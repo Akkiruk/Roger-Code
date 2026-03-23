@@ -934,6 +934,10 @@ function surf:fillArc(x, y, width, height, fromangle, toangle, b, t, c)
 	end
 end
 function surf:drawSurface(surf2, x, y, width, height, sx, sy, swidth, sheight)
+	if not surf2 then
+		return
+	end
+
 	x, y, width, height, sx, sy, swidth, sheight = x + self.ox, y + self.oy, width or surf2.width, height or surf2.height, sx or 0, sy or 0, swidth or surf2.width, sheight or surf2.height
 
 	if width == swidth and height == sheight then

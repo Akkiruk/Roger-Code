@@ -4,7 +4,7 @@
 --
 -- Run on a CC:Tweaked computer in-game with vhcctweaks loaded.
 -- The player running the test should be the computer's owner (self-play)
--- so that transferSelf and escrow flows can be exercised.
+-- so that transferSelf flows can be exercised.
 --
 -- Usage:  Right-click computer, then:  test_ccvault_full
 
@@ -17,7 +17,7 @@ local MAX_REASON   = 64     -- CCVaultAPI.MAX_REASON_LENGTH
 local AUTH_TIMEOUT = 120    -- seconds to wait for player to click [APPROVE]
 local AUTH_POLL    = 0.5    -- poll interval for auth check
 
--- All 16 @LuaFunction methods from CCVaultAPI.java
+-- All @LuaFunction methods from CCVaultAPI.java
 local EXPECTED_METHODS = {
     "isAvailable",
     "requestAuth",
@@ -31,10 +31,6 @@ local EXPECTED_METHODS = {
     "transferSelf",
     "verifyTransaction",
     "getTransactionHistory",
-    "escrow",
-    "resolveEscrow",
-    "cancelEscrow",
-    "getEscrowInfo",
 }
 
 -- ============================================================
@@ -314,10 +310,6 @@ local function phase2_noauth_errors()
         { "transferSelf(1, 'test')",    function() return ccvault.transferSelf(1, "test") end },
         { "verifyTransaction('fake')",  function() return ccvault.verifyTransaction("fake") end },
         { "getTransactionHistory(5)",   function() return ccvault.getTransactionHistory(5) end },
-        { "escrow(1, 'test')",          function() return ccvault.escrow(1, "test") end },
-        { "resolveEscrow('x','host','r')", function() return ccvault.resolveEscrow("x","host","r") end },
-        { "cancelEscrow('x', 'r')",     function() return ccvault.cancelEscrow("x", "r") end },
-        { "getEscrowInfo('x')",         function() return ccvault.getEscrowInfo("x") end },
     }
 
     for _, entry in ipairs(authMethods) do
@@ -406,7 +398,7 @@ local function phase3_authenticate()
 end
 
 -- ============================================================
---  PHASE 4 — INPUT VALIDATION (bad args to transfer/escrow)
+--  PHASE 4 — INPUT VALIDATION (bad args to transfer APIs)
 -- ============================================================
 
 local function phase4_validation()
@@ -461,34 +453,6 @@ local function phase4_validation()
     }
 
     for _, tc in ipairs(selfCases) do
-        local label, fn, expectErr = tc[1], tc[2], tc[3]
-        local ok, val, err = pcall(fn)
-        if not ok then
-            local errStr = tostring(val)
-            local matched = errStr:find(expectErr, 1, true) ~= nil
-            record(label, matched, "threw: " .. errStr:sub(1, 80))
-        elseif val == nil and type(err) == "string" then
-            local matched = err:find(expectErr, 1, true) ~= nil
-            record(label, matched, "err: " .. err)
-        else
-            record(label, false, "expected nil+error, got " .. tostring(val))
-        end
-    end
-
-    -- escrow() validations
-    local escrowCases = {
-        { "escrow: amount <= 0",
-            function() return ccvault.escrow(0, "x") end,
-            "amount must be positive" },
-        { "escrow: empty reason",
-            function() return ccvault.escrow(1, "") end,
-            "reason is required" },
-        { "escrow: reason too long",
-            function() return ccvault.escrow(1, string.rep("C", MAX_REASON + 1)) end,
-            "reason too long" },
-    }
-
-    for _, tc in ipairs(escrowCases) do
         local label, fn, expectErr = tc[1], tc[2], tc[3]
         local ok, val, err = pcall(fn)
         if not ok then
@@ -727,202 +691,23 @@ local function phase8_history()
 end
 
 -- ============================================================
---  PHASE 9 — FULL ESCROW LIFECYCLE
+--  PHASE 9 — RETIRED ESCROW LIFECYCLE
 -- ============================================================
 
 local function phase9_escrow()
-    banner("PHASE 9: Escrow Lifecycle")
-
-    -- Check balance first
-    local ok0, bal = safeCall(ccvault.getBalance, "player")
-    if not ok0 or bal == nil then
-        colPrint(colors.yellow, "Cannot read balance. Skipping escrow tests.")
-        record("escrow: balance check", false, tostring(bal))
-        return
-    end
-
-    if bal < 1 then
-        colPrint(colors.yellow, "Insufficient balance (" .. bal .. "). Need at least 1.")
-        record("escrow: balance >= 1", false, "bal=" .. bal)
-        return
-    end
-
-    record("escrow: balance >= 1", true, "bal=" .. bal)
-
-    -- 9.1  Create escrow
-    local escrowAmt = 1
-    local ok1, result, err1 = safeCall(ccvault.escrow, escrowAmt, "test escrow hold")
-    if not ok1 then
-        record("escrow() create call", false, tostring(result))
-        return
-    end
-    if result == nil then
-        record("escrow() create returned result", false, "err=" .. tostring(err1))
-        return
-    end
-
-    record("escrow() create returned result", true)
-    record("escrow result.success", result.success == true,
-        "got " .. tostring(result.success))
-    record("escrow result.escrowId is string", type(result.escrowId) == "string",
-        "got " .. type(result.escrowId))
-    record("escrow result.amount matches", result.amount == escrowAmt,
-        "got " .. tostring(result.amount) .. " expected " .. escrowAmt)
-    record("escrow result.timeoutSeconds is number", type(result.timeoutSeconds) == "number",
-        "got " .. type(result.timeoutSeconds))
-
-    local escrowId = result.escrowId
-    print("  Escrow ID: " .. tostring(escrowId))
-    print("  Amount: " .. tostring(result.amount))
-    print("  Timeout: " .. tostring(result.timeoutSeconds) .. "s")
-
-    -- 9.2  Verify balance decreased
-    local ok2, balAfter = safeCall(ccvault.getBalance, "player")
-    if ok2 and type(balAfter) == "number" then
-        record("escrow deducted from balance", balAfter == bal - escrowAmt,
-            "before=" .. bal .. " after=" .. balAfter .. " expected=" .. (bal - escrowAmt))
-        print("  Balance: " .. bal .. " -> " .. balAfter)
-    end
-
-    -- 9.3  getEscrowInfo
-    local ok3, einfo = safeCall(ccvault.getEscrowInfo, escrowId)
-    if not ok3 then
-        record("getEscrowInfo() call", false, tostring(einfo))
-    elseif einfo == nil then
-        record("getEscrowInfo() found hold", false, "returned nil")
-    else
-        record("getEscrowInfo() found hold", true)
-        record("escrowInfo.escrowId matches", einfo.escrowId == escrowId,
-            "got " .. tostring(einfo.escrowId))
-        record("escrowInfo.amount matches", einfo.amount == escrowAmt,
-            "got " .. tostring(einfo.amount))
-        record("escrowInfo.status == 'HELD'", einfo.status == "HELD",
-            "got " .. tostring(einfo.status))
-        record("escrowInfo.timeRemaining is number", type(einfo.timeRemaining) == "number",
-            "got " .. type(einfo.timeRemaining))
-        record("escrowInfo.timeRemaining > 0", (einfo.timeRemaining or 0) > 0,
-            "got " .. tostring(einfo.timeRemaining))
-        record("escrowInfo.reason is string", type(einfo.reason) == "string",
-            "got " .. type(einfo.reason))
-
-        print("  Escrow info:")
-        for k, v in pairs(einfo) do
-            print("    " .. tostring(k) .. " = " .. tostring(v))
-        end
-    end
-
-    -- 9.4  getEscrowInfo with fake ID returns nil
-    local ok4, fake = safeCall(ccvault.getEscrowInfo, "fake-escrow-id-99999")
-    if not ok4 then
-        record("getEscrowInfo fake returns nil", false, "threw: " .. tostring(fake))
-    else
-        record("getEscrowInfo fake returns nil", fake == nil,
-            "got " .. tostring(fake))
-    end
-
-    -- 9.5  Cancel the escrow (refund tokens)
-    local ok5, cancelResult, cerr = safeCall(ccvault.cancelEscrow, escrowId, "test cancel")
-    if not ok5 then
-        record("cancelEscrow() call", false, tostring(cancelResult))
-        return
-    end
-    if cancelResult == nil then
-        record("cancelEscrow() returned result", false, "err=" .. tostring(cerr))
-        return
-    end
-
-    record("cancelEscrow() returned result", true)
-    record("cancelEscrow result.success", cancelResult.success == true,
-        "got " .. tostring(cancelResult.success))
-    record("cancelEscrow result.txId is string", type(cancelResult.txId) == "string",
-        "got " .. type(cancelResult.txId))
-
-    print("  Cancel TX: " .. tostring(cancelResult.txId))
-
-    -- 9.6  Verify balance restored after cancel
-    local ok6, balRestored = safeCall(ccvault.getBalance, "player")
-    if ok6 and type(balRestored) == "number" then
-        record("escrow cancel restored balance", balRestored == bal,
-            "restored=" .. balRestored .. " original=" .. bal)
-        print("  Balance restored: " .. tostring(balRestored))
-    end
-
-    -- 9.7  getEscrowInfo after cancel should return nil
-    local ok7, stale = safeCall(ccvault.getEscrowInfo, escrowId)
-    if not ok7 then
-        record("escrowInfo after cancel is nil", false, "threw: " .. tostring(stale))
-    else
-        record("escrowInfo after cancel is nil", stale == nil,
-            "got " .. tostring(stale))
-    end
+    banner("PHASE 9: Escrow Lifecycle (Retired)")
+    colPrint(colors.yellow, "Escrow API removed in transfer-at-end mode. Skipping.")
+    record("escrow lifecycle retired", "skip", "Escrow API methods were removed")
 end
 
 -- ============================================================
---  PHASE 10 — ESCROW RESOLVE (create + resolve to host/player)
+--  PHASE 10 — RETIRED ESCROW RESOLVE
 -- ============================================================
 
 local function phase10_escrow_resolve()
-    banner("PHASE 10: Escrow Resolve")
-
-    local ok0, bal = safeCall(ccvault.getBalance, "player")
-    if not ok0 or bal == nil or bal < 1 then
-        colPrint(colors.yellow, "Insufficient balance for resolve test. Skipping.")
-        record("escrow resolve: balance check", "skip", "bal=" .. tostring(bal))
-        return
-    end
-
-    local info = ccvault.getSessionInfo()
-    local recipient = info.isSelfPlay and "player" or "host"
-
-    -- 10.1  Create escrow
-    local ok1, result, err1 = safeCall(ccvault.escrow, 1, "resolve test hold")
-    if not ok1 or result == nil then
-        record("escrow for resolve: create", false,
-            tostring(result) .. " " .. tostring(err1))
-        return
-    end
-
-    local escrowId = result.escrowId
-    record("escrow for resolve: created", true, escrowId)
-    print("  Created escrow: " .. escrowId)
-
-    -- 10.2  Resolve it
-    local ok2, rResult, rerr = safeCall(ccvault.resolveEscrow,
-        escrowId, recipient, "test resolve payout")
-    if not ok2 then
-        record("resolveEscrow() call", false, tostring(rResult))
-        return
-    end
-    if rResult == nil then
-        record("resolveEscrow() returned result", false, "err=" .. tostring(rerr))
-        return
-    end
-
-    record("resolveEscrow() returned result", true)
-    record("resolveEscrow result.success", rResult.success == true,
-        "got " .. tostring(rResult.success))
-    record("resolveEscrow result.txId is string", type(rResult.txId) == "string",
-        "got " .. type(rResult.txId))
-
-    print("  Resolve TX: " .. tostring(rResult.txId))
-
-    -- 10.3  For self-play, balance should be back to original (debit + credit same)
-    if info.isSelfPlay then
-        local ok3, balAfter = safeCall(ccvault.getBalance, "player")
-        if ok3 and type(balAfter) == "number" then
-            record("escrow resolve self-play balance unchanged", balAfter == bal,
-                "before=" .. bal .. " after=" .. balAfter)
-        end
-    end
-
-    -- 10.4  Escrow should be gone
-    local ok4, stale = safeCall(ccvault.getEscrowInfo, escrowId)
-    if not ok4 then
-        record("escrowInfo after resolve is nil", false, "threw: " .. tostring(stale))
-    else
-        record("escrowInfo after resolve is nil", stale == nil,
-            "got " .. tostring(stale))
-    end
+    banner("PHASE 10: Escrow Resolve (Retired)")
+    colPrint(colors.yellow, "Escrow API removed in transfer-at-end mode. Skipping.")
+    record("escrow resolve retired", "skip", "Escrow API methods were removed")
 end
 
 -- ============================================================

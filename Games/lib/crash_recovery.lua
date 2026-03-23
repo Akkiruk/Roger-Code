@@ -1,25 +1,23 @@
--- crash_recovery.lua  (v2)
--- Robust crash-safe bet recovery for any casino game.
+-- crash_recovery.lua  (v3)
+-- Crash-safe bet tracking for any casino game.
 -- Atomic writes, backup files, crash audit log, rich metadata.
--- Uses CCVault token economy (escrow-first, legacy fallback).
+-- With transfer-at-end economy, no money moves during the game,
+-- so crash recovery only needs to audit-log the interruption and clear state.
 --
 -- Usage:
 --   local recovery = require("lib.crash_recovery")
 --   recovery.configure("blackjack_recovery.dat")
 --   recovery.setGame("blackjack")
 --   recovery.setPlayer("Steve")
---   recovery.saveEscrowBet(45, {{ id = "abc", amount = 45, tag = "initial" }})
---   recovery.addEscrow("def", 45, "double")
+--   recovery.saveBet(45)
 --   recovery.saveSnapshot(90, { phase = "player_turn", hands = ... })
 --   recovery.clearBet()
 --   recovery.recoverBet(true)
 
-local currency = require("lib.currency")
-
 -----------------------------------------------------
 -- Internal state
 -----------------------------------------------------
-local SCHEMA_VERSION = 2
+local SCHEMA_VERSION = 3
 local RECOVERY_FILE = "game_recovery.dat"
 local LOG_FILE = "crash_recovery.log"
 local ERROR_LOG = "crash_recovery_error.log"
@@ -156,10 +154,10 @@ local function buildMeta()
   }
 end
 
---- Migrate v1 data (or raw numbers) to v2 schema.
+--- Migrate v1 data (or raw numbers) to current schema.
 -- @param data table|nil   Parsed data from file
 -- @param raw  string|nil  Raw file contents (for bare number fallback)
--- @return table  v2 formatted data
+-- @return table  formatted state data
 local function migrateToV2(data, raw)
   -- Bare number (ancient format)
   if not data and raw then
@@ -168,7 +166,7 @@ local function migrateToV2(data, raw)
       return {
         version = SCHEMA_VERSION,
         bet = num,
-        escrows = {},
+
         phase = nil,
         snapshot = nil,
         createdAt = os.epoch("local"),
@@ -184,7 +182,7 @@ local function migrateToV2(data, raw)
   local migrated = {
     version   = SCHEMA_VERSION,
     bet       = data.bet or 0,
-    escrows   = data.escrows or {},
+
     phase     = data.phase,
     snapshot  = data.snapshot,
     game      = data.game,
@@ -201,7 +199,7 @@ end
 -----------------------------------------------------
 
 --- Append an entry to the persistent crash audit log.
--- @param entry table  {event, game, player, bet, escrowCount, outcome, detail}
+-- @param entry table  {event, game, player, bet, outcome, detail}
 local function auditLog(entry)
   entry.timestamp = os.epoch("local")
   entry.computerID = os.getComputerID()
@@ -305,7 +303,7 @@ local function saveBet(betAmount, phase)
   local state = loadState() or {}
   state.bet = betAmount
   state.phase = phase
-  state.escrows = state.escrows or {}
+
   state.createdAt = state.createdAt or os.epoch("local")
   local meta = buildMeta()
   state.game = meta.game or state.game
@@ -315,59 +313,8 @@ local function saveBet(betAmount, phase)
   dbg("Saved bet: " .. betAmount .. (phase and (" phase=" .. phase) or ""))
 end
 
---- Save an active bet with escrow IDs for crash-safe recovery.
--- @param betAmount number  Total bet at risk
--- @param escrows   table   Array of {id=string, amount=number, tag=string}
--- @param phase     string|nil  Optional game phase
-local function saveEscrowBet(betAmount, escrows, phase)
-  assert(type(betAmount) == "number", "betAmount must be a number")
-  local meta = buildMeta()
-  local state = {
-    version    = SCHEMA_VERSION,
-    bet        = betAmount,
-    escrows    = escrows or {},
-    phase      = phase,
-    snapshot   = nil,
-    game       = meta.game,
-    player     = meta.player,
-    computerID = meta.computerID,
-    createdAt  = os.epoch("local"),
-    updatedAt  = os.epoch("local"),
-  }
-  -- Tag escrows with timestamps
-  for _, esc in ipairs(state.escrows) do
-    esc.timestamp = esc.timestamp or os.epoch("local")
-  end
-  writeState(state)
-  dbg("Saved escrow bet: " .. betAmount .. " with " .. #(escrows or {}) .. " escrow(s)")
-end
-
---- Add an escrow to the existing recovery data (for doubles/splits mid-round).
--- Updates the total bet and appends the escrow entry.
--- @param id     string  Escrow ID
--- @param amount number  Token amount held
--- @param tag    string  Label (e.g. "double", "split", "insurance")
-local function addEscrow(id, amount, tag)
-  local state = loadState()
-  if not state then
-    logError("addEscrow: no active recovery state to add escrow to")
-    return
-  end
-  if not state.escrows then state.escrows = {} end
-  table.insert(state.escrows, {
-    id = id,
-    amount = amount,
-    tag = tag or "unknown",
-    timestamp = os.epoch("local"),
-  })
-  state.bet = (state.bet or 0) + amount
-  writeState(state)
-  dbg("Added escrow " .. tostring(id) .. " (" .. tostring(tag) .. " +"
-      .. tostring(amount) .. "), total bet=" .. state.bet)
-end
-
 --- Save a full round snapshot (bet + hand state) so crashes can be audited.
--- Merges into existing state, preserving escrow IDs.
+
 -- @param betAmount number
 -- @param snapshot  table  Serializable game state for auditing
 local function saveSnapshot(betAmount, snapshot)
@@ -380,7 +327,7 @@ local function saveSnapshot(betAmount, snapshot)
   state.game = meta.game or state.game
   state.player = meta.player or state.player
   state.computerID = meta.computerID
-  if not state.escrows then state.escrows = {} end
+
   writeState(state)
   dbg("Saved snapshot, bet=" .. betAmount)
 end
@@ -424,12 +371,11 @@ end
 -- Public API — Recovery
 -----------------------------------------------------
 
---- Check for and recover an unresolved bet from a previous session.
--- Escrow-aware: cancels any held escrows first (instant refund).
--- Falls back to legacy payout refund for old recovery files.
--- Logs all recovery attempts to the crash audit log.
+--- Check for and handle an unresolved bet from a previous session.
+-- With transfer-at-end, no money moved during the game, so nothing needs refunding.
+-- Logs the interruption to the crash audit log and clears the recovery file.
 -- @param verbose boolean?  If true, print messages even when no bet is found
--- @return boolean  true if a bet was recovered
+-- @return boolean  true if a crashed bet was found (and cleared)
 local function recoverBet(verbose)
   local state = loadState()
 
@@ -441,120 +387,32 @@ local function recoverBet(verbose)
   end
 
   local betAmount = state.bet or 0
-  local escrows = state.escrows or {}
   local stateGame = state.game or gameName or "unknown"
   local statePlayer = state.player or playerName or "unknown"
   local age = state.createdAt and (os.epoch("local") - state.createdAt) or nil
   local ageStr = age and string.format("%.1fs ago", age / 1000) or "unknown age"
 
   dbg("Recovery check: game=" .. stateGame .. " player=" .. statePlayer
-      .. " bet=" .. betAmount .. " escrows=" .. #escrows .. " (" .. ageStr .. ")")
+      .. " bet=" .. betAmount .. " (" .. ageStr .. ")")
 
-  -- Path 1: Escrow-aware recovery (modern)
-  if #escrows > 0 then
-    dbg("Escrow recovery: " .. #escrows .. " escrow(s) to process")
-    print("Recovering unresolved bet from previous session...")
+  if betAmount > 0 then
+    -- No money moved (transfer-at-end), so no refund needed — just inform and log
+    print("Previous game interrupted (no tokens were charged).")
     print("  Game: " .. stateGame .. "  Bet: " .. betAmount .. " tokens  (" .. ageStr .. ")")
 
-    local refunded = 0
-    local failed = 0
-    local alreadyResolved = 0
-
-    for _, esc in ipairs(escrows) do
-      local infoOk, info = pcall(function() return currency.getEscrowInfo(esc.id) end)
-      if infoOk and info and info.status == "held" then
-        print("  Cancelling escrow: " .. tostring(esc.amount or "?")
-              .. " tokens (" .. tostring(esc.tag or "?") .. ")...")
-        local cancelOk = pcall(function() return currency.cancelEscrow(esc.id, "crash recovery") end)
-        if cancelOk then
-          refunded = refunded + (esc.amount or 0)
-          print("    Refunded.")
-        else
-          failed = failed + 1
-          logError("Failed to cancel escrow " .. tostring(esc.id)
-                   .. " (" .. tostring(esc.amount) .. " tokens)")
-          print("    FAILED — see crash_recovery_error.log")
-        end
-      elseif infoOk and info then
-        dbg("  Escrow " .. tostring(esc.id) .. " status: " .. tostring(info.status)
-            .. " (already resolved)")
-        alreadyResolved = alreadyResolved + 1
-      else
-        dbg("  Escrow " .. tostring(esc.id) .. " not found (expired/auto-refunded)")
-        alreadyResolved = alreadyResolved + 1
-      end
-    end
-
-    -- Log to audit
     auditLog({
-      event = "escrow_recovery",
+      event = "crash_cleared",
       game = stateGame,
       player = statePlayer,
       bet = betAmount,
-      escrowCount = #escrows,
-      refunded = refunded,
-      failed = failed,
-      alreadyResolved = alreadyResolved,
-      outcome = failed > 0 and "partial" or "success",
+      outcome = "no_refund_needed",
+      detail = "transfer-at-end: no money moved during game",
       age = age,
       phase = state.phase,
     })
 
-    if refunded > 0 then
-      print("Recovery complete: " .. refunded .. " tokens refunded.")
-    elseif failed > 0 then
-      print("Recovery had " .. failed .. " failure(s). Check logs.")
-    elseif verbose then
-      print("All escrows were already resolved.")
-    end
-
     clearBet()
-    return refunded > 0 or alreadyResolved > 0
-  end
-
-  -- Path 2: Legacy recovery (no escrow data, old format)
-  if betAmount > 0 then
-    dbg("Legacy recovery: " .. betAmount .. " tokens")
-    print("Recovering unresolved bet from previous session...")
-    print("  Game: " .. stateGame .. "  Bet: " .. betAmount .. " tokens  (" .. ageStr .. ")")
-    if state.snapshot then
-      dbg("Snapshot found — hand state saved for audit")
-    end
-
-    local payOk, payErr = pcall(function()
-      return currency.payout(betAmount, "crash recovery refund")
-    end)
-
-    if payOk then
-      print("  Refunded " .. betAmount .. " tokens.")
-      auditLog({
-        event = "legacy_recovery",
-        game = stateGame,
-        player = statePlayer,
-        bet = betAmount,
-        outcome = "success",
-        age = age,
-        phase = state.phase,
-      })
-      clearBet()
-      return true
-    else
-      print("  FAILED to refund " .. betAmount .. " tokens!")
-      print("  Please contact an admin for assistance.")
-      logError("Legacy recovery payout failed: " .. betAmount
-               .. " tokens, err=" .. tostring(payErr))
-      auditLog({
-        event = "legacy_recovery",
-        game = stateGame,
-        player = statePlayer,
-        bet = betAmount,
-        outcome = "failed",
-        detail = tostring(payErr),
-        age = age,
-        phase = state.phase,
-      })
-      return false
-    end
+    return true
   end
 
   -- State file existed but bet was 0 or missing
@@ -577,7 +435,7 @@ local function getActiveBet()
   return state.bet, state.phase, state.snapshot
 end
 
---- Get full recovery data including escrow IDs (for escrow-aware recovery).
+--- Get full recovery data.
 -- @return table|nil  Full v2 state, or nil
 local function getRecoveryData()
   return loadState()
@@ -680,8 +538,6 @@ return {
   setPlayer       = setPlayer,
   -- Saving state
   saveBet         = saveBet,
-  saveEscrowBet   = saveEscrowBet,
-  addEscrow       = addEscrow,
   saveSnapshot    = saveSnapshot,
   update          = update,
   -- Clearing
