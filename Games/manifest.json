@@ -1,284 +1,264 @@
 {
-    "manifest_version":  1,
-    "installer_version":  "1.1.0",
-    "installer_hash":  "598a7e643bccc48e",
-    "programs":  {
-                     "baccarat":  {
-                                      "name":  "Baccarat",
-                                      "version":  "1.2.6",
-                                      "content_hash":  "d1a43c0ccef2d476",
-                                      "description":  "Baccarat card game for ComputerCraft casino.",
-                                      "source_dir":  "Games/Baccarat",
-                                      "uses_lib":  true,
-                                      "files":  [
-                                                    "baccarat.lua",
-                                                    "startup.lua"
-                                                ],
-                                      "config_files":  [
-                                                           "baccarat_config.lua"
-                                                       ],
-                                      "assets":  [
-                                                     "card.nfp",
-                                                     "cardback.nfp",
-                                                     "club.nfp",
-                                                     "clubs.nfp",
-                                                     "diamond.nfp",
-                                                     "diamonds.nfp",
-                                                     "font",
-                                                     "heart.nfp",
-                                                     "hearts.nfp",
-                                                     "spade.nfp",
-                                                     "spades.nfp",
-                                                     "surface"
-                                                 ]
-                                  },
-                     "blackjack":  {
-                                       "name":  "Blackjack",
-                                       "version":  "1.2.4",
-                                       "content_hash":  "2c63bfc62e849ba5",
-                                       "description":  "Blackjack card game for ComputerCraft casino.",
-                                       "source_dir":  "Games/Blackjack",
-                                       "uses_lib":  true,
-                                       "files":  [
-                                                     "blackjack.lua",
-                                                     "startup.lua",
-                                                     "statistics.lua",
-                                                     "stats_ui.lua"
-                                                 ],
-                                       "config_files":  [
-                                                            "blackjack_config.lua"
-                                                        ],
-                                       "assets":  [
-                                                      "card.nfp",
-                                                      "cardback.nfp",
-                                                      "club.nfp",
-                                                      "clubs.nfp",
-                                                      "diamond.nfp",
-                                                      "diamonds.nfp",
-                                                      "font",
-                                                      "gothic",
-                                                      "heart.nfp",
-                                                      "hearts.nfp",
-                                                      "logo.nfp",
-                                                      "spade.nfp",
-                                                      "spades.nfp",
-                                                      "surface"
-                                                  ]
-                                   },
-                     "hilo":  {
-                                  "name":  "HiLo",
-                                  "version":  "1.0.7",
-                                  "content_hash":  "7d963c748a74dfdf",
-                                  "description":  "Hi-Lo card game for ComputerCraft casino.",
-                                  "source_dir":  "Games/HiLo",
-                                  "uses_lib":  true,
-                                  "files":  [
-                                                "hilo.lua",
-                                                "startup.lua"
-                                            ],
-                                  "config_files":  [
-                                                       "hilo_config.lua"
-                                                   ],
-                                  "assets":  [
-                                                 "card.nfp",
-                                                 "cardback.nfp",
-                                                 "club.nfp",
-                                                 "clubs.nfp",
-                                                 "diamond.nfp",
-                                                 "diamonds.nfp",
-                                                 "font",
-                                                 "heart.nfp",
-                                                 "hearts.nfp",
-                                                 "spade.nfp",
-                                                 "spades.nfp",
-                                                 "surface"
-                                             ]
-                              },
-                     "roulette":  {
-                                      "name":  "Roulette",
-                                      "version":  "1.0.7",
-                                      "content_hash":  "bff081dd42cd9459",
-                                      "description":  "European Roulette for ComputerCraft casino.",
-                                      "source_dir":  "Games/Roulette",
-                                      "uses_lib":  true,
-                                      "files":  [
-                                                    "Roulette.lua",
-                                                    "startup.lua",
-                                                    "ThreeCardPoker.lua"
-                                                ],
-                                      "config_files":  [
-                                                           "roulette_config.lua"
-                                                       ],
-                                      "assets":  [
-                                                     "card.nfp",
-                                                     "cardback.nfp",
-                                                     "font",
-                                                     "surface"
-                                                 ]
-                                  },
-                     "slots":  {
-                                   "name":  "Slots",
-                                   "version":  "1.0.5",
-                                   "content_hash":  "793e8cba1e1e22d5",
-                                   "description":  "Slot Machine game for ComputerCraft casino.",
-                                   "source_dir":  "Games/Slots",
-                                   "uses_lib":  true,
-                                   "files":  [
-                                                 "slots.lua",
-                                                 "startup.lua",
-                                                 "view_art.lua"
-                                             ],
-                                   "config_files":  [
-                                                        "slots_config.lua"
-                                                    ],
-                                   "assets":  [
-                                                  "bar.nfp",
-                                                  "bell.nfp",
-                                                  "cherry.nfp",
-                                                  "diamond.nfp",
-                                                  "font",
-                                                  "lemon.nfp",
-                                                  "melon.nfp",
-                                                  "seven.nfp",
-                                                  "surface"
-                                              ]
-                               },
-                     "taskmaster":  {
-                                        "name":  "TaskMaster",
-                                        "version":  "1.0.0",
-                                        "content_hash":  "028199a3c01752c3",
-                                        "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
-                                        "source_dir":  "Games/TaskMaster",
-                                        "uses_lib":  false,
-                                        "files":  [
-                                                      "taskmaster.lua"
-                                                  ],
-                                        "config_files":  [
-
-                                                         ],
-                                        "assets":  [
-
-                                                   ]
-                                    },
-                     "videopoker":  {
-                                        "name":  "VideoPoker",
-                                        "version":  "1.0.7",
-                                        "content_hash":  "4e091b0d23c95550",
-                                        "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
-                                        "source_dir":  "Games/VideoPoker",
-                                        "uses_lib":  true,
-                                        "files":  [
-                                                      "startup.lua",
-                                                      "videopoker.lua"
-                                                  ],
-                                        "config_files":  [
-                                                             "videopoker_config.lua"
-                                                         ],
-                                        "assets":  [
-                                                       "card.nfp",
-                                                       "cardback.nfp",
-                                                       "club.nfp",
-                                                       "clubs.nfp",
-                                                       "diamond.nfp",
-                                                       "diamonds.nfp",
-                                                       "font",
-                                                       "heart.nfp",
-                                                       "hearts.nfp",
-                                                       "spade.nfp",
-                                                       "spades.nfp",
-                                                       "surface"
-                                                   ]
-                                    },
-                     "peripheral_info_collector":  {
-                                                       "name":  "peripheral_info_collector",
-                                                       "version":  "1.0.0",
-                                                       "content_hash":  "ff1b520a22d89911",
-                                                       "description":  "Gathers detailed information about all attached peripherals, including methods and documentation,",
-                                                       "source_dir":  "Utilities",
-                                                       "uses_lib":  false,
-                                                       "files":  [
-                                                                     "peripheral_info_collector.lua"
-                                                                 ],
-                                                       "config_files":  [
-
-                                                                        ],
-                                                       "assets":  [
-
-                                                                  ]
-                                                   },
-                     "test_ccvault":  {
-                                          "name":  "test_ccvault",
-                                          "version":  "1.0.3",
-                                          "content_hash":  "e86a7af2f9dbb31b",
-                                          "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
-                                          "source_dir":  "Utilities",
-                                          "uses_lib":  false,
-                                          "files":  [
-                                                        "test_ccvault.lua"
-                                                    ],
-                                          "config_files":  [
-
-                                                           ],
-                                          "assets":  [
-
-                                                     ]
-                                      },
-                     "test_ccvault_full":  {
-                                               "name":  "test_ccvault_full",
-                                               "version":  "1.0.5",
-                                               "content_hash":  "d337a86221c018ee",
-                                               "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
-                                               "source_dir":  "Utilities",
-                                               "uses_lib":  false,
-                                               "files":  [
-                                                             "test_ccvault_full.lua"
-                                                         ],
-                                               "config_files":  [
-
-                                                                ],
-                                               "assets":  [
-
-                                                          ]
-                                           },
-                     "vault_item_analyzer":  {
-                                                 "name":  "vault_item_analyzer",
-                                                 "version":  "1.0.3",
-                                                 "content_hash":  "a9ebd5a151c9089c",
-                                                 "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
-                                                 "source_dir":  "Utilities",
-                                                 "uses_lib":  false,
-                                                 "files":  [
-                                                               "vault_item_analyzer.lua"
-                                                           ],
-                                                 "config_files":  [
-
-                                                                  ],
-                                                 "assets":  [
-
-                                                            ]
-                                             }
-                 },
-    "lib":  {
-                "version":  "1.2.11",
-                "content_hash":  "cce1415e9faae25e",
-                "files":  [
-                              "achievements.lua",
-                              "alert.lua",
-                              "auto_player.lua",
-                              "betting.lua",
-                              "card_anim.lua",
-                              "cards.lua",
-                              "crash_recovery.lua",
-                              "currency.lua",
-                              "game_setup.lua",
-                              "idle_screen.lua",
-                              "peripherals.lua",
-                              "player_detection.lua",
-                              "player_stats.lua",
-                              "safe_runner.lua",
-                              "sound.lua",
-                              "ui.lua",
-                              "updater.lua"
-                          ]
-            }
+  "manifest_version": 1,
+  "installer_version": "1.1.0",
+  "installer_hash": "598a7e643bccc48e",
+  "programs": {
+    "baccarat": {
+      "name": "Baccarat",
+      "version": "1.2.7",
+      "content_hash": "f8c40dca83a61610",
+      "description": "Baccarat card game for ComputerCraft casino.",
+      "source_dir": "Games/Baccarat",
+      "uses_lib": true,
+      "files": [
+        "baccarat.lua",
+        "startup.lua"
+      ],
+      "config_files": [
+        "baccarat_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "heart.nfp",
+        "hearts.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface"
+      ]
+    },
+    "blackjack": {
+      "name": "Blackjack",
+      "version": "1.2.5",
+      "content_hash": "aa92bc038adc0371",
+      "description": "Blackjack card game for ComputerCraft casino.",
+      "source_dir": "Games/Blackjack",
+      "uses_lib": true,
+      "files": [
+        "blackjack.lua",
+        "startup.lua",
+        "statistics.lua",
+        "stats_ui.lua"
+      ],
+      "config_files": [
+        "blackjack_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "gothic",
+        "heart.nfp",
+        "hearts.nfp",
+        "logo.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface"
+      ]
+    },
+    "hilo": {
+      "name": "HiLo",
+      "version": "1.0.8",
+      "content_hash": "4911a2f8a9b10fec",
+      "description": "Hi-Lo card game for ComputerCraft casino.",
+      "source_dir": "Games/HiLo",
+      "uses_lib": true,
+      "files": [
+        "hilo.lua",
+        "startup.lua"
+      ],
+      "config_files": [
+        "hilo_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "heart.nfp",
+        "hearts.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface"
+      ]
+    },
+    "roulette": {
+      "name": "Roulette",
+      "version": "1.0.8",
+      "content_hash": "b07bc411ecd2b671",
+      "description": "European Roulette for ComputerCraft casino.",
+      "source_dir": "Games/Roulette",
+      "uses_lib": true,
+      "files": [
+        "Roulette.lua",
+        "startup.lua",
+        "ThreeCardPoker.lua"
+      ],
+      "config_files": [
+        "roulette_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "font",
+        "surface"
+      ]
+    },
+    "slots": {
+      "name": "Slots",
+      "version": "1.0.6",
+      "content_hash": "62416cc08d654e99",
+      "description": "Slot Machine game for ComputerCraft casino.",
+      "source_dir": "Games/Slots",
+      "uses_lib": true,
+      "files": [
+        "slots.lua",
+        "startup.lua",
+        "view_art.lua"
+      ],
+      "config_files": [
+        "slots_config.lua"
+      ],
+      "assets": [
+        "bar.nfp",
+        "bell.nfp",
+        "cherry.nfp",
+        "diamond.nfp",
+        "font",
+        "lemon.nfp",
+        "melon.nfp",
+        "seven.nfp",
+        "surface"
+      ]
+    },
+    "taskmaster": {
+      "name": "TaskMaster",
+      "version": "1.0.0",
+      "content_hash": "028199a3c01752c3",
+      "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
+      "source_dir": "Games/TaskMaster",
+      "uses_lib": false,
+      "files": [
+        "taskmaster.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    },
+    "videopoker": {
+      "name": "VideoPoker",
+      "version": "1.0.8",
+      "content_hash": "bf011bd64a7f059e",
+      "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
+      "source_dir": "Games/VideoPoker",
+      "uses_lib": true,
+      "files": [
+        "startup.lua",
+        "videopoker.lua"
+      ],
+      "config_files": [
+        "videopoker_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "heart.nfp",
+        "hearts.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface"
+      ]
+    },
+    "peripheral_info_collector": {
+      "name": "peripheral_info_collector",
+      "version": "1.0.0",
+      "content_hash": "ff1b520a22d89911",
+      "description": "Gathers detailed information about all attached peripherals, including methods and documentation,",
+      "source_dir": "Utilities",
+      "uses_lib": false,
+      "files": [
+        "peripheral_info_collector.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    },
+    "test_ccvault_full": {
+      "name": "test_ccvault_full",
+      "version": "1.0.5",
+      "content_hash": "d337a86221c018ee",
+      "description": "Comprehensive step-by-step integration test for the CCVault economy API.",
+      "source_dir": "Utilities",
+      "uses_lib": false,
+      "files": [
+        "test_ccvault_full.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    },
+    "test_ccvault": {
+      "name": "test_ccvault",
+      "version": "1.0.3",
+      "content_hash": "e86a7af2f9dbb31b",
+      "description": "test_ccvault.lua — quick diagnostic for the ccvault API",
+      "source_dir": "Utilities",
+      "uses_lib": false,
+      "files": [
+        "test_ccvault.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    },
+    "vault_item_analyzer": {
+      "name": "vault_item_analyzer",
+      "version": "1.0.3",
+      "content_hash": "a9ebd5a151c9089c",
+      "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
+      "source_dir": "Utilities",
+      "uses_lib": false,
+      "files": [
+        "vault_item_analyzer.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    }
+  },
+  "lib": {
+    "version": "1.2.12",
+    "content_hash": "401a54507c94bbaf",
+    "files": [
+      "achievements.lua",
+      "alert.lua",
+      "auto_player.lua",
+      "betting.lua",
+      "card_anim.lua",
+      "cards.lua",
+      "crash_recovery.lua",
+      "currency.lua",
+      "game_setup.lua",
+      "idle_screen.lua",
+      "peripherals.lua",
+      "player_detection.lua",
+      "player_stats.lua",
+      "safe_runner.lua",
+      "sound.lua",
+      "ui.lua",
+      "updater.lua"
+    ]
+  }
 }

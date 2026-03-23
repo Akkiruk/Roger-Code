@@ -9,6 +9,7 @@
 --   currency.payout(100, "blackjack win")
 
 local DEBUG = settings.get("casino.debug") or false
+local AUTH_POLL_INTERVAL = 0.2
 local function dbg(msg)
   if DEBUG then print(os.epoch("local"), "[currency] " .. msg) end
 end
@@ -100,13 +101,22 @@ local function authenticate(timeout)
   print("Approve Computer #" .. tostring(compId) .. " in chat.")
 
   local timer = os.startTimer(timeout)
+  local pollTimer = os.startTimer(AUTH_POLL_INTERVAL)
   while not ccvault.isAuthenticated() do
     local event, id = os.pullEvent()
     if event == "timer" and id == timer then
+      if pollTimer then
+        os.cancelTimer(pollTimer)
+      end
       print("Auth timed out.")
       return false
     end
-    os.sleep(0.5)
+    if event == "timer" and id == pollTimer then
+      pollTimer = os.startTimer(AUTH_POLL_INTERVAL)
+    end
+  end
+  if pollTimer then
+    os.cancelTimer(pollTimer)
   end
   os.cancelTimer(timer)
 
