@@ -215,8 +215,8 @@ local function drawNumberDisplay(number, y)
   local bg = getNumberColor(number)
   local fg = getNumberTextColor(number)
 
-  local boxW = 20
-  local boxH = 12
+  local boxW = 12
+  local boxH = 8
   local boxX = floor((width - boxW) / 2)
 
   screen:fillRect(boxX - 1, y - 1, boxW + 2, boxH + 2, colors.yellow)
@@ -248,12 +248,12 @@ local function drawBoardCell(x, y, n, w, h, isSelected, isGold)
 end
 
 local function drawNumberBoard(activeNumber, finalNumber)
-  local cellW = (width >= 90) and 12 or 10
-  local cellH = (height >= 70) and 8 or 7
+  local cellW = (width >= 100) and 11 or 10
+  local cellH = (height >= 100) and 8 or 7
   local gap = 1
   local cols = 6
 
-  local zeroY = 20
+  local zeroY = 31
   local zeroX = floor((width - cellW) / 2)
 
   local totalGridW = cols * (cellW + gap) - gap
@@ -278,32 +278,66 @@ local function drawScreen(result, betType, straightNum, betAmount, statusText, a
   screen:clear(LO.TABLE_COLOR)
 
   -- Title bar
-  screen:fillRect(0, 0, width, 8, colors.black)
+  screen:fillRect(0, 0, width, 16, colors.black)
   local title = "ROULETTE"
-  local ttw = ui.getTextSize(title)
-  ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), LO.TITLE_Y, colors.yellow)
+  local titleW = ui.getTextSize(title)
 
-  -- Bet amount (top-left)
+  local betStr = nil
   if betAmount and betAmount > 0 then
-    local betStr = "Bet: " .. currency.formatTokens(betAmount)
-    ui.safeDrawText(screen, betStr, font, 2, LO.TITLE_Y, colors.lightGray)
+    betStr = "Bet: " .. currency.formatTokens(betAmount)
   end
 
-  -- Bet type + payout (top-right)
+  local rightStr = nil
   if betType then
     local betLabel = getBetTypeLabel(betType, straightNum)
     local payoutStr = getPayoutMultiplier(betType) .. ":1"
-    betLabel = betLabel .. " " .. payoutStr
-    local blw = ui.getTextSize(betLabel)
-    ui.safeDrawText(screen, betLabel, font, width - blw - 2, LO.TITLE_Y, colors.cyan)
+    rightStr = betLabel .. " " .. payoutStr
+  end
+
+  ui.safeDrawText(screen, title, font, floor((width - titleW) / 2), 1, colors.yellow)
+
+  -- Bet amount (top-left)
+  if betStr then
+    ui.safeDrawText(screen, betStr, font, 2, 9, colors.lightGray)
+  end
+
+  -- Bet type + payout (top-right)
+  if rightStr then
+    local rsw = ui.getTextSize(rightStr)
+    local rightX = width - rsw - 2
+
+    if betStr then
+      local leftW = ui.getTextSize(betStr)
+      if (2 + leftW + 3) > rightX then
+        betStr = "Bet:" .. tostring(betAmount)
+        ui.safeDrawText(screen, string.rep(" ", leftW), font, 2, 9, colors.black)
+        ui.safeDrawText(screen, betStr, font, 2, 9, colors.lightGray)
+      end
+
+      leftW = ui.getTextSize(betStr)
+      rightX = width - rsw - 2
+      if (2 + leftW + 3) > rightX then
+        rightStr = getPayoutMultiplier(betType) .. ":1"
+        rsw = ui.getTextSize(rightStr)
+        rightX = width - rsw - 2
+      end
+    end
+
+    ui.safeDrawText(screen, rightStr, font, rightX, 9, colors.cyan)
   end
 
   -- Separator
-  screen:fillRect(0, 8, width, 1, colors.yellow)
+  screen:fillRect(0, 16, width, 1, colors.yellow)
 
   local boardTitle = "PICK A NUMBER 35:1"
-  local btw = ui.getTextSize(boardTitle)
-  ui.safeDrawText(screen, boardTitle, font, floor((width - btw) / 2), 11, colors.yellow)
+  local lineText = boardTitle
+  local lineColor = colors.yellow
+  if statusText then
+    lineText = statusText.text
+    lineColor = statusText.color
+  end
+  local ltw = ui.getTextSize(lineText)
+  ui.safeDrawText(screen, lineText, font, floor((width - ltw) / 2), 19, lineColor)
 
   local shownNumber = activeNumber
   if shownNumber == nil then
@@ -313,15 +347,8 @@ local function drawScreen(result, betType, straightNum, betAmount, statusText, a
     shownNumber = (betType == "straight" and straightNum) or 0
   end
 
-  drawNumberDisplay(shownNumber, 14)
+  drawNumberDisplay(shownNumber, 22)
   drawNumberBoard(shownNumber, finalNumber)
-
-  -- Status text at bottom
-  if statusText then
-    local stw = ui.getTextSize(statusText.text)
-    local sy = height - 10
-    ui.safeDrawText(screen, statusText.text, font, floor((width - stw) / 2), sy, statusText.color)
-  end
 
   screen:output()
 end

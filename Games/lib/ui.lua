@@ -43,7 +43,11 @@ local function getButtonSurface(text, bg)
   local textSize = _surface.getTextSize(text, _font)
   local btn = _surface.create(textSize + 2, 7)
   btn:fillRect(0, 0, textSize + 2, 7, bg)
-  btn:drawText(text, _font, 1, 1, colors.black)
+  local fg = colors.black
+  if bg == colors.black or bg == colors.gray then
+    fg = colors.white
+  end
+  btn:drawText(text, _font, 1, 1, fg)
   return btn
 end
 
@@ -59,7 +63,11 @@ local function getFixedWidthButtonSurface(text, bg, fixedWidth)
   local btn = _surface.create(btnWidth, 7)
   btn:fillRect(0, 0, btnWidth, 7, bg)
   local textX = math.floor((btnWidth - textSize) / 2)
-  btn:drawText(text, _font, textX, 1, colors.black)
+  local fg = colors.black
+  if bg == colors.black or bg == colors.gray then
+    fg = colors.white
+  end
+  btn:drawText(text, _font, textX, 1, fg)
   return btn
 end
 

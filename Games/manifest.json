@@ -96,8 +96,8 @@
                               },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.6",
-                                      "content_hash":  "f663b612aeb10871",
+                                      "version":  "1.0.7",
+                                      "content_hash":  "bff081dd42cd9459",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -259,8 +259,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.8",
-                "content_hash":  "736fb2769c142a96",
+                "version":  "1.2.9",
+                "content_hash":  "c78d0e300c7c7a27",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
