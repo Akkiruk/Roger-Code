@@ -118,8 +118,9 @@ if (Test-Path $libDir) {
 # ── Write JSON ─────────────────────────────────────────────────────────────
 
 $outPath = Join-Path $GamesDir "manifest.json"
-$json = $manifest | ConvertTo-Json -Depth 5
-$json | Set-Content $outPath -Encoding UTF8
+$json = ($manifest | ConvertTo-Json -Depth 5) -replace "`r`n", "`n"
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText($outPath, $json, $utf8NoBom)
 
 Write-Host ""
 Write-Host "Wrote $outPath" -ForegroundColor Green

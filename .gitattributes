@@ -1,6 +1,9 @@
 # Lua source code
 *.lua text eol=lf
 
+# JSON manifests — must be LF, no BOM (CC:Tweaked JSON parser requirement)
+*.json text eol=lf
+
 # NFP paint files (CC pixel art) — treat as text, keep LF
 *.nfp text eol=lf
 
