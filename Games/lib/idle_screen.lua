@@ -47,7 +47,9 @@ local function setup(cfg)
   env.surface = s
 
   env.monitor = peripherals.require(cfg.monitorName, "monitor", "monitor")
-  env.monitor.setTextScale(0.5)
+  if type(env.monitor.setTextScale) == "function" then
+    env.monitor.setTextScale(0.5)
+  end
   term.redirect(env.monitor)
 
   local palette = cfg.palette or DEFAULT_PALETTE

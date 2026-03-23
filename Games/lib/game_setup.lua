@@ -83,7 +83,9 @@ local function init(cfg)
   env.surface = dofile(surfacePath)
 
   -- Monitor setup
-  env.monitor.setTextScale(0.5)
+  if type(env.monitor.setTextScale) == "function" then
+    env.monitor.setTextScale(0.5)
+  end
   term.redirect(env.monitor)
 
   -- Palette

@@ -207,8 +207,8 @@
                                                    },
                      "test_ccvault":  {
                                           "name":  "test_ccvault",
-                                          "version":  "1.0.2",
-                                          "content_hash":  "e9db193d54d962dd",
+                                          "version":  "1.0.3",
+                                          "content_hash":  "e86a7af2f9dbb31b",
                                           "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
                                           "source_dir":  "Utilities",
                                           "uses_lib":  false,
@@ -224,8 +224,8 @@
                                       },
                      "test_ccvault_full":  {
                                                "name":  "test_ccvault_full",
-                                               "version":  "1.0.2",
-                                               "content_hash":  "a2ef0cd34e657bca",
+                                               "version":  "1.0.3",
+                                               "content_hash":  "dc2c46255e3814de",
                                                "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
                                                "source_dir":  "Utilities",
                                                "uses_lib":  false,
@@ -241,8 +241,8 @@
                                            },
                      "vault_item_analyzer":  {
                                                  "name":  "vault_item_analyzer",
-                                                 "version":  "1.0.2",
-                                                 "content_hash":  "7554485565b3757b",
+                                                 "version":  "1.0.3",
+                                                 "content_hash":  "a9ebd5a151c9089c",
                                                  "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
                                                  "source_dir":  "Utilities",
                                                  "uses_lib":  false,
@@ -258,8 +258,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.0",
-                "content_hash":  "69f3acc0efe4e91c",
+                "version":  "1.2.1",
+                "content_hash":  "9ff78d7a85b8e2c6",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
