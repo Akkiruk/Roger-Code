@@ -180,7 +180,24 @@
                                                "assets":  [
 
                                                           ]
-                                           }
+                                           },
+                     "vault_item_analyzer":  {
+                                                 "name":  "vault_item_analyzer",
+                                                 "version":  "1.0.0",
+                                                 "content_hash":  "a9ebd5a151c9089c",
+                                                 "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
+                                                 "source_dir":  "Utilities",
+                                                 "uses_lib":  false,
+                                                 "files":  [
+                                                               "vault_item_analyzer.lua"
+                                                           ],
+                                                 "config_files":  [
+
+                                                                  ],
+                                                 "assets":  [
+
+                                                            ]
+                                             }
                  },
     "lib":  {
                 "version":  "1.1.0",
