@@ -76,6 +76,7 @@ alert.addPlannedExits({
   cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
+  cfg.EXIT_CODES.PLAYER_QUIT,
 })
 
 local screen = env.screen

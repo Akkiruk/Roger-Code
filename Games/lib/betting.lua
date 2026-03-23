@@ -33,6 +33,7 @@ end
 --   onTimeout           function Called on inactivity timeout (default: error)
 --   hostBalance         number?  Override for host balance limit calculations
 --   hostCoverageMultiplier number? How much the host must hold to cover max payout
+--   onQuit              function Called when the player presses QUIT (default: error("player_quit"))
 -- @return number bet, string|nil escrowId  Confirmed bet and escrow ID (nil if no escrow)
 local function runBetScreen(screen, opts)
   opts = opts or {}
@@ -47,6 +48,12 @@ local function runBetScreen(screen, opts)
   end
   local hostBalance        = opts.hostBalance
   local hostCoverageMult   = opts.hostCoverageMultiplier or 3
+  local onQuit             = opts.onQuit or function()
+    error("player_quit")
+  end
+
+  -- Session lock: capture the authenticated player so others can't play on their dime
+  local sessionPlayer = currency.getPlayerName()
 
   local bet = 0
   local activeEscrowId = nil
@@ -174,8 +181,16 @@ local function runBetScreen(screen, opts)
       end
     end, true, maxWidth)
 
+    -- QUIT button (below ALL IN, full width)
+    local quitY = allInY + btnSpacing
+    ui.fixedWidthButton(screen, "QUIT", colors.gray, btnX, quitY, function()
+      bet = 0
+      sound.play(sound.SOUNDS.TIMEOUT)
+      onQuit()
+    end, true, maxWidth)
+
     -- CLEAR and DEAL/CONFIRM side by side
-    local ctrlY = allInY + btnSpacing
+    local ctrlY = quitY + btnSpacing
     local clearWidth = ui.getTextSize("CLEAR") + 4
     local dealWidth  = ui.getTextSize(confirmLabel) + 4
     local controlSpacing = 1
@@ -217,6 +232,14 @@ local function runBetScreen(screen, opts)
     while true do
       local event, side, px, py = os.pullEvent()
       if event == "monitor_touch" then
+        -- Session lock: reject touches from other players
+        if sessionPlayer then
+          local currentPlayer = currency.getPlayerName()
+          if currentPlayer and currentPlayer ~= sessionPlayer then
+            ui.displayCenteredMessage(screen, "Game in use by " .. sessionPlayer, colors.red, 1.5)
+            break
+          end
+        end
         lastActivityTime = os.epoch("local")
         if px and py then
           local cb = ui.checkButtonHit(px, py)

@@ -80,5 +80,6 @@ return {
     INACTIVITY_TIMEOUT = "inactivity_timeout",
     MAIN_MENU          = "main_menu",
     USER_TERMINATED    = "user_terminated",
+    PLAYER_QUIT        = "player_quit",
   },
 }
