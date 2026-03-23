@@ -270,21 +270,31 @@ local function showTutorial()
     screen:clear(LO.TABLE_COLOR)
     local pg = TUTORIAL_PAGES[page]
 
-    drawCenteredLine(pg.title, 2, colors.yellow)
+    drawCenteredLine(pg.title, 1, colors.yellow)
 
     local indicator = "Page " .. page .. "/" .. #TUTORIAL_PAGES
-    drawCenteredLine(indicator, 10, colors.lightGray)
+    drawCenteredLine(indicator, 1 + LINE_H, colors.lightGray)
 
-    local contentY = 18
+    -- Count non-empty content lines
+    local contentLines = 0
+    for _, ln in ipairs(pg.lines) do
+      contentLines = contentLines + 1
+    end
+
+    -- Compute spacing to fit between header and buttons
+    local contentY = 1 + LINE_H * 2 + 2
+    local btnY = height - 9
+    local availH = btnY - contentY - 2
+    local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
+
     local lineIdx = 0
     for _, ln in ipairs(pg.lines) do
       if ln.text ~= "" then
-        drawCenteredLine(ln.text, contentY + lineIdx * LINE_H, ln.color)
+        drawCenteredLine(ln.text, contentY + lineIdx * lineSpacing, ln.color)
       end
       lineIdx = lineIdx + 1
     end
 
-    local btnY = math.max(contentY + lineIdx * LINE_H + 4, height - 12)
     ui.clearButtons()
     local navRow = {}
     if page > 1 then
@@ -310,12 +320,13 @@ end
 -----------------------------------------------------
 local function showStats()
   screen:clear(LO.TABLE_COLOR)
-  drawCenteredLine("SESSION STATS", 2, colors.yellow)
+  drawCenteredLine("SESSION STATS", 1, colors.yellow)
 
-  local y = 14
+  local y = 1 + LINE_H + 2
+  local statsSpacing = math.min(LINE_H, math.floor((height - y - 10) / 9))
   local function statLine(label, value, color)
     drawCenteredLine(label .. ": " .. tostring(value), y, color or colors.white)
-    y = y + LINE_H
+    y = y + statsSpacing
   end
 
   statLine("Rounds", sessionStats.rounds, colors.white)
