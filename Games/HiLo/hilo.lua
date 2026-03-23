@@ -429,7 +429,7 @@ local function hiloRound(betAmount, escrowId)
   if not AUTO_PLAY then
     local img = cards.renderCard(currentCard)
     cardAnim.slideIn(img, leftCardX, cardY, function()
-      renderBase({}, revealedCards, betAmount, round, multiplier, nil)
+      renderBase(nil, revealedCards, betAmount, round, multiplier, nil)
     end)
   else
     sound.play(sound.SOUNDS.CARD_PLACE, 0.7)

@@ -208,14 +208,14 @@ local function evaluateHand(hand)
                    and ranks[4] == 13 and ranks[5] == 14)
 
   -- Count pairs, trips, quads
-  local pairs = 0
+  local pairCount = 0
   local trips = 0
   local quads = 0
   local pairRanks = {}
 
   for rank, count in pairs(rankCounts) do
     if count == 2 then
-      pairs = pairs + 1
+      pairCount = pairCount + 1
       table.insert(pairRanks, rank)
     elseif count == 3 then
       trips = 1
@@ -237,7 +237,7 @@ local function evaluateHand(hand)
     return "Four of a Kind", 3
   end
 
-  if trips == 1 and pairs == 1 then
+  if trips == 1 and pairCount == 1 then
     return "Full House", 4
   end
 
@@ -253,11 +253,11 @@ local function evaluateHand(hand)
     return "Three of a Kind", 7
   end
 
-  if pairs == 2 then
+  if pairCount == 2 then
     return "Two Pair", 8
   end
 
-  if pairs == 1 then
+  if pairCount == 1 then
     -- Jacks or Better: pair must be J, Q, K, or A
     local pairRank = pairRanks[1]
     if pairRank >= 11 then  -- J=11, Q=12, K=13, A=14
