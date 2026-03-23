@@ -50,6 +50,35 @@ local function buildRangeNumbers(startValue, endValue, step)
   return numbers
 end
 
+local function getShortOutsideText(key)
+  if key == "column:1" then
+    return "C1"
+  elseif key == "column:2" then
+    return "C2"
+  elseif key == "column:3" then
+    return "C3"
+  elseif key == "dozen:1" then
+    return "D1"
+  elseif key == "dozen:2" then
+    return "D2"
+  elseif key == "dozen:3" then
+    return "D3"
+  elseif key == "low" then
+    return "1-18"
+  elseif key == "even" then
+    return "EV"
+  elseif key == "red" then
+    return "RED"
+  elseif key == "black" then
+    return "BLK"
+  elseif key == "odd" then
+    return "ODD"
+  elseif key == "high" then
+    return "19+"
+  end
+  return nil
+end
+
 local function getTableContentHeight(cellHeight, rowGap)
   local zeroHeight = cellHeight + 1
   local outsideHeight = cellHeight + 1
@@ -79,8 +108,16 @@ local function build(width, height, chipCount)
     hitRegions = {},
   }
 
+  layout.compact = width < 200 or height < 120
+
+  if layout.compact then
+    layout.header.h = 15
+  end
+
   local panelWidth = max(24, min(36, floor(width * 0.30)))
-  if (width - panelWidth) < 54 then
+  if layout.compact then
+    panelWidth = max(18, min(22, floor(width * 0.20)))
+  elseif (width - panelWidth) < 54 then
     panelWidth = max(22, width - 54)
   end
 
@@ -93,6 +130,9 @@ local function build(width, height, chipCount)
   local rightW = width - rightX - layout.margin
   local trackY = panelY
   local trackH = (height >= 80) and 11 or 9
+  if layout.compact then
+    trackH = 7
+  end
   local feltY = trackY + trackH + 2
   local feltH = height - feltY - layout.margin
 
@@ -106,7 +146,7 @@ local function build(width, height, chipCount)
   }
   layout.felt = { x = rightX, y = feltY, w = rightW, h = feltH }
 
-  local summaryH = 24
+  local summaryH = layout.compact and 16 or 24
   local buttonGap = 1
   local buttonH = 7
   local panelInnerX = panelX + 1
@@ -132,15 +172,18 @@ local function build(width, height, chipCount)
     chipRow = chipRow + 1
   end
 
-  local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + 2
+  local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + (layout.compact and 1 or 2)
   layout.actionButtons = {
     makeActionButton("spin", "SPIN", panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
     makeActionButton("undo", "UNDO", panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
-    makeActionButton("clear", "CLEAR", panelInnerX, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.red),
-    makeActionButton("rebet", "REBET", panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
+    makeActionButton("clear", layout.compact and "CLR" or "CLEAR", panelInnerX, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.red),
+    makeActionButton("rebet", layout.compact and "RE" or "REBET", panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
     makeActionButton("double", "DOUBLE", panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.magenta),
-    makeActionButton("quit", "QUIT", panelInnerX + gridButtonW + buttonGap, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.gray),
+    makeActionButton("quit", layout.compact and "OUT" or "QUIT", panelInnerX + gridButtonW + buttonGap, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.gray),
   }
+  if layout.compact then
+    layout.actionButtons[5].label = "X2"
+  end
 
   local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + 2
   layout.slipBox = {
@@ -149,14 +192,21 @@ local function build(width, height, chipCount)
     w = panelW,
     h = max(14, panelY + panelH - slipY),
   }
+  if layout.compact then
+    layout.slipBox.h = 0
+  end
 
   local colGap = 1
   local rowGap = 1
-  local streetW = 6
+  local streetW = layout.compact and 4 or 6
   local gridBodyW = rightW - 6
   local cellW = max(8, floor((gridBodyW - streetW - (colGap * 2)) / 3))
-  local cellH = 7
-  while cellH > 4 and getTableContentHeight(cellH, rowGap) > (feltH - 4) do
+  if layout.compact then
+    cellW = max(9, floor((gridBodyW - streetW - (colGap * 2)) / 3))
+  end
+  local cellH = layout.compact and 5 or 7
+  local minCellHeight = layout.compact and 3 or 4
+  while cellH > minCellHeight and getTableContentHeight(cellH, rowGap) > (feltH - 4) do
     cellH = cellH - 1
   end
 
@@ -213,8 +263,8 @@ local function build(width, height, chipCount)
       11,
       rowNumbers,
       colors.orange
-    )
-    attachRect(streetRegion, streetX, rowY, streetW, cellH, colors.orange, colors.black, "ST", "street")
+      )
+    attachRect(streetRegion, streetX, rowY, streetW, cellH, colors.orange, colors.black, layout.compact and "S" or "ST", "street")
     insert(layout.regions, streetRegion)
     insert(layout.hitRegions, streetRegion)
 
@@ -236,7 +286,7 @@ local function build(width, height, chipCount)
         lineNumbers,
         colors.yellow
       )
-      attachRect(lineRegion, streetX, rowY + cellH - 1, streetW, rowGap + 2, colors.yellow, colors.black, "LN", "line")
+      attachRect(lineRegion, streetX, rowY + cellH - 1, streetW, rowGap + 2, colors.yellow, colors.black, layout.compact and "L" or "LN", "line")
       insert(layout.regions, lineRegion)
       insert(layout.hitRegions, lineRegion)
     end
@@ -326,17 +376,17 @@ local function build(width, height, chipCount)
     appendRegion(layout.regions, layout.hitRegions, region)
   end
 
-  addOutsideRegion("column:1", "column", "Column 1", 2, model.getColumnNumbers(1), colX[1], layout.table.columnsY, cellW, outsideH, colors.cyan, colors.black, "COL 1", "outside")
-  addOutsideRegion("column:2", "column", "Column 2", 2, model.getColumnNumbers(2), colX[2], layout.table.columnsY, cellW, outsideH, colors.cyan, colors.black, "COL 2", "outside")
-  addOutsideRegion("column:3", "column", "Column 3", 2, model.getColumnNumbers(3), colX[3], layout.table.columnsY, cellW, outsideH, colors.cyan, colors.black, "COL 3", "outside")
+  addOutsideRegion("column:1", "column", "Column 1", 2, model.getColumnNumbers(1), colX[1], layout.table.columnsY, cellW, outsideH, colors.cyan, colors.black, layout.compact and getShortOutsideText("column:1") or "COL 1", "outside")
+  addOutsideRegion("column:2", "column", "Column 2", 2, model.getColumnNumbers(2), colX[2], layout.table.columnsY, cellW, outsideH, colors.cyan, colors.black, layout.compact and getShortOutsideText("column:2") or "COL 2", "outside")
+  addOutsideRegion("column:3", "column", "Column 3", 2, model.getColumnNumbers(3), colX[3], layout.table.columnsY, cellW, outsideH, colors.cyan, colors.black, layout.compact and getShortOutsideText("column:3") or "COL 3", "outside")
 
-  addOutsideRegion("dozen:1", "dozen", "1st 12", 2, model.getDozenNumbers(1), colX[1], layout.table.dozensY, cellW, outsideH, colors.lightBlue, colors.black, "1ST 12", "outside")
-  addOutsideRegion("dozen:2", "dozen", "2nd 12", 2, model.getDozenNumbers(2), colX[2], layout.table.dozensY, cellW, outsideH, colors.lightBlue, colors.black, "2ND 12", "outside")
-  addOutsideRegion("dozen:3", "dozen", "3rd 12", 2, model.getDozenNumbers(3), colX[3], layout.table.dozensY, cellW, outsideH, colors.lightBlue, colors.black, "3RD 12", "outside")
+  addOutsideRegion("dozen:1", "dozen", "1st 12", 2, model.getDozenNumbers(1), colX[1], layout.table.dozensY, cellW, outsideH, colors.lightBlue, colors.black, layout.compact and getShortOutsideText("dozen:1") or "1ST 12", "outside")
+  addOutsideRegion("dozen:2", "dozen", "2nd 12", 2, model.getDozenNumbers(2), colX[2], layout.table.dozensY, cellW, outsideH, colors.lightBlue, colors.black, layout.compact and getShortOutsideText("dozen:2") or "2ND 12", "outside")
+  addOutsideRegion("dozen:3", "dozen", "3rd 12", 2, model.getDozenNumbers(3), colX[3], layout.table.dozensY, cellW, outsideH, colors.lightBlue, colors.black, layout.compact and getShortOutsideText("dozen:3") or "3RD 12", "outside")
 
-  addOutsideRegion("low", "low", "1-18", 1, buildRangeNumbers(1, 18), colX[1], layout.table.evenTopY, cellW, outsideH, colors.brown, colors.white, "1-18", "outside")
-  addOutsideRegion("even", "even", "Even", 1, buildRangeNumbers(2, 36, 2), colX[2], layout.table.evenTopY, cellW, outsideH, colors.gray, colors.white, "EVEN", "outside")
-  addOutsideRegion("red", "red", "Red", 1, cfg.RED_NUMBERS, colX[3], layout.table.evenTopY, cellW, outsideH, colors.red, colors.white, "RED", "outside")
+  addOutsideRegion("low", "low", "1-18", 1, buildRangeNumbers(1, 18), colX[1], layout.table.evenTopY, cellW, outsideH, colors.brown, colors.white, layout.compact and getShortOutsideText("low") or "1-18", "outside")
+  addOutsideRegion("even", "even", "Even", 1, buildRangeNumbers(2, 36, 2), colX[2], layout.table.evenTopY, cellW, outsideH, colors.gray, colors.white, layout.compact and getShortOutsideText("even") or "EVEN", "outside")
+  addOutsideRegion("red", "red", "Red", 1, cfg.RED_NUMBERS, colX[3], layout.table.evenTopY, cellW, outsideH, colors.red, colors.white, layout.compact and getShortOutsideText("red") or "RED", "outside")
 
   local blackNumbers = {}
   local value = 1
@@ -346,13 +396,13 @@ local function build(width, height, chipCount)
     end
     value = value + 1
   end
-  addOutsideRegion("black", "black", "Black", 1, blackNumbers, colX[1], layout.table.evenBottomY, cellW, outsideH, colors.black, colors.white, "BLACK", "outside")
+  addOutsideRegion("black", "black", "Black", 1, blackNumbers, colX[1], layout.table.evenBottomY, cellW, outsideH, colors.black, colors.white, layout.compact and getShortOutsideText("black") or "BLACK", "outside")
 
   local oddNumbers = buildRangeNumbers(1, 35, 2)
-  addOutsideRegion("odd", "odd", "Odd", 1, oddNumbers, colX[2], layout.table.evenBottomY, cellW, outsideH, colors.gray, colors.white, "ODD", "outside")
+  addOutsideRegion("odd", "odd", "Odd", 1, oddNumbers, colX[2], layout.table.evenBottomY, cellW, outsideH, colors.gray, colors.white, layout.compact and getShortOutsideText("odd") or "ODD", "outside")
 
   local highNumbers = buildRangeNumbers(19, 36)
-  addOutsideRegion("high", "high", "19-36", 1, highNumbers, colX[3], layout.table.evenBottomY, cellW, outsideH, colors.brown, colors.white, "19-36", "outside")
+  addOutsideRegion("high", "high", "19-36", 1, highNumbers, colX[3], layout.table.evenBottomY, cellW, outsideH, colors.brown, colors.white, layout.compact and getShortOutsideText("high") or "19-36", "outside")
 
   for index = #layout.regions, 1, -1 do
     local region = layout.regions[index]
@@ -366,7 +416,7 @@ local function build(width, height, chipCount)
     layout.regionByKey[region.key] = region
   end
 
-  layout.maxSlipLines = max(4, floor((layout.slipBox.h - 10) / 8))
+  layout.maxSlipLines = max(2, floor((layout.slipBox.h - 10) / 8))
 
   return layout
 end

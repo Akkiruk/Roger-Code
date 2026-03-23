@@ -19,6 +19,13 @@ local function getToneColor(tone)
   return colors.lightGray
 end
 
+local function getCompactHeaderPlayer(playerName)
+  if not playerName or playerName == "" then
+    return "PLAYER"
+  end
+  return playerName
+end
+
 local function pointInRect(px, py, rect)
   return px >= rect.x and px <= (rect.x + rect.w - 1)
     and py >= rect.y and py <= (rect.y + rect.h - 1)
@@ -90,6 +97,22 @@ local function getRegionFill(region, stakeMap, highlightKeys)
 end
 
 local function drawChip(screen, font, x, y, amount, toneColor)
+  local compact = false
+  if type(toneColor) == "table" then
+    compact = toneColor.compact == true
+    toneColor = toneColor.color
+  end
+
+  if compact then
+    local chipW = 5
+    local chipH = 3
+    local chipX = x - floor(chipW / 2)
+    local chipY = y - floor(chipH / 2)
+    screen:fillRect(chipX, chipY, chipW, chipH, colors.yellow)
+    screen:fillRect(chipX + 1, chipY + 1, chipW - 2, chipH - 2, toneColor)
+    return
+  end
+
   local chipW = 7
   local chipH = 5
   local chipX = x - floor(chipW / 2)
@@ -109,6 +132,23 @@ local function drawHeader(screen, font, layout, state)
   screen:fillRect(header.x, header.y + header.h - 1, header.w, 1, colors.yellow)
 
   local title = "ROULETTE"
+  local statusText = state.statusText or "Choose a chip and touch the felt."
+  local toneColor = getToneColor(state.statusTone)
+
+  if layout.compact then
+    local bankText = currency.formatTokens(state.playerBalance or 0)
+    ui.safeDrawText(screen, bankText, font, 2, header.y + 1, colors.lightGray)
+
+    local titleRect = { x = 0, y = header.y + 1, w = layout.width, h = 7 }
+    drawCenteredText(screen, font, titleRect, title, colors.yellow)
+
+    local playerName = getCompactHeaderPlayer(state.currentPlayer or "Unknown")
+    drawRightText(screen, font, playerName, layout.width - 2, header.y + 1, colors.lightGray)
+
+    ui.safeDrawText(screen, statusText, font, 2, header.y + 8, toneColor)
+    return
+  end
+
   local titleRect = { x = 0, y = header.y + 1, w = layout.width, h = 7 }
   drawCenteredText(screen, font, titleRect, title, colors.yellow)
 
@@ -118,8 +158,6 @@ local function drawHeader(screen, font, layout, state)
   local playerName = state.currentPlayer or "Unknown"
   drawRightText(screen, font, "Player " .. playerName, layout.width - 2, header.y + 8, colors.lightGray)
 
-  local statusText = state.statusText or "Choose a chip and touch the felt."
-  local toneColor = getToneColor(state.statusTone)
   drawCenteredText(screen, font, {
     x = 0,
     y = header.y + header.h - 8,
@@ -135,35 +173,58 @@ local function drawTrack(screen, font, layout, state)
   local recent = state.history or {}
   local recentX = track.x + 2
   local recentY = track.y + 1
-  local recentCount = min(6, #recent)
+  local recentCount = min(layout.compact and 4 or 6, #recent)
   local slotWidth = 5
   local slotGap = 1
+  local bandX = track.x + 1
+  local bandW = track.w - 2
 
-  local index = 1
-  while index <= recentCount do
-    local number = recent[index]
-    local bg = model.getNumberColor(number)
-    local fg = model.getNumberTextColor(number)
-    local slotX = recentX + ((index - 1) * (slotWidth + slotGap))
-    screen:fillRect(slotX, recentY, slotWidth, 5, bg)
-    local label = tostring(number)
-    local labelW = ui.getTextSize(label)
-    ui.safeDrawText(screen, label, font, slotX + floor((slotWidth - labelW) / 2), recentY - 1, fg)
-    index = index + 1
+  if layout.compact then
+    if recentCount > 0 then
+      local compactRecentWidth = (recentCount * slotWidth) + ((recentCount - 1) * slotGap)
+      bandX = recentX + compactRecentWidth + 2
+      bandW = track.x + track.w - bandX - 1
+
+      local index = 1
+      while index <= recentCount do
+        local number = recent[index]
+        local bg = model.getNumberColor(number)
+        local fg = model.getNumberTextColor(number)
+        local slotX = recentX + ((index - 1) * (slotWidth + slotGap))
+        screen:fillRect(slotX, recentY, slotWidth, 5, bg)
+        local label = tostring(number)
+        local labelW = ui.getTextSize(label)
+        ui.safeDrawText(screen, label, font, slotX + floor((slotWidth - labelW) / 2), recentY - 1, fg)
+        index = index + 1
+      end
+    end
+  else
+    local index = 1
+    while index <= recentCount do
+      local number = recent[index]
+      local bg = model.getNumberColor(number)
+      local fg = model.getNumberTextColor(number)
+      local slotX = recentX + ((index - 1) * (slotWidth + slotGap))
+      screen:fillRect(slotX, recentY, slotWidth, 5, bg)
+      local label = tostring(number)
+      local labelW = ui.getTextSize(label)
+      ui.safeDrawText(screen, label, font, slotX + floor((slotWidth - labelW) / 2), recentY - 1, fg)
+      index = index + 1
+    end
+
+    ui.safeDrawText(screen, "RECENT", font, track.x + track.w - ui.getTextSize("RECENT") - 2, recentY, colors.lightGray)
   end
 
-  ui.safeDrawText(screen, "RECENT", font, track.x + track.w - ui.getTextSize("RECENT") - 2, recentY, colors.lightGray)
+  local bandY = track.y + (layout.compact and 1 or 5)
+  local bandH = track.h - (layout.compact and 2 or 6)
+  screen:fillRect(bandX, bandY, max(1, bandW), bandH, colors.black)
 
-  local bandY = track.y + 5
-  local bandH = track.h - 6
-  screen:fillRect(track.x + 1, bandY, track.w - 2, bandH, colors.black)
-
-  local pointerX = track.x + floor(track.w / 2)
+  local pointerX = bandX + floor(max(1, bandW) / 2)
   screen:fillRect(pointerX, bandY, 1, bandH, colors.yellow)
 
   local cellW = track.cellW
   local wheelOffset = state.wheelOffset or 0
-  local visible = floor(track.w / cellW) + 4
+  local visible = floor(max(1, bandW) / cellW) + 4
   local baseIndex = floor(wheelOffset)
   local fraction = wheelOffset - baseIndex
 
@@ -200,6 +261,12 @@ local function drawSummaryBox(screen, font, layout, state)
 
   local totalStake = state.totalStake or 0
   local exposure = state.maxExposure or 0
+  if layout.compact then
+    ui.safeDrawText(screen, "B " .. currency.formatTokens(totalStake), font, box.x + 2, box.y + 8, colors.lightGray)
+    drawRightText(screen, font, "R " .. currency.formatTokens(exposure), box.x + box.w - 2, box.y + 8, colors.lightGray)
+    return
+  end
+
   ui.safeDrawText(screen, "Bet " .. currency.formatTokens(totalStake), font, box.x + 2, box.y + 8, colors.lightGray)
   ui.safeDrawText(screen, "Risk " .. currency.formatTokens(exposure), font, box.x + 2, box.y + 14, colors.lightGray)
 end
@@ -216,7 +283,7 @@ local function drawButtons(screen, font, layout, state)
       local fill = isSelected and denom.color or colors.gray
       screen:fillRect(button.x, button.y, button.w, button.h, border)
       screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
-      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), colors.black)
+      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), colors.black, layout.compact and -1 or 0)
     end
   end
 
@@ -235,11 +302,15 @@ local function drawButtons(screen, font, layout, state)
     screen:fillRect(button.x, button.y, button.w, button.h, colors.black)
     screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
     local textColor = (fill == colors.black or fill == colors.gray) and colors.white or colors.black
-    drawCenteredText(screen, font, button, button.label, textColor)
+    drawCenteredText(screen, font, button, button.label, textColor, layout.compact and -1 or 0)
   end
 end
 
 local function drawSlipBox(screen, font, layout, state)
+  if layout.compact or layout.slipBox.h <= 0 then
+    return
+  end
+
   local box = layout.slipBox
   drawFrame(screen, box, colors.gray, colors.yellow)
 
@@ -272,6 +343,54 @@ local function drawSlipBox(screen, font, layout, state)
   drawRightText(screen, font, footer, box.x + box.w - 2, box.y + box.h - 8, getToneColor(state.sessionProfitTone))
 end
 
+local function drawPrimaryRegion(screen, font, region, fill, textColor, hasBet, isHighlighted)
+  screen:fillRect(region.x, region.y, region.w, region.h, fill)
+  if hasBet or isHighlighted then
+    screen:fillRect(region.x - 1, region.y - 1, region.w + 2, region.h + 2, colors.yellow)
+    screen:fillRect(region.x, region.y, region.w, region.h, fill)
+  end
+  drawCenteredText(screen, font, region, region.displayText, textColor)
+end
+
+local function drawSecondaryRegion(screen, font, region, fill, textColor, hasBet, isHighlighted, compact)
+  if region.drawStyle == "street" then
+    local baseColor = hasBet and colors.orange or colors.green
+    if isHighlighted then
+      baseColor = colors.yellow
+    end
+    screen:fillRect(region.x, region.y, region.w, region.h, baseColor)
+    if region.displayText ~= "" then
+      drawCenteredText(screen, font, region, region.displayText, isHighlighted and colors.black or textColor, compact and -1 or 0)
+    end
+    return
+  end
+
+  if hasBet or isHighlighted then
+    local markerColor = isHighlighted and colors.yellow or colors.orange
+    screen:fillRect(region.x, region.y, region.w, region.h, markerColor)
+    if region.drawStyle == "line" then
+      screen:fillRect(region.x, region.y, region.w, region.h, markerColor)
+    end
+    return
+  end
+
+  if compact then
+    return
+  end
+
+  if region.drawStyle == "line" then
+    screen:fillRect(region.x, region.y, region.w, region.h, colors.green)
+  elseif region.drawStyle == "split" then
+    if region.w <= 2 then
+      screen:fillRect(region.x, region.y + 1, region.w, max(1, region.h - 2), colors.green)
+    else
+      screen:fillRect(region.x + 1, region.y, max(1, region.w - 2), region.h, colors.green)
+    end
+  elseif region.drawStyle == "corner" then
+    screen:fillRect(region.x, region.y, region.w, region.h, colors.green)
+  end
+end
+
 local function drawTable(screen, font, layout, state)
   local felt = layout.felt
   drawFrame(screen, felt, colors.green, colors.yellow)
@@ -291,35 +410,20 @@ local function drawTable(screen, font, layout, state)
   for _, region in ipairs(layout.regions) do
     local fill, textColor, hasBet, isHighlighted = getRegionFill(region, stakeMap, highlightKeys)
 
-    if region.drawStyle == "straight" or region.drawStyle == "zero" then
-      screen:fillRect(region.x, region.y, region.w, region.h, fill)
-      if hasBet or isHighlighted then
-        screen:fillRect(region.x - 1, region.y - 1, region.w + 2, region.h + 2, colors.yellow)
-        screen:fillRect(region.x, region.y, region.w, region.h, fill)
-      end
-      drawCenteredText(screen, font, region, region.displayText, textColor)
-    elseif region.drawStyle == "outside" then
-      screen:fillRect(region.x, region.y, region.w, region.h, fill)
-      if hasBet or isHighlighted then
-        screen:fillRect(region.x - 1, region.y - 1, region.w + 2, region.h + 2, colors.yellow)
-        screen:fillRect(region.x, region.y, region.w, region.h, fill)
-      end
-      drawCenteredText(screen, font, region, region.displayText, textColor)
+    if region.drawStyle == "straight" or region.drawStyle == "zero" or region.drawStyle == "outside" then
+      drawPrimaryRegion(screen, font, region, fill, textColor, hasBet, isHighlighted)
     else
-      screen:fillRect(region.x, region.y, region.w, region.h, fill)
-      if pointInRect(region.cx, region.cy, region) and (hasBet or isHighlighted) then
-        screen:fillRect(region.x, region.y, region.w, region.h, colors.yellow)
-      end
-      if region.displayText ~= "" then
-        drawCenteredText(screen, font, region, region.displayText, textColor)
-      end
+      drawSecondaryRegion(screen, font, region, fill, textColor, hasBet, isHighlighted, layout.compact)
     end
   end
 
   for _, bet in ipairs(state.bets or {}) do
     for _, region in ipairs(layout.regions) do
       if region.key == bet.key then
-        drawChip(screen, font, region.cx, region.cy, bet.stake or 0, region.fillColor or colors.gray)
+        drawChip(screen, font, region.cx, region.cy, bet.stake or 0, {
+          color = region.fillColor or colors.gray,
+          compact = layout.compact,
+        })
         break
       end
     end

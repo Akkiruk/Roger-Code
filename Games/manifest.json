@@ -96,16 +96,16 @@
     },
     "roulette": {
       "name": "Roulette",
-      "version": "1.0.10",
-      "content_hash": "913abebd22bc07ab",
+      "version": "1.0.11",
+      "content_hash": "73e1bf2350dfd312",
       "description": "European Roulette with a single-screen felt UI and multi-bet support.",
       "source_dir": "Games/Roulette",
       "uses_lib": true,
       "files": [
-        "Roulette.lua",
         "roulette_layout.lua",
         "roulette_model.lua",
         "roulette_render.lua",
+        "Roulette.lua",
         "startup.lua",
         "ThreeCardPoker.lua"
       ],
