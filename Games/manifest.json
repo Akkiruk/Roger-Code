@@ -140,7 +140,39 @@
                                                        "assets":  [
 
                                                                   ]
-                                                   }
+                                                   },
+                     "test_ccvault":  {
+                                          "name":  "test_ccvault",
+                                          "version":  "1.0.0",
+                                          "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
+                                          "source_dir":  "Utilities",
+                                          "uses_lib":  false,
+                                          "files":  [
+                                                        "test_ccvault.lua"
+                                                    ],
+                                          "config_files":  [
+
+                                                           ],
+                                          "assets":  [
+
+                                                     ]
+                                      },
+                     "test_ccvault_full":  {
+                                               "name":  "test_ccvault_full",
+                                               "version":  "1.0.0",
+                                               "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
+                                               "source_dir":  "Utilities",
+                                               "uses_lib":  false,
+                                               "files":  [
+                                                             "test_ccvault_full.lua"
+                                                         ],
+                                               "config_files":  [
+
+                                                                ],
+                                               "assets":  [
+
+                                                          ]
+                                           }
                  },
     "lib":  {
                 "version":  "1.0.0",

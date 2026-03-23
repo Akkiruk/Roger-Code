@@ -17,7 +17,7 @@ $GamesDir = Join-Path $RootDir "Games"
 $UtilitiesDir = Join-Path $RootDir "Utilities"
 
 # Files to always skip in scans
-$SkipPatterns = @("*.bak", "*.old", "debug.txt", "*.log", "*.md", "manifest.json", "installer.lua", "test_*.lua")
+$SkipPatterns = @("*.bak", "*.old", "debug.txt", "*.log", "*.md", "manifest.json", "installer.lua")
 
 # Directories that are not programs (shared support dirs or non-code)
 $SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules")
