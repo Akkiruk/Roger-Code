@@ -1,66 +1,43 @@
 <#
 .SYNOPSIS
   Regenerates Games/manifest.json from the actual file tree.
-  Run this after adding or removing game files, then commit the result.
+  Auto-discovers ALL programs — any subfolder with .lua files becomes installable.
+  Run this after adding or removing files, then commit the result.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .vscode/generate-manifest.ps1
 #>
 
 param(
-    [string]$GamesDir = (Join-Path $PSScriptRoot "..\Games")
+    [string]$RootDir = (Join-Path $PSScriptRoot "..")
 )
 
-$GamesDir = (Resolve-Path $GamesDir).Path
+$RootDir = (Resolve-Path $RootDir).Path
+$GamesDir = Join-Path $RootDir "Games"
+$UtilitiesDir = Join-Path $RootDir "Utilities"
 
-# ── Game definitions ───────────────────────────────────────────────────────
-# Each game maps source_dir to its metadata. Files are auto-discovered.
-# Config files are separated so the installer can skip them on updates.
+# Files to always skip in scans
+$SkipPatterns = @("*.bak", "*.old", "debug.txt", "*.log", "*.md", "manifest.json", "installer.lua", "test_*.lua")
 
-$GameDefs = @{
-    blackjack = @{
-        name        = "Blackjack"
-        description = "Casino Blackjack with betting, stats, achievements"
-        source_dir  = "Blackjack"
-        config_pattern = "*_config.lua"
+# Directories that are not programs (shared support dirs or non-code)
+$SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules")
+
+function Test-SkipFile {
+    param([string]$Name)
+    foreach ($pat in $SkipPatterns) {
+        if ($Name -like $pat) { return $true }
     }
-    baccarat = @{
-        name        = "Baccarat"
-        description = "Casino Baccarat with betting"
-        source_dir  = "Baccarat"
-        config_pattern = "*_config.lua"
-    }
-    roulette = @{
-        name        = "Roulette"
-        description = "Casino Roulette with betting"
-        source_dir  = "Roulette"
-        config_pattern = "*_config.lua"
-    }
-    slots = @{
-        name        = "Slots"
-        description = "Casino Slot Machine"
-        source_dir  = "Slots"
-        config_pattern = "*_config.lua"
-    }
+    return $false
 }
 
-# Files to always skip
-$SkipPatterns = @("*.bak", "*.old", "debug.txt", "*.log")
+# Discover files in a program directory, sorting into code/config/assets
+function Get-ProgramFiles {
+    param([string]$Dir)
 
-function Get-GameFiles {
-    param([string]$Dir, [string]$ConfigPattern)
+    $allFiles = Get-ChildItem $Dir -File | Where-Object { -not (Test-SkipFile $_.Name) }
 
-    $allFiles = Get-ChildItem $Dir -File | Where-Object {
-        $name = $_.Name
-        $skip = $false
-        foreach ($pat in $SkipPatterns) {
-            if ($name -like $pat) { $skip = $true; break }
-        }
-        -not $skip
-    }
-
-    $configFiles = @($allFiles | Where-Object { $_.Name -like $ConfigPattern } | ForEach-Object { $_.Name })
-    $luaFiles    = @($allFiles | Where-Object { $_.Extension -eq ".lua" -and $_.Name -notlike $ConfigPattern } | ForEach-Object { $_.Name })
+    $configFiles = @($allFiles | Where-Object { $_.Name -like "*_config.lua" -or $_.Name -like "*_settings.lua" } | ForEach-Object { $_.Name })
+    $luaFiles    = @($allFiles | Where-Object { $_.Extension -eq ".lua" -and $_.Name -notlike "*_config.lua" -and $_.Name -notlike "*_settings.lua" } | ForEach-Object { $_.Name })
     $assetFiles  = @($allFiles | Where-Object { $_.Extension -ne ".lua" } | ForEach-Object { $_.Name })
 
     return @{
@@ -70,49 +47,141 @@ function Get-GameFiles {
     }
 }
 
+# Check if a directory uses shared lib (has require("lib.xxx") in any .lua))
+function Test-UsesLib {
+    param([string]$Dir)
+    $luaFiles = Get-ChildItem $Dir -File -Filter "*.lua" -ErrorAction SilentlyContinue
+    foreach ($f in $luaFiles) {
+        $content = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
+        if ($content -match 'require\s*\(\s*["\x27]lib\.') { return $true }
+    }
+    return $false
+}
+
+# Read description from first comment block of main lua file
+function Get-ProgramDescription {
+    param([string]$Dir, [string]$DirName)
+    $mainFile = $null
+    # Try <dirname>.lua, then startup.lua, then first .lua file
+    $candidates = @(
+        (Join-Path $Dir "$($DirName.ToLower()).lua"),
+        (Join-Path $Dir "startup.lua")
+    )
+    foreach ($c in $candidates) {
+        if (Test-Path $c) { $mainFile = $c; break }
+    }
+    if (-not $mainFile) {
+        $first = Get-ChildItem $Dir -File -Filter "*.lua" | Select-Object -First 1
+        if ($first) { $mainFile = $first.FullName }
+    }
+    if (-not $mainFile) { return "" }
+
+    $lines = Get-Content $mainFile -TotalCount 5 -ErrorAction SilentlyContinue
+    foreach ($line in $lines) {
+        if ($line -match '^\s*--\s*(.+)$') {
+            $desc = $Matches[1].Trim()
+            # Skip lines that are just the filename or shebangs
+            if ($desc -notmatch '^\S+\.lua$' -and $desc.Length -gt 10) {
+                return $desc
+            }
+        }
+    }
+    return ""
+}
+
 # ── Build manifest ─────────────────────────────────────────────────────────
 
 $manifest = [ordered]@{
     manifest_version  = 1
     installer_version = "1.0.0"
-    games             = [ordered]@{}
+    programs          = [ordered]@{}
     lib               = [ordered]@{
         version = "1.0.0"
         files   = @()
     }
 }
 
-# Discover games
-foreach ($key in ($GameDefs.Keys | Sort-Object)) {
-    $def = $GameDefs[$key]
-    $dir = Join-Path $GamesDir $def.source_dir
+Write-Host "Scanning for programs..." -ForegroundColor Cyan
 
-    if (-not (Test-Path $dir)) {
-        Write-Warning "Skipping $key - directory not found: $dir"
+# Auto-discover program directories under Games/
+$programDirs = @()
+if (Test-Path $GamesDir) {
+    $programDirs += Get-ChildItem $GamesDir -Directory | Where-Object { $_.Name -notin $SkipDirs }
+}
+# Also scan Utilities/
+if (Test-Path $UtilitiesDir) {
+    $programDirs += Get-ChildItem $UtilitiesDir -Directory | Where-Object { $_.Name -notin $SkipDirs }
+}
+
+# Handle standalone .lua files in Utilities/ as single-file programs
+$standaloneUtils = @()
+if (Test-Path $UtilitiesDir) {
+    $standaloneUtils = @(Get-ChildItem $UtilitiesDir -File -Filter "*.lua" | Where-Object { -not (Test-SkipFile $_.Name) })
+}
+
+foreach ($dir in ($programDirs | Sort-Object Name)) {
+    $key = $dir.Name.ToLower()
+    $luaCount = @(Get-ChildItem $dir.FullName -File -Filter "*.lua" -ErrorAction SilentlyContinue).Count
+    if ($luaCount -eq 0) {
+        Write-Warning "  Skipping $($dir.Name) - no .lua files"
         continue
     }
 
-    $discovered = Get-GameFiles -Dir $dir -ConfigPattern $def.config_pattern
+    $discovered = Get-ProgramFiles -Dir $dir.FullName
+    $usesLib = Test-UsesLib -Dir $dir.FullName
+    $desc = Get-ProgramDescription -Dir $dir.FullName -DirName $dir.Name
 
-    $manifest.games[$key] = [ordered]@{
-        name         = $def.name
+    # Determine source_dir relative to repo root for the installer URL
+    $relPath = $dir.FullName.Replace($RootDir, "").TrimStart("\", "/").Replace("\", "/")
+
+    $manifest.programs[$key] = [ordered]@{
+        name         = $dir.Name
         version      = "1.0.0"
-        description  = $def.description
-        source_dir   = $def.source_dir
+        description  = $desc
+        source_dir   = $relPath
+        uses_lib     = $usesLib
         files        = $discovered.files
         config_files = $discovered.config_files
         assets       = $discovered.assets
     }
 
-    Write-Host "  $($def.name): $($discovered.files.Count) files, $($discovered.config_files.Count) configs, $($discovered.assets.Count) assets"
+    $libTag = if ($usesLib) { " [+lib]" } else { "" }
+    Write-Host "  $($dir.Name): $($discovered.files.Count) lua, $($discovered.config_files.Count) config, $($discovered.assets.Count) assets$libTag"
 }
 
-# Discover lib files
+# Standalone utility scripts (single .lua files, no folder)
+foreach ($file in $standaloneUtils) {
+    $key = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLower()
+    if ($manifest.programs.Contains($key)) { continue }
+
+    $desc = ""
+    $lines = Get-Content $file.FullName -TotalCount 3 -ErrorAction SilentlyContinue
+    foreach ($line in $lines) {
+        if ($line -match '^\s*--\s*(.+)$') {
+            $d = $Matches[1].Trim()
+            if ($d -notmatch '^\S+\.lua$' -and $d.Length -gt 10) { $desc = $d; break }
+        }
+    }
+
+    $manifest.programs[$key] = [ordered]@{
+        name         = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+        version      = "1.0.0"
+        description  = $desc
+        source_dir   = "Utilities"
+        uses_lib     = $false
+        files        = @($file.Name)
+        config_files = @()
+        assets       = @()
+    }
+    Write-Host "  $($file.Name): standalone utility"
+}
+
+# Discover shared lib files
 $libDir = Join-Path $GamesDir "lib"
 if (Test-Path $libDir) {
     $libFiles = @(Get-ChildItem $libDir -File -Filter "*.lua" | ForEach-Object { $_.Name } | Sort-Object)
     $manifest.lib.files = $libFiles
-    Write-Host "  lib: $($libFiles.Count) modules"
+    Write-Host "  lib/: $($libFiles.Count) shared modules"
 }
 
 # ── Write JSON ─────────────────────────────────────────────────────────────

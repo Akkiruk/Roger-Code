@@ -1,24 +1,24 @@
 -- installer.lua
--- Casino Game Installer & Updater for ComputerCraft
+-- Program Installer & Updater for ComputerCraft
 --
 -- Bootstrap (paste into CC shell):
 --   wget https://raw.githubusercontent.com/Akkiruk/Roger-Code/main/Games/installer.lua
 --
 -- Usage:
 --   installer              -- Interactive menu
---   installer <game>       -- Install/update a specific game
---   installer update       -- Update currently installed game
+--   installer <name>       -- Install/update a specific program
+--   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.0.0"
+local INSTALLER_VERSION = "1.1.0"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME  = "Roger-Code"
 local BRANCH     = "main"
-local BASE_URL   = "https://raw.githubusercontent.com/"
+local REPO_URL   = "https://raw.githubusercontent.com/"
                     .. REPO_OWNER .. "/" .. REPO_NAME
-                    .. "/" .. BRANCH .. "/Games/"
-local MANIFEST_URL = BASE_URL .. "manifest.json"
-local VERSION_FILE = ".casino_installed"
+                    .. "/" .. BRANCH .. "/"
+local MANIFEST_URL = REPO_URL .. "Games/manifest.json"
+local VERSION_FILE = ".installed_program"
 local LOG_FILE     = "installer_error.log"
 
 local tArgs = { ... }
@@ -134,6 +134,10 @@ local function fetchManifest()
   if not manifest then
     return nil, "Failed to parse manifest JSON"
   end
+  -- Backward compat: old manifests used "games", new uses "programs"
+  if not manifest.programs and manifest.games then
+    manifest.programs = manifest.games
+  end
   return manifest
 end
 
@@ -162,32 +166,32 @@ end
 ---------------------------------------------------------------------------
 -- Install / update a game
 ---------------------------------------------------------------------------
-local function installGame(manifest, gameKey, forceConfig)
-  local game = manifest.games[gameKey]
-  if not game then
-    cprint(colors.red, "Unknown game: " .. tostring(gameKey))
+local function installProgram(manifest, progKey, forceConfig)
+  local prog = manifest.programs[progKey]
+  if not prog then
+    cprint(colors.red, "Unknown program: " .. tostring(progKey))
     return false
   end
 
-  header("Installing " .. game.name .. " v" .. game.version)
+  header("Installing " .. prog.name .. " v" .. prog.version)
 
   -- Build download list: { url, destPath }
   local downloads = {}
-  local srcDir = game.source_dir
+  local srcDir = prog.source_dir
 
-  -- Game code files (always overwrite)
-  for _, file in ipairs(game.files or {}) do
+  -- Code files (always overwrite)
+  for _, file in ipairs(prog.files or {}) do
     downloads[#downloads + 1] = {
-      url  = BASE_URL .. srcDir .. "/" .. file,
+      url  = REPO_URL .. srcDir .. "/" .. file,
       path = file,
     }
   end
 
   -- Config files (preserve existing on updates unless forced)
-  for _, file in ipairs(game.config_files or {}) do
+  for _, file in ipairs(prog.config_files or {}) do
     if forceConfig or not fs.exists(file) then
       downloads[#downloads + 1] = {
-        url  = BASE_URL .. srcDir .. "/" .. file,
+        url  = REPO_URL .. srcDir .. "/" .. file,
         path = file,
         tag  = "config",
       }
@@ -197,18 +201,18 @@ local function installGame(manifest, gameKey, forceConfig)
   end
 
   -- Asset files (nfp, fonts, surface, etc.)
-  for _, file in ipairs(game.assets or {}) do
+  for _, file in ipairs(prog.assets or {}) do
     downloads[#downloads + 1] = {
-      url  = BASE_URL .. srcDir .. "/" .. file,
+      url  = REPO_URL .. srcDir .. "/" .. file,
       path = file,
     }
   end
 
-  -- Shared libraries
-  if manifest.lib and manifest.lib.files then
+  -- Shared libraries (only if this program uses them)
+  if prog.uses_lib and manifest.lib and manifest.lib.files then
     for _, file in ipairs(manifest.lib.files) do
       downloads[#downloads + 1] = {
-        url  = BASE_URL .. "lib/" .. file,
+        url  = REPO_URL .. "Games/lib/" .. file,
         path = "lib/" .. file,
       }
     end
@@ -245,9 +249,9 @@ local function installGame(manifest, gameKey, forceConfig)
 
   -- Save install record
   saveInstalled({
-    game         = gameKey,
-    game_version = game.version,
-    lib_version  = manifest.lib and manifest.lib.version or "?",
+    program      = progKey,
+    version      = prog.version,
+    lib_version  = prog.uses_lib and manifest.lib and manifest.lib.version or nil,
     installed_at = os.epoch("local"),
     updated_at   = os.epoch("local"),
   })
@@ -262,7 +266,7 @@ local function installGame(manifest, gameKey, forceConfig)
   end
 
   print("")
-  cprint(colors.white, "Run 'startup' to launch " .. game.name .. ".")
+  cprint(colors.white, "Run 'startup' to launch " .. prog.name .. ".")
   return #failed == 0
 end
 
@@ -284,7 +288,7 @@ local function selfUpdate(manifest)
     .. INSTALLER_VERSION .. " -> v" .. remoteVer .. "... ")
 
   local myPath = shell.getRunningProgram()
-  local ok, err = downloadAndSave(BASE_URL .. "installer.lua", myPath)
+  local ok, err = downloadAndSave(REPO_URL .. "Games/installer.lua", myPath)
   if ok then
     cprint(colors.lime, "Done!")
     cprint(colors.white, "Run '" .. myPath .. "' again to use the new version.")
@@ -295,28 +299,28 @@ local function selfUpdate(manifest)
 end
 
 ---------------------------------------------------------------------------
--- Game selection menu
+-- Program selection menu
 ---------------------------------------------------------------------------
-local function selectGame(manifest)
-  header("Select Game")
+local function selectProgram(manifest)
+  header("Select Program")
 
-  local gameList = {}
-  for key, game in pairs(manifest.games) do
-    gameList[#gameList + 1] = {
+  local progList = {}
+  for key, prog in pairs(manifest.programs) do
+    progList[#progList + 1] = {
       key  = key,
-      name = game.name,
-      ver  = game.version,
-      desc = game.description or "",
+      name = prog.name,
+      ver  = prog.version,
+      desc = prog.description or "",
     }
   end
-  table.sort(gameList, function(a, b) return a.name < b.name end)
+  table.sort(progList, function(a, b) return a.name < b.name end)
 
-  for i, g in ipairs(gameList) do
+  for i, p in ipairs(progList) do
     cwrite(colors.yellow, "  " .. i .. ". ")
-    cwrite(colors.white, g.name)
-    cprint(colors.gray, "  v" .. g.ver)
-    if g.desc ~= "" then
-      cprint(colors.gray, "     " .. g.desc)
+    cwrite(colors.white, p.name)
+    cprint(colors.gray, "  v" .. p.ver)
+    if p.desc ~= "" then
+      cprint(colors.gray, "     " .. p.desc)
     end
   end
   print("")
@@ -324,10 +328,10 @@ local function selectGame(manifest)
   print("")
   cwrite(colors.white, "Select: ")
   local choice = tonumber(read())
-  if not choice or choice < 1 or choice > #gameList then
+  if not choice or choice < 1 or choice > #progList then
     return nil
   end
-  return gameList[choice].key
+  return progList[choice].key
 end
 
 ---------------------------------------------------------------------------
@@ -353,7 +357,7 @@ local function main()
   if tArgs[1] == "update" then
     local installed = loadInstalled()
     if not installed then
-      cprint(colors.red, "No game installed. Run 'installer' to install.")
+      cprint(colors.red, "No program installed. Run 'installer' to install.")
       return
     end
     cwrite(colors.white, "Checking for updates... ")
@@ -365,11 +369,13 @@ local function main()
       return
     end
     cprint(colors.lime, "OK")
-    installGame(manifest, installed.game, false)
+    -- Support old .casino_installed format (game key) and new format (program key)
+    local key = installed.program or installed.game
+    installProgram(manifest, key, false)
     return
   end
 
-  -- CLI: installer <gamename>
+  -- CLI: installer <name>
   if tArgs[1] and tArgs[1] ~= "" then
     cwrite(colors.white, "Fetching manifest... ")
     local manifest, err = fetchManifest()
@@ -380,12 +386,12 @@ local function main()
       return
     end
     cprint(colors.lime, "OK")
-    installGame(manifest, string.lower(tArgs[1]), false)
+    installProgram(manifest, string.lower(tArgs[1]), false)
     return
   end
 
   -- Interactive mode
-  header("Casino Game Installer v" .. INSTALLER_VERSION)
+  header("Program Installer v" .. INSTALLER_VERSION)
 
   cwrite(colors.white, "Fetching manifest... ")
   local manifest, err = fetchManifest()
@@ -414,53 +420,65 @@ local function main()
     end
   end
 
-  -- Check if a game is already installed
+  -- Check if a program is already installed
   local installed = loadInstalled()
 
+  -- Support old .casino_installed format
+  if not installed and fs.exists(".casino_installed") then
+    local f = fs.open(".casino_installed", "r")
+    if f then
+      local raw = f.readAll()
+      f.close()
+      local parseOk, info = pcall(function() return textutils.unserialise(raw) end)
+      if parseOk and type(info) == "table" then
+        installed = info
+      end
+    end
+  end
+
   if installed then
-    local game = manifest.games[installed.game]
-    local gameName = game and game.name or installed.game
+    local key = installed.program or installed.game
+    local prog = manifest.programs[key]
+    local progName = prog and prog.name or key
+    local instVer = installed.version or installed.game_version or "?"
     print("")
 
-    if game and game.version ~= installed.game_version then
-      cprint(colors.yellow, gameName .. " v"
-        .. installed.game_version .. " installed")
-      cprint(colors.lime, "  Update available: v" .. game.version)
-    elseif game then
-      cprint(colors.lime, gameName .. " v"
-        .. installed.game_version .. " - up to date")
+    if prog and prog.version ~= instVer then
+      cprint(colors.yellow, progName .. " v" .. instVer .. " installed")
+      cprint(colors.lime, "  Update available: v" .. prog.version)
+    elseif prog then
+      cprint(colors.lime, progName .. " v" .. instVer .. " - up to date")
     else
-      cprint(colors.gray, "Installed: "
-        .. installed.game .. " v" .. (installed.game_version or "?"))
+      cprint(colors.gray, "Installed: " .. tostring(key) .. " v" .. instVer)
     end
 
     print("")
-    print("  1. Update " .. gameName)
-    print("  2. Reinstall " .. gameName .. " (keep config)")
-    print("  3. Reinstall " .. gameName .. " (reset config)")
-    print("  4. Install different game")
+    print("  1. Update " .. progName)
+    print("  2. Reinstall " .. progName .. " (keep config)")
+    print("  3. Reinstall " .. progName .. " (reset config)")
+    print("  4. Install different program")
     print("  5. Exit")
     print("")
     cwrite(colors.white, "Select: ")
     local choice = tonumber(read())
 
     if choice == 1 or choice == 2 then
-      installGame(manifest, installed.game, false)
+      installProgram(manifest, key, false)
       return
     elseif choice == 3 then
-      installGame(manifest, installed.game, true)
+      installProgram(manifest, key, true)
       return
     elseif choice == 4 then
-      -- fall through to game selection
+      -- fall through to program selection
     else
       return
     end
   end
 
-  -- Game selection
-  local gameKey = selectGame(manifest)
-  if gameKey then
-    installGame(manifest, gameKey, true)
+  -- Program selection
+  local progKey = selectProgram(manifest)
+  if progKey then
+    installProgram(manifest, progKey, true)
   end
 end
 

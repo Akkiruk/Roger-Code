@@ -1,111 +1,147 @@
 {
     "manifest_version":  1,
     "installer_version":  "1.0.0",
-    "games":  {
-                  "baccarat":  {
-                                   "name":  "Baccarat",
-                                   "version":  "1.0.0",
-                                   "description":  "Casino Baccarat with betting",
-                                   "source_dir":  "Baccarat",
-                                   "files":  [
-                                                 "baccarat.lua",
-                                                 "startup.lua"
-                                             ],
-                                   "config_files":  [
-                                                        "baccarat_config.lua"
-                                                    ],
-                                   "assets":  [
-                                                  "card.nfp",
-                                                  "cardback.nfp",
-                                                  "club.nfp",
-                                                  "clubs.nfp",
-                                                  "diamond.nfp",
-                                                  "diamonds.nfp",
-                                                  "font",
-                                                  "heart.nfp",
-                                                  "hearts.nfp",
-                                                  "spade.nfp",
-                                                  "spades.nfp",
-                                                  "surface"
-                                              ]
-                               },
-                  "blackjack":  {
-                                    "name":  "Blackjack",
-                                    "version":  "1.0.0",
-                                    "description":  "Casino Blackjack with betting, stats, achievements",
-                                    "source_dir":  "Blackjack",
-                                    "files":  [
-                                                  "blackjack.lua",
-                                                  "startup.lua",
-                                                  "statistics.lua",
-                                                  "stats_ui.lua"
-                                              ],
-                                    "config_files":  [
-                                                         "blackjack_config.lua"
-                                                     ],
-                                    "assets":  [
-                                                   "card.nfp",
-                                                   "cardback.nfp",
-                                                   "club.nfp",
-                                                   "clubs.nfp",
-                                                   "diamond.nfp",
-                                                   "diamonds.nfp",
-                                                   "font",
-                                                   "gothic",
-                                                   "heart.nfp",
-                                                   "hearts.nfp",
-                                                   "logo.nfp",
-                                                   "spade.nfp",
-                                                   "spades.nfp",
-                                                   "surface"
-                                               ]
-                                },
-                  "roulette":  {
-                                   "name":  "Roulette",
-                                   "version":  "1.0.0",
-                                   "description":  "Casino Roulette with betting",
-                                   "source_dir":  "Roulette",
-                                   "files":  [
-                                                 "Roulette.lua",
-                                                 "startup.lua",
-                                                 "ThreeCardPoker.lua"
-                                             ],
-                                   "config_files":  [
-                                                        "roulette_config.lua"
-                                                    ],
-                                   "assets":  [
-                                                  "card.nfp",
-                                                  "cardback.nfp",
-                                                  "font",
-                                                  "surface"
-                                              ]
-                               },
-                  "slots":  {
-                                "name":  "Slots",
-                                "version":  "1.0.0",
-                                "description":  "Casino Slot Machine",
-                                "source_dir":  "Slots",
-                                "files":  [
-                                              "slots.lua",
-                                              "startup.lua",
-                                              "view_art.lua"
-                                          ],
-                                "config_files":  [
-                                                     "slots_config.lua"
+    "programs":  {
+                     "baccarat":  {
+                                      "name":  "Baccarat",
+                                      "version":  "1.0.0",
+                                      "description":  "Baccarat card game for ComputerCraft casino.",
+                                      "source_dir":  "Games/Baccarat",
+                                      "uses_lib":  true,
+                                      "files":  [
+                                                    "baccarat.lua",
+                                                    "startup.lua"
+                                                ],
+                                      "config_files":  [
+                                                           "baccarat_config.lua"
+                                                       ],
+                                      "assets":  [
+                                                     "card.nfp",
+                                                     "cardback.nfp",
+                                                     "club.nfp",
+                                                     "clubs.nfp",
+                                                     "diamond.nfp",
+                                                     "diamonds.nfp",
+                                                     "font",
+                                                     "heart.nfp",
+                                                     "hearts.nfp",
+                                                     "spade.nfp",
+                                                     "spades.nfp",
+                                                     "surface"
+                                                 ]
+                                  },
+                     "blackjack":  {
+                                       "name":  "Blackjack",
+                                       "version":  "1.0.0",
+                                       "description":  "Blackjack card game for ComputerCraft casino.",
+                                       "source_dir":  "Games/Blackjack",
+                                       "uses_lib":  true,
+                                       "files":  [
+                                                     "blackjack.lua",
+                                                     "startup.lua",
+                                                     "statistics.lua",
+                                                     "stats_ui.lua"
                                                  ],
-                                "assets":  [
-                                               "bar.nfp",
-                                               "bell.nfp",
-                                               "cherry.nfp",
-                                               "diamond.nfp",
-                                               "font",
-                                               "lemon.nfp",
-                                               "melon.nfp",
-                                               "seven.nfp",
-                                               "surface"
-                                           ]
-                            }
-              },
+                                       "config_files":  [
+                                                            "blackjack_config.lua"
+                                                        ],
+                                       "assets":  [
+                                                      "card.nfp",
+                                                      "cardback.nfp",
+                                                      "club.nfp",
+                                                      "clubs.nfp",
+                                                      "diamond.nfp",
+                                                      "diamonds.nfp",
+                                                      "font",
+                                                      "gothic",
+                                                      "heart.nfp",
+                                                      "hearts.nfp",
+                                                      "logo.nfp",
+                                                      "spade.nfp",
+                                                      "spades.nfp",
+                                                      "surface"
+                                                  ]
+                                   },
+                     "roulette":  {
+                                      "name":  "Roulette",
+                                      "version":  "1.0.0",
+                                      "description":  "European Roulette for ComputerCraft casino.",
+                                      "source_dir":  "Games/Roulette",
+                                      "uses_lib":  true,
+                                      "files":  [
+                                                    "Roulette.lua",
+                                                    "startup.lua",
+                                                    "ThreeCardPoker.lua"
+                                                ],
+                                      "config_files":  [
+                                                           "roulette_config.lua"
+                                                       ],
+                                      "assets":  [
+                                                     "card.nfp",
+                                                     "cardback.nfp",
+                                                     "font",
+                                                     "surface"
+                                                 ]
+                                  },
+                     "slots":  {
+                                   "name":  "Slots",
+                                   "version":  "1.0.0",
+                                   "description":  "Slot Machine game for ComputerCraft casino.",
+                                   "source_dir":  "Games/Slots",
+                                   "uses_lib":  true,
+                                   "files":  [
+                                                 "slots.lua",
+                                                 "startup.lua",
+                                                 "view_art.lua"
+                                             ],
+                                   "config_files":  [
+                                                        "slots_config.lua"
+                                                    ],
+                                   "assets":  [
+                                                  "bar.nfp",
+                                                  "bell.nfp",
+                                                  "cherry.nfp",
+                                                  "diamond.nfp",
+                                                  "font",
+                                                  "lemon.nfp",
+                                                  "melon.nfp",
+                                                  "seven.nfp",
+                                                  "surface"
+                                              ]
+                               },
+                     "taskmaster":  {
+                                        "name":  "TaskMaster",
+                                        "version":  "1.0.0",
+                                        "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
+                                        "source_dir":  "Games/TaskMaster",
+                                        "uses_lib":  false,
+                                        "files":  [
+                                                      "taskmaster.lua"
+                                                  ],
+                                        "config_files":  [
+
+                                                         ],
+                                        "assets":  [
+
+                                                   ]
+                                    },
+                     "peripheral_info_collector":  {
+                                                       "name":  "peripheral_info_collector",
+                                                       "version":  "1.0.0",
+                                                       "description":  "Gathers detailed information about all attached peripherals, including methods and documentation,",
+                                                       "source_dir":  "Utilities",
+                                                       "uses_lib":  false,
+                                                       "files":  [
+                                                                     "peripheral_info_collector.lua"
+                                                                 ],
+                                                       "config_files":  [
+
+                                                                        ],
+                                                       "assets":  [
+
+                                                                  ]
+                                                   }
+                 },
     "lib":  {
                 "version":  "1.0.0",
                 "files":  [
