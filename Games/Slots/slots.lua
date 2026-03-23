@@ -423,15 +423,15 @@ local function slotsRound(currentBet, escrowId)
 
   if winAmount > 0 then
     -- Resolve escrow to player (bet returned) + payout winnings
-    currency.resolveEscrow(escrowId, "player", isJackpot and "slots jackpot" or "slots win")
-    if not currency.payout(winAmount, isJackpot and "slots jackpot" or "slots win") then
+    currency.resolveEscrow(escrowId, "player", isJackpot and "Slots: jackpot!" or "Slots: win")
+    if not currency.payout(winAmount, isJackpot and "Slots: jackpot payout" or "Slots: payout") then
       alert.send("CRITICAL: Failed to pay " .. winAmount .. " tokens (slots)")
     end
     displayWin(result, winAmount, label, isJackpot, currentBet)
     dbg("WIN: " .. label .. " payout=" .. (currentBet + winAmount))
   else
     -- House wins: resolve escrow to host
-    currency.resolveEscrow(escrowId, "host", "slots loss")
+    currency.resolveEscrow(escrowId, "host", "Slots: loss")
     displayLoss(result, currentBet)
     dbg("LOSS")
   end
@@ -448,6 +448,7 @@ end
 local function betSelection()
   return betting.runBetScreen(screen, {
     maxBet                 = getMaxBet(),
+    gameName               = "Slots",
     confirmLabel           = "SPIN",
     title                  = "PLACE YOUR BET",
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
@@ -475,7 +476,7 @@ local function main()
     local escrowId = nil
     if AUTO_PLAY then
       currentBet = cfg.AUTO_PLAY_BET
-      local ok, eid = currency.escrow(currentBet, "slots auto-play bet")
+      local ok, eid = currency.escrow(currentBet, "Slots: auto-play bet")
       if not ok then
         dbg("Auto-play: insufficient funds, pausing")
         os.sleep(2)

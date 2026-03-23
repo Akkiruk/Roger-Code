@@ -27,6 +27,7 @@ end
 -- @param screen     surface   The screen surface to draw on
 -- @param opts       table     Options:
 --   maxBet              number   Maximum bet in tokens (required)
+--   gameName            string   Game name for transaction reasons (e.g. "Blackjack")
 --   confirmLabel        string   Label for the deal/play button (default "DEAL")
 --   title               string   Header text (default "PLACE YOUR BET")
 --   inactivityTimeout   number   Milliseconds before auto-exit with no bet (default 30000)
@@ -38,6 +39,7 @@ end
 local function runBetScreen(screen, opts)
   opts = opts or {}
   local maxBet             = opts.maxBet or error("maxBet is required")
+  local gameName           = opts.gameName or "Casino"
   local confirmLabel       = opts.confirmLabel or "DEAL"
   local title              = opts.title or "PLACE YOUR BET"
   local inactivityTimeout  = opts.inactivityTimeout or 30000
@@ -209,7 +211,7 @@ local function runBetScreen(screen, opts)
     -- DEAL/CONFIRM: create escrow for total bet, then start game
     ui.fixedWidthButton(screen, confirmLabel, colors.magenta, dealX, ctrlY, function()
       if bet > 0 then
-        local ok, eid = currency.escrow(bet, "casino bet")
+        local ok, eid = currency.escrow(bet, gameName .. ": bet")
         if ok and eid then
           activeEscrowId = eid
           sound.play(sound.SOUNDS.START)

@@ -726,13 +726,13 @@ local function baccaratRound(betAmount, betType, escrowId)
   if payout > 0 then
     if netChange == 0 then
       -- Push: cancel escrow (refund bet to player)
-      currency.cancelEscrow(escrowId, "baccarat push")
+      currency.cancelEscrow(escrowId, "Baccarat: push")
     else
       -- Win: resolve escrow to player (bet returned) + payout profit separately
-      currency.resolveEscrow(escrowId, "player", "baccarat win")
+      currency.resolveEscrow(escrowId, "player", "Baccarat: win")
       local profit = payout - betAmount
       if profit > 0 then
-        local payOk = currency.payout(profit, "baccarat win")
+        local payOk = currency.payout(profit, "Baccarat: payout")
         if not payOk then
           alert.send("CRITICAL: Failed to pay " .. profit .. " tokens to player!")
           alert.log("Payout failure: " .. profit .. " tokens, outcome=" .. outcome)
@@ -744,7 +744,7 @@ local function baccaratRound(betAmount, betType, escrowId)
     end
   else
     -- Loss: resolve escrow to host
-    currency.resolveEscrow(escrowId, "host", "baccarat loss")
+    currency.resolveEscrow(escrowId, "host", "Baccarat: loss")
   end
 
   -- Update session statistics
@@ -783,6 +783,7 @@ end
 local function betSelection()
   return betting.runBetScreen(screen, {
     maxBet                 = getMaxBet(),
+    gameName               = "Baccarat",
     confirmLabel           = "CONFIRM",
     title                  = "PLACE YOUR WAGER",
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
@@ -817,7 +818,7 @@ local function main()
       local playerBalance = currency.getPlayerBalance()
       local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
       if autoBet > 0 then
-        local ok, eid = currency.escrow(autoBet, "baccarat auto-play bet")
+        local ok, eid = currency.escrow(autoBet, "Baccarat: auto-play bet")
         if ok and eid then
           betAmount = autoBet
           escrowId = eid

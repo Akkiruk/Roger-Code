@@ -517,8 +517,8 @@ local function rouletteRound(betAmount, betType, straightNum, escrowId)
     local winnings = betAmount * multiplier
 
     -- Resolve escrow to player (bet returned) + payout winnings
-    currency.resolveEscrow(escrowId, "player", "roulette " .. betType .. " win")
-    if not currency.payout(winnings, "roulette " .. betType .. " win") then
+    currency.resolveEscrow(escrowId, "player", "Roulette: " .. betType .. " win")
+    if not currency.payout(winnings, "Roulette: " .. betType .. " payout") then
       alert.send("CRITICAL: Failed to pay " .. winnings .. " tokens (roulette)")
     end
 
@@ -551,7 +551,7 @@ local function rouletteRound(betAmount, betType, straightNum, escrowId)
     dbg("WIN: " .. betType .. " number=" .. winNumber .. " payout=" .. (betAmount + winnings))
   else
     -- Loss: resolve escrow to host
-    currency.resolveEscrow(escrowId, "host", "roulette " .. betType .. " loss")
+    currency.resolveEscrow(escrowId, "host", "Roulette: " .. betType .. " loss")
 
     -- Loss display
     drawScreen(winNumber, winIdx, betType, straightNum, betAmount, {
@@ -588,6 +588,7 @@ local function betSelection(betType, straightNum)
 
   return betting.runBetScreen(screen, {
     maxBet                 = effectiveMax,
+    gameName               = "Roulette",
     confirmLabel           = "SPIN",
     title                  = "BET: " .. betLabel:upper(),
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
@@ -620,7 +621,7 @@ local function main()
 
     if AUTO_PLAY then
       currentBet = cfg.AUTO_PLAY_BET
-      local ok, eid = currency.escrow(currentBet, "roulette auto-play bet")
+      local ok, eid = currency.escrow(currentBet, "Roulette: auto-play bet")
       if not ok then
         dbg("Auto-play: insufficient funds, pausing")
         os.sleep(2)
