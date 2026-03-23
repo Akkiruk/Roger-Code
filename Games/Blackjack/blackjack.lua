@@ -534,9 +534,10 @@ local function doPlayerTurn(ctx)
         local actionStart = epoch("local")
         ui.clearButtons()
         local rows = {}
-        local row = {}
+        local row1 = {}
+        local row2 = {}
 
-        table.insert(row, {
+        table.insert(row1, {
           text = "HIT", color = colors.lightBlue,
           func = function()
             table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
@@ -544,7 +545,7 @@ local function doPlayerTurn(ctx)
           end,
         })
 
-        table.insert(row, {
+        table.insert(row1, {
           text = "STAND", color = colors.yellow,
           func = function()
             table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
@@ -553,7 +554,7 @@ local function doPlayerTurn(ctx)
         })
 
         if #hand.cards == 2 and currency.getPlayerBalance() >= hand.bet then
-          table.insert(row, {
+          table.insert(row2, {
             text = "DOUBLE", color = colors.orange,
             func = function()
               table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
@@ -566,7 +567,7 @@ local function doPlayerTurn(ctx)
            and #ctx.hands < (cfg.MAX_SPLITS + 1)
            and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
            and currency.getPlayerBalance() >= hand.bet then
-          table.insert(row, {
+          table.insert(row2, {
             text = "SPLIT", color = colors.purple,
             func = function()
               table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
@@ -576,7 +577,7 @@ local function doPlayerTurn(ctx)
         end
 
         if cfg.ALLOW_SURRENDER and hand.hitCount == 0 and not hand.fromSplit and #ctx.actionLog == 0 then
-          table.insert(row, {
+          table.insert(row2, {
             text = "SURRENDER", color = colors.gray,
             func = function()
               table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
@@ -585,8 +586,11 @@ local function doPlayerTurn(ctx)
           })
         end
 
-        table.insert(rows, row)
-        ui.layoutButtonGrid(screen, rows, layout.centerX, layout.buttonY, 8, 4)
+        table.insert(rows, row1)
+        if #row2 > 0 then table.insert(rows, row2) end
+        local startY = layout.buttonY
+        if #rows > 1 then startY = startY - 8 end
+        ui.layoutButtonGrid(screen, rows, layout.centerX, startY, 8, 4)
         screen:output()
         ui.waitForButton(0, 0)
       end

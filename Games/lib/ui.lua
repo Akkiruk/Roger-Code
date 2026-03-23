@@ -111,6 +111,7 @@ local function fixedWidthButton(surfaceObj, text, bg, x, y, func, center, fixedW
 end
 
 --- Layout rows of buttons in a centered horizontal grid.
+-- Automatically wraps a row into multiple sub-rows if it exceeds screen width.
 -- @param screen     surface
 -- @param buttonRows table  Array of rows; each row is an array of {text, color, func}
 -- @param centerX    number
@@ -118,25 +119,53 @@ end
 -- @param rowSpacing number
 -- @param colSpacing number
 local function layoutButtonGrid(screen, buttonRows, centerX, startY, rowSpacing, colSpacing)
-  for i, row in ipairs(buttonRows) do
-    local totalWidth = 0
+  local screenW = screen.width or (centerX * 2)
+  local actualRow = 0
+  for _, row in ipairs(buttonRows) do
+    -- Pre-render all button surfaces for this row
     local btnSurfs = {}
     for j, btn in ipairs(row) do
       local bs = getButtonSurface(btn.text, btn.color)
       btnSurfs[j] = { surf = bs, btn = btn }
-      totalWidth = totalWidth + bs.width
-      if j > 1 then totalWidth = totalWidth + colSpacing end
     end
-    local x = centerX - math.floor(totalWidth / 2)
-    local y = startY + (i - 1) * rowSpacing
-    for j, bs in ipairs(btnSurfs) do
-      screen:drawSurface(bs.surf, x, y)
-      buttons[bs.btn.text] = {
-        x = x, y = y,
-        width = bs.surf.width, height = bs.surf.height,
-        cb = bs.btn.func,
-      }
-      x = x + bs.surf.width + colSpacing
+
+    -- Split into sub-rows that fit within screen width
+    local subRows = {}
+    local current = {}
+    local currentWidth = 0
+    for _, bs in ipairs(btnSurfs) do
+      local addedWidth = bs.surf.width
+      if #current > 0 then addedWidth = addedWidth + colSpacing end
+      if #current > 0 and (currentWidth + addedWidth) > screenW then
+        table.insert(subRows, current)
+        current = { bs }
+        currentWidth = bs.surf.width
+      else
+        table.insert(current, bs)
+        currentWidth = currentWidth + addedWidth
+      end
+    end
+    if #current > 0 then table.insert(subRows, current) end
+
+    -- Draw each sub-row centered
+    for _, subRow in ipairs(subRows) do
+      local totalWidth = 0
+      for j, bs in ipairs(subRow) do
+        totalWidth = totalWidth + bs.surf.width
+        if j > 1 then totalWidth = totalWidth + colSpacing end
+      end
+      local x = centerX - math.floor(totalWidth / 2)
+      local y = startY + actualRow * rowSpacing
+      for _, bs in ipairs(subRow) do
+        screen:drawSurface(bs.surf, x, y)
+        buttons[bs.btn.text] = {
+          x = x, y = y,
+          width = bs.surf.width, height = bs.surf.height,
+          cb = bs.btn.func,
+        }
+        x = x + bs.surf.width + colSpacing
+      end
+      actualRow = actualRow + 1
     end
   end
 end

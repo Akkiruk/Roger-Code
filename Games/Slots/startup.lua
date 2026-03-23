@@ -7,6 +7,7 @@
 
 local alertLib   = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
+local updater    = require("lib.updater")
 
 -----------------------------------------------------
 -- Config
@@ -68,7 +69,15 @@ if not ok then
   error(err)
 end
 
-debugLog("startup.lua: Slots idle setup complete.")
+debugLog("startup.lua: Slots idle setup complete. Checking for updates...")
+
+updater.checkForUpdates({
+  callback = function(status, msg)
+    debugLog("Auto-update: [" .. status .. "] " .. tostring(msg))
+  end,
+})
+
+debugLog("startup.lua: Entering idle loop...")
 
 while true do
   local idleOk, actionOrError = pcall(idleScreen.runLoop, idleEnv, {
