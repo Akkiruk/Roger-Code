@@ -5,6 +5,7 @@
 local TURN_IN_CHEST_SIDE = "top"
 local FRONT_CHEST_SIDE = "front"  -- Added front chest configuration
 local REWARD_CHEST_SIDE = "bottom"
+local CONSUMED_CHEST_SIDE = nil -- Optional dedicated storage for accepted turn-ins
 local MONITOR_SIDE = nil -- nil means any connected monitor
 
 -- UI_LINES_PER_TASK and other UI constants remain unchanged
@@ -17,6 +18,7 @@ local UI_MIN_CONTENT_LINES = 5 -- Minimum lines for task display area
 local turn_in_chest = nil
 local front_chest = nil  -- Added front chest peripheral
 local reward_chest = nil
+local consumed_chest = nil
 local monitor = nil
 
 -- Peripheral setup for speaker, chat box, and player detector
@@ -147,6 +149,13 @@ local TASKS = {
   {need = 20000, name = "Rotten Meat", category = "Rotten Items", enabled = true, slot = 47}
 }
 
+local MAX_REWARD_SLOT = 0
+for _, task in ipairs(TASKS) do
+    if task.slot > MAX_REWARD_SLOT then
+        MAX_REWARD_SLOT = task.slot
+    end
+end
+
 -- Fuzzy matching helpers
 local function normalize(str)
     str = string.lower(str or "")
@@ -200,6 +209,13 @@ local function setupPeripherals()
     reward_chest = peripheral.wrap(REWARD_CHEST_SIDE)
     if not reward_chest then
         print("Error: Reward chest (" .. REWARD_CHEST_SIDE .. ") not found.")
+    end
+
+    if CONSUMED_CHEST_SIDE then
+        consumed_chest = peripheral.wrap(CONSUMED_CHEST_SIDE)
+        if not consumed_chest then
+            print("Warning: Consumed-items chest (" .. CONSUMED_CHEST_SIDE .. ") not found.")
+        end
     end
 
     if MONITOR_SIDE then
@@ -311,38 +327,233 @@ local function updateCurrentProgress()
     scanChest(front_chest)
 end
 
--- New helper function to consume specific items from a chest
-local function consumeItemsFromChest(chestInstance, taskDefForMatch, amountToConsume, destinationChestName, feedbackMessages)
-    if not chestInstance or not destinationChestName or amountToConsume <= 0 then
-        return 0
+local function getItemMaxCount(itemDetails)
+    return tonumber(itemDetails and itemDetails.maxCount) or 64
+end
+
+local function makeItemKey(itemDetails)
+    if not itemDetails then
+        return nil
+    end
+    return table.concat({
+        tostring(itemDetails.name or ""),
+        tostring(itemDetails.damage or 0),
+        tostring(itemDetails.nbt or ""),
+    }, "|")
+end
+
+local function getConsumedStorageTarget()
+    if consumed_chest then
+        local consumedName = peripheral.getName(consumed_chest)
+        local rewardName = reward_chest and peripheral.getName(reward_chest) or nil
+        local slotStart = 1
+        if rewardName and consumedName == rewardName then
+            slotStart = MAX_REWARD_SLOT + 1
+        end
+        return {
+            inventory = consumed_chest,
+            name = consumedName,
+            slotStart = slotStart,
+            slotEnd = consumed_chest.size(),
+            label = "consumed-items chest",
+        }
     end
 
-    local totalConsumedFromThisChest = 0
-    for slotIdx = 1, chestInstance.size() do
-        if totalConsumedFromThisChest >= amountToConsume then
+    if not reward_chest then
+        return nil
+    end
+
+    local rewardSize = reward_chest.size()
+    if rewardSize <= MAX_REWARD_SLOT then
+        return nil
+    end
+
+    return {
+        inventory = reward_chest,
+        name = peripheral.getName(reward_chest),
+        slotStart = MAX_REWARD_SLOT + 1,
+        slotEnd = rewardSize,
+        label = "reward chest sink area",
+    }
+end
+
+local function buildStorageSlots(storageTarget)
+    local slots = {}
+    for slot = storageTarget.slotStart, storageTarget.slotEnd do
+        local item = storageTarget.inventory.getItemDetail(slot)
+        table.insert(slots, {
+            slot = slot,
+            key = makeItemKey(item),
+            count = item and item.count or 0,
+            maxCount = item and getItemMaxCount(item) or nil,
+        })
+    end
+    return slots
+end
+
+local function allocateIntoStorage(storageSlots, itemDetails, amount)
+    local allocations = {}
+    local remaining = amount
+    local itemKey = makeItemKey(itemDetails)
+    local itemMaxCount = getItemMaxCount(itemDetails)
+
+    for _, slotState in ipairs(storageSlots) do
+        if remaining <= 0 then
             break
         end
-
-        local itemDetails = chestInstance.getItemDetail(slotIdx)
-        if itemDetails and itemDetails.count > 0 then
-            if fuzzyMatch(itemDetails.displayName or itemDetails.name, taskDefForMatch) or fuzzyMatch(itemDetails.name, taskDefForMatch) then
-                local canConsumeNow = math.min(amountToConsume - totalConsumedFromThisChest, itemDetails.count)
-                if canConsumeNow > 0 then
-                    local pushedAmount = chestInstance.pushItems(destinationChestName, slotIdx, canConsumeNow)
-                    if pushedAmount > 0 then
-                        table.insert(feedbackMessages, string.format("Consumed %d of '%s' from %s",
-                                  pushedAmount, taskDefForMatch.name, peripheral.getName(chestInstance)))
-                        totalConsumedFromThisChest = totalConsumedFromThisChest + pushedAmount
-                    else
-                        table.insert(feedbackMessages, string.format("Failed to push %d '%s' from %s",
-                                  canConsumeNow, taskDefForMatch.name, peripheral.getName(chestInstance)))
-                    end
-                end
+        if slotState.key == itemKey and slotState.count < slotState.maxCount then
+            local free = slotState.maxCount - slotState.count
+            local take = math.min(free, remaining)
+            if take > 0 then
+                slotState.count = slotState.count + take
+                table.insert(allocations, { toSlot = slotState.slot, amount = take })
+                remaining = remaining - take
             end
         end
-        if slotIdx % 10 == 0 then os.sleep(0) end -- Tiny yield during consumption loop
     end
-    return totalConsumedFromThisChest
+
+    for _, slotState in ipairs(storageSlots) do
+        if remaining <= 0 then
+            break
+        end
+        if not slotState.key then
+            local take = math.min(itemMaxCount, remaining)
+            slotState.key = itemKey
+            slotState.count = take
+            slotState.maxCount = itemMaxCount
+            table.insert(allocations, { toSlot = slotState.slot, amount = take })
+            remaining = remaining - take
+        end
+    end
+
+    return allocations, remaining
+end
+
+local function buildTaskConsumptionPlan(taskDefForMatch, amountToConsume, storageTarget)
+    if amountToConsume <= 0 then
+        return {}, nil
+    end
+
+    local storageSlots = buildStorageSlots(storageTarget)
+    local remaining = amountToConsume
+    local plan = {}
+
+    local function scanChest(chestInstance)
+        if not chestInstance or remaining <= 0 then
+            return true
+        end
+
+        for slotIdx = 1, chestInstance.size() do
+            if remaining <= 0 then
+                break
+            end
+
+            local itemDetails = chestInstance.getItemDetail(slotIdx)
+            if itemDetails and itemDetails.count > 0 then
+                if fuzzyMatch(itemDetails.displayName or itemDetails.name, taskDefForMatch)
+                    or fuzzyMatch(itemDetails.name, taskDefForMatch) then
+                    local plannedAmount = math.min(remaining, itemDetails.count)
+                    local allocations, unallocated = allocateIntoStorage(storageSlots, itemDetails, plannedAmount)
+                    if unallocated > 0 then
+                        return false, "Not enough safe storage space for accepted items."
+                    end
+
+                    table.insert(plan, {
+                        chest = chestInstance,
+                        chestName = peripheral.getName(chestInstance),
+                        slot = slotIdx,
+                        amount = plannedAmount,
+                        allocations = allocations,
+                        item = itemDetails,
+                    })
+                    remaining = remaining - plannedAmount
+                end
+            end
+
+            if slotIdx % 10 == 0 then
+                os.sleep(0)
+            end
+        end
+
+        return true
+    end
+
+    local ok, err = scanChest(turn_in_chest)
+    if not ok then
+        return nil, err
+    end
+
+    ok, err = scanChest(front_chest)
+    if not ok then
+        return nil, err
+    end
+
+    if remaining > 0 then
+        return nil, string.format("Not enough %s found. Needed: %d more.", taskDefForMatch.name, remaining)
+    end
+
+    return plan, nil
+end
+
+local function executeTaskConsumptionPlan(plan, storageTarget)
+    local totalMoved = 0
+
+    for _, entry in ipairs(plan) do
+        local movedForEntry = 0
+        for _, allocation in ipairs(entry.allocations) do
+            local moved = entry.chest.pushItems(storageTarget.name, entry.slot, allocation.amount, allocation.toSlot)
+            if moved ~= allocation.amount then
+                return false, totalMoved + (moved or 0)
+            end
+            movedForEntry = movedForEntry + moved
+            totalMoved = totalMoved + moved
+        end
+        if movedForEntry ~= entry.amount then
+            return false, totalMoved
+        end
+    end
+
+    return true, totalMoved
+end
+
+local function getRewardDestinationNames(plan)
+    local names = {}
+    local seen = {}
+
+    for _, entry in ipairs(plan) do
+        if entry.chestName and not seen[entry.chestName] then
+            table.insert(names, entry.chestName)
+            seen[entry.chestName] = true
+        end
+    end
+
+    if turn_in_chest then
+        local name = peripheral.getName(turn_in_chest)
+        if name and not seen[name] then
+            table.insert(names, name)
+            seen[name] = true
+        end
+    end
+
+    if front_chest then
+        local name = peripheral.getName(front_chest)
+        if name and not seen[name] then
+            table.insert(names, name)
+            seen[name] = true
+        end
+    end
+
+    return names
+end
+
+local function describeRewardDestination(destinationName)
+    if turn_in_chest and destinationName == peripheral.getName(turn_in_chest) then
+        return "your chest"
+    end
+    if front_chest and destinationName == peripheral.getName(front_chest) then
+        return "the front chest"
+    end
+    return destinationName or "the output chest"
 end
 
 local function calculateOptimalTextScale(mon, linesNeeded)
@@ -639,10 +850,18 @@ local function performAllPossibleTaskTurnIns()
         return 
     end
 
+    local storageTarget = getConsumedStorageTarget()
+    if not storageTarget or not storageTarget.name or storageTarget.slotStart > storageTarget.slotEnd then
+        table.insert(feedbackMessages, "Warning: no safe storage was found for accepted turn-ins.")
+        table.insert(feedbackMessages, "Set CONSUMED_CHEST_SIDE or reserve extra sink slots after the reward stock.")
+        playKioskSound(SOUND_ERROR)
+        displayFeedbackOnMonitor(feedbackMessages)
+        return
+    end
+
     updateCurrentProgress()
 
     local overallExchangeMade = false
-    local CONSUMED_ITEMS_DESTINATION_NAME = peripheral.getName(reward_chest)
     local playerName = getNearestPlayerName()
 
     for _, taskDef in ipairs(TASKS) do
@@ -655,46 +874,44 @@ local function performAllPossibleTaskTurnIns()
                 else
                     table.insert(feedbackMessages, string.format("%d %s accepted!", taskDef.need, taskDef.name))
                     local itemsRequiredForTask = taskDef.need
-                    local totalActuallyConsumedForTask = 0
-                    if turn_in_chest then
-                        local consumed = consumeItemsFromChest(turn_in_chest, taskDef, itemsRequiredForTask - totalActuallyConsumedForTask, CONSUMED_ITEMS_DESTINATION_NAME, {})
-                        totalActuallyConsumedForTask = totalActuallyConsumedForTask + consumed
-                    end
-                    if totalActuallyConsumedForTask < itemsRequiredForTask and front_chest then
-                        local consumed = consumeItemsFromChest(front_chest, taskDef, itemsRequiredForTask - totalActuallyConsumedForTask, CONSUMED_ITEMS_DESTINATION_NAME, {})
-                        totalActuallyConsumedForTask = totalActuallyConsumedForTask + consumed
-                    end
-                    if totalActuallyConsumedForTask >= itemsRequiredForTask then
-                        local rewardPushedAmount = 0
-                        local rewardDestinationAttemptedName = ""
-                        local rewardPushedTo = ""
-                        if turn_in_chest then
-                            rewardDestinationAttemptedName = peripheral.getName(turn_in_chest)
-                            rewardPushedAmount = reward_chest.pushItems(rewardDestinationAttemptedName, taskDef.slot, 1)
-                            if rewardPushedAmount > 0 then rewardPushedTo = "your chest" end
-                        end
-                        if rewardPushedAmount < 1 and front_chest then
-                            rewardDestinationAttemptedName = peripheral.getName(front_chest)
-                            rewardPushedAmount = reward_chest.pushItems(rewardDestinationAttemptedName, taskDef.slot, 1)
-                            if rewardPushedAmount > 0 then rewardPushedTo = "the front chest" end
-                        end
-                        if rewardPushedAmount > 0 then
-                            table.insert(feedbackMessages, string.format("Reward delivered to %s!", rewardPushedTo))
-                            overallExchangeMade = true
-                            local item = reward_chest.getItemDetail(taskDef.slot)
-                            if not item or item.count <= 0 then
-                                emptySlots[taskDef.slot] = true
+                    local plan, planErr = buildTaskConsumptionPlan(taskDef, itemsRequiredForTask, storageTarget)
+                    if not plan then
+                        table.insert(feedbackMessages, "Task " .. taskDef.name .. ": " .. tostring(planErr))
+                        playKioskSound(SOUND_ERROR)
+                    else
+                        local consumedOk, totalActuallyConsumedForTask = executeTaskConsumptionPlan(plan, storageTarget)
+                        if consumedOk and totalActuallyConsumedForTask >= itemsRequiredForTask then
+                            local rewardPushedAmount = 0
+                            local rewardPushedTo = ""
+
+                            for _, rewardDestinationName in ipairs(getRewardDestinationNames(plan)) do
+                                rewardPushedAmount = reward_chest.pushItems(rewardDestinationName, taskDef.slot, 1)
+                                if rewardPushedAmount > 0 then
+                                    rewardPushedTo = describeRewardDestination(rewardDestinationName)
+                                    break
+                                end
                             end
-                            -- Play success sound and announce in chat for rare trade
-                            playKioskSound(SOUND_SUCCESS)
-                            announceTrade(playerName, taskDef.name, itemsRequiredForTask)
+
+                            if rewardPushedAmount > 0 then
+                                table.insert(feedbackMessages, string.format("Reward delivered to %s!", rewardPushedTo))
+                                overallExchangeMade = true
+                                local item = reward_chest.getItemDetail(taskDef.slot)
+                                if not item or item.count <= 0 then
+                                    emptySlots[taskDef.slot] = true
+                                end
+                                -- Play success sound and announce in chat for rare trade
+                                playKioskSound(SOUND_SUCCESS)
+                                announceTrade(playerName, taskDef.name, itemsRequiredForTask)
+                            else
+                                table.insert(feedbackMessages, "Reward delivery failed after items were stored safely.")
+                                table.insert(feedbackMessages, "Please contact an admin so they can complete the exchange.")
+                                playKioskSound(SOUND_ERROR)
+                            end
                         else
-                            table.insert(feedbackMessages, "Warning: your reward could not be delivered. Please make space in your chest.")
+                            table.insert(feedbackMessages, "Storage move failed before the reward could be delivered.")
+                            table.insert(feedbackMessages, "Please contact an admin to review the stored items.")
                             playKioskSound(SOUND_ERROR)
                         end
-                    else
-                        table.insert(feedbackMessages, string.format("Not enough %s found. Needed: %d.", taskDef.name, itemsRequiredForTask))
-                        playKioskSound(SOUND_ERROR)
                     end
                 end
             end

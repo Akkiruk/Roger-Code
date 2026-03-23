@@ -32,7 +32,9 @@ end
 --   inactivityTimeout   number   Milliseconds before auto-exit with no bet (default 30000)
 --   onTimeout           function Called on inactivity timeout (default: error)
 --   hostBalance         number?  Override for host balance limit calculations
---   hostCoverageMultiplier number? How much the host must hold to cover max payout
+--   hostCoverageMultiplier number? Total payout multiple including the returned wager;
+--                                  transfers settle net at round end, so this module
+--                                  subtracts 1 internally when checking coverage.
 --   onQuit              function Called when the player presses QUIT (default: error("player_quit"))
 -- @return number bet  Confirmed bet amount (0 if timed out)
 local function runBetScreen(screen, opts)
@@ -235,7 +237,8 @@ local function runBetScreen(screen, opts)
         -- Session lock: reject touches from other players
         if sessionPlayer then
           local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
-          local currentPlayer = (sessionInfo and sessionInfo.playerName) or currency.getPlayerName()
+          local currentPlayer = (currency.getLivePlayerName and currency.getLivePlayerName())
+            or ((sessionInfo and sessionInfo.playerName) or nil)
           if currentPlayer and currentPlayer ~= sessionPlayer then
             ui.displayCenteredMessage(screen, "Game in use by " .. sessionPlayer, colors.red, 1.5)
             break

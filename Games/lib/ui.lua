@@ -10,8 +10,27 @@
 local _surface = nil
 local _font    = nil
 local buttons  = {}
+local currency = require("lib.currency")
 
 local m_round = function(x) return x + 0.5 - (x + 0.5) % 1 end
+
+local function isAuthorizedMonitorTouch()
+  local sessionPlayer = currency.getAuthenticatedPlayerName and currency.getAuthenticatedPlayerName() or nil
+  if not sessionPlayer or sessionPlayer == "" then
+    return true
+  end
+
+  local currentPlayer = nil
+  if currency.getLivePlayerName then
+    currentPlayer = currency.getLivePlayerName()
+  end
+  if (not currentPlayer or currentPlayer == "") and currency.getSessionInfo then
+    local info = currency.getSessionInfo()
+    currentPlayer = info and info.playerName or nil
+  end
+
+  return (not currentPlayer) or currentPlayer == sessionPlayer
+end
 
 --- Initialize the UI module with the surface API and font.
 -- @param surfaceAPI table  The loaded surface library
@@ -196,16 +215,32 @@ end
 local function waitForButton(ox, oy)
   while true do
     local event, side, px, py = os.pullEvent("monitor_touch")
-    px = px - (ox or 0)
-    py = py - (oy or 0)
-    for _, b in pairs(buttons) do
-      if px >= b.x and px <= b.x + b.width - 1
-         and py >= b.y and py <= b.y + b.height - 1 then
-        buttons = {}
-        b.cb()
-        return
+    if not isAuthorizedMonitorTouch() then
+      os.sleep(0)
+    else
+      px = px - (ox or 0)
+      py = py - (oy or 0)
+      for _, b in pairs(buttons) do
+        if px >= b.x and px <= b.x + b.width - 1
+           and py >= b.y and py <= b.y + b.height - 1 then
+          buttons = {}
+          b.cb()
+          return
+        end
       end
     end
+  end
+end
+
+--- Wait for a monitor touch that passes the active session guard.
+-- @return string side, number x, number y
+local function waitForMonitorTouch()
+  while true do
+    local event, side, px, py = os.pullEvent("monitor_touch")
+    if isAuthorizedMonitorTouch() then
+      return side, px, py
+    end
+    os.sleep(0)
   end
 end
 
@@ -521,6 +556,7 @@ return {
   layoutButtonGrid     = layoutButtonGrid,
   drawButtonsColumn    = drawButtonsColumn,
   waitForButton        = waitForButton,
+  waitForMonitorTouch  = waitForMonitorTouch,
   checkButtonHit       = checkButtonHit,
 
   -- Surface text

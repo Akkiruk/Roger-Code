@@ -106,7 +106,7 @@ local sessionStats = {
   bestStreak   = 0,
   cashOuts     = 0,
   busts        = 0,
-  pushes       = 0,
+  sameValueLosses = 0,
 }
 
 -----------------------------------------------------
@@ -123,11 +123,16 @@ end
 -----------------------------------------------------
 -- Deck helpers
 -----------------------------------------------------
+local function freshDeck()
+  deck = cards.buildDeck(cfg.DECK_COUNT)
+  cards.shuffle(deck)
+  return deck
+end
+
 local function ensureDeck()
   if #deck < cfg.MIN_CARDS_RESHUFFLE then
     dbg("Reshuffling deck")
-    deck = cards.buildDeck(cfg.DECK_COUNT)
-    cards.shuffle(deck)
+    freshDeck()
   end
 end
 
@@ -256,10 +261,10 @@ local TUTORIAL_PAGES = {
       { text = "2 is lowest",            color = colors.lightGray },
       { text = "Ace is highest",         color = colors.cyan },
       { text = "",                        color = colors.white },
-      { text = "Equal cards = push",     color = colors.yellow },
-      { text = "(bet returned)",         color = colors.yellow },
+      { text = "Equal cards lose",       color = colors.yellow },
+      { text = "(streak ends)",          color = colors.yellow },
       { text = "",                        color = colors.white },
-      { text = "Up to x32 payout!",      color = colors.lime },
+      { text = "Up to x15 payout!",      color = colors.lime },
     },
   },
 }
@@ -347,7 +352,7 @@ local function showStats()
   y = y + 2
   statLine("Cash Outs", sessionStats.cashOuts, colors.lime)
   statLine("Busts", sessionStats.busts, colors.red)
-  statLine("Pushes", sessionStats.pushes, colors.yellow)
+  statLine("Same-Value Losses", sessionStats.sameValueLosses, colors.yellow)
 
   if sessionStats.bestStreak > 1 then
     statLine("Best Streak", sessionStats.bestStreak, colors.cyan)
@@ -428,6 +433,11 @@ end
 -- Hi-Lo round
 -----------------------------------------------------
 local function hiloRound(betAmount)
+  if cfg.RESHUFFLE_EACH_ROUND then
+    dbg("Starting round with a fresh deck")
+    freshDeck()
+  end
+
   recovery.saveBet(betAmount)
 
   local revealedCards = {}
@@ -545,28 +555,35 @@ local function hiloRound(betAmount)
 
     -- Evaluate guess
     local correct = false
-    local push = false
+    local sameValueLoss = (currentVal == nextVal)
 
-    if currentVal == nextVal then
-      push = true
-    elseif choice == "higher" and nextVal > currentVal then
+    if choice == "higher" and nextVal > currentVal then
       correct = true
     elseif choice == "lower" and nextVal < currentVal then
       correct = true
     end
 
-    if push then
-      -- Push: equal value, no win or loss, round doesn't count
-      round = round - 1
-      sound.play(sound.SOUNDS.PUSH)
+    if sameValueLoss then
+      sessionStats.sameValueLosses = sessionStats.sameValueLosses + 1
+      sessionStats.busts = sessionStats.busts + 1
+      sessionStats.rounds = sessionStats.rounds + 1
+      sessionStats.totalBet = sessionStats.totalBet + betAmount
+      sessionStats.netProfit = sessionStats.netProfit - betAmount
+      if round - 1 > sessionStats.bestStreak then
+        sessionStats.bestStreak = round - 1
+      end
 
-      sessionStats.pushes = sessionStats.pushes + 1
-
+      sound.play(sound.SOUNDS.FAIL)
       renderScreen(nextCard, revealedCards, betAmount, round, multiplier, nil)
-      ui.displayCenteredMessage(screen, "Push! Same value.", colors.white, LO.RESULT_PAUSE)
+      ui.displayCenteredMessage(screen,
+        "Same value loses! " .. cards.displayValue(currentCard) .. " = " .. cards.displayValue(nextCard),
+        colors.red, LO.RESULT_PAUSE)
 
-      -- Current card becomes the next card, continue
-      currentCard = nextCard
+      recovery.clearBet()
+      dbg("Same-value loss: round=" .. round
+          .. " current=" .. cards.displayValue(currentCard)
+          .. " next=" .. cards.displayValue(nextCard))
+      return
     elseif correct then
       -- Correct guess: increase multiplier
       multiplier = MULTIPLIERS[round] or MULTIPLIERS[#MULTIPLIERS]
@@ -628,8 +645,6 @@ local function hiloRound(betAmount)
 
       sound.play(sound.SOUNDS.FAIL)
       renderScreen(currentCard, revealedCards, betAmount, round, multiplier, nil)
-
-      local expected = choice == "higher" and "Higher" or "Lower"
       ui.displayCenteredMessage(screen,
         "Wrong! " .. cards.displayValue(currentCard) .. " vs " .. cards.displayValue(nextCard),
         colors.red, LO.RESULT_PAUSE)

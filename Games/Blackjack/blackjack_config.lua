@@ -5,6 +5,7 @@
 return {
   -- Game rules
   DECK_COUNT          = 6,
+  MIN_CARDS_RESHUFFLE = 78,      -- reshuffle with 1.5 decks left to curb counting edge
   DEALER_STAND        = 17,
   DEALER_HIT_SOFT_17  = true,    -- dealer hits on soft 17 (+0.20% house edge)
   BLACKJACK_PAYOUT    = 1.5,    -- 3:2 payout for natural blackjack
@@ -16,7 +17,7 @@ return {
 
   -- Economy
   MAX_BET_PERCENT     = 0.18,    -- max bet = 18% of host balance
-  HOST_COVERAGE_MULT  = 3,       -- host must hold bet * this to accept wager
+  HOST_COVERAGE_MULT  = 5,       -- covers split + double exposure from the original wager
   INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
 
   -- Peripheral sides

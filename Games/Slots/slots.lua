@@ -112,6 +112,7 @@ end
 -----------------------------------------------------
 local SYMBOLS = cfg.SYMBOLS
 local PAYOUTS = cfg.PAYOUTS
+local TWO_OF_A_KIND_PAYOUTS = cfg.TWO_OF_A_KIND_PAYOUTS or {}
 local surfaceLib = env.surface
 
 -- Pre-load pixel art for each symbol
@@ -318,8 +319,8 @@ local function evaluateResult(result, bet)
 
   if #pairs > 0 then
     local sym = pairs[1]
-    local mult = PAYOUTS[sym] or 2
-    local winnings = floor(bet * mult / 5)
+    local mult = TWO_OF_A_KIND_PAYOUTS[sym] or 0
+    local winnings = bet * mult
     if winnings > 0 then
       return winnings, "Two " .. sym .. "s!", false
     end
@@ -403,7 +404,7 @@ local function slotsRound(currentBet)
     }, currentBet)
 
     -- Wait for any touch on the monitor
-    os.pullEvent("monitor_touch")
+    ui.waitForMonitorTouch()
   else
     os.sleep(cfg.AUTO_PLAY_DELAY)
   end

@@ -132,16 +132,23 @@ local function authenticate(timeout)
   return true
 end
 
---- Get the currently interacting player's name.
+--- Get the live CCVault-reported player name without applying the auth lock.
+-- @return string|nil
+local function getLivePlayerName()
+  if ccvault and ccvault.getPlayerName then
+    return ccvault.getPlayerName()
+  end
+  return nil
+end
+
+--- Get the player name for this terminal session.
+-- Returns the authenticated player when one is locked, otherwise the live CCVault player.
 -- @return string|nil
 local function getPlayerName()
   if AUTH_PLAYER and AUTH_PLAYER ~= "" then
     return AUTH_PLAYER
   end
-  if ccvault and ccvault.getPlayerName then
-    return ccvault.getPlayerName()
-  end
-  return nil
+  return getLivePlayerName()
 end
 
 --- Get the player bound to the current authenticated session.
@@ -326,6 +333,7 @@ return {
   isReady          = isReady,
   authenticate     = authenticate,
   getPlayerName    = getPlayerName,
+  getLivePlayerName = getLivePlayerName,
   getAuthenticatedPlayerName = getAuthenticatedPlayerName,
   getHostName      = getHostName,
   getComputerId    = getComputerId,

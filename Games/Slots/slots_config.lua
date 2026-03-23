@@ -8,7 +8,7 @@ return {
 
   -- Economy
   MAX_BET_PERCENT     = 0.005,  -- max bet = 0.5% of host balance (jackpot-safe: worst case takes ~50%)
-  HOST_COVERAGE_MULT  = 100,    -- host must hold bet * this to accept wagers (= jackpot multiplier)
+  HOST_COVERAGE_MULT  = 101,    -- total payout multiplier for the 100x jackpot (stake + winnings)
   INACTIVITY_TIMEOUT  = 30000,  -- ms before auto-exit
 
   -- Auto-play
@@ -34,13 +34,6 @@ return {
   },
 
   -- Payouts: multiplier of the bet for 3-of-a-kind.
-  -- Two-of-a-kind pays 1/5 of the listed multiplier, rounded down.
-  --
-  -- House edge math (total weight per reel = 46):
-  --   3-of-a-kind EV  ~0.187  (per unit bet)
-  --   2-of-a-kind EV  ~0.712
-  --   Total RTP        ~0.899  (≈90%)
-  --   House edge        ~10%
   PAYOUTS = {
     ["7"]       = 100,  -- JACKPOT
     ["diamond"] = 50,
@@ -51,8 +44,21 @@ return {
     ["melon"]   = 2,
   },
 
+  -- Pair payouts are explicit so the common 5/25/100-token chip sizes stay
+  -- house-favored instead of scaling into a player-positive exploit.
+  -- With the current reel weights this table lands at roughly a 10.02% edge.
+  TWO_OF_A_KIND_PAYOUTS = {
+    ["7"]       = 10,
+    ["diamond"] = 5,
+    ["bell"]    = 2,
+    ["bar"]     = 2,
+    ["cherry"]  = 2,
+    ["lemon"]   = 0,
+    ["melon"]   = 0,
+  },
+
   -- Special combos
-  ANY_TWO_CHERRY_MULT = 1,  -- any 2 cherries = 1x bet back (small win)
+  ANY_TWO_CHERRY_MULT = 0,  -- cherry pairs are handled in TWO_OF_A_KIND_PAYOUTS
 
   -- Animation
   REEL_SPIN_TICKS = { 12, 18, 24 },  -- each reel spins a different number of frames
@@ -67,10 +73,10 @@ return {
   LAYOUT = {
     TABLE_COLOR    = colors.brown,     -- remapped via PALETTE above
     REEL_BG        = colors.black,
-    REEL_Y         = 12,              -- top of reel display area
-    REEL_HEIGHT    = 20,              -- height of each reel cell
-    REEL_SPACING   = 4,               -- gap between reels
-    REEL_WIDTH     = 18,              -- width of each reel cell
+    REEL_Y         = 12,               -- top of reel display area
+    REEL_HEIGHT    = 20,               -- height of each reel cell
+    REEL_SPACING   = 4,                -- gap between reels
+    REEL_WIDTH     = 18,               -- width of each reel cell
     BUTTON_Y_OFFSET = 14,
     TITLE_Y        = 1,
   },

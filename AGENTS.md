@@ -43,5 +43,7 @@
 ## Git Workflow Preference
 
 - Default behavior after changes: commit and push directly to `main` without waiting for user review.
+- After any completed repo change, finish the loop in the same turn by pushing the full change set unless the user explicitly says not to push yet.
+- Skip tests, linting, emulator runs, and other verification by default. Only run verification when the user explicitly asks for it or when it is required to recover from a failed git operation.
 - Use `scripts/push-all.ps1` for the default fast path unless the task needs a custom flow.
 - Do not fake success or use destructive history rewrites. If a push fails, report it plainly.

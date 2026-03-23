@@ -154,7 +154,8 @@ end
 -- Card helpers
 -----------------------------------------------------
 local function ensureDeck()
-  if #deck < 20 then
+  local reshuffleAt = cfg.MIN_CARDS_RESHUFFLE or 20
+  if #deck < reshuffleAt then
     dbg("Reshuffling deck")
     deck = cards.buildDeck(cfg.DECK_COUNT)
     cards.shuffle(deck)
@@ -368,6 +369,19 @@ local function availableBalance(ctx)
   return math.max(0, bal - totalAtRisk(ctx))
 end
 
+local function currentHouseExposure(ctx)
+  local exposure = 0
+  for _, hand in ipairs(ctx.hands or {}) do
+    exposure = exposure + (hand.bet or 0)
+  end
+  return exposure
+end
+
+local function hasHostCapacityForAdditionalBet(ctx, additionalBet)
+  additionalBet = additionalBet or 0
+  return currency.getHostBalance() >= (currentHouseExposure(ctx) + additionalBet)
+end
+
 local function settleNetChange(netChange, reason)
   if netChange > 0 then
     if not currency.payout(netChange, reason) then
@@ -537,6 +551,13 @@ local function executeDouble(hand, ctx, handIdx)
     end
     return false
   end
+  if not hasHostCapacityForAdditionalBet(ctx, additionalBet) then
+    if not AUTO_PLAY then
+      sound.play(sound.SOUNDS.ERROR)
+      ui.displayCenteredMessage(screen, "House limit reached!", colors.red, 0.8)
+    end
+    return false
+  end
   hand.bet = hand.bet * 2
   hand.doubled = true
   hand.lastAction = ACT.DOUBLE
@@ -568,6 +589,13 @@ local function executeSplit(hand, ctx, handIdx)
     if not AUTO_PLAY then
       sound.play(sound.SOUNDS.ERROR)
       ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red, 0.8)
+    end
+    return false
+  end
+  if not hasHostCapacityForAdditionalBet(ctx, splitBet) then
+    if not AUTO_PLAY then
+      sound.play(sound.SOUNDS.ERROR)
+      ui.displayCenteredMessage(screen, "House limit reached!", colors.red, 0.8)
     end
     return false
   end
@@ -642,11 +670,14 @@ local function doPlayerTurn(ctx)
 
       if AUTO_PLAY then
         os.sleep(cfg.AUTO_PLAY_DELAY)
-        local canDbl = #hand.cards == 2 and availableBalance(ctx) >= hand.bet
+        local canDbl = #hand.cards == 2
+                       and availableBalance(ctx) >= hand.bet
+                       and hasHostCapacityForAdditionalBet(ctx, hand.bet)
         local canSpl = #hand.cards == 2 and cfg.ALLOW_SPLIT
                        and #ctx.hands < (cfg.MAX_SPLITS + 1)
                        and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
                        and availableBalance(ctx) >= hand.bet
+                       and hasHostCapacityForAdditionalBet(ctx, hand.bet)
         local action = autoPlayer.decide(hand.cards, ctx.dealerHand[2], canDbl, canSpl, AUTO_PLAY_STRATEGY)
 
         if action == ACT.HIT then       handDone = executeHit(hand, ctx, handIdx)
@@ -679,7 +710,9 @@ local function doPlayerTurn(ctx)
           end,
         })
 
-        if #hand.cards == 2 and availableBalance(ctx) >= hand.bet then
+        if #hand.cards == 2
+           and availableBalance(ctx) >= hand.bet
+           and hasHostCapacityForAdditionalBet(ctx, hand.bet) then
           table.insert(row2, {
             text = "DOUBLE", color = colors.orange,
             func = function()
@@ -692,7 +725,8 @@ local function doPlayerTurn(ctx)
         if #hand.cards == 2 and cfg.ALLOW_SPLIT
            and #ctx.hands < (cfg.MAX_SPLITS + 1)
            and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
-            and availableBalance(ctx) >= hand.bet then
+            and availableBalance(ctx) >= hand.bet
+            and hasHostCapacityForAdditionalBet(ctx, hand.bet) then
           table.insert(row2, {
             text = "SPLIT", color = colors.purple,
             func = function()
@@ -877,8 +911,6 @@ local function doResolve(ctx)
   -- Display result
   displayRoundResult(ctx, dealerBusted)
 
-  recovery.clearBet()
-
   -- Determine overall outcome for stats
   local primary = ctx.hands[1]
   if primary.busted then
@@ -900,6 +932,8 @@ local function doResolve(ctx)
   if totalNetChange > 0 then
     notifyHostOfWin(env.currentPlayer, totalNetChange, ctx.outcome or "win")
   end
+
+  recovery.clearBet()
 
   -- Record stats
   buildAndRecordResult(ctx, dealerTotal, dealerBusted)

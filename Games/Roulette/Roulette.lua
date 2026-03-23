@@ -179,7 +179,8 @@ end
 
 local function validateCurrentSession()
   local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
-  local currentSessionPlayer = (sessionInfo and sessionInfo.playerName) or currency.getPlayerName()
+  local currentSessionPlayer = (currency.getLivePlayerName and currency.getLivePlayerName())
+    or ((sessionInfo and sessionInfo.playerName) or nil)
 
   if sessionPlayer and currentSessionPlayer and currentSessionPlayer ~= sessionPlayer then
     return false, "Game in use by " .. sessionPlayer .. "."

@@ -6,15 +6,17 @@ return {
   -- Game rules
   DECK_COUNT          = 1,       -- single deck
   MIN_CARDS_RESHUFFLE = 10,      -- reshuffle when deck drops below this
+  RESHUFFLE_EACH_ROUND = true,   -- start every round from a fresh deck to block shoe counting
 
   -- Payout multipliers for consecutive correct guesses
-  -- Round 1 correct = 1.5x, Round 2 = 2x, etc.
-  MULTIPLIERS = { 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32 },
+  -- Same-value cards lose, so the ladder can stay exciting without turning
+  -- edge cards into a guaranteed profit source for the player.
+  MULTIPLIERS = { 1.25, 1.5, 2, 2.5, 3.5, 4.5, 6, 8, 11, 15 },
   MAX_ROUNDS  = 10,              -- cap at 10 correct guesses
 
   -- Economy
-  MAX_BET_PERCENT     = 0.03,    -- max bet = 3% of host balance (must cover 32x worst case)
-  HOST_COVERAGE_MULT  = 32,      -- host must hold bet * this to cover max payout
+  MAX_BET_PERCENT     = 0.03,    -- conservative table cap; max total return is 15x
+  HOST_COVERAGE_MULT  = 15,      -- total payout multiplier (returned wager + 14x profit)
   INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
 
   -- Peripheral sides

@@ -30,6 +30,20 @@ local drawBox          = uiLib.drawBox
 local drawButton       = uiLib.drawTermButton
 local wrapText         = uiLib.wrapText
 
+local function formatTokens(amount)
+  amount = math.floor(amount or 0)
+  if amount == 1 then return "1 token" end
+  return tostring(amount) .. " tokens"
+end
+
+local function formatSignedTokens(amount)
+  amount = math.floor(amount or 0)
+  if amount >= 0 then
+    return "+" .. formatTokens(amount)
+  end
+  return formatTokens(amount)
+end
+
 local function writeWithBg(x, y, text, textColor, bgColor)
   uiLib.blitWrite(x, y, text, textColor, bgColor)
   term.setCursorPos(x + #text, y)
@@ -447,23 +461,23 @@ local function showPlayerStats()
       term.setCursorPos(col1X, y); safeWrite("Win rate: " .. wr .. "%", colors.cyan)
 
       y = 5
-      local bwG  = math.floor((stats.biggestWin or 0) / 9)
-      local bbG  = math.floor((stats.biggestBet or 0) / 9)
-      local twG  = math.floor((stats.totalBet or 0) / 9)
-      local tWnG = math.floor((stats.totalWinnings or 0) / 9)
-      local tLG  = math.floor((stats.totalLosses or 0) / 9)
+      local bwG  = math.floor(stats.biggestWin or 0)
+      local bbG  = math.floor(stats.biggestBet or 0)
+      local twG  = math.floor(stats.totalBet or 0)
+      local tWnG = math.floor(stats.totalWinnings or 0)
+      local tLG  = math.floor(stats.totalLosses or 0)
       local np   = (stats.totalWinnings or 0) - (stats.totalLosses or 0)
-      local npG  = math.floor(np / 9)
+      local npG  = math.floor(np)
 
-      term.setCursorPos(col2X, y); safeWrite("Biggest win: " .. bwG .. " gold", colors.green); y = y + lh
-      term.setCursorPos(col2X, y); safeWrite("Biggest bet: " .. bbG .. " gold", colors.white); y = y + lh
-      term.setCursorPos(col2X, y); safeWrite("Total wagered: " .. twG .. " gold", colors.gray); y = y + lh
-      term.setCursorPos(col2X, y); safeWrite("Total won: " .. tWnG .. " gold", colors.green); y = y + lh
-      term.setCursorPos(col2X, y); safeWrite("Total lost: " .. tLG .. " gold", colors.red); y = y + lh
-      term.setCursorPos(col2X, y); safeWrite("Net profit: " .. (np >= 0 and "+" or "") .. npG .. " gold",
+      term.setCursorPos(col2X, y); safeWrite("Biggest win: " .. formatTokens(bwG), colors.green); y = y + lh
+      term.setCursorPos(col2X, y); safeWrite("Biggest bet: " .. formatTokens(bbG), colors.white); y = y + lh
+      term.setCursorPos(col2X, y); safeWrite("Total wagered: " .. formatTokens(twG), colors.gray); y = y + lh
+      term.setCursorPos(col2X, y); safeWrite("Total won: " .. formatTokens(tWnG), colors.green); y = y + lh
+      term.setCursorPos(col2X, y); safeWrite("Total lost: " .. formatTokens(tLG), colors.red); y = y + lh
+      term.setCursorPos(col2X, y); safeWrite("Net profit: " .. formatSignedTokens(npG),
                                               np >= 0 and colors.green or colors.red); y = y + lh
       if stats.averageBet then
-        term.setCursorPos(col2X, y); safeWrite("Average bet: " .. math.floor(stats.averageBet / 9) .. " gold", colors.cyan)
+        term.setCursorPos(col2X, y); safeWrite("Average bet: " .. formatTokens(stats.averageBet), colors.cyan)
       end
 
     elseif page == 2 then
@@ -587,8 +601,8 @@ local function showLeaderboard()
         term.setCursorPos(7, y); safeWrite(playerLabel, colors.lime)
         term.setCursorPos(w - 15, y)
         if page == 1 then     safeWrite("Wins: " .. (e.wins or 0), colors.white)
-        elseif page == 2 then safeWrite("Profit: " .. math.floor((e.netProfit or 0) / 9) .. " gold", colors.white)
-        elseif page == 3 then safeWrite("Bet: " .. math.floor((e.biggestBet or 0) / 9) .. " gold", colors.white)
+        elseif page == 2 then safeWrite("Profit: " .. formatSignedTokens(e.netProfit or 0), colors.white)
+        elseif page == 3 then safeWrite("Bet: " .. formatTokens(e.biggestBet or 0), colors.white)
         else                  safeWrite("Blackjacks: " .. (e.blackjacks or 0), colors.white) end
       end
     end

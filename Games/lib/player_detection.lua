@@ -9,6 +9,7 @@
 --   local name = players.getCurrent()
 
 local peripherals = require("lib.peripherals")
+local currency    = require("lib.currency")
 
 local DEBUG = settings.get("casino.debug") or false
 local function dbg(msg)
@@ -24,7 +25,10 @@ local onChange     = nil   -- optional callback(newPlayer, oldPlayer)
 -- @param newName string|nil
 -- @return string|nil
 local function setIfChanged(newName)
-  if newName and newName ~= currentName then
+  if newName == "" then
+    newName = nil
+  end
+  if newName ~= currentName then
     local old = currentName
     currentName = newName
     dbg("Player changed: " .. tostring(newName) .. " (was " .. tostring(old) .. ")")
@@ -72,15 +76,20 @@ end
 -- Falls back to playerDetector peripheral if CCVault has no player yet.
 -- @return string|nil  The detected player name, or nil
 local function refresh()
-  -- Primary: CCVault knows who authenticated / right-clicked
-  if ccvault and ccvault.getPlayerName then
-    local name = ccvault.getPlayerName()
-    if name then
-      return setIfChanged(name)
-    end
+  -- If this terminal is authenticated, always prefer the locked player identity.
+  local sessionPlayer = currency.getAuthenticatedPlayerName and currency.getAuthenticatedPlayerName() or nil
+  if sessionPlayer and sessionPlayer ~= "" then
+    return setIfChanged(sessionPlayer)
+  end
+
+  -- Primary: CCVault knows who interacted most recently.
+  local livePlayer = currency.getLivePlayerName and currency.getLivePlayerName() or nil
+  if livePlayer and livePlayer ~= "" then
+    return setIfChanged(livePlayer)
   end
 
   -- Fallback: playerDetector peripheral
+  local detectorFailed = false
   if detector and type(detector.getPlayersInRange) == "function" then
     local ok, players = pcall(function()
       return detector.getPlayersInRange(range)
@@ -89,10 +98,15 @@ local function refresh()
       return setIfChanged(players[1])
     elseif not ok then
       dbg("playerDetector lookup failed")
+      detectorFailed = true
     end
   end
 
-  return currentName  -- keep last-known
+  if detectorFailed then
+    return currentName
+  end
+
+  return setIfChanged(nil)
 end
 
 --- Get the current (cached) player name without a new detection pass.

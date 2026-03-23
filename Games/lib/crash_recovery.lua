@@ -474,18 +474,22 @@ local function getCrashLog(limit)
 end
 
 --- Get summary statistics from the crash audit log.
--- @return table  { totalCrashes, totalRefunded, totalFailed, byGame={}, byPlayer={} }
+-- @return table  { totalCrashes, totalRefunded, totalNoRefundNeeded, totalFailed, byGame={}, byPlayer={} }
 local function getCrashStats()
   local entries = getCrashLog()
   local stats = {
     totalCrashes = #entries,
     totalRefunded = 0,
+    totalNoRefundNeeded = 0,
     totalFailed = 0,
     byGame = {},
     byPlayer = {},
   }
   for _, e in ipairs(entries) do
-    stats.totalRefunded = stats.totalRefunded + (e.refunded or e.bet or 0)
+    stats.totalRefunded = stats.totalRefunded + (e.refunded or 0)
+    if e.outcome == "no_refund_needed" then
+      stats.totalNoRefundNeeded = stats.totalNoRefundNeeded + 1
+    end
     if e.outcome == "failed" or e.outcome == "partial" then
       stats.totalFailed = stats.totalFailed + 1
     end
@@ -503,6 +507,7 @@ local function printReport()
   print("=== Crash Recovery Report ===")
   print("Total recoveries: " .. stats.totalCrashes)
   print("Total refunded:   " .. stats.totalRefunded .. " tokens")
+  print("No refund needed: " .. stats.totalNoRefundNeeded)
   print("Failed attempts:  " .. stats.totalFailed)
   if next(stats.byGame) then
     print("By game:")
