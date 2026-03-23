@@ -71,11 +71,6 @@ local function init(cfg)
     local sessionInfo = currency.getSessionInfo()
     env.sessionInfo = sessionInfo
     env.isSelfPlay = sessionInfo and sessionInfo.isSelfPlay or false
-
-    if env.isSelfPlay then
-      print("Self-play session detected — test mode active.")
-      alert.log("Self-play session: " .. tostring(sessionInfo and sessionInfo.playerName or "?"))
-    end
   end
 
   -- Surface API

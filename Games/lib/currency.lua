@@ -168,6 +168,17 @@ local function charge(amount, reason)
     dbg("Charge OK, TX: " .. (result.txId or "?"))
     return true, result.txId
   end
+  -- Self-play: transfer() blocks same-account transfers, use transferSelf()
+  if isSelfPlay() and ccvault.transferSelf then
+    dbg("Self-play fallback for charge")
+    local selfResult, selfErr = ccvault.transferSelf(amount, reason)
+    if selfResult then
+      dbg("Charge (self) OK, TX: " .. (selfResult.txId or "?"))
+      return true, selfResult.txId
+    end
+    dbg("Charge (self) failed: " .. (selfErr or "unknown"))
+    return false, nil
+  end
   dbg("Charge failed: " .. (txErr or "unknown"))
   return false, nil
 end
@@ -190,6 +201,17 @@ local function payout(amount, reason)
   if result then
     dbg("Payout OK, TX: " .. (result.txId or "?"))
     return true, result.txId
+  end
+  -- Self-play: transfer() blocks same-account transfers, use transferSelf()
+  if isSelfPlay() and ccvault.transferSelf then
+    dbg("Self-play fallback for payout")
+    local selfResult, selfErr = ccvault.transferSelf(amount, reason)
+    if selfResult then
+      dbg("Payout (self) OK, TX: " .. (selfResult.txId or "?"))
+      return true, selfResult.txId
+    end
+    dbg("Payout (self) failed: " .. (selfErr or "unknown"))
+    return false, nil
   end
   dbg("Payout failed: " .. (txErr or "unknown"))
   return false, nil
