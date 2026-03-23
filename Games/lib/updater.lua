@@ -17,10 +17,6 @@ local MANIFEST_URL  = REPO_URL .. "Games/manifest.json"
 local VERSION_FILE  = ".installed_program"
 local LOG_FILE      = "updater.log"
 local UPDATE_LOCK   = ".update_lock"
-local COOLDOWN_FILE = ".last_update_check"
-
--- Minimum seconds between update checks (avoid hammering GitHub on every reboot)
-local CHECK_COOLDOWN = 300  -- 5 minutes
 
 -----------------------------------------------------
 -- Helpers
@@ -99,27 +95,6 @@ local function fetchManifest()
     manifest.programs = manifest.games
   end
   return manifest
-end
-
---- Check if we're within the cooldown window.
-local function isCooldownActive()
-  if not fs.exists(COOLDOWN_FILE) then return false end
-  local f = fs.open(COOLDOWN_FILE, "r")
-  if not f then return false end
-  local raw = f.readAll()
-  f.close()
-  local lastCheck = tonumber(raw)
-  if not lastCheck then return false end
-  local elapsed = (os.epoch("local") - lastCheck) / 1000
-  return elapsed < CHECK_COOLDOWN
-end
-
-local function writeCooldown()
-  local f = fs.open(COOLDOWN_FILE, "w")
-  if f then
-    f.write(tostring(os.epoch("local")))
-    f.close()
-  end
 end
 
 --- Simple lock to prevent concurrent update runs.
@@ -269,9 +244,9 @@ end
 -----------------------------------------------------
 
 --- Check for updates and apply them silently.
--- Safe to call on every startup — respects cooldown and lock.
+-- Safe to call on every startup.
 -- Never throws errors; all failures are logged silently.
--- @param opts table|nil  Optional: { force=bool, callback=function(status,msg) }
+-- @param opts table|nil  Optional: { callback=function(status,msg) }
 -- @return string status  "updated", "up-to-date", "skipped", or "error"
 local function checkForUpdates(opts)
   opts = opts or {}
@@ -280,22 +255,12 @@ local function checkForUpdates(opts)
   local status = "skipped"
 
   local ok, err = pcall(function()
-    -- Cooldown check (skip if recently checked, unless forced)
-    if not opts.force and isCooldownActive() then
-      status = "skipped"
-      callback("skipped", "Cooldown active, skipping check")
-      return
-    end
-
     -- Lock to prevent concurrent runs
     if not acquireLock() then
       status = "skipped"
       callback("skipped", "Another update in progress")
       return
     end
-
-    -- Record that we checked
-    writeCooldown()
 
     -- Load install info
     local installed = loadInstalled()
@@ -409,10 +374,10 @@ local function getInstallInfo()
   return loadInstalled()
 end
 
---- Force an update check, ignoring cooldown.
+--- Force an update check.
 -- @return string status
 local function forceUpdate()
-  return checkForUpdates({ force = true })
+  return checkForUpdates()
 end
 
 --- Background polling loop that checks for updates at a fixed interval.
