@@ -91,9 +91,19 @@ function Get-ProgramDescription {
 
 # ── Build manifest ─────────────────────────────────────────────────────────
 
+# Read installer version from installer.lua itself
+$installerFile = Join-Path $GamesDir "installer.lua"
+$installerVersion = "1.0.0"
+if (Test-Path $installerFile) {
+    $match = Select-String -Path $installerFile -Pattern 'INSTALLER_VERSION\s*=\s*"([^"]+)"' | Select-Object -First 1
+    if ($match) {
+        $installerVersion = $match.Matches[0].Groups[1].Value
+    }
+}
+
 $manifest = [ordered]@{
     manifest_version  = 1
-    installer_version = "1.0.0"
+    installer_version = $installerVersion
     programs          = [ordered]@{}
     lib               = [ordered]@{
         version = "1.0.0"
