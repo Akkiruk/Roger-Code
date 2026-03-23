@@ -127,12 +127,13 @@ end
 local function getNumberColor(n)
   if n == 0 then return colors.lime end
   if isRed(n) then return colors.red end
-  return colors.gray
+  return colors.black
 end
 
 local function getNumberTextColor(n)
   if n == 0 then return colors.black end
-  return colors.white
+  if isRed(n) then return colors.black end
+  return colors.lightGray
 end
 
 local function getColorName(n)
@@ -207,43 +208,8 @@ local function spinWheel()
   return WHEEL[idx], idx
 end
 
------------------------------------------------------
 -- Rendering helpers
 -----------------------------------------------------
-local function drawWheelCell(x, y, n, w, h, highlight)
-  local bg = getNumberColor(n)
-  if highlight then
-    screen:fillRect(x, y, w, h, colors.yellow)
-    screen:fillRect(x + 1, y + 1, w - 2, h - 2, bg)
-  else
-    screen:fillRect(x, y, w, h, bg)
-  end
-
-  local numStr = tostring(n)
-  local tw = ui.getTextSize(numStr)
-  local tx = x + floor((w - tw) / 2)
-  local ty = y + floor((h - 7) / 2)
-  ui.safeDrawText(screen, numStr, font, tx, ty, getNumberTextColor(n))
-end
-
-local function drawWheelStrip(centerIdx, y, cellW, cellH, visibleCount)
-  local half = floor(visibleCount / 2)
-  local totalW = visibleCount * (cellW + 1) - 1
-  local startX = floor((width - totalW) / 2)
-
-  for i = -half, half do
-    local idx = ((centerIdx - 1 + i) % WHEEL_SIZE) + 1
-    local n = WHEEL[idx]
-    local x = startX + (i + half) * (cellW + 1)
-    local isCenter = (i == 0)
-    drawWheelCell(x, y, n, cellW, cellH, isCenter)
-  end
-
-  -- Pointer arrow above center cell
-  local arrowX = startX + half * (cellW + 1) + floor(cellW / 2)
-  screen:fillRect(arrowX - 1, y - 2, 3, 2, colors.yellow)
-end
-
 local function drawNumberDisplay(number, y)
   local numStr = tostring(number)
   local bg = getNumberColor(number)
@@ -262,15 +228,53 @@ local function drawNumberDisplay(number, y)
   ui.safeDrawText(screen, numStr, font, tx, ty, fg)
 end
 
+local function drawBoardCell(x, y, n, w, h, isSelected, isGold)
+  local bg = getNumberColor(n)
+
+  if isGold then
+    screen:fillRect(x - 2, y - 2, w + 4, h + 4, colors.yellow)
+    screen:fillRect(x - 1, y - 1, w + 2, h + 2, colors.orange)
+  elseif isSelected then
+    screen:fillRect(x - 1, y - 1, w + 2, h + 2, colors.yellow)
+  end
+
+  screen:fillRect(x, y, w, h, bg)
+
+  local numStr = tostring(n)
+  local tw = ui.getTextSize(numStr)
+  local tx = x + floor((w - tw) / 2)
+  local ty = y + floor((h - 7) / 2)
+  ui.safeDrawText(screen, numStr, font, tx, ty, getNumberTextColor(n))
+end
+
+local function drawNumberBoard(activeNumber, finalNumber)
+  local cellW = (width >= 90) and 12 or 10
+  local cellH = (height >= 70) and 8 or 7
+  local gap = 1
+  local cols = 6
+
+  local zeroY = 20
+  local zeroX = floor((width - cellW) / 2)
+
+  local totalGridW = cols * (cellW + gap) - gap
+  local gridX = floor((width - totalGridW) / 2)
+  local gridY = zeroY + cellH + gap + 2
+
+  drawBoardCell(zeroX, zeroY, 0, cellW, cellH, activeNumber == 0, finalNumber == 0)
+
+  for n = 1, 36 do
+    local row = floor((n - 1) / cols)
+    local col = (n - 1) % cols
+    local x = gridX + col * (cellW + gap)
+    local y = gridY + row * (cellH + gap)
+    drawBoardCell(x, y, n, cellW, cellH, activeNumber == n, finalNumber == n)
+  end
+end
+
 -----------------------------------------------------
 -- Main screen rendering
 -----------------------------------------------------
-local STRIP_Y = 11
-local CELL_W  = 8
-local CELL_H  = 8
-local VISIBLE_CELLS = 7
-
-local function drawScreen(result, resultIdx, betType, straightNum, betAmount, statusText, spinIdx)
+local function drawScreen(result, betType, straightNum, betAmount, statusText, activeNumber, finalNumber)
   screen:clear(LO.TABLE_COLOR)
 
   -- Title bar
@@ -297,22 +301,20 @@ local function drawScreen(result, resultIdx, betType, straightNum, betAmount, st
   -- Separator
   screen:fillRect(0, 8, width, 1, colors.yellow)
 
-  -- Wheel strip or result
-  if spinIdx then
-    -- Animating spin
-    drawWheelStrip(spinIdx, STRIP_Y, CELL_W, CELL_H, VISIBLE_CELLS)
-  elseif result ~= nil then
-    -- Showing result
-    drawWheelStrip(resultIdx, STRIP_Y, CELL_W, CELL_H, VISIBLE_CELLS)
-    -- Big number display (adaptive: only if there's room)
-    local numY = STRIP_Y + CELL_H + 3
-    if numY + 14 < height - 10 then
-      drawNumberDisplay(result, numY)
-    end
-  else
-    -- Idle / pre-spin
-    drawWheelStrip(1, STRIP_Y, CELL_W, CELL_H, VISIBLE_CELLS)
+  local boardTitle = "PICK A NUMBER 35:1"
+  local btw = ui.getTextSize(boardTitle)
+  ui.safeDrawText(screen, boardTitle, font, floor((width - btw) / 2), 11, colors.yellow)
+
+  local shownNumber = activeNumber
+  if shownNumber == nil then
+    shownNumber = result
   end
+  if shownNumber == nil then
+    shownNumber = (betType == "straight" and straightNum) or 0
+  end
+
+  drawNumberDisplay(shownNumber, 14)
+  drawNumberBoard(shownNumber, finalNumber)
 
   -- Status text at bottom
   if statusText then
@@ -446,37 +448,36 @@ end
 -----------------------------------------------------
 -- Spin animation
 -----------------------------------------------------
-local function animateSpin(finalIdx, betType, straightNum, betAmount)
+local function animateSpin(finalNumber, betType, straightNum, betAmount)
   local totalTicks = cfg.SPIN_TICKS
-  local startIdx = random(1, WHEEL_SIZE)
-
-  -- Multiple full rotations + landing position
-  local fullRotations = 3
-  local totalPositions = fullRotations * WHEEL_SIZE + ((finalIdx - startIdx) % WHEEL_SIZE)
+  local currentNumber = random(0, 36)
 
   for tick = 1, totalTicks do
-    -- Ease-out: decelerates toward the end
     local progress = tick / totalTicks
-    local easedProgress = 1 - (1 - progress) * (1 - progress)
-    local posOffset = floor(easedProgress * totalPositions)
-    local currentIdx = ((startIdx - 1 + posOffset) % WHEEL_SIZE) + 1
 
-    drawScreen(nil, nil, betType, straightNum, betAmount, {
+    if tick >= totalTicks - 2 then
+      currentNumber = finalNumber
+    else
+      local nextNumber = currentNumber
+      while nextNumber == currentNumber do
+        nextNumber = random(0, 36)
+      end
+      currentNumber = nextNumber
+    end
+
+    drawScreen(nil, betType, straightNum, betAmount, {
       text = "Spinning...",
       color = colors.yellow,
-    }, currentIdx)
+    }, currentNumber, nil)
 
-    -- Variable delay: faster at start, slower near the end
-    local delay = cfg.SPIN_FRAME_DELAY
-    if progress > 0.7 then
-      delay = delay + (progress - 0.7) * 0.3
-    end
+    -- Slight slowdown near the end for readability.
+    local delay = cfg.SPIN_FRAME_DELAY + (progress * 0.08)
     os.sleep(delay)
   end
 
   -- Landing click
   sound.play(sound.SOUNDS.CARD_PLACE, 0.8)
-  os.sleep(0.3)
+  os.sleep(0.2)
 end
 
 -----------------------------------------------------
@@ -489,10 +490,10 @@ local function rouletteRound(betAmount, betType, straightNum)
   local betLabel = getBetTypeLabel(betType, straightNum)
   local payoutStr = getPayoutMultiplier(betType) .. ":1"
 
-  drawScreen(nil, nil, betType, straightNum, betAmount, {
+  drawScreen(nil, betType, straightNum, betAmount, {
     text = betLabel .. " " .. payoutStr .. "  Touch to SPIN!",
     color = colors.lime,
-  }, nil)
+  }, straightNum, nil)
 
   if not AUTO_PLAY then
     os.pullEvent("monitor_touch")
@@ -502,10 +503,10 @@ local function rouletteRound(betAmount, betType, straightNum)
 
   -- Spin the wheel
   sound.play(sound.SOUNDS.START, 0.6)
-  local winNumber, winIdx = spinWheel()
+  local winNumber = spinWheel()
 
   -- Animate the spin
-  animateSpin(winIdx, betType, straightNum, betAmount)
+  animateSpin(winNumber, betType, straightNum, betAmount)
 
   -- Evaluate result
   local won = doesBetWin(betType, winNumber, straightNum)
@@ -527,10 +528,10 @@ local function rouletteRound(betAmount, betType, straightNum)
     local flashes = isJackpot and 8 or 4
     for flash = 1, flashes do
       local showHighlight = (flash % 2 == 1)
-      drawScreen(winNumber, winIdx, betType, straightNum, betAmount, {
+      drawScreen(winNumber, betType, straightNum, betAmount, {
         text = winMsg,
         color = showHighlight and colors.yellow or colors.lime,
-      }, nil)
+      }, winNumber, winNumber)
       if isJackpot then
         sound.play(sound.SOUNDS.SUCCESS, 1.0)
       elseif flash == 1 then
@@ -540,10 +541,10 @@ local function rouletteRound(betAmount, betType, straightNum)
     end
 
     -- Hold the result on screen
-    drawScreen(winNumber, winIdx, betType, straightNum, betAmount, {
+    drawScreen(winNumber, betType, straightNum, betAmount, {
       text = winMsg,
       color = colors.lime,
-    }, nil)
+    }, winNumber, winNumber)
     os.sleep(cfg.RESULT_PAUSE)
 
     dbg("WIN: " .. betType .. " number=" .. winNumber .. " payout=" .. (betAmount + winnings))
@@ -554,10 +555,10 @@ local function rouletteRound(betAmount, betType, straightNum)
     end
 
     -- Loss display
-    drawScreen(winNumber, winIdx, betType, straightNum, betAmount, {
+    drawScreen(winNumber, betType, straightNum, betAmount, {
       text = resultLabel .. " - Better luck next time!",
       color = colors.lightGray,
-    }, nil)
+    }, winNumber, winNumber)
     sound.play(sound.SOUNDS.FAIL, 0.4)
     os.sleep(cfg.RESULT_PAUSE)
 

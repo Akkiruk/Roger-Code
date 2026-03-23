@@ -96,8 +96,8 @@
                               },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.5",
-                                      "content_hash":  "c41d195a5481f42d",
+                                      "version":  "1.0.6",
+                                      "content_hash":  "f663b612aeb10871",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
