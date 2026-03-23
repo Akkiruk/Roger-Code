@@ -302,8 +302,6 @@ end
 -- Program selection menu
 ---------------------------------------------------------------------------
 local function selectProgram(manifest)
-  header("Select Program")
-
   local progList = {}
   for key, prog in pairs(manifest.programs) do
     progList[#progList + 1] = {
@@ -315,23 +313,66 @@ local function selectProgram(manifest)
   end
   table.sort(progList, function(a, b) return a.name < b.name end)
 
-  for i, p in ipairs(progList) do
-    cwrite(colors.yellow, "  " .. i .. ". ")
-    cwrite(colors.white, p.name)
-    cprint(colors.gray, "  v" .. p.ver)
-    if p.desc ~= "" then
-      cprint(colors.gray, "     " .. p.desc)
+  -- Paginated display: 1 line per entry, fits within terminal height
+  -- Header uses 4 lines, footer uses 3 lines (nav hints + "Select:" prompt)
+  local perPage = H - 7
+  if perPage < 3 then perPage = 3 end
+  local totalPages = math.ceil(#progList / perPage)
+  local page = 1
+
+  while true do
+    header("Select Program")
+
+    local startIdx = (page - 1) * perPage + 1
+    local endIdx   = math.min(page * perPage, #progList)
+
+    for i = startIdx, endIdx do
+      local p = progList[i]
+      -- Compact: number, name, version, and truncated description on one line
+      local prefix = string.format("  %d. ", i)
+      local nameVer = p.name .. " v" .. p.ver
+      local remaining = W - #prefix - #nameVer - 2
+      local suffix = ""
+      if remaining > 5 and p.desc ~= "" then
+        if #p.desc > remaining then
+          suffix = " " .. p.desc:sub(1, remaining - 2) .. ".."
+        else
+          suffix = " " .. p.desc
+        end
+      end
+      cwrite(colors.yellow, prefix)
+      cwrite(colors.white, nameVer)
+      cprint(colors.gray, suffix)
+    end
+
+    print("")
+
+    -- Navigation hints
+    if totalPages > 1 then
+      local nav = "Page " .. page .. "/" .. totalPages
+      if page < totalPages then nav = nav .. "  [n]ext" end
+      if page > 1 then nav = nav .. "  [p]rev" end
+      cprint(colors.lightGray, "  " .. nav)
+    end
+    cprint(colors.gray, "  0. Cancel")
+    cwrite(colors.white, "Select: ")
+
+    local input = read()
+    if not input then return nil end
+    input = input:lower():gsub("^%s+", ""):gsub("%s+$", "")
+
+    if input == "n" and page < totalPages then
+      page = page + 1
+    elseif input == "p" and page > 1 then
+      page = page - 1
+    else
+      local choice = tonumber(input)
+      if not choice or choice < 1 or choice > #progList then
+        return nil
+      end
+      return progList[choice].key
     end
   end
-  print("")
-  cprint(colors.gray, "  0. Cancel")
-  print("")
-  cwrite(colors.white, "Select: ")
-  local choice = tonumber(read())
-  if not choice or choice < 1 or choice > #progList then
-    return nil
-  end
-  return progList[choice].key
 end
 
 ---------------------------------------------------------------------------
