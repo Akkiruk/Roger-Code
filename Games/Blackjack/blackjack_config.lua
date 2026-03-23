@@ -29,7 +29,6 @@ return {
   STRATEGY_CHANGE_FREQ     = 10,
 
   -- Admin & logging
-  ADMIN_NAME          = "Akkiruk",
   GAME_NAME           = "Blackjack",
   LOG_FILE            = "blackjack_error.log",
   RECOVERY_FILE       = "blackjack_recovery.dat",

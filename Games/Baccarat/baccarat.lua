@@ -63,7 +63,6 @@ local env = gameSetup.init({
   monitorName     = cfg.MONITOR,
   deckCount       = cfg.DECK_COUNT,
   gameName        = cfg.GAME_NAME,
-  adminName       = cfg.ADMIN_NAME,
   logFile         = cfg.LOG_FILE,
   initPlayerStats = false,
 })

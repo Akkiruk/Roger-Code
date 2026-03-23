@@ -6,8 +6,16 @@ local uploader -- Will be loaded later if System.uploadlogs is available
 
 -- Configuration
 local LOG_FILE_PATH = "peripheral_info.log"
-local UPLOAD_RECIPIENT = "Akkiruk" -- Configure your recipient
+local UPLOAD_RECIPIENT = nil  -- resolved from ccvault host below
 local DEBUG_MODE = true -- Set to true for verbose console output during script execution
+
+-- Resolve upload recipient from ccvault host (who placed this computer)
+if ccvault and type(ccvault.getHostName) == "function" then
+    local ok, name = pcall(ccvault.getHostName)
+    if ok and name and type(name) == "string" and name ~= "" then
+        UPLOAD_RECIPIENT = name
+    end
+end
 
 local function script_print(message)
     if DEBUG_MODE then
@@ -146,6 +154,11 @@ local function uploadLog()
     if not fs.exists(LOG_FILE_PATH) or fs.getSize(LOG_FILE_PATH) == 0 then
         print("Log file is empty or does not exist. Skipping upload.")
         script_print("Log file empty or missing. Skipping upload.")
+        return
+    end
+
+    if not UPLOAD_RECIPIENT then
+        print("No upload recipient — ccvault host not available.")
         return
     end
 

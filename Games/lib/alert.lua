@@ -3,15 +3,19 @@
 -- Sends admin alerts via chatBox peripheral and writes to log files.
 -- Usage:
 --   local alert = require("lib.alert")
---   alert.configure({ adminName = "Akkiruk", logFile = "blackjack_error.log", gameName = "Blackjack" })
+--   alert.configure({ logFile = "blackjack_error.log", gameName = "Blackjack" })
 --   alert.send("Something went wrong!")
 --   alert.log("debug info here")
+--
+-- adminName is resolved automatically from ccvault.getHostName() (the player
+-- who placed this computer). Override with alert.configure({ adminName = ".." })
+-- if you need a specific recipient.
 
 local peripherals = require("lib.peripherals")
 
 local DEBUG = settings.get("casino.debug") or false
 
-local adminName  = "Akkiruk"
+local adminName  = nil  -- resolved lazily from ccvault host
 local gameName   = "Casino"
 local logFile    = "casino_error.log"
 local chatbox    = nil
@@ -58,6 +62,18 @@ local function log(msg)
   end
 end
 
+--- Resolve adminName lazily from ccvault host if not explicitly set.
+local function resolveAdmin()
+  if adminName then return adminName end
+  if ccvault and type(ccvault.getHostName) == "function" then
+    local ok, name = pcall(ccvault.getHostName)
+    if ok and name and type(name) == "string" and name ~= "" then
+      adminName = name
+    end
+  end
+  return adminName
+end
+
 --- Send an admin alert via chatbox. Skips planned exits.
 -- @param errorMsg string
 local function send(errorMsg)
@@ -70,6 +86,9 @@ local function send(errorMsg)
 
   log("ALERT: " .. tostring(errorMsg))
 
+  local recipient = resolveAdmin()
+  if not recipient then return end
+
   -- Lazy-init chatbox
   if not chatbox then
     chatbox = peripherals.find("chatBox")
@@ -79,10 +98,34 @@ local function send(errorMsg)
     pcall(function()
       chatbox.sendMessageToPlayer(
         "[" .. gameName .. " Error]: " .. tostring(errorMsg),
-        adminName,
+        recipient,
         gameName,
         "[]",
         "c"
+      )
+    end)
+  end
+end
+
+--- Send a notification to a specific player via chatbox.
+-- @param playerName string  The player to message
+-- @param message    string  The message text
+local function notifyPlayer(playerName, message)
+  if not playerName or playerName == "" then return end
+
+  -- Lazy-init chatbox
+  if not chatbox then
+    chatbox = peripherals.find("chatBox")
+  end
+
+  if chatbox then
+    pcall(function()
+      chatbox.sendMessageToPlayer(
+        tostring(message),
+        playerName,
+        gameName,
+        "[]",
+        "6"
       )
     end)
   end
@@ -97,9 +140,10 @@ local function addPlannedExits(codes)
 end
 
 return {
-  configure      = configure,
-  isPlannedExit  = isPlannedExit,
-  log            = log,
-  send           = send,
+  configure       = configure,
+  isPlannedExit   = isPlannedExit,
+  log             = log,
+  send            = send,
+  notifyPlayer    = notifyPlayer,
   addPlannedExits = addPlannedExits,
 }

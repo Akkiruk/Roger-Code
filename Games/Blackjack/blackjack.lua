@@ -75,7 +75,6 @@ local env = gameSetup.init({
   monitorName = cfg.MONITOR,
   deckCount   = cfg.DECK_COUNT,
   gameName    = cfg.GAME_NAME,
-  adminName   = cfg.ADMIN_NAME,
   logFile     = cfg.LOG_FILE,
   initPlayerStats = true,
 })
@@ -134,6 +133,17 @@ end
 
 local function drawPlayerOverlay()
   gameSetup.drawPlayerOverlay(env)
+end
+
+-----------------------------------------------------
+-- Host win notification
+-----------------------------------------------------
+local function notifyHostOfWin(playerName, amount, reason)
+  local hostName = currency.getHostName()
+  if not hostName or hostName == "" then return end
+  if hostName == playerName then return end
+  local msg = playerName .. " won " .. amount .. " tokens (" .. reason .. ")"
+  alert.notifyPlayer(hostName, msg)
 end
 
 -----------------------------------------------------
@@ -377,6 +387,7 @@ local function doCheckNaturals(ctx)
     end
     ctx.outcome = OUT.BLACKJACK
     ctx.netChange = bonus - (ctx.insuranceBet or 0)
+    notifyHostOfWin(env.currentPlayer, bonus, "blackjack natural")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
     return nil
@@ -769,6 +780,11 @@ local function doResolve(ctx)
   -- Subtract insurance loss
   totalNetChange = totalNetChange - (ctx.insuranceBet or 0)
   ctx.netChange = totalNetChange
+
+  -- Notify host if player won
+  if totalNetChange > 0 then
+    notifyHostOfWin(env.currentPlayer, totalNetChange, ctx.outcome or "win")
+  end
 
   -- Record stats
   buildAndRecordResult(ctx, dealerTotal, dealerBusted)

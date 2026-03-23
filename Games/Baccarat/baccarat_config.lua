@@ -28,7 +28,6 @@ return {
   AUTO_PLAY_BET       = 9,
 
   -- Admin & logging
-  ADMIN_NAME          = "Akkiruk",
   GAME_NAME           = "Baccarat",
   LOG_FILE            = "baccarat_error.log",
   RECOVERY_FILE       = "baccarat_recovery.dat",

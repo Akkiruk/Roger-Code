@@ -14,7 +14,6 @@ local idleScreen = require("lib.idle_screen")
 local MONITOR_NAME = "right"
 
 alertLib.configure({
-  adminName = "Akkiruk",
   gameName  = "Baccarat Startup",
   logFile   = "baccarat_error.log",
 })

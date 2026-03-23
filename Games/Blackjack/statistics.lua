@@ -33,7 +33,6 @@ end
 -- Alert / logging
 -----------------------------------------------------
 alertLib.configure({
-  adminName = "Akkiruk",
   gameName  = "Blackjack Stats",
   logFile   = "statistics_error.log",
 })

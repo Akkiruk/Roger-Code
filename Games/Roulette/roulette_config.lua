@@ -17,7 +17,6 @@ return {
   AUTO_PLAY_BET   = 9,
 
   -- Admin & logging
-  ADMIN_NAME    = "Akkiruk",
   GAME_NAME     = "Roulette",
   LOG_FILE      = "roulette_error.log",
   RECOVERY_FILE = "roulette_recovery.dat",

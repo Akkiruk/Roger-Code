@@ -16,7 +16,6 @@ return {
   AUTO_PLAY_BET   = 9,
 
   -- Admin & logging
-  ADMIN_NAME    = "Akkiruk",
   GAME_NAME     = "Slots",
   LOG_FILE      = "slots_error.log",
   RECOVERY_FILE = "slots_recovery.dat",

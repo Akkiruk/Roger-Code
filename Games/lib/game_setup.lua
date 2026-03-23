@@ -40,9 +40,9 @@ local function init(cfg)
 
   local env = {}
 
-  -- Alert module
+  -- Alert module (adminName resolved after auth below)
   alert.configure({
-    adminName = cfg.adminName or "Akkiruk",
+    adminName = cfg.adminName,
     gameName  = cfg.gameName  or "Casino",
     logFile   = cfg.logFile   or "casino_error.log",
   })
@@ -59,6 +59,13 @@ local function init(cfg)
     if not authOk then
       error("CCVault authentication failed — cannot run game")
     end
+
+    -- Resolve host name for admin alerts
+    local hostName = currency.getHostName()
+    if hostName then
+      alert.configure({ adminName = hostName })
+    end
+    env.hostName = hostName
 
     -- Session info: detect self-play mode (server-authoritative)
     local sessionInfo = currency.getSessionInfo()
