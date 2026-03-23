@@ -5,8 +5,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.5",
-                                      "content_hash":  "63305f3ffbe0c2dc",
+                                      "version":  "1.2.6",
+                                      "content_hash":  "d1a43c0ccef2d476",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -34,8 +34,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.2.3",
-                                       "content_hash":  "e2f12fed5ff94154",
+                                       "version":  "1.2.4",
+                                       "content_hash":  "2c63bfc62e849ba5",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -67,8 +67,8 @@
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.6",
-                                  "content_hash":  "1d8f8ad5f9136369",
+                                  "version":  "1.0.7",
+                                  "content_hash":  "7d963c748a74dfdf",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
@@ -96,8 +96,8 @@
                               },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.4",
-                                      "content_hash":  "a79a664e2e0419b2",
+                                      "version":  "1.0.5",
+                                      "content_hash":  "c41d195a5481f42d",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -118,8 +118,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.4",
-                                   "content_hash":  "8d5cd24b17cc54a9",
+                                   "version":  "1.0.5",
+                                   "content_hash":  "793e8cba1e1e22d5",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -162,8 +162,8 @@
                                     },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.6",
-                                        "content_hash":  "068397fae92d2fb2",
+                                        "version":  "1.0.7",
+                                        "content_hash":  "4e091b0d23c95550",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,

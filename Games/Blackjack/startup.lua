@@ -104,6 +104,9 @@ if not ok then
   error(err)
 end
 
+-- Initialize ui module so safeDrawText works in the idle overlay
+ui.init(idleEnv.surface, idleEnv.font)
+
 debugLog("Blackjack idle setup complete.")
 
 local installInfo = updater.getInstallInfo()
