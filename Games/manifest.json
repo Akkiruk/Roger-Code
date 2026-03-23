@@ -64,6 +64,35 @@
                                                       "surface"
                                                   ]
                                    },
+                     "hilo":  {
+                                  "name":  "HiLo",
+                                  "version":  "1.0.1",
+                                  "content_hash":  "23d99b3bc40b0370",
+                                  "description":  "Hi-Lo card game for ComputerCraft casino.",
+                                  "source_dir":  "Games/HiLo",
+                                  "uses_lib":  true,
+                                  "files":  [
+                                                "hilo.lua",
+                                                "startup.lua"
+                                            ],
+                                  "config_files":  [
+                                                       "hilo_config.lua"
+                                                   ],
+                                  "assets":  [
+                                                 "card.nfp",
+                                                 "cardback.nfp",
+                                                 "club.nfp",
+                                                 "clubs.nfp",
+                                                 "diamond.nfp",
+                                                 "diamonds.nfp",
+                                                 "font",
+                                                 "heart.nfp",
+                                                 "hearts.nfp",
+                                                 "spade.nfp",
+                                                 "spades.nfp",
+                                                 "surface"
+                                             ]
+                              },
                      "roulette":  {
                                       "name":  "Roulette",
                                       "version":  "1.0.1",
@@ -130,6 +159,35 @@
 
                                                    ]
                                     },
+                     "videopoker":  {
+                                        "name":  "VideoPoker",
+                                        "version":  "1.0.1",
+                                        "content_hash":  "7844b247721c8f0b",
+                                        "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
+                                        "source_dir":  "Games/VideoPoker",
+                                        "uses_lib":  true,
+                                        "files":  [
+                                                      "startup.lua",
+                                                      "videopoker.lua"
+                                                  ],
+                                        "config_files":  [
+                                                             "videopoker_config.lua"
+                                                         ],
+                                        "assets":  [
+                                                       "card.nfp",
+                                                       "cardback.nfp",
+                                                       "club.nfp",
+                                                       "clubs.nfp",
+                                                       "diamond.nfp",
+                                                       "diamonds.nfp",
+                                                       "font",
+                                                       "heart.nfp",
+                                                       "hearts.nfp",
+                                                       "spade.nfp",
+                                                       "spades.nfp",
+                                                       "surface"
+                                                   ]
+                                    },
                      "peripheral_info_collector":  {
                                                        "name":  "peripheral_info_collector",
                                                        "version":  "1.0.0",
@@ -149,8 +207,8 @@
                                                    },
                      "test_ccvault":  {
                                           "name":  "test_ccvault",
-                                          "version":  "1.0.1",
-                                          "content_hash":  "e86a7af2f9dbb31b",
+                                          "version":  "1.0.2",
+                                          "content_hash":  "e9db193d54d962dd",
                                           "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
                                           "source_dir":  "Utilities",
                                           "uses_lib":  false,
@@ -166,8 +224,8 @@
                                       },
                      "test_ccvault_full":  {
                                                "name":  "test_ccvault_full",
-                                               "version":  "1.0.1",
-                                               "content_hash":  "dc2c46255e3814de",
+                                               "version":  "1.0.2",
+                                               "content_hash":  "a2ef0cd34e657bca",
                                                "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
                                                "source_dir":  "Utilities",
                                                "uses_lib":  false,
@@ -183,8 +241,8 @@
                                            },
                      "vault_item_analyzer":  {
                                                  "name":  "vault_item_analyzer",
-                                                 "version":  "1.0.1",
-                                                 "content_hash":  "a9ebd5a151c9089c",
+                                                 "version":  "1.0.2",
+                                                 "content_hash":  "7554485565b3757b",
                                                  "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
                                                  "source_dir":  "Utilities",
                                                  "uses_lib":  false,
