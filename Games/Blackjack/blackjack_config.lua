@@ -53,10 +53,10 @@ return {
 
   -- UI layout tweaks (pixel offsets from screen edges)
   LAYOUT = {
-    DEALER_Y          = 2,
+    DEALER_Y          = 5,
     PLAYER_Y_OFFSET   = 2,      -- cards from bottom
     BUTTON_Y_OFFSET   = 14,     -- buttons above player cards
-    DEALER_SCORE_Y    = 8,
+    DEALER_SCORE_Y    = 11,
     SCORE_Y_OFFSET    = 6,
     CARD_SPACING      = 2,      -- px gap between cards
     TABLE_COLOR       = colors.green,

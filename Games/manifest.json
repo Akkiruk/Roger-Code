@@ -33,8 +33,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.1.2",
-                                       "content_hash":  "a3b984425a600fe3",
+                                       "version":  "1.1.3",
+                                       "content_hash":  "6d068170585755db",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
