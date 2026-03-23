@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "craftos-pc",
+      "request": "launch",
+      "name": "Debug Blackjack",
+      "program": "blackjack.lua"
+    },
+    {
+      "type": "craftos-pc",
+      "request": "launch",
+      "name": "Debug Current File",
+      "program": "${file}"
+    }
+  ]
+}

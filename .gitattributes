@@ -1,0 +1,10 @@
+# Lua source code
+*.lua text eol=lf
+
+# NFP paint files (CC pixel art) — treat as text, keep LF
+*.nfp text eol=lf
+
+# CC precompiled assets — treat as binary
+font binary
+gothic binary
+surface binary

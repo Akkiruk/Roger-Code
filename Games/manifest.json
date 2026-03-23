@@ -1,0 +1,129 @@
+﻿{
+    "manifest_version":  1,
+    "installer_version":  "1.0.0",
+    "games":  {
+                  "baccarat":  {
+                                   "name":  "Baccarat",
+                                   "version":  "1.0.0",
+                                   "description":  "Casino Baccarat with betting",
+                                   "source_dir":  "Baccarat",
+                                   "files":  [
+                                                 "baccarat.lua",
+                                                 "startup.lua"
+                                             ],
+                                   "config_files":  [
+                                                        "baccarat_config.lua"
+                                                    ],
+                                   "assets":  [
+                                                  "card.nfp",
+                                                  "cardback.nfp",
+                                                  "club.nfp",
+                                                  "clubs.nfp",
+                                                  "diamond.nfp",
+                                                  "diamonds.nfp",
+                                                  "font",
+                                                  "heart.nfp",
+                                                  "hearts.nfp",
+                                                  "spade.nfp",
+                                                  "spades.nfp",
+                                                  "surface"
+                                              ]
+                               },
+                  "blackjack":  {
+                                    "name":  "Blackjack",
+                                    "version":  "1.0.0",
+                                    "description":  "Casino Blackjack with betting, stats, achievements",
+                                    "source_dir":  "Blackjack",
+                                    "files":  [
+                                                  "blackjack.lua",
+                                                  "startup.lua",
+                                                  "statistics.lua",
+                                                  "stats_ui.lua"
+                                              ],
+                                    "config_files":  [
+                                                         "blackjack_config.lua"
+                                                     ],
+                                    "assets":  [
+                                                   "card.nfp",
+                                                   "cardback.nfp",
+                                                   "club.nfp",
+                                                   "clubs.nfp",
+                                                   "diamond.nfp",
+                                                   "diamonds.nfp",
+                                                   "font",
+                                                   "gothic",
+                                                   "heart.nfp",
+                                                   "hearts.nfp",
+                                                   "logo.nfp",
+                                                   "spade.nfp",
+                                                   "spades.nfp",
+                                                   "surface"
+                                               ]
+                                },
+                  "roulette":  {
+                                   "name":  "Roulette",
+                                   "version":  "1.0.0",
+                                   "description":  "Casino Roulette with betting",
+                                   "source_dir":  "Roulette",
+                                   "files":  [
+                                                 "Roulette.lua",
+                                                 "startup.lua",
+                                                 "ThreeCardPoker.lua"
+                                             ],
+                                   "config_files":  [
+                                                        "roulette_config.lua"
+                                                    ],
+                                   "assets":  [
+                                                  "card.nfp",
+                                                  "cardback.nfp",
+                                                  "font",
+                                                  "surface"
+                                              ]
+                               },
+                  "slots":  {
+                                "name":  "Slots",
+                                "version":  "1.0.0",
+                                "description":  "Casino Slot Machine",
+                                "source_dir":  "Slots",
+                                "files":  [
+                                              "slots.lua",
+                                              "startup.lua",
+                                              "view_art.lua"
+                                          ],
+                                "config_files":  [
+                                                     "slots_config.lua"
+                                                 ],
+                                "assets":  [
+                                               "bar.nfp",
+                                               "bell.nfp",
+                                               "cherry.nfp",
+                                               "diamond.nfp",
+                                               "font",
+                                               "lemon.nfp",
+                                               "melon.nfp",
+                                               "seven.nfp",
+                                               "surface"
+                                           ]
+                            }
+              },
+    "lib":  {
+                "version":  "1.0.0",
+                "files":  [
+                              "achievements.lua",
+                              "alert.lua",
+                              "auto_player.lua",
+                              "betting.lua",
+                              "cards.lua",
+                              "crash_recovery.lua",
+                              "currency.lua",
+                              "game_setup.lua",
+                              "idle_screen.lua",
+                              "peripherals.lua",
+                              "player_detection.lua",
+                              "player_stats.lua",
+                              "safe_runner.lua",
+                              "sound.lua",
+                              "ui.lua"
+                          ]
+            }
+}
