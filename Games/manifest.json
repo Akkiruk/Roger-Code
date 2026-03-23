@@ -5,6 +5,7 @@
                      "baccarat":  {
                                       "name":  "Baccarat",
                                       "version":  "1.1.0",
+                                      "content_hash":  "da066e13797c7bcf",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -33,6 +34,7 @@
                      "blackjack":  {
                                        "name":  "Blackjack",
                                        "version":  "1.1.0",
+                                       "content_hash":  "8a8f4518aa420637",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -65,6 +67,7 @@
                      "roulette":  {
                                       "name":  "Roulette",
                                       "version":  "1.0.0",
+                                      "content_hash":  "8d31642717e11c72",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -86,6 +89,7 @@
                      "slots":  {
                                    "name":  "Slots",
                                    "version":  "1.0.0",
+                                   "content_hash":  "e12bd88a62a3a57c",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -112,6 +116,7 @@
                      "taskmaster":  {
                                         "name":  "TaskMaster",
                                         "version":  "1.0.0",
+                                        "content_hash":  "028199a3c01752c3",
                                         "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
                                         "source_dir":  "Games/TaskMaster",
                                         "uses_lib":  false,
@@ -128,6 +133,7 @@
                      "peripheral_info_collector":  {
                                                        "name":  "peripheral_info_collector",
                                                        "version":  "1.0.0",
+                                                       "content_hash":  "ff1b520a22d89911",
                                                        "description":  "Gathers detailed information about all attached peripherals, including methods and documentation,",
                                                        "source_dir":  "Utilities",
                                                        "uses_lib":  false,
@@ -144,6 +150,7 @@
                      "test_ccvault":  {
                                           "name":  "test_ccvault",
                                           "version":  "1.0.0",
+                                          "content_hash":  "e86a7af2f9dbb31b",
                                           "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
                                           "source_dir":  "Utilities",
                                           "uses_lib":  false,
@@ -160,6 +167,7 @@
                      "test_ccvault_full":  {
                                                "name":  "test_ccvault_full",
                                                "version":  "1.0.0",
+                                               "content_hash":  "dc2c46255e3814de",
                                                "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
                                                "source_dir":  "Utilities",
                                                "uses_lib":  false,
@@ -176,6 +184,7 @@
                  },
     "lib":  {
                 "version":  "1.1.0",
+                "content_hash":  "1b7ba2fd3b866589",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",

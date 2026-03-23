@@ -491,10 +491,10 @@ local function baccaratRound(betAmount, betType, escrowId)
       currency.cancelEscrow(escrowId, "baccarat push")
     else
       -- Win: resolve escrow to player (bet returned) + payout profit separately
-      currency.resolveEscrow(escrowId, "player", "baccarat bet returned")
+      currency.resolveEscrow(escrowId, "player", "baccarat win")
       local profit = payout - betAmount
       if profit > 0 then
-        local payOk = currency.payout(profit, "baccarat winnings")
+        local payOk = currency.payout(profit, "baccarat win")
         if not payOk then
           alert.send("CRITICAL: Failed to pay " .. profit .. " tokens to player!")
           alert.log("Payout failure: " .. profit .. " tokens, outcome=" .. outcome)

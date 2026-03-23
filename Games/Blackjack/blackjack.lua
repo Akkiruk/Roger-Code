@@ -410,7 +410,7 @@ local function doCheckNaturals(ctx)
     end
     -- Insurance win: resolve to player + pay winnings
     if ctx.insuranceBet > 0 and ctx.insuranceEscrowId then
-      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance returned")
+      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance win")
       if not currency.payout(ctx.insuranceBet * 2, "blackjack insurance win") then
         alert.send("CRITICAL: Failed to pay insurance " .. (ctx.insuranceBet * 2) .. " tokens")
       end
@@ -429,7 +429,7 @@ local function doCheckNaturals(ctx)
     sound.play(sound.SOUNDS.SUCCESS)
     -- Resolve escrow to player (bet returned) + pay natural bonus
     for _, eid in ipairs(ctx.hands[1].escrowIds or {}) do
-      currency.resolveEscrow(eid, "player", "blackjack bet returned")
+      currency.resolveEscrow(eid, "player", "blackjack natural")
     end
     local bonus = math.floor(ctx.hands[1].bet * cfg.BLACKJACK_PAYOUT)
     if not currency.payout(bonus, "blackjack natural") then
@@ -453,7 +453,7 @@ local function doCheckNaturals(ctx)
     end
     -- Insurance win: resolve to player + pay winnings
     if ctx.insuranceBet > 0 and ctx.insuranceEscrowId then
-      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance returned")
+      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance win")
       if not currency.payout(ctx.insuranceBet * 2, "blackjack insurance win") then
         alert.send("CRITICAL: Failed to pay insurance " .. (ctx.insuranceBet * 2) .. " tokens")
       end
@@ -784,7 +784,7 @@ local function resolveHandOutcomes(ctx, dealerTotal, dealerBusted)
       totalNetChange = totalNetChange + hand.bet
       -- Resolve escrows to player (bet returned) + payout winnings
       for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "player", "blackjack bet returned")
+        currency.resolveEscrow(eid, "player", "blackjack win")
       end
       if not currency.payout(hand.bet, "blackjack win") then
         alert.send("CRITICAL: Failed to pay " .. hand.bet .. " tokens")
@@ -793,7 +793,7 @@ local function resolveHandOutcomes(ctx, dealerTotal, dealerBusted)
       hand.outcome = OUT.PLAYER_WIN
       totalNetChange = totalNetChange + hand.bet
       for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "player", "blackjack bet returned")
+        currency.resolveEscrow(eid, "player", "blackjack win")
       end
       if not currency.payout(hand.bet, "blackjack win") then
         alert.send("CRITICAL: Failed to pay " .. hand.bet .. " tokens")

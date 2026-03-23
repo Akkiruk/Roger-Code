@@ -2,6 +2,7 @@
 .SYNOPSIS
   Regenerates Games/manifest.json from the actual file tree.
   Auto-discovers ALL programs — any subfolder with .lua files becomes installable.
+  Automatically bumps version numbers when file content changes (hash-based).
   Run this after adding or removing files, then commit the result.
 
 .EXAMPLE
@@ -20,7 +21,7 @@ $UtilitiesDir = Join-Path $RootDir "Utilities"
 $SkipPatterns = @("*.bak", "*.old", "debug.txt", "*.log", "*.md", "manifest.json", "installer.lua")
 
 # Directories that are not programs (shared support dirs or non-code)
-$SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules")
+$SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules", "emulator")
 
 function Test-SkipFile {
     param([string]$Name)
@@ -89,6 +90,82 @@ function Get-ProgramDescription {
     return ""
 }
 
+# ── Hashing & auto-versioning ──────────────────────────────────────────────
+
+# Compute a content hash for a list of files (sorted by name for determinism)
+function Get-ContentHash {
+    param([string[]]$FilePaths)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $sorted = $FilePaths | Sort-Object
+    foreach ($fp in $sorted) {
+        if (Test-Path $fp) {
+            $bytes = [System.IO.File]::ReadAllBytes($fp)
+            [void]$sha.TransformBlock($bytes, 0, $bytes.Length, $bytes, 0)
+        }
+    }
+    [void]$sha.TransformFinalBlock(@(), 0, 0)
+    $hashStr = [BitConverter]::ToString($sha.Hash).Replace("-", "").ToLower()
+    $sha.Dispose()
+    return $hashStr.Substring(0, 16)  # 16-char hex prefix is plenty
+}
+
+# Bump the patch component of a semver string
+function Bump-PatchVersion {
+    param([string]$Version)
+    $parts = $Version -split '\.'
+    if ($parts.Count -ne 3) { return "1.0.1" }
+    $parts[2] = [string]([int]$parts[2] + 1)
+    return $parts -join '.'
+}
+
+# Read the existing manifest to preserve versions and compare hashes
+$outPath = Join-Path $GamesDir "manifest.json"
+$oldManifest = $null
+if (Test-Path $outPath) {
+    try {
+        $oldManifest = Get-Content $outPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } catch {
+        Write-Warning "Could not parse existing manifest, starting fresh"
+    }
+}
+
+# Helper: get old version + hash for a program or lib
+function Get-OldEntry {
+    param([string]$Key, [switch]$IsLib)
+    if (-not $oldManifest) { return @{ version = "1.0.0"; content_hash = "" } }
+    if ($IsLib) {
+        $v = if ($oldManifest.lib.version) { $oldManifest.lib.version } else { "1.0.0" }
+        $h = if ($oldManifest.lib.content_hash) { $oldManifest.lib.content_hash } else { "" }
+        return @{ version = $v; content_hash = $h }
+    }
+    $prog = $null
+    if ($oldManifest.programs.PSObject.Properties.Name -contains $Key) {
+        $prog = $oldManifest.programs.$Key
+    }
+    if ($prog) {
+        $v = if ($prog.version) { $prog.version } else { "1.0.0" }
+        $h = if ($prog.content_hash) { $prog.content_hash } else { "" }
+        return @{ version = $v; content_hash = $h }
+    }
+    return @{ version = "1.0.0"; content_hash = "" }
+}
+
+# Resolve version: bump patch if hash changed, keep if same, start at 1.0.0 if new
+function Resolve-Version {
+    param([string]$Key, [string]$NewHash, [switch]$IsLib)
+    $old = Get-OldEntry -Key $Key -IsLib:$IsLib
+    if ($old.content_hash -eq "") {
+        # New entry or no hash stored — keep existing version, store hash
+        return $old.version
+    }
+    if ($old.content_hash -eq $NewHash) {
+        return $old.version
+    }
+    # Hash changed — auto-bump
+    $bumped = Bump-PatchVersion $old.version
+    return $bumped
+}
+
 # ── Build manifest ─────────────────────────────────────────────────────────
 
 # Read installer version from installer.lua itself
@@ -106,8 +183,9 @@ $manifest = [ordered]@{
     installer_version = $installerVersion
     programs          = [ordered]@{}
     lib               = [ordered]@{
-        version = "1.0.0"
-        files   = @()
+        version      = "1.0.0"
+        content_hash = ""
+        files        = @()
     }
 }
 
@@ -144,9 +222,18 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
     # Determine source_dir relative to repo root for the installer URL
     $relPath = $dir.FullName.Replace($RootDir, "").TrimStart("\", "/").Replace("\", "/")
 
+    # Compute content hash from all code + config files (not assets — those rarely change and are large)
+    $hashFiles = @()
+    foreach ($f in ($discovered.files + $discovered.config_files)) {
+        $hashFiles += Join-Path $dir.FullName $f
+    }
+    $contentHash = Get-ContentHash -FilePaths $hashFiles
+    $version = Resolve-Version -Key $key -NewHash $contentHash
+
     $manifest.programs[$key] = [ordered]@{
         name         = $dir.Name
-        version      = "1.0.0"
+        version      = $version
+        content_hash = $contentHash
         description  = $desc
         source_dir   = $relPath
         uses_lib     = $usesLib
@@ -155,8 +242,17 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
         assets       = $discovered.assets
     }
 
+    # Show version bump info
+    $old = Get-OldEntry -Key $key
+    $versionTag = "v$version"
+    if ($old.content_hash -ne "" -and $old.content_hash -ne $contentHash) {
+        $versionTag = "v$($old.version) -> v$version (auto-bumped)"
+    } elseif ($old.content_hash -eq "") {
+        $versionTag = "v$version (new hash)"
+    }
+
     $libTag = if ($usesLib) { " [+lib]" } else { "" }
-    Write-Host "  $($dir.Name): $($discovered.files.Count) lua, $($discovered.config_files.Count) config, $($discovered.assets.Count) assets$libTag"
+    Write-Host "  $($dir.Name): $($discovered.files.Count) lua, $($discovered.config_files.Count) config, $($discovered.assets.Count) assets$libTag  $versionTag"
 }
 
 # Standalone utility scripts (single .lua files, no folder)
@@ -173,9 +269,13 @@ foreach ($file in $standaloneUtils) {
         }
     }
 
+    $contentHash = Get-ContentHash -FilePaths @($file.FullName)
+    $version = Resolve-Version -Key $key -NewHash $contentHash
+
     $manifest.programs[$key] = [ordered]@{
         name         = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-        version      = "1.0.0"
+        version      = $version
+        content_hash = $contentHash
         description  = $desc
         source_dir   = "Utilities"
         uses_lib     = $false
@@ -183,15 +283,29 @@ foreach ($file in $standaloneUtils) {
         config_files = @()
         assets       = @()
     }
-    Write-Host "  $($file.Name): standalone utility"
+    Write-Host "  $($file.Name): standalone utility  v$version"
 }
 
 # Discover shared lib files
 $libDir = Join-Path $GamesDir "lib"
 if (Test-Path $libDir) {
     $libFiles = @(Get-ChildItem $libDir -File -Filter "*.lua" | ForEach-Object { $_.Name } | Sort-Object)
+    $libPaths = @(Get-ChildItem $libDir -File -Filter "*.lua" | ForEach-Object { $_.FullName })
+    $libHash = Get-ContentHash -FilePaths $libPaths
+    $libVersion = Resolve-Version -Key "lib" -NewHash $libHash -IsLib
+
+    $manifest.lib.version = $libVersion
+    $manifest.lib.content_hash = $libHash
     $manifest.lib.files = $libFiles
-    Write-Host "  lib/: $($libFiles.Count) shared modules"
+
+    $oldLib = Get-OldEntry -Key "lib" -IsLib
+    $libTag = "v$libVersion"
+    if ($oldLib.content_hash -ne "" -and $oldLib.content_hash -ne $libHash) {
+        $libTag = "v$($oldLib.version) -> v$libVersion (auto-bumped)"
+    } elseif ($oldLib.content_hash -eq "") {
+        $libTag = "v$libVersion (new hash)"
+    }
+    Write-Host "  lib/: $($libFiles.Count) shared modules  $libTag"
 }
 
 # ── Write JSON ─────────────────────────────────────────────────────────────
@@ -203,4 +317,4 @@ $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 
 Write-Host ""
 Write-Host "Wrote $outPath" -ForegroundColor Green
-Write-Host "Remember to bump version numbers when making releases!"
+Write-Host "Versions are auto-bumped when file content changes." -ForegroundColor Gray
