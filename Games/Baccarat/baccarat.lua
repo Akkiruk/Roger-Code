@@ -39,6 +39,7 @@ local alert      = require("lib.alert")
 local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
+local cardAnim   = require("lib.card_anim")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -79,6 +80,8 @@ local width    = env.width
 local height   = env.height
 local cardBack = env.cardBack
 local font     = env.font
+
+cardAnim.init(screen, cardBack)
 
 -----------------------------------------------------
 -- Host balance tracking
@@ -201,7 +204,7 @@ local function drawHand(hand, centerHandX, y)
   end
 end
 
-local function renderTable(playerHand, bankerHand, betType, betAmount, statusText)
+local function renderTableBase(playerHand, bankerHand, betType, betAmount, statusText)
   screen:clear(LO.TABLE_COLOR)
 
   -- Bet display
@@ -238,7 +241,10 @@ local function renderTable(playerHand, bankerHand, betType, betAmount, statusTex
     local tw = ui.getTextSize(statusText)
     screen:drawText(statusText, font, math.floor((width - tw) / 2), statusY, colors.yellow)
   end
+end
 
+local function renderTable(playerHand, bankerHand, betType, betAmount, statusText)
+  renderTableBase(playerHand, bankerHand, betType, betAmount, statusText)
   screen:output()
 end
 
@@ -298,15 +304,62 @@ local function baccaratRound(betAmount, betType, escrowId)
   local bankerHand = {}
   local roundStart = epoch("local")
 
-  -- Initial deal: 2 cards each, alternating (player, banker, player, banker)
-  playerHand[1] = dealOne()
-  bankerHand[1] = dealOne()
-  playerHand[2] = dealOne()
-  bankerHand[2] = dealOne()
+  -- Pre-deal all 4 cards
+  local p1 = dealOne()
+  local b1 = dealOne()
+  local p2 = dealOne()
+  local b2 = dealOne()
 
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  if not AUTO_PLAY then
+    -- Animated deal: slide each card in one at a time
+    -- Precompute final card positions (2 cards each, centered on their area)
+    local pTotalW = 2 * deltaX - LO.CARD_SPACING
+    local pStartX = playerAreaX - math.floor(pTotalW / 2)
+    local bStartX = bankerAreaX - math.floor(pTotalW / 2)
+
+    -- Track visible cards for the background
+    local visPlayer = {}
+    local visBanker = {}
+
+    local betLabel = "Bet: " .. currency.formatTokens(betAmount) .. " on " .. string.upper(betType)
+    local plW = ui.getTextSize("PLAYER")
+    local blW = ui.getTextSize("BANKER")
+
+    local function bgRender()
+      screen:clear(LO.TABLE_COLOR)
+      screen:drawText(betLabel, font, 1, 0, colors.white)
+      screen:drawText("PLAYER", font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
+      screen:drawText("BANKER", font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
+      for i, cid in ipairs(visPlayer) do
+        screen:drawSurface(cards.renderCard(cid), pStartX + (i - 1) * deltaX, cardsY)
+      end
+      for i, cid in ipairs(visBanker) do
+        screen:drawSurface(cards.renderCard(cid), bStartX + (i - 1) * deltaX, cardsY)
+      end
+    end
+
+    -- Deal order: player1, banker1, player2, banker2
+    cardAnim.slideIn(cards.renderCard(p1), pStartX, cardsY, bgRender)
+    table.insert(visPlayer, p1)
+
+    cardAnim.slideIn(cards.renderCard(b1), bStartX, cardsY, bgRender)
+    table.insert(visBanker, b1)
+
+    cardAnim.slideIn(cards.renderCard(p2), pStartX + deltaX, cardsY, bgRender)
+    table.insert(visPlayer, p2)
+
+    cardAnim.slideIn(cards.renderCard(b2), bStartX + deltaX, cardsY, bgRender)
+    table.insert(visBanker, b2)
+  else
+    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  end
+
+  -- Set final hands
+  playerHand = { p1, p2 }
+  bankerHand = { b1, b2 }
+
   renderTable(playerHand, bankerHand, betType, betAmount, nil)
-  os.sleep(0.6)
+  os.sleep(0.4)
 
   local playerTotal = baccaratHandTotal(playerHand)
   local bankerTotal = baccaratHandTotal(bankerHand)
@@ -322,18 +375,47 @@ local function baccaratRound(betAmount, betType, escrowId)
       local third = dealOne()
       table.insert(playerHand, third)
       playerThirdValue = baccaratCardValue(third)
-      sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+
+      if not AUTO_PLAY then
+        -- Animate the third card
+        local nCards = #playerHand
+        local totalW = nCards * deltaX - LO.CARD_SPACING
+        local startX = playerAreaX - math.floor(totalW / 2)
+        local toX = startX + (nCards - 1) * deltaX
+        local savedCard = table.remove(playerHand)
+        cardAnim.slideIn(cards.renderCard(savedCard), toX, cardsY, function()
+          renderTableBase(playerHand, bankerHand, betType, betAmount, nil)
+        end)
+        table.insert(playerHand, savedCard)
+      else
+        sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+      end
+
       renderTable(playerHand, bankerHand, betType, betAmount, nil)
-      os.sleep(0.5)
+      os.sleep(0.4)
       playerTotal = baccaratHandTotal(playerHand)
     end
 
     -- Banker third card rule
     if bankerDrawsThird(bankerTotal, playerThirdValue) then
       table.insert(bankerHand, dealOne())
-      sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+
+      if not AUTO_PLAY then
+        local nCards = #bankerHand
+        local totalW = nCards * deltaX - LO.CARD_SPACING
+        local startX = bankerAreaX - math.floor(totalW / 2)
+        local toX = startX + (nCards - 1) * deltaX
+        local savedCard = table.remove(bankerHand)
+        cardAnim.slideIn(cards.renderCard(savedCard), toX, cardsY, function()
+          renderTableBase(playerHand, bankerHand, betType, betAmount, nil)
+        end)
+        table.insert(bankerHand, savedCard)
+      else
+        sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+      end
+
       renderTable(playerHand, bankerHand, betType, betAmount, nil)
-      os.sleep(0.5)
+      os.sleep(0.4)
       bankerTotal = baccaratHandTotal(bankerHand)
     end
   end
@@ -409,10 +491,10 @@ local function baccaratRound(betAmount, betType, escrowId)
       currency.cancelEscrow(escrowId, "baccarat push")
     else
       -- Win: resolve escrow to player (bet returned) + payout profit separately
-      currency.resolveEscrow(escrowId, "player", "baccarat win")
+      currency.resolveEscrow(escrowId, "player", "baccarat bet returned")
       local profit = payout - betAmount
       if profit > 0 then
-        local payOk = currency.payout(profit, "baccarat win")
+        local payOk = currency.payout(profit, "baccarat winnings")
         if not payOk then
           alert.send("CRITICAL: Failed to pay " .. profit .. " tokens to player!")
           alert.log("Payout failure: " .. profit .. " tokens, outcome=" .. outcome)

@@ -43,6 +43,7 @@ local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local autoPlayer = require("lib.auto_player")
+local cardAnim   = require("lib.card_anim")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -91,6 +92,8 @@ local width    = env.width
 local height   = env.height
 local cardBack = env.cardBack
 local font     = env.font
+
+cardAnim.init(screen, cardBack)
 
 -----------------------------------------------------
 -- Host balance tracking
@@ -192,7 +195,7 @@ local layout  = {
 -----------------------------------------------------
 -- Render
 -----------------------------------------------------
-local function renderTable(ctx, hideDealer, statusText)
+local function renderTableBase(ctx, hideDealer, statusText)
   screen:clear(LO.TABLE_COLOR)
 
   -- Bet display
@@ -242,7 +245,10 @@ local function renderTable(ctx, hideDealer, statusText)
     local tw = ui.getTextSize(statusText)
     screen:drawText(statusText, font, math.floor((width - tw) / 2), layout.statusY, colors.yellow)
   end
+end
 
+local function renderTable(ctx, hideDealer, statusText)
+  renderTableBase(ctx, hideDealer, statusText)
   screen:output()
 end
 
@@ -282,10 +288,54 @@ end
 -- State: DEAL
 -----------------------------------------------------
 local function doDeal(ctx)
-  ctx.hands[1].cards = { dealOne(), dealOne() }
-  ctx.dealerHand = { dealOne(), dealOne() }
+  -- Pre-deal all 4 cards
+  local p1 = dealOne()
+  local d1 = dealOne()
+  local p2 = dealOne()
+  local d2 = dealOne()
 
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  if not AUTO_PLAY then
+    -- Animated deal: slide each card in one at a time
+    -- Precompute final positions (2 cards each, centered)
+    local playerStartX = math.floor((width - (2 * deltaX)) / 2)
+    local dealerStartX = math.floor((width - (2 * deltaX)) / 2)
+
+    -- Track which cards are visible for the background render
+    local visiblePlayer = {}
+    local visibleDealer = {}
+
+    local betStr = "Bet: " .. currency.formatTokens(ctx.hands[1].bet)
+    local function bgRender()
+      screen:clear(LO.TABLE_COLOR)
+      screen:drawText(betStr, font, 1, 0, colors.white)
+      for i, cid in ipairs(visiblePlayer) do
+        screen:drawSurface(cards.renderCard(cid), playerStartX + (i - 1) * deltaX, layout.playerY)
+      end
+      for i, cid in ipairs(visibleDealer) do
+        local img = (i == 1) and cardBack or cards.renderCard(cid)
+        screen:drawSurface(img, dealerStartX + (i - 1) * deltaX, layout.dealerY)
+      end
+    end
+
+    -- Deal order: player1, dealer1 (face-down), player2, dealer2 (face-up)
+    cardAnim.slideIn(cards.renderCard(p1), playerStartX, layout.playerY, bgRender)
+    table.insert(visiblePlayer, p1)
+
+    cardAnim.slideIn(cardBack, dealerStartX, layout.dealerY, bgRender)
+    table.insert(visibleDealer, d1)
+
+    cardAnim.slideIn(cards.renderCard(p2), playerStartX + deltaX, layout.playerY, bgRender)
+    table.insert(visiblePlayer, p2)
+
+    cardAnim.slideIn(cards.renderCard(d2), dealerStartX + deltaX, layout.dealerY, bgRender)
+    table.insert(visibleDealer, d2)
+  else
+    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  end
+
+  -- Set final hand state
+  ctx.hands[1].cards = { p1, p2 }
+  ctx.dealerHand = { d1, d2 }
 
   -- Record initial hand total (for houdini check)
   local initTotal = cards.blackjackValue(ctx.hands[1].cards)
@@ -360,7 +410,7 @@ local function doCheckNaturals(ctx)
     end
     -- Insurance win: resolve to player + pay winnings
     if ctx.insuranceBet > 0 and ctx.insuranceEscrowId then
-      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance win")
+      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance returned")
       if not currency.payout(ctx.insuranceBet * 2, "blackjack insurance win") then
         alert.send("CRITICAL: Failed to pay insurance " .. (ctx.insuranceBet * 2) .. " tokens")
       end
@@ -379,7 +429,7 @@ local function doCheckNaturals(ctx)
     sound.play(sound.SOUNDS.SUCCESS)
     -- Resolve escrow to player (bet returned) + pay natural bonus
     for _, eid in ipairs(ctx.hands[1].escrowIds or {}) do
-      currency.resolveEscrow(eid, "player", "blackjack natural")
+      currency.resolveEscrow(eid, "player", "blackjack bet returned")
     end
     local bonus = math.floor(ctx.hands[1].bet * cfg.BLACKJACK_PAYOUT)
     if not currency.payout(bonus, "blackjack natural") then
@@ -403,7 +453,7 @@ local function doCheckNaturals(ctx)
     end
     -- Insurance win: resolve to player + pay winnings
     if ctx.insuranceBet > 0 and ctx.insuranceEscrowId then
-      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance win")
+      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "insurance returned")
       if not currency.payout(ctx.insuranceBet * 2, "blackjack insurance win") then
         alert.send("CRITICAL: Failed to pay insurance " .. (ctx.insuranceBet * 2) .. " tokens")
       end
@@ -432,7 +482,34 @@ local function executeHit(hand, ctx, handIdx)
   hand.hitCount = hand.hitCount + 1
   hand.lastAction = ACT.HIT
   table.insert(ctx.actionLog, { action = ACT.HIT, handIdx = handIdx, time = epoch("local") })
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+
+  if not AUTO_PLAY then
+    -- Animate the new card sliding in
+    local nCards = #hand.cards
+    local toX, toY
+    if #ctx.hands == 1 then
+      local startX = math.floor((width - (nCards * deltaX)) / 2)
+      toX = startX + (nCards - 1) * deltaX
+    else
+      local baseX
+      if handIdx == 1 then
+        baseX = math.floor(width / 4) - math.floor((nCards * deltaX) / 2)
+      else
+        baseX = math.floor(width * 3 / 4) - math.floor((nCards * deltaX) / 2)
+      end
+      toX = baseX + (nCards - 1) * deltaX
+    end
+    toY = layout.playerY
+    local newCard = hand.cards[nCards]
+    local savedCard = table.remove(hand.cards)
+    cardAnim.slideIn(cards.renderCard(newCard), toX, toY, function()
+      renderTableBase(ctx, true, nil)
+    end)
+    table.insert(hand.cards, savedCard)
+  else
+    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  end
+
   local t = cards.blackjackValue(hand.cards)
   if t > 21 then hand.busted = true; return true end
   if t == 21 then return true end
@@ -456,7 +533,21 @@ local function executeDouble(hand, ctx, handIdx)
   table.insert(ctx.actionLog, { action = ACT.DOUBLE, handIdx = handIdx, time = epoch("local") })
   recovery.addEscrow(dblEscId, additionalBet, "double")
   table.insert(hand.cards, dealOne())
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+
+  if not AUTO_PLAY then
+    local nCards = #hand.cards
+    local startX = math.floor((width - (nCards * deltaX)) / 2)
+    local toX = startX + (nCards - 1) * deltaX
+    local newCard = hand.cards[nCards]
+    local savedCard = table.remove(hand.cards)
+    cardAnim.slideIn(cards.renderCard(newCard), toX, layout.playerY, function()
+      renderTableBase(ctx, true, nil)
+    end)
+    table.insert(hand.cards, savedCard)
+  else
+    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  end
+
   local t = cards.blackjackValue(hand.cards)
   if t > 21 then hand.busted = true end
   return true
@@ -482,7 +573,30 @@ local function executeSplit(hand, ctx, handIdx)
   table.insert(ctx.actionLog, { action = ACT.SPLIT, handIdx = handIdx, time = epoch("local") })
   recovery.addEscrow(splitEscId, splitBet, "split")
   table.insert(ctx.hands, handIdx + 1, newHand)
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+
+  if not AUTO_PLAY then
+    -- Animate the two new cards dealt to each split hand
+    -- Hand 1 (left): second card slides in
+    local h1Cards = hand.cards
+    local base1 = math.floor(width / 4) - math.floor((#h1Cards * deltaX) / 2)
+    local saved1 = table.remove(hand.cards)
+    cardAnim.slideIn(cards.renderCard(saved1), base1 + (#hand.cards) * deltaX, layout.playerY, function()
+      renderTableBase(ctx, true, nil)
+    end)
+    table.insert(hand.cards, saved1)
+
+    -- Hand 2 (right): second card slides in
+    local h2Cards = newHand.cards
+    local base2 = math.floor(width * 3 / 4) - math.floor((#h2Cards * deltaX) / 2)
+    local saved2 = table.remove(newHand.cards)
+    cardAnim.slideIn(cards.renderCard(saved2), base2 + (#newHand.cards) * deltaX, layout.playerY, function()
+      renderTableBase(ctx, true, nil)
+    end)
+    table.insert(newHand.cards, saved2)
+  else
+    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  end
+
   return false -- stay on current hand
 end
 
@@ -628,9 +742,24 @@ local function doDealerTurn(ctx)
                     or (cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and isSoft)
     if not mustHit then break end
     table.insert(ctx.dealerHand, dealOne())
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-    renderTable(ctx, false, nil)
-    os.sleep(0.5)
+
+    if not AUTO_PLAY then
+      local nCards = #ctx.dealerHand
+      local dealerStartX = math.floor((width - (nCards * deltaX)) / 2)
+      local toX = dealerStartX + (nCards - 1) * deltaX
+      local newCard = ctx.dealerHand[nCards]
+      local savedCard = table.remove(ctx.dealerHand)
+      cardAnim.slideIn(cards.renderCard(newCard), toX, layout.dealerY, function()
+        renderTableBase(ctx, false, nil)
+      end)
+      table.insert(ctx.dealerHand, savedCard)
+      renderTable(ctx, false, nil)
+      os.sleep(0.3)
+    else
+      sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+      renderTable(ctx, false, nil)
+      os.sleep(0.5)
+    end
   end
 
   return "resolve"
@@ -655,7 +784,7 @@ local function resolveHandOutcomes(ctx, dealerTotal, dealerBusted)
       totalNetChange = totalNetChange + hand.bet
       -- Resolve escrows to player (bet returned) + payout winnings
       for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "player", "blackjack win")
+        currency.resolveEscrow(eid, "player", "blackjack bet returned")
       end
       if not currency.payout(hand.bet, "blackjack win") then
         alert.send("CRITICAL: Failed to pay " .. hand.bet .. " tokens")
@@ -664,7 +793,7 @@ local function resolveHandOutcomes(ctx, dealerTotal, dealerBusted)
       hand.outcome = OUT.PLAYER_WIN
       totalNetChange = totalNetChange + hand.bet
       for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "player", "blackjack win")
+        currency.resolveEscrow(eid, "player", "blackjack bet returned")
       end
       if not currency.payout(hand.bet, "blackjack win") then
         alert.send("CRITICAL: Failed to pay " .. hand.bet .. " tokens")
