@@ -317,7 +317,7 @@ end
 -----------------------------------------------------
 -- Tutorial / How to play screens
 -----------------------------------------------------
-local LINE_H = 8
+local LINE_H = 9
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
@@ -328,40 +328,49 @@ local TUTORIAL_PAGES = {
   {
     title = "THE BASICS",
     lines = {
-      { text = "Baccarat is simple:",  color = colors.white },
-      { text = "Pick PLAYER, BANKER,", color = colors.white },
-      { text = "or TIE before cards",  color = colors.white },
-      { text = "are dealt.",           color = colors.white },
-      { text = "",                      color = colors.white },
-      { text = "Hand closest to 9",    color = colors.yellow },
-      { text = "wins! You just bet",   color = colors.yellow },
-      { text = "on the outcome.",      color = colors.yellow },
+      { text = "Pick PLAYER, BANKER", color = colors.white },
+      { text = "or TIE before the",   color = colors.white },
+      { text = "cards are dealt.",    color = colors.white },
+      { text = "",                     color = colors.white },
+      { text = "Closest to 9 wins!",  color = colors.yellow },
+      { text = "You just bet on",     color = colors.yellow },
+      { text = "the outcome.",        color = colors.yellow },
     },
   },
   {
     title = "CARD VALUES",
     lines = {
-      { text = "Ace = 1 point",       color = colors.cyan },
-      { text = "2 - 9 = face value",  color = colors.white },
-      { text = "10, J, Q, K = 0",     color = colors.lightGray },
-      { text = "",                     color = colors.white },
-      { text = "Only ones digit counts", color = colors.yellow },
-      { text = "7 + 8 = 15 -> 5",     color = colors.yellow },
-      { text = "Best hand: Natural 9", color = colors.lime },
-      { text = "(8 or 9 on first 2)", color = colors.lime },
+      { text = "Ace = 1 point",      color = colors.cyan },
+      { text = "2-9 = face value",   color = colors.white },
+      { text = "10,J,Q,K = 0",       color = colors.lightGray },
+      { text = "",                    color = colors.white },
+      { text = "Only ones digit",    color = colors.yellow },
+      { text = "counts: 7+8=15->5",  color = colors.yellow },
     },
   },
   {
-    title = "PAYOUTS & TIPS",
+    title = "NATURALS",
     lines = {
-      { text = "PLAYER: pays 1:1",     color = colors.cyan },
-      { text = "BANKER: pays 1:1",     color = colors.red },
-      { text = "  minus 5% commission", color = colors.red },
-      { text = "TIE: pays 8:1",        color = colors.yellow },
-      { text = "  (risky - rare hit!)", color = colors.yellow },
-      { text = "",                      color = colors.white },
-      { text = "Tip: Banker bet has",  color = colors.lime },
-      { text = "the best odds!",       color = colors.lime },
+      { text = "8 or 9 on the",      color = colors.lime },
+      { text = "first 2 cards is",   color = colors.lime },
+      { text = "a Natural - best",   color = colors.lime },
+      { text = "possible hand!",     color = colors.lime },
+      { text = "",                    color = colors.white },
+      { text = "No extra cards",     color = colors.white },
+      { text = "are drawn.",         color = colors.white },
+    },
+  },
+  {
+    title = "PAYOUTS",
+    lines = {
+      { text = "PLAYER: 1:1",        color = colors.cyan },
+      { text = "BANKER: 1:1",        color = colors.red },
+      { text = " minus 5% fee",      color = colors.red },
+      { text = "TIE: 8:1",           color = colors.yellow },
+      { text = " (risky-rare!)",     color = colors.yellow },
+      { text = "",                    color = colors.white },
+      { text = "Tip: BANKER has",    color = colors.lime },
+      { text = "the best odds!",     color = colors.lime },
     },
   },
 }
@@ -381,26 +390,29 @@ local function showTutorial()
 
     -- Content lines
     local contentY = 18
-    for i, ln in ipairs(pg.lines) do
+    local lineIdx = 0
+    for _, ln in ipairs(pg.lines) do
       if ln.text ~= "" then
-        drawCenteredLine(ln.text, contentY + (i - 1) * LINE_H, ln.color)
+        drawCenteredLine(ln.text, contentY + lineIdx * LINE_H, ln.color)
       end
+      lineIdx = lineIdx + 1
     end
 
-    -- Navigation buttons
+    -- Navigation buttons (ensure they don't overlap content)
+    local btnY = math.max(contentY + lineIdx * LINE_H + 4, height - 12)
     ui.clearButtons()
     local navRow = {}
     if page > 1 then
-      table.insert(navRow, { text = "PREV", color = colors.lightGray,
+      table.insert(navRow, { text = "<", color = colors.lightGray,
         func = function() page = page - 1 end })
     end
     table.insert(navRow, { text = "BACK", color = colors.red,
       func = function() page = nil end })
     if page < #TUTORIAL_PAGES then
-      table.insert(navRow, { text = "NEXT", color = colors.lime,
+      table.insert(navRow, { text = ">", color = colors.lime,
         func = function() page = page + 1 end })
     end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, height - 10, 8, 4)
+    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, 8, 4)
 
     screen:output()
     ui.waitForButton(0, 0)
@@ -422,32 +434,26 @@ local function showStats()
     y = y + LINE_H
   end
 
-  statLine("Hands Played", sessionStats.hands, colors.white)
+  statLine("Hands", sessionStats.hands, colors.white)
 
-  local winCount = 0
-  local lossCount = 0
-  for i = 1, sessionStats.hands do os.sleep(0) end  -- yield placeholder
-  -- Calculate wins/losses from the player's perspective (bets that paid out)
-  winCount = sessionStats.totalWon > 0 and sessionStats.hands or 0
-  -- Actually, simpler: use net profit to show win rate
   local profitColor = colors.white
   if sessionStats.netProfit > 0 then
     profitColor = colors.lime
   elseif sessionStats.netProfit < 0 then
     profitColor = colors.red
   end
-  statLine("Net Profit", currency.formatTokens(sessionStats.netProfit), profitColor)
-  statLine("Total Wagered", currency.formatTokens(sessionStats.totalBet), colors.white)
+  statLine("Profit", currency.formatTokens(sessionStats.netProfit), profitColor)
+  statLine("Wagered", currency.formatTokens(sessionStats.totalBet), colors.white)
 
   if sessionStats.biggestWin > 0 then
-    statLine("Biggest Win", currency.formatTokens(sessionStats.biggestWin), colors.lime)
+    statLine("Best Win", currency.formatTokens(sessionStats.biggestWin), colors.lime)
   end
 
   y = y + 2
   drawCenteredLine("-- OUTCOMES --", y, colors.yellow)
   y = y + LINE_H
-  statLine("Player Wins", sessionStats.playerWins, colors.cyan)
-  statLine("Banker Wins", sessionStats.bankerWins, colors.red)
+  statLine("Player", sessionStats.playerWins, colors.cyan)
+  statLine("Banker", sessionStats.bankerWins, colors.red)
   statLine("Ties", sessionStats.ties, colors.yellow)
 
   if sessionStats.bestStreak > 1 then
@@ -474,7 +480,7 @@ local function selectBetType()
     screen:drawText(title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
 
     -- Brief hint for new players
-    local hint = "Pick who wins - closest to 9!"
+    local hint = "Closest to 9 wins!"
     local hw = ui.getTextSize(hint)
     screen:drawText(hint, font, math.floor((width - hw) / 2), math.floor(height * 0.22), colors.lightGray)
 
