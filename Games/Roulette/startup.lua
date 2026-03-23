@@ -8,6 +8,7 @@
 local alertLib   = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
 local updater    = require("lib.updater")
+local ui         = require("lib.ui")
 
 -----------------------------------------------------
 -- Config
@@ -43,13 +44,13 @@ end
 local function drawOverlay(env, screen)
   local title = "ROULETTE"
   local tw = env.surface.getTextSize(title, env.font)
-  screen:drawText(title, env.font,
+  ui.safeDrawText(screen, title, env.font,
     math.floor((env.width - tw) / 2),
     math.floor(env.height * 0.15), colors.yellow)
 
   local subtitle = "Touch to play"
   local sw = env.surface.getTextSize(subtitle, env.font)
-  screen:drawText(subtitle, env.font,
+  ui.safeDrawText(screen, subtitle, env.font,
     math.floor((env.width - sw) / 2),
     math.floor(env.height * 0.28), colors.white)
 end
@@ -62,6 +63,8 @@ local idleEnv = nil
 local function setupIdle()
   idleEnv = idleScreen.setup({
     monitorName = MONITOR_NAME,
+    -- Roulette package does not include suit sprite assets; keep idle stable.
+    cardCount = 0,
   })
 end
 

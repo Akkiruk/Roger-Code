@@ -269,7 +269,21 @@ end
 -- Term-based UI helpers (for statistics / non-surface screens)
 -----------------------------------------------------
 
+--- Truncate text to fit within maxWidth, appending a suffix if truncated.
+-- @param text     string
+-- @param maxWidth number
+-- @param suffix   string?  (default "..")
+-- @return string
+local function truncateText(text, maxWidth, suffix)
+  if not text then return "" end
+  if #text <= maxWidth then return text end
+  suffix = suffix or ".."
+  if maxWidth <= #suffix then return text:sub(1, maxWidth) end
+  return text:sub(1, maxWidth - #suffix) .. suffix
+end
+
 --- Write text at position using blit to preserve background color.
+-- Automatically truncates text that would go past the right screen edge.
 -- @param x         number
 -- @param y         number
 -- @param text      string
@@ -279,6 +293,13 @@ local function blitWrite(x, y, text, textColor, bgColor)
   local oldBg   = term.getBackgroundColor()
   local oldText  = term.getTextColor()
   local useBg = bgColor or oldBg
+  -- Auto-truncate to screen bounds
+  local w = term.getSize()
+  local maxLen = w - x + 1
+  if maxLen <= 0 then return end
+  if #text > maxLen then
+    text = truncateText(text, maxLen)
+  end
   term.setCursorPos(x, y)
   term.blit(
     text,
@@ -290,12 +311,16 @@ local function blitWrite(x, y, text, textColor, bgColor)
 end
 
 --- Draw centered text on the terminal.
+-- Automatically truncates to screen width if text is too long.
 -- @param text      string
 -- @param yPos      number
 -- @param textColor number
 -- @return table  {x, y, text}
 local function drawCenteredText(text, yPos, textColor)
   local w = term.getSize()
+  if #text > w then
+    text = truncateText(text, w)
+  end
   local xPos = math.floor((w - #text) / 2) + 1
   blitWrite(xPos, yPos, text, textColor)
   return { x = xPos, y = yPos, text = text }
@@ -340,11 +365,21 @@ end
 -- @return table  Array of strings
 local function wrapText(text, maxWidth)
   if not text then return { "<no text>" } end
+  if not maxWidth or maxWidth < 1 then return { "" } end
   if #text <= maxWidth then return { text } end
 
   local words = {}
   for word in text:gmatch("%S+") do
-    table.insert(words, word)
+    -- Split extra-long words so no produced line can exceed maxWidth.
+    if #word > maxWidth then
+      local i = 1
+      while i <= #word do
+        table.insert(words, word:sub(i, i + maxWidth - 1))
+        i = i + maxWidth
+      end
+    else
+      table.insert(words, word)
+    end
   end
 
   local lines = {}
@@ -365,6 +400,86 @@ local function wrapText(text, maxWidth)
   return lines
 end
 
+--- Write text at position, auto-truncating to a specified max width.
+-- Convenience wrapper for bounded text output on term screens.
+-- @param x         number
+-- @param y         number
+-- @param text      string
+-- @param maxWidth  number   Maximum chars to render (truncates with "..")
+-- @param textColor number
+-- @param bgColor   number?  If nil, preserves current background
+local function safeWrite(x, y, text, maxWidth, textColor, bgColor)
+  if not text then return end
+  if not maxWidth or maxWidth < 1 then return end
+  text = truncateText(text, maxWidth)
+  blitWrite(x, y, text, textColor, bgColor)
+end
+
+--- Draw multiple lines of word-wrapped text on the terminal.
+-- Returns the number of lines actually drawn.
+-- @param x         number   Left X position
+-- @param y         number   Starting Y position
+-- @param text      string   Text to wrap and render
+-- @param maxWidth  number   Max chars per line
+-- @param maxLines  number?  Max lines to draw (default: unlimited)
+-- @param textColor number
+-- @param bgColor   number?  If nil, preserves current background
+-- @return number  Number of lines drawn
+local function drawWrappedText(x, y, text, maxWidth, maxLines, textColor, bgColor)
+  local lines = wrapText(text, maxWidth)
+  local drawn = 0
+  for i, line in ipairs(lines) do
+    if maxLines and i > maxLines then break end
+    blitWrite(x, y + i - 1, line, textColor, bgColor)
+    drawn = drawn + 1
+  end
+  return drawn
+end
+
+--- Draw text on a surface, auto-clipping to screen width.
+-- Drop-in safe replacement for screen:drawText() — prevents text from
+-- rendering past the right edge of the surface.
+-- @param screen surface  The screen surface
+-- @param text   string   Text to draw
+-- @param font   table    Font object
+-- @param x      number   X position
+-- @param y      number   Y position
+-- @param color  number   Text color
+local function safeDrawText(screen, text, font, x, y, color)
+  assert(_surface, "Call ui.init() first")
+  if not text or not screen then return end
+  if y < 0 or y >= screen.height then return end
+  if x >= screen.width then return end
+
+  -- Clamp left overflow to the visible area.
+  if x < 0 then
+    x = 0
+  end
+
+  local textWidth = _surface.getTextSize(text, font)
+  local available = screen.width - x
+  if textWidth > available and available > 0 then
+    -- Binary search for max chars that fit
+    local lo, hi = 1, #text
+    while lo < hi do
+      local mid = math.ceil((lo + hi) / 2)
+      if _surface.getTextSize(text:sub(1, mid), font) <= available then
+        lo = mid
+      else
+        hi = mid - 1
+      end
+    end
+    -- Try to fit with ellipsis
+    local dotW = _surface.getTextSize("..", font)
+    if lo > 2 and _surface.getTextSize(text:sub(1, lo - 2) .. "..", font) <= available then
+      text = text:sub(1, lo - 2) .. ".."
+    else
+      text = text:sub(1, lo)
+    end
+  end
+  screen:drawText(text, font, x, y, color)
+end
+
 --- Draw a player name overlay in the top-right corner of a monitor.
 -- Uses term API directly so it works on any redirected monitor.
 -- @param monitor  table   The monitor peripheral (used for term.redirect)
@@ -375,6 +490,9 @@ local function drawPlayerOverlay(monitor, playerName)
   term.redirect(monitor)
   local w = term.getSize()
   local text = "Player: " .. playerName
+  if #text > w - 2 then
+    text = truncateText(text, w - 2)
+  end
   term.setCursorPos(w - #text - 1, 1)
   term.setBackgroundColor(colors.black)
   term.setTextColor(colors.yellow)
@@ -404,10 +522,16 @@ return {
   round                  = round,
 
   -- Term-based helpers
+  truncateText       = truncateText,
   blitWrite          = blitWrite,
+  safeWrite          = safeWrite,
   drawCenteredText   = drawCenteredText,
+  drawWrappedText    = drawWrappedText,
   drawBox            = drawBox,
   drawTermButton     = drawTermButton,
   drawPlayerOverlay  = drawPlayerOverlay,
   wrapText           = wrapText,
+
+  -- Surface-based safe text
+  safeDrawText       = safeDrawText,
 }

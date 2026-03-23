@@ -196,7 +196,7 @@ local function drawReelCell(x, y, sym, highlight)
     local tx = x + floor((REEL_W - tw) / 2)
     local ty = iy + artSpace
     local textClr = highlight and colors.black or sym.color
-    screen:drawText(label, font, tx, ty, textClr)
+    ui.safeDrawText(screen, label, font, tx, ty, textClr)
   else
     -- Fallback: text only
     local label = sym.label
@@ -204,7 +204,7 @@ local function drawReelCell(x, y, sym, highlight)
     local tx = x + floor((REEL_W - tw) / 2)
     local ty = y + floor((REEL_H - 7) / 2)
     local textClr = highlight and colors.black or sym.color
-    screen:drawText(label, font, tx, ty, textClr)
+    ui.safeDrawText(screen, label, font, tx, ty, textClr)
   end
 end
 
@@ -218,12 +218,12 @@ local function drawMachine(result, highlights, statusText, currentBet)
   screen:fillRect(0, 0, width, 7, colors.black)
   local title = "SLOT MACHINE"
   local ttw = ui.getTextSize(title)
-  screen:drawText(title, font, floor((width - ttw) / 2), LO.TITLE_Y, colors.yellow)
+  ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), LO.TITLE_Y, colors.yellow)
 
   -- Bet display
   if currentBet then
     local betStr = "Bet: " .. currency.formatTokens(currentBet)
-    screen:drawText(betStr, font, 2, LO.TITLE_Y, colors.lightGray)
+    ui.safeDrawText(screen, betStr, font, 2, LO.TITLE_Y, colors.lightGray)
   end
 
   -- Decorative gold trim below title
@@ -254,7 +254,7 @@ local function drawMachine(result, highlights, statusText, currentBet)
   -- Status text below machine frame
   if statusText then
     local stw = ui.getTextSize(statusText.text)
-    screen:drawText(statusText.text, font, floor((width - stw) / 2),
+    ui.safeDrawText(screen, statusText.text, font, floor((width - stw) / 2),
                     frameY + frameH + 2, statusText.color)
   end
 
@@ -351,8 +351,7 @@ local function displayWin(result, winAmount, label, isJackpot, currentBet)
   end
 
   local clr = isJackpot and colors.red or colors.lime
-  local goldWon = floor(winAmount / 9)
-  local winText = label .. "  +" .. goldWon .. " gold!"
+  local winText = label .. "  +" .. currency.formatTokens(winAmount)
 
   -- Flash effect
   local flashes = isJackpot and 8 or 4
@@ -391,8 +390,8 @@ end
 -----------------------------------------------------
 -- One round of slots
 -----------------------------------------------------
-local function slotsRound(currentBet, escrowId)
-  recovery.saveEscrowBet(currentBet, {{ id = escrowId, amount = currentBet, tag = "initial" }})
+local function slotsRound(currentBet)
+  recovery.saveBet(currentBet)
 
   -- Show idle machine then spin
   local idleResult = { SYMBOLS[random(1, #SYMBOLS)], SYMBOLS[random(1, #SYMBOLS)], SYMBOLS[random(1, #SYMBOLS)] }
@@ -422,16 +421,16 @@ local function slotsRound(currentBet, escrowId)
   local winAmount, label, isJackpot = evaluateResult(result, currentBet)
 
   if winAmount > 0 then
-    -- Resolve escrow to player (bet returned) + payout winnings
-    currency.resolveEscrow(escrowId, "player", isJackpot and "Slots: jackpot!" or "Slots: win")
     if not currency.payout(winAmount, isJackpot and "Slots: jackpot payout" or "Slots: payout") then
       alert.send("CRITICAL: Failed to pay " .. winAmount .. " tokens (slots)")
     end
     displayWin(result, winAmount, label, isJackpot, currentBet)
     dbg("WIN: " .. label .. " payout=" .. (currentBet + winAmount))
   else
-    -- House wins: resolve escrow to host
-    currency.resolveEscrow(escrowId, "host", "Slots: loss")
+    local charged = currency.charge(currentBet, "Slots: loss")
+    if not charged then
+      alert.send("CRITICAL: Failed to charge " .. currentBet .. " tokens (slots)")
+    end
     displayLoss(result, currentBet)
     dbg("LOSS")
   end
@@ -465,7 +464,7 @@ local function main()
   refreshPlayer()
   drawPlayerOverlay()
 
-  -- Recover from crash if needed (escrow-aware)
+  -- Recover from crash if needed
   recovery.recoverBet(true)
 
   while true do
@@ -473,22 +472,20 @@ local function main()
     refreshPlayer()
 
     local currentBet = nil
-    local escrowId = nil
     if AUTO_PLAY then
-      currentBet = cfg.AUTO_PLAY_BET
-      local ok, eid = currency.escrow(currentBet, "Slots: auto-play bet")
-      if not ok then
+      local playerBalance = currency.getPlayerBalance()
+      currentBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
+      if currentBet <= 0 then
         dbg("Auto-play: insufficient funds, pausing")
         os.sleep(2)
       else
-        escrowId = eid
-        slotsRound(currentBet, escrowId)
+        slotsRound(currentBet)
       end
     else
       drawPlayerOverlay()
-      local selectedBet, selEscrow = betSelection()
-      if selectedBet and selectedBet > 0 and selEscrow then
-        slotsRound(selectedBet, selEscrow)
+      local selectedBet = betSelection()
+      if selectedBet and selectedBet > 0 then
+        slotsRound(selectedBet)
       end
     end
 

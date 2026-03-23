@@ -223,7 +223,7 @@ local function drawWheelCell(x, y, n, w, h, highlight)
   local tw = ui.getTextSize(numStr)
   local tx = x + floor((w - tw) / 2)
   local ty = y + floor((h - 7) / 2)
-  screen:drawText(numStr, font, tx, ty, getNumberTextColor(n))
+  ui.safeDrawText(screen, numStr, font, tx, ty, getNumberTextColor(n))
 end
 
 local function drawWheelStrip(centerIdx, y, cellW, cellH, visibleCount)
@@ -259,7 +259,7 @@ local function drawNumberDisplay(number, y)
   local tw = ui.getTextSize(numStr)
   local tx = floor((width - tw) / 2)
   local ty = y + floor((boxH - 7) / 2)
-  screen:drawText(numStr, font, tx, ty, fg)
+  ui.safeDrawText(screen, numStr, font, tx, ty, fg)
 end
 
 -----------------------------------------------------
@@ -277,12 +277,12 @@ local function drawScreen(result, resultIdx, betType, straightNum, betAmount, st
   screen:fillRect(0, 0, width, 8, colors.black)
   local title = "ROULETTE"
   local ttw = ui.getTextSize(title)
-  screen:drawText(title, font, floor((width - ttw) / 2), LO.TITLE_Y, colors.yellow)
+  ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), LO.TITLE_Y, colors.yellow)
 
   -- Bet amount (top-left)
   if betAmount and betAmount > 0 then
     local betStr = "Bet: " .. currency.formatTokens(betAmount)
-    screen:drawText(betStr, font, 2, LO.TITLE_Y, colors.lightGray)
+    ui.safeDrawText(screen, betStr, font, 2, LO.TITLE_Y, colors.lightGray)
   end
 
   -- Bet type + payout (top-right)
@@ -291,7 +291,7 @@ local function drawScreen(result, resultIdx, betType, straightNum, betAmount, st
     local payoutStr = getPayoutMultiplier(betType) .. ":1"
     betLabel = betLabel .. " " .. payoutStr
     local blw = ui.getTextSize(betLabel)
-    screen:drawText(betLabel, font, width - blw - 2, LO.TITLE_Y, colors.cyan)
+    ui.safeDrawText(screen, betLabel, font, width - blw - 2, LO.TITLE_Y, colors.cyan)
   end
 
   -- Separator
@@ -318,7 +318,7 @@ local function drawScreen(result, resultIdx, betType, straightNum, betAmount, st
   if statusText then
     local stw = ui.getTextSize(statusText.text)
     local sy = height - 10
-    screen:drawText(statusText.text, font, floor((width - stw) / 2), sy, statusText.color)
+    ui.safeDrawText(screen, statusText.text, font, floor((width - stw) / 2), sy, statusText.color)
   end
 
   screen:output()
@@ -340,7 +340,7 @@ local function selectBetType()
       -- Outside bets + navigation to number picker
       local title = "CHOOSE YOUR BET"
       local ttw = ui.getTextSize(title)
-      screen:drawText(title, font, floor((width - ttw) / 2), 1, colors.yellow)
+      ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), 1, colors.yellow)
 
       local centerX = floor(width / 2)
       local btnY = 10
@@ -393,7 +393,7 @@ local function selectBetType()
       -- Straight-up number picker grid (6 columns for readability)
       local title = "PICK A NUMBER 35:1"
       local ttw = ui.getTextSize(title)
-      screen:drawText(title, font, floor((width - ttw) / 2), 1, colors.yellow)
+      ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), 1, colors.yellow)
 
       local startY = 10
       local cellW = 12
@@ -482,8 +482,8 @@ end
 -----------------------------------------------------
 -- One round of roulette
 -----------------------------------------------------
-local function rouletteRound(betAmount, betType, straightNum, escrowId)
-  recovery.saveEscrowBet(betAmount, {{ id = escrowId, amount = betAmount, tag = "initial" }})
+local function rouletteRound(betAmount, betType, straightNum)
+  recovery.saveBet(betAmount)
 
   -- Pre-spin confirmation screen with bet summary
   local betLabel = getBetTypeLabel(betType, straightNum)
@@ -516,8 +516,6 @@ local function rouletteRound(betAmount, betType, straightNum, escrowId)
     local multiplier = getPayoutMultiplier(betType)
     local winnings = betAmount * multiplier
 
-    -- Resolve escrow to player (bet returned) + payout winnings
-    currency.resolveEscrow(escrowId, "player", "Roulette: " .. betType .. " win")
     if not currency.payout(winnings, "Roulette: " .. betType .. " payout") then
       alert.send("CRITICAL: Failed to pay " .. winnings .. " tokens (roulette)")
     end
@@ -550,8 +548,10 @@ local function rouletteRound(betAmount, betType, straightNum, escrowId)
 
     dbg("WIN: " .. betType .. " number=" .. winNumber .. " payout=" .. (betAmount + winnings))
   else
-    -- Loss: resolve escrow to host
-    currency.resolveEscrow(escrowId, "host", "Roulette: " .. betType .. " loss")
+    local charged = currency.charge(betAmount, "Roulette: " .. betType .. " loss")
+    if not charged then
+      alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (roulette)")
+    end
 
     -- Loss display
     drawScreen(winNumber, winIdx, betType, straightNum, betAmount, {
@@ -617,16 +617,14 @@ local function main()
     local currentBet = nil
     local betType = nil
     local straightNum = nil
-    local escrowId = nil
 
     if AUTO_PLAY then
-      currentBet = cfg.AUTO_PLAY_BET
-      local ok, eid = currency.escrow(currentBet, "Roulette: auto-play bet")
-      if not ok then
+      local playerBalance = currency.getPlayerBalance()
+      currentBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
+      if currentBet <= 0 then
         dbg("Auto-play: insufficient funds, pausing")
         os.sleep(2)
       else
-        escrowId = eid
         -- Auto-play picks a random bet type
         local types = { "red", "black", "odd", "even", "low", "high",
                         "dozen1", "dozen2", "dozen3", "col1", "col2", "col3", "straight" }
@@ -634,7 +632,7 @@ local function main()
         if betType == "straight" then
           straightNum = random(0, 36)
         end
-        rouletteRound(currentBet, betType, straightNum, escrowId)
+        rouletteRound(currentBet, betType, straightNum)
       end
     else
       -- Step 1: Choose bet type
@@ -643,10 +641,10 @@ local function main()
 
       -- Step 2: Choose bet amount (dynamically capped per bet type)
       drawPlayerOverlay()
-      local selectedBet, selEscrow = betSelection(betType, straightNum)
+      local selectedBet = betSelection(betType, straightNum)
 
-      if selectedBet and selectedBet > 0 and selEscrow then
-        rouletteRound(selectedBet, betType, straightNum, selEscrow)
+      if selectedBet and selectedBet > 0 then
+        rouletteRound(selectedBet, betType, straightNum)
       end
     end
 

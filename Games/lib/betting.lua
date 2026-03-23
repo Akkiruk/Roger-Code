@@ -20,10 +20,9 @@ local function dbg(msg)
   if DEBUG then print(os.time(), "[betting] " .. msg) end
 end
 
---- Run the full betting screen loop. Returns the total bet in tokens and escrow ID.
--- Chips are tracked locally (no transfers until confirm). On confirm, a single
--- escrow hold is created for the total bet. If escrow is unavailable, falls back
--- to a single charge.
+--- Run the full betting screen loop. Returns the confirmed bet in tokens.
+-- Chips are tracked locally (no transfers until the game round resolves).
+-- On confirm, validates the player has sufficient balance.
 -- @param screen     surface   The screen surface to draw on
 -- @param opts       table     Options:
 --   maxBet              number   Maximum bet in tokens (required)
@@ -35,7 +34,7 @@ end
 --   hostBalance         number?  Override for host balance limit calculations
 --   hostCoverageMultiplier number? How much the host must hold to cover max payout
 --   onQuit              function Called when the player presses QUIT (default: error("player_quit"))
--- @return number bet, string|nil escrowId  Confirmed bet and escrow ID (nil if no escrow)
+-- @return number bet  Confirmed bet amount (0 if timed out)
 local function runBetScreen(screen, opts)
   opts = opts or {}
   local maxBet             = opts.maxBet or error("maxBet is required")
@@ -58,7 +57,6 @@ local function runBetScreen(screen, opts)
   local sessionPlayer = currency.getPlayerName()
 
   local bet = 0
-  local activeEscrowId = nil
   local selecting = true
   local lastActivityTime = os.epoch("local")
   local timerID = nil
@@ -73,13 +71,13 @@ local function runBetScreen(screen, opts)
       idleMs = now - lastActivityTime
       if idleMs > inactivityTimeout then
         onTimeout()
-        return 0, nil
+        return 0
       end
     end
 
     -- Header
     local titleSize = ui.getTextSize(title)
-    screen:drawText(title, ui.getFont(), ui.round((screen.width - titleSize) / 2), 1, colors.white)
+    ui.safeDrawText(screen, title, ui.getFont(), ui.round((screen.width - titleSize) / 2), 1, colors.white)
 
     -- Inactivity countdown warning (last 10 seconds)
     if bet == 0 then
@@ -88,14 +86,14 @@ local function runBetScreen(screen, opts)
         local secsLeft = math.ceil((inactivityTimeout - idleMs) / 1000)
         local warnMsg = "Auto-exit in " .. secsLeft .. "s..."
         local warnSize = ui.getTextSize(warnMsg)
-        screen:drawText(warnMsg, ui.getFont(), ui.round((screen.width - warnSize) / 2), 10, colors.orange)
+        ui.safeDrawText(screen, warnMsg, ui.getFont(), ui.round((screen.width - warnSize) / 2), 10, colors.orange)
       end
     end
 
     -- Current bet display
     local betStr = "Bet: " .. currency.formatTokens(bet)
     local betStrSize = ui.getTextSize(betStr)
-    screen:drawText(betStr, ui.getFont(), ui.round((screen.width - betStrSize) / 2), 6, colors.yellow)
+    ui.safeDrawText(screen, betStr, ui.getFont(), ui.round((screen.width - betStrSize) / 2), 6, colors.yellow)
 
     -- Buttons
     ui.clearButtons()
@@ -208,19 +206,19 @@ local function runBetScreen(screen, opts)
       end
     end, false, clearWidth)
 
-    -- DEAL/CONFIRM: create escrow for total bet, then start game
+    -- DEAL/CONFIRM: validate balance and start game
     ui.fixedWidthButton(screen, confirmLabel, colors.magenta, dealX, ctrlY, function()
       if bet > 0 then
-        local ok, eid = currency.escrow(bet, gameName .. ": bet")
-        if ok and eid then
-          activeEscrowId = eid
-          sound.play(sound.SOUNDS.START)
-          selecting = false
-        else
+        -- Final balance check before starting
+        local playerBal = currency.getPlayerBalance()
+        if playerBal < bet then
           sound.play(sound.SOUNDS.ERROR)
-          ui.displayCenteredMessage(screen, "Bet failed! Try again.", colors.red)
+          ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red)
           bet = 0
+          return
         end
+        sound.play(sound.SOUNDS.START)
+        selecting = false
       else
         ui.displayCenteredMessage(screen, "Place a bet first!", colors.red)
       end
@@ -254,14 +252,14 @@ local function runBetScreen(screen, opts)
         -- Check timeout
         if bet == 0 and (os.epoch("local") - lastActivityTime) > inactivityTimeout then
           onTimeout()
-          return 0, nil
+          return 0
         end
         break  -- redraw
       end
     end
   end
 
-  return bet, activeEscrowId
+  return bet
 end
 
 return {

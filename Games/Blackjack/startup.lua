@@ -8,6 +8,7 @@
 local alertLib   = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
 local updater    = require("lib.updater")
+local ui         = require("lib.ui")
 
 -----------------------------------------------------
 -- Config
@@ -58,7 +59,7 @@ local function drawOverlay(env, screen)
 
   screen:fillRect(buttonX, buttonY, buttonWidth, buttonHeight, colors.gray)
   screen:fillRect(buttonX + 2, buttonY + 2, buttonWidth - 4, buttonHeight - 4, colors.lime)
-  screen:drawText(
+  ui.safeDrawText(screen,
     buttonText, env.font,
     buttonX + math.floor((buttonWidth - env.surface.getTextSize(buttonText, env.font)) / 2),
     buttonY + 5, colors.black

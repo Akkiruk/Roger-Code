@@ -230,15 +230,15 @@ local function renderTableBase(playerHand, bankerHand, betType, betAmount, statu
 
   -- Bet display
   local betLabel = "Bet: " .. currency.formatTokens(betAmount) .. " on " .. string.upper(betType)
-  screen:drawText(betLabel, font, 1, 0, colors.white)
+  ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
 
   -- "PLAYER" and "BANKER" labels
   local playerLabel = "PLAYER"
   local bankerLabel = "BANKER"
   local plW = ui.getTextSize(playerLabel)
   local blW = ui.getTextSize(bankerLabel)
-  screen:drawText(playerLabel, font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
-  screen:drawText(bankerLabel, font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
+  ui.safeDrawText(screen, playerLabel, font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
+  ui.safeDrawText(screen, bankerLabel, font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
 
   -- Draw hands
   if #playerHand > 0 then
@@ -246,7 +246,7 @@ local function renderTableBase(playerHand, bankerHand, betType, betAmount, statu
     local pTotal = baccaratHandTotal(playerHand)
     local pStr = tostring(pTotal)
     local pW = ui.getTextSize(pStr)
-    screen:drawText(pStr, font, playerAreaX - math.floor(pW / 2), scoreY, colors.white)
+    ui.safeDrawText(screen, pStr, font, playerAreaX - math.floor(pW / 2), scoreY, colors.white)
   end
 
   if #bankerHand > 0 then
@@ -254,13 +254,13 @@ local function renderTableBase(playerHand, bankerHand, betType, betAmount, statu
     local bTotal = baccaratHandTotal(bankerHand)
     local bStr = tostring(bTotal)
     local bW = ui.getTextSize(bStr)
-    screen:drawText(bStr, font, bankerAreaX - math.floor(bW / 2), scoreY, colors.white)
+    ui.safeDrawText(screen, bStr, font, bankerAreaX - math.floor(bW / 2), scoreY, colors.white)
   end
 
   -- Status text (centered)
   if statusText then
     local tw = ui.getTextSize(statusText)
-    screen:drawText(statusText, font, math.floor((width - tw) / 2), statusY, colors.yellow)
+    ui.safeDrawText(screen, statusText, font, math.floor((width - tw) / 2), statusY, colors.yellow)
   end
 end
 
@@ -321,7 +321,7 @@ local LINE_H = 9
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
-  screen:drawText(text, font, math.floor((width - tw) / 2), y, color or colors.white)
+  ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
 local TUTORIAL_PAGES = {
@@ -484,12 +484,12 @@ local function selectBetType()
 
     local title = "CHOOSE YOUR BET"
     local tw = ui.getTextSize(title)
-    screen:drawText(title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
 
     -- Brief hint for new players
     local hint = "Closest to 9 wins!"
     local hw = ui.getTextSize(hint)
-    screen:drawText(hint, font, math.floor((width - hw) / 2), math.floor(height * 0.22), colors.lightGray)
+    ui.safeDrawText(screen, hint, font, math.floor((width - hw) / 2), math.floor(height * 0.22), colors.lightGray)
 
     ui.clearButtons()
     local chosen = nil
@@ -542,8 +542,8 @@ end
 -----------------------------------------------------
 -- Baccarat round
 -----------------------------------------------------
-local function baccaratRound(betAmount, betType, escrowId)
-  recovery.saveEscrowBet(betAmount, {{ id = escrowId, amount = betAmount, tag = "initial" }})
+local function baccaratRound(betAmount, betType)
+  recovery.saveBet(betAmount)
 
   local playerHand = {}
   local bankerHand = {}
@@ -572,9 +572,9 @@ local function baccaratRound(betAmount, betType, escrowId)
 
     local function bgRender()
       screen:clear(LO.TABLE_COLOR)
-      screen:drawText(betLabel, font, 1, 0, colors.white)
-      screen:drawText("PLAYER", font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
-      screen:drawText("BANKER", font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
+      ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
+      ui.safeDrawText(screen, "PLAYER", font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
+      ui.safeDrawText(screen, "BANKER", font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
       for i, cid in ipairs(visPlayer) do
         screen:drawSurface(cards.renderCard(cid), pStartX + (i - 1) * deltaX, cardsY)
       end
@@ -729,29 +729,26 @@ local function baccaratRound(betAmount, betType, escrowId)
     end
   end
 
-  -- Transfer payout via escrow resolution
-  if payout > 0 then
-    if netChange == 0 then
-      -- Push: cancel escrow (refund bet to player)
-      currency.cancelEscrow(escrowId, "Baccarat: push")
-    else
-      -- Win: resolve escrow to player (bet returned) + payout profit separately
-      currency.resolveEscrow(escrowId, "player", "Baccarat: win")
-      local profit = payout - betAmount
-      if profit > 0 then
-        local payOk = currency.payout(profit, "Baccarat: payout")
-        if not payOk then
-          alert.send("CRITICAL: Failed to pay " .. profit .. " tokens to player!")
-          alert.log("Payout failure: " .. profit .. " tokens, outcome=" .. outcome)
-          msg = "ERROR: Payout failed! Contact admin."
-          msgClr = colors.red
-          snd = sound.SOUNDS.ERROR
-        end
-      end
+  -- Transfer-at-end settlement
+  if netChange > 0 then
+    local payOk = currency.payout(netChange, "Baccarat: payout")
+    if not payOk then
+      alert.send("CRITICAL: Failed to pay " .. netChange .. " tokens to player!")
+      alert.log("Payout failure: " .. netChange .. " tokens, outcome=" .. outcome)
+      msg = "ERROR: Payout failed! Contact admin."
+      msgClr = colors.red
+      snd = sound.SOUNDS.ERROR
     end
-  else
-    -- Loss: resolve escrow to host
-    currency.resolveEscrow(escrowId, "host", "Baccarat: loss")
+  elseif netChange < 0 then
+    local chargeAmt = -netChange
+    local chargeOk = currency.charge(chargeAmt, "Baccarat: loss")
+    if not chargeOk then
+      alert.send("CRITICAL: Failed to charge " .. chargeAmt .. " tokens from player!")
+      alert.log("Charge failure: " .. chargeAmt .. " tokens, outcome=" .. outcome)
+      msg = "ERROR: Charge failed! Contact admin."
+      msgClr = colors.red
+      snd = sound.SOUNDS.ERROR
+    end
   end
 
   -- Update session statistics
@@ -819,21 +816,14 @@ local function main()
 
     local betAmount = nil
     local betType = nil
-    local escrowId = nil
 
     if AUTO_PLAY then
       local playerBalance = currency.getPlayerBalance()
       local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
       if autoBet > 0 then
-        local ok, eid = currency.escrow(autoBet, "Baccarat: auto-play bet")
-        if ok and eid then
-          betAmount = autoBet
-          escrowId = eid
-          betType = selectBetType()
-          os.sleep(cfg.AUTO_PLAY_DELAY)
-        else
-          os.sleep(1)
-        end
+        betAmount = autoBet
+        betType = selectBetType()
+        os.sleep(cfg.AUTO_PLAY_DELAY)
       else
         os.sleep(1)
       end
@@ -844,16 +834,15 @@ local function main()
         os.sleep(0.1)
       else
         -- Step 2: Choose bet amount
-        local selectedBet, selEscrow = betSelection()
-        if selectedBet and selectedBet > 0 and selEscrow then
+        local selectedBet = betSelection()
+        if selectedBet and selectedBet > 0 then
           betAmount = selectedBet
-          escrowId = selEscrow
         end
       end
     end
 
-    if betAmount and betAmount > 0 and betType and escrowId then
-      baccaratRound(betAmount, betType, escrowId)
+    if betAmount and betAmount > 0 and betType then
+      baccaratRound(betAmount, betType)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
     end

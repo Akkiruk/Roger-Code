@@ -15,6 +15,12 @@ local ACHIEVEMENTS = achLib.ACHIEVEMENTS
 -----------------------------------------------------
 local function safeWrite(text, textColor)
   local x, y = term.getCursorPos()
+  local w = term.getSize()
+  local maxLen = w - x + 1
+  if maxLen <= 0 then return end
+  if #text > maxLen then
+    text = uiLib.truncateText(text, maxLen)
+  end
   uiLib.blitWrite(x, y, text, textColor)
   term.setCursorPos(x + #text, y)
 end
@@ -236,9 +242,10 @@ local function showAchievementsBrowser()
     -- Category description / progress under filters
     local descY = curRowY + 2
     if currentCategory then
+      local desc = uiLib.truncateText(currentCategory.description or "", w - 6)
       term.setTextColor(currentCategory.color or colors.white)
       term.setCursorPos(3, descY)
-      term.write(currentCategory.description or "")
+      term.write(desc)
     end
 
     -- Achievement list
@@ -307,6 +314,7 @@ local function showAchievementsBrowser()
     local navY = h - 2
     local pageText = "Page " .. currentPage .. "/" .. totalPages
           .. " (" .. #display .. " achievements)"
+    pageText = uiLib.truncateText(pageText, w - 4)
     term.setCursorPos(math.floor((w - #pageText) / 2), navY - 1)
     term.setTextColor(colors.lightGray)
     term.write(pageText)
@@ -574,7 +582,9 @@ local function showLeaderboard()
         local e = entries[i]
         local y = startY + (i - 1) * lh
         term.setCursorPos(3, y); safeWrite("#" .. i, i <= 3 and colors.yellow or colors.white)
-        term.setCursorPos(7, y); safeWrite(e.player or "Unknown", colors.lime)
+        local nameMaxW = w - 20 - 7
+        local playerLabel = uiLib.truncateText(e.player or "Unknown", nameMaxW)
+        term.setCursorPos(7, y); safeWrite(playerLabel, colors.lime)
         term.setCursorPos(w - 15, y)
         if page == 1 then     safeWrite("Wins: " .. (e.wins or 0), colors.white)
         elseif page == 2 then safeWrite("Profit: " .. math.floor((e.netProfit or 0) / 9) .. " gold", colors.white)

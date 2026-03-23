@@ -284,7 +284,7 @@ local LINE_H = 9
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
-  screen:drawText(text, font, math.floor((width - tw) / 2), y, color or colors.white)
+  ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
 local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
@@ -292,7 +292,7 @@ local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
 
   -- Bet display
   local betLabel = "Bet: " .. currency.formatTokens(betAmount)
-  screen:drawText(betLabel, font, 1, 0, colors.white)
+  ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
 
   -- Draw cards
   for i, cardID in ipairs(hand) do
@@ -304,7 +304,7 @@ local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
     if showHoldLabels and held[i] then
       local holdLabel = "HOLD"
       local hw = ui.getTextSize(holdLabel)
-      screen:drawText(holdLabel, font,
+      ui.safeDrawText(screen, holdLabel, font,
         x + math.floor((cardBack.width - hw) / 2),
         cardY - LINE_H - LO.HOLD_Y_OFFSET,
         colors.lime)
@@ -344,9 +344,9 @@ local function showPayoutTable()
       color = colors.cyan
     end
 
-    screen:drawText(p.name, font, 4, y, color)
-    screen:drawText(multStr, font, width - multW - 4, y, color)
-    y = y + paySpacing
+    ui.safeDrawText(screen, p.name, font, 4, y, color)
+    ui.safeDrawText(screen, multStr, font, width - multW - 4, y, color)
+  y = y + paySpacing
   end
 
   ui.clearButtons()
@@ -507,11 +507,11 @@ local function preRoundMenu()
 
     local title = "VIDEO POKER"
     local tw = ui.getTextSize(title)
-    screen:drawText(title, font, math.floor((width - tw) / 2), math.floor(height * 0.10), colors.yellow)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), math.floor(height * 0.10), colors.yellow)
 
     local subtitle = "Jacks or Better"
     local sw = ui.getTextSize(subtitle)
-    screen:drawText(subtitle, font, math.floor((width - sw) / 2), math.floor(height * 0.20), colors.lightGray)
+    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), math.floor(height * 0.20), colors.lightGray)
 
     ui.clearButtons()
     local chosen = nil
@@ -592,8 +592,8 @@ end
 -----------------------------------------------------
 -- Video Poker round
 -----------------------------------------------------
-local function pokerRound(betAmount, escrowId)
-  recovery.saveEscrowBet(betAmount, {{ id = escrowId, amount = betAmount, tag = "initial" }})
+local function pokerRound(betAmount)
+  recovery.saveBet(betAmount)
 
   -- Fresh deck each hand
   freshDeck()
@@ -614,7 +614,7 @@ local function pokerRound(betAmount, escrowId)
       local img = cards.renderCard(cardID)
       cardAnim.slideIn(img, x, cardY, function()
         screen:clear(LO.TABLE_COLOR)
-        screen:drawText("Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
+        ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
         for j, cid in ipairs(visCards) do
           screen:drawSurface(cards.renderCard(cid), handStartX + (j - 1) * deltaX, cardY)
         end
@@ -679,7 +679,7 @@ local function pokerRound(betAmount, escrowId)
         local img = cards.renderCard(hand[i])
         cardAnim.slideIn(img, x, cardY, function()
           screen:clear(LO.TABLE_COLOR)
-          screen:drawText("Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
+          ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
           for j, cid in ipairs(hand) do
             local cx = handStartX + (j - 1) * deltaX
             if j < i or held[j] then
@@ -708,8 +708,6 @@ local function pokerRound(betAmount, escrowId)
     totalPayout = betAmount * (multiplier + 1)  -- bet * multiplier + original bet back
     netChange = betAmount * multiplier
 
-    -- Resolve escrow to player + pay profit
-    currency.resolveEscrow(escrowId, "player", "VideoPoker: " .. handName)
     if netChange > 0 then
       local payOk = currency.payout(netChange, "VideoPoker: " .. handName .. " payout")
       if not payOk then
@@ -726,7 +724,10 @@ local function pokerRound(betAmount, escrowId)
   else
     -- Loss
     netChange = -betAmount
-    currency.resolveEscrow(escrowId, "host", "VideoPoker: no win")
+    local charged = currency.charge(betAmount, "VideoPoker: no win")
+    if not charged then
+      alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (video poker)")
+    end
 
     sound.play(sound.SOUNDS.FAIL)
     renderHand(hand, held, betAmount, nil, false)
@@ -763,35 +764,27 @@ local function main()
     drawPlayerOverlay()
 
     local betAmount = nil
-    local escrowId = nil
 
     if AUTO_PLAY then
       local playerBalance = currency.getPlayerBalance()
       local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
       if autoBet > 0 then
-        local ok, eid = currency.escrow(autoBet, "VideoPoker: auto-play bet")
-        if ok and eid then
-          betAmount = autoBet
-          escrowId = eid
-          os.sleep(cfg.AUTO_PLAY_DELAY)
-        else
-          os.sleep(1)
-        end
+        betAmount = autoBet
+        os.sleep(cfg.AUTO_PLAY_DELAY)
       else
         os.sleep(1)
       end
     else
       preRoundMenu()
 
-      local selectedBet, selEscrow = betSelection()
-      if selectedBet and selectedBet > 0 and selEscrow then
+      local selectedBet = betSelection()
+      if selectedBet and selectedBet > 0 then
         betAmount = selectedBet
-        escrowId = selEscrow
       end
     end
 
-    if betAmount and betAmount > 0 and escrowId then
-      pokerRound(betAmount, escrowId)
+    if betAmount and betAmount > 0 then
+      pokerRound(betAmount)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
     end

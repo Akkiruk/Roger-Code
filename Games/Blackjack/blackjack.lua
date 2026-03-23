@@ -203,10 +203,10 @@ local function renderTableBase(ctx, hideDealer, statusText)
   local totalBet = 0
   for _, h in ipairs(ctx.hands) do totalBet = totalBet + h.bet end
   local betStr = "Bet: " .. currency.formatTokens(totalBet)
-  screen:drawText(betStr, font, 1, 0, colors.white)
+  ui.safeDrawText(screen, betStr, font, 1, 0, colors.white)
 
   if ctx.insuranceBet > 0 then
-    screen:drawText("Ins: " .. currency.formatTokens(ctx.insuranceBet), font, 1, 7, colors.cyan)
+    ui.safeDrawText(screen, "Ins: " .. currency.formatTokens(ctx.insuranceBet), font, 1, 7, colors.cyan)
   end
 
   -- Dealer hand
@@ -214,7 +214,7 @@ local function renderTableBase(ctx, hideDealer, statusText)
   drawHand(ctx.dealerHand, dealerX, layout.dealerY, hideDealer)
   if not hideDealer then
     local dTotal = cards.blackjackValue(ctx.dealerHand)
-    screen:drawText(tostring(dTotal), font, dealerX - 10, layout.dealerScoreY, colors.white)
+    ui.safeDrawText(screen, tostring(dTotal), font, dealerX - 10, layout.dealerScoreY, colors.white)
   end
 
   -- Player hand(s)
@@ -223,7 +223,7 @@ local function renderTableBase(ctx, hideDealer, statusText)
     local px = math.floor((width - (#hand.cards * deltaX)) / 2)
     drawHand(hand.cards, px, layout.playerY, false)
     local pTotal = cards.blackjackValue(hand.cards)
-    screen:drawText(tostring(pTotal), font, px - 10, layout.playerY + layout.scoreYOff, colors.white)
+    ui.safeDrawText(screen, tostring(pTotal), font, px - 10, layout.playerY + layout.scoreYOff, colors.white)
   else
     for i, hand in ipairs(ctx.hands) do
       local baseX
@@ -235,16 +235,16 @@ local function renderTableBase(ctx, hideDealer, statusText)
       drawHand(hand.cards, baseX, layout.playerY, false)
       local pTotal = cards.blackjackValue(hand.cards)
       local clr = (i == ctx.currentHandIdx) and colors.yellow or colors.white
-      screen:drawText(tostring(pTotal), font, baseX - 10, layout.playerY + layout.scoreYOff, clr)
+      ui.safeDrawText(screen, tostring(pTotal), font, baseX - 10, layout.playerY + layout.scoreYOff, clr)
       if i == ctx.currentHandIdx and #ctx.hands > 1 then
-        screen:drawText(">>", font, baseX - 18, layout.playerY + layout.scoreYOff, colors.yellow)
+        ui.safeDrawText(screen, ">>", font, baseX - 18, layout.playerY + layout.scoreYOff, colors.yellow)
       end
     end
   end
 
   if statusText then
     local tw = ui.getTextSize(statusText)
-    screen:drawText(statusText, font, math.floor((width - tw) / 2), layout.statusY, colors.yellow)
+    ui.safeDrawText(screen, statusText, font, math.floor((width - tw) / 2), layout.statusY, colors.yellow)
   end
 end
 
@@ -308,7 +308,7 @@ local function doDeal(ctx)
     local betStr = "Bet: " .. currency.formatTokens(ctx.hands[1].bet)
     local function bgRender()
       screen:clear(LO.TABLE_COLOR)
-      screen:drawText(betStr, font, 1, 0, colors.white)
+      ui.safeDrawText(screen, betStr, font, 1, 0, colors.white)
       for i, cid in ipairs(visiblePlayer) do
         screen:drawSurface(cards.renderCard(cid), playerStartX + (i - 1) * deltaX, layout.playerY)
       end
@@ -354,12 +354,44 @@ local function doDeal(ctx)
   return "check_naturals"
 end
 
+local function totalAtRisk(ctx)
+  local atRisk = 0
+  for _, hand in ipairs(ctx.hands or {}) do
+    atRisk = atRisk + (hand.bet or 0)
+  end
+  atRisk = atRisk + (ctx.insuranceBet or 0)
+  return atRisk
+end
+
+local function availableBalance(ctx)
+  local bal = currency.getPlayerBalance()
+  return math.max(0, bal - totalAtRisk(ctx))
+end
+
+local function settleNetChange(netChange, reason)
+  if netChange > 0 then
+    if not currency.payout(netChange, reason) then
+      alert.send("CRITICAL: Failed to pay " .. netChange .. " tokens")
+      return false
+    end
+    return true
+  elseif netChange < 0 then
+    local chargeAmt = -netChange
+    local ok = currency.charge(chargeAmt, reason)
+    if not ok then
+      alert.send("CRITICAL: Failed to charge " .. chargeAmt .. " tokens")
+      return false
+    end
+  end
+  return true
+end
+
 -----------------------------------------------------
 -- State: INSURANCE
 -----------------------------------------------------
 local function doInsurance(ctx)
   local maxIns = math.floor(ctx.hands[1].bet / 2)
-  local playerBalance = currency.getPlayerBalance()
+  local playerBalance = availableBalance(ctx)
 
   if playerBalance < 1 then
     return "check_naturals"
@@ -381,12 +413,9 @@ local function doInsurance(ctx)
   ui.waitForButton(0, 0)
 
   if chosen then
-    local ok, insEscId = currency.escrow(insBet, "Blackjack: insurance")
-    if ok and insEscId then
+    if insBet > 0 then
       ctx.insuranceBet = insBet
       ctx.insurancePaid = insBet
-      ctx.insuranceEscrowId = insEscId
-      recovery.addEscrow(insEscId, insBet, "insurance")
     end
   end
 
@@ -405,20 +434,13 @@ local function doCheckNaturals(ctx)
     renderTable(ctx, false, nil)
     ui.displayCenteredMessage(screen, "Double Blackjack Push!", colors.yellow, 1.5)
     sound.play(sound.SOUNDS.PUSH)
-    -- Cancel bet escrow (refund to player)
-    for _, eid in ipairs(ctx.hands[1].escrowIds or {}) do
-      currency.cancelEscrow(eid, "Blackjack: push")
-    end
-    -- Insurance win: resolve to player + pay winnings
-    if ctx.insuranceBet > 0 and ctx.insuranceEscrowId then
-      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "Blackjack: insurance win")
-      if not currency.payout(ctx.insuranceBet * 2, "Blackjack: insurance payout") then
-        alert.send("CRITICAL: Failed to pay insurance " .. (ctx.insuranceBet * 2) .. " tokens")
-      end
+    -- Push on main hand, insurance pays 2:1 when dealer has blackjack
+    if ctx.insuranceBet > 0 then
       ctx.insuranceWon = ctx.insuranceBet * 2
     end
     ctx.outcome = OUT.PUSH
     ctx.netChange = (ctx.insuranceWon or 0)
+    settleNetChange(ctx.netChange, "Blackjack: round settlement")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
     return nil  -- round over
@@ -428,16 +450,10 @@ local function doCheckNaturals(ctx)
     renderTable(ctx, false, nil)
     ui.displayCenteredMessage(screen, "Blackjack!", colors.yellow, 1.5)
     sound.play(sound.SOUNDS.SUCCESS)
-    -- Resolve escrow to player (bet returned) + pay natural bonus
-    for _, eid in ipairs(ctx.hands[1].escrowIds or {}) do
-      currency.resolveEscrow(eid, "player", "Blackjack: natural win")
-    end
     local bonus = math.floor(ctx.hands[1].bet * cfg.BLACKJACK_PAYOUT)
-    if not currency.payout(bonus, "Blackjack: natural payout") then
-      alert.send("CRITICAL: Failed to pay " .. bonus .. " tokens (natural)")
-    end
     ctx.outcome = OUT.BLACKJACK
     ctx.netChange = bonus - (ctx.insuranceBet or 0)
+    settleNetChange(ctx.netChange, "Blackjack: natural settlement")
     notifyHostOfWin(env.currentPlayer, bonus, "Blackjack: natural")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
@@ -448,29 +464,18 @@ local function doCheckNaturals(ctx)
     renderTable(ctx, false, nil)
     ui.displayCenteredMessage(screen, "Dealer Blackjack!", colors.red, 1.5)
     sound.play(sound.SOUNDS.FAIL)
-    -- Resolve bet escrow to host (dealer wins)
-    for _, eid in ipairs(ctx.hands[1].escrowIds or {}) do
-      currency.resolveEscrow(eid, "host", "Blackjack: dealer natural")
-    end
-    -- Insurance win: resolve to player + pay winnings
-    if ctx.insuranceBet > 0 and ctx.insuranceEscrowId then
-      currency.resolveEscrow(ctx.insuranceEscrowId, "player", "Blackjack: insurance win")
-      if not currency.payout(ctx.insuranceBet * 2, "Blackjack: insurance payout") then
-        alert.send("CRITICAL: Failed to pay insurance " .. (ctx.insuranceBet * 2) .. " tokens")
-      end
+    if ctx.insuranceBet > 0 then
       ctx.insuranceWon = ctx.insuranceBet * 2
     end
     ctx.outcome = OUT.DEALER_WIN
     ctx.netChange = -ctx.hands[1].bet + (ctx.insuranceWon or 0)
+    settleNetChange(ctx.netChange, "Blackjack: dealer natural settlement")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
     return nil
   end
 
-  -- No naturals — insurance lost, resolve to host
-  if ctx.insuranceEscrowId then
-    currency.resolveEscrow(ctx.insuranceEscrowId, "host", "Blackjack: insurance lost")
-  end
+  -- No naturals — insurance remains a tracked side bet and is settled in doResolve.
 
   return "player_turn"
 end
@@ -525,14 +530,17 @@ end
 
 local function executeDouble(hand, ctx, handIdx)
   local additionalBet = hand.bet
-  local ok, dblEscId = currency.escrow(additionalBet, "Blackjack: double down")
-  if not ok then return true end
-  table.insert(hand.escrowIds, dblEscId)
+  if availableBalance(ctx) < additionalBet then
+    if not AUTO_PLAY then
+      sound.play(sound.SOUNDS.ERROR)
+      ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red, 0.8)
+    end
+    return false
+  end
   hand.bet = hand.bet * 2
   hand.doubled = true
   hand.lastAction = ACT.DOUBLE
   table.insert(ctx.actionLog, { action = ACT.DOUBLE, handIdx = handIdx, time = epoch("local") })
-  recovery.addEscrow(dblEscId, additionalBet, "double")
   table.insert(hand.cards, dealOne())
 
   if not AUTO_PLAY then
@@ -556,15 +564,19 @@ end
 
 local function executeSplit(hand, ctx, handIdx)
   local splitBet = hand.bet
-  local ok, splitEscId = currency.escrow(splitBet, "Blackjack: split")
-  if not ok then return false end
+  if availableBalance(ctx) < splitBet then
+    if not AUTO_PLAY then
+      sound.play(sound.SOUNDS.ERROR)
+      ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red, 0.8)
+    end
+    return false
+  end
   local splitCard = table.remove(hand.cards, 2)
   local isSplitAces = (hand.cards[1]:sub(1, 1) == "A")
   local newHand = {
     cards = { splitCard }, bet = splitBet, doubled = false,
     fromSplit = true, busted = false, hitCount = 0, lastAction = ACT.STAND,
     splitAces = isSplitAces,
-    escrowIds = { splitEscId },
   }
   table.insert(hand.cards, dealOne())
   table.insert(newHand.cards, dealOne())
@@ -572,7 +584,6 @@ local function executeSplit(hand, ctx, handIdx)
   hand.splitAces = isSplitAces
   ctx.splitCount = (ctx.splitCount or 0) + 1
   table.insert(ctx.actionLog, { action = ACT.SPLIT, handIdx = handIdx, time = epoch("local") })
-  recovery.addEscrow(splitEscId, splitBet, "split")
   table.insert(ctx.hands, handIdx + 1, newHand)
 
   if not AUTO_PLAY then
@@ -631,11 +642,11 @@ local function doPlayerTurn(ctx)
 
       if AUTO_PLAY then
         os.sleep(cfg.AUTO_PLAY_DELAY)
-        local canDbl = #hand.cards == 2 and currency.getPlayerBalance() >= hand.bet
+        local canDbl = #hand.cards == 2 and availableBalance(ctx) >= hand.bet
         local canSpl = #hand.cards == 2 and cfg.ALLOW_SPLIT
                        and #ctx.hands < (cfg.MAX_SPLITS + 1)
                        and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
-                       and currency.getPlayerBalance() >= hand.bet
+                       and availableBalance(ctx) >= hand.bet
         local action = autoPlayer.decide(hand.cards, ctx.dealerHand[2], canDbl, canSpl, AUTO_PLAY_STRATEGY)
 
         if action == ACT.HIT then       handDone = executeHit(hand, ctx, handIdx)
@@ -668,7 +679,7 @@ local function doPlayerTurn(ctx)
           end,
         })
 
-        if #hand.cards == 2 and currency.getPlayerBalance() >= hand.bet then
+        if #hand.cards == 2 and availableBalance(ctx) >= hand.bet then
           table.insert(row2, {
             text = "DOUBLE", color = colors.orange,
             func = function()
@@ -681,7 +692,7 @@ local function doPlayerTurn(ctx)
         if #hand.cards == 2 and cfg.ALLOW_SPLIT
            and #ctx.hands < (cfg.MAX_SPLITS + 1)
            and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
-           and currency.getPlayerBalance() >= hand.bet then
+            and availableBalance(ctx) >= hand.bet then
           table.insert(row2, {
             text = "SPLIT", color = colors.purple,
             func = function()
@@ -776,41 +787,17 @@ local function resolveHandOutcomes(ctx, dealerTotal, dealerBusted)
     if hand.busted then
       hand.outcome = OUT.BUST
       totalNetChange = totalNetChange - hand.bet
-      -- Resolve escrows to host (house wins the bet)
-      for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "host", "Blackjack: bust")
-      end
     elseif dealerBusted then
       hand.outcome = OUT.PLAYER_WIN
       totalNetChange = totalNetChange + hand.bet
-      -- Resolve escrows to player (bet returned) + payout winnings
-      for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "player", "Blackjack: dealer bust")
-      end
-      if not currency.payout(hand.bet, "Blackjack: win payout") then
-        alert.send("CRITICAL: Failed to pay " .. hand.bet .. " tokens")
-      end
     elseif pTotal > dealerTotal then
       hand.outcome = OUT.PLAYER_WIN
       totalNetChange = totalNetChange + hand.bet
-      for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "player", "Blackjack: win")
-      end
-      if not currency.payout(hand.bet, "Blackjack: win payout") then
-        alert.send("CRITICAL: Failed to pay " .. hand.bet .. " tokens")
-      end
     elseif pTotal < dealerTotal then
       hand.outcome = OUT.DEALER_WIN
       totalNetChange = totalNetChange - hand.bet
-      for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.resolveEscrow(eid, "host", "Blackjack: dealer wins")
-      end
     else
       hand.outcome = OUT.PUSH
-      -- Cancel escrows (refund bet to player)
-      for _, eid in ipairs(hand.escrowIds or {}) do
-        currency.cancelEscrow(eid, "Blackjack: push")
-      end
     end
   end
   return totalNetChange
@@ -873,16 +860,9 @@ local function doResolve(ctx)
   if ctx.surrendered then
     local hand = ctx.hands[1]
     local halfBet = math.floor(hand.bet / 2)
-    -- Resolve escrow to host (house gets the bet)
-    for _, eid in ipairs(hand.escrowIds or {}) do
-      currency.resolveEscrow(eid, "host", "Blackjack: surrender")
-    end
-    -- Return half to player from host
-    if not currency.payout(halfBet, "Blackjack: surrender refund") then
-      alert.send("CRITICAL: Failed to refund " .. halfBet .. " tokens (surrender)")
-    end
     ctx.outcome = OUT.DEALER_WIN
     ctx.netChange = -hand.bet + halfBet
+    settleNetChange(ctx.netChange, "Blackjack: surrender settlement")
     renderTable(ctx, false, nil)
     ui.displayCenteredMessage(screen, "Surrendered", colors.gray, 1.5)
     sound.play(sound.SOUNDS.FAIL)
@@ -914,6 +894,7 @@ local function doResolve(ctx)
   -- Subtract insurance loss
   totalNetChange = totalNetChange - (ctx.insuranceBet or 0)
   ctx.netChange = totalNetChange
+  settleNetChange(totalNetChange, "Blackjack: round settlement")
 
   -- Notify host if player won
   if totalNetChange > 0 then
@@ -1086,8 +1067,8 @@ end
 -----------------------------------------------------
 -- Round runner (state machine)
 -----------------------------------------------------
-local function blackjackRound(currentBet, escrowId)
-  recovery.saveEscrowBet(currentBet, {{ id = escrowId, amount = currentBet, tag = "initial" }})
+local function blackjackRound(currentBet)
+  recovery.saveBet(currentBet)
 
   local ctx = {
     hands = {
@@ -1101,7 +1082,6 @@ local function blackjackRound(currentBet, escrowId)
         lastAction = ACT.STAND,
         outcome    = nil,
         netChange  = 0,
-        escrowIds  = { escrowId },
       },
     },
     currentHandIdx   = 1,
@@ -1109,7 +1089,6 @@ local function blackjackRound(currentBet, escrowId)
     insuranceBet     = 0,
     insurancePaid    = 0,
     insuranceWon     = 0,
-    insuranceEscrowId = nil,
     surrendered      = false,
     splitCount       = 0,
     outcome          = nil,
@@ -1179,15 +1158,12 @@ local function main()
     drawPlayerOverlay()
 
     local bet = nil
-    local escrowId = nil
     if AUTO_PLAY then
       local playerBalance = currency.getPlayerBalance()
       local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
       if autoBet > 0 then
-        local ok, eid = currency.escrow(autoBet, "Blackjack: auto-play bet")
-        if ok and eid then
+        if playerBalance >= autoBet then
           bet = autoBet
-          escrowId = eid
           os.sleep(cfg.AUTO_PLAY_DELAY)
         else
           os.sleep(1)
@@ -1201,11 +1177,11 @@ local function main()
         dbg("Strategy changed to " .. AUTO_PLAY_STRATEGY)
       end
     else
-      bet, escrowId = betSelection()
+      bet = betSelection()
     end
 
-    if bet and bet > 0 and escrowId then
-      blackjackRound(bet, escrowId)
+    if bet and bet > 0 then
+      blackjackRound(bet)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
     end

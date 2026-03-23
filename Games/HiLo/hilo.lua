@@ -168,7 +168,7 @@ local LINE_H = 9
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
-  screen:drawText(text, font, math.floor((width - tw) / 2), y, color or colors.white)
+  ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
 local function renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
@@ -176,12 +176,12 @@ local function renderBase(currentCard, revealedCards, betAmount, round, multipli
 
   -- Bet and multiplier display
   local betLabel = "Bet: " .. currency.formatTokens(betAmount)
-  screen:drawText(betLabel, font, 1, 0, colors.white)
+  ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
 
   if round > 0 then
     local multLabel = "x" .. tostring(multiplier)
     local mw = ui.getTextSize(multLabel)
-    screen:drawText(multLabel, font, width - mw - 1, 0, colors.yellow)
+    ui.safeDrawText(screen, multLabel, font, width - mw - 1, 0, colors.yellow)
   end
 
   -- Round indicator
@@ -206,7 +206,7 @@ local function renderBase(currentCard, revealedCards, betAmount, round, multipli
     end
     local tw = ui.getTextSize(trail)
     if tw < width - 4 then
-      screen:drawText(trail, font, math.floor((width - tw) / 2), trailY, colors.lightGray)
+      ui.safeDrawText(screen, trail, font, math.floor((width - tw) / 2), trailY, colors.lightGray)
     end
   end
 
@@ -370,11 +370,11 @@ local function preRoundMenu()
 
     local title = "HI-LO"
     local tw = ui.getTextSize(title)
-    screen:drawText(title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
 
     local subtitle = "Higher or Lower?"
     local sw = ui.getTextSize(subtitle)
-    screen:drawText(subtitle, font, math.floor((width - sw) / 2), math.floor(height * 0.22), colors.lightGray)
+    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), math.floor(height * 0.22), colors.lightGray)
 
     ui.clearButtons()
     local chosen = nil
@@ -427,8 +427,8 @@ end
 -----------------------------------------------------
 -- Hi-Lo round
 -----------------------------------------------------
-local function hiloRound(betAmount, escrowId)
-  recovery.saveEscrowBet(betAmount, {{ id = escrowId, amount = betAmount, tag = "initial" }})
+local function hiloRound(betAmount)
+  recovery.saveBet(betAmount)
 
   local revealedCards = {}
   local currentCard = dealOne()
@@ -493,8 +493,6 @@ local function hiloRound(betAmount, escrowId)
       local totalPayout = math.floor(betAmount * multiplier)
       local profit = totalPayout - betAmount
 
-      -- Resolve escrow to player (returns bet) + pay profit
-      currency.resolveEscrow(escrowId, "player", "HiLo: cash out round " .. round)
       if profit > 0 then
         local payOk = currency.payout(profit, "HiLo: cash out profit")
         if not payOk then
@@ -581,7 +579,6 @@ local function hiloRound(betAmount, escrowId)
         local totalPayout = math.floor(betAmount * multiplier)
         local profit = totalPayout - betAmount
 
-        currency.resolveEscrow(escrowId, "player", "HiLo: max streak cash out")
         if profit > 0 then
           local payOk = currency.payout(profit, "HiLo: max streak profit")
           if not payOk then
@@ -616,7 +613,10 @@ local function hiloRound(betAmount, escrowId)
       os.sleep(0.8)
     else
       -- Wrong guess: player loses
-      currency.resolveEscrow(escrowId, "host", "HiLo: wrong guess round " .. round)
+      local charged = currency.charge(betAmount, "HiLo: wrong guess round " .. round)
+      if not charged then
+        alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (HiLo)")
+      end
 
       sessionStats.busts = sessionStats.busts + 1
       sessionStats.rounds = sessionStats.rounds + 1
@@ -657,20 +657,13 @@ local function main()
     drawPlayerOverlay()
 
     local betAmount = nil
-    local escrowId = nil
 
     if AUTO_PLAY then
       local playerBalance = currency.getPlayerBalance()
       local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
       if autoBet > 0 then
-        local ok, eid = currency.escrow(autoBet, "HiLo: auto-play bet")
-        if ok and eid then
-          betAmount = autoBet
-          escrowId = eid
-          os.sleep(cfg.AUTO_PLAY_DELAY)
-        else
-          os.sleep(1)
-        end
+        betAmount = autoBet
+        os.sleep(cfg.AUTO_PLAY_DELAY)
       else
         os.sleep(1)
       end
@@ -679,15 +672,14 @@ local function main()
       preRoundMenu()
 
       -- Run bet screen
-      local selectedBet, selEscrow = betSelection()
-      if selectedBet and selectedBet > 0 and selEscrow then
+      local selectedBet = betSelection()
+      if selectedBet and selectedBet > 0 then
         betAmount = selectedBet
-        escrowId = selEscrow
       end
     end
 
-    if betAmount and betAmount > 0 and escrowId then
-      hiloRound(betAmount, escrowId)
+    if betAmount and betAmount > 0 then
+      hiloRound(betAmount)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
     end

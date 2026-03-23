@@ -5,8 +5,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.2",
-                                      "content_hash":  "6d849dbdbe8c6f82",
+                                      "version":  "1.2.4",
+                                      "content_hash":  "90ff66561d158899",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -34,8 +34,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.2.1",
-                                       "content_hash":  "f255a714c66b7a2b",
+                                       "version":  "1.2.3",
+                                       "content_hash":  "e2f12fed5ff94154",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -67,8 +67,8 @@
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.3",
-                                  "content_hash":  "7894c6c14425e3a2",
+                                  "version":  "1.0.5",
+                                  "content_hash":  "76e3c570214779df",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
@@ -96,8 +96,8 @@
                               },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.2",
-                                      "content_hash":  "aadbabcd307ef65c",
+                                      "version":  "1.0.4",
+                                      "content_hash":  "a79a664e2e0419b2",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -118,8 +118,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.2",
-                                   "content_hash":  "7acb66bbdb52f7b9",
+                                   "version":  "1.0.4",
+                                   "content_hash":  "8d5cd24b17cc54a9",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -162,8 +162,8 @@
                                     },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.3",
-                                        "content_hash":  "81bf5e1f28f872d3",
+                                        "version":  "1.0.5",
+                                        "content_hash":  "d5b556eae1894b37",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,
@@ -225,8 +225,8 @@
                                       },
                      "test_ccvault_full":  {
                                                "name":  "test_ccvault_full",
-                                               "version":  "1.0.3",
-                                               "content_hash":  "dc2c46255e3814de",
+                                               "version":  "1.0.4",
+                                               "content_hash":  "35fe58c3d6ee55a3",
                                                "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
                                                "source_dir":  "Utilities",
                                                "uses_lib":  false,
@@ -259,8 +259,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.3",
-                "content_hash":  "6351da08fffffd50",
+                "version":  "1.2.5",
+                "content_hash":  "9bcf9b15120a52b5",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",

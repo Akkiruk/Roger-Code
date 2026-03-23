@@ -8,6 +8,7 @@
 local alertLib   = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
 local updater    = require("lib.updater")
+local ui         = require("lib.ui")
 
 -----------------------------------------------------
 -- Config
@@ -43,11 +44,11 @@ end
 local function drawOverlay(env, screen)
   local title = "SLOT MACHINE"
   local tw = env.surface.getTextSize(title, env.font)
-  screen:drawText(title, env.font, math.floor((env.width - tw) / 2), math.floor(env.height * 0.15), colors.yellow)
+  ui.safeDrawText(screen, title, env.font, math.floor((env.width - tw) / 2), math.floor(env.height * 0.15), colors.yellow)
 
   local subtitle = "Touch to play"
   local sw = env.surface.getTextSize(subtitle, env.font)
-  screen:drawText(subtitle, env.font, math.floor((env.width - sw) / 2), math.floor(env.height * 0.28), colors.white)
+  ui.safeDrawText(screen, subtitle, env.font, math.floor((env.width - sw) / 2), math.floor(env.height * 0.28), colors.white)
 end
 
 -----------------------------------------------------
