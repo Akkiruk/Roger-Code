@@ -288,13 +288,13 @@ local function showTutorial()
     ui.clearButtons()
     local navRow = {}
     if page > 1 then
-      table.insert(navRow, { text = "<", color = colors.lightGray,
+      table.insert(navRow, { text = "PREV", color = colors.lightGray,
         func = function() page = page - 1 end })
     end
     table.insert(navRow, { text = "BACK", color = colors.red,
       func = function() page = nil end })
     if page < #TUTORIAL_PAGES then
-      table.insert(navRow, { text = ">", color = colors.lime,
+      table.insert(navRow, { text = "NEXT", color = colors.lime,
         func = function() page = page + 1 end })
     end
     ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, 8, 4)
