@@ -96,13 +96,16 @@
     },
     "roulette": {
       "name": "Roulette",
-      "version": "1.0.8",
-      "content_hash": "b07bc411ecd2b671",
-      "description": "European Roulette for ComputerCraft casino.",
+      "version": "1.0.10",
+      "content_hash": "913abebd22bc07ab",
+      "description": "European Roulette with a single-screen felt UI and multi-bet support.",
       "source_dir": "Games/Roulette",
       "uses_lib": true,
       "files": [
         "Roulette.lua",
+        "roulette_layout.lua",
+        "roulette_model.lua",
+        "roulette_render.lua",
         "startup.lua",
         "ThreeCardPoker.lua"
       ],

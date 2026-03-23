@@ -1,75 +1,67 @@
 -- roulette.lua
--- European Roulette for ComputerCraft casino.
--- Single-zero wheel, visual spin animation, inside + outside bets.
--- Uses shared casino libraries for economy, UI, crash recovery, etc.
+-- European Roulette with a single-screen felt UI and multi-bet support.
 
------------------------------------------------------
--- Configuration & Caching
------------------------------------------------------
 local cfg = require("roulette_config")
 
-local LO = cfg.LAYOUT
+local currency = require("lib.currency")
+local sound = require("lib.sound")
+local alert = require("lib.alert")
+local recovery = require("lib.crash_recovery")
+local gameSetup = require("lib.game_setup")
+local safeRunner = require("lib.safe_runner")
 
-local epoch        = os.epoch
-local r_getInput   = redstone.getInput
+local rouletteModel = require("roulette_model")
+local rouletteLayout = require("roulette_layout")
+local rouletteRender = require("roulette_render")
+
+local epoch = os.epoch
+local floor = math.floor
+local ceil = math.ceil
+local min = math.min
+local max = math.max
+local random = math.random
+local randomseed = math.randomseed
+local r_getInput = redstone.getInput
 local settings_get = settings.get
-local floor        = math.floor
-local random       = math.random
+local insert = table.insert
 
 settings.define("roulette.debug", {
   description = "Enable debug messages for Roulette.",
-  type        = "boolean",
-  default     = false,
+  type = "boolean",
+  default = false,
 })
 
 local DEBUG = settings_get("roulette.debug")
-local function dbg(msg)
-  if DEBUG then print(os.time(), "[ROUL] " .. msg) end
-end
 
------------------------------------------------------
--- Shared library imports
------------------------------------------------------
-local currency  = require("lib.currency")
-local sound     = require("lib.sound")
-local ui        = require("lib.ui")
-local alert     = require("lib.alert")
-local recovery  = require("lib.crash_recovery")
-local gameSetup = require("lib.game_setup")
-local betting   = require("lib.betting")
-
------------------------------------------------------
--- Auto-play state
------------------------------------------------------
-local AUTO_PLAY = false
-
-local function updateAutoPlay()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg("Auto-play " .. (AUTO_PLAY and "ON" or "OFF"))
+local function dbg(message)
+  if DEBUG then
+    print("[" .. epoch("local") .. "] [roulette] " .. tostring(message))
   end
-  return AUTO_PLAY
 end
 
------------------------------------------------------
--- Initialize game environment
------------------------------------------------------
+local AUTO_PLAY = false
+local sessionPlayer = nil
+
 recovery.configure(cfg.RECOVERY_FILE)
+recovery.setGame(cfg.GAME_NAME)
 
 local roulettePalette = {}
-for k, v in pairs(gameSetup.DEFAULT_PALETTE) do roulettePalette[k] = v end
+for colorID, hex in pairs(gameSetup.DEFAULT_PALETTE) do
+  roulettePalette[colorID] = hex
+end
 if cfg.PALETTE then
-  for k, v in pairs(cfg.PALETTE) do roulettePalette[k] = v end
+  for colorID, hex in pairs(cfg.PALETTE) do
+    roulettePalette[colorID] = hex
+  end
 end
 
 local env = gameSetup.init({
   monitorName = cfg.MONITOR,
-  deckCount   = 1,
-  gameName    = cfg.GAME_NAME,
-  logFile     = cfg.LOG_FILE,
-  skipAuth    = false,
-  palette     = roulettePalette,
+  deckCount = 1,
+  gameName = cfg.GAME_NAME,
+  logFile = cfg.LOG_FILE,
+  skipAuth = false,
+  palette = roulettePalette,
 })
 
 alert.addPlannedExits({
@@ -80,611 +72,668 @@ alert.addPlannedExits({
 })
 
 local screen = env.screen
-local width  = env.width
+local width = env.width
 local height = env.height
-local font   = env.font
+local font = env.font
+local layout = rouletteLayout.build(width, height, #currency.DENOMINATIONS)
 
------------------------------------------------------
--- Host balance tracking
------------------------------------------------------
-local hostBankBalance = currency.getHostBalance()
-dbg("Initial host balance: " .. hostBankBalance .. " tokens")
+sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName()
+recovery.setPlayer(sessionPlayer or "Unknown")
 
-local function getMaxBet()
-  return floor(hostBankBalance * cfg.MAX_BET_PERCENT)
-end
+local state = {
+  autoPlay = false,
+  phase = "betting",
+  currentPlayer = sessionPlayer or env.currentPlayer or "Unknown",
+  statusText = "Choose a chip and touch the felt.",
+  statusTone = "neutral",
+  statusUntil = 0,
+  selectedChipIndex = min(2, #currency.DENOMINATIONS),
+  denominations = currency.DENOMINATIONS,
+  bets = {},
+  betActions = {},
+  lastResolved = {},
+  history = {},
+  playerBalance = 0,
+  hostBalance = 0,
+  totalStake = 0,
+  maxExposure = 0,
+  wheelOffset = 0,
+  resultNumber = nil,
+  highlightKeys = nil,
+  sessionProfit = 0,
+  sessionProfitText = "0",
+  sessionProfitTone = "neutral",
+  betActionCount = 0,
+  lastResolvedCount = 0,
+  lastBalanceRefresh = 0,
+}
 
------------------------------------------------------
--- Player detection
------------------------------------------------------
-local function refreshPlayer()
-  return gameSetup.refreshPlayer(env)
-end
-
-local function drawPlayerOverlay()
-  gameSetup.drawPlayerOverlay(env)
-end
-
------------------------------------------------------
--- Roulette lookup tables
------------------------------------------------------
-local WHEEL = cfg.WHEEL_ORDER
-local WHEEL_SIZE = #WHEEL
-
-local redSet = {}
-for _, n in ipairs(cfg.RED_NUMBERS) do
-  redSet[n] = true
-end
-
-local function isRed(n)
-  return redSet[n] == true
-end
-
-local function isBlack(n)
-  return n > 0 and not redSet[n]
-end
-
-local function getNumberColor(n)
-  if n == 0 then return colors.lime end
-  if isRed(n) then return colors.red end
-  return colors.black
-end
-
-local function getNumberTextColor(n)
-  if n == 0 then return colors.black end
-  if isRed(n) then return colors.black end
-  return colors.lightGray
-end
-
-local function getColorName(n)
-  if n == 0 then return "GREEN" end
-  if isRed(n) then return "RED" end
-  return "BLACK"
-end
-
------------------------------------------------------
--- Bet type helpers
------------------------------------------------------
-local function getBetTypeLabel(betType, straightNum)
-  for _, bt in ipairs(cfg.BET_TYPES) do
-    if bt.id == betType then
-      if betType == "straight" and straightNum then
-        return bt.label .. " (" .. straightNum .. ")"
-      end
-      return bt.label
-    end
+local function formatSignedTokens(amount)
+  if amount > 0 then
+    return "+" .. currency.formatTokens(amount)
+  elseif amount < 0 then
+    return "-" .. currency.formatTokens(-amount)
   end
-  return betType:upper()
+  return "even"
 end
 
-local function getPayoutMultiplier(betType)
-  for _, bt in ipairs(cfg.BET_TYPES) do
-    if bt.id == betType then
-      return bt.payout
-    end
-  end
-  return 0
+local function setStatus(text, tone, stickyMs)
+  state.statusText = text
+  state.statusTone = tone or "neutral"
+  state.statusUntil = epoch("local") + (stickyMs or 1600)
 end
 
------------------------------------------------------
--- Bet evaluation
------------------------------------------------------
-local function doesBetWin(betType, number, straightNum)
-  if betType == "straight" then
-    return number == straightNum
-  elseif betType == "red" then
-    return isRed(number)
-  elseif betType == "black" then
-    return isBlack(number)
-  elseif betType == "odd" then
-    return number > 0 and number % 2 == 1
-  elseif betType == "even" then
-    return number > 0 and number % 2 == 0
-  elseif betType == "low" then
-    return number >= 1 and number <= 18
-  elseif betType == "high" then
-    return number >= 19 and number <= 36
-  elseif betType == "dozen1" then
-    return number >= 1 and number <= 12
-  elseif betType == "dozen2" then
-    return number >= 13 and number <= 24
-  elseif betType == "dozen3" then
-    return number >= 25 and number <= 36
-  elseif betType == "col1" then
-    return number > 0 and number % 3 == 1
-  elseif betType == "col2" then
-    return number > 0 and number % 3 == 2
-  elseif betType == "col3" then
-    return number > 0 and number % 3 == 0
-  end
-  return false
-end
+local function refreshDerivedState()
+  state.autoPlay = AUTO_PLAY
+  state.denominations = currency.DENOMINATIONS
+  state.totalStake = rouletteModel.getTotalStake(state.bets)
+  state.maxExposure = rouletteModel.getMaxExposure(state.bets)
+  state.betActionCount = #state.betActions
+  state.lastResolvedCount = #state.lastResolved
 
------------------------------------------------------
--- Spin the wheel
------------------------------------------------------
-local function spinWheel()
-  local idx = random(1, WHEEL_SIZE)
-  return WHEEL[idx], idx
-end
-
--- Rendering helpers
------------------------------------------------------
-local function drawNumberDisplay(number, y)
-  local numStr = tostring(number)
-  local bg = getNumberColor(number)
-  local fg = getNumberTextColor(number)
-
-  local boxW = 12
-  local boxH = 8
-  local boxX = floor((width - boxW) / 2)
-
-  screen:fillRect(boxX - 1, y - 1, boxW + 2, boxH + 2, colors.yellow)
-  screen:fillRect(boxX, y, boxW, boxH, bg)
-
-  local tw = ui.getTextSize(numStr)
-  local tx = floor((width - tw) / 2)
-  local ty = y + floor((boxH - 7) / 2)
-  ui.safeDrawText(screen, numStr, font, tx, ty, fg)
-end
-
-local function drawBoardCell(x, y, n, w, h, isSelected, isGold)
-  local bg = getNumberColor(n)
-
-  if isGold then
-    screen:fillRect(x - 2, y - 2, w + 4, h + 4, colors.yellow)
-    screen:fillRect(x - 1, y - 1, w + 2, h + 2, colors.orange)
-  elseif isSelected then
-    screen:fillRect(x - 1, y - 1, w + 2, h + 2, colors.yellow)
-  end
-
-  screen:fillRect(x, y, w, h, bg)
-
-  local numStr = tostring(n)
-  local tw = ui.getTextSize(numStr)
-  local tx = x + floor((w - tw) / 2)
-  local ty = y + floor((h - 7) / 2)
-  ui.safeDrawText(screen, numStr, font, tx, ty, getNumberTextColor(n))
-end
-
-local function drawNumberBoard(activeNumber, finalNumber)
-  local cellW = (width >= 100) and 11 or 10
-  local cellH = (height >= 100) and 8 or 7
-  local gap = 1
-  local cols = 6
-
-  local zeroY = 31
-  local zeroX = floor((width - cellW) / 2)
-
-  local totalGridW = cols * (cellW + gap) - gap
-  local gridX = floor((width - totalGridW) / 2)
-  local gridY = zeroY + cellH + gap + 2
-
-  drawBoardCell(zeroX, zeroY, 0, cellW, cellH, activeNumber == 0, finalNumber == 0)
-
-  for n = 1, 36 do
-    local row = floor((n - 1) / cols)
-    local col = (n - 1) % cols
-    local x = gridX + col * (cellW + gap)
-    local y = gridY + row * (cellH + gap)
-    drawBoardCell(x, y, n, cellW, cellH, activeNumber == n, finalNumber == n)
+  if state.sessionProfit > 0 then
+    state.sessionProfitText = "+" .. currency.formatTokens(state.sessionProfit)
+    state.sessionProfitTone = "success"
+  elseif state.sessionProfit < 0 then
+    state.sessionProfitText = "-" .. currency.formatTokens(-state.sessionProfit)
+    state.sessionProfitTone = "error"
+  else
+    state.sessionProfitText = "0"
+    state.sessionProfitTone = "neutral"
   end
 end
 
------------------------------------------------------
--- Main screen rendering
------------------------------------------------------
-local function drawScreen(result, betType, straightNum, betAmount, statusText, activeNumber, finalNumber)
-  screen:clear(LO.TABLE_COLOR)
-
-  -- Title bar
-  screen:fillRect(0, 0, width, 16, colors.black)
-  local title = "ROULETTE"
-  local titleW = ui.getTextSize(title)
-
-  local betStr = nil
-  if betAmount and betAmount > 0 then
-    betStr = "Bet: " .. currency.formatTokens(betAmount)
-  end
-
-  local rightStr = nil
-  if betType then
-    local betLabel = getBetTypeLabel(betType, straightNum)
-    local payoutStr = getPayoutMultiplier(betType) .. ":1"
-    rightStr = betLabel .. " " .. payoutStr
-  end
-
-  ui.safeDrawText(screen, title, font, floor((width - titleW) / 2), 1, colors.yellow)
-
-  -- Bet amount (top-left)
-  if betStr then
-    ui.safeDrawText(screen, betStr, font, 2, 9, colors.lightGray)
-  end
-
-  -- Bet type + payout (top-right)
-  if rightStr then
-    local rsw = ui.getTextSize(rightStr)
-    local rightX = width - rsw - 2
-
-    if betStr then
-      local leftW = ui.getTextSize(betStr)
-      if (2 + leftW + 3) > rightX then
-        betStr = "Bet:" .. tostring(betAmount)
-        ui.safeDrawText(screen, string.rep(" ", leftW), font, 2, 9, colors.black)
-        ui.safeDrawText(screen, betStr, font, 2, 9, colors.lightGray)
-      end
-
-      leftW = ui.getTextSize(betStr)
-      rightX = width - rsw - 2
-      if (2 + leftW + 3) > rightX then
-        rightStr = getPayoutMultiplier(betType) .. ":1"
-        rsw = ui.getTextSize(rightStr)
-        rightX = width - rsw - 2
-      end
-    end
-
-    ui.safeDrawText(screen, rightStr, font, rightX, 9, colors.cyan)
-  end
-
-  -- Separator
-  screen:fillRect(0, 16, width, 1, colors.yellow)
-
-  local boardTitle = "PICK A NUMBER 35:1"
-  local lineText = boardTitle
-  local lineColor = colors.yellow
-  if statusText then
-    lineText = statusText.text
-    lineColor = statusText.color
-  end
-  local ltw = ui.getTextSize(lineText)
-  ui.safeDrawText(screen, lineText, font, floor((width - ltw) / 2), 19, lineColor)
-
-  local shownNumber = activeNumber
-  if shownNumber == nil then
-    shownNumber = result
-  end
-  if shownNumber == nil then
-    shownNumber = (betType == "straight" and straightNum) or 0
-  end
-
-  drawNumberDisplay(shownNumber, 22)
-  drawNumberBoard(shownNumber, finalNumber)
-
-  screen:output()
-end
-
------------------------------------------------------
--- Bet type selection screen
------------------------------------------------------
-local function selectBetType()
-  local selectedType = nil
-  local straightNum = nil
-  local page = 1
-
-  while not selectedType do
-    screen:clear(LO.TABLE_COLOR)
-    ui.clearButtons()
-
-    if page == 1 then
-      -- Outside bets + navigation to number picker
-      local title = "CHOOSE YOUR BET"
-      local ttw = ui.getTextSize(title)
-      ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), 1, colors.yellow)
-
-      local centerX = floor(width / 2)
-      local btnY = 10
-      local btnSpacing = 8
-
-      ui.layoutButtonGrid(screen, {
-        {
-          { text = "RED 1:1", color = colors.red,
-            func = function() selectedType = "red" end },
-          { text = "BLACK 1:1", color = colors.gray,
-            func = function() selectedType = "black" end },
-        },
-        {
-          { text = "ODD 1:1", color = colors.orange,
-            func = function() selectedType = "odd" end },
-          { text = "EVEN 1:1", color = colors.lightBlue,
-            func = function() selectedType = "even" end },
-        },
-        {
-          { text = "1-18 1:1", color = colors.brown,
-            func = function() selectedType = "low" end },
-          { text = "19-36 1:1", color = colors.purple,
-            func = function() selectedType = "high" end },
-        },
-        {
-          { text = "1ST 12 2:1", color = colors.cyan,
-            func = function() selectedType = "dozen1" end },
-          { text = "2ND 12 2:1", color = colors.cyan,
-            func = function() selectedType = "dozen2" end },
-          { text = "3RD 12 2:1", color = colors.cyan,
-            func = function() selectedType = "dozen3" end },
-        },
-        {
-          { text = "COL 1 2:1", color = colors.lime,
-            func = function() selectedType = "col1" end },
-          { text = "COL 2 2:1", color = colors.lime,
-            func = function() selectedType = "col2" end },
-          { text = "COL 3 2:1", color = colors.lime,
-            func = function() selectedType = "col3" end },
-        },
-      }, centerX, btnY, btnSpacing, 4)
-
-      -- Navigation to straight-up number picker
-      local pickY = btnY + 5 * btnSpacing
-      ui.button(screen, "PICK A NUMBER 35:1", colors.magenta, centerX, pickY, function()
-        page = 2
-      end, true)
-
-    elseif page == 2 then
-      -- Straight-up number picker grid (6 columns for readability)
-      local title = "PICK A NUMBER 35:1"
-      local ttw = ui.getTextSize(title)
-      ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), 1, colors.yellow)
-
-      local startY = 10
-      local cellW = 12
-      local cellH = 8
-      local gap = 1
-      local cols = 6
-
-      -- Zero button (centered, special green)
-      local zeroW = cellW
-      ui.fixedWidthButton(screen, "0", colors.lime,
-        floor((width - zeroW) / 2), startY, function()
-          selectedType = "straight"
-          straightNum = 0
-        end, false, zeroW)
-
-      -- Numbers 1-36 in a 6-column grid (6 rows of 6)
-      local totalGridW = cols * (cellW + gap) - gap
-      local gridX = floor((width - totalGridW) / 2)
-      local numStartY = startY + cellH + gap + 2
-
-      for n = 1, 36 do
-        local row = floor((n - 1) / cols)
-        local col = (n - 1) % cols
-        local x = gridX + col * (cellW + gap)
-        local y = numStartY + row * (cellH + gap)
-
-        local bg = getNumberColor(n)
-        ui.fixedWidthButton(screen, tostring(n), bg, x, y, function()
-          selectedType = "straight"
-          straightNum = n
-        end, false, cellW)
-      end
-
-      -- Back button below the grid
-      local backY = numStartY + 6 * (cellH + gap) + 2
-      ui.button(screen, "< BACK", colors.red, floor(width / 2), backY, function()
-        page = 1
-      end, true)
-    end
-
-    screen:output()
-    ui.waitForButton(0, 0)
-  end
-
-  -- Confirm sound on selection
-  sound.play(sound.SOUNDS.START, 0.4)
-  return selectedType, straightNum
-end
-
------------------------------------------------------
--- Spin animation
------------------------------------------------------
-local function animateSpin(finalNumber, betType, straightNum, betAmount)
-  local totalTicks = cfg.SPIN_TICKS
-  local currentNumber = random(0, 36)
-
-  for tick = 1, totalTicks do
-    local progress = tick / totalTicks
-
-    if tick >= totalTicks - 2 then
-      currentNumber = finalNumber
+local function refreshAutoPlay()
+  local powered = r_getInput(cfg.REDSTONE)
+  if powered ~= AUTO_PLAY then
+    AUTO_PLAY = powered
+    dbg("Auto-play " .. (AUTO_PLAY and "enabled" or "disabled"))
+    if AUTO_PLAY then
+      setStatus("Auto play enabled.", "accent", 1200)
     else
-      local nextNumber = currentNumber
-      while nextNumber == currentNumber do
-        nextNumber = random(0, 36)
-      end
-      currentNumber = nextNumber
+      setStatus("Manual play restored.", "accent", 1200)
     end
-
-    drawScreen(nil, betType, straightNum, betAmount, {
-      text = "Spinning...",
-      color = colors.yellow,
-    }, currentNumber, nil)
-
-    -- Slight slowdown near the end for readability.
-    local delay = cfg.SPIN_FRAME_DELAY + (progress * 0.08)
-    os.sleep(delay)
   end
-
-  -- Landing click
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.8)
-  os.sleep(0.2)
+  return AUTO_PLAY
 end
 
------------------------------------------------------
--- One round of roulette
------------------------------------------------------
-local function rouletteRound(betAmount, betType, straightNum)
-  recovery.saveBet(betAmount)
+local function refreshPlayerState(forceBalances)
+  local detectedPlayer = gameSetup.refreshPlayer(env)
+  local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
+  local currentSessionPlayer = (sessionInfo and sessionInfo.playerName) or currency.getPlayerName()
 
-  -- Pre-spin confirmation screen with bet summary
-  local betLabel = getBetTypeLabel(betType, straightNum)
-  local payoutStr = getPayoutMultiplier(betType) .. ":1"
-
-  drawScreen(nil, betType, straightNum, betAmount, {
-    text = betLabel .. " " .. payoutStr .. "  Touch to SPIN!",
-    color = colors.lime,
-  }, straightNum, nil)
-
-  if not AUTO_PLAY then
-    os.pullEvent("monitor_touch")
-  else
-    os.sleep(cfg.AUTO_PLAY_DELAY)
+  if sessionPlayer == nil or sessionPlayer == "" then
+    sessionPlayer = currentSessionPlayer or detectedPlayer
   end
 
-  -- Spin the wheel
-  sound.play(sound.SOUNDS.START, 0.6)
-  local winNumber = spinWheel()
+  state.currentPlayer = currentSessionPlayer or detectedPlayer or sessionPlayer or "Unknown"
+  recovery.setPlayer(state.currentPlayer)
 
-  -- Animate the spin
-  animateSpin(winNumber, betType, straightNum, betAmount)
+  local now = epoch("local")
+  if forceBalances or (now - state.lastBalanceRefresh) > 1000 then
+    state.playerBalance = currency.getPlayerBalance()
+    state.hostBalance = currency.getHostBalance()
+    state.lastBalanceRefresh = now
+  end
+end
 
-  -- Evaluate result
-  local won = doesBetWin(betType, winNumber, straightNum)
-  local colorName = getColorName(winNumber)
-  local resultLabel = winNumber .. " " .. colorName
+local function validateCurrentSession()
+  local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
+  local currentSessionPlayer = (sessionInfo and sessionInfo.playerName) or currency.getPlayerName()
 
-  if won then
-    local multiplier = getPayoutMultiplier(betType)
-    local winnings = betAmount * multiplier
+  if sessionPlayer and currentSessionPlayer and currentSessionPlayer ~= sessionPlayer then
+    return false, "Game in use by " .. sessionPlayer .. "."
+  end
 
-    if not currency.payout(winnings, "Roulette: " .. betType .. " payout") then
-      alert.send("CRITICAL: Failed to pay " .. winnings .. " tokens (roulette)")
+  return true, nil
+end
+
+local function getTableStakeCap()
+  local cap = floor((state.hostBalance or 0) * cfg.MAX_BET_PERCENT)
+  if cap < 1 then
+    cap = 1
+  end
+  return cap
+end
+
+local function validateBetSet(candidateBets)
+  local totalStake = rouletteModel.getTotalStake(candidateBets)
+  local exposure = rouletteModel.getMaxExposure(candidateBets)
+
+  if totalStake <= 0 then
+    return false, "Place a bet first.", totalStake, exposure
+  end
+  if totalStake > (state.playerBalance or 0) then
+    return false, "Not enough tokens.", totalStake, exposure
+  end
+  if totalStake > getTableStakeCap() then
+    return false, "Table limit is " .. currency.formatTokens(getTableStakeCap()) .. ".", totalStake, exposure
+  end
+  if exposure > (state.hostBalance or 0) then
+    return false, "House coverage limit exceeded.", totalStake, exposure
+  end
+  return true, nil, totalStake, exposure
+end
+
+local function buildChangesFromBets(bets)
+  local changes = {}
+  for _, bet in ipairs(bets or {}) do
+    local region = layout.regionByKey[bet.key]
+    if region then
+      insert(changes, {
+        region = region,
+        amount = bet.stake or 0,
+      })
+    end
+  end
+  return changes
+end
+
+local function applyChanges(candidateBets, changes)
+  for _, change in ipairs(changes) do
+    rouletteModel.addStake(candidateBets, change.region, change.amount)
+  end
+end
+
+local function tryApplyAction(changes, successText, soundID)
+  if not changes or #changes == 0 then
+    sound.play(sound.SOUNDS.ERROR, 0.4)
+    setStatus("Nothing to place.", "warning")
+    return false
+  end
+
+  refreshPlayerState(true)
+
+  local candidateBets = rouletteModel.cloneBetList(state.bets)
+  applyChanges(candidateBets, changes)
+
+  local ok, err = validateBetSet(candidateBets)
+  if not ok then
+    sound.play(sound.SOUNDS.ERROR, 0.4)
+    setStatus(err, "error", 1800)
+    return false
+  end
+
+  state.bets = candidateBets
+  insert(state.betActions, { changes = changes })
+  refreshDerivedState()
+  setStatus(successText, "accent", 1200)
+  sound.play(soundID or sound.SOUNDS.CARD_PLACE, 0.45)
+  return true
+end
+
+local function undoLastAction()
+  local lastAction = state.betActions[#state.betActions]
+  if not lastAction then
+    sound.play(sound.SOUNDS.ERROR, 0.4)
+    setStatus("Nothing to undo.", "warning")
+    return
+  end
+
+  local candidateBets = rouletteModel.cloneBetList(state.bets)
+  local index = #lastAction.changes
+  while index >= 1 do
+    local change = lastAction.changes[index]
+    rouletteModel.removeStake(candidateBets, change.region.key, change.amount)
+    index = index - 1
+  end
+
+  state.bets = candidateBets
+  table.remove(state.betActions)
+  refreshDerivedState()
+  sound.play(sound.SOUNDS.CLEAR, 0.45)
+  setStatus("Removed the last placement.", "warning", 1200)
+end
+
+local function clearBets()
+  if #state.bets == 0 then
+    sound.play(sound.SOUNDS.ERROR, 0.4)
+    setStatus("No chips to clear.", "warning")
+    return
+  end
+
+  state.bets = {}
+  state.betActions = {}
+  refreshDerivedState()
+  sound.play(sound.SOUNDS.CLEAR, 0.5)
+  setStatus("Cleared the table.", "warning", 1200)
+end
+
+local function updatePassiveStatus(idleMs)
+  local now = epoch("local")
+  if now < (state.statusUntil or 0) then
+    return
+  end
+
+  if state.phase == "spinning" then
+    state.statusText = "Spinning the wheel..."
+    state.statusTone = "warning"
+    return
+  end
+
+  if state.totalStake > 0 then
+    state.statusText = "Touch SPIN to lock the table."
+    state.statusTone = "accent"
+    return
+  end
+
+  local warningStart = cfg.INACTIVITY_TIMEOUT - 10000
+  if idleMs and idleMs >= warningStart then
+    local remainingMs = max(0, cfg.INACTIVITY_TIMEOUT - idleMs)
+    local remainingSec = ceil(remainingMs / 1000)
+    state.statusText = "Auto-exit in " .. tostring(remainingSec) .. "s."
+    state.statusTone = "warning"
+    return
+  end
+
+  state.statusText = "Choose a chip and touch the felt."
+  state.statusTone = "neutral"
+end
+
+local function renderCurrent(idleMs)
+  refreshDerivedState()
+  updatePassiveStatus(idleMs)
+  rouletteRender.draw(screen, font, layout, state)
+end
+
+local function hitRect(px, py, rect)
+  return px >= rect.x and px <= (rect.x + rect.w - 1)
+    and py >= rect.y and py <= (rect.y + rect.h - 1)
+end
+
+local function findTarget(px, py)
+  for _, button in ipairs(layout.chipButtons) do
+    if hitRect(px, py, button) then
+      return "chip", button
+    end
+  end
+
+  for _, button in ipairs(layout.actionButtons) do
+    if hitRect(px, py, button) then
+      return "action", button
+    end
+  end
+
+  for _, region in ipairs(layout.hitRegions) do
+    if hitRect(px, py, region) then
+      return "region", region
+    end
+  end
+
+  return nil, nil
+end
+
+local function buildHighlightKeys(bets, winningNumber)
+  local keys = rouletteModel.getWinningKeysForOutcome(winningNumber)
+  for _, bet in ipairs(bets) do
+    if rouletteModel.doesBetWin(bet, winningNumber) then
+      keys[bet.key] = true
+    end
+  end
+  return keys
+end
+
+local function pushHistory(number)
+  table.insert(state.history, 1, number)
+  while #state.history > (cfg.HISTORY_LENGTH or 10) do
+    table.remove(state.history)
+  end
+end
+
+local function animateSpin(finalNumber)
+  local wheelSize = #rouletteModel.WHEEL_ORDER
+  local startOffset = state.wheelOffset or random(0, wheelSize - 1)
+  local startIndex = floor(startOffset) % wheelSize
+  local targetIndex = (rouletteModel.getWheelIndex(finalNumber) or 1) - 1
+  local diff = targetIndex - startIndex
+  while diff <= 0 do
+    diff = diff + wheelSize
+  end
+
+  local targetOffset = startOffset + diff + (wheelSize * 3)
+  local lastAudioTick = nil
+  local frame = 1
+
+  state.phase = "spinning"
+  state.highlightKeys = nil
+  state.resultNumber = nil
+
+  while frame <= cfg.SPIN_TICKS do
+    local progress = frame / cfg.SPIN_TICKS
+    local eased = 1 - ((1 - progress) * (1 - progress) * (1 - progress))
+    local currentOffset = startOffset + ((targetOffset - startOffset) * eased)
+    local alignedTick = floor(currentOffset + 0.5)
+
+    state.wheelOffset = currentOffset
+    renderCurrent(nil)
+
+    if alignedTick ~= lastAudioTick then
+      sound.play(sound.SOUNDS.CARD_PLACE, 0.25)
+      lastAudioTick = alignedTick
     end
 
-    local winMsg = resultLabel .. "! +" .. currency.formatTokens(winnings)
-    local isJackpot = (betType == "straight")
+    os.sleep(cfg.SPIN_FRAME_DELAY + (progress * 0.05))
+    frame = frame + 1
+  end
 
-    -- Win flash animation
-    local flashes = isJackpot and 8 or 4
-    for flash = 1, flashes do
-      local showHighlight = (flash % 2 == 1)
-      drawScreen(winNumber, betType, straightNum, betAmount, {
-        text = winMsg,
-        color = showHighlight and colors.yellow or colors.lime,
-      }, winNumber, winNumber)
-      if isJackpot then
-        sound.play(sound.SOUNDS.SUCCESS, 1.0)
-      elseif flash == 1 then
-        sound.play(sound.SOUNDS.SUCCESS, 0.8)
-      end
-      os.sleep(isJackpot and 0.35 or 0.25)
+  state.wheelOffset = targetIndex
+  renderCurrent(nil)
+end
+
+local function settleRound()
+  refreshPlayerState(true)
+  local ok, err = validateBetSet(state.bets)
+  if not ok then
+    sound.play(sound.SOUNDS.ERROR, 0.4)
+    setStatus(err, "error")
+    return
+  end
+
+  local roundBets = rouletteModel.cloneBetList(state.bets)
+  local totalStake = rouletteModel.getTotalStake(roundBets)
+  state.lastResolved = rouletteModel.cloneBetList(roundBets)
+  state.phase = "spinning"
+  recovery.saveSnapshot(totalStake, {
+    phase = "spinning",
+    bets = state.lastResolved,
+  })
+
+  sound.play(sound.SOUNDS.START, 0.55)
+  local winningNumber = rouletteModel.WHEEL_ORDER[random(1, #rouletteModel.WHEEL_ORDER)]
+  animateSpin(winningNumber)
+
+  local summary = rouletteModel.settleBets(roundBets, winningNumber)
+  local reasonBase = "Roulette: " .. tostring(winningNumber) .. " " .. string.lower(summary.winningColor)
+
+  if summary.net > 0 then
+    local paid = currency.payout(summary.net, reasonBase .. " payout")
+    if not paid then
+      alert.send("CRITICAL: Roulette payout failed for " .. tostring(summary.net) .. " tokens")
+      setStatus("Payout failed. Admin alerted.", "error", 3000)
     end
-
-    -- Hold the result on screen
-    drawScreen(winNumber, betType, straightNum, betAmount, {
-      text = winMsg,
-      color = colors.lime,
-    }, winNumber, winNumber)
-    os.sleep(cfg.RESULT_PAUSE)
-
-    dbg("WIN: " .. betType .. " number=" .. winNumber .. " payout=" .. (betAmount + winnings))
-  else
-    local charged = currency.charge(betAmount, "Roulette: " .. betType .. " loss")
+    sound.play(sound.SOUNDS.SUCCESS, 0.8)
+  elseif summary.net < 0 then
+    local charged = currency.charge(-summary.net, reasonBase .. " loss")
     if not charged then
-      alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (roulette)")
+      alert.send("CRITICAL: Roulette charge failed for " .. tostring(-summary.net) .. " tokens")
+      setStatus("Charge failed. Admin alerted.", "error", 3000)
     end
-
-    -- Loss display
-    drawScreen(winNumber, betType, straightNum, betAmount, {
-      text = resultLabel .. " - Better luck next time!",
-      color = colors.lightGray,
-    }, winNumber, winNumber)
-    sound.play(sound.SOUNDS.FAIL, 0.4)
-    os.sleep(cfg.RESULT_PAUSE)
-
-    dbg("LOSS: " .. betType .. " number=" .. winNumber)
+    sound.play(sound.SOUNDS.FAIL, 0.45)
+  else
+    sound.play(sound.SOUNDS.PUSH or sound.SOUNDS.START, 0.4)
   end
+
+  state.sessionProfit = state.sessionProfit + summary.net
+  state.phase = "result"
+  state.resultNumber = winningNumber
+  state.highlightKeys = buildHighlightKeys(roundBets, winningNumber)
+  pushHistory(winningNumber)
+  refreshPlayerState(true)
+  refreshDerivedState()
+
+  if summary.net > 0 then
+    setStatus(
+      tostring(winningNumber) .. " " .. summary.winningColor .. "  " .. formatSignedTokens(summary.net),
+      "success",
+      floor(cfg.RESULT_PAUSE * 1000)
+    )
+  elseif summary.net < 0 then
+    setStatus(
+      tostring(winningNumber) .. " " .. summary.winningColor .. "  " .. formatSignedTokens(summary.net),
+      "error",
+      floor(cfg.RESULT_PAUSE * 1000)
+    )
+  else
+    setStatus(
+      tostring(winningNumber) .. " " .. summary.winningColor .. "  " .. formatSignedTokens(summary.net),
+      "accent",
+      floor(cfg.RESULT_PAUSE * 1000)
+    )
+  end
+
+  renderCurrent(nil)
+  os.sleep(cfg.RESULT_PAUSE)
 
   recovery.clearBet()
-  hostBankBalance = currency.getHostBalance()
+  state.bets = {}
+  state.betActions = {}
+  state.highlightKeys = nil
+  state.phase = "betting"
+  refreshDerivedState()
 end
 
------------------------------------------------------
--- Bet amount selection (dynamic coverage per bet type)
------------------------------------------------------
-local function betSelection(betType, straightNum)
-  -- Calculate max payout multiplier for this bet type
-  -- Host must be able to cover: bet * (payout + 1) for the return + winnings
-  local payoutMult = getPayoutMultiplier(betType) + 1
-
-  -- Cap the bet by both percentage and actual host coverage
-  local percentCap = getMaxBet()
-  local coverageCap = floor(hostBankBalance / payoutMult)
-  local effectiveMax = math.min(percentCap, coverageCap)
-  if effectiveMax <= 0 then
-    effectiveMax = 1
+local function handleActionButton(actionKey)
+  if actionKey == "spin" then
+    refreshPlayerState(true)
+    local ok, err = validateBetSet(state.bets)
+    if not ok then
+      sound.play(sound.SOUNDS.ERROR, 0.4)
+      setStatus(err, "error")
+      return nil
+    end
+    return "spin"
   end
 
-  local betLabel = getBetTypeLabel(betType, straightNum)
+  if actionKey == "undo" then
+    undoLastAction()
+    return nil
+  end
 
-  return betting.runBetScreen(screen, {
-    maxBet                 = effectiveMax,
-    gameName               = "Roulette",
-    confirmLabel           = "SPIN",
-    title                  = "BET: " .. betLabel:upper(),
-    inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
-    hostBalance            = hostBankBalance,
-    hostCoverageMultiplier = payoutMult,
-    onTimeout              = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
-  })
+  if actionKey == "clear" then
+    clearBets()
+    return nil
+  end
+
+  if actionKey == "rebet" then
+    if #state.bets > 0 then
+      sound.play(sound.SOUNDS.ERROR, 0.4)
+      setStatus("Clear the table before REBET.", "warning")
+      return nil
+    end
+    if #state.lastResolved == 0 then
+      sound.play(sound.SOUNDS.ERROR, 0.4)
+      setStatus("No previous round to replay.", "warning")
+      return nil
+    end
+    tryApplyAction(buildChangesFromBets(state.lastResolved), "Replayed the last round.", sound.SOUNDS.ALL_IN)
+    return nil
+  end
+
+  if actionKey == "double" then
+    if #state.bets == 0 then
+      sound.play(sound.SOUNDS.ERROR, 0.4)
+      setStatus("Place chips before DOUBLE.", "warning")
+      return nil
+    end
+    tryApplyAction(buildChangesFromBets(state.bets), "Doubled the current table.", sound.SOUNDS.ALL_IN)
+    return nil
+  end
+
+  if actionKey == "quit" then
+    sound.play(sound.SOUNDS.TIMEOUT, 0.45)
+    os.sleep(0.3)
+    error(cfg.EXIT_CODES.PLAYER_QUIT)
+  end
+
+  return nil
 end
 
------------------------------------------------------
--- Main game loop
------------------------------------------------------
-local function main()
-  dbg("Roulette starting up")
-  refreshPlayer()
-  drawPlayerOverlay()
+local function handleTouch(px, py)
+  local sessionOk, sessionErr = validateCurrentSession()
+  if not sessionOk then
+    sound.play(sound.SOUNDS.ERROR, 0.45)
+    setStatus(sessionErr, "error", 2000)
+    return nil
+  end
+
+  local targetType, target = findTarget(px, py)
+  if not targetType then
+    return nil
+  end
+
+  if targetType == "chip" then
+    local chipIndex = tonumber(string.match(target.key, "^chip:(%d+)$"))
+    if chipIndex and currency.DENOMINATIONS[chipIndex] then
+      state.selectedChipIndex = chipIndex
+      sound.play(currency.DENOMINATIONS[chipIndex].sound, 0.4)
+      setStatus("Selected " .. currency.formatTokens(currency.DENOMINATIONS[chipIndex].value) .. ".", "accent", 900)
+    end
+    return nil
+  end
+
+  if targetType == "action" then
+    return handleActionButton(target.key)
+  end
+
+  if targetType == "region" then
+    local denomination = currency.DENOMINATIONS[state.selectedChipIndex] or currency.DENOMINATIONS[1]
+    tryApplyAction({
+      {
+        region = target,
+        amount = denomination.value,
+      },
+    }, "Placed " .. currency.formatTokens(denomination.value) .. " on " .. target.label .. ".", denomination.sound)
+  end
+
+  return nil
+end
+
+local function runBettingLoop()
+  local lastActivity = epoch("local")
 
   while true do
-    updateAutoPlay()
-    refreshPlayer()
-
-    local currentBet = nil
-    local betType = nil
-    local straightNum = nil
+    refreshAutoPlay()
+    refreshPlayerState(false)
+    refreshDerivedState()
 
     if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      currentBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if currentBet <= 0 then
-        dbg("Auto-play: insufficient funds, pausing")
-        os.sleep(2)
-      else
-        -- Auto-play picks a random bet type
-        local types = { "red", "black", "odd", "even", "low", "high",
-                        "dozen1", "dozen2", "dozen3", "col1", "col2", "col3", "straight" }
-        betType = types[random(1, #types)]
-        if betType == "straight" then
-          straightNum = random(0, 36)
+      return "auto"
+    end
+
+    local idleMs = epoch("local") - lastActivity
+    if state.totalStake == 0 and idleMs > cfg.INACTIVITY_TIMEOUT then
+      sound.play(sound.SOUNDS.TIMEOUT, 0.45)
+      os.sleep(0.5)
+      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+    end
+
+    state.phase = "betting"
+    state.wheelOffset = (state.wheelOffset + 0.03) % #rouletteModel.WHEEL_ORDER
+    renderCurrent(idleMs)
+
+    local timerID = os.startTimer(0.20)
+    local continueLoop = false
+
+    while true do
+      local event, param1, param2, param3 = os.pullEvent()
+
+      if event == "monitor_touch" then
+        local action = handleTouch(param2, param3)
+        lastActivity = epoch("local")
+        continueLoop = true
+        if timerID then
+          pcall(os.cancelTimer, timerID)
+          timerID = nil
         end
-        rouletteRound(currentBet, betType, straightNum)
+        if action == "spin" then
+          return "spin"
+        end
+        break
       end
-    else
-      -- Step 1: Choose bet type
-      drawPlayerOverlay()
-      betType, straightNum = selectBetType()
 
-      -- Step 2: Choose bet amount (dynamically capped per bet type)
-      drawPlayerOverlay()
-      local selectedBet = betSelection(betType, straightNum)
+      if event == "timer" and param1 == timerID then
+        timerID = nil
+        break
+      end
 
-      if selectedBet and selectedBet > 0 then
-        rouletteRound(selectedBet, betType, straightNum)
+      if event == "term_resize" then
+        continueLoop = true
+        if timerID then
+          pcall(os.cancelTimer, timerID)
+          timerID = nil
+        end
+        break
       end
     end
 
+    if continueLoop then
+      os.sleep(0)
+    end
+  end
+end
+
+local function runAutoRound()
+  refreshPlayerState(true)
+  refreshDerivedState()
+
+  state.phase = "betting"
+  state.bets = {}
+  state.betActions = {}
+  refreshDerivedState()
+
+  local autoStake = min(cfg.AUTO_PLAY_BET, state.playerBalance, getTableStakeCap())
+  if autoStake <= 0 then
+    setStatus("Auto play waiting for tokens.", "warning", 1200)
+    renderCurrent(nil)
+    os.sleep(1)
+    return
+  end
+
+  local attempt = 1
+  while attempt <= 25 do
+    local region = layout.regions[random(1, #layout.regions)]
+    local candidateBets = {}
+    rouletteModel.addStake(candidateBets, region, autoStake)
+    local ok = validateBetSet(candidateBets)
+    if ok then
+      state.bets = candidateBets
+      state.betActions = {
+        {
+          changes = {
+            {
+              region = region,
+              amount = autoStake,
+            },
+          },
+        },
+      }
+      refreshDerivedState()
+      setStatus("Auto: " .. region.label .. " for " .. currency.formatTokens(autoStake) .. ".", "accent", 900)
+      renderCurrent(nil)
+      os.sleep(cfg.AUTO_PLAY_DELAY)
+      settleRound()
+      return
+    end
+    attempt = attempt + 1
+  end
+
+  setStatus("Auto play found no safe table.", "warning", 1200)
+  renderCurrent(nil)
+  os.sleep(1)
+end
+
+local function main()
+  dbg("Roulette starting")
+  randomseed(epoch("local"))
+  state.wheelOffset = random(0, #rouletteModel.WHEEL_ORDER - 1)
+
+  refreshPlayerState(true)
+  refreshDerivedState()
+  recovery.recoverBet(true)
+
+  while true do
+    refreshAutoPlay()
+    if AUTO_PLAY then
+      runAutoRound()
+    else
+      local action = runBettingLoop()
+      if action == "spin" then
+        settleRound()
+      end
+    end
     os.sleep(0)
   end
 end
 
------------------------------------------------------
--- Entry point with safe runner
------------------------------------------------------
-sound.play(sound.SOUNDS.BOOT)
-recovery.recoverBet(true)
-
-local safeRunner = require("lib.safe_runner")
+sound.play(sound.SOUNDS.BOOT, 0.5)
 safeRunner.run(main)

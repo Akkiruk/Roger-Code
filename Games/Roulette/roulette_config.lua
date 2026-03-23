@@ -22,9 +22,10 @@ return {
   RECOVERY_FILE = "roulette_recovery.dat",
 
   -- Spin animation
-  SPIN_TICKS       = 40,     -- total animation frames
-  SPIN_FRAME_DELAY = 0.04,   -- seconds between frames
-  RESULT_PAUSE     = 2.0,    -- seconds to display result
+  SPIN_TICKS       = 44,     -- total animation frames
+  SPIN_FRAME_DELAY = 0.03,   -- seconds between frames
+  RESULT_PAUSE     = 2.4,    -- seconds to display result
+  HISTORY_LENGTH   = 10,
 
   -- Bet types with their payouts (payout is net winnings, not including original bet)
   BET_TYPES = {
@@ -70,7 +71,22 @@ return {
   },
 
   -- Palette overrides
-  PALETTE = {},
+  PALETTE = {
+    [colors.black]     = 0x101618,
+    [colors.gray]      = 0x2a363d,
+    [colors.lightGray] = 0xd6d0c2,
+    [colors.white]     = 0xf6f1e6,
+    [colors.green]     = 0x174a2d,
+    [colors.lime]      = 0x3d8f56,
+    [colors.yellow]    = 0xd5b46a,
+    [colors.orange]    = 0xb87a32,
+    [colors.red]       = 0x9b3d34,
+    [colors.brown]     = 0x6a4a2c,
+    [colors.cyan]      = 0x6ba8b0,
+    [colors.lightBlue] = 0x92aebe,
+    [colors.magenta]   = 0x9a6c7f,
+    [colors.purple]    = 0x735b7d,
+  },
 
   -- Exit codes (intentional, non-error shutdowns)
   EXIT_CODES = {
