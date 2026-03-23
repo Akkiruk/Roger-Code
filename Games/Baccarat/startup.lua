@@ -29,8 +29,10 @@ local debugTerm = term.native()
 
 local function debugLog(msg)
   if debugEnabled then
-    local line = os.date("%Y-%m-%d %H:%M:%S") .. " - " .. msg
-    debugTerm.write(line .. "\n")
+    local line = "[" .. os.date("%H:%M:%S") .. "] " .. msg
+    local prev = term.redirect(debugTerm)
+    print(line)
+    term.redirect(prev)
     alertLib.log(msg)
   end
 end
@@ -69,15 +71,26 @@ if not ok then
   error(err)
 end
 
-debugLog("startup.lua: Baccarat idle setup complete. Checking for updates...")
+debugLog("Baccarat idle setup complete.")
 
+local installInfo = updater.getInstallInfo()
+if installInfo then
+  debugLog("Installed: " .. tostring(installInfo.program)
+    .. " v" .. tostring(installInfo.version)
+    .. " | lib v" .. tostring(installInfo.lib_version)
+    .. " | hash=" .. tostring(installInfo.content_hash))
+else
+  debugLog("WARNING: No .installed_program record found!")
+end
+
+debugLog("Checking for updates...")
 updater.checkForUpdates({
   callback = function(status, msg)
-    debugLog("Auto-update: [" .. status .. "] " .. tostring(msg))
+    debugLog("Updater [" .. status .. "] " .. tostring(msg))
   end,
 })
 
-debugLog("startup.lua: Entering idle loop...")
+debugLog("Entering idle loop...")
 
 local function mainLoop()
   while true do
@@ -118,7 +131,7 @@ end
 local function updateWatcher()
   updater.watchForUpdates({
     callback = function(status, msg)
-      debugLog("Background update: [" .. status .. "] " .. tostring(msg))
+      debugLog("BG Updater [" .. status .. "] " .. tostring(msg))
     end,
   })
 end

@@ -323,7 +323,7 @@ local function checkForUpdates(opts)
       logMsg("Manifest fetch failed: " .. tostring(fetchErr))
       releaseLock()
       status = "error"
-      callback("error", "Manifest fetch failed")
+      callback("error", "Manifest fetch failed: " .. tostring(fetchErr))
       return
     end
 
@@ -354,7 +354,8 @@ local function checkForUpdates(opts)
       logMsg("Up to date: " .. progKey .. " v" .. localVer)
       releaseLock()
       status = "up-to-date"
-      callback("up-to-date", progKey .. " v" .. localVer)
+      callback("up-to-date", progKey .. " local=v" .. localVer .. " remote=v" .. remoteVer
+        .. " hash=" .. tostring(localHash):sub(1, 8) .. "/" .. tostring(remoteHash):sub(1, 8))
       return
     end
 

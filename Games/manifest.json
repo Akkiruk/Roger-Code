@@ -4,8 +4,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.0",
-                                      "content_hash":  "dd29f0906786a62f",
+                                      "version":  "1.2.1",
+                                      "content_hash":  "a3cbd3471abc5a5a",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -33,8 +33,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.2.0",
-                                       "content_hash":  "364e16daee7dbf2f",
+                                       "version":  "1.2.1",
+                                       "content_hash":  "f255a714c66b7a2b",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -66,8 +66,8 @@
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.1",
-                                  "content_hash":  "23d99b3bc40b0370",
+                                  "version":  "1.0.2",
+                                  "content_hash":  "e138f0f529b51942",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
@@ -95,8 +95,8 @@
                               },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.1",
-                                      "content_hash":  "b3c9f7dd2dff63a7",
+                                      "version":  "1.0.2",
+                                      "content_hash":  "aadbabcd307ef65c",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -117,8 +117,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.1",
-                                   "content_hash":  "f79a2de03dade03c",
+                                   "version":  "1.0.2",
+                                   "content_hash":  "7acb66bbdb52f7b9",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -161,8 +161,8 @@
                                     },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.1",
-                                        "content_hash":  "7844b247721c8f0b",
+                                        "version":  "1.0.2",
+                                        "content_hash":  "6c9bc7c0b92f6642",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,
@@ -258,8 +258,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.1",
-                "content_hash":  "9ff78d7a85b8e2c6",
+                "version":  "1.2.2",
+                "content_hash":  "00b59a19879a2452",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
