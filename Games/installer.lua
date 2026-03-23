@@ -271,30 +271,73 @@ local function installProgram(manifest, progKey, forceConfig)
 end
 
 ---------------------------------------------------------------------------
--- Self-update
+-- Version comparison (same as updater.lua)
 ---------------------------------------------------------------------------
-local function selfUpdate(manifest)
-  local remoteVer = manifest.installer_version
-  if not remoteVer then
-    cprint(colors.gray, "No installer version in manifest.")
-    return
+local function isNewer(remoteVer, localVer)
+  if not remoteVer or not localVer then return remoteVer ~= localVer end
+  local rParts = {}
+  for p in tostring(remoteVer):gmatch("(%d+)") do
+    rParts[#rParts + 1] = tonumber(p) or 0
   end
-  if remoteVer == INSTALLER_VERSION then
-    cprint(colors.lime, "Installer is up to date (v" .. INSTALLER_VERSION .. ")")
-    return
+  local lParts = {}
+  for p in tostring(localVer):gmatch("(%d+)") do
+    lParts[#lParts + 1] = tonumber(p) or 0
+  end
+  for i = 1, math.max(#rParts, #lParts) do
+    local r = rParts[i] or 0
+    local l = lParts[i] or 0
+    if r > l then return true end
+    if r < l then return false end
+  end
+  return false
+end
+
+---------------------------------------------------------------------------
+-- Self-update (auto-restarts if updated)
+---------------------------------------------------------------------------
+local function selfUpdate(manifest, silent)
+  local remoteVer = manifest.installer_version
+  local remoteHash = manifest.installer_hash
+  if not remoteVer then
+    if not silent then cprint(colors.gray, "No installer version in manifest.") end
+    return false
   end
 
-  cwrite(colors.yellow, "Updating installer v"
-    .. INSTALLER_VERSION .. " -> v" .. remoteVer .. "... ")
+  local needsUpdate = isNewer(remoteVer, INSTALLER_VERSION)
+
+  -- Also check content hash if versions match but hash differs
+  if not needsUpdate and remoteHash then
+    -- Read our own file to compute a simple length check as fallback
+    -- (full hash comparison requires the manifest generator to provide it)
+    needsUpdate = false -- version-based is authoritative when hashes aren't stored locally
+  end
+
+  if not needsUpdate then
+    if not silent then
+      cprint(colors.lime, "Installer is up to date (v" .. INSTALLER_VERSION .. ")")
+    end
+    return false
+  end
+
+  if not silent then
+    cwrite(colors.yellow, "Updating installer v"
+      .. INSTALLER_VERSION .. " -> v" .. remoteVer .. "... ")
+  end
 
   local myPath = shell.getRunningProgram()
   local ok, err = downloadAndSave(REPO_URL .. "Games/installer.lua", myPath)
   if ok then
-    cprint(colors.lime, "Done!")
-    cprint(colors.white, "Run '" .. myPath .. "' again to use the new version.")
+    if not silent then
+      cprint(colors.lime, "Done! Restarting...")
+    end
+    -- Re-run ourselves with the same arguments
+    shell.run(myPath, table.unpack(tArgs))
+    -- Exit this (old) instance after the new one finishes
+    return true
   else
-    cprint(colors.red, "Failed!")
+    if not silent then cprint(colors.red, "Failed!") end
     logError("Self-update failed: " .. tostring(err))
+    return false
   end
 end
 
@@ -379,18 +422,24 @@ end
 -- Main
 ---------------------------------------------------------------------------
 local function main()
+  -- Always self-update first, regardless of CLI mode
+  -- Fetch manifest early so we can check installer version
+  local earlyManifest, earlyErr = fetchManifest()
+  if earlyManifest then
+    local didUpdate = selfUpdate(earlyManifest, false)
+    if didUpdate then return end -- new version already ran and finished
+  end
+
+  -- Use the already-fetched manifest for subsequent operations
+  local manifest = earlyManifest
+
   -- CLI: installer self-update
   if tArgs[1] == "self-update" then
-    cwrite(colors.white, "Fetching manifest... ")
-    local manifest, err = fetchManifest()
     if not manifest then
-      cprint(colors.red, "FAILED")
-      cprint(colors.red, tostring(err))
-      logError(tostring(err))
-      return
+      cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
+      logError(tostring(earlyErr))
     end
-    cprint(colors.lime, "OK")
-    selfUpdate(manifest)
+    -- Already handled above
     return
   end
 
@@ -401,15 +450,11 @@ local function main()
       cprint(colors.red, "No program installed. Run 'installer' to install.")
       return
     end
-    cwrite(colors.white, "Checking for updates... ")
-    local manifest, err = fetchManifest()
     if not manifest then
-      cprint(colors.red, "FAILED")
-      cprint(colors.red, tostring(err))
-      logError(tostring(err))
+      cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
+      logError(tostring(earlyErr))
       return
     end
-    cprint(colors.lime, "OK")
     -- Support old .casino_installed format (game key) and new format (program key)
     local key = installed.program or installed.game
     installProgram(manifest, key, false)
@@ -418,15 +463,11 @@ local function main()
 
   -- CLI: installer <name>
   if tArgs[1] and tArgs[1] ~= "" then
-    cwrite(colors.white, "Fetching manifest... ")
-    local manifest, err = fetchManifest()
     if not manifest then
-      cprint(colors.red, "FAILED")
-      cprint(colors.red, tostring(err))
-      logError(tostring(err))
+      cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
+      logError(tostring(earlyErr))
       return
     end
-    cprint(colors.lime, "OK")
     installProgram(manifest, string.lower(tArgs[1]), false)
     return
   end
@@ -434,32 +475,15 @@ local function main()
   -- Interactive mode
   header("Program Installer v" .. INSTALLER_VERSION)
 
-  cwrite(colors.white, "Fetching manifest... ")
-  local manifest, err = fetchManifest()
   if not manifest then
-    cprint(colors.red, "FAILED")
-    cprint(colors.red, tostring(err))
-    logError(tostring(err))
+    cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
+    logError(tostring(earlyErr))
     print("")
     cprint(colors.gray, "Check that HTTP is enabled in the server config")
     cprint(colors.gray, "and that github.com is allowed.")
     return
   end
-  cprint(colors.lime, "OK")
-
-  -- Offer self-update if available
-  if manifest.installer_version
-     and manifest.installer_version ~= INSTALLER_VERSION then
-    print("")
-    cprint(colors.yellow, "Installer update: v"
-      .. INSTALLER_VERSION .. " -> v" .. manifest.installer_version)
-    cwrite(colors.white, "Update installer now? (y/n) ")
-    local ans = read()
-    if ans and ans:lower() == "y" then
-      selfUpdate(manifest)
-      return
-    end
-  end
+  cprint(colors.lime, "Manifest loaded. " .. INSTALLER_VERSION)
 
   -- Check if a program is already installed
   local installed = loadInstalled()

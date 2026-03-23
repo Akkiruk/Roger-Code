@@ -168,19 +168,45 @@ function Resolve-Version {
 
 # ── Build manifest ─────────────────────────────────────────────────────────
 
-# Read installer version from installer.lua itself
+# Read installer version and compute its content hash
 $installerFile = Join-Path $GamesDir "installer.lua"
 $installerVersion = "1.0.0"
+$installerHash = ""
 if (Test-Path $installerFile) {
     $match = Select-String -Path $installerFile -Pattern 'INSTALLER_VERSION\s*=\s*"([^"]+)"' | Select-Object -First 1
     if ($match) {
         $installerVersion = $match.Matches[0].Groups[1].Value
+    }
+    $installerHash = Get-ContentHash -FilePaths @($installerFile)
+
+    # Auto-bump installer version when content changes
+    $oldInstallerHash = ""
+    $oldInstallerVersion = $installerVersion
+    if ($oldManifest -and $oldManifest.installer_hash) {
+        $oldInstallerHash = $oldManifest.installer_hash
+    }
+    if ($oldManifest -and $oldManifest.installer_version) {
+        $oldInstallerVersion = $oldManifest.installer_version
+    }
+    if ($oldInstallerHash -ne "" -and $oldInstallerHash -ne $installerHash) {
+        $installerVersion = Bump-PatchVersion $oldInstallerVersion
+        # Write bumped version back into installer.lua
+        $installerContent = [System.IO.File]::ReadAllText($installerFile)
+        $installerContent = $installerContent -replace '(local INSTALLER_VERSION\s*=\s*")[^"]+"', "`${1}$installerVersion`""
+        $utf8NoBomTemp = [System.Text.UTF8Encoding]::new($false)
+        [System.IO.File]::WriteAllText($installerFile, $installerContent, $utf8NoBomTemp)
+        # Recompute hash after writing new version
+        $installerHash = Get-ContentHash -FilePaths @($installerFile)
+        Write-Host "  installer.lua: v$oldInstallerVersion -> v$installerVersion (auto-bumped)" -ForegroundColor Yellow
+    } else {
+        Write-Host "  installer.lua: v$installerVersion" -ForegroundColor DarkGray
     }
 }
 
 $manifest = [ordered]@{
     manifest_version  = 1
     installer_version = $installerVersion
+    installer_hash    = $installerHash
     programs          = [ordered]@{}
     lib               = [ordered]@{
         version      = "1.0.0"
