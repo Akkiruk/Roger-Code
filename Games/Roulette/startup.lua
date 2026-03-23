@@ -83,38 +83,50 @@ updater.checkForUpdates({
 
 debugLog("startup.lua: Entering idle loop...")
 
-while true do
-  local idleOk, actionOrError = pcall(idleScreen.runLoop, idleEnv, {
-    drawOverlay = drawOverlay,
-  })
-  if not idleOk then
-    debugLog("Error in idle loop: " .. tostring(actionOrError))
-    alertLib.send("Idle loop error: " .. tostring(actionOrError))
-    os.sleep(5)
-    os.reboot()
-  end
-
-  local action = actionOrError
-
-  if action == "play" then
-    debugLog("startup.lua: Starting roulette game...")
-    local runOk, runErr = pcall(shell.run, "Roulette.lua")
-    if not runOk then
-      debugLog("startup.lua: Error in Roulette.lua: " .. tostring(runErr))
-      alertLib.send("Roulette.lua error: " .. tostring(runErr))
-      if idleEnv.monitor then
-        term.clear()
-        term.setCursorPos(1, 1)
-        term.setTextColor(colors.red)
-        term.write("Game crashed! Error reported to admin.")
-        term.setCursorPos(1, 3)
-        term.setTextColor(colors.white)
-        term.write("The game will restart in 10 seconds...")
-        os.sleep(10)
-      end
+local function mainLoop()
+  while true do
+    local idleOk, actionOrError = pcall(idleScreen.runLoop, idleEnv, {
+      drawOverlay = drawOverlay,
+    })
+    if not idleOk then
+      debugLog("Error in idle loop: " .. tostring(actionOrError))
+      alertLib.send("Idle loop error: " .. tostring(actionOrError))
+      os.sleep(5)
+      os.reboot()
     end
-    debugLog("startup.lua: Roulette.lua finished, returning to idle.")
-  end
 
-  setupIdle()
+    local action = actionOrError
+
+    if action == "play" then
+      debugLog("startup.lua: Starting roulette game...")
+      local runOk, runErr = pcall(shell.run, "Roulette.lua")
+      if not runOk then
+        debugLog("startup.lua: Error in Roulette.lua: " .. tostring(runErr))
+        alertLib.send("Roulette.lua error: " .. tostring(runErr))
+        if idleEnv.monitor then
+          term.clear()
+          term.setCursorPos(1, 1)
+          term.setTextColor(colors.red)
+          term.write("Game crashed! Error reported to admin.")
+          term.setCursorPos(1, 3)
+          term.setTextColor(colors.white)
+          term.write("The game will restart in 10 seconds...")
+          os.sleep(10)
+        end
+      end
+      debugLog("startup.lua: Roulette.lua finished, returning to idle.")
+    end
+
+    setupIdle()
+  end
 end
+
+local function updateWatcher()
+  updater.watchForUpdates({
+    callback = function(status, msg)
+      debugLog("Background update: [" .. status .. "] " .. tostring(msg))
+    end,
+  })
+end
+
+parallel.waitForAny(mainLoop, updateWatcher)

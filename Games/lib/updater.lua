@@ -255,6 +255,7 @@ local function performUpdate(manifest, progKey, installed)
   saveInstalled({
     program      = progKey,
     version      = prog.version,
+    content_hash = prog.content_hash,
     lib_version  = prog.uses_lib and manifest.lib and manifest.lib.version or nil,
     installed_at = installed.installed_at or os.epoch("local"),
     updated_at   = os.epoch("local"),
@@ -344,7 +345,12 @@ local function checkForUpdates(opts)
     local needsUpdate = isNewer(remoteVer, localVer)
     local needsLibUpdate = remoteLibVer and localLibVer and isNewer(remoteLibVer, localLibVer)
 
-    if not needsUpdate and not needsLibUpdate then
+    -- Also check content hash for changes without version bumps
+    local localHash = installed.content_hash
+    local remoteHash = prog.content_hash
+    local hashChanged = remoteHash and localHash and remoteHash ~= localHash
+
+    if not needsUpdate and not needsLibUpdate and not hashChanged then
       logMsg("Up to date: " .. progKey .. " v" .. localVer)
       releaseLock()
       status = "up-to-date"
@@ -356,6 +362,9 @@ local function checkForUpdates(opts)
     local reason = ""
     if needsUpdate then
       reason = "v" .. localVer .. " -> v" .. remoteVer
+    end
+    if hashChanged and not needsUpdate then
+      reason = reason ~= "" and (reason .. ", hash changed") or "hash changed"
     end
     if needsLibUpdate then
       local libReason = "lib v" .. tostring(localLibVer) .. " -> v" .. tostring(remoteLibVer)
@@ -405,9 +414,30 @@ local function forceUpdate()
   return checkForUpdates({ force = true })
 end
 
+--- Background polling loop that checks for updates at a fixed interval.
+-- When an update is applied, automatically reboots the computer.
+-- Designed to run inside parallel.waitForAny alongside the game loop.
+-- @param opts table|nil  Optional: { interval=number (seconds, default 300), callback=function(status,msg) }
+local function watchForUpdates(opts)
+  opts = opts or {}
+  local interval = opts.interval or 300
+  local callback = opts.callback or function() end
+
+  while true do
+    os.sleep(interval)
+    local status = checkForUpdates({ force = true, callback = callback })
+    if status == "updated" then
+      callback("rebooting", "Update applied, rebooting...")
+      os.sleep(1)
+      os.reboot()
+    end
+  end
+end
+
 return {
   checkForUpdates = checkForUpdates,
   forceUpdate     = forceUpdate,
+  watchForUpdates = watchForUpdates,
   getInstallInfo  = getInstallInfo,
   isNewer         = isNewer,
 }

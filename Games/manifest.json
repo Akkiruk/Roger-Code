@@ -4,8 +4,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.1.3",
-                                      "content_hash":  "ac373ac4283f132e",
+                                      "version":  "1.0.0",
+                                      "content_hash":  "aa3784f4ddb2121a",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -33,8 +33,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.1.3",
-                                       "content_hash":  "6d068170585755db",
+                                       "version":  "1.0.0",
+                                       "content_hash":  "1e606b100a98a666",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -66,8 +66,8 @@
                                    },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.1",
-                                      "content_hash":  "a209705b9d3c815e",
+                                      "version":  "1.0.0",
+                                      "content_hash":  "977c02e3e37c048b",
                                       "description":  "European Roulette for ComputerCraft casino.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -88,8 +88,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.1",
-                                   "content_hash":  "6ea06c186b45653e",
+                                   "version":  "1.0.0",
+                                   "content_hash":  "62715c57c2fc7045",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -150,7 +150,7 @@
                      "test_ccvault":  {
                                           "name":  "test_ccvault",
                                           "version":  "1.0.0",
-                                          "content_hash":  "e86a7af2f9dbb31b",
+                                          "content_hash":  "e9db193d54d962dd",
                                           "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
                                           "source_dir":  "Utilities",
                                           "uses_lib":  false,
@@ -167,7 +167,7 @@
                      "test_ccvault_full":  {
                                                "name":  "test_ccvault_full",
                                                "version":  "1.0.0",
-                                               "content_hash":  "dc2c46255e3814de",
+                                               "content_hash":  "a2ef0cd34e657bca",
                                                "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
                                                "source_dir":  "Utilities",
                                                "uses_lib":  false,
@@ -184,7 +184,7 @@
                      "vault_item_analyzer":  {
                                                  "name":  "vault_item_analyzer",
                                                  "version":  "1.0.0",
-                                                 "content_hash":  "a9ebd5a151c9089c",
+                                                 "content_hash":  "7554485565b3757b",
                                                  "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
                                                  "source_dir":  "Utilities",
                                                  "uses_lib":  false,
@@ -200,8 +200,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.1.2",
-                "content_hash":  "d20dbc3d8e6d3d81",
+                "version":  "1.0.0",
+                "content_hash":  "69e09fc9e63ad2ad",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
