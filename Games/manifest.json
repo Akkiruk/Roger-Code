@@ -4,7 +4,7 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.0.0",
+                                      "version":  "1.0.1",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -32,7 +32,7 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.0.0",
+                                       "version":  "1.0.1",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -175,7 +175,7 @@
                                            }
                  },
     "lib":  {
-                "version":  "1.0.0",
+                "version":  "1.0.1",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
@@ -191,7 +191,8 @@
                               "player_stats.lua",
                               "safe_runner.lua",
                               "sound.lua",
-                              "ui.lua"
+                              "ui.lua",
+                              "updater.lua"
                           ]
             }
 }

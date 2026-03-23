@@ -256,14 +256,18 @@ local function selectBetType()
   ui.clearButtons()
   local chosen = nil
 
-  ui.layoutButtonGrid(screen, {{
-    { text = "PLAYER (1:1)", color = colors.cyan,
-      func = function() chosen = BET.PLAYER end },
-    { text = "BANKER (1:1 -5%)", color = colors.red,
-      func = function() chosen = BET.BANKER end },
-    { text = "TIE (8:1)", color = colors.yellow,
-      func = function() chosen = BET.TIE end },
-  }}, centerX, math.floor(height * 0.45), 8, 4)
+  ui.layoutButtonGrid(screen, {
+    {
+      { text = "PLAYER 1:1", color = colors.cyan,
+        func = function() chosen = BET.PLAYER end },
+      { text = "BANKER 1:1", color = colors.red,
+        func = function() chosen = BET.BANKER end },
+    },
+    {
+      { text = "TIE 8:1", color = colors.yellow,
+        func = function() chosen = BET.TIE end },
+    },
+  }, centerX, math.floor(height * 0.40), 8, 4)
 
   screen:output()
 
