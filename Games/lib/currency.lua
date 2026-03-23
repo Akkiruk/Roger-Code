@@ -13,6 +13,10 @@ local function dbg(msg)
   if DEBUG then print(os.time(), "[currency] " .. msg) end
 end
 
+-- Player identity for the currently authenticated session.
+-- All financial operations are guarded against this lock to avoid cross-player charges.
+local AUTH_PLAYER = nil
+
 -- Token denomination table used by betting UI
 -- "value" is in tokens (the base unit in CCVault)
 local DENOMINATIONS = {
@@ -38,6 +42,19 @@ local function isReady()
   if not ccvault.isAuthenticated() then
     return false, "not authenticated"
   end
+  if AUTH_PLAYER and AUTH_PLAYER ~= "" then
+    local info = nil
+    if ccvault.getSessionInfo then
+      info = ccvault.getSessionInfo()
+    end
+    local currentPlayer = (info and info.playerName) or (ccvault.getPlayerName and ccvault.getPlayerName()) or nil
+    if (not currentPlayer) or currentPlayer == "" then
+      return false, "no active player session"
+    end
+    if currentPlayer ~= AUTH_PLAYER then
+      return false, "session player changed from " .. AUTH_PLAYER .. " to " .. tostring(currentPlayer)
+    end
+  end
   return true, nil
 end
 
@@ -58,21 +75,25 @@ local function authenticate(timeout)
     os.sleep(1)
   end
 
-  if ccvault.isAuthenticated() then
-    dbg("Already authenticated as " .. (ccvault.getPlayerName() or "?"))
-    return true
+  local targetPlayer = ccvault.getPlayerName()
+  if targetPlayer and targetPlayer ~= "" then
+    print("Player detected: " .. targetPlayer)
   end
 
-  -- requestAuth() throws (not returns nil) if no player is present,
-  -- so pcall-wrap it in case the player walks away between the name check and here.
+  -- Always request a fresh approval so this terminal binds to the active tester/player.
+  -- If the session is already valid for the same player, we allow that fast path below.
   local pcallOk, ok, err = pcall(ccvault.requestAuth)
-  if not pcallOk then
-    print("Auth request error: " .. tostring(ok))
-    return false
-  end
-  if not ok then
-    print("Auth request failed: " .. (err or "unknown"))
-    return false
+  if not pcallOk or not ok then
+    local alreadyAuthed = ccvault.isAuthenticated()
+    local currentPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
+    if not (alreadyAuthed and currentPlayer and currentPlayer == targetPlayer) then
+      if not pcallOk then
+        print("Auth request error: " .. tostring(ok))
+      else
+        print("Auth request failed: " .. (err or "unknown"))
+      end
+      return false
+    end
   end
 
   local compId = ccvault.getComputerId and ccvault.getComputerId() or os.getComputerID()
@@ -88,17 +109,35 @@ local function authenticate(timeout)
     os.sleep(0.5)
   end
 
-  dbg("Authenticated as " .. (ccvault.getPlayerName() or "?"))
+  local authedPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
+  if targetPlayer and authedPlayer and targetPlayer ~= authedPlayer then
+    print("Authentication player changed from " .. targetPlayer .. " to " .. authedPlayer .. ".")
+    print("Please interact again and retry.")
+    return false
+  end
+
+  AUTH_PLAYER = authedPlayer or targetPlayer
+  dbg("Authenticated as " .. tostring(AUTH_PLAYER or "?"))
   return true
 end
 
 --- Get the currently interacting player's name.
 -- @return string|nil
 local function getPlayerName()
+  if AUTH_PLAYER and AUTH_PLAYER ~= "" then
+    return AUTH_PLAYER
+  end
   if ccvault and ccvault.getPlayerName then
     return ccvault.getPlayerName()
   end
   return nil
+end
+
+--- Get the player bound to the current authenticated session.
+-- This is pinned at auth time to avoid identity drift between players.
+-- @return string|nil
+local function getAuthenticatedPlayerName()
+  return AUTH_PLAYER
 end
 
 --- Get the host (computer owner) name.
@@ -276,6 +315,7 @@ return {
   isReady          = isReady,
   authenticate     = authenticate,
   getPlayerName    = getPlayerName,
+  getAuthenticatedPlayerName = getAuthenticatedPlayerName,
   getHostName      = getHostName,
   getComputerId    = getComputerId,
   getPlayerBalance = getPlayerBalance,

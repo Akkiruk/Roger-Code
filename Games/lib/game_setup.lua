@@ -129,7 +129,7 @@ local function init(cfg)
   env.monitorName = cfg.monitorName
 
   -- Player state (shared by refreshPlayer/drawPlayerOverlay helpers)
-  env.currentPlayer = "Unknown"
+  env.currentPlayer = currency.getAuthenticatedPlayerName() or "Unknown"
 
   return env
 end

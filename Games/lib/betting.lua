@@ -54,7 +54,7 @@ local function runBetScreen(screen, opts)
   end
 
   -- Session lock: capture the authenticated player so others can't play on their dime
-  local sessionPlayer = currency.getPlayerName()
+  local sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName()
 
   local bet = 0
   local selecting = true
@@ -234,7 +234,8 @@ local function runBetScreen(screen, opts)
       if event == "monitor_touch" then
         -- Session lock: reject touches from other players
         if sessionPlayer then
-          local currentPlayer = currency.getPlayerName()
+          local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
+          local currentPlayer = (sessionInfo and sessionInfo.playerName) or currency.getPlayerName()
           if currentPlayer and currentPlayer ~= sessionPlayer then
             ui.displayCenteredMessage(screen, "Game in use by " .. sessionPlayer, colors.red, 1.5)
             break
