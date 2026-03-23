@@ -158,6 +158,9 @@ local function runLoop(env, opts)
 
     local timerID = os.startTimer(0.05)
     local event, side, x, y = os.pullEvent()
+    if not (event == "timer" and side == timerID) then
+      os.cancelTimer(timerID)
+    end
     if event == "monitor_touch" then
       if checkHit then
         local action = checkHit(x, y, env)

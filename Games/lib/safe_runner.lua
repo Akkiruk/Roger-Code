@@ -11,7 +11,7 @@ local alert    = require("lib.alert")
 local recovery = require("lib.crash_recovery")
 
 local DEBUG = settings.get("casino.debug") or settings.get("blackjack.debug") or false
-local function dbg(msg) if DEBUG then print(os.time(), msg) end end
+local function dbg(msg) if DEBUG then print(os.epoch("local"), msg) end end
 
 --- Run `mainFn` inside pcall with crash recovery.
 -- On error: clears the recovery file (no money moved), sends an alert, and reboots.

@@ -54,11 +54,11 @@ end
 local function log(msg)
   local f = fs.open(logFile, "a")
   if f then
-    f.writeLine(os.date() .. ": " .. tostring(msg))
+    f.writeLine("[" .. os.epoch("local") .. "] " .. tostring(msg))
     f.close()
   end
   if DEBUG then
-    print(os.time(), "[alert] " .. tostring(msg))
+    print(os.epoch("local"), "[alert] " .. tostring(msg))
   end
 end
 
@@ -79,7 +79,7 @@ end
 local function send(errorMsg)
   if isPlannedExit(errorMsg) then
     if DEBUG then
-      print(os.time(), "[alert] Skipping planned exit: " .. tostring(errorMsg))
+      print(os.epoch("local"), "[alert] Skipping planned exit: " .. tostring(errorMsg))
     end
     return
   end

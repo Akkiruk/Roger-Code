@@ -12,7 +12,7 @@ local peripherals = require("lib.peripherals")
 
 local DEBUG = settings.get("casino.debug") or false
 local function dbg(msg)
-  if DEBUG then print(os.time(), "[player_detect] " .. msg) end
+  if DEBUG then print(os.epoch("local"), "[player_detect] " .. msg) end
 end
 
 local detector    = nil
@@ -28,8 +28,13 @@ local function setIfChanged(newName)
     local old = currentName
     currentName = newName
     dbg("Player changed: " .. tostring(newName) .. " (was " .. tostring(old) .. ")")
-    if onChange then
-      pcall(onChange, newName, old)
+    if type(onChange) == "function" then
+      local ok, err = pcall(function()
+        onChange(newName, old)
+      end)
+      if not ok then
+        dbg("onChange callback failed: " .. tostring(err))
+      end
     end
   end
   return currentName
@@ -76,10 +81,14 @@ local function refresh()
   end
 
   -- Fallback: playerDetector peripheral
-  if detector then
-    local ok, players = pcall(detector.getPlayersInRange, range)
+  if detector and type(detector.getPlayersInRange) == "function" then
+    local ok, players = pcall(function()
+      return detector.getPlayersInRange(range)
+    end)
     if ok and players and #players > 0 then
       return setIfChanged(players[1])
+    elseif not ok then
+      dbg("playerDetector lookup failed")
     end
   end
 

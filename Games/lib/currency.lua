@@ -10,7 +10,7 @@
 
 local DEBUG = settings.get("casino.debug") or false
 local function dbg(msg)
-  if DEBUG then print(os.time(), "[currency] " .. msg) end
+  if DEBUG then print(os.epoch("local"), "[currency] " .. msg) end
 end
 
 -- Player identity for the currently authenticated session.
@@ -108,6 +108,7 @@ local function authenticate(timeout)
     end
     os.sleep(0.5)
   end
+  os.cancelTimer(timer)
 
   local authedPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
   if targetPlayer and authedPlayer and targetPlayer ~= authedPlayer then

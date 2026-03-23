@@ -7,14 +7,14 @@ local LEADERBOARD_FILE = "leaderboard.dat"
 
 local DEBUG = settings.get("casino.debug") or false
 local function dbg(msg)
-  if DEBUG then print(os.time(), "[player_stats] " .. msg) end
+  if DEBUG then print(os.epoch("local"), "[player_stats] " .. msg) end
 end
 
 local LOG_FILE = "statistics_log.txt"
 local function writeLog(message)
   local file = fs.open(LOG_FILE, "a")
   if file then
-    file.writeLine(os.date() .. ": " .. message)
+    file.writeLine("[" .. os.epoch("local") .. "] " .. message)
     file.close()
   end
 end
