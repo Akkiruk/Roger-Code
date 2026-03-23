@@ -188,6 +188,27 @@ local function getHostBalance()
   return 0
 end
 
+-----------------------------------------------------
+-- Session / verification API wrappers
+-----------------------------------------------------
+
+--- Get session info from CCVault (no auth required).
+-- @return table|nil  {playerName, hostName, isSelfPlay, authenticated, transfersRemaining, ...}
+local function getSessionInfo()
+  if not ccvault or not ccvault.getSessionInfo then
+    return nil
+  end
+  local info = ccvault.getSessionInfo()
+  return info
+end
+
+--- Check if the current session is self-play (player == host).
+-- @return boolean
+local function isSelfPlay()
+  local info = getSessionInfo()
+  return info and info.isSelfPlay or false
+end
+
 --- Charge the player (player pays host).
 -- @param amount number  Tokens to charge (rounded to whole tokens)
 -- @param reason string  Audit log reason (max 64 chars)
@@ -262,27 +283,6 @@ end
 local function formatTokens(tokens)
   if tokens == 1 then return "1 token" end
   return tostring(tokens) .. " tokens"
-end
-
------------------------------------------------------
--- Session / verification API wrappers
------------------------------------------------------
-
---- Get session info from CCVault (no auth required).
--- @return table|nil  {playerName, hostName, isSelfPlay, authenticated, transfersRemaining, ...}
-local function getSessionInfo()
-  if not ccvault or not ccvault.getSessionInfo then
-    return nil
-  end
-  local info = ccvault.getSessionInfo()
-  return info
-end
-
---- Check if the current session is self-play (player == host).
--- @return boolean
-local function isSelfPlay()
-  local info = getSessionInfo()
-  return info and info.isSelfPlay or false
 end
 
 --- Verify a transaction by ID in the server ledger.
