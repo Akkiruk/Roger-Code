@@ -64,11 +64,16 @@ end
 -----------------------------------------------------
 local function showAchievementsBrowser()
   local currentPage = 1
-  local achievementsPerPage = 8
+  local achievementsPerPage = 10
   local currentCategory = nil
 
+  -- Pre-compute stats reference (refreshed each loop iteration)
+  local playerName = getActivePlayer()
+  local stats = nil
+  if playerName then stats = pStats.loadPlayerStats(playerName) end
+
   local sortOptions = {
-    { id = "category", name = "By Category", sortFunc = function(a, b)
+    { id = "category", name = "Category", sortFunc = function(a, b)
         if a.category and b.category then
           if a.category.id == b.category.id then return a._index < b._index end
           return a.category.id < b.category.id
@@ -76,9 +81,14 @@ local function showAchievementsBrowser()
         elseif b.category then return false
         else return a._index < b._index end
       end },
-    { id = "default", name = "Default Order", sortFunc = function(a, b) return a._index < b._index end },
-    { id = "reward",  name = "By Reward",     sortFunc = function(a, b) return a.rewardGold > b.rewardGold end },
-    { id = "name",    name = "By Name",       sortFunc = function(a, b) return a.name < b.name end },
+    { id = "default", name = "Default", sortFunc = function(a, b) return a._index < b._index end },
+    { id = "name",    name = "A-Z",     sortFunc = function(a, b) return a.name < b.name end },
+    { id = "status",  name = "Status",  sortFunc = function(a, b)
+        local aU = (stats and stats.achievements and stats.achievements[a.id]) and 1 or 0
+        local bU = (stats and stats.achievements and stats.achievements[b.id]) and 1 or 0
+        if aU ~= bU then return aU > bU end
+        return a._index < b._index
+      end },
   }
   local currentSort = 1
 
@@ -101,8 +111,26 @@ local function showAchievementsBrowser()
   end
   table.sort(categories, function(a, b) return a.name < b.name end)
 
+  -- Helper: count unlocked in a category (or all)
+  local function countUnlocked(cat)
+    local total, unlocked = 0, 0
+    for _, ach in ipairs(ACHIEVEMENTS) do
+      if not cat or (ach.category and ach.category.id == cat.id) then
+        total = total + 1
+        if stats and stats.achievements and stats.achievements[ach.id] then
+          unlocked = unlocked + 1
+        end
+      end
+    end
+    return unlocked, total
+  end
+
   local needsSort = true
   while true do
+    -- Refresh stats each loop
+    playerName = getActivePlayer()
+    if playerName then stats = pStats.loadPlayerStats(playerName) end
+
     -- Sort only when sort option changes
     if needsSort then
       table.sort(sortedAchievements, sortOptions[currentSort].sortFunc)
@@ -125,26 +153,39 @@ local function showAchievementsBrowser()
 
     local w, h = term.getSize()
 
-    drawCenteredText("ACHIEVEMENTS BROWSER", 2, colors.yellow)
+    -- Title + progress summary
+    local uAll, tAll = countUnlocked(nil)
+    local pctAll = tAll > 0 and math.floor((uAll / tAll) * 100) or 0
+    drawCenteredText("ACHIEVEMENTS", 2, colors.yellow)
 
-    local playerName = getActivePlayer()
-    local stats = nil
     if playerName then
-      stats = pStats.loadPlayerStats(playerName)
-      drawCenteredText("Player: " .. playerName, 4, colors.lime)
+      local summary = playerName .. " - " .. uAll .. "/" .. tAll .. " (" .. pctAll .. "%)"
+      drawCenteredText(summary, 3, colors.lime)
     else
-      drawCenteredText("No player detected", 4, colors.red)
+      drawCenteredText("No player detected", 3, colors.red)
     end
 
-    -- Sort buttons
+    -- Visual progress bar (row 4)
+    local barX1 = 3
+    local barX2 = w - 4
+    local barW = barX2 - barX1 + 1
+    local filledW = tAll > 0 and math.floor((uAll / tAll) * barW) or 0
+    if filledW > 0 then
+      drawBox(barX1, 4, barX1 + filledW - 1, 4, colors.lime)
+    end
+    if filledW < barW then
+      drawBox(barX1 + filledW, 4, barX2, 4, colors.gray)
+    end
+
+    -- Sort buttons (row 5)
     local sortY = 5
     local sortButtons = {}
-    local availWidth = w - 12
+    local availWidth = w - 6
     local bSpacing = 2
     local totalBtnW, btnCount = 0, 0
     for _, opt in ipairs(sortOptions) do
       local bw = #opt.name + 4
-      if totalBtnW + bw <= availWidth then
+      if totalBtnW + bw + bSpacing <= availWidth + bSpacing then
         totalBtnW = totalBtnW + bw + bSpacing
         btnCount = btnCount + 1
       else break end
@@ -157,65 +198,58 @@ local function showAchievementsBrowser()
       sx = sx + bw + bSpacing
     end
 
-    -- Category filter
-    local catY = sortY + 3
-    term.setCursorPos(3, catY)
-    term.setTextColor(colors.white)
-    term.write("Category: ")
-
+    -- Category filter (row 7+)
+    local catY = sortY + 2
     local categoryButtons = {}
-    drawBox(3, catY, w - 3, catY + 10, colors.black)
 
     local cx = 3
-    local allBtn = drawButton(cx, catY + 1, 8, "All", currentCategory == nil)
+    local uCatAll, tCatAll = countUnlocked(nil)
+    local allLabel = "All " .. uCatAll .. "/" .. tCatAll
+    local allBtn = drawButton(cx, catY, #allLabel + 4, allLabel, currentCategory == nil)
     table.insert(categoryButtons, { btn = allBtn, category = nil })
-    cx = cx + 10
+    cx = cx + #allLabel + 6
 
-    local maxRowW = w - 5
+    local maxRowW = w - 3
     local curRowW = cx
-    local curRowY = catY + 1
-    local maxRows = 5
+    local curRowY = catY
+    local maxRows = 4
     local rowCnt = 1
 
     for _, cat in ipairs(categories) do
-      local bw = #cat.name + 4
+      local uC, tC = countUnlocked(cat)
+      local label = cat.name .. " " .. uC .. "/" .. tC
+      local bw = #label + 4
       if curRowW + bw > maxRowW and rowCnt < maxRows then
         curRowY = curRowY + 1
         curRowW = 3; cx = 3
         rowCnt = rowCnt + 1
       end
       if rowCnt <= maxRows then
-        local btn = drawButton(cx, curRowY, bw, cat.name,
-                               currentCategory and currentCategory.id == cat.id)
+        local isSelected = currentCategory and currentCategory.id == cat.id
+        local btn = drawButton(cx, curRowY, bw, label, isSelected)
         table.insert(categoryButtons, { btn = btn, category = cat })
         cx = cx + bw + 2
         curRowW = curRowW + bw + 2
       end
     end
 
-    local descY = catY + (rowCnt * 2) + 1
-    drawBox(3, descY, w - 4, descY + 2, colors.black)
-
+    -- Category description / progress under filters
+    local descY = curRowY + 2
     if currentCategory then
       term.setTextColor(currentCategory.color or colors.white)
-      local dl = wrapText(currentCategory.description or "", w - 6)
-      for i, line in ipairs(dl) do
-        term.setCursorPos(3, descY + (i - 1))
-        term.write(line)
-      end
-    elseif stats then
-      local cnt = 0
-      for _ in pairs(stats.achievements or {}) do cnt = cnt + 1 end
       term.setCursorPos(3, descY)
-      term.setTextColor(colors.cyan)
-      term.write("You have unlocked " .. cnt .. " of " .. #ACHIEVEMENTS
-                 .. " achievements (" .. math.floor((cnt / #ACHIEVEMENTS) * 100) .. "%)")
+      term.write(currentCategory.description or "")
     end
 
     -- Achievement list
-    local achY = descY + (currentCategory and 3 or 2)
+    local achY = descY + 1
     local startIdx = (currentPage - 1) * achievementsPerPage + 1
     local endIdx   = math.min(startIdx + achievementsPerPage - 1, #display)
+
+    -- Calculate how many fit before nav area
+    local navReserve = 4
+    local maxAchY = h - navReserve
+    local cardHeight = 3
 
     if #display == 0 then
       term.setCursorPos(5, achY + 2)
@@ -223,59 +257,65 @@ local function showAchievementsBrowser()
       term.write("No achievements match the current filter.")
     else
       for idx = startIdx, endIdx do
+        if achY + cardHeight - 1 > maxAchY then break end
         local ach = display[idx]
         local unlocked = stats and stats.achievements and stats.achievements[ach.id]
         local unlockDay = unlocked and stats.achievements[ach.id]
-        local boxClr = unlocked and colors.green or colors.gray
 
-        drawBox(3, achY, w - 4, achY + 3, boxClr)
+        -- Card color: category color for unlocked, dark gray for locked
+        local catColor = ach.category and ach.category.color or colors.green
+        local boxClr = unlocked and catColor or colors.gray
 
-        writeWithBg(5, achY, ach.name,
-                    unlocked and colors.black or colors.white, boxClr)
+        drawBox(3, achY, w - 4, achY + cardHeight - 1, boxClr)
 
-        if ach.category then
+        -- Row 1: status icon + name + category badge
+        local namePrefix = unlocked and "[OK] " or "[ ] "
+        local nameText = namePrefix .. ach.name
+        local nameColor = unlocked and colors.black or colors.white
+        writeWithBg(4, achY, nameText, nameColor, boxClr)
+
+        if ach.category and not currentCategory then
           local badge = "[" .. ach.category.name .. "]"
-          local maxBW = w - 12
-          if #badge > maxBW then badge = "[" .. ach.category.name:sub(1, maxBW - 5) .. "...]" end
-          writeWithBg(w - 5 - #badge, achY, badge,
-                      unlocked and colors.black or colors.white, boxClr)
+          local maxBW = w - 10 - #nameText
+          if #badge > maxBW then badge = "[" .. ach.category.name:sub(1, math.max(3, maxBW - 5)) .. "..]" end
+          if #badge > 3 then
+            writeWithBg(w - 4 - #badge, achY, badge, nameColor, boxClr)
+          end
         end
 
+        -- Row 2: description
         local dl = wrapText(ach.description, w - 10)
         writeWithBg(5, achY + 1, dl[1] or "",
                     unlocked and colors.black or colors.lightGray, boxClr)
-        if dl[2] then
-          writeWithBg(5, achY + 2, dl[2],
-                      unlocked and colors.black or colors.lightGray, boxClr)
-        end
 
-        writeWithBg(5, achY + 3, "Reward: " .. ach.rewardGold .. " gold",
-                    unlocked and colors.black or colors.yellow, boxClr)
-
+        -- Row 3: unlock status or locked hint
         if unlocked and unlockDay then
           local dd = os.day() - unlockDay
           local ut = dd == 0 and "Unlocked today!" or
                      dd == 1 and "Unlocked yesterday" or
                      "Unlocked " .. dd .. " days ago"
-          writeWithBg(w - 5 - #ut, achY + 3, ut, colors.black, boxClr)
+          writeWithBg(5, achY + 2, ut, colors.black, boxClr)
+        else
+          writeWithBg(5, achY + 2, "Locked", colors.lightGray, boxClr)
         end
 
-        achY = achY + 5
+        achY = achY + cardHeight + 1
       end
     end
 
-    -- Page indicator
-    local pageText = "Page " .. currentPage .. " of " .. totalPages
-    term.setCursorPos(math.floor((w - #pageText) / 2), h - 5)
-    term.setTextColor(colors.white)
+    -- Page indicator + nav buttons
+    local navY = h - 2
+    local pageText = "Page " .. currentPage .. "/" .. totalPages
+          .. " (" .. #display .. " achievements)"
+    term.setCursorPos(math.floor((w - #pageText) / 2), navY - 1)
+    term.setTextColor(colors.lightGray)
     term.write(pageText)
 
-    -- Nav buttons
-    local navY = h - 3
+    -- Nav buttons on navY
     local btnTotalW = 0
     if currentPage > 1    then btnTotalW = btnTotalW + 12 end
     if currentPage < totalPages then btnTotalW = btnTotalW + 12 end
-    btnTotalW = btnTotalW + 12 + 10
+    btnTotalW = btnTotalW + 12 + 12
     local btnStartX = math.floor((w - btnTotalW) / 2)
     local curX = btnStartX
 
@@ -293,23 +333,6 @@ local function showAchievementsBrowser()
     curX = curX + 12
     local statsBtnX = curX
     drawButton(statsBtnX, navY, 10, "STATS", false)
-
-    -- Progress bar
-    drawBox(3, h - 1, w - 4, h - 1, colors.black)
-    if stats then
-      local tCat, uCat = 0, 0
-      for _, ach in ipairs(ACHIEVEMENTS) do
-        if not currentCategory or (ach.category and ach.category.id == currentCategory.id) then
-          tCat = tCat + 1
-          if stats.achievements and stats.achievements[ach.id] then uCat = uCat + 1 end
-        end
-      end
-      local pct = tCat > 0 and math.floor((uCat / tCat) * 100) or 0
-      local pText = pct .. "% (" .. uCat .. "/" .. tCat .. ")"
-      term.setCursorPos(math.floor((w - #pText) / 2), h - 1)
-      term.setTextColor(colors.lightGray)
-      term.write(pText)
-    end
 
     -- Input
     local event, button, ex, ey = os.pullEvent()

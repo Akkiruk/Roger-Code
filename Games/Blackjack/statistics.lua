@@ -411,16 +411,6 @@ local function processGameResult(playerName, gameResult)
   savePlayerStats(playerName, stats)
   local newAchievements = checkAchievements(stats)
 
-  -- Track session achievement rewards
-  if newAchievements and #newAchievements > 0 then
-    local reward = 0
-    for _, ach in ipairs(newAchievements) do
-      reward = reward + (ach.rewardGold or 0) * 9
-    end
-    stats.sessionAchievementRewards = (stats.sessionAchievementRewards or 0) + reward
-    savePlayerStats(playerName, stats)
-  end
-
   return { stats = stats, newAchievements = newAchievements }
 end
 

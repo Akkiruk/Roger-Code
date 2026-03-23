@@ -95,6 +95,26 @@ local function getMaxBet()
 end
 
 -----------------------------------------------------
+-- Session statistics
+-----------------------------------------------------
+local sessionStats = {
+  hands       = 0,
+  playerWins  = 0,
+  bankerWins  = 0,
+  ties        = 0,
+  playerBets  = 0,
+  bankerBets  = 0,
+  tieBets     = 0,
+  totalBet    = 0,
+  totalWon    = 0,
+  netProfit   = 0,
+  biggestWin  = 0,
+  streak      = 0,
+  streakType  = nil,
+  bestStreak  = 0,
+}
+
+-----------------------------------------------------
 -- Player detection (shared via game_setup)
 -----------------------------------------------------
 local function refreshPlayer()
@@ -250,49 +270,260 @@ local function renderTable(playerHand, bankerHand, betType, betAmount, statusTex
 end
 
 -----------------------------------------------------
+-- Session stats update
+-----------------------------------------------------
+local function updateSessionStats(outcome, betType, betAmount, netChange)
+  sessionStats.hands = sessionStats.hands + 1
+  sessionStats.totalBet = sessionStats.totalBet + betAmount
+  sessionStats.netProfit = sessionStats.netProfit + netChange
+
+  if netChange > sessionStats.biggestWin then
+    sessionStats.biggestWin = netChange
+  end
+  if netChange > 0 then
+    sessionStats.totalWon = sessionStats.totalWon + netChange
+  end
+
+  -- Track bet type counts
+  if betType == BET.PLAYER then
+    sessionStats.playerBets = sessionStats.playerBets + 1
+  elseif betType == BET.BANKER then
+    sessionStats.bankerBets = sessionStats.bankerBets + 1
+  elseif betType == BET.TIE then
+    sessionStats.tieBets = sessionStats.tieBets + 1
+  end
+
+  -- Track outcome counts
+  if outcome == OUT.PLAYER_WIN then
+    sessionStats.playerWins = sessionStats.playerWins + 1
+  elseif outcome == OUT.BANKER_WIN then
+    sessionStats.bankerWins = sessionStats.bankerWins + 1
+  else
+    sessionStats.ties = sessionStats.ties + 1
+  end
+
+  -- Streak tracking
+  if sessionStats.streakType == outcome then
+    sessionStats.streak = sessionStats.streak + 1
+  else
+    sessionStats.streak = 1
+    sessionStats.streakType = outcome
+  end
+  if sessionStats.streak > sessionStats.bestStreak then
+    sessionStats.bestStreak = sessionStats.streak
+  end
+end
+
+-----------------------------------------------------
+-- Tutorial / How to play screens
+-----------------------------------------------------
+local LINE_H = 8
+
+local function drawCenteredLine(text, y, color)
+  local tw = ui.getTextSize(text)
+  screen:drawText(text, font, math.floor((width - tw) / 2), y, color or colors.white)
+end
+
+local TUTORIAL_PAGES = {
+  {
+    title = "THE BASICS",
+    lines = {
+      { text = "Baccarat is simple:",  color = colors.white },
+      { text = "Pick PLAYER, BANKER,", color = colors.white },
+      { text = "or TIE before cards",  color = colors.white },
+      { text = "are dealt.",           color = colors.white },
+      { text = "",                      color = colors.white },
+      { text = "Hand closest to 9",    color = colors.yellow },
+      { text = "wins! You just bet",   color = colors.yellow },
+      { text = "on the outcome.",      color = colors.yellow },
+    },
+  },
+  {
+    title = "CARD VALUES",
+    lines = {
+      { text = "Ace = 1 point",       color = colors.cyan },
+      { text = "2 - 9 = face value",  color = colors.white },
+      { text = "10, J, Q, K = 0",     color = colors.lightGray },
+      { text = "",                     color = colors.white },
+      { text = "Only ones digit counts", color = colors.yellow },
+      { text = "7 + 8 = 15 -> 5",     color = colors.yellow },
+      { text = "Best hand: Natural 9", color = colors.lime },
+      { text = "(8 or 9 on first 2)", color = colors.lime },
+    },
+  },
+  {
+    title = "PAYOUTS & TIPS",
+    lines = {
+      { text = "PLAYER: pays 1:1",     color = colors.cyan },
+      { text = "BANKER: pays 1:1",     color = colors.red },
+      { text = "  minus 5% commission", color = colors.red },
+      { text = "TIE: pays 8:1",        color = colors.yellow },
+      { text = "  (risky - rare hit!)", color = colors.yellow },
+      { text = "",                      color = colors.white },
+      { text = "Tip: Banker bet has",  color = colors.lime },
+      { text = "the best odds!",       color = colors.lime },
+    },
+  },
+}
+
+local function showTutorial()
+  local page = 1
+  while true do
+    screen:clear(LO.TABLE_COLOR)
+    local pg = TUTORIAL_PAGES[page]
+
+    -- Title
+    drawCenteredLine(pg.title, 2, colors.yellow)
+
+    -- Page indicator
+    local indicator = "Page " .. page .. "/" .. #TUTORIAL_PAGES
+    drawCenteredLine(indicator, 10, colors.lightGray)
+
+    -- Content lines
+    local contentY = 18
+    for i, ln in ipairs(pg.lines) do
+      if ln.text ~= "" then
+        drawCenteredLine(ln.text, contentY + (i - 1) * LINE_H, ln.color)
+      end
+    end
+
+    -- Navigation buttons
+    ui.clearButtons()
+    local navRow = {}
+    if page > 1 then
+      table.insert(navRow, { text = "PREV", color = colors.lightGray,
+        func = function() page = page - 1 end })
+    end
+    table.insert(navRow, { text = "BACK", color = colors.red,
+      func = function() page = nil end })
+    if page < #TUTORIAL_PAGES then
+      table.insert(navRow, { text = "NEXT", color = colors.lime,
+        func = function() page = page + 1 end })
+    end
+    ui.layoutButtonGrid(screen, { navRow }, centerX, height - 10, 8, 4)
+
+    screen:output()
+    ui.waitForButton(0, 0)
+    if not page then return end
+  end
+end
+
+-----------------------------------------------------
+-- Stats display
+-----------------------------------------------------
+local function showStats()
+  screen:clear(LO.TABLE_COLOR)
+
+  drawCenteredLine("SESSION STATS", 2, colors.yellow)
+
+  local y = 14
+  local function statLine(label, value, color)
+    drawCenteredLine(label .. ": " .. tostring(value), y, color or colors.white)
+    y = y + LINE_H
+  end
+
+  statLine("Hands Played", sessionStats.hands, colors.white)
+
+  local winCount = 0
+  local lossCount = 0
+  for i = 1, sessionStats.hands do os.sleep(0) end  -- yield placeholder
+  -- Calculate wins/losses from the player's perspective (bets that paid out)
+  winCount = sessionStats.totalWon > 0 and sessionStats.hands or 0
+  -- Actually, simpler: use net profit to show win rate
+  local profitColor = colors.white
+  if sessionStats.netProfit > 0 then
+    profitColor = colors.lime
+  elseif sessionStats.netProfit < 0 then
+    profitColor = colors.red
+  end
+  statLine("Net Profit", currency.formatTokens(sessionStats.netProfit), profitColor)
+  statLine("Total Wagered", currency.formatTokens(sessionStats.totalBet), colors.white)
+
+  if sessionStats.biggestWin > 0 then
+    statLine("Biggest Win", currency.formatTokens(sessionStats.biggestWin), colors.lime)
+  end
+
+  y = y + 2
+  drawCenteredLine("-- OUTCOMES --", y, colors.yellow)
+  y = y + LINE_H
+  statLine("Player Wins", sessionStats.playerWins, colors.cyan)
+  statLine("Banker Wins", sessionStats.bankerWins, colors.red)
+  statLine("Ties", sessionStats.ties, colors.yellow)
+
+  if sessionStats.bestStreak > 1 then
+    statLine("Best Streak", sessionStats.bestStreak, colors.lime)
+  end
+
+  ui.clearButtons()
+  ui.layoutButtonGrid(screen, {
+    {{ text = "BACK", color = colors.red, func = function() end }},
+  }, centerX, height - 10, 8, 4)
+  screen:output()
+  ui.waitForButton(0, 0)
+end
+
+-----------------------------------------------------
 -- Bet type selection (Player / Banker / Tie)
 -----------------------------------------------------
 local function selectBetType()
-  screen:clear(LO.TABLE_COLOR)
+  while true do
+    screen:clear(LO.TABLE_COLOR)
 
-  local title = "CHOOSE YOUR BET"
-  local tw = ui.getTextSize(title)
-  screen:drawText(title, font, math.floor((width - tw) / 2), math.floor(height * 0.2), colors.yellow)
+    local title = "CHOOSE YOUR BET"
+    local tw = ui.getTextSize(title)
+    screen:drawText(title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
 
-  ui.clearButtons()
-  local chosen = nil
+    -- Brief hint for new players
+    local hint = "Pick who wins - closest to 9!"
+    local hw = ui.getTextSize(hint)
+    screen:drawText(hint, font, math.floor((width - hw) / 2), math.floor(height * 0.22), colors.lightGray)
 
-  ui.layoutButtonGrid(screen, {
-    {
-      { text = "PLAYER 1:1", color = colors.cyan,
-        func = function() chosen = BET.PLAYER end },
-      { text = "BANKER 1:1", color = colors.red,
-        func = function() chosen = BET.BANKER end },
-    },
-    {
-      { text = "TIE 8:1", color = colors.yellow,
-        func = function() chosen = BET.TIE end },
-    },
-  }, centerX, math.floor(height * 0.40), 8, 4)
+    ui.clearButtons()
+    local chosen = nil
+    local action = nil
 
-  screen:output()
+    ui.layoutButtonGrid(screen, {
+      {
+        { text = "PLAYER 1:1", color = colors.cyan,
+          func = function() chosen = BET.PLAYER end },
+        { text = "BANKER 1:1", color = colors.red,
+          func = function() chosen = BET.BANKER end },
+      },
+      {
+        { text = "TIE 8:1", color = colors.yellow,
+          func = function() chosen = BET.TIE end },
+      },
+      {
+        { text = "HOW TO PLAY", color = colors.lightBlue,
+          func = function() action = "tutorial" end },
+        { text = "STATS", color = colors.lightGray,
+          func = function() action = "stats" end },
+      },
+    }, centerX, math.floor(height * 0.35), 8, 4)
 
-  if AUTO_PLAY then
-    -- Bot: random bet type weighted toward banker (best odds)
-    local r = math.random(100)
-    if r <= 50 then
-      chosen = BET.BANKER
-    elseif r <= 90 then
-      chosen = BET.PLAYER
-    else
-      chosen = BET.TIE
+    screen:output()
+
+    if AUTO_PLAY then
+      -- Bot: random bet type weighted toward banker (best odds)
+      local r = math.random(100)
+      if r <= 50 then
+        chosen = BET.BANKER
+      elseif r <= 90 then
+        chosen = BET.PLAYER
+      else
+        chosen = BET.TIE
+      end
+      os.sleep(cfg.AUTO_PLAY_DELAY)
+      return chosen
     end
-    os.sleep(cfg.AUTO_PLAY_DELAY)
-    return chosen
-  end
 
-  ui.waitForButton(0, 0)
-  return chosen
+    ui.waitForButton(0, 0)
+
+    if chosen then return chosen end
+    if action == "tutorial" then showTutorial() end
+    if action == "stats" then showStats() end
+    -- If tutorial/stats was shown, loop redraws the bet selection
+  end
 end
 
 -----------------------------------------------------
@@ -510,10 +741,29 @@ local function baccaratRound(betAmount, betType, escrowId)
     currency.resolveEscrow(escrowId, "host", "baccarat loss")
   end
 
-  -- Show result
+  -- Update session statistics
+  updateSessionStats(outcome, betType, betAmount, netChange)
+
+  -- Show result with beginner-friendly explanation
   local naturalTag = isNatural and " (Natural)" or ""
+  local explanation = ""
+  if isNatural then
+    explanation = " Natural = 8 or 9 on first deal"
+  elseif playerThirdValue ~= nil and #bankerHand == 3 then
+    explanation = " Both sides drew a third card"
+  elseif playerThirdValue ~= nil then
+    explanation = " Player drew a third card"
+  elseif #bankerHand == 3 then
+    explanation = " Banker drew a third card"
+  end
   renderTable(playerHand, bankerHand, betType, betAmount, nil)
   ui.displayCenteredMessage(screen, msg .. naturalTag, msgClr, LO.RESULT_PAUSE)
+  if explanation ~= "" then
+    -- Brief explanation overlay
+    drawCenteredLine(explanation, height - 12, colors.lightGray)
+    screen:output()
+    os.sleep(1.0)
+  end
   sound.play(snd)
 
   recovery.clearBet()
