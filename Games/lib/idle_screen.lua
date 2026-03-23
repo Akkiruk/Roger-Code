@@ -62,8 +62,12 @@ local function setup(cfg)
   env.font     = env.surface.loadFont(env.surface.load("font"))
 
   -- Card assets are optional — games without cards skip the bouncing animation
-  env.cardBg   = fs.exists("card.nfp")    and env.surface.load("card.nfp")    or nil
-  env.cardBack = fs.exists("cardback.nfp") and env.surface.load("cardback.nfp") or nil
+  -- Need card bg, card back, AND at least one suit image for the animation
+  local hasCards = fs.exists("card.nfp") and fs.exists("cardback.nfp")
+    and fs.exists("heart.nfp") and fs.exists("club.nfp")
+    and fs.exists("diamond.nfp") and fs.exists("spade.nfp")
+  env.cardBg   = hasCards and env.surface.load("card.nfp")    or nil
+  env.cardBack = hasCards and env.surface.load("cardback.nfp") or nil
 
   -- Load extra assets if requested (e.g. logo)
   env.assets = {}

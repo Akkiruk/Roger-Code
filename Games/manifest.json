@@ -5,8 +5,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.1",
-                                      "content_hash":  "a3cbd3471abc5a5a",
+                                      "version":  "1.2.2",
+                                      "content_hash":  "6d849dbdbe8c6f82",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -67,8 +67,8 @@
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.2",
-                                  "content_hash":  "e138f0f529b51942",
+                                  "version":  "1.0.3",
+                                  "content_hash":  "7894c6c14425e3a2",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
@@ -162,8 +162,8 @@
                                     },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.2",
-                                        "content_hash":  "6c9bc7c0b92f6642",
+                                        "version":  "1.0.3",
+                                        "content_hash":  "81bf5e1f28f872d3",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,
@@ -259,8 +259,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.2",
-                "content_hash":  "00b59a19879a2452",
+                "version":  "1.2.3",
+                "content_hash":  "6351da08fffffd50",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",

@@ -177,7 +177,9 @@ local function renderCard(cardID)
   local card   = _surface.create(12, 15)
   local suitImg = _surface.load(suit .. ".nfp")
   card:drawSurface(_cardBg, 0, 0)
-  card:drawSurface(suitImg, 5, 2)
+  if suitImg then
+    card:drawSurface(suitImg, 5, 2)
+  end
   card:drawText(number, _font, 2, 8, colors.black)
   return card
 end
