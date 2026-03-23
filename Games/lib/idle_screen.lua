@@ -58,8 +58,10 @@ local function setup(cfg)
   env.width, env.height = term.getSize()
   env.screen   = env.surface.create(env.width, env.height)
   env.font     = env.surface.loadFont(env.surface.load("font"))
-  env.cardBg   = env.surface.load("card.nfp")    or error("card.nfp missing")
-  env.cardBack = env.surface.load("cardback.nfp") or error("cardback.nfp missing")
+
+  -- Card assets are optional — games without cards skip the bouncing animation
+  env.cardBg   = fs.exists("card.nfp")    and env.surface.load("card.nfp")    or nil
+  env.cardBack = fs.exists("cardback.nfp") and env.surface.load("cardback.nfp") or nil
 
   -- Load extra assets if requested (e.g. logo)
   env.assets = {}
@@ -69,23 +71,24 @@ local function setup(cfg)
     end
   end
 
-  cardsLib.initRenderer(env.surface, env.font, env.cardBg)
-
-  env.deck = cardsLib.buildDeck(1)
-  cardsLib.shuffle(env.deck)
-
-  local cardCount = cfg.cardCount or 4
   env.bouncingCards = {}
-  for j = 1, cardCount do
-    env.bouncingCards[j] = {
-      x            = -math.floor(math.random() * env.width * 2),
-      y            = 0,
-      speed        = 1 + math.random() * 0.5,
-      bounceHeight = 0.6 + math.random() * 0.3,
-      mirror       = (math.random() > 0.5),
-      card         = env.deck[j],
-      yDrift       = math.random() * 2 - 1,
-    }
+  if env.cardBg and env.cardBack then
+    cardsLib.initRenderer(env.surface, env.font, env.cardBg)
+    env.deck = cardsLib.buildDeck(1)
+    cardsLib.shuffle(env.deck)
+
+    local cardCount = cfg.cardCount or 4
+    for j = 1, cardCount do
+      env.bouncingCards[j] = {
+        x            = -math.floor(math.random() * env.width * 2),
+        y            = 0,
+        speed        = 1 + math.random() * 0.5,
+        bounceHeight = 0.6 + math.random() * 0.3,
+        mirror       = (math.random() > 0.5),
+        card         = env.deck[j],
+        yDrift       = math.random() * 2 - 1,
+      }
+    end
   end
 
   return env

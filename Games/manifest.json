@@ -200,8 +200,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.0.1",
-                "content_hash":  "c432cce96cb9cb1b",
+                "version":  "1.0.2",
+                "content_hash":  "69f3acc0efe4e91c",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
