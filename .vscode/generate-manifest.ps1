@@ -31,15 +31,41 @@ function Test-SkipFile {
     return $false
 }
 
+function Get-RelativeFilePath {
+    param(
+        [string]$BaseDir,
+        [string]$FullPath
+    )
+
+    $base = (Resolve-Path $BaseDir).Path.TrimEnd('\', '/')
+    $full = (Resolve-Path $FullPath).Path
+    return $full.Substring($base.Length + 1).Replace('\', '/')
+}
+
 # Discover files in a program directory, sorting into code/config/assets
 function Get-ProgramFiles {
     param([string]$Dir)
 
-    $allFiles = Get-ChildItem $Dir -File | Where-Object { -not (Test-SkipFile $_.Name) }
+    $allFiles = Get-ChildItem $Dir -File -Recurse | Where-Object { -not (Test-SkipFile $_.Name) }
 
-    $configFiles = @($allFiles | Where-Object { $_.Name -like "*_config.lua" -or $_.Name -like "*_settings.lua" } | ForEach-Object { $_.Name })
-    $luaFiles    = @($allFiles | Where-Object { $_.Extension -eq ".lua" -and $_.Name -notlike "*_config.lua" -and $_.Name -notlike "*_settings.lua" } | ForEach-Object { $_.Name })
-    $assetFiles  = @($allFiles | Where-Object { $_.Extension -ne ".lua" } | ForEach-Object { $_.Name })
+    $configFiles = @(
+        $allFiles |
+            Where-Object { $_.Name -like "*_config.lua" -or $_.Name -like "*_settings.lua" } |
+            ForEach-Object { Get-RelativeFilePath -BaseDir $Dir -FullPath $_.FullName } |
+            Sort-Object
+    )
+    $luaFiles = @(
+        $allFiles |
+            Where-Object { $_.Extension -eq ".lua" -and $_.Name -notlike "*_config.lua" -and $_.Name -notlike "*_settings.lua" } |
+            ForEach-Object { Get-RelativeFilePath -BaseDir $Dir -FullPath $_.FullName } |
+            Sort-Object
+    )
+    $assetFiles = @(
+        $allFiles |
+            Where-Object { $_.Extension -ne ".lua" } |
+            ForEach-Object { Get-RelativeFilePath -BaseDir $Dir -FullPath $_.FullName } |
+            Sort-Object
+    )
 
     return @{
         files        = $luaFiles
@@ -51,7 +77,7 @@ function Get-ProgramFiles {
 # Check if a directory uses shared lib (has require("lib.xxx") in any .lua))
 function Test-UsesLib {
     param([string]$Dir)
-    $luaFiles = Get-ChildItem $Dir -File -Filter "*.lua" -ErrorAction SilentlyContinue
+    $luaFiles = Get-ChildItem $Dir -File -Filter "*.lua" -Recurse -ErrorAction SilentlyContinue
     foreach ($f in $luaFiles) {
         $content = Get-Content $f.FullName -Raw -ErrorAction SilentlyContinue
         if ($content -match 'require\s*\(\s*["\x27]lib\.') { return $true }
@@ -315,8 +341,9 @@ foreach ($file in $standaloneUtils) {
 # Discover shared lib files
 $libDir = Join-Path $GamesDir "lib"
 if (Test-Path $libDir) {
-    $libFiles = @(Get-ChildItem $libDir -File -Filter "*.lua" | ForEach-Object { $_.Name } | Sort-Object)
-    $libPaths = @(Get-ChildItem $libDir -File -Filter "*.lua" | ForEach-Object { $_.FullName })
+    $libItems = @(Get-ChildItem $libDir -File -Filter "*.lua" -Recurse | Sort-Object FullName)
+    $libFiles = @($libItems | ForEach-Object { Get-RelativeFilePath -BaseDir $libDir -FullPath $_.FullName })
+    $libPaths = @($libItems | ForEach-Object { $_.FullName })
     $libHash = Get-ContentHash -FilePaths $libPaths
     $libVersion = Resolve-Version -Key "lib" -NewHash $libHash -IsLib
 
