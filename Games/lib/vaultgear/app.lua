@@ -120,11 +120,26 @@ local function resetStats(app)
   app.last_cycle_at = nil
 end
 
-local function saveAll(app)
-  store.saveConfig(app.config)
-  store.saveState(app.state)
-  app.dirty_config = false
-  app.dirty_state = false
+local function saveAll(app, context)
+  local location = context or "update"
+
+  if app.dirty_config then
+    local ok, err = store.saveConfig(app.config)
+    if ok then
+      app.dirty_config = false
+    else
+      recentEvent(app, "error", "Failed to save config after " .. location .. ": " .. tostring(err))
+    end
+  end
+
+  if app.dirty_state then
+    local ok, err = store.saveState(app.state)
+    if ok then
+      app.dirty_state = false
+    else
+      recentEvent(app, "error", "Failed to save state after " .. location .. ": " .. tostring(err))
+    end
+  end
 end
 
 local function adjustNumericField(profile, field, delta)
@@ -458,6 +473,7 @@ function M.run()
 
   refreshDiscovery(app)
   rebuildPreview(app)
+  saveAll(app, "startup")
 
   local redrawTimer = os.startTimer(0.2)
   local previewTimer = os.startTimer(2)
@@ -469,26 +485,30 @@ function M.run()
     local event, p1, p2, p3 = os.pullEventRaw()
 
     if event == "terminate" then
-      saveAll(app)
+      saveAll(app, "terminate")
       return
     elseif event == "monitor_touch" then
       if app.monitor and p1 == app.monitor.name then
         handleZone(app, ui.hit(app.frame, p2, p3))
+        saveAll(app, "monitor touch")
       end
     elseif event == "peripheral" or event == "peripheral_detach" then
       refreshDiscovery(app)
       rebuildPreview(app)
+      saveAll(app, "peripheral refresh")
     elseif event == "timer" and p1 == redrawTimer then
       redrawTimer = os.startTimer(0.2)
     elseif event == "timer" and p1 == previewTimer then
       rebuildPreview(app)
+      saveAll(app, "preview refresh")
       previewTimer = os.startTimer(2)
     elseif event == "timer" and p1 == sortTimer then
       processSortCycle(app)
+      saveAll(app, "sort cycle")
       sortTimer = os.startTimer(app.config.runtime.scan_interval)
     elseif event == "timer" and p1 == saveTimer then
       if app.dirty_config or app.dirty_state then
-        saveAll(app)
+        saveAll(app, "periodic backup")
       end
       saveTimer = os.startTimer(10)
     end
