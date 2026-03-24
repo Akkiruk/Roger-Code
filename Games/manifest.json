@@ -161,8 +161,8 @@
     },
     "vaultgear": {
       "name": "VaultGear",
-      "version": "1.0.1",
-      "content_hash": "ab1a863340e74453",
+      "version": "1.0.2",
+      "content_hash": "3bce4c194eaa879c",
       "description": "Vault Gear Sorter monitor app for configurable Vault Hunters gear routing.",
       "source_dir": "Games/VaultGear",
       "uses_lib": true,
@@ -259,8 +259,8 @@
     }
   },
   "lib": {
-    "version": "1.2.16",
-    "content_hash": "f37ead61dbc8643a",
+    "version": "1.2.17",
+    "content_hash": "e14174f4bad71c20",
     "files": [
       "achievements.lua",
       "alert.lua",

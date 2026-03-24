@@ -147,6 +147,55 @@ function M.trimText(text, maxLen)
   return value:sub(1, maxLen - 2) .. ".."
 end
 
+function M.wrapText(text, width, maxLines)
+  local source = tostring(text or "")
+  width = math.max(1, tonumber(width) or 1)
+  maxLines = maxLines or 999
+
+  local words = {}
+  for word in source:gmatch("%S+") do
+    words[#words + 1] = word
+  end
+
+  if #words == 0 then
+    return { "" }
+  end
+
+  local lines = {}
+  local current = ""
+
+  for _, word in ipairs(words) do
+    local candidate = current == "" and word or (current .. " " .. word)
+    if #candidate <= width then
+      current = candidate
+    else
+      if current ~= "" then
+        lines[#lines + 1] = current
+        if #lines >= maxLines then
+          lines[#lines] = M.trimText(lines[#lines], width)
+          return lines
+        end
+        current = word
+      else
+        lines[#lines + 1] = M.trimText(word, width)
+        if #lines >= maxLines then
+          return lines
+        end
+      end
+    end
+  end
+
+  if current ~= "" and #lines < maxLines then
+    lines[#lines + 1] = current
+  end
+
+  if #lines == 0 then
+    lines[1] = ""
+  end
+
+  return lines
+end
+
 function M.formatTime(epochMs)
   if type(epochMs) ~= "number" then
     return "--:--:--"

@@ -12,10 +12,10 @@ M.MIN_MONITOR_WIDTH = 52
 M.MIN_MONITOR_HEIGHT = 18
 
 M.TABS = {
-  { id = "run", label = "Run" },
-  { id = "routing", label = "Routing" },
-  { id = "profiles", label = "Profiles" },
-  { id = "modifiers", label = "Modifiers" },
+  { id = "run", label = "Home" },
+  { id = "routing", label = "Setup" },
+  { id = "profiles", label = "Rules" },
+  { id = "modifiers", label = "Mods" },
 }
 
 M.ROUTING_ROLES = {
@@ -78,21 +78,60 @@ M.DEFAULT_SAFETY = {
 }
 
 M.PROFILE_LABELS = {
-  enabled = "Enabled",
-  miss_action = "Miss Action",
+  enabled = "Profile",
+  miss_action = "Misses Go To",
   unidentified_mode = "Unidentified",
   min_rarity = "Min Rarity",
   min_level = "Min Level",
   max_level = "Max Level",
   min_crafting_potential = "Min CP",
-  min_free_repair_slots = "Min Free Repair",
-  min_durability_percent = "Min Durability%",
+  min_free_repair_slots = "Free Repair",
+  min_durability_percent = "Durability%",
   max_jewel_size = "Max Jewel Size",
   min_uses = "Min Uses",
-  keep_legendary = "Keep Legendary",
-  keep_soulbound = "Keep Soulbound",
-  keep_unique = "Keep Unique",
+  keep_legendary = "Always Keep Legendary",
+  keep_soulbound = "Always Keep Soulbound",
+  keep_unique = "Always Keep Unique",
   wanted_modifier_mode = "Wanted Mode",
+}
+
+M.PROFILE_PRESETS = {
+  Gear = {
+    { id = "keep_all", label = "Keep All" },
+    { id = "common_plus", label = "Common+" },
+    { id = "rare_plus", label = "Rare+" },
+    { id = "trash_unid", label = "Unid Trash" },
+  },
+  Tool = {
+    { id = "keep_all", label = "Keep All" },
+    { id = "common_plus", label = "Common+" },
+    { id = "rare_plus", label = "Rare+" },
+    { id = "trash_unid", label = "Unid Trash" },
+  },
+  Jewel = {
+    { id = "keep_all", label = "Keep All" },
+    { id = "common_plus", label = "Common+" },
+    { id = "rare_plus", label = "Rare+" },
+    { id = "trash_unid", label = "Unid Trash" },
+  },
+  Trinket = {
+    { id = "keep_all", label = "Keep All" },
+    { id = "uses_2", label = "2+ Uses" },
+    { id = "uses_5", label = "5+ Uses" },
+    { id = "trash_unid", label = "Unid Trash" },
+  },
+  Charm = {
+    { id = "keep_all", label = "Keep All" },
+    { id = "common_plus", label = "Common+" },
+    { id = "uses_3", label = "3+ Uses" },
+    { id = "trash_unid", label = "Unid Trash" },
+  },
+  Etching = {
+    { id = "keep_all", label = "Keep All" },
+    { id = "common_plus", label = "Common+" },
+    { id = "rare_plus", label = "Rare+" },
+    { id = "trash_unid", label = "Unid Trash" },
+  },
 }
 
 M.PROFILE_FIELDS = {

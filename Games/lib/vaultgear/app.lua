@@ -40,6 +40,31 @@ local function bindMonitor(app)
   return true
 end
 
+local function profileSupportsField(itemType, field)
+  local fields = constants.PROFILE_FIELDS[itemType] or {}
+  for _, entry in ipairs(fields) do
+    if entry == field then
+      return true
+    end
+  end
+  return false
+end
+
+local function overlappingModifierLabel(profile)
+  local blocked = {}
+  for _, entry in ipairs(profile.blocked_modifiers or {}) do
+    blocked[entry.key] = entry.label or entry.key
+  end
+
+  for _, entry in ipairs(profile.wanted_modifiers or {}) do
+    if blocked[entry.key] then
+      return entry.label or blocked[entry.key] or entry.key
+    end
+  end
+
+  return nil
+end
+
 local function refreshHealth(app)
   app.health = {
     monitor_ok = true,
@@ -69,9 +94,23 @@ local function refreshHealth(app)
     end
   end
 
-  for itemType, profile in pairs(app.config.type_profiles) do
-    if profile.enabled and profile.miss_action == "discard" and not evaluator.profileHasActiveFilters(profile) then
-      app.health.warnings[#app.health.warnings + 1] = itemType .. " would discard everything"
+  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+    local profile = app.config.type_profiles[itemType]
+    if profile then
+      if profile.enabled and profile.miss_action == "discard" and not evaluator.profileHasActiveFilters(profile) then
+        app.health.warnings[#app.health.warnings + 1] = itemType .. " would discard everything"
+      end
+      if profile.enabled and evaluator.profileHasActiveFilters(profile) and profile.miss_action == "keep" then
+        app.health.warnings[#app.health.warnings + 1] = itemType .. " misses still go to Keep"
+      end
+      if profile.enabled and evaluator.profileHasActiveFilters(profile) and profile.unidentified_mode == "keep" then
+        app.health.warnings[#app.health.warnings + 1] = itemType .. " unidentified items bypass filters"
+      end
+
+      local overlap = overlappingModifierLabel(profile)
+      if profile.enabled and overlap then
+        app.health.warnings[#app.health.warnings + 1] = itemType .. " keeps and blocks " .. overlap
+      end
     end
   end
 end
@@ -140,6 +179,82 @@ local function saveAll(app, context)
       recentEvent(app, "error", "Failed to save state after " .. location .. ": " .. tostring(err))
     end
   end
+end
+
+local function resetProfileToDefaults(app, itemType)
+  local profile = app.config.type_profiles[itemType]
+  local defaults = store.buildDefaultConfig().type_profiles[itemType]
+  if not profile or not defaults then
+    return
+  end
+
+  for key in pairs(profile) do
+    if defaults[key] == nil then
+      profile[key] = nil
+    end
+  end
+
+  for key, value in pairs(defaults) do
+    profile[key] = util.deepCopy(value)
+  end
+end
+
+local function applyPreset(app, itemType, presetId)
+  local profile = app.config.type_profiles[itemType]
+  if not profile then
+    return
+  end
+
+  resetProfileToDefaults(app, itemType)
+  profile = app.config.type_profiles[itemType]
+
+  if presetId == "common_plus" then
+    if profileSupportsField(itemType, "min_rarity") then
+      profile.min_rarity = "COMMON"
+    end
+    profile.miss_action = "discard"
+    profile.unidentified_mode = "evaluate_basic"
+  elseif presetId == "rare_plus" then
+    if profileSupportsField(itemType, "min_rarity") then
+      profile.min_rarity = "RARE"
+    end
+    profile.miss_action = "discard"
+    profile.unidentified_mode = "evaluate_basic"
+  elseif presetId == "trash_unid" then
+    profile.unidentified_mode = "discard"
+  elseif presetId == "uses_2" then
+    if profileSupportsField(itemType, "min_uses") then
+      profile.min_uses = 2
+    end
+    profile.miss_action = "discard"
+    profile.unidentified_mode = "evaluate_basic"
+  elseif presetId == "uses_3" then
+    if profileSupportsField(itemType, "min_uses") then
+      profile.min_uses = 3
+    end
+    profile.miss_action = "discard"
+    profile.unidentified_mode = "evaluate_basic"
+  elseif presetId == "uses_5" then
+    if profileSupportsField(itemType, "min_uses") then
+      profile.min_uses = 5
+    end
+    profile.miss_action = "discard"
+    profile.unidentified_mode = "evaluate_basic"
+  end
+
+  app.dirty_config = true
+  app.dirty_state = true
+  refreshHealth(app)
+  rebuildPreview(app)
+end
+
+local function nextMissingRoutingRole(routing)
+  for _, role in ipairs(constants.ROUTING_ROLES) do
+    if not routing[role.id] or routing[role.id] == "" then
+      return role.id
+    end
+  end
+  return nil
 end
 
 local function adjustNumericField(profile, field, delta)
@@ -221,6 +336,7 @@ local function addRule(app, listName)
     }
     app.dirty_config = true
     app.dirty_state = true
+    refreshHealth(app)
     rebuildPreview(app)
   end
 end
@@ -237,6 +353,7 @@ local function removeRule(app, listName)
     table.remove(profile[listName], index)
     app.dirty_config = true
     app.dirty_state = true
+    refreshHealth(app)
     rebuildPreview(app)
   end
 end
@@ -268,6 +385,11 @@ local function handleZone(app, zone)
     return
   end
 
+  if zone.id == "apply_preset" then
+    applyPreset(app, zone.data.item_type or app.ui.selected_type, zone.data.preset_id)
+    return
+  end
+
   if zone.id == "run_reset_stats" then
     resetStats(app)
     return
@@ -294,6 +416,11 @@ local function handleZone(app, zone)
   if zone.id == "routing_assign" then
     app.config.routing[app.ui.routing_role] = zone.data.name
     app.dirty_config = true
+    app.dirty_state = true
+    local nextRole = nextMissingRoutingRole(app.config.routing)
+    if nextRole then
+      app.ui.routing_role = nextRole
+    end
     refreshHealth(app)
     rebuildPreview(app)
     return
@@ -366,6 +493,7 @@ local function handleZone(app, zone)
     local profile = app.config.type_profiles[app.ui.selected_type]
     profile.wanted_modifier_mode = util.cycleValue(constants.WANTED_MODES, profile.wanted_modifier_mode, 1)
     app.dirty_config = true
+    refreshHealth(app)
     rebuildPreview(app)
     return
   end
@@ -405,6 +533,17 @@ local function handleZone(app, zone)
 
   if zone.id == "modifiers_remove_block" then
     removeRule(app, "blocked_modifiers")
+    return
+  end
+
+  if zone.id == "modifiers_clear_all" then
+    local profile = app.config.type_profiles[app.ui.selected_type]
+    profile.wanted_modifiers = {}
+    profile.blocked_modifiers = {}
+    app.dirty_config = true
+    app.dirty_state = true
+    refreshHealth(app)
+    rebuildPreview(app)
     return
   end
 end
@@ -470,6 +609,18 @@ function M.run()
   }
 
   app.ui = app.state.ui
+  if app.ui.page ~= "run" and app.ui.page ~= "routing" and app.ui.page ~= "profiles" and app.ui.page ~= "modifiers" then
+    app.ui.page = "run"
+    app.dirty_state = true
+  end
+  if not constants.SUPPORTED_TYPE_SET[app.ui.selected_type] then
+    app.ui.selected_type = "Gear"
+    app.dirty_state = true
+  end
+  if app.ui.routing_role ~= "input" and app.ui.routing_role ~= "keep" and app.ui.routing_role ~= "trash" then
+    app.ui.routing_role = nextMissingRoutingRole(app.config.routing) or "input"
+    app.dirty_state = true
+  end
 
   refreshDiscovery(app)
   rebuildPreview(app)
