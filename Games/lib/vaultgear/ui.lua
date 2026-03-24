@@ -46,6 +46,67 @@ local function button(frame, id, x, y, width, label, fg, bg, data)
   addZone(frame, id, x, y, x + width - 1, y, data)
 end
 
+local function firstReasonWithPrefix(reasons, prefix)
+  for _, reason in ipairs(reasons or {}) do
+    if type(reason) == "string" and reason:find(prefix, 1, true) == 1 then
+      return reason
+    end
+  end
+  return nil
+end
+
+local function decisionHint(entry)
+  local decision = entry and entry.decision or {}
+  local reasons = decision.reasons or {}
+
+  if firstReasonWithPrefix(reasons, "Unidentified -> keep") then
+    return "Profiles: set Unidentified to discard/basic"
+  end
+  if firstReasonWithPrefix(reasons, "Miss -> keep") then
+    return "Profiles: set Miss Action to discard"
+  end
+  if firstReasonWithPrefix(reasons, "Wanted modifiers missing") then
+    return "Modifiers: add/remove keep rules"
+  end
+  if firstReasonWithPrefix(reasons, "Blocked mod: ") then
+    return "Modifiers: remove block rule if unwanted"
+  end
+  if firstReasonWithPrefix(reasons, "Below rarity floor") then
+    return "Profiles: lower Min Rarity to keep more"
+  end
+  return nil
+end
+
+local function selectedDetailLines(entry)
+  local item = entry and entry.item or {}
+  local decision = entry and entry.decision or {}
+  local reasons = decision.reasons or {}
+  local lines = {}
+
+  lines[#lines + 1] = string.format("%s | %s | Lv%s", item.item_type or "Item", item.rarity or "-", tostring(item.level or "-"))
+
+  local actionLabel = string.upper(tostring(decision.action or "keep"))
+  local primaryReason = reasons[1] or "No decision details"
+  lines[#lines + 1] = actionLabel .. ": " .. primaryReason
+
+  local hint = decisionHint(entry)
+  if hint then
+    lines[#lines + 1] = hint
+    return lines
+  end
+
+  if #reasons > 1 then
+    local tailReason = reasons[#reasons]
+    if tailReason ~= primaryReason then
+      lines[#lines + 1] = tailReason
+      return lines
+    end
+  end
+
+  lines[#lines + 1] = item.display_name or "-"
+  return lines
+end
+
 local function header(frame, app, width)
   local runLabel = app.config.runtime.enabled and "RUNNING" or "STOPPED"
   local bg = app.config.runtime.enabled and colors.green or colors.red
@@ -121,10 +182,20 @@ local function renderRun(frame, app, width, height)
     local selected = preview[selectedIndex]
     local detailY = detailStart
     fill(1, detailY, width, colors.gray)
-    writeAt(1, detailY, "Selected", width, colors.white, colors.gray)
-    local lines = selected.lines
+    writeAt(1, detailY, "Selected Decision", width, colors.white, colors.gray)
+    local lines = selectedDetailLines(selected)
     for i = 1, math.min(3, #lines) do
-      writeAt(1, detailY + i, lines[i], width, colors.white, colors.black)
+      local fg = colors.white
+      if i == 2 then
+        if selected.decision.action == "discard" then
+          fg = colors.red
+        else
+          fg = colors.lime
+        end
+      elseif i == 3 then
+        fg = colors.lightGray
+      end
+      writeAt(1, detailY + i, lines[i], width, fg, colors.black)
     end
   end
 end
