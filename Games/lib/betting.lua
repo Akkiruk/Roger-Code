@@ -39,6 +39,18 @@ local function appendGridRows(rows, buttons, columns)
   end
 end
 
+local function compactAmountLabel(value)
+  value = tonumber(value) or 0
+  local absValue = math.abs(value)
+  if absValue >= 1000000 and absValue % 1000000 == 0 then
+    return tostring(value / 1000000) .. "M"
+  end
+  if absValue >= 1000 and absValue % 1000 == 0 then
+    return tostring(value / 1000) .. "K"
+  end
+  return tostring(value)
+end
+
 --- Run the full betting screen loop. Returns the confirmed bet in tokens.
 -- Chips are tracked locally (no transfers until the game round resolves).
 -- On confirm, validates the player has sufficient balance.
@@ -124,22 +136,49 @@ local function runBetScreen(screen, opts)
     -- Buttons
     ui.clearButtons()
     local btnX = ui.round(screen.width / 2)
+    local availableWidth = screen.width - (metrics.edgePad * 2)
+    local compactLabels = metrics.compact and availableWidth < 120
+
+    local denominationSpecs = {}
+    for _, denom in ipairs(currency.DENOMINATIONS) do
+      denominationSpecs[#denominationSpecs + 1] = {
+        source = denom,
+        label = compactLabels and ("+" .. compactAmountLabel(denom.value)) or denom.name,
+      }
+    end
+
+    local allInLabel = compactLabels and "ALL" or "ALL IN"
+    local clearLabel = compactLabels and "CLR" or "CLEAR"
+    local quitLabel = "QUIT"
+    local confirmText = compactLabels and confirmLabel:sub(1, min(#confirmLabel, 4)) or confirmLabel
 
     -- Measure widest button to make all uniform
     local buttonTexts = {}
-    for _, denom in ipairs(currency.DENOMINATIONS) do
-      buttonTexts[#buttonTexts + 1] = denom.name
+    for _, denom in ipairs(denominationSpecs) do
+      buttonTexts[#buttonTexts + 1] = denom.label
     end
-    buttonTexts[#buttonTexts + 1] = "ALL IN"
-    buttonTexts[#buttonTexts + 1] = "CLEAR"
-    buttonTexts[#buttonTexts + 1] = "QUIT"
-    buttonTexts[#buttonTexts + 1] = confirmLabel
+    buttonTexts[#buttonTexts + 1] = allInLabel
+    buttonTexts[#buttonTexts + 1] = clearLabel
+    buttonTexts[#buttonTexts + 1] = quitLabel
+    buttonTexts[#buttonTexts + 1] = confirmText
 
     local textWidths = {}
     for _, txt in ipairs(buttonTexts) do
       textWidths[#textWidths + 1] = ui.getTextSize(txt)
     end
-    local maxWidth = metrics:fixedButtonWidth(textWidths, 2)
+    local maxWidth = compactLabels and nil or metrics:fixedButtonWidth(textWidths, 2)
+
+    local function buttonWidthForText(text)
+      if maxWidth then
+        return maxWidth
+      end
+      return metrics:buttonWidth(ui.getTextSize(text))
+    end
+
+    local widestButton = 0
+    for _, txt in ipairs(buttonTexts) do
+      widestButton = max(widestButton, buttonWidthForText(txt))
+    end
 
     -- Add-bet callbacks: counter-based, no transfers until confirm
     local function addBet(denomination)
@@ -172,7 +211,7 @@ local function runBetScreen(screen, opts)
     end
 
     local allInButton = {
-      text = "ALL IN",
+      text = allInLabel,
       color = colors.orange,
       width = maxWidth,
       func = function()
@@ -203,7 +242,7 @@ local function runBetScreen(screen, opts)
     }
 
     local quitButton = {
-      text = "QUIT",
+      text = quitLabel,
       color = colors.gray,
       width = maxWidth,
       func = function()
@@ -214,7 +253,7 @@ local function runBetScreen(screen, opts)
     }
 
     local clearButton = {
-      text = "CLEAR",
+      text = clearLabel,
       color = colors.red,
       width = maxWidth,
       func = function()
@@ -226,7 +265,7 @@ local function runBetScreen(screen, opts)
     }
 
     local confirmButton = {
-      text = confirmLabel,
+      text = confirmText,
       color = colors.magenta,
       width = maxWidth,
       func = function()
@@ -247,16 +286,15 @@ local function runBetScreen(screen, opts)
       end,
     }
 
-    local availableWidth = screen.width - (metrics.edgePad * 2)
     local availableHeight = screen.height - betY - metrics.messageLineHeight - metrics.edgePad
     local maxColumns = min(3, #currency.DENOMINATIONS)
     local denomColumns = 1
     local widestFit = 1
-    local controlRowWidth = (maxWidth * 2) + metrics.buttonColGap
+    local controlRowWidth = buttonWidthForText(allInLabel) + buttonWidthForText(quitLabel) + metrics.buttonColGap
     local controlsCanPair = controlRowWidth <= availableWidth
 
     for columns = 1, maxColumns do
-      local rowWidth = (columns * maxWidth) + ((columns - 1) * metrics.buttonColGap)
+      local rowWidth = (columns * widestButton) + ((columns - 1) * metrics.buttonColGap)
       if rowWidth <= availableWidth then
         widestFit = columns
         local denomRows = ceil(#currency.DENOMINATIONS / columns)
@@ -275,12 +313,12 @@ local function runBetScreen(screen, opts)
 
     local rows = {}
     local denominationButtons = {}
-    for _, denom in ipairs(currency.DENOMINATIONS) do
+    for _, denom in ipairs(denominationSpecs) do
       denominationButtons[#denominationButtons + 1] = {
-        text = denom.name,
-        color = denom.color,
+        text = denom.label,
+        color = denom.source.color,
         width = maxWidth,
-        func = addBet(denom),
+        func = addBet(denom.source),
       }
     end
     appendGridRows(rows, denominationButtons, denomColumns)
