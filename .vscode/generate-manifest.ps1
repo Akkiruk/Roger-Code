@@ -85,11 +85,11 @@ function Test-UsesLib {
     return $false
 }
 
-# Read description from first comment block of main lua file
-function Get-ProgramDescription {
+# Locate the primary Lua file for a program directory.
+function Get-ProgramMainFile {
     param([string]$Dir, [string]$DirName)
+
     $mainFile = $null
-    # Try <dirname>.lua, then startup.lua, then first .lua file
     $candidates = @(
         (Join-Path $Dir "$($DirName.ToLower()).lua"),
         (Join-Path $Dir "startup.lua")
@@ -101,19 +101,53 @@ function Get-ProgramDescription {
         $first = Get-ChildItem $Dir -File -Filter "*.lua" | Select-Object -First 1
         if ($first) { $mainFile = $first.FullName }
     }
-    if (-not $mainFile) { return "" }
+    return $mainFile
+}
 
-    $lines = Get-Content $mainFile -TotalCount 5 -ErrorAction SilentlyContinue
+# Read manifest metadata from the first comment block of the main Lua file.
+function Get-ProgramMetadata {
+    param([string]$Dir, [string]$DirName)
+
+    $meta = @{
+        key         = $DirName.ToLower()
+        name        = $DirName
+        description = ""
+    }
+
+    $mainFile = Get-ProgramMainFile -Dir $Dir -DirName $DirName
+    if (-not $mainFile) { return $meta }
+
+    $lines = Get-Content $mainFile -TotalCount 10 -ErrorAction SilentlyContinue
     foreach ($line in $lines) {
+        if ($line -match '^\s*--\s*manifest-key:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value -ne "") { $meta.key = $value }
+            continue
+        }
+        if ($line -match '^\s*--\s*manifest-name:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value -ne "") { $meta.name = $value }
+            continue
+        }
+        if ($line -match '^\s*--\s*manifest-description:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value -ne "" -and $meta.description -eq "") { $meta.description = $value }
+            continue
+        }
         if ($line -match '^\s*--\s*(.+)$') {
             $desc = $Matches[1].Trim()
-            # Skip lines that are just the filename or shebangs
-            if ($desc -notmatch '^\S+\.lua$' -and $desc.Length -gt 10) {
-                return $desc
+            if (
+                $desc -notmatch '^\S+\.lua$' -and
+                $desc.Length -gt 10 -and
+                $desc -notmatch '^manifest-(key|name|description):'
+            ) {
+                $meta.description = $desc
+                break
             }
         }
     }
-    return ""
+
+    return $meta
 }
 
 # ── Hashing & auto-versioning ──────────────────────────────────────────────
@@ -260,7 +294,8 @@ if (Test-Path $UtilitiesDir) {
 }
 
 foreach ($dir in ($programDirs | Sort-Object Name)) {
-    $key = $dir.Name.ToLower()
+    $meta = Get-ProgramMetadata -Dir $dir.FullName -DirName $dir.Name
+    $key = $meta.key
     $luaCount = @(Get-ChildItem $dir.FullName -File -Filter "*.lua" -ErrorAction SilentlyContinue).Count
     if ($luaCount -eq 0) {
         Write-Warning "  Skipping $($dir.Name) - no .lua files"
@@ -269,7 +304,7 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
 
     $discovered = Get-ProgramFiles -Dir $dir.FullName
     $usesLib = Test-UsesLib -Dir $dir.FullName
-    $desc = Get-ProgramDescription -Dir $dir.FullName -DirName $dir.Name
+    $desc = $meta.description
 
     # Determine source_dir relative to repo root for the installer URL
     $relPath = $dir.FullName.Replace($RootDir, "").TrimStart("\", "/").Replace("\", "/")
@@ -283,7 +318,7 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
     $version = Resolve-Version -Key $key -NewHash $contentHash
 
     $manifest.programs[$key] = [ordered]@{
-        name         = $dir.Name
+        name         = $meta.name
         version      = $version
         content_hash = $contentHash
         description  = $desc

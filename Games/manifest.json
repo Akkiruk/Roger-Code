@@ -94,6 +94,29 @@
                                                  "surface"
                                              ]
                               },
+                     "phone_os":  {
+                                      "name":  "Pocket Casino OS",
+                                      "version":  "1.0.0",
+                                      "content_hash":  "318b04e7a99ca55b",
+                                      "description":  "Pocket casino shell for ComputerCraft pocket computers.",
+                                      "source_dir":  "Games/PhoneOS",
+                                      "uses_lib":  true,
+                                      "files":  [
+                                                    "phone_os.lua",
+                                                    "phoneos/blackjack.lua",
+                                                    "phoneos/slots.lua",
+                                                    "phoneos/storage.lua",
+                                                    "phoneos/ui.lua",
+                                                    "startup.lua"
+                                                ],
+                                      "config_files":  [
+                                                           "blackjack_config.lua",
+                                                           "slots_config.lua"
+                                                       ],
+                                      "assets":  [
+
+                                                 ]
+                                  },
                      "roulette":  {
                                       "name":  "Roulette",
                                       "version":  "1.0.18",

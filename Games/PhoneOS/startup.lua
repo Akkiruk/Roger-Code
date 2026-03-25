@@ -1,3 +1,7 @@
+-- manifest-key: phone_os
+-- manifest-name: Pocket Casino OS
+-- Pocket casino shell for ComputerCraft pocket computers.
+
 local ROOT = fs.getDir(shell.getRunningProgram())
 if ROOT == "" and shell.dir then
   ROOT = shell.dir()
