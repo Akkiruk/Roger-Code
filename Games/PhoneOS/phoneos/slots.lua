@@ -158,23 +158,25 @@ function M.run(env)
       end
     end
 
+    local result = {
+      spinReel(reels[1]),
+      spinReel(reels[2]),
+      spinReel(reels[3]),
+    }
+
     if env.settings.animations then
       for tick = 1, env.slotsConfig.REEL_SPIN_TICKS[3] do
         for reelIndex = 1, 3 do
-          if tick <= env.slotsConfig.REEL_SPIN_TICKS[reelIndex] then
+          if tick < env.slotsConfig.REEL_SPIN_TICKS[reelIndex] then
             display[reelIndex] = spinReel(reels[reelIndex])
+          else
+            display[reelIndex] = result[reelIndex]
           end
         end
         drawMachine(env, display, "Spinning...", bet)
         os.sleep(env.slotsConfig.SPIN_FRAME_DELAY)
       end
     end
-
-    local result = {
-      spinReel(reels[1]),
-      spinReel(reels[2]),
-      spinReel(reels[3]),
-    }
 
     local winAmount, label, isJackpot = evaluateResult(env.slotsConfig, result, bet)
     local summary
