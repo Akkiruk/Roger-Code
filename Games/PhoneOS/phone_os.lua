@@ -27,8 +27,34 @@ local alert    = require("lib.alert")
 local blackjackApp = require("phoneos.blackjack")
 local slotsApp     = require("phoneos.slots")
 
-local blackjackConfig = dofile(fs.combine(PARENT, "Blackjack/blackjack_config.lua"))
-local slotsConfig     = dofile(fs.combine(PARENT, "Slots/slots_config.lua"))
+local function loadConfig(label, candidates)
+  for _, path in ipairs(candidates) do
+    if path and path ~= "" and fs.exists(path) then
+      local ok, value = pcall(dofile, path)
+      if not ok then
+        error("Failed to load " .. label .. " config from " .. path .. ": " .. tostring(value))
+      end
+      if type(value) == "table" then
+        return value
+      end
+      error("Invalid " .. label .. " config at " .. path)
+    end
+  end
+
+  error("Missing " .. label .. " config.")
+end
+
+local blackjackConfig = loadConfig("blackjack", {
+  PARENT ~= "" and fs.combine(PARENT, "Blackjack/blackjack_config.lua") or nil,
+  ROOT ~= "" and fs.combine(ROOT, "Blackjack/blackjack_config.lua") or nil,
+  ROOT ~= "" and fs.combine(ROOT, "blackjack_config.lua") or "blackjack_config.lua",
+})
+
+local slotsConfig = loadConfig("slots", {
+  PARENT ~= "" and fs.combine(PARENT, "Slots/slots_config.lua") or nil,
+  ROOT ~= "" and fs.combine(ROOT, "Slots/slots_config.lua") or nil,
+  ROOT ~= "" and fs.combine(ROOT, "slots_config.lua") or "slots_config.lua",
+})
 
 local DATA_DIR       = fs.combine(ROOT, "phone_data")
 local SETTINGS_FILE  = fs.combine(DATA_DIR, "settings.dat")
