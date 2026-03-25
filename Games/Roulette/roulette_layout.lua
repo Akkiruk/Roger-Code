@@ -144,7 +144,7 @@ local function build(width, height, chipCount, scale)
   local desiredRightW = desiredBoardW + (layout.compact and (scale.sectionGap * 2) or (scale.sectionGap * 3))
   local minRightW = layout.compact and 38 or 52
   local availableRightW = rightW
-  rightW = max(minRightW, min(availableRightW, desiredRightW))
+  rightW = min(availableRightW, max(minRightW, desiredRightW))
   rightX = rightX + max(0, floor((availableRightW - rightW) / 2))
 
   layout.panel = { x = panelX, y = panelY, w = panelW, h = panelH }
@@ -162,7 +162,8 @@ local function build(width, height, chipCount, scale)
   local buttonH = scale.buttonHeight
   local panelInnerX = panelX + 1
   local panelInnerW = panelW - 2
-  local gridButtonW = max(8, floor((panelInnerW - buttonGap) / 2))
+  local gridButtonW = max(layout.compact and 5 or 8, floor((panelInnerW - buttonGap) / 2))
+  layout.ultraCompact = layout.compact and (width < 72 or panelW <= 18 or gridButtonW <= 9)
 
   layout.summaryBox = { x = panelX, y = panelY, w = panelW, h = summaryH }
 
@@ -184,17 +185,20 @@ local function build(width, height, chipCount, scale)
   end
 
   local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + scale.smallGap
+  local spinLabel = layout.ultraCompact and "GO" or "SPIN"
+  local undoLabel = layout.ultraCompact and "UND" or "UNDO"
+  local clearLabel = layout.compact and "CLR" or "CLEAR"
+  local rebetLabel = layout.ultraCompact and "AGN" or (layout.compact and "AGAIN" or "PLAY AGAIN")
+  local doubleLabel = layout.compact and "X2" or "DOUBLE"
+  local quitLabel = layout.compact and "OUT" or "QUIT"
   layout.actionButtons = {
-    makeActionButton("spin", "SPIN", panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
-    makeActionButton("undo", "UNDO", panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
-    makeActionButton("clear", layout.compact and "CLR" or "CLEAR", panelInnerX, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.red),
-    makeActionButton("rebet", layout.compact and "AGAIN" or "PLAY AGAIN", panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
-    makeActionButton("double", "DOUBLE", panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.magenta),
-    makeActionButton("quit", layout.compact and "OUT" or "QUIT", panelInnerX + gridButtonW + buttonGap, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.gray),
+    makeActionButton("spin", spinLabel, panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
+    makeActionButton("undo", undoLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
+    makeActionButton("clear", clearLabel, panelInnerX, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.red),
+    makeActionButton("rebet", rebetLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
+    makeActionButton("double", doubleLabel, panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.magenta),
+    makeActionButton("quit", quitLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.gray),
   }
-  if layout.compact then
-    layout.actionButtons[5].label = "X2"
-  end
 
   local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + scale.sectionGap
   layout.slipBox = {

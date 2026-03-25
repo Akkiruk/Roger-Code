@@ -38,14 +38,44 @@ local function drawFrame(screen, rect, fillColor, borderColor)
   end
 end
 
+local function fitTextToWidth(text, maxWidth)
+  text = tostring(text or "")
+  if maxWidth <= 0 then
+    return ""
+  end
+  if ui.getTextSize(text) <= maxWidth then
+    return text
+  end
+
+  local length = #text
+  while length > 0 do
+    local candidate = text:sub(1, length)
+    if ui.getTextSize(candidate) <= maxWidth then
+      return candidate
+    end
+    length = length - 1
+  end
+
+  return ""
+end
+
 local function drawCenteredText(screen, font, rect, text, color, yOffset)
+  local inset = rect.w > 4 and 2 or 0
+  text = fitTextToWidth(text, max(1, rect.w - inset))
+  if text == "" then
+    return
+  end
   local width = ui.getTextSize(text)
   local textX = rect.x + floor((rect.w - width) / 2)
   local textY = rect.y + floor((rect.h - 7) / 2) + (yOffset or 0)
   ui.safeDrawText(screen, text, font, textX, textY, color)
 end
 
-local function drawRightText(screen, font, text, rightX, y, color)
+local function drawRightText(screen, font, text, rightX, y, color, leftX)
+  text = fitTextToWidth(text, max(1, rightX - (leftX or 0)))
+  if text == "" then
+    return
+  end
   local width = ui.getTextSize(text)
   ui.safeDrawText(screen, text, font, rightX - width, y, color)
 end
@@ -136,16 +166,21 @@ local function drawHeader(screen, font, layout, state)
   local toneColor = getToneColor(state.statusTone)
 
   if layout.compact then
-    local bankText = currency.formatTokens(state.playerBalance or 0)
-    ui.safeDrawText(screen, bankText, font, 2, header.y + 1, colors.lightGray)
-
     local titleRect = { x = 0, y = header.y + 1, w = layout.width, h = 7 }
     drawCenteredText(screen, font, titleRect, title, colors.yellow)
 
-    local playerName = getCompactHeaderPlayer(state.currentPlayer or "Unknown")
-    drawRightText(screen, font, playerName, layout.width - 2, header.y + 1, colors.lightGray)
+    if layout.ultraCompact then
+      local compactStatus = fitTextToWidth(statusText, layout.width - 4)
+      ui.safeDrawText(screen, compactStatus, font, 2, header.y + header.h - 8, toneColor)
+      return
+    end
 
-    ui.safeDrawText(screen, statusText, font, 2, header.y + 8, toneColor)
+    local infoY = header.y + header.h - 8
+    local bankText = "Bal " .. formatCompactAmount(state.playerBalance or 0)
+    ui.safeDrawText(screen, fitTextToWidth(bankText, max(8, floor(layout.width * 0.4))), font, 2, infoY, colors.lightGray)
+
+    local playerName = getCompactHeaderPlayer(state.currentPlayer or "Unknown")
+    drawRightText(screen, font, playerName, layout.width - 2, infoY, colors.lightGray, floor(layout.width * 0.45))
     return
   end
 
@@ -173,8 +208,8 @@ local function drawTrack(screen, font, layout, state)
   local recent = state.history or {}
   local recentX = track.x + 2
   local recentY = track.y + 1
-  local recentCount = min(layout.compact and 4 or 6, #recent)
-  local slotWidth = 5
+  local recentCount = min(layout.ultraCompact and 2 or (layout.compact and 4 or 6), #recent)
+  local slotWidth = layout.ultraCompact and 4 or 5
   local slotGap = 1
   local bandX = track.x + 1
   local bandW = track.w - 2
