@@ -33,20 +33,21 @@ local function drawWrapped(ui, x, y, width, text, color)
   return #lines
 end
 
-local function availableBalance(ctx, env)
-  if ctx.liveMode then
-    local session = env.refreshSession()
-    return session.playerBalance or 0
-  end
-  return math.max(0, (ctx.demoBaseBalance or 0) - (ctx.committed or 0))
-end
-
 local function currentWager(ctx)
   local total = ctx.insuranceBet or 0
   for _, hand in ipairs(ctx.hands) do
     total = total + (hand.bet or 0)
   end
   return total
+end
+
+local function availableBalance(ctx, env)
+  local session = env.refreshSession()
+  local balance = session.playerBalance
+  if type(balance) ~= "number" then
+    balance = ctx.playerBalanceBase or 0
+  end
+  return math.max(0, balance - currentWager(ctx))
 end
 
 local function ensureDeck(ctx)
@@ -143,7 +144,7 @@ local function drawTable(env, ctx, revealDealer, statusLines, actionLines)
     end
   end
 
-  ui.footer(ctx.liveMode and "Round locked until resolved" or "Demo round")
+  ui.footer(ctx.selfPlay and "Self-pay round" or "Live round")
 end
 
 local function waitForBooleanChoice(env, ctx, title, yesText, noText)
@@ -166,56 +167,26 @@ local function waitForBooleanChoice(env, ctx, title, yesText, noText)
 end
 
 local function placeEscrow(ctx, amount, reason, tag)
-  if not ctx.liveMode then
-    ctx.committed = (ctx.committed or 0) + amount
-    return "demo-" .. tostring(tag or "bet") .. "-" .. tostring(os.epoch("local"))
-  end
-
-  local ok, escrowId = currency.escrow(amount, reason)
-  if not ok or not escrowId then
+  if not amount or amount <= 0 then
     return nil
   end
-
-  recovery.addEscrow(escrowId, amount, tag or "bet")
-  return escrowId
+  return "reserved-" .. tostring(tag or "bet") .. "-" .. tostring(os.epoch("local"))
 end
 
 local function safeResolveToHost(ctx, escrowId, reason)
-  if ctx.liveMode and escrowId then
-    local ok = currency.resolveEscrow(escrowId, "host", reason)
-    if not ok then
-      error("Failed to resolve escrow to host: " .. tostring(reason))
-    end
-  end
+  return
 end
 
 local function safeResolveToPlayer(ctx, escrowId, reason)
-  if ctx.liveMode and escrowId then
-    local ok = currency.resolveEscrow(escrowId, "player", reason)
-    if not ok then
-      error("Failed to resolve escrow to player: " .. tostring(reason))
-    end
-  end
+  return
 end
 
 local function safeCancelEscrow(ctx, escrowId, reason)
-  if ctx.liveMode and escrowId then
-    local ok = currency.cancelEscrow(escrowId, reason)
-    if not ok then
-      error("Failed to cancel escrow: " .. tostring(reason))
-    end
-  end
+  return
 end
 
 local function safePayout(ctx, amount, reason)
-  if amount <= 0 or not ctx.liveMode then
-    return
-  end
-
-  local ok = currency.payout(amount, reason)
-  if not ok then
-    error("Failed payout: " .. tostring(reason))
-  end
+  return
 end
 
 local function doInsurance(env, ctx)
@@ -542,6 +513,27 @@ local function buildSummary(ctx)
   return "Push"
 end
 
+local function settleNetChange(ctx)
+  if not ctx.liveMode or not ctx.netChange or ctx.netChange == 0 then
+    return
+  end
+
+  local reason
+  if ctx.netChange > 0 then
+    reason = ctx.selfPlay and "phone blackjack self-pay win" or "phone blackjack payout"
+    local ok = currency.payout(ctx.netChange, reason)
+    if not ok then
+      error("Failed blackjack settlement payout")
+    end
+  else
+    reason = ctx.selfPlay and "phone blackjack self-pay loss" or "phone blackjack loss"
+    local ok = currency.charge(math.abs(ctx.netChange), reason)
+    if not ok then
+      error("Failed blackjack settlement charge")
+    end
+  end
+end
+
 function M.run(env)
   local function runInternal()
     recovery.configure(fs.combine(env.dataDir, "phone_blackjack_recovery.dat"))
@@ -553,13 +545,8 @@ function M.run(env)
 
     local session = env.refreshSession()
     local liveMode = env.isLiveSession(session)
-
-    if liveMode and not currency.hasEscrow() then
-      env.showMessage("Escrow Required", {
-        "The server does not expose the escrow API needed for live blackjack.",
-      }, { status = session.status })
-      return
-    end
+    recovery.setGame("Pocket Blackjack")
+    recovery.setPlayer(session.playerName or "Unknown")
 
     local hostBalance = session.hostBalance or currency.getHostBalance()
     local maxBet = math.floor((hostBalance or 0) * env.blackjackConfig.MAX_BET_PERCENT)
@@ -568,16 +555,9 @@ function M.run(env)
     end
     maxBet = math.max(0, maxBet)
 
-    if session.selfPlay then
-      env.showMessage("Test Mode", {
-        "This phone is registered to the active player.",
-        "Blackjack will run in demo mode with no live token movement.",
-      }, { status = session.status })
-    end
-
     local bet = env.promptBet({
       title = "Blackjack Bet",
-      subtitle = liveMode and "Live round" or "Demo round",
+      subtitle = session.selfPlay and "Self-pay round" or "Live round",
       maxBet = maxBet,
       liveMode = liveMode,
     })
@@ -585,32 +565,19 @@ function M.run(env)
     if not bet or bet <= 0 then
       return
     end
-
-    local initialEscrowId = nil
-    if liveMode then
-      local ok, escrowId = currency.escrow(bet, "phone blackjack bet")
-      if not ok or not escrowId then
-        env.showMessage("Bet Failed", {
-          "The opening escrow could not be created.",
-        }, { status = env.refreshSession().status })
-        return
-      end
-      initialEscrowId = escrowId
-      recovery.saveEscrowBet(bet, {
-        { id = escrowId, amount = bet, tag = "initial" },
-      }, "deal")
-    end
+    recovery.saveBet(bet, "deal")
 
     local ctx = {
       cfg = env.blackjackConfig,
       liveMode = liveMode,
+      selfPlay = session.selfPlay,
       deck = cards.buildDeck(env.blackjackConfig.DECK_COUNT),
       dealerHand = {},
       hands = {
         {
           cards = {},
           bet = bet,
-          escrowIds = initialEscrowId and { initialEscrowId } or {},
+          escrowIds = {},
           hitCount = 0,
           fromSplit = false,
           doubled = false,
@@ -622,13 +589,13 @@ function M.run(env)
       insuranceBet = 0,
       insuranceEscrowId = nil,
       insuranceResult = nil,
-      demoBaseBalance = session.playerBalance or 0,
-      committed = bet,
+      playerBalanceBase = session.playerBalance or 0,
       netChange = 0,
     }
     cards.shuffle(ctx.deck)
 
     playRound(env, ctx)
+    settleNetChange(ctx)
     recovery.clearBet()
 
     local summary = buildSummary(ctx)
@@ -641,7 +608,7 @@ function M.run(env)
     drawResult(env, ctx, resultLines, ctx.netChange < 0 and colors.red or colors.lime)
     env.showMessage("Blackjack", resultLines, { status = env.refreshSession().status })
 
-    local modeTag = liveMode and "live" or "demo"
+    local modeTag = session.selfPlay and "self-pay" or "live"
     env.addMessage("Blackjack", summary .. " (" .. modeTag .. ")", ctx.netChange < 0 and "warn" or "info")
   end
 

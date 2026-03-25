@@ -41,7 +41,13 @@ local function drawMachine(env, result, statusText, bet)
 
   ui.writeAt(2, 17, "Enter spin", colors.lime)
   ui.writeAt(14, 17, "Back exit", colors.white)
-  ui.footer(env.isLiveSession(session) and "Live mode" or "Demo mode")
+  if session.selfPlay then
+    ui.footer("Self-pay mode")
+  elseif env.isLiveSession(session) then
+    ui.footer("Live mode")
+  else
+    ui.footer("Wallet locked")
+  end
 end
 
 local function buildReel(symbols)
@@ -106,13 +112,8 @@ function M.run(env)
 
     local session = env.refreshSession()
     local liveMode = env.isLiveSession(session)
-
-    if liveMode and not currency.hasEscrow() then
-      env.showMessage("Escrow Required", {
-        "The server does not expose the escrow API needed for live slots.",
-      }, { status = session.status })
-      return
-    end
+    recovery.setGame("Pocket Slots")
+    recovery.setPlayer(session.playerName or "Unknown")
 
     local hostBalance = session.hostBalance or currency.getHostBalance()
     local maxBet = math.floor((hostBalance or 0) * env.slotsConfig.MAX_BET_PERCENT)
@@ -121,16 +122,9 @@ function M.run(env)
     end
     maxBet = math.max(0, maxBet)
 
-    if session.selfPlay then
-      env.showMessage("Test Mode", {
-        "This phone is registered to the active player.",
-        "Slots will run in demo mode with no live token movement.",
-      }, { status = session.status })
-    end
-
     local bet = env.promptBet({
       title = "Slots Bet",
-      subtitle = liveMode and "Live spin" or "Demo spin",
+      subtitle = session.selfPlay and "Self-pay spin" or "Live spin",
       maxBet = maxBet,
       liveMode = liveMode,
     })
@@ -138,21 +132,7 @@ function M.run(env)
     if not bet or bet <= 0 then
       return
     end
-
-    local escrowId = nil
-    if liveMode then
-      local ok, createdEscrow = currency.escrow(bet, "phone slots bet")
-      if not ok or not createdEscrow then
-        env.showMessage("Bet Failed", {
-          "The slot wager could not be escrowed.",
-        }, { status = env.refreshSession().status })
-        return
-      end
-      escrowId = createdEscrow
-      recovery.saveEscrowBet(bet, {
-        { id = escrowId, amount = bet, tag = "initial" },
-      }, "spin")
-    end
+    recovery.saveBet(bet, "spin")
 
     local reels = {
       buildReel(env.slotsConfig.SYMBOLS),
@@ -170,10 +150,7 @@ function M.run(env)
     while true do
       local _, key = os.pullEvent("key")
       if key == keys.backspace or key == keys.h then
-        if liveMode and escrowId then
-          currency.cancelEscrow(escrowId, "phone slots cancelled before spin")
-          recovery.clearBet()
-        end
+        recovery.clearBet()
         return
       elseif key == keys.enter then
         break
@@ -202,12 +179,8 @@ function M.run(env)
     local summary
 
     if winAmount > 0 then
-      if liveMode and escrowId then
-        local okResolve = currency.resolveEscrow(escrowId, "player", isJackpot and "phone slots jackpot" or "phone slots win")
-        if not okResolve then
-          error("Failed to resolve slot escrow to player")
-        end
-        local okPayout = currency.payout(winAmount, isJackpot and "phone slots jackpot" or "phone slots win")
+      if liveMode then
+        local okPayout = currency.payout(winAmount, session.selfPlay and "phone slots self-pay win" or (isJackpot and "phone slots jackpot" or "phone slots win"))
         if not okPayout then
           error("Failed to pay slot winnings")
         end
@@ -215,10 +188,10 @@ function M.run(env)
       summary = "Win: " .. currency.formatTokens(winAmount) .. " (" .. label .. ")"
       env.playSound(sound.SOUNDS.SUCCESS, isJackpot and 1.0 or 0.6)
     else
-      if liveMode and escrowId then
-        local okResolve = currency.resolveEscrow(escrowId, "host", "phone slots loss")
-        if not okResolve then
-          error("Failed to resolve slot escrow to host")
+      if liveMode then
+        local okCharge = currency.charge(bet, session.selfPlay and "phone slots self-pay loss" or "phone slots loss")
+        if not okCharge then
+          error("Failed to charge slot loss")
         end
       end
       summary = "Loss: no payout"
@@ -232,7 +205,7 @@ function M.run(env)
       "Result: " .. result[1].label .. " | " .. result[2].label .. " | " .. result[3].label,
     }, { status = env.refreshSession().status })
 
-    local modeTag = liveMode and "live" or "demo"
+    local modeTag = session.selfPlay and "self-pay" or "live"
     env.addMessage("Slots", summary .. " (" .. modeTag .. ")", winAmount > 0 and "info" or "warn")
   end
 

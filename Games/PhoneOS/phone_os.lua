@@ -143,7 +143,7 @@ local function defaultMessages()
     },
     {
       title = "Provisioning",
-      body = "For live wagering, register the phone once as the house account before handing it to a player.",
+      body = "House-owned phones run live wagers. Owner testing uses CCVault self-pay.",
       level = "warn",
       time = nowStamp(),
     },
@@ -323,6 +323,9 @@ local function refreshSession()
     end
   end
 
+  session.modeTag = session.selfPlay and "self-pay" or "live"
+  session.modeLabel = session.selfPlay and "Self-Pay" or "Live"
+
   if not session.available then
     session.status = "OFFLINE"
   elseif not session.playerName then
@@ -330,7 +333,7 @@ local function refreshSession()
   elseif not session.authenticated then
     session.status = "LOCKED"
   elseif session.selfPlay then
-    session.status = "TEST"
+    session.status = "SELF PAY"
   else
     session.status = "READY"
   end
@@ -344,7 +347,7 @@ end
 
 local function isLiveSession(session)
   session = session or refreshSession()
-  return session.available and session.authenticated and not session.selfPlay
+  return session.available and session.authenticated
 end
 
 local function ensureAuthenticated(reason)
@@ -434,13 +437,18 @@ local function promptBet(opts)
     return nil
   end
 
+  if not liveMode then
+    ui.showMessage(opts.title or "Wagers Locked", {
+      "This wager requires an approved live or self-pay wallet session.",
+    }, { status = session.status })
+    return nil
+  end
+
   while true do
     session = refreshSession()
     local balance = session.playerBalance or 0
     local cap = maxBet
-    if liveMode then
-      cap = math.min(cap, balance)
-    end
+    cap = math.min(cap, balance)
 
     if cap <= 0 then
       ui.showMessage(opts.title or "No Bets", {
@@ -454,16 +462,10 @@ local function promptBet(opts)
     ui.writeAt(2, 5, "Balance: " .. (session.playerBalance and currency.formatTokens(session.playerBalance) or "Locked"), colors.white)
     ui.writeAt(2, 6, "Max Bet: " .. currency.formatTokens(cap), colors.white)
     ui.writeAt(2, 8, "Current: " .. currency.formatTokens(bet), colors.yellow)
-
-    if not liveMode then
-      ui.writeAt(2, 10, "TEST MODE", colors.orange)
-      ui.writeAt(2, 11, "No real tokens move.", colors.lightGray)
-    else
-      ui.writeAt(2, 10, "1 +" .. increments[1], colors.white)
-      ui.writeAt(14, 10, "2 +" .. increments[2], colors.white)
-      ui.writeAt(2, 11, "3 +" .. increments[3], colors.white)
-      ui.writeAt(14, 11, "4 +" .. increments[4], colors.white)
-    end
+    ui.writeAt(2, 10, "1 +" .. increments[1], colors.white)
+    ui.writeAt(14, 10, "2 +" .. increments[2], colors.white)
+    ui.writeAt(2, 11, "3 +" .. increments[3], colors.white)
+    ui.writeAt(14, 11, "4 +" .. increments[4], colors.white)
 
     ui.writeAt(2, 13, "5 All In", colors.white)
     ui.writeAt(14, 13, "6 Clear", colors.white)
@@ -530,7 +532,7 @@ local function showWallet()
     ui.header("Wallet", "Computer #" .. tostring(session.computerId), session.status)
     ui.writeAt(2, 5, "Player: " .. tostring(session.playerName or "Unknown"), colors.white)
     ui.writeAt(2, 6, "Host:   " .. tostring(session.hostName or "Unregistered"), colors.white)
-    ui.writeAt(2, 7, "Mode:   " .. (session.selfPlay and "Demo/Test" or "Live"), session.selfPlay and colors.orange or colors.lime)
+    ui.writeAt(2, 7, "Mode:   " .. session.modeLabel, session.selfPlay and colors.orange or colors.lime)
     ui.writeAt(2, 8, "Auth:   " .. (session.authenticated and "Approved" or "Required"), session.authenticated and colors.lime or colors.orange)
 
     local playerBal = session.playerBalance and currency.formatTokens(session.playerBalance) or "Locked"
@@ -569,9 +571,9 @@ local function showPairing()
     ui.writeAt(2, 5, "Player: " .. tostring(session.playerName or "Unknown"), colors.white)
     ui.writeAt(2, 6, "Host:   " .. tostring(session.hostName or "Pending"), colors.white)
     ui.writeAt(2, 7, "Device: #" .. tostring(session.computerId), colors.white)
-    ui.writeAt(2, 9, "Real play needs a", colors.lightGray)
-    ui.writeAt(2, 10, "house-owned phone.", colors.lightGray)
-    ui.writeAt(2, 12, session.selfPlay and "Current mode: TEST" or "Current mode: LIVE", session.selfPlay and colors.orange or colors.lime)
+    ui.writeAt(2, 9, "House phones run", colors.lightGray)
+    ui.writeAt(2, 10, "live. Owners self-pay.", colors.lightGray)
+    ui.writeAt(2, 12, "Current mode: " .. string.upper(session.modeLabel), session.selfPlay and colors.orange or colors.lime)
     ui.writeAt(2, 13, "Last host: " .. tostring(state.pairing.lastHostName or "Unknown"), colors.white)
     ui.writeAt(2, 14, "Last link: " .. tostring(state.pairing.lastLinkedAt or "Never"), colors.white)
 
