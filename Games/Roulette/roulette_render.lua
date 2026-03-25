@@ -259,16 +259,19 @@ local function drawSummaryBox(screen, font, layout, state)
   end
   ui.safeDrawText(screen, headline, font, box.x + 2, box.y + 2, colors.white)
 
-  local totalStake = state.totalStake or 0
   local exposure = state.maxExposure or 0
   if layout.compact then
-    ui.safeDrawText(screen, "B " .. currency.formatTokens(totalStake), font, box.x + 2, box.y + 8, colors.lightGray)
-    drawRightText(screen, font, "R " .. currency.formatTokens(exposure), box.x + box.w - 2, box.y + 8, colors.lightGray)
+    local riskText = "Risk " .. currency.formatTokens(exposure)
+    drawCenteredText(screen, font, {
+      x = box.x,
+      y = box.y + 6,
+      w = box.w,
+      h = 7,
+    }, riskText, colors.lightGray)
     return
   end
 
-  ui.safeDrawText(screen, "Bet " .. currency.formatTokens(totalStake), font, box.x + 2, box.y + 8, colors.lightGray)
-  ui.safeDrawText(screen, "Risk " .. currency.formatTokens(exposure), font, box.x + 2, box.y + 14, colors.lightGray)
+  ui.safeDrawText(screen, "Risk " .. currency.formatTokens(exposure), font, box.x + 2, box.y + 11, colors.lightGray)
 end
 
 local function drawButtons(screen, font, layout, state)
@@ -291,7 +294,7 @@ local function drawButtons(screen, font, layout, state)
     spin = (state.totalStake or 0) > 0,
     undo = (state.betActionCount or 0) > 0,
     clear = (state.totalStake or 0) > 0,
-    rebet = (state.lastResolvedCount or 0) > 0,
+    rebet = (state.lastResolvedCount or 0) > 0 and (state.totalStake or 0) == 0,
     double = (state.totalStake or 0) > 0,
     quit = true,
   }
@@ -333,7 +336,7 @@ local function drawSlipBox(screen, font, layout, state)
   end
 
   if #bets == 0 then
-    local fallback = state.lastResolvedCount and state.lastResolvedCount > 0 and "Tap REBET to replay the last round." or "Tap the felt to place chips."
+    local fallback = state.lastResolvedCount and state.lastResolvedCount > 0 and "Tap AGAIN to replay and spin the last round." or "Tap the felt to place chips."
     ui.safeDrawText(screen, fallback, font, box.x + 2, linesY, colors.lightGray)
   elseif #bets > shown then
     ui.safeDrawText(screen, "+" .. tostring(#bets - shown) .. " more", font, box.x + 2, linesY + (shown * lineHeight), colors.lightGray)

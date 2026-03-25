@@ -528,7 +528,7 @@ local function handleActionButton(actionKey)
   if actionKey == "rebet" then
     if #state.bets > 0 then
       sound.play(sound.SOUNDS.ERROR, 0.4)
-      setStatus("Clear the table before REBET.", "warning")
+      setStatus("Clear the table before AGAIN.", "warning")
       return nil
     end
     if #state.lastResolved == 0 then
@@ -536,7 +536,9 @@ local function handleActionButton(actionKey)
       setStatus("No previous round to replay.", "warning")
       return nil
     end
-    tryApplyAction(buildChangesFromBets(state.lastResolved), "Replayed the last round.", sound.SOUNDS.ALL_IN)
+    if tryApplyAction(buildChangesFromBets(state.lastResolved), "Spinning the last round again.", sound.SOUNDS.ALL_IN) then
+      return "spin"
+    end
     return nil
   end
 
