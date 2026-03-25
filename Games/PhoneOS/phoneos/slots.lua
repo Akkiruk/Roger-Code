@@ -112,27 +112,29 @@ local function evaluateResult(cfg, result, bet)
     return bet * mult, "Triple " .. result[1].label, one == "7"
   end
 
-  if one == two or one == three then
-    local mult = cfg.PAYOUTS[one] or 2
-    return math.floor(bet * mult / 5), "Two " .. result[1].label, false
-  end
+  local pairs = {}
+  if one == two then pairs[#pairs + 1] = one end
+  if one == three then pairs[#pairs + 1] = one end
+  if two == three then pairs[#pairs + 1] = two end
 
-  if two == three then
-    local mult = cfg.PAYOUTS[two] or 2
-    return math.floor(bet * mult / 5), "Two " .. result[2].label, false
+  if #pairs > 0 then
+    local symbolId = pairs[1]
+    local mult = (cfg.TWO_OF_A_KIND_PAYOUTS or {})[symbolId] or 0
+    local winnings = bet * mult
+    if winnings > 0 then
+      return winnings, "Two " .. symbolId .. "s!", false
+    end
   end
 
   local cherries = 0
-  for _, symbol in ipairs(result) do
-    if symbol.id == "cherry" then
-      cherries = cherries + 1
-    end
-  end
+  if one == "cherry" then cherries = cherries + 1 end
+  if two == "cherry" then cherries = cherries + 1 end
+  if three == "cherry" then cherries = cherries + 1 end
   if cherries >= 2 and cfg.ANY_TWO_CHERRY_MULT > 0 then
-    return bet * cfg.ANY_TWO_CHERRY_MULT, "Cherries", false
+    return bet * cfg.ANY_TWO_CHERRY_MULT, "Cherries!", false
   end
 
-  return 0, "No match", false
+  return 0, nil, false
 end
 
 local function getHostMaxBet(env, session)
