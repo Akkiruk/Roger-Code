@@ -80,6 +80,7 @@ local width    = env.width
 local height   = env.height
 local cardBack = env.cardBack
 local font     = env.font
+local scale    = env.scale
 
 cardAnim.init(screen, cardBack)
 
@@ -272,15 +273,16 @@ end
 -- Layout (computed once from screen dimensions)
 -----------------------------------------------------
 local centerX = math.floor(width / 2)
-local deltaX  = cardBack.width + LO.CARD_SPACING
-local totalHandWidth = 5 * deltaX - LO.CARD_SPACING
+local cardSpacing = scale:scaledX(LO.CARD_SPACING, 1, 6)
+local deltaX  = cardBack.width + cardSpacing
+local totalHandWidth = 5 * deltaX - cardSpacing
 local handStartX = centerX - math.floor(totalHandWidth / 2)
-local cardY = LO.CARD_Y
+local cardY = scale:scaledY(LO.CARD_Y, scale:ratioY(0.16), scale:ratioY(0.38))
 
 -----------------------------------------------------
 -- Rendering helpers
 -----------------------------------------------------
-local LINE_H = 9
+local LINE_H = scale.lineHeight
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
@@ -306,14 +308,14 @@ local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
       local hw = ui.getTextSize(holdLabel)
       ui.safeDrawText(screen, holdLabel, font,
         x + math.floor((cardBack.width - hw) / 2),
-        cardY - LINE_H - LO.HOLD_Y_OFFSET,
+        cardY - LINE_H - scale:scaledY(LO.HOLD_Y_OFFSET, 1, 4),
         colors.lime)
     end
   end
 
   -- Status text
   if statusText then
-    local statusY = cardY + cardBack.height + 6
+    local statusY = cardY + cardBack.height + scale.sectionGap + scale.smallGap
     drawCenteredLine(statusText, statusY, colors.yellow)
   end
 end
@@ -352,7 +354,7 @@ local function showPayoutTable()
   ui.clearButtons()
   ui.layoutButtonGrid(screen, {
     {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, height - 10, 8, 4)
+  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
   ui.waitForButton(0, 0)
 end
@@ -418,7 +420,7 @@ local function showTutorial()
 
     -- Compute spacing to fit between header and buttons
     local contentY = 1 + LINE_H * 2 + 2
-    local btnY = height - 9
+    local btnY = scale.footerButtonY
     local availH = btnY - contentY - 2
     local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
 
@@ -442,7 +444,7 @@ local function showTutorial()
       table.insert(navRow, { text = "NEXT", color = colors.lime,
         func = function() page = page + 1 end })
     end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, 8, 4)
+    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
     ui.waitForButton(0, 0)
@@ -493,7 +495,7 @@ local function showStats()
   ui.clearButtons()
   ui.layoutButtonGrid(screen, {
     {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, height - 10, 8, 4)
+  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
   ui.waitForButton(0, 0)
 end
@@ -507,11 +509,11 @@ local function preRoundMenu()
 
     local title = "VIDEO POKER"
     local tw = ui.getTextSize(title)
-    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), math.floor(height * 0.10), colors.yellow)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), scale.titleY, colors.yellow)
 
     local subtitle = "Jacks or Better"
     local sw = ui.getTextSize(subtitle)
-    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), math.floor(height * 0.20), colors.lightGray)
+    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
 
     ui.clearButtons()
     local chosen = nil
@@ -531,7 +533,7 @@ local function preRoundMenu()
         { text = "STATS", color = colors.lightGray,
           func = function() chosen = "stats" end },
       },
-    }, centerX, math.floor(height * 0.35), 8, 4)
+    }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
 
@@ -641,7 +643,7 @@ local function pokerRound(betAmount)
       for i = 1, cfg.HAND_SIZE do
         local x = handStartX + (i - 1) * deltaX
         local idx = i
-        local lblY = cardY + cardBack.height + 1
+        local lblY = cardY + cardBack.height + scale.smallGap
         local label = held[i] and "HELD" or ("Card" .. i)
         local lblColor = held[i] and colors.lime or colors.gray
         ui.fixedWidthButton(screen, label, lblColor,
@@ -651,7 +653,7 @@ local function pokerRound(betAmount)
       end
 
       -- Draw button
-      local drawBtnY = cardY + cardBack.height + LINE_H + 6
+      local drawBtnY = cardY + cardBack.height + LINE_H + scale.sectionGap
       ui.fixedWidthButton(screen, "DRAW", colors.lime,
         centerX, drawBtnY, function()
           confirmed = true

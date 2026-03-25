@@ -42,13 +42,14 @@ end
 -- Title text overlay
 -----------------------------------------------------
 local function drawOverlay(env, screen)
+  local scale = env.scale
   local title = "VIDEO POKER"
   local tw = env.surface.getTextSize(title, env.font)
-  ui.safeDrawText(screen, title, env.font, math.floor((env.width - tw) / 2), math.floor(env.height * 0.15), colors.yellow)
+  ui.safeDrawText(screen, title, env.font, math.floor((env.width - tw) / 2), scale.idleTitleY, colors.yellow)
 
   local subtitle = "Touch to play"
   local sw = env.surface.getTextSize(subtitle, env.font)
-  ui.safeDrawText(screen, subtitle, env.font, math.floor((env.width - sw) / 2), math.floor(env.height * 0.28), colors.white)
+  ui.safeDrawText(screen, subtitle, env.font, math.floor((env.width - sw) / 2), scale.idleSubtitleY, colors.white)
 end
 
 -----------------------------------------------------
@@ -73,7 +74,7 @@ if not ok then
 end
 
 -- Initialize ui module so safeDrawText works in the idle overlay
-ui.init(idleEnv.surface, idleEnv.font)
+ui.init(idleEnv.surface, idleEnv.font, idleEnv.scale)
 
 debugLog("VideoPoker idle setup complete.")
 

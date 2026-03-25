@@ -13,6 +13,7 @@ local UI_LINES_PER_TASK = 2
 local UI_HEADER_LINES = 3 -- Categories + blank line
 local UI_FOOTER_LINES = 2 -- Scroll buttons + page info
 local UI_MIN_CONTENT_LINES = 5 -- Minimum lines for task display area
+local monitorScale = require("lib.monitor_scale")
 
 -- Peripherals
 local turn_in_chest = nil
@@ -229,16 +230,19 @@ local function setupPeripherals()
         return false
     end
 
+    monitor.setTextScale(calculateOptimalTextScale(monitor, UI_HEADER_LINES + UI_FOOTER_LINES + UI_MIN_CONTENT_LINES))
+
     -- Monitor found, calculate screen dimensions and itemsPerPage
     local w, h = monitor.getSize()
     screenWidth = w
     screenHeight = h
+    local termProfile = monitorScale.forTerminal(screenWidth, screenHeight)
     local availableLinesForTasks = screenHeight - UI_HEADER_LINES - UI_FOOTER_LINES
     if availableLinesForTasks < UI_MIN_CONTENT_LINES then -- Check based on minimum content lines directly
         print("Monitor too small for meaningful task display. Need at least " .. UI_MIN_CONTENT_LINES .. " lines for tasks.")
         itemsPerPage = 0 -- Or handle error more gracefully / prevent script run
     else
-        itemsPerPage = math.max(1, math.floor(availableLinesForTasks / UI_LINES_PER_TASK))
+        itemsPerPage = termProfile:listCapacity(UI_HEADER_LINES, UI_FOOTER_LINES, UI_LINES_PER_TASK)
     end
     print("Screen: " .. screenWidth .. "x" .. screenHeight .. ", ItemsPerPage: " .. itemsPerPage) -- Diagnostic
 
@@ -557,7 +561,10 @@ local function describeRewardDestination(destinationName)
 end
 
 local function calculateOptimalTextScale(mon, linesNeeded)
-    local scale = 0.5
+    local scale = monitorScale.pickTextScaleForLines(mon, linesNeeded, 30, {
+        maxScale = 2,
+        fallback = 0.5,
+    })
     return scale
 end
 
@@ -982,14 +989,10 @@ local function main()
     updateTaskNameLookup()
     checkEmptyRewardSlots()
 
-    monitor.setTextScale(calculateOptimalTextScale(monitor, 10))
+    monitor.setTextScale(calculateOptimalTextScale(monitor, UI_HEADER_LINES + UI_FOOTER_LINES + UI_MIN_CONTENT_LINES))
     screenWidth, screenHeight = monitor.getSize()
-
-    local taskDisplayAreaHeight = screenHeight - UI_HEADER_LINES - UI_FOOTER_LINES
-    itemsPerPage = math.floor(taskDisplayAreaHeight / UI_LINES_PER_TASK)
-    if itemsPerPage < 1 then
-        itemsPerPage = 1
-    end
+    local termProfile = monitorScale.forTerminal(screenWidth, screenHeight)
+    itemsPerPage = termProfile:listCapacity(UI_HEADER_LINES, UI_FOOTER_LINES, UI_LINES_PER_TASK)
 
     local changed = true
 

@@ -1,5 +1,6 @@
 local cfg = require("roulette_config")
 local model = require("roulette_model")
+local monitorScale = require("lib.monitor_scale")
 
 local floor = math.floor
 local insert = table.insert
@@ -96,22 +97,24 @@ local function getTableContentHeight(cellHeight, rowGap)
     + outsideHeight
 end
 
-local function build(width, height, chipCount)
+local function build(width, height, chipCount, scale)
   chipCount = chipCount or 4
+  scale = scale or monitorScale.forSurface(width, height)
 
   local layout = {
     width = width,
     height = height,
-    margin = 2,
-    header = { x = 0, y = 0, w = width, h = 22 },
+    margin = scale.edgePad,
+    header = { x = 0, y = 0, w = width, h = scale:scaledY(22, 14, 24) },
     regions = {},
     hitRegions = {},
+    scale = scale,
   }
 
-  layout.compact = width < 200 or height < 120
+  layout.compact = scale.compact or width < 200 or height < 120
 
   if layout.compact then
-    layout.header.h = 15
+    layout.header.h = max(scale:scaledY(15, 12, 18), scale.lineHeight + scale.smallGap + 3)
   end
 
   local panelWidth = max(30, min(42, floor(width * 0.34)))
@@ -122,26 +125,23 @@ local function build(width, height, chipCount)
   end
 
   local panelX = layout.margin
-  local panelY = layout.header.h + 2
+  local panelY = layout.header.h + scale.sectionGap
   local panelH = height - panelY - layout.margin
   local panelW = panelWidth
 
-  local rightX = panelX + panelW + 2
+  local rightX = panelX + panelW + scale.sectionGap
   local rightW = width - rightX - layout.margin
   local trackY = panelY
-  local trackH = (height >= 80) and 11 or 9
-  if layout.compact then
-    trackH = 7
-  end
-  local feltY = trackY + trackH + 2
+  local trackH = layout.compact and scale:scaledY(7, 7, 9) or scale:scaledY(11, 9, 13)
+  local feltY = trackY + trackH + scale.sectionGap
   local feltH = height - feltY - layout.margin
 
-  local colGap = layout.compact and 1 or 2
-  local rowGap = layout.compact and 1 or 2
-  local streetW = layout.compact and 4 or 6
-  local maxCellW = layout.compact and 10 or 15
+  local colGap = layout.compact and 1 or scale.smallGap
+  local rowGap = layout.compact and 1 or scale.smallGap
+  local streetW = max(4, scale:scaledX(layout.compact and 4 or 6, 4, 7))
+  local maxCellW = max(9, scale:scaledX(layout.compact and 10 or 15, 9, 18))
   local desiredBoardW = (maxCellW * 3) + (colGap * 2) + 1 + streetW
-  local desiredRightW = desiredBoardW + (layout.compact and 4 or 10)
+  local desiredRightW = desiredBoardW + (layout.compact and (scale.sectionGap * 2) or (scale.sectionGap * 3))
   local minRightW = layout.compact and 38 or 52
   local availableRightW = rightW
   rightW = max(minRightW, min(availableRightW, desiredRightW))
@@ -157,16 +157,16 @@ local function build(width, height, chipCount)
   }
   layout.felt = { x = rightX, y = feltY, w = rightW, h = feltH }
 
-  local summaryH = layout.compact and 16 or 28
-  local buttonGap = layout.compact and 1 or 2
-  local buttonH = layout.compact and 7 or 9
+  local summaryH = layout.compact and scale:scaledY(16, 14, 18) or scale:scaledY(28, 22, 32)
+  local buttonGap = scale.smallGap
+  local buttonH = scale.buttonHeight
   local panelInnerX = panelX + 1
   local panelInnerW = panelW - 2
-  local gridButtonW = floor((panelInnerW - buttonGap) / 2)
+  local gridButtonW = max(8, floor((panelInnerW - buttonGap) / 2))
 
   layout.summaryBox = { x = panelX, y = panelY, w = panelW, h = summaryH }
 
-  local chipsStartY = panelY + summaryH + 2
+  local chipsStartY = panelY + summaryH + scale.sectionGap
   layout.chipButtons = {}
   local chipIndex = 1
   local chipRow = 0
@@ -183,7 +183,7 @@ local function build(width, height, chipCount)
     chipRow = chipRow + 1
   end
 
-  local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + (layout.compact and 1 or 2)
+  local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + scale.smallGap
   layout.actionButtons = {
     makeActionButton("spin", "SPIN", panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
     makeActionButton("undo", "UNDO", panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
@@ -196,23 +196,23 @@ local function build(width, height, chipCount)
     layout.actionButtons[5].label = "X2"
   end
 
-  local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + 2
+  local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + scale.sectionGap
   layout.slipBox = {
     x = panelX,
     y = slipY,
     w = panelW,
-    h = max(14, panelY + panelH - slipY),
+    h = max(scale.messageLineHeight + scale.sectionGap, panelY + panelH - slipY),
   }
   if layout.compact then
     layout.slipBox.h = 0
   end
 
-  local gridBodyW = rightW - 6
+  local gridBodyW = rightW - (scale.sectionGap * 2)
   local cellW = max(8, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   if layout.compact then
     cellW = max(9, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   end
-  local cellH = layout.compact and 5 or 7
+  local cellH = layout.compact and scale:scaledY(5, 4, 6) or scale:scaledY(7, 6, 8)
   local minCellHeight = layout.compact and 3 or 4
   while cellH > minCellHeight and getTableContentHeight(cellH, rowGap) > (feltH - 4) do
     cellH = cellH - 1
@@ -424,7 +424,7 @@ local function build(width, height, chipCount)
     layout.regionByKey[region.key] = region
   end
 
-  layout.maxSlipLines = max(2, floor((layout.slipBox.h - 10) / 8))
+  layout.maxSlipLines = max(2, floor((layout.slipBox.h - 10) / scale.lineHeight))
 
   return layout
 end

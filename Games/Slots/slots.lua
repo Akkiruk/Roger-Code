@@ -14,6 +14,8 @@ local epoch        = os.epoch
 local r_getInput   = redstone.getInput
 local settings_get = settings.get
 local floor        = math.floor
+local max          = math.max
+local min          = math.min
 local random       = math.random
 
 settings.define("slots.debug", {
@@ -84,6 +86,7 @@ local screen = env.screen
 local width  = env.width
 local height = env.height
 local font   = env.font
+local scale  = env.scale
 
 -----------------------------------------------------
 -- Host balance tracking
@@ -114,6 +117,8 @@ local SYMBOLS = cfg.SYMBOLS
 local PAYOUTS = cfg.PAYOUTS
 local TWO_OF_A_KIND_PAYOUTS = cfg.TWO_OF_A_KIND_PAYOUTS or {}
 local surfaceLib = env.surface
+local maxArtW = 0
+local maxArtH = 0
 
 -- Pre-load pixel art for each symbol
 for _, sym in ipairs(SYMBOLS) do
@@ -121,6 +126,8 @@ for _, sym in ipairs(SYMBOLS) do
     local ok, art = pcall(surfaceLib.load, sym.art)
     if ok and art then
       sym.artSurface = art
+      maxArtW = max(maxArtW, art.width)
+      maxArtH = max(maxArtH, art.height)
       dbg("Loaded art: " .. sym.art .. " (" .. art.width .. "x" .. art.height .. ")")
     else
       dbg("Could not load art: " .. sym.art .. " - " .. tostring(art))
@@ -148,12 +155,20 @@ local reels = { buildReel(), buildReel(), buildReel() }
 -----------------------------------------------------
 -- Layout calculations
 -----------------------------------------------------
-local REEL_W     = LO.REEL_WIDTH
-local REEL_H     = LO.REEL_HEIGHT
-local REEL_GAP   = LO.REEL_SPACING
+local TITLE_Y    = scale:scaledY(LO.TITLE_Y, scale.edgePad, scale.lineHeight)
+local TITLE_BAR_H = max(scale.buttonHeight, scale.lineHeight + scale.smallGap + 1)
+local REEL_GAP   = scale:scaledX(LO.REEL_SPACING, 1, 8)
+local desiredReelW = scale:scaledX(LO.REEL_WIDTH, 10, 32)
+local availableReelW = width - (scale.edgePad * 2) - (REEL_GAP * 2)
+local REEL_W = max(10, floor(availableReelW / 3))
+REEL_W = min(REEL_W, max(maxArtW + (scale.buttonPadX * 2) + 2, desiredReelW))
+local minReelH = max(12, maxArtH + scale.lineHeight + 4)
+local desiredReelH = scale:scaledY(LO.REEL_HEIGHT, minReelH, height)
+local availableReelH = max(minReelH, height - TITLE_BAR_H - scale.messageLineHeight - (scale.edgePad * 4))
+local REEL_H = min(availableReelH, max(minReelH, desiredReelH))
 local TOTAL_W    = REEL_W * 3 + REEL_GAP * 2
-local REEL_START_X = floor((width - TOTAL_W) / 2)
-local REEL_Y     = LO.REEL_Y
+local REEL_START_X = max(0, floor((width - TOTAL_W) / 2))
+local REEL_Y     = max(TITLE_BAR_H + scale.sectionGap, min(scale:scaledY(LO.REEL_Y, TITLE_BAR_H + scale.smallGap, height - REEL_H - scale.messageLineHeight - scale.edgePad), height - REEL_H - scale.messageLineHeight - scale.edgePad))
 
 -----------------------------------------------------
 -- Spin a random result from a reel
@@ -185,8 +200,8 @@ local function drawReelCell(x, y, sym, highlight)
   if sym.artSurface then
     -- Draw pixel art centered, with label text below
     local art = sym.artSurface
-    local labelH = 6
-    local artSpace = ih - labelH
+    local labelH = max(6, scale.lineHeight - 1)
+    local artSpace = max(1, ih - labelH)
     local ax = ix + floor((iw - art.width) / 2)
     local ay = iy + floor((artSpace - art.height) / 2)
     screen:drawSurface(art, ax, ay)
@@ -203,7 +218,7 @@ local function drawReelCell(x, y, sym, highlight)
     local label = sym.label
     local tw = ui.getTextSize(label)
     local tx = x + floor((REEL_W - tw) / 2)
-    local ty = y + floor((REEL_H - 7) / 2)
+    local ty = y + floor((REEL_H - scale.fontHeight) / 2)
     local textClr = highlight and colors.black or sym.color
     ui.safeDrawText(screen, label, font, tx, ty, textClr)
   end
@@ -216,25 +231,26 @@ local function drawMachine(result, highlights, statusText, currentBet)
   screen:clear(LO.TABLE_COLOR)
 
   -- Title bar background
-  screen:fillRect(0, 0, width, 7, colors.black)
+  screen:fillRect(0, 0, width, TITLE_BAR_H, colors.black)
   local title = "SLOT MACHINE"
   local ttw = ui.getTextSize(title)
-  ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), LO.TITLE_Y, colors.yellow)
+  ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), TITLE_Y, colors.yellow)
 
   -- Bet display
   if currentBet then
     local betStr = "Bet: " .. currency.formatTokens(currentBet)
-    ui.safeDrawText(screen, betStr, font, 2, LO.TITLE_Y, colors.lightGray)
+    ui.safeDrawText(screen, betStr, font, scale.edgePad, TITLE_Y, colors.lightGray)
   end
 
   -- Decorative gold trim below title
-  screen:fillRect(0, 7, width, 1, colors.yellow)
+  screen:fillRect(0, TITLE_BAR_H, width, 1, colors.yellow)
 
   -- Machine outer frame (gold border > gray > inner black)
-  local frameX = REEL_START_X - 3
-  local frameY = REEL_Y - 3
-  local frameW = TOTAL_W + 6
-  local frameH = REEL_H + 6
+  local frameInset = max(2, scale.edgePad + 1)
+  local frameX = REEL_START_X - frameInset
+  local frameY = REEL_Y - frameInset
+  local frameW = TOTAL_W + (frameInset * 2)
+  local frameH = REEL_H + (frameInset * 2)
   screen:fillRect(frameX, frameY, frameW, frameH, colors.yellow)
   screen:fillRect(frameX + 1, frameY + 1, frameW - 2, frameH - 2, colors.gray)
   screen:fillRect(frameX + 2, frameY + 2, frameW - 4, frameH - 4, colors.black)
@@ -249,14 +265,14 @@ local function drawMachine(result, highlights, statusText, currentBet)
 
   -- Pay line arrows (left and right of the reels)
   local payLineY = REEL_Y + floor(REEL_H / 2)
-  screen:fillRect(frameX - 2, payLineY - 1, 2, 3, colors.red)
-  screen:fillRect(frameX + frameW, payLineY - 1, 2, 3, colors.red)
+  screen:fillRect(frameX - scale.edgePad, payLineY - 1, scale.edgePad, 3, colors.red)
+  screen:fillRect(frameX + frameW, payLineY - 1, scale.edgePad, 3, colors.red)
 
   -- Status text below machine frame
   if statusText then
     local stw = ui.getTextSize(statusText.text)
     ui.safeDrawText(screen, statusText.text, font, floor((width - stw) / 2),
-                    frameY + frameH + 2, statusText.color)
+                    frameY + frameH + scale.sectionGap, statusText.color)
   end
 
   screen:output()

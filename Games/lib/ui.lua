@@ -9,8 +9,11 @@
 
 local _surface = nil
 local _font    = nil
+local _metrics = nil
 local buttons  = {}
 local currency = require("lib.currency")
+local monitorScale = require("lib.monitor_scale")
+local max = math.max
 
 local m_round = function(x) return x + 0.5 - (x + 0.5) % 1 end
 
@@ -35,11 +38,12 @@ end
 --- Initialize the UI module with the surface API and font.
 -- @param surfaceAPI table  The loaded surface library
 -- @param font       table  Loaded font from surface.loadFont
-local function init(surfaceAPI, font)
+local function init(surfaceAPI, font, metrics)
   assert(surfaceAPI, "surfaceAPI is required")
   assert(font, "font is required")
   _surface = surfaceAPI
   _font    = font
+  _metrics = metrics or monitorScale.forSurface(160, 96)
 end
 
 --- Clear all registered buttons (call at the start of each screen redraw).
@@ -60,13 +64,14 @@ end
 local function getButtonSurface(text, bg)
   assert(_surface, "Call ui.init() first")
   local textSize = _surface.getTextSize(text, _font)
-  local btn = _surface.create(textSize + 2, 7)
-  btn:fillRect(0, 0, textSize + 2, 7, bg)
+  local btnWidth = textSize + (_metrics.buttonPadX * 2)
+  local btn = _surface.create(btnWidth, _metrics.buttonHeight)
+  btn:fillRect(0, 0, btnWidth, _metrics.buttonHeight, bg)
   local fg = colors.black
   if bg == colors.black or bg == colors.gray then
     fg = colors.white
   end
-  btn:drawText(text, _font, 1, 1, fg)
+  btn:drawText(text, _font, _metrics.buttonPadX, _metrics.buttonTextY, fg)
   return btn
 end
 
@@ -78,15 +83,16 @@ end
 local function getFixedWidthButtonSurface(text, bg, fixedWidth)
   assert(_surface, "Call ui.init() first")
   local textSize = _surface.getTextSize(text, _font)
-  local btnWidth = fixedWidth or (textSize + 2)
-  local btn = _surface.create(btnWidth, 7)
-  btn:fillRect(0, 0, btnWidth, 7, bg)
+  local minWidth = textSize + (_metrics.buttonPadX * 2)
+  local btnWidth = max(fixedWidth or minWidth, minWidth)
+  local btn = _surface.create(btnWidth, _metrics.buttonHeight)
+  btn:fillRect(0, 0, btnWidth, _metrics.buttonHeight, bg)
   local textX = math.floor((btnWidth - textSize) / 2)
   local fg = colors.black
   if bg == colors.black or bg == colors.gray then
     fg = colors.white
   end
-  btn:drawText(text, _font, textX, 1, fg)
+  btn:drawText(text, _font, textX, _metrics.buttonTextY, fg)
   return btn
 end
 
@@ -146,13 +152,20 @@ end
 -- @param rowSpacing number
 -- @param colSpacing number
 local function layoutButtonGrid(screen, buttonRows, centerX, startY, rowSpacing, colSpacing)
+  rowSpacing = rowSpacing or _metrics.buttonRowSpacing
+  colSpacing = colSpacing or _metrics.buttonColGap
   local screenW = screen.width or (centerX * 2)
   local actualRow = 0
   for _, row in ipairs(buttonRows) do
     -- Pre-render all button surfaces for this row
     local btnSurfs = {}
     for j, btn in ipairs(row) do
-      local bs = getButtonSurface(btn.text, btn.color)
+      local bs
+      if btn.width then
+        bs = getFixedWidthButtonSurface(btn.text, btn.color, btn.width)
+      else
+        bs = getButtonSurface(btn.text, btn.color)
+      end
       btnSurfs[j] = { surf = bs, btn = btn }
     end
 
@@ -204,6 +217,7 @@ end
 -- @param startY   number
 -- @param spacing  number  Vertical spacing between buttons
 local function drawButtonsColumn(screen, btnList, startX, startY, spacing)
+  spacing = spacing or _metrics.buttonRowSpacing
   for i, b in ipairs(btnList) do
     button(screen, b.text, b.color, startX, startY + (i - 1) * spacing, b.func, true)
   end
@@ -273,7 +287,7 @@ local function displayCenteredMessage(screen, msg, msgColor, pause)
   for word in msg:gmatch("%S+") do
     table.insert(words, word)
   end
-  local lineHeight = 10
+  local lineHeight = _metrics.messageLineHeight
   local blockHeight = #words * lineHeight
   local startY = math.floor((screen.height - blockHeight) / 2)
   screen:clear(colors.green)
@@ -299,6 +313,10 @@ end
 local function getTextSize(text)
   assert(_surface, "Call ui.init() first")
   return _surface.getTextSize(text, _font)
+end
+
+local function getMetrics()
+  return _metrics
 end
 
 --- Helper for math.round since Lua 5.1 lacks it natively.
@@ -563,6 +581,7 @@ return {
   displayCenteredMessage = displayCenteredMessage,
   getTextSize            = getTextSize,
   getFont                = getFont,
+  getMetrics             = getMetrics,
   round                  = round,
 
   -- Term-based helpers

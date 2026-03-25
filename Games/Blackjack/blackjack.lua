@@ -93,6 +93,7 @@ local width    = env.width
 local height   = env.height
 local cardBack = env.cardBack
 local font     = env.font
+local scale    = env.scale
 
 cardAnim.init(screen, cardBack)
 
@@ -168,7 +169,7 @@ local function dealOne()
 end
 
 local function drawHand(hand, startX, y, hideFirst)
-  local deltaX = cardBack.width + 2
+  local handDeltaX = cardBack.width + scale:scaledX(LO.CARD_SPACING, 1, 6)
   for i, cardID in ipairs(hand) do
     local img
     if hideFirst and i == 1 then
@@ -176,23 +177,24 @@ local function drawHand(hand, startX, y, hideFirst)
     else
       img = cards.renderCard(cardID)
     end
-    screen:drawSurface(img, startX + (i - 1) * deltaX, y)
+    screen:drawSurface(img, startX + (i - 1) * handDeltaX, y)
   end
 end
 
 -----------------------------------------------------
 -- Layout (computed once from config + screen dimensions)
 -----------------------------------------------------
-local deltaX  = cardBack.width + LO.CARD_SPACING
+local cardSpacing = scale:scaledX(LO.CARD_SPACING, 1, 6)
+local deltaX  = cardBack.width + cardSpacing
 local layout  = {
-  dealerY      = LO.DEALER_Y,
-  playerY      = height - cardBack.height - LO.PLAYER_Y_OFFSET,
-  buttonY      = height - cardBack.height - LO.BUTTON_Y_OFFSET,
-  scoreYOff    = LO.SCORE_Y_OFFSET,
-  dealerScoreY = LO.DEALER_SCORE_Y,
-  statusY      = math.floor(height / 2),
+  dealerY      = scale:scaledY(LO.DEALER_Y, scale.edgePad + scale.smallGap, scale:ratioY(0.18)),
+  playerY      = height - cardBack.height - scale:scaledY(LO.PLAYER_Y_OFFSET, 2, 8),
+  buttonY      = height - cardBack.height - scale:scaledY(LO.BUTTON_Y_OFFSET, 10, 26),
+  scoreYOff    = scale:scaledY(LO.SCORE_Y_OFFSET, 4, 10),
+  statusY      = scale:ratioY(0.50, 0, scale.subtitleY, height - scale.lineHeight - scale.edgePad),
   centerX      = math.floor(width / 2),
 }
+layout.dealerScoreY = layout.dealerY + cardBack.height + scale.smallGap
 
 -----------------------------------------------------
 -- Render
@@ -207,7 +209,7 @@ local function renderTableBase(ctx, hideDealer, statusText)
   ui.safeDrawText(screen, betStr, font, 1, 0, colors.white)
 
   if ctx.insuranceBet > 0 then
-    ui.safeDrawText(screen, "Ins: " .. currency.formatTokens(ctx.insuranceBet), font, 1, 7, colors.cyan)
+    ui.safeDrawText(screen, "Ins: " .. currency.formatTokens(ctx.insuranceBet), font, 1, scale.lineHeight - scale.smallGap, colors.cyan)
   end
 
   -- Dealer hand
@@ -215,7 +217,7 @@ local function renderTableBase(ctx, hideDealer, statusText)
   drawHand(ctx.dealerHand, dealerX, layout.dealerY, hideDealer)
   if not hideDealer then
     local dTotal = cards.blackjackValue(ctx.dealerHand)
-    ui.safeDrawText(screen, tostring(dTotal), font, dealerX - 10, layout.dealerScoreY, colors.white)
+    ui.safeDrawText(screen, tostring(dTotal), font, dealerX - scale:scaledX(10, 8, 14), layout.dealerScoreY, colors.white)
   end
 
   -- Player hand(s)
@@ -224,7 +226,7 @@ local function renderTableBase(ctx, hideDealer, statusText)
     local px = math.floor((width - (#hand.cards * deltaX)) / 2)
     drawHand(hand.cards, px, layout.playerY, false)
     local pTotal = cards.blackjackValue(hand.cards)
-    ui.safeDrawText(screen, tostring(pTotal), font, px - 10, layout.playerY + layout.scoreYOff, colors.white)
+    ui.safeDrawText(screen, tostring(pTotal), font, px - scale:scaledX(10, 8, 14), layout.playerY + layout.scoreYOff, colors.white)
   else
     for i, hand in ipairs(ctx.hands) do
       local baseX
@@ -236,9 +238,9 @@ local function renderTableBase(ctx, hideDealer, statusText)
       drawHand(hand.cards, baseX, layout.playerY, false)
       local pTotal = cards.blackjackValue(hand.cards)
       local clr = (i == ctx.currentHandIdx) and colors.yellow or colors.white
-      ui.safeDrawText(screen, tostring(pTotal), font, baseX - 10, layout.playerY + layout.scoreYOff, clr)
+      ui.safeDrawText(screen, tostring(pTotal), font, baseX - scale:scaledX(10, 8, 14), layout.playerY + layout.scoreYOff, clr)
       if i == ctx.currentHandIdx and #ctx.hands > 1 then
-        ui.safeDrawText(screen, ">>", font, baseX - 18, layout.playerY + layout.scoreYOff, colors.yellow)
+        ui.safeDrawText(screen, ">>", font, baseX - scale:scaledX(18, 14, 24), layout.playerY + layout.scoreYOff, colors.yellow)
       end
     end
   end
@@ -422,7 +424,7 @@ local function doInsurance(ctx)
       func = function() chosen = true end },
     { text = "NO", color = colors.red,
       func = function() chosen = false end },
-  }}, layout.centerX, layout.buttonY, 8, 4)
+  }}, layout.centerX, layout.buttonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
   ui.waitForButton(0, 0)
 
@@ -748,9 +750,8 @@ local function doPlayerTurn(ctx)
 
         table.insert(rows, row1)
         if #row2 > 0 then table.insert(rows, row2) end
-        local startY = layout.buttonY
-        if #rows > 1 then startY = startY - 8 end
-        ui.layoutButtonGrid(screen, rows, layout.centerX, startY, 8, 4)
+        local startY = scale:buttonBlockTop(layout.buttonY, #rows, scale.buttonRowSpacing)
+        ui.layoutButtonGrid(screen, rows, layout.centerX, startY, scale.buttonRowSpacing, scale.buttonColGap)
         screen:output()
         ui.waitForButton(0, 0)
       end

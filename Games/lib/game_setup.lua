@@ -19,6 +19,7 @@ local cards           = require("lib.cards")
 local ui              = require("lib.ui")
 local playerDet       = require("lib.player_detection")
 local currency        = require("lib.currency")
+local monitorScale    = require("lib.monitor_scale")
 
 -- Default palette overrides used by all casino games
 local DEFAULT_PALETTE = {
@@ -79,7 +80,7 @@ local function init(cfg)
 
   -- Monitor setup
   if type(env.monitor.setTextScale) == "function" then
-    env.monitor.setTextScale(0.5)
+    env.monitor.setTextScale(monitorScale.surfaceTextScale(cfg.monitorTextScale))
   end
   term.redirect(env.monitor)
 
@@ -90,6 +91,7 @@ local function init(cfg)
   end
 
   env.width, env.height = term.getSize()
+  env.scale = monitorScale.forSurface(env.width, env.height)
 
   -- Screen buffer
   env.screen = env.surface.create(env.width, env.height)
@@ -108,7 +110,7 @@ local function init(cfg)
   cards.initRenderer(env.surface, env.font, env.cardBg)
 
   -- Initialize UI module
-  ui.init(env.surface, env.font)
+  ui.init(env.surface, env.font, env.scale)
 
   -- Player detection
   local detectionRange = cfg.playerDetectionRange or 10

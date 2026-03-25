@@ -1,3 +1,5 @@
+local constants = require("lib.vaultgear.constants")
+local monitorScale = require("lib.monitor_scale")
 local util = require("lib.vaultgear.util")
 
 local M = {}
@@ -98,10 +100,20 @@ function M.bindMonitor(discovery, preferredName, textScale)
     return nil, "Monitor could not be wrapped: " .. entry.name
   end
 
+  local chosenScale = textScale
   if type(monitor.setTextScale) == "function" then
-    pcall(function()
-      monitor.setTextScale(textScale or 0.5)
-    end)
+    if chosenScale ~= nil then
+      pcall(function()
+        monitor.setTextScale(chosenScale)
+      end)
+    else
+      chosenScale = select(1, monitorScale.pickTextScale(monitor, {
+        minWidth = constants.MIN_MONITOR_WIDTH,
+        minHeight = constants.MIN_MONITOR_HEIGHT,
+        maxScale = 2,
+        fallback = 0.5,
+      }))
+    end
   end
 
   local width, height = monitor.getSize()
@@ -110,6 +122,7 @@ function M.bindMonitor(discovery, preferredName, textScale)
     peripheral = monitor,
     width = width,
     height = height,
+    text_scale = chosenScale,
   }
 end
 

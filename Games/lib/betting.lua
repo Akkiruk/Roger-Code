@@ -15,9 +15,28 @@ local currency = require("lib.currency")
 local sound    = require("lib.sound")
 local ui       = require("lib.ui")
 
+local ceil  = math.ceil
+local floor = math.floor
+local max   = math.max
+local min   = math.min
+
 local DEBUG = settings.get("casino.debug") or false
 local function dbg(msg)
   if DEBUG then print(os.time(), "[betting] " .. msg) end
+end
+
+local function appendGridRows(rows, buttons, columns)
+  local index = 1
+  while index <= #buttons do
+    local row = {}
+    local column = 1
+    while column <= columns and index <= #buttons do
+      row[#row + 1] = buttons[index]
+      index = index + 1
+      column = column + 1
+    end
+    rows[#rows + 1] = row
+  end
 end
 
 --- Run the full betting screen loop. Returns the confirmed bet in tokens.
@@ -66,6 +85,11 @@ local function runBetScreen(screen, opts)
   while selecting do
     screen:clear(colors.green)
 
+    local metrics = ui.getMetrics()
+    local titleY = metrics.titleY
+    local warnY = titleY + metrics.messageLineHeight
+    local betY = warnY + metrics.lineHeight
+
     -- Check inactivity when no bet placed
     local idleMs = 0
     if bet == 0 then
@@ -79,45 +103,43 @@ local function runBetScreen(screen, opts)
 
     -- Header
     local titleSize = ui.getTextSize(title)
-    ui.safeDrawText(screen, title, ui.getFont(), ui.round((screen.width - titleSize) / 2), 1, colors.white)
+    ui.safeDrawText(screen, title, ui.getFont(), ui.round((screen.width - titleSize) / 2), titleY, colors.white)
 
     -- Inactivity countdown warning (last 10 seconds)
     if bet == 0 then
       local warnThreshold = inactivityTimeout - 10000
       if idleMs >= warnThreshold then
-        local secsLeft = math.ceil((inactivityTimeout - idleMs) / 1000)
+        local secsLeft = ceil((inactivityTimeout - idleMs) / 1000)
         local warnMsg = "Auto-exit in " .. secsLeft .. "s..."
         local warnSize = ui.getTextSize(warnMsg)
-        ui.safeDrawText(screen, warnMsg, ui.getFont(), ui.round((screen.width - warnSize) / 2), 10, colors.orange)
+        ui.safeDrawText(screen, warnMsg, ui.getFont(), ui.round((screen.width - warnSize) / 2), warnY, colors.orange)
       end
     end
 
     -- Current bet display
     local betStr = "Bet: " .. currency.formatTokens(bet)
     local betStrSize = ui.getTextSize(betStr)
-    ui.safeDrawText(screen, betStr, ui.getFont(), ui.round((screen.width - betStrSize) / 2), 6, colors.yellow)
+    ui.safeDrawText(screen, betStr, ui.getFont(), ui.round((screen.width - betStrSize) / 2), betY, colors.yellow)
 
     -- Buttons
     ui.clearButtons()
-    local btnStartY = 15
-    local btnSpacing = 7
     local btnX = ui.round(screen.width / 2)
 
     -- Measure widest button to make all uniform
     local buttonTexts = {}
     for _, denom in ipairs(currency.DENOMINATIONS) do
-      table.insert(buttonTexts, denom.name)
+      buttonTexts[#buttonTexts + 1] = denom.name
     end
-    table.insert(buttonTexts, "ALL IN")
-    table.insert(buttonTexts, "CLEAR")
-    table.insert(buttonTexts, confirmLabel)
+    buttonTexts[#buttonTexts + 1] = "ALL IN"
+    buttonTexts[#buttonTexts + 1] = "CLEAR"
+    buttonTexts[#buttonTexts + 1] = "QUIT"
+    buttonTexts[#buttonTexts + 1] = confirmLabel
 
-    local maxWidth = 0
+    local textWidths = {}
     for _, txt in ipairs(buttonTexts) do
-      local w = ui.getTextSize(txt) + 6
-      if w > maxWidth then maxWidth = w end
+      textWidths[#textWidths + 1] = ui.getTextSize(txt)
     end
-    if maxWidth % 2 == 1 then maxWidth = maxWidth + 1 end
+    local maxWidth = metrics:fixedButtonWidth(textWidths, 2)
 
     -- Add-bet callbacks: counter-based, no transfers until confirm
     local function addBet(denomination)
@@ -149,82 +171,138 @@ local function runBetScreen(screen, opts)
       end
     end
 
-    -- Denomination buttons
-    for i, denom in ipairs(currency.DENOMINATIONS) do
-      ui.fixedWidthButton(screen, denom.name, denom.color,
-        btnX, btnStartY + btnSpacing * (i - 1), addBet(denom), true, maxWidth)
-    end
-
-    -- ALL IN button
-    local allInY = btnStartY + btnSpacing * #currency.DENOMINATIONS
-    ui.fixedWidthButton(screen, "ALL IN", colors.orange, btnX, allInY, function()
-      local playerBal = currency.getPlayerBalance()
-      local available = playerBal - bet
-      if available <= 0 then
-        sound.play(sound.SOUNDS.ERROR)
-        ui.displayCenteredMessage(screen, "No tokens!", colors.red)
-        return
-      end
-      local remainingAllowable = maxBet - bet
-      if hostBalance and hostCoverageMult > 1 then
-        local coverageCap = math.floor(hostBalance / (hostCoverageMult - 1)) - bet
-        remainingAllowable = math.min(remainingAllowable, coverageCap)
-      end
-      local amountToBet = math.min(available, remainingAllowable)
-      if amountToBet <= 0 then
-        sound.play(sound.SOUNDS.ERROR)
-        ui.displayCenteredMessage(screen, "Maximum bet reached!", colors.red)
-        return
-      end
-      bet = bet + amountToBet
-      sound.play(sound.SOUNDS.ALL_IN)
-      if amountToBet < available then
-        ui.displayCenteredMessage(screen, "Maximum allowable bet!", colors.yellow, 0.8)
-      end
-    end, true, maxWidth)
-
-    -- QUIT button (below ALL IN, full width)
-    local quitY = allInY + btnSpacing
-    ui.fixedWidthButton(screen, "QUIT", colors.gray, btnX, quitY, function()
-      bet = 0
-      sound.play(sound.SOUNDS.TIMEOUT)
-      onQuit()
-    end, true, maxWidth)
-
-    -- CLEAR and DEAL/CONFIRM side by side
-    local ctrlY = quitY + btnSpacing
-    local clearWidth = ui.getTextSize("CLEAR") + 4
-    local dealWidth  = ui.getTextSize(confirmLabel) + 4
-    local controlSpacing = 1
-    local totalCtrlWidth = clearWidth + dealWidth + controlSpacing
-    local clearX = math.floor(btnX - totalCtrlWidth / 2)
-    local dealX  = clearX + clearWidth + controlSpacing
-
-    -- CLEAR: just resets counter, no refund transfer needed
-    ui.fixedWidthButton(screen, "CLEAR", colors.red, clearX, ctrlY, function()
-      if bet > 0 then
-        bet = 0
-        sound.play(sound.SOUNDS.CLEAR)
-      end
-    end, false, clearWidth)
-
-    -- DEAL/CONFIRM: validate balance and start game
-    ui.fixedWidthButton(screen, confirmLabel, colors.magenta, dealX, ctrlY, function()
-      if bet > 0 then
-        -- Final balance check before starting
+    local allInButton = {
+      text = "ALL IN",
+      color = colors.orange,
+      width = maxWidth,
+      func = function()
         local playerBal = currency.getPlayerBalance()
-        if playerBal < bet then
+        local available = playerBal - bet
+        if available <= 0 then
           sound.play(sound.SOUNDS.ERROR)
-          ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red)
-          bet = 0
+          ui.displayCenteredMessage(screen, "No tokens!", colors.red)
           return
         end
-        sound.play(sound.SOUNDS.START)
-        selecting = false
-      else
-        ui.displayCenteredMessage(screen, "Place a bet first!", colors.red)
+        local remainingAllowable = maxBet - bet
+        if hostBalance and hostCoverageMult > 1 then
+          local coverageCap = floor(hostBalance / (hostCoverageMult - 1)) - bet
+          remainingAllowable = min(remainingAllowable, coverageCap)
+        end
+        local amountToBet = min(available, remainingAllowable)
+        if amountToBet <= 0 then
+          sound.play(sound.SOUNDS.ERROR)
+          ui.displayCenteredMessage(screen, "Maximum bet reached!", colors.red)
+          return
+        end
+        bet = bet + amountToBet
+        sound.play(sound.SOUNDS.ALL_IN)
+        if amountToBet < available then
+          ui.displayCenteredMessage(screen, "Maximum allowable bet!", colors.yellow, 0.8)
+        end
+      end,
+    }
+
+    local quitButton = {
+      text = "QUIT",
+      color = colors.gray,
+      width = maxWidth,
+      func = function()
+        bet = 0
+        sound.play(sound.SOUNDS.TIMEOUT)
+        onQuit()
+      end,
+    }
+
+    local clearButton = {
+      text = "CLEAR",
+      color = colors.red,
+      width = maxWidth,
+      func = function()
+        if bet > 0 then
+          bet = 0
+          sound.play(sound.SOUNDS.CLEAR)
+        end
+      end,
+    }
+
+    local confirmButton = {
+      text = confirmLabel,
+      color = colors.magenta,
+      width = maxWidth,
+      func = function()
+        if bet > 0 then
+          -- Final balance check before starting
+          local playerBal = currency.getPlayerBalance()
+          if playerBal < bet then
+            sound.play(sound.SOUNDS.ERROR)
+            ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red)
+            bet = 0
+            return
+          end
+          sound.play(sound.SOUNDS.START)
+          selecting = false
+        else
+          ui.displayCenteredMessage(screen, "Place a bet first!", colors.red)
+        end
+      end,
+    }
+
+    local availableWidth = screen.width - (metrics.edgePad * 2)
+    local availableHeight = screen.height - betY - metrics.messageLineHeight - metrics.edgePad
+    local maxColumns = min(3, #currency.DENOMINATIONS)
+    local denomColumns = 1
+    local widestFit = 1
+    local controlRowWidth = (maxWidth * 2) + metrics.buttonColGap
+    local controlsCanPair = controlRowWidth <= availableWidth
+
+    for columns = 1, maxColumns do
+      local rowWidth = (columns * maxWidth) + ((columns - 1) * metrics.buttonColGap)
+      if rowWidth <= availableWidth then
+        widestFit = columns
+        local denomRows = ceil(#currency.DENOMINATIONS / columns)
+        local controlRows = controlsCanPair and 2 or 3
+        local totalRows = denomRows + controlRows
+        local neededHeight = metrics.buttonHeight + ((totalRows - 1) * metrics.buttonRowSpacing)
+        if neededHeight <= availableHeight then
+          denomColumns = columns
+          break
+        end
       end
-    end, false, dealWidth)
+    end
+    if denomColumns == 1 and widestFit > 1 then
+      denomColumns = widestFit
+    end
+
+    local rows = {}
+    local denominationButtons = {}
+    for _, denom in ipairs(currency.DENOMINATIONS) do
+      denominationButtons[#denominationButtons + 1] = {
+        text = denom.name,
+        color = denom.color,
+        width = maxWidth,
+        func = addBet(denom),
+      }
+    end
+    appendGridRows(rows, denominationButtons, denomColumns)
+
+    if controlsCanPair then
+      rows[#rows + 1] = { allInButton, quitButton }
+    else
+      rows[#rows + 1] = { allInButton }
+      rows[#rows + 1] = { quitButton }
+    end
+    rows[#rows + 1] = { clearButton, confirmButton }
+
+    local totalRows = #rows
+    local blockHeight = metrics.buttonHeight + ((totalRows - 1) * metrics.buttonRowSpacing)
+    local minStartY = betY + metrics.messageLineHeight + metrics.sectionGap
+    local latestStartY = max(metrics.edgePad, screen.height - blockHeight - metrics.edgePad)
+    local btnStartY = max(minStartY, floor((screen.height - blockHeight) / 2))
+    if btnStartY > latestStartY then
+      btnStartY = latestStartY
+    end
+
+    ui.layoutButtonGrid(screen, rows, btnX, btnStartY)
 
     screen:output()
 

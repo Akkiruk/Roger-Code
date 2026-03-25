@@ -5,8 +5,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.10",
-                                      "content_hash":  "d1a43c0ccef2d476",
+                                      "version":  "1.2.11",
+                                      "content_hash":  "ce44fa7c62f69215",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -34,8 +34,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.2.8",
-                                       "content_hash":  "a5f8de4dbfccb31f",
+                                       "version":  "1.2.9",
+                                       "content_hash":  "11eec3e6a786e677",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -67,8 +67,8 @@
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.11",
-                                  "content_hash":  "3008c3bcd2f3fbba",
+                                  "version":  "1.0.12",
+                                  "content_hash":  "8f8ef8462720f83e",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
@@ -96,8 +96,8 @@
                               },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.17",
-                                      "content_hash":  "c3319dad142cceed",
+                                      "version":  "1.0.18",
+                                      "content_hash":  "53de6b55dc6ff88d",
                                       "description":  "European Roulette with a single-screen felt UI and multi-bet support.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -120,8 +120,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.9",
-                                   "content_hash":  "6064d654ecc3919e",
+                                   "version":  "1.0.10",
+                                   "content_hash":  "46f84e4267901be2",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -147,11 +147,11 @@
                                },
                      "taskmaster":  {
                                         "name":  "TaskMaster",
-                                        "version":  "1.0.1",
-                                        "content_hash":  "84a3b635d4d2a61a",
+                                        "version":  "1.0.2",
+                                        "content_hash":  "66d2ed9da80c73a6",
                                         "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
                                         "source_dir":  "Games/TaskMaster",
-                                        "uses_lib":  false,
+                                        "uses_lib":  true,
                                         "files":  [
                                                       "taskmaster.lua"
                                                   ],
@@ -183,8 +183,8 @@
                                    },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.11",
-                                        "content_hash":  "39bed51a38aa88ac",
+                                        "version":  "1.0.12",
+                                        "content_hash":  "acaaec9d824b37b0",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,
@@ -280,8 +280,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.17",
-                "content_hash":  "e14174f4bad71c20",
+                "version":  "1.2.18",
+                "content_hash":  "59ec6648ada43b3f",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
@@ -293,6 +293,7 @@
                               "currency.lua",
                               "game_setup.lua",
                               "idle_screen.lua",
+                              "monitor_scale.lua",
                               "peripherals.lua",
                               "player_detection.lua",
                               "player_stats.lua",

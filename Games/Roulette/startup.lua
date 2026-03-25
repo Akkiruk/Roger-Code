@@ -42,26 +42,27 @@ end
 -- Title overlay (drawn on top of bouncing cards)
 -----------------------------------------------------
 local function drawOverlay(env, screen)
+  local scale = env.scale
   local title = "ROULETTE"
   local tw = env.surface.getTextSize(title, env.font)
   ui.safeDrawText(screen, title, env.font,
     math.floor((env.width - tw) / 2) + 1,
-    math.floor(env.height * 0.15) + 1, colors.black)
+    scale.idleTitleY + 1, colors.black)
   ui.safeDrawText(screen, title, env.font,
     math.floor((env.width - tw) / 2),
-    math.floor(env.height * 0.15), colors.yellow)
+    scale.idleTitleY, colors.yellow)
 
   local subtitle = "Touch felt to open table"
   local sw = env.surface.getTextSize(subtitle, env.font)
   ui.safeDrawText(screen, subtitle, env.font,
     math.floor((env.width - sw) / 2),
-    math.floor(env.height * 0.28), colors.lightGray)
+    scale.idleSubtitleY, colors.lightGray)
 
   local strap = "Single-zero European roulette"
   local strapW = env.surface.getTextSize(strap, env.font)
   ui.safeDrawText(screen, strap, env.font,
     math.floor((env.width - strapW) / 2),
-    math.floor(env.height * 0.38), colors.cyan)
+    scale.idleAccentY, colors.cyan)
 end
 
 -----------------------------------------------------
@@ -88,7 +89,7 @@ if not ok then
 end
 
 -- Initialize ui module so safeDrawText works in the idle overlay
-ui.init(idleEnv.surface, idleEnv.font)
+ui.init(idleEnv.surface, idleEnv.font, idleEnv.scale)
 
 debugLog("Roulette idle setup complete.")
 

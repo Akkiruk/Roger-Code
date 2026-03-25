@@ -44,6 +44,7 @@ end
 local statsButton = nil
 
 local function drawOverlay(env, screen)
+  local scale = env.scale
   -- Logo drawn after cards but before button
   local logo = env.assets.logo
   if logo then
@@ -52,10 +53,11 @@ local function drawOverlay(env, screen)
 
   -- Statistics button
   local buttonText   = "STATISTICS"
-  local buttonWidth  = math.floor(env.width * 0.45) + 22
-  local buttonHeight = 16
+  local textWidth = env.surface.getTextSize(buttonText, env.font)
+  local buttonWidth = math.max(scale:buttonWidth(textWidth, scale:scaledX(18, 8, 24)), math.floor(env.width * (scale.compact and 0.42 or 0.34)))
+  local buttonHeight = scale.buttonHeight + scale:scaledY(6, 2, 10)
   local buttonX      = math.floor((env.width - buttonWidth) / 2)
-  local buttonY      = math.floor(env.height * 0.8) - 2
+  local buttonY      = math.max(scale.edgePad, scale:bottom(buttonHeight, scale.edgePad * 2))
 
   screen:fillRect(buttonX, buttonY, buttonWidth, buttonHeight, colors.gray)
   screen:fillRect(buttonX + 2, buttonY + 2, buttonWidth - 4, buttonHeight - 4, colors.lime)
@@ -105,7 +107,7 @@ if not ok then
 end
 
 -- Initialize ui module so safeDrawText works in the idle overlay
-ui.init(idleEnv.surface, idleEnv.font)
+ui.init(idleEnv.surface, idleEnv.font, idleEnv.scale)
 
 debugLog("Blackjack idle setup complete.")
 

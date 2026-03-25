@@ -81,6 +81,7 @@ local width    = env.width
 local height   = env.height
 local cardBack = env.cardBack
 local font     = env.font
+local scale    = env.scale
 
 cardAnim.init(screen, cardBack)
 
@@ -200,24 +201,25 @@ end
 -----------------------------------------------------
 -- Layout (computed once from screen dimensions)
 -----------------------------------------------------
-local deltaX   = cardBack.width + LO.CARD_SPACING
+local cardSpacing = scale:scaledX(LO.CARD_SPACING, 1, 6)
+local deltaX   = cardBack.width + cardSpacing
 local centerX  = math.floor(width / 2)
-local statusY  = math.floor(height / 2)
+local statusY  = scale:ratioY(0.50, LO.STATUS_Y_OFFSET or 0, scale.subtitleY, height - scale.lineHeight - scale.edgePad)
 
 -- Player hand on left side, Banker hand on right side
 local playerAreaX = math.floor(width * 0.25)
 local bankerAreaX = math.floor(width * 0.75)
 
 -- Vertical positioning: labels at top, cards below, scores below cards
-local labelY   = LO.PLAYER_LABEL_Y
-local cardsY   = LO.PLAYER_CARDS_Y
-local scoreY   = cardsY + cardBack.height + 2
+local labelY   = scale:scaledY(LO.PLAYER_LABEL_Y, 1, scale.titleY)
+local cardsY   = scale:scaledY(LO.PLAYER_CARDS_Y, scale.subtitleY, scale:ratioY(0.30))
+local scoreY   = cardsY + cardBack.height + scale.smallGap
 
 -----------------------------------------------------
 -- Rendering
 -----------------------------------------------------
 local function drawHand(hand, centerHandX, y)
-  local totalWidth = #hand * deltaX - LO.CARD_SPACING
+  local totalWidth = #hand * deltaX - cardSpacing
   local startX = centerHandX - math.floor(totalWidth / 2)
   for i, cardID in ipairs(hand) do
     local img = cards.renderCard(cardID)
@@ -317,7 +319,7 @@ end
 -----------------------------------------------------
 -- Tutorial / How to play screens
 -----------------------------------------------------
-local LINE_H = 9
+local LINE_H = scale.lineHeight
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
@@ -394,7 +396,7 @@ local function showTutorial()
 
     -- Compute spacing to fit between header and buttons
     local contentY = 1 + LINE_H * 2 + 2
-    local btnY = height - 9
+    local btnY = scale.footerButtonY
     local availH = btnY - contentY - 2
     local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
 
@@ -418,7 +420,7 @@ local function showTutorial()
       table.insert(navRow, { text = "NEXT", color = colors.lime,
         func = function() page = page + 1 end })
     end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, 8, 4)
+    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
     ui.waitForButton(0, 0)
@@ -470,7 +472,7 @@ local function showStats()
   ui.clearButtons()
   ui.layoutButtonGrid(screen, {
     {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, height - 10, 8, 4)
+  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
   ui.waitForButton(0, 0)
 end
@@ -484,12 +486,12 @@ local function selectBetType()
 
     local title = "CHOOSE YOUR BET"
     local tw = ui.getTextSize(title)
-    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), scale.titleY, colors.yellow)
 
     -- Brief hint for new players
     local hint = "Closest to 9 wins!"
     local hw = ui.getTextSize(hint)
-    ui.safeDrawText(screen, hint, font, math.floor((width - hw) / 2), math.floor(height * 0.22), colors.lightGray)
+    ui.safeDrawText(screen, hint, font, math.floor((width - hw) / 2), scale.subtitleY, colors.lightGray)
 
     ui.clearButtons()
     local chosen = nil
@@ -512,7 +514,7 @@ local function selectBetType()
         { text = "STATS", color = colors.lightGray,
           func = function() action = "stats" end },
       },
-    }, centerX, math.floor(height * 0.35), 8, 4)
+    }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
 
@@ -558,7 +560,7 @@ local function baccaratRound(betAmount, betType)
   if not AUTO_PLAY then
     -- Animated deal: slide each card in one at a time
     -- Precompute final card positions (2 cards each, centered on their area)
-    local pTotalW = 2 * deltaX - LO.CARD_SPACING
+    local pTotalW = 2 * deltaX - cardSpacing
     local pStartX = playerAreaX - math.floor(pTotalW / 2)
     local bStartX = bankerAreaX - math.floor(pTotalW / 2)
 
@@ -624,7 +626,7 @@ local function baccaratRound(betAmount, betType)
       if not AUTO_PLAY then
         -- Animate the third card
         local nCards = #playerHand
-        local totalW = nCards * deltaX - LO.CARD_SPACING
+        local totalW = nCards * deltaX - cardSpacing
         local startX = playerAreaX - math.floor(totalW / 2)
         local toX = startX + (nCards - 1) * deltaX
         local savedCard = table.remove(playerHand)
@@ -647,7 +649,7 @@ local function baccaratRound(betAmount, betType)
 
       if not AUTO_PLAY then
         local nCards = #bankerHand
-        local totalW = nCards * deltaX - LO.CARD_SPACING
+        local totalW = nCards * deltaX - cardSpacing
         local startX = bankerAreaX - math.floor(totalW / 2)
         local toX = startX + (nCards - 1) * deltaX
         local savedCard = table.remove(bankerHand)

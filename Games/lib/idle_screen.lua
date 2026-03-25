@@ -10,6 +10,7 @@
 local peripherals = require("lib.peripherals")
 local cardsLib    = require("lib.cards")
 local gameSetup   = require("lib.game_setup")
+local monitorScale = require("lib.monitor_scale")
 
 local DEFAULT_PALETTE = gameSetup.DEFAULT_PALETTE
 
@@ -48,7 +49,7 @@ local function setup(cfg)
 
   env.monitor = peripherals.require(cfg.monitorName, "monitor", "monitor")
   if type(env.monitor.setTextScale) == "function" then
-    env.monitor.setTextScale(0.5)
+    env.monitor.setTextScale(monitorScale.surfaceTextScale(cfg.monitorTextScale))
   end
   term.redirect(env.monitor)
 
@@ -58,6 +59,7 @@ local function setup(cfg)
   end
 
   env.width, env.height = term.getSize()
+  env.scale = monitorScale.forSurface(env.width, env.height)
   env.screen   = env.surface.create(env.width, env.height)
   env.font     = env.surface.loadFont(env.surface.load("font"))
 

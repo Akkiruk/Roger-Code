@@ -75,7 +75,8 @@ local screen = env.screen
 local width = env.width
 local height = env.height
 local font = env.font
-local layout = rouletteLayout.build(width, height, #currency.DENOMINATIONS)
+local scale = env.scale
+local layout = rouletteLayout.build(width, height, #currency.DENOMINATIONS, scale)
 
 sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName()
 recovery.setPlayer(sessionPlayer or "Unknown")

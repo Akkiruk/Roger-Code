@@ -16,6 +16,7 @@ local ostime       = os.time
 local settings_get = settings.get
 local r_getInput   = redstone.getInput
 local epoch        = os.epoch
+local min          = math.min
 
 settings.define("hilo.debug", {
   description = "Enable debug messages for the Hi-Lo game.",
@@ -81,6 +82,7 @@ local width    = env.width
 local height   = env.height
 local cardBack = env.cardBack
 local font     = env.font
+local scale    = env.scale
 
 cardAnim.init(screen, cardBack)
 
@@ -158,18 +160,18 @@ end
 -----------------------------------------------------
 -- Layout (computed once from screen dimensions)
 -----------------------------------------------------
-local deltaX   = cardBack.width + 2
+local deltaX   = cardBack.width + scale.cardSpacing
 local centerX  = math.floor(width / 2)
 
 -- Card positions: current card on left, next card on right
-local leftCardX  = centerX - deltaX - 2
-local rightCardX = centerX + 4
-local cardY      = LO.CARD_Y
+local leftCardX  = centerX - deltaX - scale.smallGap
+local rightCardX = centerX + (scale.smallGap * 2)
+local cardY      = scale:scaledY(LO.CARD_Y, scale.subtitleY, scale:ratioY(0.35))
 
 -----------------------------------------------------
 -- Rendering helpers
 -----------------------------------------------------
-local LINE_H = 9
+local LINE_H = scale.lineHeight
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
@@ -217,7 +219,7 @@ local function renderBase(currentCard, revealedCards, betAmount, round, multipli
 
   -- Status text
   if statusText then
-    local statusY = math.floor(height / 2) + cardBack.height
+    local statusY = min(height - LINE_H - scale.edgePad, cardY + cardBack.height + (scale.sectionGap * 2))
     drawCenteredLine(statusText, statusY, colors.yellow)
   end
 end
@@ -288,7 +290,7 @@ local function showTutorial()
 
     -- Compute spacing to fit between header and buttons
     local contentY = 1 + LINE_H * 2 + 2
-    local btnY = height - 9
+    local btnY = scale.footerButtonY
     local availH = btnY - contentY - 2
     local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
 
@@ -312,7 +314,7 @@ local function showTutorial()
       table.insert(navRow, { text = "NEXT", color = colors.lime,
         func = function() page = page + 1 end })
     end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, 8, 4)
+    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
     ui.waitForButton(0, 0)
@@ -361,7 +363,7 @@ local function showStats()
   ui.clearButtons()
   ui.layoutButtonGrid(screen, {
     {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, height - 10, 8, 4)
+  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
   ui.waitForButton(0, 0)
 end
@@ -375,11 +377,11 @@ local function preRoundMenu()
 
     local title = "HI-LO"
     local tw = ui.getTextSize(title)
-    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), math.floor(height * 0.12), colors.yellow)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), scale.titleY, colors.yellow)
 
     local subtitle = "Higher or Lower?"
     local sw = ui.getTextSize(subtitle)
-    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), math.floor(height * 0.22), colors.lightGray)
+    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
 
     ui.clearButtons()
     local chosen = nil
@@ -395,7 +397,7 @@ local function preRoundMenu()
         { text = "STATS", color = colors.lightGray,
           func = function() chosen = "stats" end },
       },
-    }, centerX, math.floor(height * 0.40), 8, 4)
+    }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
 
@@ -482,8 +484,8 @@ local function hiloRound(betAmount)
       })
     end
 
-    local btnY = cardY + cardBack.height + 8
-    ui.layoutButtonGrid(screen, btnRows, centerX, btnY, 8, 4)
+    local btnY = cardY + cardBack.height + scale.sectionGap
+    ui.layoutButtonGrid(screen, btnRows, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
     if AUTO_PLAY then
