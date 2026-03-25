@@ -35,12 +35,12 @@ return {
 
   TWO_OF_A_KIND_PAYOUTS = {
     ["7"] = 10,
-    ["diamond"] = 5,
+    ["diamond"] = 6,
     ["bell"] = 2,
     ["bar"] = 2,
     ["cherry"] = 2,
-    ["lemon"] = 0,
-    ["melon"] = 0,
+    ["lemon"] = 1,
+    ["melon"] = 1,
   },
 
   ANY_TWO_CHERRY_MULT = 0,

@@ -9,7 +9,7 @@ return {
 
   -- Economy
   MAX_BET_PERCENT     = 0.005,  -- max bet = 0.5% of host balance (jackpot-safe: worst case takes ~50%)
-  HOST_COVERAGE_MULT  = 101,    -- total payout multiplier for the 100x jackpot (stake + winnings)
+  HOST_COVERAGE_MULT  = 101,    -- conservative coverage buffer for the 100x top line
   INACTIVITY_TIMEOUT  = 30000,  -- ms before auto-exit
 
   -- Auto-play
@@ -32,7 +32,8 @@ return {
     { id = "melon",   label = "~~",  color = colors.lime,      weight = 10, art = "melon.nfp"   },
   },
 
-  -- Payouts: multiplier of the bet for 3-of-a-kind.
+  -- Gross return multipliers for 3-of-a-kind.
+  -- These include the original stake, so 1 means a push, 2 means double back, etc.
   PAYOUTS = {
     ["7"]       = 100,  -- JACKPOT
     ["diamond"] = 50,
@@ -43,17 +44,17 @@ return {
     ["melon"]   = 2,
   },
 
-  -- Pair payouts are explicit so the common 5/25/100-token chip sizes stay
-  -- house-favored instead of scaling into a player-positive exploit.
-  -- With the current reel weights this table lands at roughly a 10.02% edge.
+  -- Gross return multipliers for any paying pair.
+  -- Common fruit pairs now return at least the stake, while the overall cabinet
+  -- still lands close to a 10% edge with the current reel weights.
   TWO_OF_A_KIND_PAYOUTS = {
     ["7"]       = 10,
-    ["diamond"] = 5,
+    ["diamond"] = 6,
     ["bell"]    = 2,
     ["bar"]     = 2,
     ["cherry"]  = 2,
-    ["lemon"]   = 0,
-    ["melon"]   = 0,
+    ["lemon"]   = 1,
+    ["melon"]   = 1,
   },
 
   -- Special combos

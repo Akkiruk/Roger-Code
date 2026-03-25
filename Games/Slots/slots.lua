@@ -322,9 +322,9 @@ local function evaluateResult(result, bet)
   -- Three of a kind
   if s1 == s2 and s2 == s3 then
     local mult = PAYOUTS[s1] or 2
-    local winnings = bet * mult
+    local winnings = max(0, bet * (mult - 1))
     local label = s1 == "7" and "!!! JACKPOT !!!" or "THREE " .. result[1].label .. " !!!"
-    return winnings, label, true
+    return winnings, label, true, mult == 1
   end
 
   -- Two of a kind (any position)
@@ -336,9 +336,9 @@ local function evaluateResult(result, bet)
   if #pairs > 0 then
     local sym = pairs[1]
     local mult = TWO_OF_A_KIND_PAYOUTS[sym] or 0
-    local winnings = bet * mult
-    if winnings > 0 then
-      return winnings, "Two " .. sym .. "s!", false
+    if mult > 0 then
+      local winnings = max(0, bet * (mult - 1))
+      return winnings, "Two " .. sym .. "s!", false, mult == 1
     end
   end
 
@@ -348,10 +348,11 @@ local function evaluateResult(result, bet)
   if s2 == "cherry" then cherryCount = cherryCount + 1 end
   if s3 == "cherry" then cherryCount = cherryCount + 1 end
   if cherryCount >= 2 and cfg.ANY_TWO_CHERRY_MULT > 0 then
-    return bet * cfg.ANY_TWO_CHERRY_MULT, "Cherries!", false
+    local winnings = max(0, bet * (cfg.ANY_TWO_CHERRY_MULT - 1))
+    return winnings, "Cherries!", false, cfg.ANY_TWO_CHERRY_MULT == 1
   end
 
-  return 0, nil, false
+  return 0, nil, false, false
 end
 
 -----------------------------------------------------
@@ -404,6 +405,15 @@ local function displayLoss(result, currentBet)
   os.sleep(1.0)
 end
 
+local function displayPush(result, label, currentBet)
+  drawMachine(result, nil, {
+    text = label .. "  PUSH",
+    color = colors.cyan,
+  }, currentBet)
+  sound.play(sound.SOUNDS.PUSH, 0.5)
+  os.sleep(1.2)
+end
+
 -----------------------------------------------------
 -- One round of slots
 -----------------------------------------------------
@@ -435,14 +445,17 @@ local function slotsRound(currentBet)
   animateSpin(result, currentBet)
 
   -- Evaluate
-  local winAmount, label, isJackpot = evaluateResult(result, currentBet)
+  local winAmount, label, isJackpot, isPush = evaluateResult(result, currentBet)
 
-  if winAmount > 0 then
+  if isPush then
+    displayPush(result, label or "Pair", currentBet)
+    dbg("PUSH: " .. tostring(label))
+  elseif winAmount > 0 then
     if not currency.payout(winAmount, isJackpot and "Slots: jackpot payout" or "Slots: payout") then
       alert.send("CRITICAL: Failed to pay " .. winAmount .. " tokens (slots)")
     end
     displayWin(result, winAmount, label, isJackpot, currentBet)
-    dbg("WIN: " .. label .. " payout=" .. (currentBet + winAmount))
+    dbg("WIN: " .. label .. " net=" .. winAmount)
   else
     local charged = currency.charge(currentBet, "Slots: loss")
     if not charged then

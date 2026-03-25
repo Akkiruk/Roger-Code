@@ -109,7 +109,7 @@ local function evaluateResult(cfg, result, bet)
 
   if one == two and two == three then
     local mult = cfg.PAYOUTS[one] or 2
-    return bet * mult, "Triple " .. result[1].label, one == "7"
+    return math.max(0, bet * (mult - 1)), "Triple " .. result[1].label, one == "7", mult == 1
   end
 
   local pairs = {}
@@ -120,9 +120,9 @@ local function evaluateResult(cfg, result, bet)
   if #pairs > 0 then
     local symbolId = pairs[1]
     local mult = (cfg.TWO_OF_A_KIND_PAYOUTS or {})[symbolId] or 0
-    local winnings = bet * mult
-    if winnings > 0 then
-      return winnings, "Two " .. symbolId .. "s!", false
+    if mult > 0 then
+      local winnings = math.max(0, bet * (mult - 1))
+      return winnings, "Two " .. symbolId .. "s!", false, mult == 1
     end
   end
 
@@ -131,10 +131,10 @@ local function evaluateResult(cfg, result, bet)
   if two == "cherry" then cherries = cherries + 1 end
   if three == "cherry" then cherries = cherries + 1 end
   if cherries >= 2 and cfg.ANY_TWO_CHERRY_MULT > 0 then
-    return bet * cfg.ANY_TWO_CHERRY_MULT, "Cherries!", false
+    return math.max(0, bet * (cfg.ANY_TWO_CHERRY_MULT - 1)), "Cherries!", false, cfg.ANY_TWO_CHERRY_MULT == 1
   end
 
-  return 0, nil, false
+  return 0, nil, false, false
 end
 
 local function getHostMaxBet(env, session)
@@ -161,14 +161,20 @@ local function promptSlotsBet(env, initial)
   })
 end
 
-local function waitForReplay(env, result, summary, bet, won)
+local function waitForReplay(env, result, summary, bet, outcomeState)
   local ui = env.ui
   local theme = ui.theme or {}
+  local summaryColor = colors.red
+  if outcomeState == "win" then
+    summaryColor = colors.lime
+  elseif outcomeState == "push" then
+    summaryColor = theme.rule or colors.lightBlue
+  end
 
   drawMachine(env, result, {
     {
       text = summary,
-      color = won and colors.lime or colors.red,
+      color = summaryColor,
     },
     {
       text = "Result: " .. result[1].label .. " | " .. result[2].label .. " | " .. result[3].label,
@@ -286,10 +292,15 @@ function M.run(env)
         end
       end
 
-      local winAmount, label, isJackpot = evaluateResult(env.slotsConfig, result, currentBet)
+      local winAmount, label, isJackpot, isPush = evaluateResult(env.slotsConfig, result, currentBet)
       local summary
+      local outcomeState
 
-      if winAmount > 0 then
+      if isPush then
+        summary = "Push: " .. tostring(label or "Pair")
+        outcomeState = "push"
+        env.playSound(sound.SOUNDS.PUSH, 0.5)
+      elseif winAmount > 0 then
         if liveMode then
           local okPayout = currency.payout(winAmount, session.selfPlay and "phone slots self-pay win" or (isJackpot and "phone slots jackpot" or "phone slots win"))
           if not okPayout then
@@ -297,6 +308,7 @@ function M.run(env)
           end
         end
         summary = "Win: " .. currency.formatTokens(winAmount) .. " (" .. label .. ")"
+        outcomeState = "win"
         env.playSound(sound.SOUNDS.SUCCESS, isJackpot and 1.0 or 0.6)
       else
         if liveMode then
@@ -306,15 +318,17 @@ function M.run(env)
           end
         end
         summary = "Loss: no payout"
+        outcomeState = "loss"
         env.playSound(sound.SOUNDS.FAIL, 0.5)
       end
 
       recovery.clearBet()
 
       local modeTag = session.selfPlay and "self-pay" or "live"
-      env.addMessage("Slots", summary .. " (" .. modeTag .. ")", winAmount > 0 and "info" or "warn")
+      local messageLevel = outcomeState == "loss" and "warn" or "info"
+      env.addMessage("Slots", summary .. " (" .. modeTag .. ")", messageLevel)
 
-      if waitForReplay(env, result, summary, currentBet, winAmount > 0) ~= "replay" then
+      if waitForReplay(env, result, summary, currentBet, outcomeState) ~= "replay" then
         return
       end
 
