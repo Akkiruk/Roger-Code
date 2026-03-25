@@ -23,6 +23,7 @@ local storage  = require("phoneos.storage")
 local currency = require("lib.currency")
 local sound    = require("lib.sound")
 local alert    = require("lib.alert")
+local updater  = require("lib.updater")
 
 local theme = ui.theme or {}
 
@@ -845,46 +846,123 @@ local function showSettings()
   local selected = 1
   local labels = {
     {
+      kind = "toggle",
       key = "sound",
       name = "Sound",
     },
     {
+      kind = "toggle",
       key = "animations",
       name = "Animations",
     },
     {
+      kind = "toggle",
       key = "autoAuth",
       name = "Auto Auth On Boot",
     },
     {
+      kind = "toggle",
       key = "confirmWagers",
       name = "Confirm Wagers",
     },
+    {
+      kind = "action",
+      action = "update",
+      name = "Check For Updates",
+    },
   }
+
+  local function checkForUpdatesNow()
+    local callbackStatus = "checking"
+    local callbackMessage = "Contacting update server..."
+
+    local function renderProgress()
+      ui.showMessage("Update Check", {
+        string.upper(tostring(callbackStatus or "checking")),
+        tostring(callbackMessage or ""),
+      }, {
+        subtitle = "Pocket Casino OS",
+        status = refreshSession().status,
+        footer = "Working...",
+        wait = false,
+      })
+    end
+
+    renderProgress()
+
+    local result = updater.checkForUpdates({
+      callback = function(status, msg)
+        callbackStatus = status
+        callbackMessage = msg
+        renderProgress()
+      end,
+    })
+
+    local install = updater.getInstallInfo() or {}
+    local version = tostring(install.version or "?")
+
+    if result == "updated" then
+      addMessage("Phone Updated", "Pocket Casino OS updated to v" .. version .. ".", "info")
+      if ui.confirm("Update Applied", {
+        "Pocket Casino OS updated to v" .. version .. ".",
+        "Reboot now to load the new files?",
+      }, { status = refreshSession().status }) then
+        os.reboot()
+      end
+      ui.showMessage("Update Applied", {
+        "Update is installed.",
+        "Reboot the phone when you are ready.",
+      }, { status = refreshSession().status })
+    elseif result == "up-to-date" then
+      ui.showMessage("Up To Date", {
+        "Pocket Casino OS is current.",
+        "Installed version: v" .. version,
+      }, { status = refreshSession().status })
+    elseif result == "skipped" then
+      ui.showMessage("Update Skipped", {
+        tostring(callbackMessage or "Another update is already running."),
+      }, { status = refreshSession().status })
+    else
+      ui.showMessage("Update Error", {
+        tostring(callbackMessage or "Update check failed."),
+      }, { status = refreshSession().status })
+    end
+  end
 
   while true do
     local items = {}
     for i, item in ipairs(labels) do
-      local enabled = state.settings[item.key]
-      items[i] = {
-        label = item.name .. ": " .. (enabled and "ON" or "OFF"),
-      }
+      if item.kind == "toggle" then
+        local enabled = state.settings[item.key]
+        items[i] = {
+          label = item.name .. ": " .. (enabled and "ON" or "OFF"),
+        }
+      else
+        items[i] = {
+          label = item.name,
+        }
+      end
     end
 
     local index, action = ui.chooseMenu("Settings", items, {
       selected = selected,
-      subtitle = "Enter toggle",
+      subtitle = "Enter toggle or open",
       status = refreshSession().status,
-      footer = "Enter toggle  Back home",
+      footer = "Enter open  Back home",
     })
 
     selected = index
     if action == "back" or action == "home" then
       return "home"
     elseif action == "select" and labels[index] then
-      local key = labels[index].key
-      state.settings[key] = not state.settings[key]
-      saveSettings()
+      local item = labels[index]
+      if item.kind == "toggle" then
+        local key = item.key
+        state.settings[key] = not state.settings[key]
+        saveSettings()
+      elseif item.action == "update" then
+        checkForUpdatesNow()
+      end
     end
   end
 end
