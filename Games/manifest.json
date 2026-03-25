@@ -145,8 +145,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.11",
-                                   "content_hash":  "8b7fcc64d9e886bb",
+                                   "version":  "1.0.12",
+                                   "content_hash":  "ccfbf84b91b4d6d9",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,

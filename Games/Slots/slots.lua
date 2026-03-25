@@ -356,30 +356,170 @@ local function evaluateResult(result, bet)
 end
 
 -----------------------------------------------------
+-- Result helpers
+-----------------------------------------------------
+local function buildResultHighlights(result)
+  local highlights = { false, false, false }
+  local s1, s2, s3 = result[1].id, result[2].id, result[3].id
+
+  if s1 == s2 then
+    highlights[1], highlights[2] = true, true
+  end
+  if s1 == s3 then
+    highlights[1], highlights[3] = true, true
+  end
+  if s2 == s3 then
+    highlights[2], highlights[3] = true, true
+  end
+
+  if highlights[1] or highlights[2] or highlights[3] then
+    return highlights
+  end
+
+  return nil
+end
+
+local function canReplayCurrentBet(currentBet)
+  if currentBet <= 0 then
+    return false, "Place a new bet."
+  end
+
+  if currency.getPlayerBalance() < currentBet then
+    return false, "Lower the bet to spin again."
+  end
+
+  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
+    local needed = currentBet * (cfg.HOST_COVERAGE_MULT - 1)
+    if hostBankBalance < needed then
+      return false, "House limit changed. Pick a new bet."
+    end
+  end
+
+  if getMaxBet() < currentBet then
+    return false, "House limit changed. Pick a new bet."
+  end
+
+  return true
+end
+
+local function waitForReplayChoice(result, highlights, statusText, currentBet)
+  local metrics = ui.getMetrics()
+  local centerX = floor(width / 2)
+  local buttonY = metrics.footerButtonY
+  local sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName()
+  local lastActivityTime = epoch("local")
+  local timerID = nil
+  local choice = nil
+
+  local buttonTexts = {
+    ui.getTextSize("ROLL AGAIN"),
+    ui.getTextSize("CHANGE BET"),
+  }
+  local buttonWidth = metrics:fixedButtonWidth(buttonTexts, 4)
+
+  while not choice do
+    local replayAvailable, replayHint = canReplayCurrentBet(currentBet)
+    local hintText = replayAvailable and "Touch ROLL AGAIN to spin the same bet." or replayHint
+    local hintColor = replayAvailable and colors.lightGray or colors.orange
+    local hintWidth = ui.getTextSize(hintText)
+    local hintY = max(TITLE_BAR_H + scale.smallGap, buttonY - metrics.lineHeight - metrics.smallGap)
+
+    drawMachine(result, highlights, statusText, currentBet)
+    ui.safeDrawText(screen, hintText, font, max(0, floor((width - hintWidth) / 2)), hintY, hintColor)
+
+    ui.clearButtons()
+    ui.layoutButtonGrid(screen, {
+      {
+        {
+          text = "ROLL AGAIN",
+          color = replayAvailable and colors.magenta or colors.gray,
+          width = buttonWidth,
+          func = function()
+            if replayAvailable then
+              choice = "replay"
+              return
+            end
+            sound.play(sound.SOUNDS.ERROR)
+            ui.displayCenteredMessage(screen, replayHint, colors.orange, 1)
+            choice = "bet"
+          end,
+        },
+        {
+          text = "CHANGE BET",
+          color = colors.orange,
+          width = buttonWidth,
+          func = function()
+            choice = "bet"
+          end,
+        },
+      },
+    }, centerX, buttonY)
+    screen:output()
+
+    if timerID then
+      os.cancelTimer(timerID)
+    end
+    timerID = os.startTimer(0.5)
+
+    while not choice do
+      local event, side, px, py = os.pullEvent()
+      if event == "monitor_touch" then
+        if sessionPlayer then
+          local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
+          local currentPlayer = (currency.getLivePlayerName and currency.getLivePlayerName())
+            or ((sessionInfo and sessionInfo.playerName) or nil)
+          if currentPlayer and currentPlayer ~= sessionPlayer then
+            ui.displayCenteredMessage(screen, "Game in use by " .. sessionPlayer, colors.red, 1.5)
+            break
+          end
+        end
+
+        lastActivityTime = epoch("local")
+        if px and py then
+          local cb = ui.checkButtonHit(px, py)
+          if cb then
+            cb()
+            break
+          end
+        end
+      elseif event == "timer" and side == timerID then
+        if (epoch("local") - lastActivityTime) > cfg.INACTIVITY_TIMEOUT then
+          choice = "bet"
+        end
+        break
+      end
+    end
+  end
+
+  if timerID then
+    os.cancelTimer(timerID)
+  end
+  ui.clearButtons()
+
+  return choice == "replay"
+end
+
+-----------------------------------------------------
 -- Win display
 -----------------------------------------------------
 local function displayWin(result, winAmount, label, isJackpot, currentBet)
-  local highlights = {}
-  local s1, s2, s3 = result[1].id, result[2].id, result[3].id
-  if s1 == s2 and s2 == s3 then
-    highlights = { true, true, true }
-  elseif s1 == s2 then highlights = { true, true, false }
-  elseif s1 == s3 then highlights = { true, false, true }
-  elseif s2 == s3 then highlights = { false, true, true }
-  end
-
+  local highlights = buildResultHighlights(result)
   local clr = isJackpot and colors.red or colors.lime
   local winText = label .. "  +" .. currency.formatTokens(winAmount)
+  local status = {
+    text = winText,
+    color = clr,
+  }
 
   -- Flash effect
   local flashes = isJackpot and 8 or 4
   for flash = 1, flashes do
     local showHighlight = (flash % 2 == 1)
-    local status = {
+    local flashStatus = {
       text = winText,
       color = showHighlight and clr or colors.yellow,
     }
-    drawMachine(result, showHighlight and highlights or nil, status, currentBet)
+    drawMachine(result, showHighlight and highlights or nil, flashStatus, currentBet)
     if isJackpot then
       sound.play(sound.SOUNDS.SUCCESS, 1.0)
     elseif flash == 1 then
@@ -389,29 +529,29 @@ local function displayWin(result, winAmount, label, isJackpot, currentBet)
   end
 
   -- Hold final result
-  drawMachine(result, highlights, {
-    text = winText,
-    color = clr,
-  }, currentBet)
-  os.sleep(1.5)
+  drawMachine(result, highlights, status, currentBet)
+  return highlights, status
 end
 
 local function displayLoss(result, currentBet)
-  drawMachine(result, nil, {
+  local status = {
     text = "No match... Try again!",
     color = colors.lightGray,
-  }, currentBet)
+  }
+  drawMachine(result, nil, status, currentBet)
   sound.play(sound.SOUNDS.FAIL, 0.4)
-  os.sleep(1.0)
+  return nil, status
 end
 
 local function displayPush(result, label, currentBet)
-  drawMachine(result, nil, {
+  local highlights = buildResultHighlights(result)
+  local status = {
     text = label .. "  PUSH",
     color = colors.cyan,
-  }, currentBet)
+  }
+  drawMachine(result, highlights, status, currentBet)
   sound.play(sound.SOUNDS.PUSH, 0.5)
-  os.sleep(1.2)
+  return highlights, status
 end
 
 -----------------------------------------------------
@@ -446,29 +586,37 @@ local function slotsRound(currentBet)
 
   -- Evaluate
   local winAmount, label, isJackpot, isPush = evaluateResult(result, currentBet)
+  local resultHighlights = nil
+  local resultStatus = nil
 
   if isPush then
-    displayPush(result, label or "Pair", currentBet)
+    resultHighlights, resultStatus = displayPush(result, label or "Pair", currentBet)
     dbg("PUSH: " .. tostring(label))
   elseif winAmount > 0 then
     if not currency.payout(winAmount, isJackpot and "Slots: jackpot payout" or "Slots: payout") then
       alert.send("CRITICAL: Failed to pay " .. winAmount .. " tokens (slots)")
     end
-    displayWin(result, winAmount, label, isJackpot, currentBet)
+    resultHighlights, resultStatus = displayWin(result, winAmount, label, isJackpot, currentBet)
     dbg("WIN: " .. label .. " net=" .. winAmount)
   else
     local charged = currency.charge(currentBet, "Slots: loss")
     if not charged then
       alert.send("CRITICAL: Failed to charge " .. currentBet .. " tokens (slots)")
     end
-    displayLoss(result, currentBet)
+    resultHighlights, resultStatus = displayLoss(result, currentBet)
     dbg("LOSS")
   end
 
-  recovery.clearBet()
-
   -- Update host balance
   hostBankBalance = currency.getHostBalance()
+
+  recovery.clearBet()
+
+  if not AUTO_PLAY then
+    return waitForReplayChoice(result, resultHighlights, resultStatus, currentBet)
+  end
+
+  return false
 end
 
 -----------------------------------------------------
@@ -515,7 +663,13 @@ local function main()
       drawPlayerOverlay()
       local selectedBet = betSelection()
       if selectedBet and selectedBet > 0 then
-        slotsRound(selectedBet)
+        local currentBet = selectedBet
+        repeat
+          updateAutoPlay()
+          if AUTO_PLAY then
+            break
+          end
+        until not slotsRound(currentBet)
       end
     end
 
