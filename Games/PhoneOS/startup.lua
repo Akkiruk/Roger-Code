@@ -17,6 +17,16 @@ alert.configure({
   logFile = "phone_os_startup.log",
 })
 
+local function sleepRaw(seconds)
+  local timer = os.startTimer(seconds)
+  while true do
+    local event, id = os.pullEventRaw()
+    if event == "timer" and id == timer then
+      return
+    end
+  end
+end
+
 updater.checkForUpdates({
   callback = function(status, msg)
     alert.log("Updater [" .. tostring(status) .. "] " .. tostring(msg))
@@ -50,13 +60,13 @@ end
 while true do
   local ok, err = runProgram()
   if ok then
-    os.sleep(0.25)
+    sleepRaw(0.25)
   elseif tostring(err) == "Terminated" then
     alert.log("Pocket OS terminated; relaunching")
-    os.sleep(0.25)
+    sleepRaw(0.25)
   else
     alert.log("Pocket OS crash: " .. tostring(err))
     showCrash(err)
-    os.sleep(5)
+    sleepRaw(5)
   end
 end
