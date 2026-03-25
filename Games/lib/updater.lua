@@ -17,6 +17,8 @@ local MANIFEST_URL  = REPO_URL .. "Games/manifest.json"
 local VERSION_FILE  = ".installed_program"
 local LOG_FILE      = "updater.log"
 local UPDATE_LOCK   = ".update_lock"
+local LOCKDOWN_FILE = "vhcc_lockdown.txt"
+local UNLOCK_FILE   = ".vhcc_unlock"
 
 -----------------------------------------------------
 -- Helpers
@@ -79,6 +81,34 @@ local function saveInstalled(info)
   if f then
     f.write(textutils.serialise(info))
     f.close()
+  end
+end
+
+local function beginWriteWindow(tag)
+  if not fs.exists(LOCKDOWN_FILE) then
+    return true, false
+  end
+
+  if fs.exists(UNLOCK_FILE) then
+    return true, false
+  end
+
+  local f = fs.open(UNLOCK_FILE, "w")
+  if not f then
+    return false, "Cannot create lockdown unlock file"
+  end
+
+  f.write(textutils.serialise({
+    source = tag or "updater",
+    openedAt = os.epoch("local"),
+  }))
+  f.close()
+  return true, true
+end
+
+local function endWriteWindow(createdUnlock)
+  if createdUnlock and fs.exists(UNLOCK_FILE) then
+    fs.delete(UNLOCK_FILE)
   end
 end
 
@@ -166,6 +196,13 @@ local function performUpdate(manifest, progKey, installed)
     return false, 0, 0
   end
 
+  local unlockOk, unlockResult = beginWriteWindow("auto-update")
+  if not unlockOk then
+    logMsg("Update unlock failed: " .. tostring(unlockResult))
+    return false, 0, 0
+  end
+  local createdUnlock = unlockResult == true
+
   local srcDir = prog.source_dir
   local downloads = {}
 
@@ -236,6 +273,7 @@ local function performUpdate(manifest, progKey, installed)
     updated_at   = os.epoch("local"),
   })
 
+  endWriteWindow(createdUnlock)
   return true, success, failed
 end
 

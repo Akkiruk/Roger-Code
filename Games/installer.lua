@@ -10,7 +10,7 @@
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.1.1"
+local INSTALLER_VERSION = "1.1.2"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME  = "Roger-Code"
 local BRANCH     = "main"
@@ -22,6 +22,8 @@ local REPO_URL   = RAW_ROOT .. BRANCH .. "/"
 local MANIFEST_URL = REPO_URL .. "Games/manifest.json"
 local VERSION_FILE = ".installed_program"
 local LOG_FILE     = "installer_error.log"
+local LOCKDOWN_FILE = "vhcc_lockdown.txt"
+local UNLOCK_FILE   = ".vhcc_unlock"
 local API_HEADERS  = {
   ["User-Agent"] = "Roger-Code-Installer",
   ["Accept"] = "application/vnd.github+json",
@@ -218,6 +220,34 @@ local function saveInstalled(info)
   end
 end
 
+local function beginWriteWindow(tag)
+  if not fs.exists(LOCKDOWN_FILE) then
+    return true, false
+  end
+
+  if fs.exists(UNLOCK_FILE) then
+    return true, false
+  end
+
+  local f = fs.open(UNLOCK_FILE, "w")
+  if not f then
+    return false, "Cannot create lockdown unlock file"
+  end
+
+  f.write(textutils.serialise({
+    source = tag or "installer",
+    openedAt = os.epoch("local"),
+  }))
+  f.close()
+  return true, true
+end
+
+local function endWriteWindow(createdUnlock)
+  if createdUnlock and fs.exists(UNLOCK_FILE) then
+    fs.delete(UNLOCK_FILE)
+  end
+end
+
 ---------------------------------------------------------------------------
 -- Install / update a game
 ---------------------------------------------------------------------------
@@ -227,6 +257,14 @@ local function installProgram(manifest, progKey, forceConfig)
     cprint(colors.red, "Unknown program: " .. tostring(progKey))
     return false
   end
+
+  local unlockOk, unlockResult = beginWriteWindow("install")
+  if not unlockOk then
+    cprint(colors.red, "Could not open update window: " .. tostring(unlockResult))
+    logError("Install unlock failed: " .. tostring(unlockResult))
+    return false
+  end
+  local createdUnlock = unlockResult == true
 
   header("Installing " .. prog.name .. " v" .. prog.version)
 
@@ -323,6 +361,7 @@ local function installProgram(manifest, progKey, forceConfig)
 
   print("")
   cprint(colors.white, "Run 'startup' to launch " .. prog.name .. ".")
+  endWriteWindow(createdUnlock)
   return #failed == 0
 end
 
@@ -380,6 +419,14 @@ local function selfUpdate(manifest, silent)
       .. INSTALLER_VERSION .. " -> v" .. remoteVer .. "... ")
   end
 
+  local unlockOk, unlockResult = beginWriteWindow("installer-self-update")
+  if not unlockOk then
+    if not silent then cprint(colors.red, "Failed!") end
+    logError("Self-update unlock failed: " .. tostring(unlockResult))
+    return false
+  end
+  local createdUnlock = unlockResult == true
+
   local myPath = shell.getRunningProgram()
   local rawBase = manifest and manifest._raw_base or REPO_URL
   local ok, err = downloadAndSave(buildRepoUrl("Games/installer.lua", rawBase), myPath)
@@ -387,12 +434,14 @@ local function selfUpdate(manifest, silent)
     if not silent then
       cprint(colors.lime, "Done! Restarting...")
     end
+    endWriteWindow(createdUnlock)
     -- Re-run ourselves with the same arguments
     shell.run(myPath, table.unpack(tArgs))
     -- Exit this (old) instance after the new one finishes
     return true
   else
     if not silent then cprint(colors.red, "Failed!") end
+    endWriteWindow(createdUnlock)
     logError("Self-update failed: " .. tostring(err))
     return false
   end

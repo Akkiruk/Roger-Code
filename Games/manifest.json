@@ -1,12 +1,12 @@
 {
     "manifest_version":  1,
-    "installer_version":  "1.1.1",
-    "installer_hash":  "535f804314508f1a",
+    "installer_version":  "1.1.2",
+    "installer_hash":  "1c593210c063f7b5",
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.11",
-                                      "content_hash":  "ce44fa7c62f69215",
+                                      "version":  "1.2.12",
+                                      "content_hash":  "911f88937a57115f",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
@@ -29,13 +29,14 @@
                                                      "hearts.nfp",
                                                      "spade.nfp",
                                                      "spades.nfp",
-                                                     "surface"
+                                                     "surface",
+                                                     "vhcc_lockdown.txt"
                                                  ]
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.2.9",
-                                       "content_hash":  "11eec3e6a786e677",
+                                       "version":  "1.2.10",
+                                       "content_hash":  "72b240f16465d90a",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
@@ -62,13 +63,14 @@
                                                       "logo.nfp",
                                                       "spade.nfp",
                                                       "spades.nfp",
-                                                      "surface"
+                                                      "surface",
+                                                      "vhcc_lockdown.txt"
                                                   ]
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.12",
-                                  "content_hash":  "8f8ef8462720f83e",
+                                  "version":  "1.0.13",
+                                  "content_hash":  "ce78fca5f569a665",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
@@ -91,13 +93,14 @@
                                                  "hearts.nfp",
                                                  "spade.nfp",
                                                  "spades.nfp",
-                                                 "surface"
+                                                 "surface",
+                                                 "vhcc_lockdown.txt"
                                              ]
                               },
                      "phone_os":  {
                                       "name":  "Pocket Casino OS",
-                                      "version":  "1.0.9",
-                                      "content_hash":  "2617cf7156ea02cf",
+                                      "version":  "1.0.11",
+                                      "content_hash":  "cbeab4071be350cb",
                                       "description":  "Pocket casino shell for ComputerCraft pocket computers.",
                                       "source_dir":  "Games/PhoneOS",
                                       "uses_lib":  true,
@@ -116,13 +119,13 @@
                                                            "slots_config.lua"
                                                        ],
                                       "assets":  [
-
+                                                     "vhcc_lockdown.txt"
                                                  ]
                                   },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.21",
-                                      "content_hash":  "39bde4f902ca7b07",
+                                      "version":  "1.0.22",
+                                      "content_hash":  "4c85656453ec3cfd",
                                       "description":  "European Roulette with a single-screen felt UI and multi-bet support.",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
@@ -140,13 +143,14 @@
                                                      "card.nfp",
                                                      "cardback.nfp",
                                                      "font",
-                                                     "surface"
+                                                     "surface",
+                                                     "vhcc_lockdown.txt"
                                                  ]
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.13",
-                                   "content_hash":  "7e73c01d0a2d66fa",
+                                   "version":  "1.0.14",
+                                   "content_hash":  "d7952929ddcb8a4b",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
@@ -167,7 +171,8 @@
                                                   "lemon.nfp",
                                                   "melon.nfp",
                                                   "seven.nfp",
-                                                  "surface"
+                                                  "surface",
+                                                  "vhcc_lockdown.txt"
                                               ]
                                },
                      "taskmaster":  {
@@ -208,8 +213,8 @@
                                    },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.12",
-                                        "content_hash":  "acaaec9d824b37b0",
+                                        "version":  "1.0.13",
+                                        "content_hash":  "dab838b9a61580fb",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,
@@ -232,7 +237,8 @@
                                                        "hearts.nfp",
                                                        "spade.nfp",
                                                        "spades.nfp",
-                                                       "surface"
+                                                       "surface",
+                                                       "vhcc_lockdown.txt"
                                                    ]
                                     },
                      "peripheral_info_collector":  {
@@ -305,8 +311,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.20",
-                "content_hash":  "53f0b8805f33b29a",
+                "version":  "1.2.21",
+                "content_hash":  "36187c9a0868555d",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",

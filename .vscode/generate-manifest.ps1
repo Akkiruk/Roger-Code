@@ -309,9 +309,10 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
     # Determine source_dir relative to repo root for the installer URL
     $relPath = $dir.FullName.Replace($RootDir, "").TrimStart("\", "/").Replace("\", "/")
 
-    # Compute content hash from all code + config files (not assets — those rarely change and are large)
+    # Compute content hash from all install-delivered files so asset-only changes
+    # still trigger installer/update version bumps.
     $hashFiles = @()
-    foreach ($f in ($discovered.files + $discovered.config_files)) {
+    foreach ($f in ($discovered.files + $discovered.config_files + $discovered.assets)) {
         $hashFiles += Join-Path $dir.FullName $f
     }
     $contentHash = Get-ContentHash -FilePaths $hashFiles
