@@ -92,7 +92,6 @@ local state = {
   denominations = currency.DENOMINATIONS,
   bets = {},
   betActions = {},
-  lastResolved = {},
   history = {},
   playerBalance = 0,
   hostBalance = 0,
@@ -105,7 +104,6 @@ local state = {
   sessionProfitText = "0",
   sessionProfitTone = "neutral",
   betActionCount = 0,
-  lastResolvedCount = 0,
   lastBalanceRefresh = 0,
 }
 
@@ -130,7 +128,6 @@ local function refreshDerivedState()
   state.totalStake = rouletteModel.getTotalStake(state.bets)
   state.maxExposure = rouletteModel.getMaxExposure(state.bets)
   state.betActionCount = #state.betActions
-  state.lastResolvedCount = #state.lastResolved
 
   if state.sessionProfit > 0 then
     state.sessionProfitText = "+" .. currency.formatTokens(state.sessionProfit)
@@ -433,11 +430,10 @@ local function settleRound()
 
   local roundBets = rouletteModel.cloneBetList(state.bets)
   local totalStake = rouletteModel.getTotalStake(roundBets)
-  state.lastResolved = rouletteModel.cloneBetList(roundBets)
   state.phase = "spinning"
   recovery.saveSnapshot(totalStake, {
     phase = "spinning",
-    bets = state.lastResolved,
+    bets = roundBets,
   })
 
   sound.play(sound.SOUNDS.START, 0.55)
@@ -523,23 +519,6 @@ local function handleActionButton(actionKey)
 
   if actionKey == "clear" then
     clearBets()
-    return nil
-  end
-
-  if actionKey == "rebet" then
-    if #state.bets > 0 then
-      sound.play(sound.SOUNDS.ERROR, 0.4)
-      setStatus("Clear the table before PLAY AGAIN.", "warning")
-      return nil
-    end
-    if #state.lastResolved == 0 then
-      sound.play(sound.SOUNDS.ERROR, 0.4)
-      setStatus("No previous round to replay.", "warning")
-      return nil
-    end
-    if tryApplyAction(buildChangesFromBets(state.lastResolved), "Spinning the last round again.", sound.SOUNDS.ALL_IN) then
-      return "spin"
-    end
     return nil
   end
 

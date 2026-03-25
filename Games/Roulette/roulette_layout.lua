@@ -188,16 +188,14 @@ local function build(width, height, chipCount, scale)
   local spinLabel = layout.ultraCompact and "GO" or "SPIN"
   local undoLabel = layout.ultraCompact and "UND" or "UNDO"
   local clearLabel = layout.compact and "CLR" or "CLEAR"
-  local rebetLabel = layout.ultraCompact and "AGN" or (layout.compact and "AGAIN" or "PLAY AGAIN")
   local doubleLabel = layout.compact and "X2" or "DOUBLE"
   local quitLabel = layout.compact and "OUT" or "QUIT"
   layout.actionButtons = {
     makeActionButton("spin", spinLabel, panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
     makeActionButton("undo", undoLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
     makeActionButton("clear", clearLabel, panelInnerX, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.red),
-    makeActionButton("rebet", rebetLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
-    makeActionButton("double", doubleLabel, panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.magenta),
-    makeActionButton("quit", quitLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.gray),
+    makeActionButton("double", doubleLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.magenta),
+    makeActionButton("quit", quitLabel, panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, (gridButtonW * 2) + buttonGap, buttonH, colors.gray),
   }
 
   local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + scale.sectionGap

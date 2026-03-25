@@ -329,7 +329,6 @@ local function drawButtons(screen, font, layout, state)
     spin = (state.totalStake or 0) > 0,
     undo = (state.betActionCount or 0) > 0,
     clear = (state.totalStake or 0) > 0,
-    rebet = (state.lastResolvedCount or 0) > 0 and (state.totalStake or 0) == 0,
     double = (state.totalStake or 0) > 0,
     quit = true,
   }
@@ -371,8 +370,7 @@ local function drawSlipBox(screen, font, layout, state)
   end
 
   if #bets == 0 then
-    local fallback = state.lastResolvedCount and state.lastResolvedCount > 0 and "Tap PLAY AGAIN to replay and spin the last round." or "Tap the felt to place chips."
-    ui.safeDrawText(screen, fallback, font, box.x + 2, linesY, colors.lightGray)
+    ui.safeDrawText(screen, "Tap the felt to place chips.", font, box.x + 2, linesY, colors.lightGray)
   elseif #bets > shown then
     ui.safeDrawText(screen, "+" .. tostring(#bets - shown) .. " more", font, box.x + 2, linesY + (shown * lineHeight), colors.lightGray)
   end
