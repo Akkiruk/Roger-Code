@@ -200,9 +200,10 @@ local function build(width, height, chipCount)
   local rowGap = 1
   local streetW = layout.compact and 4 or 6
   local gridBodyW = rightW - 6
-  local cellW = max(8, floor((gridBodyW - streetW - (colGap * 2)) / 3))
+  local maxCellW = layout.compact and 10 or 13
+  local cellW = max(8, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   if layout.compact then
-    cellW = max(9, floor((gridBodyW - streetW - (colGap * 2)) / 3))
+    cellW = max(9, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   end
   local cellH = layout.compact and 5 or 7
   local minCellHeight = layout.compact and 3 or 4
