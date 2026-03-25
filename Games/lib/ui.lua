@@ -14,6 +14,7 @@ local buttons  = {}
 local currency = require("lib.currency")
 local monitorScale = require("lib.monitor_scale")
 local max = math.max
+local min = math.min
 
 local m_round = function(x) return x + 0.5 - (x + 0.5) % 1 end
 
@@ -96,6 +97,23 @@ local function getFixedWidthButtonSurface(text, bg, fixedWidth)
   return btn
 end
 
+local function clampButtonPlacement(surfaceObj, btnSurf, x, y)
+  local surfaceWidth = surfaceObj and surfaceObj.width or nil
+  local surfaceHeight = surfaceObj and surfaceObj.height or nil
+
+  if surfaceWidth then
+    local maxX = max(0, surfaceWidth - btnSurf.width)
+    x = min(max(0, x), maxX)
+  end
+
+  if surfaceHeight then
+    local maxY = max(0, surfaceHeight - btnSurf.height)
+    y = min(max(0, y), maxY)
+  end
+
+  return x, y
+end
+
 --- Draw a button on a surface and register it for click detection.
 -- @param surfaceObj  surface  The screen to draw on
 -- @param text        string   Button label (also used as key in buttons table)
@@ -110,6 +128,7 @@ local function button(surfaceObj, text, bg, x, y, func, center)
   if center then
     x = math.floor(x - btnSurf.width / 2)
   end
+  x, y = clampButtonPlacement(surfaceObj, btnSurf, x, y)
   surfaceObj:drawSurface(btnSurf, x, y)
   buttons[text] = {
     x = x, y = y,
@@ -134,6 +153,7 @@ local function fixedWidthButton(surfaceObj, text, bg, x, y, func, center, fixedW
   if center then
     x = math.floor(x - btnSurf.width / 2)
   end
+  x, y = clampButtonPlacement(surfaceObj, btnSurf, x, y)
   surfaceObj:drawSurface(btnSurf, x, y)
   buttons[text] = {
     x = x, y = y,
@@ -155,7 +175,7 @@ local function layoutButtonGrid(screen, buttonRows, centerX, startY, rowSpacing,
   rowSpacing = rowSpacing or _metrics.buttonRowSpacing
   colSpacing = colSpacing or _metrics.buttonColGap
   local screenW = screen.width or (centerX * 2)
-  local actualRow = 0
+  local plannedRows = {}
   for _, row in ipairs(buttonRows) do
     -- Pre-render all button surfaces for this row
     local btnSurfs = {}
@@ -187,25 +207,56 @@ local function layoutButtonGrid(screen, buttonRows, centerX, startY, rowSpacing,
     end
     if #current > 0 then table.insert(subRows, current) end
 
-    -- Draw each sub-row centered
+    -- Stage each sub-row centered
     for _, subRow in ipairs(subRows) do
       local totalWidth = 0
       for j, bs in ipairs(subRow) do
         totalWidth = totalWidth + bs.surf.width
         if j > 1 then totalWidth = totalWidth + colSpacing end
       end
-      local x = centerX - math.floor(totalWidth / 2)
-      local y = startY + actualRow * rowSpacing
-      for _, bs in ipairs(subRow) do
-        screen:drawSurface(bs.surf, x, y)
-        buttons[bs.btn.text] = {
-          x = x, y = y,
-          width = bs.surf.width, height = bs.surf.height,
-          cb = bs.btn.func,
-        }
-        x = x + bs.surf.width + colSpacing
-      end
-      actualRow = actualRow + 1
+      plannedRows[#plannedRows + 1] = {
+        totalWidth = totalWidth,
+        buttons = subRow,
+      }
+    end
+  end
+
+  local totalRows = #plannedRows
+  local buttonHeight = _metrics.buttonHeight
+  local edgePad = _metrics.edgePad or 0
+  local screenH = screen.height
+
+  if screenH and totalRows > 0 then
+    local availableHeight = max(buttonHeight, screenH - (edgePad * 2))
+    local neededHeight = buttonHeight + ((totalRows - 1) * rowSpacing)
+
+    if totalRows > 1 and neededHeight > availableHeight then
+      local compressedSpacing = math.floor((availableHeight - buttonHeight) / (totalRows - 1))
+      rowSpacing = max(buttonHeight, compressedSpacing)
+      neededHeight = buttonHeight + ((totalRows - 1) * rowSpacing)
+    end
+
+    local maxStartY = max(0, screenH - edgePad - neededHeight)
+    if startY > maxStartY then
+      startY = maxStartY
+    end
+    if startY < edgePad then
+      startY = edgePad
+    end
+  end
+
+  for rowIndex, rowInfo in ipairs(plannedRows) do
+    local x = centerX - math.floor(rowInfo.totalWidth / 2)
+    local y = startY + ((rowIndex - 1) * rowSpacing)
+    for _, bs in ipairs(rowInfo.buttons) do
+      local drawX, drawY = clampButtonPlacement(screen, bs.surf, x, y)
+      screen:drawSurface(bs.surf, drawX, drawY)
+      buttons[bs.btn.text] = {
+        x = drawX, y = drawY,
+        width = bs.surf.width, height = bs.surf.height,
+        cb = bs.btn.func,
+      }
+      x = x + bs.surf.width + colSpacing
     end
   end
 end

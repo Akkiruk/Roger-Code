@@ -305,8 +305,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.18",
-                "content_hash":  "59ec6648ada43b3f",
+                "version":  "1.2.19",
+                "content_hash":  "2bfe40a944c737a9",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
