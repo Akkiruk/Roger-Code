@@ -1,0 +1,250 @@
+local currency = require("lib.currency")
+local sound    = require("lib.sound")
+local alert    = require("lib.alert")
+local recovery = require("lib.crash_recovery")
+
+local M = {}
+
+local function symbolBox(ui, x, y, width, label, bg, fg)
+  ui.writeAt(x, y, "+" .. string.rep("-", width - 2) .. "+", fg or colors.white, bg)
+  ui.writeAt(x, y + 1, "|" .. string.rep(" ", width - 2) .. "|", fg or colors.white, bg)
+  ui.writeAt(x, y + 2, "|" .. string.rep(" ", width - 2) .. "|", fg or colors.white, bg)
+  ui.writeAt(x, y + 3, "+" .. string.rep("-", width - 2) .. "+", fg or colors.white, bg)
+
+  local shown = tostring(label or ""):sub(1, width - 2)
+  local textX = x + math.floor((width - #shown) / 2)
+  ui.writeAt(textX, y + 1, shown, fg or colors.white, bg)
+end
+
+local function drawMachine(env, result, statusText, bet)
+  local ui = env.ui
+  local session = env.refreshSession()
+  local width = select(1, term.getSize())
+  local reelWidth = 7
+  local gap = 1
+  local totalWidth = reelWidth * 3 + gap * 2
+  local startX = math.max(1, math.floor((width - totalWidth) / 2) + 1)
+
+  ui.clear(colors.black)
+  ui.header("Slots", "Bet " .. currency.formatTokens(bet), session.status)
+
+  symbolBox(ui, startX, 6, reelWidth, result[1].label, colors.gray, colors.white)
+  symbolBox(ui, startX + reelWidth + gap, 6, reelWidth, result[2].label, colors.gray, colors.white)
+  symbolBox(ui, startX + (reelWidth + gap) * 2, 6, reelWidth, result[3].label, colors.gray, colors.white)
+
+  if statusText then
+    local lines = ui.wrap(statusText, 22)
+    for i, line in ipairs(lines) do
+      ui.writeAt(2, 12 + i, line, colors.white)
+    end
+  end
+
+  ui.writeAt(2, 17, "Enter spin", colors.lime)
+  ui.writeAt(14, 17, "Back exit", colors.white)
+  ui.footer(env.isLiveSession(session) and "Live mode" or "Demo mode")
+end
+
+local function buildReel(symbols)
+  local reel = {}
+  for _, symbol in ipairs(symbols) do
+    for _ = 1, symbol.weight do
+      reel[#reel + 1] = symbol
+    end
+  end
+  for i = #reel, 2, -1 do
+    local j = math.random(i)
+    reel[i], reel[j] = reel[j], reel[i]
+  end
+  return reel
+end
+
+local function spinReel(reel)
+  return reel[math.random(1, #reel)]
+end
+
+local function evaluateResult(cfg, result, bet)
+  local one = result[1].id
+  local two = result[2].id
+  local three = result[3].id
+
+  if one == two and two == three then
+    local mult = cfg.PAYOUTS[one] or 2
+    return bet * mult, "Triple " .. result[1].label, one == "7"
+  end
+
+  if one == two or one == three then
+    local mult = cfg.PAYOUTS[one] or 2
+    return math.floor(bet * mult / 5), "Two " .. result[1].label, false
+  end
+
+  if two == three then
+    local mult = cfg.PAYOUTS[two] or 2
+    return math.floor(bet * mult / 5), "Two " .. result[2].label, false
+  end
+
+  local cherries = 0
+  for _, symbol in ipairs(result) do
+    if symbol.id == "cherry" then
+      cherries = cherries + 1
+    end
+  end
+  if cherries >= 2 and cfg.ANY_TWO_CHERRY_MULT > 0 then
+    return bet * cfg.ANY_TWO_CHERRY_MULT, "Cherries", false
+  end
+
+  return 0, "No match", false
+end
+
+function M.run(env)
+  local function runInternal()
+    recovery.configure(fs.combine(env.dataDir, "phone_slots_recovery.dat"))
+    recovery.recoverBet(false)
+
+    if not env.ensureAuthenticated("Slots needs wallet approval.") then
+      return
+    end
+
+    local session = env.refreshSession()
+    local liveMode = env.isLiveSession(session)
+
+    if liveMode and not currency.hasEscrow() then
+      env.showMessage("Escrow Required", {
+        "The server does not expose the escrow API needed for live slots.",
+      }, { status = session.status })
+      return
+    end
+
+    local hostBalance = session.hostBalance or currency.getHostBalance()
+    local maxBet = math.floor((hostBalance or 0) * env.slotsConfig.MAX_BET_PERCENT)
+    if env.slotsConfig.HOST_COVERAGE_MULT > 1 then
+      maxBet = math.min(maxBet, math.floor((hostBalance or 0) / (env.slotsConfig.HOST_COVERAGE_MULT - 1)))
+    end
+    maxBet = math.max(0, maxBet)
+
+    if session.selfPlay then
+      env.showMessage("Test Mode", {
+        "This phone is registered to the active player.",
+        "Slots will run in demo mode with no live token movement.",
+      }, { status = session.status })
+    end
+
+    local bet = env.promptBet({
+      title = "Slots Bet",
+      subtitle = liveMode and "Live spin" or "Demo spin",
+      maxBet = maxBet,
+      liveMode = liveMode,
+    })
+
+    if not bet or bet <= 0 then
+      return
+    end
+
+    local escrowId = nil
+    if liveMode then
+      local ok, createdEscrow = currency.escrow(bet, "phone slots bet")
+      if not ok or not createdEscrow then
+        env.showMessage("Bet Failed", {
+          "The slot wager could not be escrowed.",
+        }, { status = env.refreshSession().status })
+        return
+      end
+      escrowId = createdEscrow
+      recovery.saveEscrowBet(bet, {
+        { id = escrowId, amount = bet, tag = "initial" },
+      }, "spin")
+    end
+
+    local reels = {
+      buildReel(env.slotsConfig.SYMBOLS),
+      buildReel(env.slotsConfig.SYMBOLS),
+      buildReel(env.slotsConfig.SYMBOLS),
+    }
+
+    local display = {
+      env.slotsConfig.SYMBOLS[1],
+      env.slotsConfig.SYMBOLS[2],
+      env.slotsConfig.SYMBOLS[3],
+    }
+
+    drawMachine(env, display, "Press Enter to spin the reels.", bet)
+    while true do
+      local _, key = os.pullEvent("key")
+      if key == keys.backspace or key == keys.h then
+        if liveMode and escrowId then
+          currency.cancelEscrow(escrowId, "phone slots cancelled before spin")
+          recovery.clearBet()
+        end
+        return
+      elseif key == keys.enter then
+        break
+      end
+    end
+
+    if env.settings.animations then
+      for tick = 1, env.slotsConfig.REEL_SPIN_TICKS[3] do
+        for reelIndex = 1, 3 do
+          if tick <= env.slotsConfig.REEL_SPIN_TICKS[reelIndex] then
+            display[reelIndex] = spinReel(reels[reelIndex])
+          end
+        end
+        drawMachine(env, display, "Spinning...", bet)
+        os.sleep(env.slotsConfig.SPIN_FRAME_DELAY)
+      end
+    end
+
+    local result = {
+      spinReel(reels[1]),
+      spinReel(reels[2]),
+      spinReel(reels[3]),
+    }
+
+    local winAmount, label, isJackpot = evaluateResult(env.slotsConfig, result, bet)
+    local summary
+
+    if winAmount > 0 then
+      if liveMode and escrowId then
+        local okResolve = currency.resolveEscrow(escrowId, "player", isJackpot and "phone slots jackpot" or "phone slots win")
+        if not okResolve then
+          error("Failed to resolve slot escrow to player")
+        end
+        local okPayout = currency.payout(winAmount, isJackpot and "phone slots jackpot" or "phone slots win")
+        if not okPayout then
+          error("Failed to pay slot winnings")
+        end
+      end
+      summary = "Win: " .. currency.formatTokens(winAmount) .. " (" .. label .. ")"
+      env.playSound(sound.SOUNDS.SUCCESS, isJackpot and 1.0 or 0.6)
+    else
+      if liveMode and escrowId then
+        local okResolve = currency.resolveEscrow(escrowId, "host", "phone slots loss")
+        if not okResolve then
+          error("Failed to resolve slot escrow to host")
+        end
+      end
+      summary = "Loss: no payout"
+      env.playSound(sound.SOUNDS.FAIL, 0.5)
+    end
+
+    recovery.clearBet()
+    drawMachine(env, result, summary, bet)
+    env.showMessage("Slots", {
+      summary,
+      "Result: " .. result[1].label .. " | " .. result[2].label .. " | " .. result[3].label,
+    }, { status = env.refreshSession().status })
+
+    local modeTag = liveMode and "live" or "demo"
+    env.addMessage("Slots", summary .. " (" .. modeTag .. ")", winAmount > 0 and "info" or "warn")
+  end
+
+  local ok, err = pcall(runInternal)
+  if not ok then
+    alert.log("Pocket slots error: " .. tostring(err))
+    recovery.recoverBet(false)
+    env.addMessage("Slots Error", tostring(err), "error")
+    env.showMessage("Slots Error", {
+      tostring(err),
+    }, { status = env.refreshSession().status })
+  end
+end
+
+return M
