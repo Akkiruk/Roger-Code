@@ -16,7 +16,8 @@ local function symbolBox(ui, x, y, width, label, bg, fg)
   ui.writeAt(textX, y + 1, shown, fg or colors.white, bg)
 end
 
-local function drawMachine(env, result, statusText, bet)
+local function drawMachine(env, result, statusText, bet, opts)
+  opts = opts or {}
   local ui = env.ui
   local theme = ui.theme or {}
   local session = env.refreshSession()
@@ -34,21 +35,53 @@ local function drawMachine(env, result, statusText, bet)
   symbolBox(ui, startX + (reelWidth + gap) * 2, 6, reelWidth, result[3].label, theme.chromeBg or colors.gray, colors.white)
 
   if statusText then
-    local lines = ui.wrap(statusText, 22)
+    local lines = {}
+
+    local function appendStatus(entry)
+      if type(entry) == "table" then
+        local wrapped = ui.wrap(entry.text or "", 22)
+        for _, line in ipairs(wrapped) do
+          lines[#lines + 1] = {
+            text = line,
+            color = entry.color or colors.white,
+            bg = entry.bg,
+          }
+        end
+      else
+        local wrapped = ui.wrap(entry or "", 22)
+        for _, line in ipairs(wrapped) do
+          lines[#lines + 1] = {
+            text = line,
+            color = colors.white,
+          }
+        end
+      end
+    end
+
+    if type(statusText) == "table" then
+      for _, entry in ipairs(statusText) do
+        appendStatus(entry)
+      end
+    else
+      appendStatus(statusText)
+    end
+
+    local statusY = opts.statusY or 12
     for i, line in ipairs(lines) do
-      ui.writeAt(2, 12 + i, line, colors.white)
+      ui.writeAt(2, statusY + i - 1, line.text, line.color, line.bg)
     end
   end
 
-  ui.writeAt(2, 17, "Enter spin", colors.lime)
-  ui.writeAt(14, 17, "Back exit", colors.white)
-  if session.selfPlay then
-    ui.footer("Self-pay mode")
-  elseif env.isLiveSession(session) then
-    ui.footer("Live mode")
-  else
-    ui.footer("Wallet locked")
+  if opts.centerBanners then
+    for _, banner in ipairs(opts.centerBanners) do
+      local shown = " " .. tostring(banner.text or "") .. " "
+      ui.center(banner.y or 15, shown, banner.color or colors.white, banner.bg)
+    end
   end
+
+  ui.writeAt(2, 17, opts.primaryAction or "Enter spin", opts.primaryColor or colors.lime)
+  ui.writeAt(14, 17, opts.secondaryAction or "Back exit", opts.secondaryColor or colors.white)
+  ui.footer(opts.footer or (session.selfPlay and "Self-pay mode" or (env.isLiveSession(session) and "Live mode" or "Wallet locked")))
 end
 
 local function buildReel(symbols)
@@ -102,6 +135,75 @@ local function evaluateResult(cfg, result, bet)
   return 0, "No match", false
 end
 
+local function getHostMaxBet(env, session)
+  local hostBalance = session.hostBalance or currency.getHostBalance()
+  local maxBet = math.floor((hostBalance or 0) * env.slotsConfig.MAX_BET_PERCENT)
+  if env.slotsConfig.HOST_COVERAGE_MULT > 1 then
+    maxBet = math.min(maxBet, math.floor((hostBalance or 0) / (env.slotsConfig.HOST_COVERAGE_MULT - 1)))
+  end
+  return math.max(0, maxBet)
+end
+
+local function getReplayCap(env, session)
+  return math.max(0, math.min(getHostMaxBet(env, session), session.playerBalance or 0))
+end
+
+local function promptSlotsBet(env, initial)
+  local session = env.refreshSession()
+  return env.promptBet({
+    title = "Slots Bet",
+    subtitle = session.selfPlay and "Self-pay spin" or "Live spin",
+    maxBet = getHostMaxBet(env, session),
+    liveMode = env.isLiveSession(session),
+    initial = initial,
+  })
+end
+
+local function waitForReplay(env, result, summary, bet, won)
+  local ui = env.ui
+  local theme = ui.theme or {}
+
+  drawMachine(env, result, {
+    {
+      text = summary,
+      color = won and colors.lime or colors.red,
+    },
+    {
+      text = "Result: " .. result[1].label .. " | " .. result[2].label .. " | " .. result[3].label,
+      color = theme.subtitle or colors.lightGray,
+    },
+  }, bet, {
+    centerBanners = {
+      {
+        y = 15,
+        text = "PRESS R TO",
+        color = colors.white,
+        bg = theme.rule or colors.lightBlue,
+      },
+      {
+        y = 16,
+        text = "ROLL AGAIN",
+        color = colors.white,
+        bg = theme.accent or colors.magenta,
+      },
+    },
+    primaryAction = "R replay",
+    primaryColor = theme.accent or colors.magenta,
+    secondaryAction = "Back exit",
+    secondaryColor = colors.white,
+    footer = "R roll again  Back exit",
+  })
+
+  while true do
+    local _, key = os.pullEvent("key")
+    if key == keys.r then
+      return "replay"
+    elseif key == keys.backspace or key == keys.h then
+      return "exit"
+    end
+  end
+end
+
 function M.run(env)
   local function runInternal()
     recovery.configure(fs.combine(env.dataDir, "phone_slots_recovery.dat"))
@@ -112,104 +214,126 @@ function M.run(env)
     end
 
     local session = env.refreshSession()
-    local liveMode = env.isLiveSession(session)
     recovery.setGame("Pocket Slots")
     recovery.setPlayer(session.playerName or "Unknown")
 
-    local hostBalance = session.hostBalance or currency.getHostBalance()
-    local maxBet = math.floor((hostBalance or 0) * env.slotsConfig.MAX_BET_PERCENT)
-    if env.slotsConfig.HOST_COVERAGE_MULT > 1 then
-      maxBet = math.min(maxBet, math.floor((hostBalance or 0) / (env.slotsConfig.HOST_COVERAGE_MULT - 1)))
-    end
-    maxBet = math.max(0, maxBet)
-
-    local bet = env.promptBet({
-      title = "Slots Bet",
-      subtitle = session.selfPlay and "Self-pay spin" or "Live spin",
-      maxBet = maxBet,
-      liveMode = liveMode,
-    })
-
-    if not bet or bet <= 0 then
+    local currentBet = promptSlotsBet(env)
+    if not currentBet or currentBet <= 0 then
       return
     end
-    recovery.saveBet(bet, "spin")
 
-    local reels = {
-      buildReel(env.slotsConfig.SYMBOLS),
-      buildReel(env.slotsConfig.SYMBOLS),
-      buildReel(env.slotsConfig.SYMBOLS),
-    }
+    local instantReplay = false
+    local openingDisplay = nil
 
-    local display = {
-      env.slotsConfig.SYMBOLS[1],
-      env.slotsConfig.SYMBOLS[2],
-      env.slotsConfig.SYMBOLS[3],
-    }
-
-    drawMachine(env, display, "Press Enter to spin the reels.", bet)
-    while true do
-      local _, key = os.pullEvent("key")
-      if key == keys.backspace or key == keys.h then
-        recovery.clearBet()
+    while currentBet and currentBet > 0 do
+      session = env.refreshSession()
+      local liveMode = env.isLiveSession(session)
+      if not liveMode then
+        env.showMessage("Slots Locked", {
+          "This wallet session is no longer approved for another spin.",
+        }, { status = session.status })
         return
-      elseif key == keys.enter then
-        break
       end
-    end
 
-    local result = {
-      spinReel(reels[1]),
-      spinReel(reels[2]),
-      spinReel(reels[3]),
-    }
+      recovery.saveBet(currentBet, "spin")
 
-    if env.settings.animations then
-      for tick = 1, env.slotsConfig.REEL_SPIN_TICKS[3] do
-        for reelIndex = 1, 3 do
-          if tick < env.slotsConfig.REEL_SPIN_TICKS[reelIndex] then
-            display[reelIndex] = spinReel(reels[reelIndex])
-          else
-            display[reelIndex] = result[reelIndex]
+      local reels = {
+        buildReel(env.slotsConfig.SYMBOLS),
+        buildReel(env.slotsConfig.SYMBOLS),
+        buildReel(env.slotsConfig.SYMBOLS),
+      }
+
+      local display = openingDisplay or {
+        env.slotsConfig.SYMBOLS[1],
+        env.slotsConfig.SYMBOLS[2],
+        env.slotsConfig.SYMBOLS[3],
+      }
+      openingDisplay = nil
+
+      if not instantReplay then
+        drawMachine(env, display, "Press Enter to spin the reels.", currentBet)
+        while true do
+          local _, key = os.pullEvent("key")
+          if key == keys.backspace or key == keys.h then
+            recovery.clearBet()
+            return
+          elseif key == keys.enter then
+            break
           end
         end
-        drawMachine(env, display, "Spinning...", bet)
-        os.sleep(env.slotsConfig.SPIN_FRAME_DELAY)
       end
-    end
+      instantReplay = false
 
-    local winAmount, label, isJackpot = evaluateResult(env.slotsConfig, result, bet)
-    local summary
+      local result = {
+        spinReel(reels[1]),
+        spinReel(reels[2]),
+        spinReel(reels[3]),
+      }
 
-    if winAmount > 0 then
-      if liveMode then
-        local okPayout = currency.payout(winAmount, session.selfPlay and "phone slots self-pay win" or (isJackpot and "phone slots jackpot" or "phone slots win"))
-        if not okPayout then
-          error("Failed to pay slot winnings")
+      if env.settings.animations then
+        for tick = 1, env.slotsConfig.REEL_SPIN_TICKS[3] do
+          for reelIndex = 1, 3 do
+            if tick < env.slotsConfig.REEL_SPIN_TICKS[reelIndex] then
+              display[reelIndex] = spinReel(reels[reelIndex])
+            else
+              display[reelIndex] = result[reelIndex]
+            end
+          end
+          drawMachine(env, display, "Spinning...", currentBet)
+          os.sleep(env.slotsConfig.SPIN_FRAME_DELAY)
         end
       end
-      summary = "Win: " .. currency.formatTokens(winAmount) .. " (" .. label .. ")"
-      env.playSound(sound.SOUNDS.SUCCESS, isJackpot and 1.0 or 0.6)
-    else
-      if liveMode then
-        local okCharge = currency.charge(bet, session.selfPlay and "phone slots self-pay loss" or "phone slots loss")
-        if not okCharge then
-          error("Failed to charge slot loss")
+
+      local winAmount, label, isJackpot = evaluateResult(env.slotsConfig, result, currentBet)
+      local summary
+
+      if winAmount > 0 then
+        if liveMode then
+          local okPayout = currency.payout(winAmount, session.selfPlay and "phone slots self-pay win" or (isJackpot and "phone slots jackpot" or "phone slots win"))
+          if not okPayout then
+            error("Failed to pay slot winnings")
+          end
         end
+        summary = "Win: " .. currency.formatTokens(winAmount) .. " (" .. label .. ")"
+        env.playSound(sound.SOUNDS.SUCCESS, isJackpot and 1.0 or 0.6)
+      else
+        if liveMode then
+          local okCharge = currency.charge(currentBet, session.selfPlay and "phone slots self-pay loss" or "phone slots loss")
+          if not okCharge then
+            error("Failed to charge slot loss")
+          end
+        end
+        summary = "Loss: no payout"
+        env.playSound(sound.SOUNDS.FAIL, 0.5)
       end
-      summary = "Loss: no payout"
-      env.playSound(sound.SOUNDS.FAIL, 0.5)
+
+      recovery.clearBet()
+
+      local modeTag = session.selfPlay and "self-pay" or "live"
+      env.addMessage("Slots", summary .. " (" .. modeTag .. ")", winAmount > 0 and "info" or "warn")
+
+      if waitForReplay(env, result, summary, currentBet, winAmount > 0) ~= "replay" then
+        return
+      end
+
+      local replaySession = env.refreshSession()
+      local replayCap = getReplayCap(env, replaySession)
+      if replayCap >= currentBet then
+        instantReplay = true
+        openingDisplay = result
+      elseif replayCap > 0 then
+        env.showMessage("Replay Adjusted", {
+          "That bet is no longer available.",
+          "Pick a new bet to keep spinning.",
+        }, { status = replaySession.status })
+        currentBet = promptSlotsBet(env, replayCap)
+      else
+        env.showMessage("Replay Locked", {
+          "There is not enough balance for another spin right now.",
+        }, { status = replaySession.status })
+        return
+      end
     end
-
-    recovery.clearBet()
-    drawMachine(env, result, summary, bet)
-    env.showMessage("Slots", {
-      summary,
-      "Result: " .. result[1].label .. " | " .. result[2].label .. " | " .. result[3].label,
-    }, { status = env.refreshSession().status })
-
-    local modeTag = session.selfPlay and "self-pay" or "live"
-    env.addMessage("Slots", summary .. " (" .. modeTag .. ")", winAmount > 0 and "info" or "warn")
   end
 
   local ok, err = pcall(runInternal)
