@@ -59,6 +59,86 @@ local function fitTextToWidth(text, maxWidth)
   return ""
 end
 
+local function splitWordToWidth(word, maxWidth)
+  local parts = {}
+  local startIndex = 1
+
+  while startIndex <= #word do
+    local best = startIndex
+    local length = startIndex
+    while length <= #word do
+      local candidate = word:sub(startIndex, length)
+      if ui.getTextSize(candidate) <= maxWidth then
+        best = length
+        length = length + 1
+      else
+        break
+      end
+    end
+
+    if best < startIndex then
+      best = startIndex
+    end
+
+    parts[#parts + 1] = word:sub(startIndex, best)
+    startIndex = best + 1
+  end
+
+  return parts
+end
+
+local function wrapTextToWidth(text, maxWidth, maxLines)
+  text = tostring(text or "")
+  if maxWidth <= 0 then
+    return { "" }
+  end
+
+  local words = {}
+  for word in text:gmatch("%S+") do
+    if ui.getTextSize(word) <= maxWidth then
+      words[#words + 1] = word
+    else
+      local pieces = splitWordToWidth(word, maxWidth)
+      for _, piece in ipairs(pieces) do
+        words[#words + 1] = piece
+      end
+    end
+  end
+
+  if #words == 0 then
+    return { "" }
+  end
+
+  local lines = {}
+  local current = ""
+  for _, word in ipairs(words) do
+    local candidate = current == "" and word or (current .. " " .. word)
+    if current == "" or ui.getTextSize(candidate) <= maxWidth then
+      current = candidate
+    else
+      lines[#lines + 1] = current
+      current = word
+    end
+  end
+
+  if current ~= "" then
+    lines[#lines + 1] = current
+  end
+
+  if maxLines and #lines > maxLines then
+    local limited = {}
+    local index = 1
+    while index <= maxLines do
+      limited[index] = lines[index]
+      index = index + 1
+    end
+    limited[maxLines] = fitTextToWidth(limited[maxLines], maxWidth)
+    return limited
+  end
+
+  return lines
+end
+
 local function drawCenteredText(screen, font, rect, text, color, yOffset)
   local inset = rect.w > 4 and 2 or 0
   text = fitTextToWidth(text, max(1, rect.w - inset))
@@ -69,6 +149,24 @@ local function drawCenteredText(screen, font, rect, text, color, yOffset)
   local textX = rect.x + floor((rect.w - width) / 2)
   local textY = rect.y + floor((rect.h - 7) / 2) + (yOffset or 0)
   ui.safeDrawText(screen, text, font, textX, textY, color)
+end
+
+local function drawWrappedCenteredText(screen, font, rect, text, color, maxLines, yOffset)
+  local inset = rect.w > 4 and 2 or 0
+  local maxWidth = max(1, rect.w - inset)
+  local lines = wrapTextToWidth(text, maxWidth, maxLines)
+  local _, fontHeight = ui.getTextSize("A")
+  fontHeight = max(1, fontHeight or 7)
+  local lineAdvance = fontHeight
+  local totalHeight = fontHeight + ((#lines - 1) * lineAdvance)
+  local textY = rect.y + floor((rect.h - totalHeight) / 2) + (yOffset or 0)
+
+  for _, line in ipairs(lines) do
+    local width = ui.getTextSize(line)
+    local textX = rect.x + floor((rect.w - width) / 2)
+    ui.safeDrawText(screen, line, font, textX, textY, color)
+    textY = textY + lineAdvance
+  end
 end
 
 local function drawRightText(screen, font, text, rightX, y, color, leftX)
@@ -385,7 +483,18 @@ local function drawPrimaryRegion(screen, font, region, fill, textColor, hasBet, 
     screen:fillRect(region.x - 1, region.y - 1, region.w + 2, region.h + 2, colors.yellow)
     screen:fillRect(region.x, region.y, region.w, region.h, fill)
   end
-  drawCenteredText(screen, font, region, region.displayText, textColor)
+  local maxLines = 1
+  local _, fontHeight = ui.getTextSize("A")
+  fontHeight = max(1, fontHeight or 7)
+  if region.drawStyle == "outside" and ui.getTextSize(region.displayText or "") > max(1, region.w - 2) and region.h >= (fontHeight * 2) then
+    maxLines = 2
+  end
+
+  if maxLines > 1 then
+    drawWrappedCenteredText(screen, font, region, region.displayText, textColor, maxLines)
+  else
+    drawCenteredText(screen, font, region, region.displayText, textColor)
+  end
 end
 
 local function drawSecondaryRegion(screen, font, region, fill, textColor, hasBet, isHighlighted, compact)

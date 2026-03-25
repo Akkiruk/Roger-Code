@@ -80,9 +80,9 @@ local function getShortOutsideText(key)
   return nil
 end
 
-local function getTableContentHeight(cellHeight, rowGap)
+local function getTableContentHeight(cellHeight, rowGap, outsideHeight)
   local zeroHeight = cellHeight + 1
-  local outsideHeight = cellHeight + 1
+  outsideHeight = outsideHeight or (cellHeight + 1)
   return zeroHeight
     + 1
     + (12 * cellHeight)
@@ -139,13 +139,9 @@ local function build(width, height, chipCount, scale)
   local colGap = layout.compact and 1 or scale.smallGap
   local rowGap = layout.compact and 1 or scale.smallGap
   local streetW = max(4, scale:scaledX(layout.compact and 4 or 6, 4, 7))
-  local maxCellW = max(9, scale:scaledX(layout.compact and 10 or 15, 9, 18))
-  local desiredBoardW = (maxCellW * 3) + (colGap * 2) + 1 + streetW
-  local desiredRightW = desiredBoardW + (layout.compact and (scale.sectionGap * 2) or (scale.sectionGap * 3))
-  local minRightW = layout.compact and 38 or 52
+  local maxCellW = max(9, scale:scaledX(layout.compact and 12 or 18, 9, layout.compact and 16 or 28))
   local availableRightW = rightW
-  rightW = min(availableRightW, max(minRightW, desiredRightW))
-  rightX = rightX + max(0, floor((availableRightW - rightW) / 2))
+  rightW = availableRightW
 
   layout.panel = { x = panelX, y = panelY, w = panelW, h = panelH }
   layout.track = {
@@ -222,9 +218,14 @@ local function build(width, height, chipCount, scale)
 
   local zeroH = cellH + 1
   local outsideH = cellH + 1
+  if not layout.compact then
+    local baseContentH = getTableContentHeight(cellH, rowGap, outsideH)
+    local extraOutsideHeight = floor(max(0, (feltH - 4) - baseContentH) / 4)
+    outsideH = min(14, outsideH + extraOutsideHeight)
+  end
   local zeroW = (cellW * 3) + (colGap * 2)
   local totalContentW = zeroW + 1 + streetW
-  local contentH = getTableContentHeight(cellH, rowGap)
+  local contentH = getTableContentHeight(cellH, rowGap, outsideH)
   local contentX = rightX + max(1, floor((rightW - totalContentW) / 2))
   local contentY = feltY + max(1, floor((feltH - contentH) / 2))
   local streetX = contentX + zeroW + 1
