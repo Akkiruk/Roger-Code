@@ -136,6 +136,17 @@ local function build(width, height, chipCount)
   local feltY = trackY + trackH + 2
   local feltH = height - feltY - layout.margin
 
+  local colGap = 1
+  local rowGap = 1
+  local streetW = layout.compact and 4 or 6
+  local maxCellW = layout.compact and 10 or 15
+  local desiredBoardW = (maxCellW * 3) + (colGap * 2) + 1 + streetW
+  local desiredRightW = desiredBoardW + (layout.compact and 4 or 10)
+  local minRightW = layout.compact and 38 or 52
+  local availableRightW = rightW
+  rightW = max(minRightW, min(availableRightW, desiredRightW))
+  rightX = rightX + max(0, floor((availableRightW - rightW) / 2))
+
   layout.panel = { x = panelX, y = panelY, w = panelW, h = panelH }
   layout.track = {
     x = rightX,
@@ -196,11 +207,7 @@ local function build(width, height, chipCount)
     layout.slipBox.h = 0
   end
 
-  local colGap = 1
-  local rowGap = 1
-  local streetW = layout.compact and 4 or 6
   local gridBodyW = rightW - 6
-  local maxCellW = layout.compact and 10 or 13
   local cellW = max(8, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   if layout.compact then
     cellW = max(9, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
