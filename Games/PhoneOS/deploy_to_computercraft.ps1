@@ -22,7 +22,9 @@ $filesToCopy = @(
     @{ Source = Join-Path $repoRoot 'Games\lib\peripherals.lua'; Destination = Join-Path $TargetDir 'lib\peripherals.lua' },
     @{ Source = Join-Path $repoRoot 'Games\lib\sound.lua'; Destination = Join-Path $TargetDir 'lib\sound.lua' },
     @{ Source = Join-Path $repoRoot 'Games\Blackjack\blackjack_config.lua'; Destination = Join-Path $TargetDir 'Blackjack\blackjack_config.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\Slots\slots_config.lua'; Destination = Join-Path $TargetDir 'Slots\slots_config.lua' }
+    @{ Source = Join-Path $repoRoot 'Games\Blackjack\blackjack_config.lua'; Destination = Join-Path $TargetDir 'blackjack_config.lua' },
+    @{ Source = Join-Path $repoRoot 'Games\Slots\slots_config.lua'; Destination = Join-Path $TargetDir 'Slots\slots_config.lua' },
+    @{ Source = Join-Path $repoRoot 'Games\Slots\slots_config.lua'; Destination = Join-Path $TargetDir 'slots_config.lua' }
 )
 
 New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null

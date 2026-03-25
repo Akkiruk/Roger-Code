@@ -47,12 +47,14 @@ end
 local blackjackConfig = loadConfig("blackjack", {
   PARENT ~= "" and fs.combine(PARENT, "Blackjack/blackjack_config.lua") or nil,
   ROOT ~= "" and fs.combine(ROOT, "Blackjack/blackjack_config.lua") or nil,
+  "Blackjack/blackjack_config.lua",
   ROOT ~= "" and fs.combine(ROOT, "blackjack_config.lua") or "blackjack_config.lua",
 })
 
 local slotsConfig = loadConfig("slots", {
   PARENT ~= "" and fs.combine(PARENT, "Slots/slots_config.lua") or nil,
   ROOT ~= "" and fs.combine(ROOT, "Slots/slots_config.lua") or nil,
+  "Slots/slots_config.lua",
   ROOT ~= "" and fs.combine(ROOT, "slots_config.lua") or "slots_config.lua",
 })
 
