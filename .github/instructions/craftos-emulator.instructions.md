@@ -2,9 +2,21 @@
 applyTo: 'Games/**'
 ---
 
-# CraftOS-PC Emulator Integration
+# Legacy CraftOS-PC Notes
 
-This workspace has a CraftOS-PC emulator fully integrated for testing ComputerCraft code.
+The active workflow now targets the real PrismLauncher runtime under `saves/*/computercraft/computer/`.
+Use the emulator notes below only when you are explicitly doing emulator-specific work.
+
+## Live Runtime First
+
+- Preferred deploy path: `powershell -ExecutionPolicy Bypass -File "scripts/sync-roger-code.ps1" -Game <Name>`
+- Direct deploy path: `powershell -ExecutionPolicy Bypass -File "scripts/deploy-to-world.ps1" -Game <Name>`
+- Discover installed computers: `powershell -ExecutionPolicy Bypass -File "scripts/deploy-to-world.ps1" -ListTargets`
+- The legacy `.vscode/deploy-to-emulator.ps1` entry point now forwards to the live PrismLauncher deploy flow.
+
+## CraftOS-PC Reference
+
+This section remains as historical reference for CraftOS-PC testing.
 
 ## Architecture
 
@@ -56,7 +68,7 @@ computer/0/
 - **Read Emulator Logs** — Shows tail of all log files
 
 ### From AI / Terminal
-Deploy files:
+Deploy files through the legacy wrapper:
 ```powershell
 powershell -ExecutionPolicy Bypass -File ".vscode/deploy-to-emulator.ps1"
 ```

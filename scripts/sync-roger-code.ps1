@@ -1,8 +1,11 @@
 param(
     [string]$Game,
-    [int]$ComputerId = 0,
-    [switch]$NoMocks,
-    [switch]$CleanEmulator,
+    [int[]]$ComputerId,
+    [string]$SaveName,
+    [string]$MinecraftDir,
+    [switch]$ResetConfig,
+    [switch]$AllInstalled,
+    [switch]$ListTargets,
     [switch]$SkipManifest,
     [switch]$DryRun
 )
@@ -11,7 +14,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $manifestScript = Join-Path $PSScriptRoot "regenerate-manifest.ps1"
-$deployScript = Join-Path $repoRoot ".vscode\deploy-to-emulator.ps1"
+$deployScript = Join-Path $PSScriptRoot "deploy-to-world.ps1"
 
 if (-not $SkipManifest) {
     if ($DryRun) {
@@ -21,46 +24,55 @@ if (-not $SkipManifest) {
     }
 }
 
-if ($Game -or $CleanEmulator) {
-    if (-not (Test-Path $deployScript)) {
-        throw "Emulator deploy script not found: $deployScript"
-    }
+if (-not (Test-Path $deployScript)) {
+    throw "World deploy script not found: $deployScript"
+}
 
-    $deployArgs = @{}
-    if ($Game) {
-        $deployArgs.Game = $Game
-    }
-    if ($ComputerId -ne 0) {
-        $deployArgs.ComputerId = $ComputerId
-    }
-    if ($NoMocks) {
-        $deployArgs.NoMocks = $true
-    }
-    if ($CleanEmulator) {
-        $deployArgs.Clean = $true
-    }
+$deployArgs = @{}
+if ($Game) {
+    $deployArgs.Game = $Game
+}
+if ($ComputerId -and $ComputerId.Count -gt 0) {
+    $deployArgs.ComputerId = $ComputerId
+}
+if ($SaveName) {
+    $deployArgs.SaveName = $SaveName
+}
+if ($MinecraftDir) {
+    $deployArgs.MinecraftDir = $MinecraftDir
+}
+if ($ResetConfig) {
+    $deployArgs.ResetConfig = $true
+}
+if ($AllInstalled) {
+    $deployArgs.AllInstalled = $true
+}
+if ($ListTargets) {
+    $deployArgs.ListTargets = $true
+}
+if ($DryRun) {
+    $deployArgs.DryRun = $true
+}
 
-    if ($DryRun) {
-        $argText = if ($deployArgs.Count -gt 0) {
-            ($deployArgs.GetEnumerator() | Sort-Object Name | ForEach-Object {
-                if ($_.Value -is [bool]) {
-                    "-$($_.Key)"
-                } else {
-                    "-$($_.Key) $($_.Value)"
-                }
-            }) -join " "
-        } else {
-            "<none>"
-        }
-        Write-Host "[dry-run] Would run deploy-to-emulator.ps1 $argText" -ForegroundColor Yellow
+if ($DryRun) {
+    $argText = if ($deployArgs.Count -gt 0) {
+        ($deployArgs.GetEnumerator() | Sort-Object Name | ForEach-Object {
+            if ($_.Value -is [System.Array]) {
+                "-$($_.Key) $($_.Value -join ',')"
+            } elseif ($_.Value -is [bool]) {
+                "-$($_.Key)"
+            } else {
+                "-$($_.Key) $($_.Value)"
+            }
+        }) -join " "
     } else {
-        & $deployScript @deployArgs
-        if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-        }
+        "<none>"
     }
-} elseif ($DryRun) {
-    Write-Host "[dry-run] No emulator action requested. Pass -Game <Name> to deploy a program." -ForegroundColor DarkYellow
-} else {
-    Write-Host "Manifest sync complete. Pass -Game <Name> to deploy to the CraftOS-PC emulator." -ForegroundColor Green
+    Write-Host "[dry-run] Would run deploy-to-world.ps1 $argText" -ForegroundColor Yellow
+    return
+}
+
+& $deployScript @deployArgs
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
 }
