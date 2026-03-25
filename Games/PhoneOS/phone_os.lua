@@ -934,6 +934,21 @@ local function runGame(appModule)
   return "home"
 end
 
+local function recoverPendingGames()
+  local env = buildAppEnv()
+  local ok, result = pcall(blackjackApp.recoverPending, env)
+  if not ok then
+    alert.log("Pocket recovery error: " .. tostring(result))
+    addMessage("Recovery Error", tostring(result), "error")
+    ui.showMessage("Recovery Error", {
+      tostring(result),
+    }, { status = refreshSession().status })
+    return false
+  end
+
+  return result ~= false
+end
+
 local function showHome()
   local selected = 1
 
@@ -988,7 +1003,11 @@ local current = "home"
 
 while current do
   if current == "home" then
-    current = showHome()
+    if recoverPendingGames() then
+      current = showHome()
+    else
+      current = nil
+    end
   elseif current == "wallet" then
     current = showWallet()
   elseif current == "pairing" then
