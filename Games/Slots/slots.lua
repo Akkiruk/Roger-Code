@@ -557,13 +557,13 @@ end
 -----------------------------------------------------
 -- One round of slots
 -----------------------------------------------------
-local function slotsRound(currentBet)
+local function slotsRound(currentBet, immediateSpin)
   recovery.saveBet(currentBet)
 
   -- Show idle machine then spin
   local idleResult = { SYMBOLS[random(1, #SYMBOLS)], SYMBOLS[random(1, #SYMBOLS)], SYMBOLS[random(1, #SYMBOLS)] }
 
-  if not AUTO_PLAY then
+  if not AUTO_PLAY and not immediateSpin then
     drawMachine(idleResult, nil, {
       text = ">>> Touch to SPIN! <<<",
       color = colors.lime,
@@ -664,12 +664,14 @@ local function main()
       local selectedBet = betSelection()
       if selectedBet and selectedBet > 0 then
         local currentBet = selectedBet
+        local immediateSpin = false
         repeat
           updateAutoPlay()
           if AUTO_PLAY then
             break
           end
-        until not slotsRound(currentBet)
+          immediateSpin = slotsRound(currentBet, immediateSpin)
+        until not immediateSpin
       end
     end
 
