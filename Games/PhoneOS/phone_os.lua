@@ -27,21 +27,58 @@ local alert    = require("lib.alert")
 local blackjackApp = require("phoneos.blackjack")
 local slotsApp     = require("phoneos.slots")
 
-local function loadConfig(label, candidates)
+local function loadConfig(label, candidates, fallbackModule)
+  local checked = {}
+  local seen = {}
+
+  local function tryPath(path)
+    if not path or path == "" or seen[path] then
+      return nil
+    end
+
+    seen[path] = true
+    checked[#checked + 1] = path
+
+    if not fs.exists(path) then
+      return nil
+    end
+
+    local ok, value = pcall(dofile, path)
+    if not ok then
+      error("Failed to load " .. label .. " config from " .. path .. ": " .. tostring(value))
+    end
+    if type(value) == "table" then
+      return value
+    end
+    error("Invalid " .. label .. " config at " .. path)
+  end
+
   for _, path in ipairs(candidates) do
-    if path and path ~= "" and fs.exists(path) then
-      local ok, value = pcall(dofile, path)
-      if not ok then
-        error("Failed to load " .. label .. " config from " .. path .. ": " .. tostring(value))
+    local value = tryPath(path)
+    if type(value) == "table" then
+      return value
+    end
+
+    if path and path ~= "" and shell and type(shell.resolve) == "function" then
+      local ok, resolved = pcall(shell.resolve, path)
+      if ok then
+        value = tryPath(resolved)
+        if type(value) == "table" then
+          return value
+        end
       end
-      if type(value) == "table" then
-        return value
-      end
-      error("Invalid " .. label .. " config at " .. path)
     end
   end
 
-  error("Missing " .. label .. " config.")
+  if fallbackModule and fallbackModule ~= "" then
+    local ok, value = pcall(require, fallbackModule)
+    if ok and type(value) == "table" then
+      return value
+    end
+    error("Missing " .. label .. " config. Fallback " .. fallbackModule .. " failed: " .. tostring(value))
+  end
+
+  error("Missing " .. label .. " config. Checked: " .. table.concat(checked, ", "))
 end
 
 local blackjackConfig = loadConfig("blackjack", {
@@ -49,14 +86,14 @@ local blackjackConfig = loadConfig("blackjack", {
   ROOT ~= "" and fs.combine(ROOT, "Blackjack/blackjack_config.lua") or nil,
   "Blackjack/blackjack_config.lua",
   ROOT ~= "" and fs.combine(ROOT, "blackjack_config.lua") or "blackjack_config.lua",
-})
+}, "phoneos.blackjack_defaults")
 
 local slotsConfig = loadConfig("slots", {
   PARENT ~= "" and fs.combine(PARENT, "Slots/slots_config.lua") or nil,
   ROOT ~= "" and fs.combine(ROOT, "Slots/slots_config.lua") or nil,
   "Slots/slots_config.lua",
   ROOT ~= "" and fs.combine(ROOT, "slots_config.lua") or "slots_config.lua",
-})
+}, "phoneos.slots_defaults")
 
 local DATA_DIR       = fs.combine(ROOT, "phone_data")
 local SETTINGS_FILE  = fs.combine(DATA_DIR, "settings.dat")

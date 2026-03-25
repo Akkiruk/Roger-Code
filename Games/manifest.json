@@ -96,15 +96,17 @@
                               },
                      "phone_os":  {
                                       "name":  "Pocket Casino OS",
-                                      "version":  "1.0.0",
-                                      "content_hash":  "318b04e7a99ca55b",
+                                      "version":  "1.0.2",
+                                      "content_hash":  "9729eceedc7268cc",
                                       "description":  "Pocket casino shell for ComputerCraft pocket computers.",
                                       "source_dir":  "Games/PhoneOS",
                                       "uses_lib":  true,
                                       "files":  [
                                                     "phone_os.lua",
                                                     "phoneos/blackjack.lua",
+                                                    "phoneos/blackjack_defaults.lua",
                                                     "phoneos/slots.lua",
+                                                    "phoneos/slots_defaults.lua",
                                                     "phoneos/storage.lua",
                                                     "phoneos/ui.lua",
                                                     "startup.lua"
