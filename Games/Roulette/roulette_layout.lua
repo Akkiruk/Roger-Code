@@ -114,11 +114,11 @@ local function build(width, height, chipCount)
     layout.header.h = 15
   end
 
-  local panelWidth = max(24, min(36, floor(width * 0.30)))
+  local panelWidth = max(30, min(42, floor(width * 0.34)))
   if layout.compact then
     panelWidth = max(18, min(22, floor(width * 0.20)))
   elseif (width - panelWidth) < 54 then
-    panelWidth = max(22, width - 54)
+    panelWidth = max(28, width - 54)
   end
 
   local panelX = layout.margin
@@ -136,8 +136,8 @@ local function build(width, height, chipCount)
   local feltY = trackY + trackH + 2
   local feltH = height - feltY - layout.margin
 
-  local colGap = 1
-  local rowGap = 1
+  local colGap = layout.compact and 1 or 2
+  local rowGap = layout.compact and 1 or 2
   local streetW = layout.compact and 4 or 6
   local maxCellW = layout.compact and 10 or 15
   local desiredBoardW = (maxCellW * 3) + (colGap * 2) + 1 + streetW
@@ -157,9 +157,9 @@ local function build(width, height, chipCount)
   }
   layout.felt = { x = rightX, y = feltY, w = rightW, h = feltH }
 
-  local summaryH = layout.compact and 16 or 24
-  local buttonGap = 1
-  local buttonH = 7
+  local summaryH = layout.compact and 16 or 28
+  local buttonGap = layout.compact and 1 or 2
+  local buttonH = layout.compact and 7 or 9
   local panelInnerX = panelX + 1
   local panelInnerW = panelW - 2
   local gridButtonW = floor((panelInnerW - buttonGap) / 2)
