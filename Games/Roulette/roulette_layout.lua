@@ -177,7 +177,7 @@ local function build(width, height, chipCount)
     makeActionButton("spin", "SPIN", panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
     makeActionButton("undo", "UNDO", panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
     makeActionButton("clear", layout.compact and "CLR" or "CLEAR", panelInnerX, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.red),
-    makeActionButton("rebet", layout.compact and "AGN" or "AGAIN", panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
+    makeActionButton("rebet", layout.compact and "AGAIN" or "PLAY AGAIN", panelInnerX + gridButtonW + buttonGap, actionsStartY + buttonH + buttonGap, gridButtonW, buttonH, colors.cyan),
     makeActionButton("double", "DOUBLE", panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.magenta),
     makeActionButton("quit", layout.compact and "OUT" or "QUIT", panelInnerX + gridButtonW + buttonGap, actionsStartY + (buttonH + buttonGap) * 2, gridButtonW, buttonH, colors.gray),
   }

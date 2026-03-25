@@ -528,7 +528,7 @@ local function handleActionButton(actionKey)
   if actionKey == "rebet" then
     if #state.bets > 0 then
       sound.play(sound.SOUNDS.ERROR, 0.4)
-      setStatus("Clear the table before AGAIN.", "warning")
+      setStatus("Clear the table before PLAY AGAIN.", "warning")
       return nil
     end
     if #state.lastResolved == 0 then
