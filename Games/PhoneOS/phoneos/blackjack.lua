@@ -97,6 +97,7 @@ end
 
 local function drawTable(env, ctx, revealDealer, statusLines, actionLines)
   local ui = env.ui
+  local theme = ui.theme or {}
   local session = env.refreshSession()
   local hand = ctx.hands[ctx.currentHandIdx or 1]
   local handTotal, handSoft = cards.blackjackValue(hand.cards)
@@ -106,7 +107,7 @@ local function drawTable(env, ctx, revealDealer, statusLines, actionLines)
   ui.clear(colors.black)
   ui.header("Blackjack", "Bet " .. currency.formatTokens(currentWager(ctx)), session.status)
 
-  ui.writeAt(2, 5, "Dealer", colors.yellow)
+  ui.writeAt(2, 5, "Dealer", theme.accent or colors.magenta)
   local dealerText
   if revealDealer then
     dealerText = handLabel(ctx.dealerHand)
@@ -115,19 +116,19 @@ local function drawTable(env, ctx, revealDealer, statusLines, actionLines)
   end
   drawWrapped(ui, 2, 6, 22, dealerText, colors.white)
   ui.writeAt(2, 7, "Total: " .. (revealDealer and tostring(dealerTotal) or "?") ..
-    ((revealDealer and dealerSoft) and " soft" or ""), colors.lightGray)
+    ((revealDealer and dealerSoft) and " soft" or ""), theme.subtitle or colors.lightGray)
 
   if ctx.insuranceBet and ctx.insuranceBet > 0 then
-    ui.writeAt(2, 8, "Insurance: " .. currency.formatTokens(ctx.insuranceBet), colors.cyan)
+    ui.writeAt(2, 8, "Insurance: " .. currency.formatTokens(ctx.insuranceBet), theme.rule or colors.lightBlue)
   end
 
-  ui.writeAt(2, 10, "Hand " .. tostring(ctx.currentHandIdx or 1) .. "/" .. tostring(#ctx.hands), colors.yellow)
+  ui.writeAt(2, 10, "Hand " .. tostring(ctx.currentHandIdx or 1) .. "/" .. tostring(#ctx.hands), theme.accent or colors.magenta)
   drawWrapped(ui, 2, 11, 22, handLabel(hand.cards), colors.white)
-  ui.writeAt(2, 12, "Total: " .. tostring(handTotal) .. (handSoft and " soft" or ""), colors.lightGray)
+  ui.writeAt(2, 12, "Total: " .. tostring(handTotal) .. (handSoft and " soft" or ""), theme.subtitle or colors.lightGray)
 
   local otherSummary = summaryForOtherHands(ctx)
   if otherSummary then
-    drawWrapped(ui, 2, 13, 22, otherSummary, colors.lightGray)
+    drawWrapped(ui, 2, 13, 22, otherSummary, theme.subtitle or colors.lightGray)
   end
 
   local statusY = otherSummary and 15 or 14

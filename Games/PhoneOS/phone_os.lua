@@ -24,6 +24,8 @@ local currency = require("lib.currency")
 local sound    = require("lib.sound")
 local alert    = require("lib.alert")
 
+local theme = ui.theme or {}
+
 local blackjackApp = require("phoneos.blackjack")
 local slotsApp     = require("phoneos.slots")
 
@@ -398,9 +400,9 @@ local function ensureAuthenticated(reason)
     ui.header("Waiting For Approval", shorten(reason or "Approve this phone in chat.", 26), session.status)
     ui.writeAt(2, 5, "Player: " .. tostring(session.playerName or "Unknown"), colors.white)
     ui.writeAt(2, 7, "Computer #" .. tostring(session.computerId), colors.white)
-    ui.writeAt(2, 9, "Check chat and click", colors.lightGray)
-    ui.writeAt(2, 10, "[APPROVE].", colors.yellow)
-    ui.writeAt(2, 12, "Status: " .. spinner[frame], colors.cyan)
+    ui.writeAt(2, 9, "Check chat and click", theme.subtitle or colors.lightGray)
+    ui.writeAt(2, 10, "[APPROVE].", theme.accent or colors.magenta)
+    ui.writeAt(2, 12, "Status: " .. spinner[frame], theme.rule or colors.lightBlue)
     ui.footer("Backspace cancel")
     frame = frame % #spinner + 1
 
@@ -461,7 +463,7 @@ local function promptBet(opts)
     ui.header(opts.title or "Place Bet", opts.subtitle or "", session.status)
     ui.writeAt(2, 5, "Balance: " .. (session.playerBalance and currency.formatTokens(session.playerBalance) or "Locked"), colors.white)
     ui.writeAt(2, 6, "Max Bet: " .. currency.formatTokens(cap), colors.white)
-    ui.writeAt(2, 8, "Current: " .. currency.formatTokens(bet), colors.yellow)
+    ui.writeAt(2, 8, "Current: " .. currency.formatTokens(bet), theme.accent or colors.magenta)
     ui.writeAt(2, 10, "1 +" .. increments[1], colors.white)
     ui.writeAt(14, 10, "2 +" .. increments[2], colors.white)
     ui.writeAt(2, 11, "3 +" .. increments[3], colors.white)
@@ -516,9 +518,9 @@ local function bootSplash()
 
   ui.clear(colors.black)
   ui.header("Pocket Casino", "Vault Link OS", refreshSession().status)
-  ui.center(8, "ADVANCED POCKET", colors.yellow)
-  ui.center(10, "BLACKJACK", colors.lightBlue)
-  ui.center(11, "SLOTS", colors.magenta)
+  ui.center(8, "ADVANCED POCKET", theme.subtitle or colors.lightGray)
+  ui.center(10, "BLACKJACK", theme.rule or colors.lightBlue)
+  ui.center(11, "SLOTS", theme.accent or colors.magenta)
   ui.footer("Booting...")
   playSound(sound.SOUNDS.BOOT, 0.4)
   os.sleep(0.6)
@@ -532,7 +534,7 @@ local function showWallet()
     ui.header("Wallet", "Computer #" .. tostring(session.computerId), session.status)
     ui.writeAt(2, 5, "Player: " .. tostring(session.playerName or "Unknown"), colors.white)
     ui.writeAt(2, 6, "Host:   " .. tostring(session.hostName or "Unregistered"), colors.white)
-    ui.writeAt(2, 7, "Mode:   " .. session.modeLabel, session.selfPlay and colors.orange or colors.lime)
+    ui.writeAt(2, 7, "Mode:   " .. session.modeLabel, session.selfPlay and (theme.accent or colors.magenta) or colors.lime)
     ui.writeAt(2, 8, "Auth:   " .. (session.authenticated and "Approved" or "Required"), session.authenticated and colors.lime or colors.orange)
 
     local playerBal = session.playerBalance and currency.formatTokens(session.playerBalance) or "Locked"
@@ -571,9 +573,9 @@ local function showPairing()
     ui.writeAt(2, 5, "Player: " .. tostring(session.playerName or "Unknown"), colors.white)
     ui.writeAt(2, 6, "Host:   " .. tostring(session.hostName or "Pending"), colors.white)
     ui.writeAt(2, 7, "Device: #" .. tostring(session.computerId), colors.white)
-    ui.writeAt(2, 9, "House phones run", colors.lightGray)
-    ui.writeAt(2, 10, "live. Owners self-pay.", colors.lightGray)
-    ui.writeAt(2, 12, "Current mode: " .. string.upper(session.modeLabel), session.selfPlay and colors.orange or colors.lime)
+    ui.writeAt(2, 9, "House phones run", theme.subtitle or colors.lightGray)
+    ui.writeAt(2, 10, "live. Owners self-pay.", theme.subtitle or colors.lightGray)
+    ui.writeAt(2, 12, "Current mode: " .. string.upper(session.modeLabel), session.selfPlay and (theme.accent or colors.magenta) or colors.lime)
     ui.writeAt(2, 13, "Last host: " .. tostring(state.pairing.lastHostName or "Unknown"), colors.white)
     ui.writeAt(2, 14, "Last link: " .. tostring(state.pairing.lastLinkedAt or "Never"), colors.white)
 
@@ -595,7 +597,9 @@ local function showPairing()
   end
 end
 
-local function toArray(tbl)
+local function toArray(tbl, opts)
+  opts = opts or {}
+
   if type(tbl) ~= "table" then
     return {}
   end
@@ -606,7 +610,22 @@ local function toArray(tbl)
       out[#out + 1] = { index = k, value = v }
     end
   end
-  table.sort(out, function(a, b) return a.index < b.index end)
+  table.sort(out, function(a, b)
+    local aTime = a.value and a.value.timestamp
+    local bTime = b.value and b.value.timestamp
+
+    if aTime and bTime and aTime ~= bTime then
+      if opts.newestFirst then
+        return tostring(aTime) > tostring(bTime)
+      end
+      return tostring(aTime) < tostring(bTime)
+    end
+
+    if opts.newestFirst then
+      return a.index > b.index
+    end
+    return a.index < b.index
+  end)
 
   local final = {}
   for _, item in ipairs(out) do
@@ -622,7 +641,7 @@ local function showHistory()
 
   local selected = 1
   while true do
-    local entries = toArray(currency.getTransactionHistory(12) or {})
+    local entries = toArray(currency.getTransactionHistory(12) or {}, { newestFirst = true })
     local session = refreshSession()
     local items = {}
 
@@ -647,7 +666,7 @@ local function showHistory()
 
     local index, action = ui.chooseMenu("History", items, {
       selected = selected,
-      subtitle = "Recent wallet activity",
+      subtitle = "Most recent wallet activity",
       status = session.status,
       footer = "Enter view  R refresh  Back home",
     })

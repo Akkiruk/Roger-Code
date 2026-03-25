@@ -18,6 +18,7 @@ end
 
 local function drawMachine(env, result, statusText, bet)
   local ui = env.ui
+  local theme = ui.theme or {}
   local session = env.refreshSession()
   local width = select(1, term.getSize())
   local reelWidth = 7
@@ -28,9 +29,9 @@ local function drawMachine(env, result, statusText, bet)
   ui.clear(colors.black)
   ui.header("Slots", "Bet " .. currency.formatTokens(bet), session.status)
 
-  symbolBox(ui, startX, 6, reelWidth, result[1].label, colors.gray, colors.white)
-  symbolBox(ui, startX + reelWidth + gap, 6, reelWidth, result[2].label, colors.gray, colors.white)
-  symbolBox(ui, startX + (reelWidth + gap) * 2, 6, reelWidth, result[3].label, colors.gray, colors.white)
+  symbolBox(ui, startX, 6, reelWidth, result[1].label, theme.chromeBg or colors.gray, colors.white)
+  symbolBox(ui, startX + reelWidth + gap, 6, reelWidth, result[2].label, theme.chromeBg or colors.gray, colors.white)
+  symbolBox(ui, startX + (reelWidth + gap) * 2, 6, reelWidth, result[3].label, theme.chromeBg or colors.gray, colors.white)
 
   if statusText then
     local lines = ui.wrap(statusText, 22)
