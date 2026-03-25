@@ -10,18 +10,25 @@
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.1.0"
+local INSTALLER_VERSION = "1.1.1"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME  = "Roger-Code"
 local BRANCH     = "main"
-local REPO_URL   = "https://raw.githubusercontent.com/"
+local API_URL    = "https://api.github.com/repos/"
                     .. REPO_OWNER .. "/" .. REPO_NAME
-                    .. "/" .. BRANCH .. "/"
+local RAW_ROOT   = "https://raw.githubusercontent.com/"
+                    .. REPO_OWNER .. "/" .. REPO_NAME .. "/"
+local REPO_URL   = RAW_ROOT .. BRANCH .. "/"
 local MANIFEST_URL = REPO_URL .. "Games/manifest.json"
 local VERSION_FILE = ".installed_program"
 local LOG_FILE     = "installer_error.log"
+local API_HEADERS  = {
+  ["User-Agent"] = "Roger-Code-Installer",
+  ["Accept"] = "application/vnd.github+json",
+}
 
 local tArgs = { ... }
+local resolvedRawBase = nil
 
 ---------------------------------------------------------------------------
 -- Error logging
@@ -76,10 +83,10 @@ end
 ---------------------------------------------------------------------------
 -- HTTP / file helpers
 ---------------------------------------------------------------------------
-local function download(url)
+local function download(url, headers)
   -- Always binary to preserve precompiled assets (surface, fonts)
   local ok, response = pcall(function()
-    return http.get(url, nil, true)
+    return http.get(url, headers, true)
   end)
   if not ok or not response then
     return nil, "HTTP request failed: " .. tostring(url)
@@ -116,29 +123,77 @@ local function downloadAndSave(url, path)
   return saveFile(path, data)
 end
 
+local function parseJson(data, label)
+  if type(data) ~= "string" then
+    return nil, "Unexpected " .. tostring(label or "JSON") .. " data type"
+  end
+
+  local decoded = textutils.unserialiseJSON(data)
+  if type(decoded) ~= "table" then
+    return nil, "Failed to parse " .. tostring(label or "JSON")
+  end
+
+  return decoded
+end
+
+local function resolveRawBase()
+  if resolvedRawBase then
+    return resolvedRawBase
+  end
+
+  local data, err = download(API_URL .. "/commits/" .. BRANCH, API_HEADERS)
+  if not data then
+    return nil, err or "Could not resolve latest repo commit"
+  end
+
+  local info, parseErr = parseJson(data, "commit metadata")
+  if not info then
+    return nil, parseErr
+  end
+
+  if type(info.sha) ~= "string" or info.sha == "" then
+    return nil, "Commit metadata did not include a SHA"
+  end
+
+  resolvedRawBase = RAW_ROOT .. info.sha .. "/"
+  return resolvedRawBase
+end
+
+local function buildRepoUrl(path, rawBase)
+  return (rawBase or REPO_URL) .. path
+end
+
 ---------------------------------------------------------------------------
 -- Manifest
 ---------------------------------------------------------------------------
 local function fetchManifest()
-  -- Manifest is JSON text; download as binary then decode
-  local data, err = download(MANIFEST_URL)
-  if not data then
-    return nil, err or "Could not fetch manifest"
+  local urls = {}
+  local rawBase, baseErr = resolveRawBase()
+  if rawBase then
+    urls[#urls + 1] = { url = buildRepoUrl("Games/manifest.json", rawBase), rawBase = rawBase }
   end
-  -- Convert binary bytes to string for JSON parse
-  local str = data
-  if type(str) ~= "string" then
-    return nil, "Unexpected manifest data type"
+  urls[#urls + 1] = { url = MANIFEST_URL, rawBase = REPO_URL }
+
+  local lastErr = baseErr
+
+  for _, candidate in ipairs(urls) do
+    local data, err = download(candidate.url)
+    if data then
+      local manifest, parseErr = parseJson(data, "manifest JSON")
+      if manifest then
+        if not manifest.programs and manifest.games then
+          manifest.programs = manifest.games
+        end
+        manifest._raw_base = candidate.rawBase
+        return manifest
+      end
+      lastErr = parseErr
+    else
+      lastErr = err
+    end
   end
-  local manifest = textutils.unserialiseJSON(str)
-  if not manifest then
-    return nil, "Failed to parse manifest JSON"
-  end
-  -- Backward compat: old manifests used "games", new uses "programs"
-  if not manifest.programs and manifest.games then
-    manifest.programs = manifest.games
-  end
-  return manifest
+
+  return nil, lastErr or "Could not fetch manifest"
 end
 
 ---------------------------------------------------------------------------
@@ -178,11 +233,12 @@ local function installProgram(manifest, progKey, forceConfig)
   -- Build download list: { url, destPath }
   local downloads = {}
   local srcDir = prog.source_dir
+  local rawBase = manifest._raw_base or REPO_URL
 
   -- Code files (always overwrite)
   for _, file in ipairs(prog.files or {}) do
     downloads[#downloads + 1] = {
-      url  = REPO_URL .. srcDir .. "/" .. file,
+      url  = buildRepoUrl(srcDir .. "/" .. file, rawBase),
       path = file,
     }
   end
@@ -191,7 +247,7 @@ local function installProgram(manifest, progKey, forceConfig)
   for _, file in ipairs(prog.config_files or {}) do
     if forceConfig or not fs.exists(file) then
       downloads[#downloads + 1] = {
-        url  = REPO_URL .. srcDir .. "/" .. file,
+        url  = buildRepoUrl(srcDir .. "/" .. file, rawBase),
         path = file,
         tag  = "config",
       }
@@ -203,7 +259,7 @@ local function installProgram(manifest, progKey, forceConfig)
   -- Asset files (nfp, fonts, surface, etc.)
   for _, file in ipairs(prog.assets or {}) do
     downloads[#downloads + 1] = {
-      url  = REPO_URL .. srcDir .. "/" .. file,
+      url  = buildRepoUrl(srcDir .. "/" .. file, rawBase),
       path = file,
     }
   end
@@ -212,7 +268,7 @@ local function installProgram(manifest, progKey, forceConfig)
   if prog.uses_lib and manifest.lib and manifest.lib.files then
     for _, file in ipairs(manifest.lib.files) do
       downloads[#downloads + 1] = {
-        url  = REPO_URL .. "Games/lib/" .. file,
+        url  = buildRepoUrl("Games/lib/" .. file, rawBase),
         path = "lib/" .. file,
       }
     end
@@ -325,7 +381,8 @@ local function selfUpdate(manifest, silent)
   end
 
   local myPath = shell.getRunningProgram()
-  local ok, err = downloadAndSave(REPO_URL .. "Games/installer.lua", myPath)
+  local rawBase = manifest and manifest._raw_base or REPO_URL
+  local ok, err = downloadAndSave(buildRepoUrl("Games/installer.lua", rawBase), myPath)
   if ok then
     if not silent then
       cprint(colors.lime, "Done! Restarting...")

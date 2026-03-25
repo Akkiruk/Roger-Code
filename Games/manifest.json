@@ -1,7 +1,7 @@
 {
     "manifest_version":  1,
-    "installer_version":  "1.1.0",
-    "installer_hash":  "598a7e643bccc48e",
+    "installer_version":  "1.1.1",
+    "installer_hash":  "535f804314508f1a",
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
