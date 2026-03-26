@@ -546,8 +546,6 @@ local function showWallet()
 
     ui.writeAt(2, 15, "A Authenticate", colors.white)
     ui.writeAt(2, 16, "R Refresh", colors.white)
-    ui.writeAt(14, 15, "T History", colors.white)
-    ui.writeAt(14, 16, "P Pairing", colors.white)
     ui.footer("Back/H home")
 
     local _, key = os.pullEvent("key")
@@ -555,10 +553,6 @@ local function showWallet()
       return "home"
     elseif key == keys.a then
       ensureAuthenticated("Wallet access requires approval.")
-    elseif key == keys.t then
-      return "history"
-    elseif key == keys.p then
-      return "pairing"
     elseif key == keys.r then
       -- redraw
     end
@@ -1036,12 +1030,9 @@ local function showHome()
       { key = "wallet",    label = "Wallet" },
       { key = "blackjack", label = "Blackjack" },
       { key = "slots",     label = "Slots" },
-      { key = "history",   label = "History" },
       { key = "messages",  label = "Messages (" .. tostring(#state.messages) .. ")" },
-      { key = "contacts",  label = "Contacts" },
       { key = "notes",     label = "Notes (" .. tostring(#state.notes) .. ")" },
       { key = "settings",  label = "Settings" },
-      { key = "pairing",   label = "Pairing" },
       { key = "roulette",  label = "Roulette" },
       { key = "baccarat",  label = "Baccarat" },
     }
@@ -1088,14 +1079,8 @@ while current do
     end
   elseif current == "wallet" then
     current = showWallet()
-  elseif current == "pairing" then
-    current = showPairing()
-  elseif current == "history" then
-    current = showHistory()
   elseif current == "messages" then
     current = showMessages()
-  elseif current == "contacts" then
-    current = showContacts()
   elseif current == "notes" then
     current = showNotes()
   elseif current == "settings" then
