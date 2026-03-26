@@ -102,10 +102,10 @@
                               },
                      "phone_os":  {
                                       "name":  "Pocket Casino OS",
-                                      "version":  "1.0.16",
-                                      "content_hash":  "59e70fba3f186386",
+                                      "version":  "1.0.17",
+                                      "content_hash":  "595adf4cc1f3d029",
                                       "description":  "Pocket casino shell for ComputerCraft pocket computers.",
-                                      "category":  "Games",
+                                      "category":  "Utilities",
                                       "source_dir":  "Games/PhoneOS",
                                       "uses_lib":  true,
                                       "files":  [
@@ -183,10 +183,10 @@
                                },
                      "taskmaster":  {
                                         "name":  "TaskMaster",
-                                        "version":  "1.0.2",
-                                        "content_hash":  "66d2ed9da80c73a6",
+                                        "version":  "1.0.3",
+                                        "content_hash":  "baf2b0e8a4d6ee09",
                                         "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
-                                        "category":  "Games",
+                                        "category":  "Utilities",
                                         "source_dir":  "Games/TaskMaster",
                                         "uses_lib":  true,
                                         "files":  [
@@ -201,10 +201,10 @@
                                     },
                      "vaultgear":  {
                                        "name":  "VaultGear",
-                                       "version":  "1.0.3",
-                                       "content_hash":  "622322639184eb23",
+                                       "version":  "1.0.5",
+                                       "content_hash":  "35ddfd66abc25ccb",
                                        "description":  "Vault Gear Sorter monitor app for configurable Vault Hunters gear routing.",
-                                       "category":  "Games",
+                                       "category":  "Utilities",
                                        "source_dir":  "Games/VaultGear",
                                        "uses_lib":  true,
                                        "files":  [

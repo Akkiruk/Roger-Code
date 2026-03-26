@@ -1,3 +1,4 @@
+-- manifest-category: Utilities
 -- Vault Gear Sorter monitor app for configurable Vault Hunters gear routing.
 
 local app = require("lib.vaultgear.app")

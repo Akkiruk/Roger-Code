@@ -1,5 +1,6 @@
 -- manifest-key: phone_os
 -- manifest-name: Pocket Casino OS
+-- manifest-category: Utilities
 -- Pocket casino shell for ComputerCraft pocket computers.
 
 local alert = require("lib.alert")

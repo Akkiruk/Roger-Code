@@ -120,6 +120,7 @@ function Get-ProgramMetadata {
         key         = $DirName.ToLower()
         name        = $DirName
         description = ""
+        category    = ""
     }
 
     $mainFile = Get-ProgramMainFile -Dir $Dir -DirName $DirName
@@ -142,12 +143,17 @@ function Get-ProgramMetadata {
             if ($value -ne "" -and $meta.description -eq "") { $meta.description = $value }
             continue
         }
+        if ($line -match '^\s*--\s*manifest-category:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value -ne "") { $meta.category = $value }
+            continue
+        }
         if ($line -match '^\s*--\s*(.+)$') {
             $desc = $Matches[1].Trim()
             if (
                 $desc -notmatch '^\S+\.lua$' -and
                 $desc.Length -gt 10 -and
-                $desc -notmatch '^manifest-(key|name|description):'
+                $desc -notmatch '^manifest-(key|name|description|category):'
             ) {
                 $meta.description = $desc
                 break
@@ -337,7 +343,7 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
         version      = $version
         content_hash = $contentHash
         description  = $desc
-        category     = if ($relPath -like "Utilities/*") { "Utilities" } else { "Games" }
+        category     = if ($meta.category -ne "") { $meta.category } elseif ($relPath -like "Utilities/*") { "Utilities" } else { "Games" }
         source_dir   = $relPath
         uses_lib     = $usesLib
         files        = $discovered.files
