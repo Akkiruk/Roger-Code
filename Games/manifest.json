@@ -241,57 +241,6 @@
                                                        "vhcc_lockdown.txt"
                                                    ]
                                     },
-                     "peripheral_info_collector":  {
-                                                       "name":  "peripheral_info_collector",
-                                                       "version":  "1.0.0",
-                                                       "content_hash":  "ff1b520a22d89911",
-                                                       "description":  "Gathers detailed information about all attached peripherals, including methods and documentation,",
-                                                       "source_dir":  "Utilities",
-                                                       "uses_lib":  false,
-                                                       "files":  [
-                                                                     "peripheral_info_collector.lua"
-                                                                 ],
-                                                       "config_files":  [
-
-                                                                        ],
-                                                       "assets":  [
-
-                                                                  ]
-                                                   },
-                     "test_ccvault":  {
-                                          "name":  "test_ccvault",
-                                          "version":  "1.0.4",
-                                          "content_hash":  "e9db193d54d962dd",
-                                          "description":  "test_ccvault.lua â€” quick diagnostic for the ccvault API",
-                                          "source_dir":  "Utilities",
-                                          "uses_lib":  false,
-                                          "files":  [
-                                                        "test_ccvault.lua"
-                                                    ],
-                                          "config_files":  [
-
-                                                           ],
-                                          "assets":  [
-
-                                                     ]
-                                      },
-                     "test_ccvault_full":  {
-                                               "name":  "test_ccvault_full",
-                                               "version":  "1.0.5",
-                                               "content_hash":  "d337a86221c018ee",
-                                               "description":  "Comprehensive step-by-step integration test for the CCVault economy API.",
-                                               "source_dir":  "Utilities",
-                                               "uses_lib":  false,
-                                               "files":  [
-                                                             "test_ccvault_full.lua"
-                                                         ],
-                                               "config_files":  [
-
-                                                                ],
-                                               "assets":  [
-
-                                                          ]
-                                           },
                      "vault_item_analyzer":  {
                                                  "name":  "vault_item_analyzer",
                                                  "version":  "1.0.4",

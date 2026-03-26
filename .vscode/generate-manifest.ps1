@@ -23,6 +23,14 @@ $SkipPatterns = @("*.bak", "*.old", "debug.txt", "*.log", "*.md", "manifest.json
 # Directories that are not programs (shared support dirs or non-code)
 $SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules", "emulator")
 
+# Standalone Utilities scripts that should stay repo-local and not appear in
+# the in-game installer catalog.
+$HiddenStandalonePrograms = @(
+    "peripheral_info_collector",
+    "test_ccvault",
+    "test_ccvault_full"
+)
+
 function Test-SkipFile {
     param([string]$Name)
     foreach ($pat in $SkipPatterns) {
@@ -290,7 +298,13 @@ if (Test-Path $UtilitiesDir) {
 # Handle standalone .lua files in Utilities/ as single-file programs
 $standaloneUtils = @()
 if (Test-Path $UtilitiesDir) {
-    $standaloneUtils = @(Get-ChildItem $UtilitiesDir -File -Filter "*.lua" | Where-Object { -not (Test-SkipFile $_.Name) })
+    $standaloneUtils = @(
+        Get-ChildItem $UtilitiesDir -File -Filter "*.lua" |
+            Where-Object {
+                -not (Test-SkipFile $_.Name) -and
+                ([System.IO.Path]::GetFileNameWithoutExtension($_.Name).ToLower() -notin $HiddenStandalonePrograms)
+            }
+    )
 }
 
 foreach ($dir in ($programDirs | Sort-Object Name)) {
