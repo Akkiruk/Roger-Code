@@ -217,6 +217,17 @@ local function shorten(text, maxLen)
   return text:sub(1, maxLen - 3) .. "..."
 end
 
+local function sanitizeTerminalText(text)
+  text = tostring(text or "")
+  text = text:gsub("[\r\n]+", " ")
+  text = text:gsub("[^\32-\126]", "-")
+  text = text:gsub("%-+", "-")
+  text = text:gsub("%s+", " ")
+  text = text:gsub("^%s+", "")
+  text = text:gsub("%s+$", "")
+  return text
+end
+
 local function addMessage(title, body, level)
   table.insert(state.messages, 1, {
     title = title,
@@ -375,14 +386,21 @@ local function ensureAuthenticated(reason)
   end
 
   local ok, err = ccvaultCall("requestAuth")
-  if not ok then
+  local errText = sanitizeTerminalText(err)
+  local pending = errText ~= "" and errText:lower():find("already pending", 1, true) ~= nil
+
+  if not ok and not pending then
     ui.showMessage("Auth Error", {
-      err or "Unable to send the approval prompt.",
+      errText ~= "" and errText or "Unable to send the approval prompt.",
     })
     return false
   end
 
-  addMessage("Approval Sent", "Wallet approval requested for computer #" .. tostring(session.computerId) .. ".", "info")
+  if pending then
+    addMessage("Approval Pending", "Wallet approval is already pending for computer #" .. tostring(session.computerId) .. ".", "info")
+  else
+    addMessage("Approval Sent", "Wallet approval requested for computer #" .. tostring(session.computerId) .. ".", "info")
+  end
 
   local started = os.epoch("local")
   local spinner = { "|", "/", "-", "\\" }
@@ -409,7 +427,7 @@ local function ensureAuthenticated(reason)
 
     if os.epoch("local") - started > 60000 then
       ui.showMessage("Auth Timeout", {
-        "Approval timed out. Try again from Pairing or Wallet.",
+        "Approval timed out. Try again from Wallet.",
       })
       return false
     end
