@@ -169,6 +169,19 @@ local function drawWrappedCenteredText(screen, font, rect, text, color, maxLines
   end
 end
 
+local function drawWrappedLeftText(screen, font, x, y, maxWidth, text, color, maxLines, lineAdvance)
+  local lines = wrapTextToWidth(text, maxWidth, maxLines)
+  local advance = max(1, lineAdvance or 7)
+  local index = 1
+
+  while index <= #lines do
+    ui.safeDrawText(screen, lines[index], font, x, y + ((index - 1) * advance), color)
+    index = index + 1
+  end
+
+  return #lines
+end
+
 local function drawRightText(screen, font, text, rightX, y, color, leftX)
   text = fitTextToWidth(text, max(1, rightX - (leftX or 0)))
   if text == "" then
@@ -254,6 +267,27 @@ local function drawChip(screen, font, x, y, amount, toneColor)
   ui.safeDrawText(screen, text, font, x - floor(textW / 2), chipY - 1, colors.white)
 end
 
+local function drawTrackArrow(screen, centerX, topY, bottomY, color)
+  if bottomY < topY then
+    return
+  end
+
+  screen:fillRect(centerX - 2, topY, 5, 1, color)
+  if topY + 1 <= bottomY then
+    screen:fillRect(centerX - 1, topY + 1, 3, 1, color)
+  end
+  if topY + 2 <= bottomY then
+    screen:fillRect(centerX, topY + 2, 1, (bottomY - topY) - 1, color)
+  end
+end
+
+local function drawTrackSelector(screen, x, y, width, height, color)
+  screen:fillRect(x, y, width, 1, color)
+  screen:fillRect(x, y + height - 1, width, 1, color)
+  screen:fillRect(x, y, 1, height, color)
+  screen:fillRect(x + width - 1, y, 1, height, color)
+end
+
 local function drawHeader(screen, font, layout, state)
   local header = layout.header
   screen:fillRect(header.x, header.y, header.w, header.h, colors.black)
@@ -306,67 +340,75 @@ local function drawTrack(screen, font, layout, state)
   local recent = state.history or {}
   local recentX = track.x + 2
   local recentY = track.y + 1
-  local recentCount = min(layout.ultraCompact and 2 or (layout.compact and 4 or 6), #recent)
-  local slotWidth = layout.ultraCompact and 4 or 5
-  local slotGap = 1
-  local bandX = track.x + 1
-  local bandW = track.w - 2
+  local recentCount = min(layout.ultraCompact and 2 or (layout.compact and 3 or 4), #recent)
+  local recentCellW = layout.ultraCompact and 4 or 5
+  local recentCellH = 5
+  local recentGap = 1
+  local recentMaxWidth = (recentCount * recentCellW) + max(0, recentCount - 1)
+  local innerX = track.x + 1
+  local innerW = max(1, track.w - 2)
+  local windowSlots = layout.compact and 7 or 10
+  local windowGap = 1
+  local cellW = max(4, min(track.cellW, layout.compact and 5 or 6))
+  local windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
 
-  if layout.compact then
-    if recentCount > 0 then
-      local compactRecentWidth = (recentCount * slotWidth) + ((recentCount - 1) * slotGap)
-      bandX = recentX + compactRecentWidth + 2
-      bandW = track.x + track.w - bandX - 1
+  if windowW > innerW then
+    cellW = max(3, floor((innerW - ((windowSlots - 1) * windowGap)) / windowSlots))
+    windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
+  end
 
-      local index = 1
-      while index <= recentCount do
-        local number = recent[index]
-        local bg = model.getNumberColor(number)
-        local fg = model.getNumberTextColor(number)
-        local slotX = recentX + ((index - 1) * (slotWidth + slotGap))
-        screen:fillRect(slotX, recentY, slotWidth, 5, bg)
-        local label = tostring(number)
-        local labelW = ui.getTextSize(label)
-        ui.safeDrawText(screen, label, font, slotX + floor((slotWidth - labelW) / 2), recentY - 1, fg)
-        index = index + 1
-      end
-    end
-  else
+  local windowX = innerX + floor((innerW - windowW) / 2)
+  local pointerSlot = floor((windowSlots + 1) / 2)
+  local slotPitch = cellW + windowGap
+  local pointerX = windowX + floor(cellW / 2) + ((pointerSlot - 1) * slotPitch)
+  local bandY = track.y + (layout.compact and 3 or 5)
+  local bandH = max(3, track.y + track.h - bandY - 1)
+  local bandRect = {
+    x = windowX - 1,
+    y = bandY - 1,
+    w = windowW + 2,
+    h = bandH + 2,
+  }
+
+  drawFrame(screen, bandRect, colors.black, colors.lightGray)
+
+  local recentWidthAvailable = max(0, windowX - recentX - 2)
+  local maxRecentCount = floor((recentWidthAvailable + recentGap) / (recentCellW + recentGap))
+  recentCount = min(recentCount, maxRecentCount)
+
+  if recentCount > 0 then
     local index = 1
     while index <= recentCount do
       local number = recent[index]
       local bg = model.getNumberColor(number)
       local fg = model.getNumberTextColor(number)
-      local slotX = recentX + ((index - 1) * (slotWidth + slotGap))
-      screen:fillRect(slotX, recentY, slotWidth, 5, bg)
+      local slotX = recentX + ((index - 1) * (recentCellW + recentGap))
+      screen:fillRect(slotX, recentY, recentCellW, recentCellH, bg)
       local label = tostring(number)
       local labelW = ui.getTextSize(label)
-      ui.safeDrawText(screen, label, font, slotX + floor((slotWidth - labelW) / 2), recentY - 1, fg)
+      ui.safeDrawText(screen, label, font, slotX + floor((recentCellW - labelW) / 2), recentY - 1, fg)
       index = index + 1
     end
 
-    ui.safeDrawText(screen, "RECENT", font, track.x + track.w - ui.getTextSize("RECENT") - 2, recentY, colors.lightGray)
+    if not layout.compact and recentMaxWidth <= recentWidthAvailable then
+      ui.safeDrawText(screen, "LAST", font, recentX, track.y + track.h - 8, colors.lightGray)
+    end
   end
 
-  local bandY = track.y + (layout.compact and 1 or 5)
-  local bandH = track.h - (layout.compact and 2 or 6)
-  screen:fillRect(bandX, bandY, max(1, bandW), bandH, colors.black)
+  drawTrackArrow(screen, pointerX, track.y + 1, bandY - 2, colors.yellow)
 
-  local pointerX = bandX + floor(max(1, bandW) / 2)
-  screen:fillRect(pointerX, bandY, 1, bandH, colors.yellow)
-
-  local cellW = track.cellW
   local wheelOffset = state.wheelOffset or 0
-  local visible = floor(max(1, bandW) / cellW) + 4
   local baseIndex = floor(wheelOffset)
   local fraction = wheelOffset - baseIndex
+  local visibleLeft = pointerSlot + 1
+  local visibleRight = windowSlots - pointerSlot + 2
 
-  local offset = -visible
-  while offset <= visible do
+  local offset = -visibleLeft
+  while offset <= visibleRight do
     local wheelIndex = ((baseIndex + offset) % #model.WHEEL_ORDER) + 1
     local number = model.WHEEL_ORDER[wheelIndex]
-    local cellX = pointerX + floor((offset - fraction) * cellW) - floor(cellW / 2)
-    if cellX < (track.x + track.w) and (cellX + cellW) > track.x then
+    local cellX = pointerX + floor((offset - fraction) * slotPitch) - floor(cellW / 2)
+    if cellX < (windowX + windowW) and (cellX + cellW) > windowX then
       local bg = model.getNumberColor(number)
       local fg = model.getNumberTextColor(number)
       screen:fillRect(cellX, bandY, cellW, bandH, bg)
@@ -376,13 +418,15 @@ local function drawTrack(screen, font, layout, state)
     end
     offset = offset + 1
   end
+
+  drawTrackSelector(screen, pointerX - floor(cellW / 2) - 1, bandY - 1, cellW + 2, bandH + 2, colors.yellow)
 end
 
 local function drawSummaryBox(screen, font, layout, state)
   local box = layout.summaryBox
   drawFrame(screen, box, colors.gray, colors.yellow)
 
-  local headline = "TABLE OPEN"
+  local headline = "OPEN"
   if state.phase == "spinning" then
     headline = "SPINNING"
   elseif state.phase == "result" and state.resultNumber ~= nil then
@@ -390,21 +434,20 @@ local function drawSummaryBox(screen, font, layout, state)
   elseif state.autoPlay then
     headline = "AUTO PLAY"
   end
-  ui.safeDrawText(screen, headline, font, box.x + 2, box.y + 2, colors.white)
-
   local exposure = state.maxExposure or 0
-  if layout.compact then
-    local riskText = "Risk " .. currency.formatTokens(exposure)
-    drawCenteredText(screen, font, {
-      x = box.x,
-      y = box.y + 6,
-      w = box.w,
-      h = 7,
-    }, riskText, colors.lightGray)
-    return
-  end
+  drawCenteredText(screen, font, {
+    x = box.x,
+    y = box.y + 1,
+    w = box.w,
+    h = 7,
+  }, headline, colors.white)
 
-  ui.safeDrawText(screen, "Risk " .. currency.formatTokens(exposure), font, box.x + 2, box.y + 11, colors.lightGray)
+  drawWrappedCenteredText(screen, font, {
+    x = box.x + 1,
+    y = box.y + 9,
+    w = max(1, box.w - 2),
+    h = max(7, box.h - 10),
+  }, "Risk " .. currency.formatTokens(exposure), colors.lightGray, layout.compact and 2 or 3)
 end
 
 local function drawButtons(screen, font, layout, state)
@@ -447,33 +490,69 @@ local function drawSlipBox(screen, font, layout, state)
   end
 
   local box = layout.slipBox
+  local contentX = box.x + 2
+  local contentW = max(1, box.w - 4)
+  local lineHeight = max(7, layout.scale.lineHeight)
+  local footerY = box.y + box.h - 8
+  local y = box.y + 2
   drawFrame(screen, box, colors.gray, colors.yellow)
 
-  local title = "BET SLIP"
-  ui.safeDrawText(screen, title, font, box.x + 2, box.y + 2, colors.white)
+  ui.safeDrawText(screen, "CURRENT BETS", font, contentX, y, colors.white)
+  y = y + lineHeight
 
-  local linesY = box.y + 8
-  local lineHeight = 8
-  local shown = 0
   local bets = state.bets or {}
-  local index = #bets
+  ui.safeDrawText(screen, "Total " .. currency.formatTokens(state.totalStake or 0), font, contentX, y, colors.yellow)
+  y = y + lineHeight
+  ui.safeDrawText(screen, "Spots " .. tostring(#bets), font, contentX, y, colors.lightGray)
+  y = y + lineHeight
 
-  while index >= 1 and shown < layout.maxSlipLines do
-    local bet = bets[index]
-    local stakeText = formatCompactAmount(bet.stake or 0)
-    local line = stakeText .. "  " .. bet.label
-    ui.safeDrawText(screen, line, font, box.x + 2, linesY + (shown * lineHeight), colors.lightGray)
-    shown = shown + 1
-    index = index - 1
-  end
+  screen:fillRect(contentX, y, contentW, 1, colors.yellow)
+  y = y + 2
 
   if #bets == 0 then
-    ui.safeDrawText(screen, "Tap the felt to place chips.", font, box.x + 2, linesY, colors.lightGray)
-  elseif #bets > shown then
-    ui.safeDrawText(screen, "+" .. tostring(#bets - shown) .. " more", font, box.x + 2, linesY + (shown * lineHeight), colors.lightGray)
+    drawWrappedLeftText(
+      screen,
+      font,
+      contentX,
+      y,
+      contentW,
+      "Tap the felt to place chips. UNDO removes the last move.",
+      colors.lightGray,
+      4,
+      lineHeight
+    )
+  else
+    local index = #bets
+    while index >= 1 do
+      local bet = bets[index]
+      local nextY = y + (lineHeight * 3) + 1
+      if nextY > footerY then
+        break
+      end
+
+      ui.safeDrawText(screen, currency.formatTokens(bet.stake or 0), font, contentX, y, colors.yellow)
+      y = y + lineHeight
+      y = y + (drawWrappedLeftText(
+        screen,
+        font,
+        contentX,
+        y,
+        contentW,
+        "on " .. tostring(bet.label or bet.key or ""),
+        colors.lightGray,
+        2,
+        lineHeight
+      ) * lineHeight)
+      y = y + 1
+      index = index - 1
+    end
+
+    if index >= 1 and y <= footerY then
+      ui.safeDrawText(screen, "+" .. tostring(index) .. " more bets", font, contentX, y, colors.lightGray)
+    end
   end
 
-  local footer = "Session " .. (state.sessionProfitText or "0")
+  local footer = "Net " .. (state.sessionProfitText or "0")
   drawRightText(screen, font, footer, box.x + box.w - 2, box.y + box.h - 8, getToneColor(state.sessionProfitTone))
 end
 
