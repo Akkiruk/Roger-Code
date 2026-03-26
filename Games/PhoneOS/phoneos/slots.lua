@@ -161,6 +161,20 @@ local function promptSlotsBet(env, initial)
   })
 end
 
+local function waitForReplayKeyRelease()
+  local releaseTimer = os.startTimer(0.2)
+
+  while true do
+    local event, key = os.pullEvent()
+    if event == "key_up" and key == keys.r then
+      return
+    end
+    if event == "timer" and key == releaseTimer then
+      return
+    end
+  end
+end
+
 local function waitForReplay(env, result, summary, bet, outcomeState)
   local ui = env.ui
   local theme = ui.theme or {}
@@ -205,6 +219,7 @@ local function waitForReplay(env, result, summary, bet, outcomeState)
   while true do
     local _, key = os.pullEvent("key")
     if key == keys.r then
+      waitForReplayKeyRelease()
       return "replay"
     elseif key == keys.backspace or key == keys.h then
       return "exit"
