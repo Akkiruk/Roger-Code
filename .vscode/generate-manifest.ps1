@@ -337,6 +337,7 @@ foreach ($dir in ($programDirs | Sort-Object Name)) {
         version      = $version
         content_hash = $contentHash
         description  = $desc
+        category     = if ($relPath -like "Utilities/*") { "Utilities" } else { "Games" }
         source_dir   = $relPath
         uses_lib     = $usesLib
         files        = $discovered.files
@@ -379,6 +380,7 @@ foreach ($file in $standaloneUtils) {
         version      = $version
         content_hash = $contentHash
         description  = $desc
+        category     = "Utilities"
         source_dir   = "Utilities"
         uses_lib     = $false
         files        = @($file.Name)

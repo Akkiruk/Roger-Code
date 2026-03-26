@@ -1,13 +1,14 @@
 {
     "manifest_version":  1,
-    "installer_version":  "1.1.2",
-    "installer_hash":  "1c593210c063f7b5",
+    "installer_version":  "1.1.3",
+    "installer_hash":  "64984336fc25b5c7",
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
                                       "version":  "1.2.12",
                                       "content_hash":  "911f88937a57115f",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
+                                      "category":  "Games",
                                       "source_dir":  "Games/Baccarat",
                                       "uses_lib":  true,
                                       "files":  [
@@ -38,6 +39,7 @@
                                        "version":  "1.2.10",
                                        "content_hash":  "72b240f16465d90a",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
+                                       "category":  "Games",
                                        "source_dir":  "Games/Blackjack",
                                        "uses_lib":  true,
                                        "files":  [
@@ -72,6 +74,7 @@
                                   "version":  "1.0.13",
                                   "content_hash":  "ce78fca5f569a665",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
+                                  "category":  "Games",
                                   "source_dir":  "Games/HiLo",
                                   "uses_lib":  true,
                                   "files":  [
@@ -102,6 +105,7 @@
                                       "version":  "1.0.16",
                                       "content_hash":  "59e70fba3f186386",
                                       "description":  "Pocket casino shell for ComputerCraft pocket computers.",
+                                      "category":  "Games",
                                       "source_dir":  "Games/PhoneOS",
                                       "uses_lib":  true,
                                       "files":  [
@@ -127,6 +131,7 @@
                                       "version":  "1.0.22",
                                       "content_hash":  "4c85656453ec3cfd",
                                       "description":  "European Roulette with a single-screen felt UI and multi-bet support.",
+                                      "category":  "Games",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
                                       "files":  [
@@ -152,6 +157,7 @@
                                    "version":  "1.0.14",
                                    "content_hash":  "d7952929ddcb8a4b",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
+                                   "category":  "Games",
                                    "source_dir":  "Games/Slots",
                                    "uses_lib":  true,
                                    "files":  [
@@ -180,6 +186,7 @@
                                         "version":  "1.0.2",
                                         "content_hash":  "66d2ed9da80c73a6",
                                         "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
+                                        "category":  "Games",
                                         "source_dir":  "Games/TaskMaster",
                                         "uses_lib":  true,
                                         "files":  [
@@ -197,6 +204,7 @@
                                        "version":  "1.0.3",
                                        "content_hash":  "622322639184eb23",
                                        "description":  "Vault Gear Sorter monitor app for configurable Vault Hunters gear routing.",
+                                       "category":  "Games",
                                        "source_dir":  "Games/VaultGear",
                                        "uses_lib":  true,
                                        "files":  [
@@ -216,6 +224,7 @@
                                         "version":  "1.0.13",
                                         "content_hash":  "dab838b9a61580fb",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
+                                        "category":  "Games",
                                         "source_dir":  "Games/VideoPoker",
                                         "uses_lib":  true,
                                         "files":  [
@@ -246,6 +255,7 @@
                                                  "version":  "1.0.4",
                                                  "content_hash":  "7554485565b3757b",
                                                  "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
+                                                 "category":  "Utilities",
                                                  "source_dir":  "Utilities",
                                                  "uses_lib":  false,
                                                  "files":  [

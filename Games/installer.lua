@@ -10,7 +10,7 @@
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.1.2"
+local INSTALLER_VERSION = "1.1.3"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME  = "Roger-Code"
 local BRANCH     = "main"
@@ -450,60 +450,100 @@ end
 ---------------------------------------------------------------------------
 -- Program selection menu
 ---------------------------------------------------------------------------
-local function selectProgram(manifest)
-  local progList = {}
-  for key, prog in pairs(manifest.programs) do
-    progList[#progList + 1] = {
+local function getProgramCategory(prog)
+  if type(prog) ~= "table" then
+    return "Other"
+  end
+
+  if type(prog.category) == "string" and prog.category ~= "" then
+    return prog.category
+  end
+
+  local sourceDir = tostring(prog.source_dir or "")
+  if sourceDir:match("^Utilities/") or sourceDir == "Utilities" then
+    return "Utilities"
+  end
+  if sourceDir:match("^Games/") then
+    return "Games"
+  end
+
+  return "Other"
+end
+
+local function buildProgramGroups(manifest)
+  local grouped = {}
+
+  for key, prog in pairs(manifest.programs or {}) do
+    local category = getProgramCategory(prog)
+    if not grouped[category] then
+      grouped[category] = {}
+    end
+
+    grouped[category][#grouped[category] + 1] = {
       key  = key,
       name = prog.name,
       ver  = prog.version,
       desc = prog.description or "",
     }
   end
-  table.sort(progList, function(a, b) return a.name < b.name end)
 
-  -- Paginated display: 1 line per entry, fits within terminal height
-  -- Header uses 4 lines, footer uses 3 lines (nav hints + "Select:" prompt)
+  for _, entries in pairs(grouped) do
+    table.sort(entries, function(a, b) return a.name < b.name end)
+  end
+
+  local folders = {}
+  for category, entries in pairs(grouped) do
+    folders[#folders + 1] = {
+      key = category,
+      name = category,
+      count = #entries,
+      entries = entries,
+    }
+  end
+
+  table.sort(folders, function(a, b)
+    local order = {
+      Games = 1,
+      Utilities = 2,
+      Other = 3,
+    }
+    local aOrder = order[a.name] or 99
+    local bOrder = order[b.name] or 99
+    if aOrder ~= bOrder then
+      return aOrder < bOrder
+    end
+    return a.name < b.name
+  end)
+
+  return folders
+end
+
+local function selectFromList(title, items, renderEntry)
   local perPage = H - 7
   if perPage < 3 then perPage = 3 end
-  local totalPages = math.ceil(#progList / perPage)
+
+  local totalPages = math.max(1, math.ceil(#items / perPage))
   local page = 1
 
   while true do
-    header("Select Program")
+    header(title)
 
     local startIdx = (page - 1) * perPage + 1
-    local endIdx   = math.min(page * perPage, #progList)
+    local endIdx   = math.min(page * perPage, #items)
 
     for i = startIdx, endIdx do
-      local p = progList[i]
-      -- Compact: number, name, version, and truncated description on one line
-      local prefix = string.format("  %d. ", i)
-      local nameVer = p.name .. " v" .. p.ver
-      local remaining = W - #prefix - #nameVer - 2
-      local suffix = ""
-      if remaining > 5 and p.desc ~= "" then
-        if #p.desc > remaining then
-          suffix = " " .. p.desc:sub(1, remaining - 2) .. ".."
-        else
-          suffix = " " .. p.desc
-        end
-      end
-      cwrite(colors.yellow, prefix)
-      cwrite(colors.white, nameVer)
-      cprint(colors.gray, suffix)
+      renderEntry(i, items[i])
     end
 
     print("")
 
-    -- Navigation hints
     if totalPages > 1 then
       local nav = "Page " .. page .. "/" .. totalPages
       if page < totalPages then nav = nav .. "  [n]ext" end
       if page > 1 then nav = nav .. "  [p]rev" end
       cprint(colors.lightGray, "  " .. nav)
     end
-    cprint(colors.gray, "  0. Cancel")
+    cprint(colors.gray, "  0. Back")
     cwrite(colors.white, "Select: ")
 
     local input = read()
@@ -516,10 +556,51 @@ local function selectProgram(manifest)
       page = page - 1
     else
       local choice = tonumber(input)
-      if not choice or choice < 1 or choice > #progList then
+      if not choice or choice == 0 then
         return nil
       end
-      return progList[choice].key
+      if choice >= 1 and choice <= #items then
+        return items[choice]
+      end
+    end
+  end
+end
+
+local function selectProgramFromFolder(folder)
+  return selectFromList(folder.name, folder.entries, function(i, p)
+    local prefix = string.format("  %d. ", i)
+    local nameVer = p.name .. " v" .. p.ver
+    local remaining = W - #prefix - #nameVer - 2
+    local suffix = ""
+    if remaining > 5 and p.desc ~= "" then
+      if #p.desc > remaining then
+        suffix = " " .. p.desc:sub(1, remaining - 2) .. ".."
+      else
+        suffix = " " .. p.desc
+      end
+    end
+    cwrite(colors.yellow, prefix)
+    cwrite(colors.white, nameVer)
+    cprint(colors.gray, suffix)
+  end)
+end
+
+local function selectProgram(manifest)
+  while true do
+    local folders = buildProgramGroups(manifest)
+    local folder = selectFromList("Select Folder", folders, function(i, entry)
+      cwrite(colors.yellow, string.format("  %d. ", i))
+      cwrite(colors.white, entry.name)
+      cprint(colors.gray, " (" .. tostring(entry.count) .. ")")
+    end)
+
+    if not folder then
+      return nil
+    end
+
+    local program = selectProgramFromFolder(folder)
+    if program then
+      return program.key
     end
   end
 end
