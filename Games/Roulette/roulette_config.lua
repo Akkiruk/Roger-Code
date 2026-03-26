@@ -8,7 +8,7 @@ return {
   REDSTONE = "left",
 
   -- Economy
-  MAX_BET_PERCENT     = 0.10,    -- max bet = 10% of host balance (coverage limits inside bets)
+  MAX_BET_PERCENT     = 0.10,    -- per-wager net-win cap = 10% of host balance (actual spot limit scales by payout)
   HOST_COVERAGE_MULT  = 36,      -- host must hold bet * this to accept wager
   INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
 

@@ -5,8 +5,8 @@
     "programs":  {
                      "baccarat":  {
                                       "name":  "Baccarat",
-                                      "version":  "1.2.12",
-                                      "content_hash":  "911f88937a57115f",
+                                      "version":  "1.2.13",
+                                      "content_hash":  "3d1527d16d8511f6",
                                       "description":  "Baccarat card game for ComputerCraft casino.",
                                       "category":  "Games",
                                       "source_dir":  "Games/Baccarat",
@@ -36,8 +36,8 @@
                                   },
                      "blackjack":  {
                                        "name":  "Blackjack",
-                                       "version":  "1.2.10",
-                                       "content_hash":  "72b240f16465d90a",
+                                       "version":  "1.2.11",
+                                       "content_hash":  "ebf2508909aa9f3e",
                                        "description":  "Blackjack card game for ComputerCraft casino.",
                                        "category":  "Games",
                                        "source_dir":  "Games/Blackjack",
@@ -71,8 +71,8 @@
                                    },
                      "hilo":  {
                                   "name":  "HiLo",
-                                  "version":  "1.0.13",
-                                  "content_hash":  "ce78fca5f569a665",
+                                  "version":  "1.0.14",
+                                  "content_hash":  "9b7002ecdc9278b2",
                                   "description":  "Hi-Lo card game for ComputerCraft casino.",
                                   "category":  "Games",
                                   "source_dir":  "Games/HiLo",
@@ -102,8 +102,8 @@
                               },
                      "phone_os":  {
                                       "name":  "Pocket Casino OS",
-                                      "version":  "1.0.18",
-                                      "content_hash":  "cb1531c66016b116",
+                                      "version":  "1.0.19",
+                                      "content_hash":  "920a8ef8a4a0aecc",
                                       "description":  "Pocket casino shell for ComputerCraft pocket computers.",
                                       "category":  "Utilities",
                                       "source_dir":  "Games/PhoneOS",
@@ -128,8 +128,8 @@
                                   },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.22",
-                                      "content_hash":  "4c85656453ec3cfd",
+                                      "version":  "1.0.23",
+                                      "content_hash":  "db3ab97f5439a073",
                                       "description":  "European Roulette with a single-screen felt UI and multi-bet support.",
                                       "category":  "Games",
                                       "source_dir":  "Games/Roulette",
@@ -154,8 +154,8 @@
                                   },
                      "slots":  {
                                    "name":  "Slots",
-                                   "version":  "1.0.15",
-                                   "content_hash":  "23348ca3a9c6913f",
+                                   "version":  "1.0.16",
+                                   "content_hash":  "6d76c0bad4aa6bcb",
                                    "description":  "Slot Machine game for ComputerCraft casino.",
                                    "category":  "Games",
                                    "source_dir":  "Games/Slots",
@@ -221,8 +221,8 @@
                                    },
                      "videopoker":  {
                                         "name":  "VideoPoker",
-                                        "version":  "1.0.13",
-                                        "content_hash":  "dab838b9a61580fb",
+                                        "version":  "1.0.14",
+                                        "content_hash":  "00b6c058ea12b936",
                                         "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
                                         "category":  "Games",
                                         "source_dir":  "Games/VideoPoker",
@@ -252,8 +252,8 @@
                                     },
                      "vault_item_analyzer":  {
                                                  "name":  "vault_item_analyzer",
-                                                 "version":  "1.0.4",
-                                                 "content_hash":  "7554485565b3757b",
+                                                 "version":  "1.0.5",
+                                                 "content_hash":  "a9ebd5a151c9089c",
                                                  "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
                                                  "category":  "Utilities",
                                                  "source_dir":  "Utilities",

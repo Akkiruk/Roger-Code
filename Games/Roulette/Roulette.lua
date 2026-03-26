@@ -187,14 +187,6 @@ local function validateCurrentSession()
   return true, nil
 end
 
-local function getTableStakeCap()
-  local cap = floor((state.hostBalance or 0) * cfg.MAX_BET_PERCENT)
-  if cap < 1 then
-    cap = 1
-  end
-  return cap
-end
-
 local function validateBetSet(candidateBets)
   local totalStake = rouletteModel.getTotalStake(candidateBets)
   local exposure = rouletteModel.getMaxExposure(candidateBets)
@@ -205,8 +197,13 @@ local function validateBetSet(candidateBets)
   if totalStake > (state.playerBalance or 0) then
     return false, "Not enough tokens.", totalStake, exposure
   end
-  if totalStake > getTableStakeCap() then
-    return false, "Table limit is " .. currency.formatTokens(getTableStakeCap()) .. ".", totalStake, exposure
+  local limitedBet, stakeCap = rouletteModel.findStakeLimitViolation(
+    candidateBets,
+    state.hostBalance or 0,
+    cfg.MAX_BET_PERCENT
+  )
+  if limitedBet then
+    return false, limitedBet.label .. " limit is " .. currency.formatTokens(stakeCap) .. ".", totalStake, exposure
   end
   if exposure > (state.hostBalance or 0) then
     return false, "House coverage limit exceeded.", totalStake, exposure
@@ -654,7 +651,7 @@ local function runAutoRound()
   state.betActions = {}
   refreshDerivedState()
 
-  local autoStake = min(cfg.AUTO_PLAY_BET, state.playerBalance, getTableStakeCap())
+  local autoStake = min(cfg.AUTO_PLAY_BET, state.playerBalance)
   if autoStake <= 0 then
     setStatus("Auto play waiting for tokens.", "warning", 1200)
     renderCurrent(nil)

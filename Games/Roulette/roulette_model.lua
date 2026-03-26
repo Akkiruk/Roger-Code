@@ -195,6 +195,43 @@ local function getTotalStake(bets)
   return total
 end
 
+local function getBetStakeCap(bet, hostBalance, maxBetPercent)
+  assert(type(bet) == "table", "bet must be a table")
+  assert(type(hostBalance) == "number", "hostBalance must be a number")
+  assert(type(maxBetPercent) == "number" and maxBetPercent > 0, "maxBetPercent must be positive")
+
+  local liabilityCap = floor(max(0, hostBalance) * maxBetPercent)
+  if liabilityCap < 1 then
+    liabilityCap = 1
+  end
+
+  local payout = tonumber(bet.payout) or 0
+  if payout < 1 then
+    payout = 1
+  end
+
+  local stakeCap = floor(liabilityCap / payout)
+  if stakeCap < 1 then
+    stakeCap = 1
+  end
+
+  return stakeCap
+end
+
+local function findStakeLimitViolation(bets, hostBalance, maxBetPercent)
+  assert(type(bets) == "table", "bets must be a table")
+
+  for _, bet in ipairs(bets) do
+    local stake = tonumber(bet.stake) or 0
+    local stakeCap = getBetStakeCap(bet, hostBalance, maxBetPercent)
+    if stake > stakeCap then
+      return bet, stakeCap
+    end
+  end
+
+  return nil, nil
+end
+
 local function doesBetWin(bet, number)
   return bet.lookup[number] == true
 end
@@ -311,6 +348,8 @@ return {
   addStake = addStake,
   removeStake = removeStake,
   getTotalStake = getTotalStake,
+  getBetStakeCap = getBetStakeCap,
+  findStakeLimitViolation = findStakeLimitViolation,
   getMaxExposure = getMaxExposure,
   doesBetWin = doesBetWin,
   settleBets = settleBets,
