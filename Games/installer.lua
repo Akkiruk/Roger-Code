@@ -10,7 +10,7 @@
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.1.3"
+local INSTALLER_VERSION = "1.1.4"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME  = "Roger-Code"
 local BRANCH     = "main"
@@ -21,6 +21,7 @@ local RAW_ROOT   = "https://raw.githubusercontent.com/"
 local REPO_URL   = RAW_ROOT .. BRANCH .. "/"
 local MANIFEST_URL = REPO_URL .. "Games/manifest.json"
 local VERSION_FILE = ".installed_program"
+local PHONE_HOST_MARKER_FILE = ".phone_os_host_claimed"
 local LOG_FILE     = "installer_error.log"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE   = ".vhcc_unlock"
@@ -248,6 +249,47 @@ local function endWriteWindow(createdUnlock)
   end
 end
 
+local function writePhoneHostMarker(info)
+  local f = fs.open(PHONE_HOST_MARKER_FILE, "w")
+  if not f then
+    return false, "Cannot write phone host marker"
+  end
+
+  f.write(textutils.serialise(info))
+  f.close()
+  return true
+end
+
+local function claimPhoneHostIfNeeded(shouldClaim)
+  if not shouldClaim then
+    return true
+  end
+
+  if not ccvault or type(ccvault.claimHost) ~= "function" then
+    return false, "ccvault.claimHost is unavailable"
+  end
+
+  local ok, result, err = pcall(ccvault.claimHost)
+  if not ok then
+    return false, tostring(result)
+  end
+  if type(result) ~= "table" then
+    return false, tostring(err or "host claim failed")
+  end
+
+  local markerOk, markerErr = writePhoneHostMarker({
+    claimed_at = os.epoch("local"),
+    computer_id = (ccvault.getComputerId and ccvault.getComputerId()) or os.getComputerID(),
+    host_name = result.hostName,
+    changed = result.changed == true,
+  })
+  if not markerOk then
+    return false, markerErr
+  end
+
+  return true, result
+end
+
 ---------------------------------------------------------------------------
 -- Install / update a game
 ---------------------------------------------------------------------------
@@ -267,6 +309,10 @@ local function installProgram(manifest, progKey, forceConfig)
   local createdUnlock = unlockResult == true
 
   header("Installing " .. prog.name .. " v" .. prog.version)
+
+  local installedBefore = loadInstalled()
+  local shouldClaimPhoneHost = progKey == "phone_os"
+    and not fs.exists(PHONE_HOST_MARKER_FILE)
 
   -- Build download list: { url, destPath }
   local downloads = {}
@@ -346,9 +392,21 @@ local function installProgram(manifest, progKey, forceConfig)
     program      = progKey,
     version      = prog.version,
     lib_version  = prog.uses_lib and manifest.lib and manifest.lib.version or nil,
-    installed_at = os.epoch("local"),
+    installed_at = installedBefore and installedBefore.installed_at or os.epoch("local"),
     updated_at   = os.epoch("local"),
   })
+
+  local phoneHostResult = nil
+  local phoneHostErr = nil
+  if #failed == 0 then
+    local claimOk, claimInfo = claimPhoneHostIfNeeded(shouldClaimPhoneHost)
+    if claimOk then
+      phoneHostResult = claimInfo
+    else
+      phoneHostErr = claimInfo
+      logError("Phone host claim failed: " .. tostring(claimInfo))
+    end
+  end
 
   print("")
   if #failed == 0 then
@@ -357,6 +415,15 @@ local function installProgram(manifest, progKey, forceConfig)
     cprint(colors.yellow, "  Installed " .. success .. "/" .. total .. " files.")
     cprint(colors.red, "  Failed: " .. table.concat(failed, ", "))
     cprint(colors.gray, "  See " .. LOG_FILE .. " for details.")
+  end
+
+  if phoneHostResult then
+    local hostName = phoneHostResult.hostName or "Unknown"
+    local claimVerb = phoneHostResult.changed and "assigned" or "confirmed"
+    cprint(colors.lime, "  Phone host " .. claimVerb .. ": " .. tostring(hostName))
+  elseif phoneHostErr then
+    cprint(colors.yellow, "  Phone host was not assigned.")
+    cprint(colors.yellow, "  " .. tostring(phoneHostErr))
   end
 
   print("")
