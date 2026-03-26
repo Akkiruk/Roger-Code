@@ -546,6 +546,7 @@ local function showWallet()
 
     ui.writeAt(2, 15, "A Authenticate", colors.white)
     ui.writeAt(2, 16, "R Refresh", colors.white)
+    ui.writeAt(14, 15, "T History", colors.white)
     ui.footer("Back/H home")
 
     local _, key = os.pullEvent("key")
@@ -553,6 +554,8 @@ local function showWallet()
       return "home"
     elseif key == keys.a then
       ensureAuthenticated("Wallet access requires approval.")
+    elseif key == keys.t then
+      return "history"
     elseif key == keys.r then
       -- redraw
     end
@@ -1030,7 +1033,7 @@ local function showHome()
       { key = "wallet",    label = "Wallet" },
       { key = "blackjack", label = "Blackjack" },
       { key = "slots",     label = "Slots" },
-      { key = "messages",  label = "Messages (" .. tostring(#state.messages) .. ")" },
+      { key = "history",   label = "History" },
       { key = "notes",     label = "Notes (" .. tostring(#state.notes) .. ")" },
       { key = "settings",  label = "Settings" },
       { key = "roulette",  label = "Roulette" },
@@ -1079,6 +1082,8 @@ while current do
     end
   elseif current == "wallet" then
     current = showWallet()
+  elseif current == "history" then
+    current = showHistory()
   elseif current == "messages" then
     current = showMessages()
   elseif current == "notes" then

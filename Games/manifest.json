@@ -99,8 +99,8 @@
                               },
                      "phone_os":  {
                                       "name":  "Pocket Casino OS",
-                                      "version":  "1.0.14",
-                                      "content_hash":  "04b7f39c16bab058",
+                                      "version":  "1.0.15",
+                                      "content_hash":  "2e4f74e80cedb7eb",
                                       "description":  "Pocket casino shell for ComputerCraft pocket computers.",
                                       "source_dir":  "Games/PhoneOS",
                                       "uses_lib":  true,
