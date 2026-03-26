@@ -78,6 +78,8 @@ local font = env.font
 local scale = env.scale
 local layout = rouletteLayout.build(width, height, #currency.DENOMINATIONS, scale)
 
+sound.addSounds(cfg.SOUND_IDS or {})
+
 sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName()
 recovery.setPlayer(sessionPlayer or "Unknown")
 
@@ -114,6 +116,34 @@ local function formatSignedTokens(amount)
     return "-" .. currency.formatTokens(-amount)
   end
   return "even"
+end
+
+local function getRouletteSound(name, fallback)
+  local soundId = sound.SOUNDS[name]
+  if soundId then
+    return soundId
+  end
+  return fallback
+end
+
+local function playRouletteSound(name, fallback, volume)
+  sound.play(getRouletteSound(name, fallback), volume)
+end
+
+local function getBetPlacementSound(region)
+  if not region or not region.kind then
+    return getRouletteSound("BET_OUTSIDE", sound.SOUNDS.CARD_PLACE)
+  end
+
+  if region.kind == "straight"
+    or region.kind == "split"
+    or region.kind == "corner"
+    or region.kind == "street"
+    or region.kind == "line" then
+    return getRouletteSound("BET_INSIDE", sound.SOUNDS.CARD_PLACE)
+  end
+
+  return getRouletteSound("BET_OUTSIDE", sound.SOUNDS.ALL_IN)
 end
 
 local function setStatus(text, tone, stickyMs)
@@ -386,30 +416,48 @@ local function animateSpin(finalNumber)
     diff = diff + wheelSize
   end
 
-  local targetOffset = startOffset + diff + (wheelSize * 3)
-  local lastAudioTick = nil
-  local frame = 1
+  local totalSteps = diff + (wheelSize * (cfg.SPIN_FULL_ROTATIONS or 4))
+  local currentOffset = startOffset
+  local step = 1
+  local finalBounce = { 0.32, -0.14, 0.08, 0 }
 
   state.phase = "spinning"
   state.highlightKeys = nil
   state.resultNumber = nil
+  setStatus("Wheel spinning. Bets locked.", "warning", 900)
 
-  while frame <= cfg.SPIN_TICKS do
-    local progress = frame / cfg.SPIN_TICKS
-    local eased = 1 - ((1 - progress) * (1 - progress) * (1 - progress))
-    local currentOffset = startOffset + ((targetOffset - startOffset) * eased)
-    local alignedTick = floor(currentOffset + 0.5)
+  while step <= totalSteps do
+    local progress = step / totalSteps
+    local delay = cfg.SPIN_MIN_DELAY + ((progress * progress) * (cfg.SPIN_MAX_DELAY - cfg.SPIN_MIN_DELAY))
+    local subframes = progress < 0.70 and 2 or 3
+    local nextOffset = currentOffset + 1
+    local subframe = 1
 
-    state.wheelOffset = currentOffset
-    renderCurrent(nil)
-
-    if alignedTick ~= lastAudioTick then
-      sound.play(sound.SOUNDS.CARD_PLACE, 0.25)
-      lastAudioTick = alignedTick
+    while subframe <= subframes do
+      local blended = currentOffset + (subframe / subframes)
+      state.wheelOffset = blended
+      renderCurrent(nil)
+      os.sleep(delay / subframes)
+      subframe = subframe + 1
     end
 
-    os.sleep(cfg.SPIN_FRAME_DELAY + (progress * 0.05))
-    frame = frame + 1
+    currentOffset = nextOffset
+
+    if step >= totalSteps then
+      playRouletteSound("SPIN_FINAL", sound.SOUNDS.START, 0.65)
+    elseif progress >= 0.78 then
+      playRouletteSound("SPIN_SLOW", sound.SOUNDS.CARD_PLACE, 0.36)
+    else
+      playRouletteSound("SPIN_TICK", sound.SOUNDS.CARD_PLACE, 0.24)
+    end
+
+    step = step + 1
+  end
+
+  for _, bounceOffset in ipairs(finalBounce) do
+    state.wheelOffset = targetIndex + bounceOffset
+    renderCurrent(nil)
+    os.sleep(cfg.SPIN_SETTLE_DELAY)
   end
 
   state.wheelOffset = targetIndex
@@ -433,7 +481,7 @@ local function settleRound()
     bets = roundBets,
   })
 
-  sound.play(sound.SOUNDS.START, 0.55)
+  playRouletteSound("SPIN_START", sound.SOUNDS.START, 0.55)
   local winningNumber = rouletteModel.WHEEL_ORDER[random(1, #rouletteModel.WHEEL_ORDER)]
   animateSpin(winningNumber)
 
@@ -446,16 +494,16 @@ local function settleRound()
       alert.send("CRITICAL: Roulette payout failed for " .. tostring(summary.net) .. " tokens")
       setStatus("Payout failed. Admin alerted.", "error", 3000)
     end
-    sound.play(sound.SOUNDS.SUCCESS, 0.8)
+    playRouletteSound("RESULT_WIN", sound.SOUNDS.SUCCESS, 0.8)
   elseif summary.net < 0 then
     local charged = currency.charge(-summary.net, reasonBase .. " loss")
     if not charged then
       alert.send("CRITICAL: Roulette charge failed for " .. tostring(-summary.net) .. " tokens")
       setStatus("Charge failed. Admin alerted.", "error", 3000)
     end
-    sound.play(sound.SOUNDS.FAIL, 0.45)
+    playRouletteSound("RESULT_LOSS", sound.SOUNDS.FAIL, 0.45)
   else
-    sound.play(sound.SOUNDS.PUSH or sound.SOUNDS.START, 0.4)
+    playRouletteSound("RESULT_PUSH", sound.SOUNDS.PUSH or sound.SOUNDS.START, 0.4)
   end
 
   state.sessionProfit = state.sessionProfit + summary.net
@@ -555,7 +603,7 @@ local function handleTouch(px, py)
     local chipIndex = tonumber(string.match(target.key, "^chip:(%d+)$"))
     if chipIndex and currency.DENOMINATIONS[chipIndex] then
       state.selectedChipIndex = chipIndex
-      sound.play(currency.DENOMINATIONS[chipIndex].sound, 0.4)
+      playRouletteSound("CHIP_SELECT", currency.DENOMINATIONS[chipIndex].sound, 0.35)
       setStatus("Selected " .. currency.formatTokens(currency.DENOMINATIONS[chipIndex].value) .. ".", "accent", 900)
     end
     return nil
@@ -572,7 +620,7 @@ local function handleTouch(px, py)
         region = target,
         amount = denomination.value,
       },
-    }, "Placed " .. currency.formatTokens(denomination.value) .. " on " .. target.label .. ".", denomination.sound)
+    }, "Placed " .. currency.formatTokens(denomination.value) .. " on " .. target.label .. ".", getBetPlacementSound(target))
   end
 
   return nil

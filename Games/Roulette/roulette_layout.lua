@@ -132,7 +132,7 @@ local function build(width, height, chipCount, scale)
   local rightX = panelX + panelW + scale.sectionGap
   local rightW = width - rightX - layout.margin
   local trackY = panelY
-  local trackH = layout.compact and scale:scaledY(7, 7, 9) or scale:scaledY(11, 9, 13)
+  local trackH = layout.compact and scale:scaledY(9, 8, 10) or scale:scaledY(14, 12, 16)
   local feltY = trackY + trackH + scale.sectionGap
   local feltH = height - feltY - layout.margin
 

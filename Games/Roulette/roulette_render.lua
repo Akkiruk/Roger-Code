@@ -1,3 +1,4 @@
+local cfg = require("roulette_config")
 local ui = require("lib.ui")
 local currency = require("lib.currency")
 local model = require("roulette_model")
@@ -267,17 +268,25 @@ local function drawChip(screen, font, x, y, amount, toneColor)
   ui.safeDrawText(screen, text, font, x - floor(textW / 2), chipY - 1, colors.white)
 end
 
+local function getDisplayedWheelNumber(wheelOffset)
+  local index = (floor((wheelOffset or 0) + 0.5) % #model.WHEEL_ORDER) + 1
+  return model.WHEEL_ORDER[index]
+end
+
 local function drawTrackArrow(screen, centerX, topY, bottomY, color)
   if bottomY < topY then
     return
   end
 
-  screen:fillRect(centerX - 2, topY, 5, 1, color)
+  screen:fillRect(centerX - 3, topY, 7, 1, color)
   if topY + 1 <= bottomY then
-    screen:fillRect(centerX - 1, topY + 1, 3, 1, color)
+    screen:fillRect(centerX - 2, topY + 1, 5, 1, color)
   end
   if topY + 2 <= bottomY then
-    screen:fillRect(centerX, topY + 2, 1, (bottomY - topY) - 1, color)
+    screen:fillRect(centerX - 1, topY + 2, 3, 1, color)
+  end
+  if topY + 3 <= bottomY then
+    screen:fillRect(centerX, topY + 3, 1, (bottomY - topY) - 2, color)
   end
 end
 
@@ -344,28 +353,48 @@ local function drawTrack(screen, font, layout, state)
   local recentCellW = layout.ultraCompact and 4 or 5
   local recentCellH = 5
   local recentGap = 1
-  local recentMaxWidth = (recentCount * recentCellW) + max(0, recentCount - 1)
-  local innerX = track.x + 1
-  local innerW = max(1, track.w - 2)
-  local windowSlots = layout.compact and 7 or 10
-  local windowGap = 1
-  local cellW = max(4, min(track.cellW, layout.compact and 5 or 6))
+  local showFocus = not layout.ultraCompact
+  local focusW = showFocus and (layout.compact and 7 or 9) or 0
+  local focusGap = showFocus and 2 or 0
+  local windowSlots = layout.compact and cfg.TRACK_COMPACT_WINDOW_SLOTS or cfg.TRACK_WINDOW_SLOTS
+  local windowGap = layout.compact and cfg.TRACK_COMPACT_SLOT_GAP or cfg.TRACK_SLOT_GAP
+  local cellW = max(4, min(track.cellW + (layout.compact and 0 or 1), layout.compact and 5 or 7))
   local windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
+  local bandTopY = track.y + (layout.compact and 4 or 6)
+  local bandH = max(3, track.y + track.h - bandTopY - 2)
+  local focusX = track.x + track.w - focusW - 2
+  local focusRect = nil
 
-  if windowW > innerW then
-    cellW = max(3, floor((innerW - ((windowSlots - 1) * windowGap)) / windowSlots))
+  if showFocus then
+    focusRect = {
+      x = focusX,
+      y = track.y + 1,
+      w = focusW,
+      h = track.h - 2,
+    }
+  end
+
+  local recentReserve = 0
+  if recentCount > 0 then
+    recentReserve = (recentCount * recentCellW) + ((recentCount - 1) * recentGap) + 2
+  end
+
+  local availableLeft = recentX + recentReserve
+  local availableRight = showFocus and (focusX - focusGap - 1) or (track.x + track.w - 2)
+  local windowAreaW = max(1, availableRight - availableLeft + 1)
+
+  if windowW > windowAreaW then
+    cellW = max(3, floor((windowAreaW - ((windowSlots - 1) * windowGap)) / windowSlots))
     windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
   end
 
-  local windowX = innerX + floor((innerW - windowW) / 2)
+  local windowX = availableLeft + floor((windowAreaW - windowW) / 2)
   local pointerSlot = floor((windowSlots + 1) / 2)
   local slotPitch = cellW + windowGap
   local pointerX = windowX + floor(cellW / 2) + ((pointerSlot - 1) * slotPitch)
-  local bandY = track.y + (layout.compact and 3 or 5)
-  local bandH = max(3, track.y + track.h - bandY - 1)
   local bandRect = {
     x = windowX - 1,
-    y = bandY - 1,
+    y = bandTopY - 1,
     w = windowW + 2,
     h = bandH + 2,
   }
@@ -375,6 +404,7 @@ local function drawTrack(screen, font, layout, state)
   local recentWidthAvailable = max(0, windowX - recentX - 2)
   local maxRecentCount = floor((recentWidthAvailable + recentGap) / (recentCellW + recentGap))
   recentCount = min(recentCount, maxRecentCount)
+  local recentMaxWidth = (recentCount * recentCellW) + max(0, recentCount - 1)
 
   if recentCount > 0 then
     local index = 1
@@ -395,7 +425,7 @@ local function drawTrack(screen, font, layout, state)
     end
   end
 
-  drawTrackArrow(screen, pointerX, track.y + 1, bandY - 2, colors.yellow)
+  drawTrackArrow(screen, pointerX, track.y + 1, bandTopY - 2, colors.yellow)
 
   local wheelOffset = state.wheelOffset or 0
   local baseIndex = floor(wheelOffset)
@@ -411,15 +441,42 @@ local function drawTrack(screen, font, layout, state)
     if cellX < (windowX + windowW) and (cellX + cellW) > windowX then
       local bg = model.getNumberColor(number)
       local fg = model.getNumberTextColor(number)
-      screen:fillRect(cellX, bandY, cellW, bandH, bg)
+      screen:fillRect(cellX, bandTopY, cellW, bandH, bg)
       local label = tostring(number)
       local labelW = ui.getTextSize(label)
-      ui.safeDrawText(screen, label, font, cellX + floor((cellW - labelW) / 2), bandY - 1, fg)
+      ui.safeDrawText(screen, label, font, cellX + floor((cellW - labelW) / 2), bandTopY - 1, fg)
     end
     offset = offset + 1
   end
 
-  drawTrackSelector(screen, pointerX - floor(cellW / 2) - 1, bandY - 1, cellW + 2, bandH + 2, colors.yellow)
+  drawTrackSelector(screen, pointerX - floor(cellW / 2) - 1, bandTopY - 1, cellW + 2, bandH + 2, colors.yellow)
+
+  if focusRect then
+    local currentNumber = getDisplayedWheelNumber(wheelOffset)
+    local bg = model.getNumberColor(currentNumber)
+    local fg = model.getNumberTextColor(currentNumber)
+    local focusLabel = "BALL"
+    if state.phase == "result" then
+      focusLabel = "WIN"
+    end
+    drawFrame(screen, focusRect, bg, colors.yellow)
+
+    if not layout.compact then
+      drawCenteredText(screen, font, {
+        x = focusRect.x,
+        y = focusRect.y + 1,
+        w = focusRect.w,
+        h = 7,
+      }, focusLabel, fg)
+    end
+
+    drawCenteredText(screen, font, {
+      x = focusRect.x,
+      y = focusRect.y + (layout.compact and 1 or 7),
+      w = focusRect.w,
+      h = max(7, focusRect.h - (layout.compact and 2 or 8)),
+    }, tostring(currentNumber), fg, layout.compact and 0 or 1)
+  end
 end
 
 local function drawSummaryBox(screen, font, layout, state)

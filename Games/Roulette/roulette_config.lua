@@ -22,10 +22,32 @@ return {
   RECOVERY_FILE = "roulette_recovery.dat",
 
   -- Spin animation
-  SPIN_TICKS       = 44,     -- total animation frames
-  SPIN_FRAME_DELAY = 0.03,   -- seconds between frames
-  RESULT_PAUSE     = 2.4,    -- seconds to display result
-  HISTORY_LENGTH   = 10,
+  SPIN_FULL_ROTATIONS = 4,      -- extra full loops before settling on the winning number
+  SPIN_MIN_DELAY      = 0.018,  -- fastest per-number delay during the early spin
+  SPIN_MAX_DELAY      = 0.120,  -- slowest per-number delay right before the final stop
+  SPIN_SETTLE_DELAY   = 0.045,  -- bounce delay for the final lock-in
+  RESULT_PAUSE        = 2.4,    -- seconds to display result
+  HISTORY_LENGTH      = 10,
+
+  -- Track rendering
+  TRACK_WINDOW_SLOTS        = 9, -- visible numbers in the spin window on roomy monitors
+  TRACK_COMPACT_WINDOW_SLOTS = 7,
+  TRACK_SLOT_GAP            = 2,
+  TRACK_COMPACT_SLOT_GAP    = 1,
+
+  -- Roulette-specific sound effects
+  SOUND_IDS = {
+    BET_INSIDE = "the_vault:coin_single_place",
+    BET_OUTSIDE = "lightmanscurrency:coins_clinking",
+    CHIP_SELECT = "buildinggadgets:beep",
+    SPIN_START = "the_vault:artifact_complete",
+    SPIN_TICK = "quark:ambient.clock",
+    SPIN_SLOW = "lightmanscurrency:coins_clinking",
+    SPIN_FINAL = "the_vault:coin_pile_place",
+    RESULT_WIN = "the_vault:puzzle_completion_major",
+    RESULT_LOSS = "the_vault:puzzle_completion_fail",
+    RESULT_PUSH = "the_vault:rampage",
+  },
 
   -- Bet types with their payouts (payout is net winnings, not including original bet)
   BET_TYPES = {
