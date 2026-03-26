@@ -402,6 +402,17 @@ local function canReplayCurrentBet(currentBet)
   return true
 end
 
+local function drainHeldMonitorTouches(duration)
+  local timerID = os.startTimer(duration or 0.25)
+
+  while true do
+    local event, side = os.pullEvent()
+    if event == "timer" and side == timerID then
+      return
+    end
+  end
+end
+
 local function waitForReplayChoice(result, highlights, statusText, currentBet)
   local metrics = ui.getMetrics()
   local centerX = floor(width / 2)
@@ -436,6 +447,7 @@ local function waitForReplayChoice(result, highlights, statusText, currentBet)
           width = buttonWidth,
           func = function()
             if replayAvailable then
+              drainHeldMonitorTouches(0.25)
               choice = "replay"
               return
             end
