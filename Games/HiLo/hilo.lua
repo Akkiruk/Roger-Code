@@ -198,10 +198,7 @@ end
 local function renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
   screen:clear(LO.TABLE_COLOR)
 
-  -- Bet and multiplier display
-  local betLabel = "Bet: " .. currency.formatTokens(betAmount)
-  ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
-
+  -- Multiplier display
   if round > 0 then
     local multLabel = "x" .. tostring(multiplier)
     local mw = ui.getTextSize(multLabel)
@@ -239,6 +236,11 @@ local function renderBase(currentCard, revealedCards, betAmount, round, multipli
     local statusY = getChoiceStatusY()
     drawCenteredLine(statusText, statusY, colors.yellow)
   end
+
+  -- Current bet stays in the footer so it remains visible during play-again/result screens.
+  local betLabel = "Current Bet: " .. currency.formatTokens(betAmount)
+  local betY = max(0, height - LINE_H - scale.edgePad)
+  drawCenteredLine(betLabel, betY, colors.white)
 end
 
 local function renderScreen(currentCard, revealedCards, betAmount, round, multiplier, statusText)
