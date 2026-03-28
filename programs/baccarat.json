@@ -10,8 +10,8 @@
     "version": "1.2.22"
   },
   "build": {
-    "commit": "bd66f4fa1195382ab81c1e7dfdc0b68a93bd1fb9",
-    "generated_at": "2026-03-28T19:52:43Z",
+    "commit": "51a550fbc888f76099168c29ceb2c882a1536c24",
+    "generated_at": "2026-03-28T20:18:47Z",
     "package_hash": "35b238cfa1502f35b0e14f17b08447296345ddaf65949262a382a4ef2747a59f"
   },
   "install": {
