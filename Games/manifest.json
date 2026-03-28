@@ -1,318 +1,308 @@
 {
-    "manifest_version":  1,
-    "installer_version":  "1.1.4",
-    "installer_hash":  "9a61f4200389b1c5",
-    "programs":  {
-                     "baccarat":  {
-                                      "name":  "Baccarat",
-                                      "version":  "1.2.17",
-                                      "content_hash":  "3d1527d16d8511f6",
-                                      "description":  "Baccarat card game for ComputerCraft casino.",
-                                      "category":  "Games",
-                                      "source_dir":  "Games/Baccarat",
-                                      "uses_lib":  true,
-                                      "files":  [
-                                                    "baccarat.lua",
-                                                    "startup.lua"
-                                                ],
-                                      "config_files":  [
-                                                           "baccarat_config.lua"
-                                                       ],
-                                      "assets":  [
-                                                     "card.nfp",
-                                                     "cardback.nfp",
-                                                     "club.nfp",
-                                                     "clubs.nfp",
-                                                     "diamond.nfp",
-                                                     "diamonds.nfp",
-                                                     "font",
-                                                     "heart.nfp",
-                                                     "hearts.nfp",
-                                                     "spade.nfp",
-                                                     "spades.nfp",
-                                                     "surface",
-                                                     "vhcc_lockdown.txt"
-                                                 ]
-                                  },
-                     "blackjack":  {
-                                       "name":  "Blackjack",
-                                       "version":  "1.2.15",
-                                       "content_hash":  "ebf2508909aa9f3e",
-                                       "description":  "Blackjack card game for ComputerCraft casino.",
-                                       "category":  "Games",
-                                       "source_dir":  "Games/Blackjack",
-                                       "uses_lib":  true,
-                                       "files":  [
-                                                     "blackjack.lua",
-                                                     "startup.lua",
-                                                     "statistics.lua",
-                                                     "stats_ui.lua"
-                                                 ],
-                                       "config_files":  [
-                                                            "blackjack_config.lua"
-                                                        ],
-                                       "assets":  [
-                                                      "card.nfp",
-                                                      "cardback.nfp",
-                                                      "club.nfp",
-                                                      "clubs.nfp",
-                                                      "diamond.nfp",
-                                                      "diamonds.nfp",
-                                                      "font",
-                                                      "gothic",
-                                                      "heart.nfp",
-                                                      "hearts.nfp",
-                                                      "logo.nfp",
-                                                      "spade.nfp",
-                                                      "spades.nfp",
-                                                      "surface",
-                                                      "vhcc_lockdown.txt"
-                                                  ]
-                                   },
-                     "hilo":  {
-                                  "name":  "HiLo",
-                                  "version":  "1.0.18",
-                                  "content_hash":  "9b7002ecdc9278b2",
-                                  "description":  "Hi-Lo card game for ComputerCraft casino.",
-                                  "category":  "Games",
-                                  "source_dir":  "Games/HiLo",
-                                  "uses_lib":  true,
-                                  "files":  [
-                                                "hilo.lua",
-                                                "startup.lua"
-                                            ],
-                                  "config_files":  [
-                                                       "hilo_config.lua"
-                                                   ],
-                                  "assets":  [
-                                                 "card.nfp",
-                                                 "cardback.nfp",
-                                                 "club.nfp",
-                                                 "clubs.nfp",
-                                                 "diamond.nfp",
-                                                 "diamonds.nfp",
-                                                 "font",
-                                                 "heart.nfp",
-                                                 "hearts.nfp",
-                                                 "spade.nfp",
-                                                 "spades.nfp",
-                                                 "surface",
-                                                 "vhcc_lockdown.txt"
-                                             ]
-                              },
-                     "phone_os":  {
-                                      "name":  "Pocket Casino OS",
-                                      "version":  "1.0.23",
-                                      "content_hash":  "920a8ef8a4a0aecc",
-                                      "description":  "Pocket casino shell for ComputerCraft pocket computers.",
-                                      "category":  "Utilities",
-                                      "source_dir":  "Games/PhoneOS",
-                                      "uses_lib":  true,
-                                      "files":  [
-                                                    "phone_os.lua",
-                                                    "phoneos/blackjack.lua",
-                                                    "phoneos/blackjack_defaults.lua",
-                                                    "phoneos/slots.lua",
-                                                    "phoneos/slots_defaults.lua",
-                                                    "phoneos/storage.lua",
-                                                    "phoneos/ui.lua",
-                                                    "startup.lua"
-                                                ],
-                                      "config_files":  [
-                                                           "blackjack_config.lua",
-                                                           "slots_config.lua"
-                                                       ],
-                                      "assets":  [
-                                                     "vhcc_lockdown.txt"
-                                                 ]
-                                  },
-                     "roulette":  {
-                                      "name":  "Roulette",
-                                      "version":  "1.0.34",
-                                      "content_hash":  "fdd5a8a2695009b9",
-                                      "description":  "European Roulette with a single-screen felt UI and multi-bet support.",
-                                      "category":  "Games",
-                                      "source_dir":  "Games/Roulette",
-                                      "uses_lib":  true,
-                                      "files":  [
-                                                    "roulette_layout.lua",
-                                                    "roulette_model.lua",
-                                                    "roulette_render.lua",
-                                                    "Roulette.lua",
-                                                    "startup.lua"
-                                                ],
-                                      "config_files":  [
-                                                           "roulette_config.lua"
-                                                       ],
-                                      "assets":  [
-                                                     "card.nfp",
-                                                     "cardback.nfp",
-                                                     "font",
-                                                     "surface",
-                                                     "vhcc_lockdown.txt"
-                                                 ]
-                                  },
-                     "slots":  {
-                                   "name":  "Slots",
-                                   "version":  "1.0.20",
-                                   "content_hash":  "6d76c0bad4aa6bcb",
-                                   "description":  "Slot Machine game for ComputerCraft casino.",
-                                   "category":  "Games",
-                                   "source_dir":  "Games/Slots",
-                                   "uses_lib":  true,
-                                   "files":  [
-                                                 "slots.lua",
-                                                 "startup.lua",
-                                                 "view_art.lua"
-                                             ],
-                                   "config_files":  [
-                                                        "slots_config.lua"
-                                                    ],
-                                   "assets":  [
-                                                  "bar.nfp",
-                                                  "bell.nfp",
-                                                  "cherry.nfp",
-                                                  "diamond.nfp",
-                                                  "font",
-                                                  "lemon.nfp",
-                                                  "melon.nfp",
-                                                  "seven.nfp",
-                                                  "surface",
-                                                  "vhcc_lockdown.txt"
-                                              ]
-                               },
-                     "taskmaster":  {
-                                        "name":  "TaskMaster",
-                                        "version":  "1.0.3",
-                                        "content_hash":  "baf2b0e8a4d6ee09",
-                                        "description":  "A stateless, anonymous item exchange kiosk for ComputerCraft",
-                                        "category":  "Utilities",
-                                        "source_dir":  "Games/TaskMaster",
-                                        "uses_lib":  true,
-                                        "files":  [
-                                                      "taskmaster.lua"
-                                                  ],
-                                        "config_files":  [
-
-                                                         ],
-                                        "assets":  [
-
-                                                   ]
-                                    },
-                     "vaultgear":  {
-                                       "name":  "VaultGear",
-                                       "version":  "1.0.10",
-                                       "content_hash":  "6f3c62b37ae888aa",
-                                       "description":  "Vault Storage Manager monitor app for live multi-storage routing and repair.",
-                                       "category":  "Utilities",
-                                       "source_dir":  "Games/VaultGear",
-                                       "uses_lib":  true,
-                                       "files":  [
-                                                     "startup.lua",
-                                                     "vaultgear.lua"
-                                                 ],
-                                       "config_files":  [
-                                                            "vaultgear_config.lua",
-                                                            "vaultgear_state_settings.lua"
-                                                        ],
-                                       "assets":  [
-
-                                                  ]
-                                   },
-                     "videopoker":  {
-                                        "name":  "VideoPoker",
-                                        "version":  "1.0.18",
-                                        "content_hash":  "00b6c058ea12b936",
-                                        "description":  "Video Poker (Jacks or Better) for ComputerCraft casino.",
-                                        "category":  "Games",
-                                        "source_dir":  "Games/VideoPoker",
-                                        "uses_lib":  true,
-                                        "files":  [
-                                                      "startup.lua",
-                                                      "videopoker.lua"
-                                                  ],
-                                        "config_files":  [
-                                                             "videopoker_config.lua"
-                                                         ],
-                                        "assets":  [
-                                                       "card.nfp",
-                                                       "cardback.nfp",
-                                                       "club.nfp",
-                                                       "clubs.nfp",
-                                                       "diamond.nfp",
-                                                       "diamonds.nfp",
-                                                       "font",
-                                                       "heart.nfp",
-                                                       "hearts.nfp",
-                                                       "spade.nfp",
-                                                       "spades.nfp",
-                                                       "surface",
-                                                       "vhcc_lockdown.txt"
-                                                   ]
-                                    },
-                     "vault_item_analyzer":  {
-                                                 "name":  "vault_item_analyzer",
-                                                 "version":  "1.0.7",
-                                                 "content_hash":  "a9ebd5a151c9089c",
-                                                 "description":  "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
-                                                 "category":  "Utilities",
-                                                 "source_dir":  "Utilities",
-                                                 "uses_lib":  false,
-                                                 "files":  [
-                                                               "vault_item_analyzer.lua"
-                                                           ],
-                                                 "config_files":  [
-
-                                                                  ],
-                                                 "assets":  [
-
-                                                            ]
-                                             }
-                 },
-    "lib":  {
-                "version":  "1.2.26",
-                "content_hash":  "034e55ea0be583c1",
-                "files":  [
-                              "achievements.lua",
-                              "alert.lua",
-                              "auto_player.lua",
-                              "basalt.lua",
-                              "bedrock.lua",
-                              "bedrock/layout.lua",
-                              "bedrock/renderer.lua",
-                              "bedrock/runtime.lua",
-                              "bedrock/theme.lua",
-                              "bedrock/widgets.lua",
-                              "betting.lua",
-                              "card_anim.lua",
-                              "cards.lua",
-                              "crash_recovery.lua",
-                              "currency.lua",
-                              "game_setup.lua",
-                              "idle_screen.lua",
-                              "monitor_scale.lua",
-                              "peripherals.lua",
-                              "player_detection.lua",
-                              "player_stats.lua",
-                              "safe_runner.lua",
-                              "sound.lua",
-                              "ui.lua",
-                              "updater.lua",
-                              "vaultgear/app.lua",
-                              "vaultgear/catalog.lua",
-                              "vaultgear/constants.lua",
-                              "vaultgear/logger.lua",
-                              "vaultgear/model.lua",
-                              "vaultgear/peripherals.lua",
-                              "vaultgear/planner.lua",
-                              "vaultgear/presets.lua",
-                              "vaultgear/quick_setup.lua",
-                              "vaultgear/service.lua",
-                              "vaultgear/store.lua",
-                              "vaultgear/ui.lua",
-                              "vaultgear/ui_pages.lua",
-                              "vaultgear/ui_shared.lua",
-                              "vaultgear/util.lua"
-                          ]
-            }
+  "manifest_version": 1,
+  "installer_version": "1.1.4",
+  "installer_hash": "9a61f4200389b1c5",
+  "programs": {
+    "baccarat": {
+      "name": "Baccarat",
+      "version": "1.2.18",
+      "content_hash": "b1fb73ca54fdb983",
+      "description": "Baccarat card game for ComputerCraft casino.",
+      "category": "Games",
+      "source_dir": "Games/Baccarat",
+      "uses_lib": true,
+      "files": [
+        "baccarat.lua",
+        "startup.lua"
+      ],
+      "config_files": [
+        "baccarat_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "heart.nfp",
+        "hearts.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface",
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "blackjack": {
+      "name": "Blackjack",
+      "version": "1.2.16",
+      "content_hash": "24276f750217ba0e",
+      "description": "Blackjack card game for ComputerCraft casino.",
+      "category": "Games",
+      "source_dir": "Games/Blackjack",
+      "uses_lib": true,
+      "files": [
+        "blackjack.lua",
+        "startup.lua",
+        "statistics.lua",
+        "stats_ui.lua"
+      ],
+      "config_files": [
+        "blackjack_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "gothic",
+        "heart.nfp",
+        "hearts.nfp",
+        "logo.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface",
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "hilo": {
+      "name": "HiLo",
+      "version": "1.0.19",
+      "content_hash": "210ef682cbea7146",
+      "description": "Hi-Lo card game for ComputerCraft casino.",
+      "category": "Games",
+      "source_dir": "Games/HiLo",
+      "uses_lib": true,
+      "files": [
+        "hilo.lua",
+        "startup.lua"
+      ],
+      "config_files": [
+        "hilo_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "heart.nfp",
+        "hearts.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface",
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "phone_os": {
+      "name": "Pocket Casino OS",
+      "version": "1.0.24",
+      "content_hash": "662570ff8c91f72f",
+      "description": "Pocket casino shell for ComputerCraft pocket computers.",
+      "category": "Utilities",
+      "source_dir": "Games/PhoneOS",
+      "uses_lib": true,
+      "files": [
+        "phone_os.lua",
+        "phoneos/blackjack_defaults.lua",
+        "phoneos/blackjack.lua",
+        "phoneos/slots_defaults.lua",
+        "phoneos/slots.lua",
+        "phoneos/storage.lua",
+        "phoneos/ui.lua",
+        "startup.lua"
+      ],
+      "config_files": [
+        "blackjack_config.lua",
+        "slots_config.lua"
+      ],
+      "assets": [
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "roulette": {
+      "name": "Roulette",
+      "version": "1.0.34",
+      "content_hash": "fdd5a8a2695009b9",
+      "description": "European Roulette with a single-screen felt UI and multi-bet support.",
+      "category": "Games",
+      "source_dir": "Games/Roulette",
+      "uses_lib": true,
+      "files": [
+        "roulette_layout.lua",
+        "roulette_model.lua",
+        "roulette_render.lua",
+        "Roulette.lua",
+        "startup.lua"
+      ],
+      "config_files": [
+        "roulette_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "font",
+        "surface",
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "slots": {
+      "name": "Slots",
+      "version": "1.0.21",
+      "content_hash": "523b18e02ac3ee00",
+      "description": "Slot Machine game for ComputerCraft casino.",
+      "category": "Games",
+      "source_dir": "Games/Slots",
+      "uses_lib": true,
+      "files": [
+        "slots.lua",
+        "startup.lua",
+        "view_art.lua"
+      ],
+      "config_files": [
+        "slots_config.lua"
+      ],
+      "assets": [
+        "bar.nfp",
+        "bell.nfp",
+        "cherry.nfp",
+        "diamond.nfp",
+        "font",
+        "lemon.nfp",
+        "melon.nfp",
+        "seven.nfp",
+        "surface",
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "taskmaster": {
+      "name": "TaskMaster",
+      "version": "1.0.3",
+      "content_hash": "baf2b0e8a4d6ee09",
+      "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
+      "category": "Utilities",
+      "source_dir": "Games/TaskMaster",
+      "uses_lib": true,
+      "files": [
+        "taskmaster.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    },
+    "vaultgear": {
+      "name": "VaultGear",
+      "version": "1.0.11",
+      "content_hash": "e32539224a2b0825",
+      "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
+      "category": "Utilities",
+      "source_dir": "Games/VaultGear",
+      "uses_lib": true,
+      "files": [
+        "startup.lua",
+        "vaultgear.lua"
+      ],
+      "config_files": [
+        "vaultgear_config.lua",
+        "vaultgear_state_settings.lua"
+      ],
+      "assets": []
+    },
+    "videopoker": {
+      "name": "VideoPoker",
+      "version": "1.0.19",
+      "content_hash": "6687bb8c4e2222dd",
+      "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
+      "category": "Games",
+      "source_dir": "Games/VideoPoker",
+      "uses_lib": true,
+      "files": [
+        "startup.lua",
+        "videopoker.lua"
+      ],
+      "config_files": [
+        "videopoker_config.lua"
+      ],
+      "assets": [
+        "card.nfp",
+        "cardback.nfp",
+        "club.nfp",
+        "clubs.nfp",
+        "diamond.nfp",
+        "diamonds.nfp",
+        "font",
+        "heart.nfp",
+        "hearts.nfp",
+        "spade.nfp",
+        "spades.nfp",
+        "surface",
+        "vhcc_lockdown.txt"
+      ]
+    },
+    "vault_item_analyzer": {
+      "name": "vault_item_analyzer",
+      "version": "1.0.7",
+      "content_hash": "a9ebd5a151c9089c",
+      "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
+      "category": "Utilities",
+      "source_dir": "Utilities",
+      "uses_lib": false,
+      "files": [
+        "vault_item_analyzer.lua"
+      ],
+      "config_files": [],
+      "assets": []
+    }
+  },
+  "lib": {
+    "version": "1.2.27",
+    "content_hash": "f7ed8dcdc2115dbd",
+    "files": [
+      "achievements.lua",
+      "alert.lua",
+      "auto_player.lua",
+      "basalt.lua",
+      "bedrock.lua",
+      "bedrock/layout.lua",
+      "bedrock/renderer.lua",
+      "bedrock/runtime.lua",
+      "bedrock/theme.lua",
+      "bedrock/widgets.lua",
+      "betting.lua",
+      "card_anim.lua",
+      "cards.lua",
+      "crash_recovery.lua",
+      "currency.lua",
+      "game_setup.lua",
+      "idle_screen.lua",
+      "monitor_scale.lua",
+      "peripherals.lua",
+      "player_detection.lua",
+      "player_stats.lua",
+      "safe_runner.lua",
+      "sound.lua",
+      "ui.lua",
+      "updater.lua",
+      "vaultgear/app.lua",
+      "vaultgear/catalog.lua",
+      "vaultgear/constants.lua",
+      "vaultgear/logger.lua",
+      "vaultgear/model.lua",
+      "vaultgear/peripherals.lua",
+      "vaultgear/planner.lua",
+      "vaultgear/presets.lua",
+      "vaultgear/quick_setup.lua",
+      "vaultgear/service.lua",
+      "vaultgear/store.lua",
+      "vaultgear/ui_pages.lua",
+      "vaultgear/ui_shared.lua",
+      "vaultgear/ui.lua",
+      "vaultgear/util.lua"
+    ]
+  }
 }

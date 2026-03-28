@@ -73,7 +73,7 @@ return {
   LAYOUT = {
     TABLE_COLOR    = colors.brown,     -- remapped via PALETTE above
     REEL_BG        = colors.black,
-    REEL_Y         = 12,               -- top of reel display area
+    REEL_Y         = 15,               -- top of reel display area
     REEL_HEIGHT    = 20,               -- height of each reel cell
     REEL_SPACING   = 4,                -- gap between reels
     REEL_WIDTH     = 18,               -- width of each reel cell
