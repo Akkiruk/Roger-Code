@@ -1,4 +1,4 @@
--- Vault Gear Sorter startup entry point with background updater support.
+-- Vault Storage Manager startup entry point with background updater support.
 
 local updater = require("lib.updater")
 local logger = require("lib.vaultgear.logger")

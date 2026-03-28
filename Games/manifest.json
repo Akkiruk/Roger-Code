@@ -201,9 +201,9 @@
                                     },
                      "vaultgear":  {
                                        "name":  "VaultGear",
-                                       "version":  "1.0.9",
-                                       "content_hash":  "b5589fa816123b89",
-                                       "description":  "Vault Gear Sorter monitor app for configurable Vault Hunters gear routing.",
+                                       "version":  "1.0.10",
+                                       "content_hash":  "6f3c62b37ae888aa",
+                                       "description":  "Vault Storage Manager monitor app for live multi-storage routing and repair.",
                                        "category":  "Utilities",
                                        "source_dir":  "Games/VaultGear",
                                        "uses_lib":  true,
@@ -270,8 +270,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.24",
-                "content_hash":  "df96dc09d1644556",
+                "version":  "1.2.25",
+                "content_hash":  "0ebc6e3cb3b8afe8",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
@@ -301,11 +301,11 @@
                               "vaultgear/app.lua",
                               "vaultgear/catalog.lua",
                               "vaultgear/constants.lua",
-                              "vaultgear/evaluator.lua",
                               "vaultgear/logger.lua",
                               "vaultgear/model.lua",
                               "vaultgear/peripherals.lua",
-                              "vaultgear/routing.lua",
+                              "vaultgear/planner.lua",
+                              "vaultgear/presets.lua",
                               "vaultgear/service.lua",
                               "vaultgear/store.lua",
                               "vaultgear/ui.lua",

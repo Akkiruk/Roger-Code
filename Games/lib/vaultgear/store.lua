@@ -1,43 +1,11 @@
 local constants = require("lib.vaultgear.constants")
-local routing = require("lib.vaultgear.routing")
+local planner = require("lib.vaultgear.planner")
+local presets = require("lib.vaultgear.presets")
 local util = require("lib.vaultgear.util")
 
 local M = {}
 
-local function buildBaseProfile()
-  return {
-    enabled = true,
-    miss_action = "keep",
-    unidentified_mode = "keep",
-    min_rarity = "ANY",
-    min_level = nil,
-    max_level = nil,
-    min_crafting_potential = nil,
-    min_free_repair_slots = nil,
-    min_durability_percent = nil,
-    max_jewel_size = nil,
-    min_uses = nil,
-    keep_legendary = false,
-    keep_soulbound = false,
-    keep_unique = false,
-    wanted_modifier_mode = "any",
-    wanted_modifiers = {},
-    blocked_modifiers = {},
-  }
-end
-
 function M.buildDefaultConfig()
-  local profiles = {}
-
-  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
-    profiles[itemType] = buildBaseProfile()
-  end
-
-  profiles.Gear.keep_legendary = true
-  profiles.Gear.keep_soulbound = true
-  profiles.Gear.keep_unique = true
-  profiles.Etching.keep_legendary = true
-
   return {
     schema_version = constants.CONFIG_SCHEMA_VERSION,
     monitor = {
@@ -45,9 +13,7 @@ function M.buildDefaultConfig()
       text_scale = 0.5,
     },
     runtime = util.deepCopy(constants.DEFAULT_RUNTIME),
-    routing = routing.normalizeRouting(nil),
-    safety = util.deepCopy(constants.DEFAULT_SAFETY),
-    type_profiles = profiles,
+    storages = {},
   }
 end
 
@@ -55,41 +21,19 @@ function M.buildDefaultState()
   return {
     schema_version = constants.STATE_SCHEMA_VERSION,
     ui = {
-      page = "dashboard",
-      selected_type = "Gear",
-      preview_selected = 1,
-      selected_modifier_key = nil,
-      selected_keep_key = nil,
-      selected_block_key = nil,
-      selected_destination_id = "route_1",
+      page = "overview",
+      selected_inventory = nil,
+      advanced = false,
+    },
+    runtime = {
+      repair_cursor = 1,
+      current_mode = "idle",
+      current_target = nil,
+      last_summary = "Idle",
+      last_reason = nil,
     },
     catalog = {},
   }
-end
-
-local function normalizeLoadedConfig(loaded)
-  if type(loaded) ~= "table" then
-    return nil
-  end
-
-  local normalized = util.deepCopy(loaded)
-  normalized.routing = routing.normalizeRouting(routing.migrateLegacyRouting(normalized.routing))
-  return normalized
-end
-
-local function normalizeLoadedState(loaded)
-  if type(loaded) ~= "table" then
-    return nil
-  end
-
-  local normalized = util.deepCopy(loaded)
-  if type(normalized.ui) ~= "table" then
-    normalized.ui = {}
-  end
-  if type(normalized.ui.selected_destination_id) ~= "string" or normalized.ui.selected_destination_id == "" then
-    normalized.ui.selected_destination_id = "route_1"
-  end
-  return normalized
 end
 
 local function serializeTable(data)
@@ -130,26 +74,105 @@ local function saveLuaTable(path, data)
   return atomicWrite(path, serializeTable(data))
 end
 
+local function migrateLegacyConfig(loaded)
+  local migrated = M.buildDefaultConfig()
+  if type(loaded) ~= "table" then
+    return migrated
+  end
+
+  if type(loaded.monitor) == "table" then
+    migrated.monitor = util.mergeDefaults(migrated.monitor, loaded.monitor)
+  end
+
+  if type(loaded.runtime) == "table" then
+    migrated.runtime.enabled = loaded.runtime.enabled == true
+    migrated.runtime.scan_interval = tonumber(loaded.runtime.scan_interval) or migrated.runtime.scan_interval
+  end
+
+  local storages = {}
+  local routing = loaded.routing
+  if type(routing) == "table" then
+    if type(routing.input) == "string" and routing.input ~= "" then
+      storages[#storages + 1] = planner.createStorage(storages, routing.input, "inbox", nil, nil)
+    end
+
+    for _, destination in ipairs(routing.destinations or {}) do
+      if type(destination.inventory) == "string" and destination.inventory ~= "" then
+        local storage = planner.createStorage(storages, destination.inventory, "home", "overflow", "broad")
+        storage.priority = destination.match_action == "keep" and 20 or (destination.match_action == "discard" and 90 or storage.priority)
+        storage.rescan = destination.enabled ~= false
+        storage.enabled = destination.enabled ~= false
+        storages[#storages + 1] = planner.normalizeStorage(storage, #storages + 1)
+      end
+    end
+  end
+
+  migrated.storages = planner.normalizeStorages(storages)
+  return migrated
+end
+
+local function normalizeLoadedConfig(loaded)
+  if type(loaded) ~= "table" then
+    return M.buildDefaultConfig()
+  end
+
+  if tonumber(loaded.schema_version) == constants.CONFIG_SCHEMA_VERSION and type(loaded.storages) == "table" then
+    local normalized = util.mergeDefaults(M.buildDefaultConfig(), loaded)
+    normalized.storages = planner.normalizeStorages(normalized.storages)
+    return normalized
+  end
+
+  return migrateLegacyConfig(loaded)
+end
+
+local function normalizeLoadedState(loaded)
+  if type(loaded) ~= "table" then
+    return M.buildDefaultState()
+  end
+
+  local normalized = util.mergeDefaults(M.buildDefaultState(), loaded)
+  if type(normalized.ui.selected_inventory) ~= "string" or normalized.ui.selected_inventory == "" then
+    normalized.ui.selected_inventory = nil
+  end
+  normalized.ui.advanced = normalized.ui.advanced == true
+  normalized.runtime.repair_cursor = tonumber(normalized.runtime.repair_cursor) or 1
+  normalized.runtime.current_mode = tostring(normalized.runtime.current_mode or "idle")
+  normalized.runtime.current_target = normalized.runtime.current_target and tostring(normalized.runtime.current_target) or nil
+  normalized.runtime.last_summary = tostring(normalized.runtime.last_summary or "Idle")
+  normalized.runtime.last_reason = normalized.runtime.last_reason and tostring(normalized.runtime.last_reason) or nil
+  return normalized
+end
+
 function M.loadConfig()
-  local loaded = normalizeLoadedConfig(readLuaTable(constants.CONFIG_FILE))
-  local merged = util.mergeDefaults(M.buildDefaultConfig(), loaded)
-  merged.routing = routing.normalizeRouting(merged.routing)
-  return merged
+  local loaded = readLuaTable(constants.CONFIG_FILE)
+  local normalized = normalizeLoadedConfig(loaded)
+  normalized.runtime = util.mergeDefaults(constants.DEFAULT_RUNTIME, normalized.runtime)
+  normalized.storages = planner.normalizeStorages(normalized.storages)
+  return normalized
 end
 
 function M.saveConfig(config)
   config.schema_version = constants.CONFIG_SCHEMA_VERSION
+  config.storages = planner.normalizeStorages(config.storages)
   return saveLuaTable(constants.CONFIG_FILE, config)
 end
 
 function M.loadState()
-  local loaded = normalizeLoadedState(readLuaTable(constants.STATE_FILE))
-  return util.mergeDefaults(M.buildDefaultState(), loaded)
+  return normalizeLoadedState(readLuaTable(constants.STATE_FILE))
 end
 
 function M.saveState(state)
   state.schema_version = constants.STATE_SCHEMA_VERSION
   return saveLuaTable(constants.STATE_FILE, state)
+end
+
+function M.applyPreset(storage, presetId, strictness)
+  if not storage then
+    return
+  end
+  storage.preset_id = presetId
+  storage.strictness = strictness or storage.strictness or "normal"
+  storage.rule = presets.apply(storage.preset_id, storage.strictness)
 end
 
 return M

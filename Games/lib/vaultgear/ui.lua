@@ -13,31 +13,22 @@ function M.create(app, actions)
   local view = shared.createViewState()
 
   local function syncJobs()
-    runtime:setJobInterval("sort", app.config.runtime.scan_interval or 2)
+    runtime:setJobInterval("inspect", app.config.runtime.scan_interval or 2)
+    runtime:setJobInterval("work", app.config.runtime.scan_interval or 2)
   end
 
   local controller = {}
 
   function controller:rebindTerm()
-    syncJobs()
     if app.monitor and app.monitor.peripheral then
       runtime:setTerm(app.monitor.peripheral, app.monitor.name)
     else
       runtime:setTerm(term.current(), nil)
     end
+    syncJobs()
   end
 
   function controller:refreshHeader()
-    syncJobs()
-    runtime:invalidate()
-  end
-
-  function controller:refreshDashboard()
-    syncJobs()
-    runtime:invalidate()
-  end
-
-  function controller:refreshModifiers()
     syncJobs()
     runtime:invalidate()
   end
@@ -79,8 +70,8 @@ function M.create(app, actions)
     end,
   })
 
-  runtime:setJob("preview", 2, actions.onPreviewTimer)
-  runtime:setJob("sort", app.config.runtime.scan_interval or 2, actions.onSortTimer)
+  runtime:setJob("inspect", app.config.runtime.scan_interval or 2, actions.onInspectTimer)
+  runtime:setJob("work", app.config.runtime.scan_interval or 2, actions.onWorkTimer)
   runtime:setJob("save", 10, actions.onSaveTimer)
 
   return controller

@@ -1,10 +1,16 @@
-local constants = require("lib.vaultgear.constants")
-local evaluator = require("lib.vaultgear.evaluator")
 local model = require("lib.vaultgear.model")
-local routing = require("lib.vaultgear.routing")
+local planner = require("lib.vaultgear.planner")
 
 local M = {}
 local unpackArgs = table.unpack or unpack
+
+local function safeWrap(name)
+  local ok, wrapped = pcall(peripheral.wrap, name)
+  if ok then
+    return wrapped
+  end
+  return nil
+end
 
 local function safeCall(methodOwner, methodName, ...)
   if not methodOwner or type(methodOwner[methodName]) ~= "function" then
@@ -26,134 +32,250 @@ local function slotKeys(slotMap)
   return keys
 end
 
-local function moveFromInput(inputInventory, destinationName, slot, count)
-  local ok, movedOrErr = safeCall(inputInventory, "pushItems", destinationName, slot, count)
-  if not ok then
-    return nil, tostring(movedOrErr)
+local function readDetail(inventory, slot, basic)
+  if not basic or not basic.name or basic.name:find("the_vault:", 1, true) ~= 1 then
+    return nil, nil
   end
-  return movedOrErr
-end
 
-local function readDetail(inputInventory, slot)
-  local ok, detailOrErr = safeCall(inputInventory, "getItemDetail", slot)
+  local ok, detailOrErr = safeCall(inventory, "getItemDetail", slot)
   if not ok then
     return nil, tostring(detailOrErr)
   end
-  return detailOrErr
+  return detailOrErr, nil
 end
 
-function M.buildPreview(inputInventory, config, catalog, catalogLib, limit)
-  limit = limit or constants.PREVIEW_LIMIT
+local function normalizeSlot(inventory, slot, basic)
+  local detail, detailError = readDetail(inventory, slot, basic)
+  return model.normalize(slot, basic, detail, detailError)
+end
 
-  local ok, slotMap = safeCall(inputInventory, "list")
+local function loadSlotMap(inventoryName)
+  local inventory = safeWrap(inventoryName)
+  if not inventory then
+    return nil, nil, "Inventory missing: " .. tostring(inventoryName)
+  end
+
+  local ok, slotMap = safeCall(inventory, "list")
   if not ok or type(slotMap) ~= "table" then
-    return {
-      items = {},
-      error = "Could not list input inventory",
-    }
+    return inventory, nil, "Could not list inventory: " .. tostring(inventoryName)
   end
 
-  local preview = { items = {}, scanned = 0, catalog_changed = false }
-  for _, slot in ipairs(slotKeys(slotMap)) do
-    if #preview.items >= limit then
-      break
-    end
-
-    local basic = slotMap[slot]
-    local detail = nil
-    local detailError = nil
-    if basic and basic.name and basic.name:find("the_vault:", 1, true) == 1 then
-      detail, detailError = readDetail(inputInventory, slot)
-    end
-
-    local item = model.normalize(slot, basic, detail, detailError)
-    local decision = evaluator.evaluate(item, config)
-    local destination = nil
-    destination = routing.resolveDestination(config, item, decision)
-    if catalogLib then
-      preview.catalog_changed = catalogLib.observe(catalog, item) or preview.catalog_changed
-    end
-
-    preview.items[#preview.items + 1] = {
-      slot = slot,
-      item = item,
-      decision = decision,
-      destination = destination,
-      lines = model.summaryLines(item),
-    }
-    preview.scanned = preview.scanned + 1
-    os.sleep(0)
-  end
-
-  return preview
+  return inventory, slotMap, nil
 end
 
-function M.processCycle(inputInventory, config, catalog, catalogLib)
+local function observeItem(catalog, catalogLib, item)
+  if catalogLib then
+    return catalogLib.observe(catalog, item) == true
+  end
+  return false
+end
+
+local function inspectWrappedInventory(inventoryName, inventory, slotMap, catalog, catalogLib, limit)
   local result = {
-    processed = 0,
-    moved_keep = 0,
-    moved_discard = 0,
-    errors = {},
-    last_decision = nil,
+    inventory = inventoryName,
+    items = {},
+    total_slots = 0,
+    supported_items = 0,
+    vault_items = 0,
     catalog_changed = false,
+    error = nil,
   }
 
-  local ok, slotMap = safeCall(inputInventory, "list")
-  if not ok or type(slotMap) ~= "table" then
-    result.errors[#result.errors + 1] = "Could not list input inventory"
-    return result
-  end
-
-  local batchLimit = config.runtime.batch_size or 1
-
   for _, slot in ipairs(slotKeys(slotMap)) do
-    if result.processed >= batchLimit then
-      break
-    end
-
     local basic = slotMap[slot]
-    local detail = nil
-    local detailError = nil
-    if basic and basic.name and basic.name:find("the_vault:", 1, true) == 1 then
-      detail, detailError = readDetail(inputInventory, slot)
+    local item = normalizeSlot(inventory, slot, basic)
+    result.total_slots = result.total_slots + 1
+    if item.vault then
+      result.vault_items = result.vault_items + 1
     end
-
-    local item = model.normalize(slot, basic, detail, detailError)
-    local decision = evaluator.evaluate(item, config)
-    local destination = nil
-    destination = routing.resolveDestination(config, item, decision)
-    if catalogLib then
-      result.catalog_changed = catalogLib.observe(catalog, item) or result.catalog_changed
+    if item.supported_type then
+      result.supported_items = result.supported_items + 1
     end
+    result.catalog_changed = observeItem(catalog, catalogLib, item) or result.catalog_changed
 
-    if not destination or not destination.inventory then
-      result.errors[#result.errors + 1] = "No matching destination for slot " .. tostring(slot)
-    else
-      local moved, moveError = moveFromInput(inputInventory, destination.inventory, slot, basic.count or 1)
-      if type(moved) ~= "number" then
-        result.errors[#result.errors + 1] = moveError or ("Move failed for slot " .. tostring(slot))
-      elseif moved < 1 then
-        result.errors[#result.errors + 1] = "Destination blocked for slot " .. tostring(slot)
-      else
-        result.processed = result.processed + 1
-        if decision.action == "discard" then
-          result.moved_discard = result.moved_discard + moved
-        else
-          result.moved_keep = result.moved_keep + moved
-        end
-        result.last_decision = {
-          item = item,
-          decision = decision,
-          destination = destination,
-          moved = moved,
-        }
-      end
+    if #result.items < (limit or 12) then
+      result.items[#result.items + 1] = {
+        slot = slot,
+        item = item,
+        lines = model.summaryLines(item),
+      }
     end
 
     os.sleep(0)
   end
 
   return result
+end
+
+function M.inspectInventory(inventoryName, catalog, catalogLib, limit)
+  if not inventoryName or inventoryName == "" then
+    return {
+      inventory = inventoryName,
+      items = {},
+      error = "No inventory selected.",
+      catalog_changed = false,
+      total_slots = 0,
+      supported_items = 0,
+      vault_items = 0,
+    }
+  end
+
+  local inventory, slotMap, err = loadSlotMap(inventoryName)
+  if err then
+    return {
+      inventory = inventoryName,
+      items = {},
+      error = err,
+      catalog_changed = false,
+      total_slots = 0,
+      supported_items = 0,
+      vault_items = 0,
+    }
+  end
+
+  return inspectWrappedInventory(inventoryName, inventory, slotMap, catalog, catalogLib, limit)
+end
+
+local function moveItem(sourceInventory, destinationName, slot, count)
+  local ok, movedOrErr = safeCall(sourceInventory, "pushItems", destinationName, slot, count)
+  if not ok then
+    return nil, tostring(movedOrErr)
+  end
+  return movedOrErr, nil
+end
+
+local function buildMoveAction(kind, sourceName, destination, item, reason, moved)
+  return {
+    kind = kind,
+    source = sourceName,
+    destination = destination and destination.inventory or nil,
+    destination_id = destination and destination.id or nil,
+    item = item,
+    moved = moved or 0,
+    reason = reason,
+  }
+end
+
+function M.processInboxes(storages, connectedSet, catalog, catalogLib, moveLimit)
+  local report = {
+    kind = "idle",
+    moved_stacks = 0,
+    moved_items = 0,
+    unresolved = 0,
+    errors = {},
+    action = nil,
+    target_inventory = nil,
+    catalog_changed = false,
+  }
+
+  local homes = planner.listHomes(storages, connectedSet)
+  if #homes == 0 then
+    return report
+  end
+
+  for _, storage in ipairs(planner.listInboxes(storages, connectedSet)) do
+    report.target_inventory = storage.inventory
+    local inventory, slotMap, err = loadSlotMap(storage.inventory)
+    if err then
+      report.errors[#report.errors + 1] = err
+    else
+      for _, slot in ipairs(slotKeys(slotMap)) do
+        if report.moved_stacks >= (moveLimit or 1) then
+          return report
+        end
+
+        local basic = slotMap[slot]
+        local item = normalizeSlot(inventory, slot, basic)
+        report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
+
+        local picked = planner.pickDestination(homes, item, storage.inventory)
+        if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
+          local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
+          if type(moved) ~= "number" or moved < 1 then
+            report.errors[#report.errors + 1] = moveError or ("Move failed from " .. tostring(storage.inventory))
+          else
+            report.kind = "routing"
+            report.moved_stacks = report.moved_stacks + 1
+            report.moved_items = report.moved_items + moved
+            report.action = buildMoveAction("route", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
+          end
+        elseif item.supported_type then
+          report.unresolved = report.unresolved + 1
+        end
+
+        os.sleep(0)
+      end
+    end
+  end
+
+  return report
+end
+
+function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogLib, moveLimit)
+  local report = {
+    kind = "idle",
+    moved_stacks = 0,
+    moved_items = 0,
+    errors = {},
+    action = nil,
+    target_inventory = nil,
+    catalog_changed = false,
+  }
+
+  local homes = {}
+  for _, storage in ipairs(planner.listHomes(storages, connectedSet)) do
+    if storage.rescan ~= false then
+      homes[#homes + 1] = storage
+    end
+  end
+
+  if #homes == 0 then
+    return report
+  end
+
+  local cursor = tonumber(runtimeState and runtimeState.repair_cursor) or 1
+  if cursor < 1 or cursor > #homes then
+    cursor = 1
+  end
+
+  local storage = homes[cursor]
+  report.kind = "repair_scan"
+  report.target_inventory = storage.inventory
+
+  local inventory, slotMap, err = loadSlotMap(storage.inventory)
+  if err then
+    report.errors[#report.errors + 1] = err
+    runtimeState.repair_cursor = cursor % #homes + 1
+    return report
+  end
+
+  for _, slot in ipairs(slotKeys(slotMap)) do
+    if report.moved_stacks >= (moveLimit or 1) then
+      break
+    end
+
+    local basic = slotMap[slot]
+    local item = normalizeSlot(inventory, slot, basic)
+    report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
+
+    local picked = planner.pickDestination(homes, item, storage.inventory)
+    if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
+      local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
+      if type(moved) ~= "number" or moved < 1 then
+        report.errors[#report.errors + 1] = moveError or ("Repair move failed from " .. tostring(storage.inventory))
+      else
+        report.kind = "repair"
+        report.moved_stacks = report.moved_stacks + 1
+        report.moved_items = report.moved_items + moved
+        report.action = buildMoveAction("repair", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
+      end
+    end
+
+    os.sleep(0)
+  end
+
+  runtimeState.repair_cursor = cursor % #homes + 1
+  return report
 end
 
 return M

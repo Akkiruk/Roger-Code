@@ -1,16 +1,19 @@
 -- vaultgear_state_settings.lua
--- Preserved runtime state: UI selection and discovered modifier catalog.
+-- Preserved runtime state for the storage manager monitor UI.
 
 return {
-  schema_version = 2,
+  schema_version = 3,
   ui = {
-    page = "dashboard",
-    selected_type = "Gear",
-    preview_selected = 1,
-    selected_modifier_key = nil,
-    selected_keep_key = nil,
-    selected_block_key = nil,
-    selected_destination_id = "route_1",
+    page = "overview",
+    selected_inventory = nil,
+    advanced = false,
+  },
+  runtime = {
+    repair_cursor = 1,
+    current_mode = "idle",
+    current_target = nil,
+    last_summary = "Idle",
+    last_reason = nil,
   },
   catalog = {},
 }

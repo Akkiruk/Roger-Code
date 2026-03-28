@@ -1,4 +1,5 @@
 local constants = require("lib.vaultgear.constants")
+local presets = require("lib.vaultgear.presets")
 local shared = require("lib.vaultgear.ui_shared")
 local util = require("lib.vaultgear.util")
 
@@ -7,162 +8,319 @@ local M = {}
 local layout = shared.layout
 local widgets = shared.widgets
 
-local function buildRuleRows(app, actions, itemType)
+local function flattenLines(lines, width, maxLines)
+  local flattened = {}
+  local limit = maxLines or 999
+
+  for _, line in ipairs(lines or {}) do
+    local bits = util.wrapText(line, math.max(8, width), limit - #flattened)
+    for _, bit in ipairs(bits) do
+      flattened[#flattened + 1] = bit
+      if #flattened >= limit then
+        return flattened
+      end
+    end
+  end
+
+  return flattened
+end
+
+local function drawWrappedLines(ctx, rect, lines, primaryTone)
+  local wrapped = flattenLines(lines, rect.w, rect.h)
+  for index = 1, math.min(#wrapped, rect.h) do
+    local tone = index == 1 and (primaryTone or "text") or "text"
+    ctx:drawText(rect.x, rect.y + index - 1, ctx:trimText(wrapped[index], rect.w), tone, nil)
+  end
+end
+
+local function addRow(rows, height, render)
+  rows[#rows + 1] = {
+    height = height or 1,
+    render = render,
+  }
+end
+
+local function addSpacer(rows, height)
+  addRow(rows, height or 1, function() end)
+end
+
+local function addSection(rows, text)
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderSectionLabel(ctx, rect, text)
+  end)
+end
+
+local function buildDraftRows(app, actions, view)
   local rows = {}
-  local profile = app.config.type_profiles[itemType] or {}
+  local presetOptions = shared.presetOptions()
+  local strictnessOptions = shared.strictnessOptions()
+  local role = view.draft_role or "home"
 
-  local function addRow(render)
-    rows[#rows + 1] = { height = 1, render = render }
-  end
-
-  local function addSpacer()
-    addRow(function() end)
-  end
-
-  local function addSection(text)
-    addRow(function(ctx, rect)
-      shared.renderSectionLabel(ctx, rect, text)
+  addSection(rows, "Quick Setup")
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderSegmentRow(ctx, rect, "Role", shared.roleOptions(), role, function(value)
+      view.draft_role = value
     end)
-  end
+  end)
 
-  local presets = {}
-  for _, preset in ipairs(constants.PROFILE_PRESETS[itemType] or {}) do
-    presets[#presets + 1] = { id = preset.id, label = preset.label }
-  end
-
-  addSection("Quick Presets")
-  if #presets > 0 then
-    addRow(function(ctx, rect)
-      widgets.nav(ctx, rect, presets, nil, {
-        gap = 1,
-        onSelect = function(id)
-          actions.applyPreset(itemType, id)
-        end,
-      })
-    end)
-  end
-
-  addSpacer()
-  addSection("Flow")
-  addRow(function(ctx, rect)
-    widgets.toggle(ctx, rect, "Profile Enabled", profile.enabled ~= false, {
-      onClick = function()
-        actions.setProfileFlag(itemType, "enabled", profile.enabled ~= true)
-      end,
-    })
-  end)
-  addRow(function(ctx, rect)
-    widgets.selector(ctx, rect, "Misses", shared.actionText(profile.miss_action), {
-      onPrev = function()
-        actions.setProfileChoice(itemType, "miss_action", shared.cycleOption(shared.choice_options.miss_action, profile.miss_action, -1))
-      end,
-      onNext = function()
-        actions.setProfileChoice(itemType, "miss_action", shared.cycleOption(shared.choice_options.miss_action, profile.miss_action, 1))
-      end,
-    })
-  end)
-  addRow(function(ctx, rect)
-    widgets.selector(ctx, rect, "Unidentified", shared.unidentifiedText(profile.unidentified_mode), {
-      onPrev = function()
-        actions.setProfileChoice(
-          itemType,
-          "unidentified_mode",
-          shared.cycleOption(shared.choice_options.unidentified_mode, profile.unidentified_mode, -1)
-        )
-      end,
-      onNext = function()
-        actions.setProfileChoice(
-          itemType,
-          "unidentified_mode",
-          shared.cycleOption(shared.choice_options.unidentified_mode, profile.unidentified_mode, 1)
-        )
-      end,
-    })
-  end)
-  addRow(function(ctx, rect)
-    widgets.selector(ctx, rect, "Wanted Mode", shared.optionLabel(shared.choice_options.wanted_modifier_mode, profile.wanted_modifier_mode, "Any"), {
-      onPrev = function()
-        actions.setProfileChoice(
-          itemType,
-          "wanted_modifier_mode",
-          shared.cycleOption(shared.choice_options.wanted_modifier_mode, profile.wanted_modifier_mode, -1)
-        )
-      end,
-      onNext = function()
-        actions.setProfileChoice(
-          itemType,
-          "wanted_modifier_mode",
-          shared.cycleOption(shared.choice_options.wanted_modifier_mode, profile.wanted_modifier_mode, 1)
-        )
-      end,
-    })
-  end)
-  if shared.supportsField(itemType, "min_rarity") then
-    addRow(function(ctx, rect)
-      widgets.selector(ctx, rect, "Min Rarity", shared.optionLabel(shared.choice_options.min_rarity, profile.min_rarity, "Off"), {
+  if role == "home" then
+    addRow(rows, 1, function(ctx, rect)
+      widgets.selector(ctx, rect, "Preset", shared.optionLabel(presetOptions, view.draft_preset, "Overflow"), {
         onPrev = function()
-          actions.setProfileChoice(itemType, "min_rarity", shared.cycleOption(shared.choice_options.min_rarity, profile.min_rarity, -1))
+          view.draft_preset = shared.cycleOption(presetOptions, view.draft_preset, -1)
         end,
         onNext = function()
-          actions.setProfileChoice(itemType, "min_rarity", shared.cycleOption(shared.choice_options.min_rarity, profile.min_rarity, 1))
+          view.draft_preset = shared.cycleOption(presetOptions, view.draft_preset, 1)
+        end,
+      })
+    end)
+
+    addRow(rows, 1, function(ctx, rect)
+      shared.renderSegmentRow(ctx, rect, "Style", strictnessOptions, view.draft_strictness, function(value)
+        view.draft_strictness = value
+      end)
+    end)
+
+    addRow(rows, 2, function(ctx, rect)
+      local preset = presets.find(view.draft_preset or "overflow")
+      local lines = {
+        preset and preset.description or "Catch-all home for supported vault items.",
+      }
+      if app.suggestion then
+        lines[#lines + 1] = "Suggested here: " .. presets.label(app.suggestion.preset_id) .. " | " .. tostring(app.suggestion.reason or "")
+      end
+      drawWrappedLines(ctx, rect, lines, "muted")
+    end)
+
+    addRow(rows, 1, function(ctx, rect)
+      shared.renderButtonRow(ctx, rect, {
+        {
+          label = "Save Home",
+          background = "success",
+          foreground = "text_dark",
+          onClick = function()
+            actions.manageSelectedAsHome(view.draft_preset, view.draft_strictness)
+          end,
+        },
+        app.suggestion and {
+          label = "Apply Suggest",
+          background = "gold",
+          foreground = "text_dark",
+          onClick = actions.applySuggestion,
+        } or nil,
+      })
+    end)
+  else
+    addRow(rows, 2, function(ctx, rect)
+      drawWrappedLines(ctx, rect, {
+        "Inboxes are watch points for new items.",
+        "Anything that lands here gets routed into the best matching home.",
+      }, "muted")
+    end)
+
+    addRow(rows, 1, function(ctx, rect)
+      shared.renderButtonRow(ctx, rect, {
+        {
+          label = "Save Inbox",
+          background = "accent",
+          foreground = "text_dark",
+          onClick = actions.manageSelectedAsInbox,
+        },
+      })
+    end)
+  end
+
+  return rows
+end
+
+local function buildInboxRows(app, actions)
+  local rows = {}
+
+  addSection(rows, "Basic")
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderSegmentRow(ctx, rect, "Role", shared.roleOptions(), "inbox", actions.setSelectedRole)
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    local storage = shared.selectedStorage(app)
+    widgets.toggle(ctx, rect, "Active", storage and storage.enabled ~= false, {
+      onClick = function()
+        local current = shared.selectedStorage(app)
+        actions.setSelectedEnabled(current and current.enabled == false)
+      end,
+    })
+  end)
+  addRow(rows, 2, function(ctx, rect)
+    drawWrappedLines(ctx, rect, {
+      "This storage is watched for new work.",
+      "It does not act as a long-term home during idle repair.",
+    }, "muted")
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderButtonRow(ctx, rect, {
+      {
+        label = "Run Cycle",
+        background = "surface_alt",
+        foreground = "text",
+        onClick = actions.scanNow,
+      },
+      {
+        label = "Stop Managing",
+        background = "warning",
+        foreground = "text_dark",
+        onClick = actions.stopManagingSelected,
+      },
+    })
+  end)
+
+  return rows
+end
+
+local function buildHomeRows(app, actions)
+  local rows = {}
+  local presetOptions = shared.presetOptions()
+  local strictnessOptions = shared.strictnessOptions()
+  local identifiedOptions = shared.identifiedOptions()
+  local rarityOptions = shared.rarityOptions()
+  local storage = shared.selectedStorage(app)
+  local rule = storage and storage.rule or nil
+
+  addSection(rows, "Basic")
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderSegmentRow(ctx, rect, "Role", shared.roleOptions(), "home", actions.setSelectedRole)
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.selector(ctx, rect, "Preset", shared.optionLabel(presetOptions, storage.preset_id, "Overflow"), {
+      onPrev = function()
+        actions.setSelectedPreset(shared.cycleOption(presetOptions, storage.preset_id, -1))
+      end,
+      onNext = function()
+        actions.setSelectedPreset(shared.cycleOption(presetOptions, storage.preset_id, 1))
+      end,
+    })
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderSegmentRow(ctx, rect, "Style", strictnessOptions, storage.strictness, actions.setSelectedStrictness)
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.stepper(ctx, rect, "Priority", tostring(storage.priority or 1), {
+      onMinus = function()
+        actions.adjustSelectedPriority(-1)
+      end,
+      onPlus = function()
+        actions.adjustSelectedPriority(1)
+      end,
+    })
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.toggle(ctx, rect, "Active", storage.enabled ~= false, {
+      onClick = function()
+        actions.setSelectedEnabled(storage.enabled == false)
+      end,
+    })
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.toggle(ctx, rect, "Idle Repair", storage.rescan ~= false, {
+      onClick = function()
+        actions.setSelectedRescan(storage.rescan == false)
+      end,
+    })
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderButtonRow(ctx, rect, {
+      {
+        label = app.ui.advanced and "Basic View" or "Advanced",
+        background = "surface_alt",
+        foreground = "text",
+        onClick = actions.toggleAdvanced,
+      },
+      {
+        label = "Run Cycle",
+        background = "surface_alt",
+        foreground = "text",
+        onClick = actions.scanNow,
+      },
+      {
+        label = "Stop",
+        background = "warning",
+        foreground = "text_dark",
+        onClick = actions.stopManagingSelected,
+      },
+    })
+  end)
+
+  if not app.ui.advanced then
+    addRow(rows, 2, function(ctx, rect)
+      drawWrappedLines(ctx, rect, {
+        "Advanced rules are hidden to keep setup calm.",
+        "Open Advanced when you want to tune item types or thresholds.",
+      }, "muted")
+    end)
+    return rows
+  end
+
+  addSpacer(rows, 1)
+  addSection(rows, "Match Types")
+  addRow(rows, 3, function(ctx, rect)
+    shared.renderItemTypeMatrix(ctx, rect, rule.item_types, actions.toggleSelectedType)
+  end)
+
+  addSpacer(rows, 1)
+  addSection(rows, "Match Rules")
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderSegmentRow(ctx, rect, "Identified", identifiedOptions, rule.identified_mode, function(value)
+      actions.setSelectedRuleChoice("identified_mode", value)
+    end)
+  end)
+
+  if shared.ruleSupportsField(rule, "min_rarity") then
+    addRow(rows, 1, function(ctx, rect)
+      widgets.selector(ctx, rect, "Min Rarity", shared.optionLabel(rarityOptions, rule.min_rarity, "Any"), {
+        onPrev = function()
+          actions.setSelectedRuleChoice("min_rarity", shared.cycleOption(rarityOptions, rule.min_rarity, -1))
+        end,
+        onNext = function()
+          actions.setSelectedRuleChoice("min_rarity", shared.cycleOption(rarityOptions, rule.min_rarity, 1))
         end,
       })
     end)
   end
 
-  addSpacer()
-  addSection("Thresholds")
-  local thresholdCount = 0
-  for _, field in ipairs(shared.numeric_order) do
-    if shared.supportsField(itemType, field) then
-      thresholdCount = thresholdCount + 1
-      addRow(function(ctx, rect)
-        widgets.stepper(ctx, rect, shared.numeric_labels[field] or field, tostring(profile[field] or "Off"), {
+  for _, field in ipairs(constants.NUMERIC_FIELD_ORDER) do
+    local currentField = field
+    if shared.ruleSupportsField(rule, currentField) then
+      addRow(rows, 1, function(ctx, rect)
+        widgets.stepper(ctx, rect, constants.NUMERIC_FIELDS[currentField].label, shared.formatRuleValue(rule, currentField), {
           onMinus = function()
-            actions.adjustProfileNumber(itemType, field, -1)
+            actions.adjustSelectedRuleNumber(currentField, -1)
           end,
           onPlus = function()
-            actions.adjustProfileNumber(itemType, field, 1)
-          end,
-        })
-      end)
-    end
-  end
-  if thresholdCount == 0 then
-    addRow(function(ctx, rect)
-      ctx:drawText(rect.x, rect.y, ctx:trimText("No numeric thresholds for this item type.", rect.w), "muted", nil)
-    end)
-  end
-
-  local safetyCount = 0
-  for _, field in ipairs(shared.safety_fields) do
-    if shared.supportsField(itemType, field) then
-      if safetyCount == 0 then
-        addSpacer()
-        addSection("Safety Keeps")
-      end
-      safetyCount = safetyCount + 1
-      addRow(function(ctx, rect)
-        widgets.toggle(ctx, rect, constants.PROFILE_LABELS[field] or field, profile[field] == true, {
-          onClick = function()
-            actions.setProfileFlag(itemType, field, profile[field] ~= true)
+            actions.adjustSelectedRuleNumber(currentField, 1)
           end,
         })
       end)
     end
   end
 
-  addSpacer()
-  addSection("Modifier Rules")
-  addRow(function(ctx, rect)
-    local textRect, buttonRect = layout.sliceLeft(rect, math.max(10, rect.w - 17), 1)
-    local countText = string.format("Keep %d | Block %d", #(profile.wanted_modifiers or {}), #(profile.blocked_modifiers or {}))
-    ctx:drawText(textRect.x, textRect.y, ctx:trimText(countText, textRect.w), "text", nil)
-    widgets.button(ctx, buttonRect, "Open Modifiers", {
-      background = "accent",
-      foreground = "text_dark",
+  addSpacer(rows, 1)
+  addSection(rows, "Special Cases")
+  addRow(rows, 1, function(ctx, rect)
+    widgets.toggle(ctx, rect, "Legendary Override", rule.allow_legendary == true, {
       onClick = function()
-        actions.setPage("modifiers")
+        actions.setSelectedFlag("allow_legendary", rule.allow_legendary ~= true)
+      end,
+    })
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.toggle(ctx, rect, "Soulbound Override", rule.allow_soulbound == true, {
+      onClick = function()
+        actions.setSelectedFlag("allow_soulbound", rule.allow_soulbound ~= true)
+      end,
+    })
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.toggle(ctx, rect, "Unique Override", rule.allow_unique == true, {
+      onClick = function()
+        actions.setSelectedFlag("allow_unique", rule.allow_unique ~= true)
       end,
     })
   end)
@@ -170,13 +328,30 @@ local function buildRuleRows(app, actions, itemType)
   return rows
 end
 
+local function buildStorageRows(app, actions, view)
+  local storage = shared.selectedStorage(app)
+  if not storage then
+    return buildDraftRows(app, actions, view)
+  end
+  if storage.role == "inbox" then
+    return buildInboxRows(app, actions)
+  end
+  return buildHomeRows(app, actions)
+end
+
 local function renderHeader(ctx, rect, app, actions)
-  local running = app.config.runtime.enabled
   local accent = shared.accentForApp(app)
+  local counts = shared.storageCounts(app)
   local inner = widgets.card(ctx, rect, {
     title = constants.APP_NAME,
     accent = accent,
     actions = {
+      {
+        label = "Refresh",
+        background = "surface_alt",
+        foreground = "text",
+        onClick = actions.refreshPeripherals,
+      },
       {
         label = "Scan",
         background = "surface_alt",
@@ -184,8 +359,8 @@ local function renderHeader(ctx, rect, app, actions)
         onClick = actions.scanNow,
       },
       {
-        label = running and "Pause" or "Start",
-        background = running and "warning" or "success",
+        label = app.config.runtime.enabled and "Pause" or "Start",
+        background = app.config.runtime.enabled and "warning" or "success",
         foreground = "text_dark",
         onClick = actions.toggleRuntime,
       },
@@ -197,150 +372,118 @@ local function renderHeader(ctx, rect, app, actions)
   end
 
   local row1, rest = layout.sliceTop(inner, 1, 0)
-  local row2, rest = layout.sliceTop(rest, 1, 0)
-  local row3, row4 = layout.sliceTop(rest, 1, 0)
+  local row2, row3 = layout.sliceTop(rest, 1, 0)
   local runtimeRect, remainder = layout.sliceLeft(row1, 10, 1)
   local healthRect, infoRect = layout.sliceLeft(remainder, 12, 1)
 
-  widgets.pill(ctx, runtimeRect, running and "LIVE" or "PAUSED", {
-    background = running and "success" or "warning",
+  widgets.pill(ctx, runtimeRect, app.config.runtime.enabled and "LIVE" or "PAUSED", {
+    background = app.config.runtime.enabled and "success" or "warning",
     foreground = "text_dark",
   })
   widgets.pill(ctx, healthRect, shared.healthLabel(app), {
     background = accent,
     foreground = "text_dark",
   })
-
-  local inputText = "Input: " .. shared.findInventoryLabel(app, app.config.routing.input)
-  local routeText = shared.routeFlowSummary(app)
-  ctx:drawText(infoRect.x, infoRect.y, ctx:trimText(inputText .. " | " .. routeText, infoRect.w), "text", nil)
+  ctx:drawText(infoRect.x, infoRect.y, ctx:trimText(tostring(app.state.runtime.last_summary or "Idle"), infoRect.w), "text", nil)
 
   if row2.h > 0 then
-    local metricRects = layout.columns(row2, { 0.21, 0.21, 0.21, 0.17, 0.20 }, 1)
-    widgets.pill(ctx, metricRects[1], "Preview " .. tostring(#(app.preview.items or {})), {
+    local metricRects = layout.columns(row2, { 0.25, 0.25, 0.25, 0.25 }, 1)
+    widgets.pill(ctx, metricRects[1], "Connected " .. tostring(counts.connected), {
       background = "surface_alt",
       foreground = "text",
     })
-    widgets.pill(ctx, metricRects[2], "Sorted " .. tostring(app.session.scanned or 0), {
+    widgets.pill(ctx, metricRects[2], "Managed " .. tostring(counts.managed), {
       background = "surface_alt",
       foreground = "text",
     })
-    widgets.pill(ctx, metricRects[3], "Keep " .. tostring(app.session.kept or 0), {
-      background = "success",
+    widgets.pill(ctx, metricRects[3], "Inboxes " .. tostring(counts.inboxes), {
+      background = "accent",
       foreground = "text_dark",
     })
-    widgets.pill(ctx, metricRects[4], "Trash " .. tostring(app.session.discarded or 0), {
-      background = "danger",
+    widgets.pill(ctx, metricRects[4], "Homes " .. tostring(counts.homes), {
+      background = "gold",
       foreground = "text_dark",
-    })
-    local lastCycle = app.last_cycle_at and util.formatTime(app.last_cycle_at) or "--:--:--"
-    widgets.pill(ctx, metricRects[5], "Last " .. lastCycle, {
-      background = "surface_alt",
-      foreground = "text",
     })
   end
 
   if row3.h > 0 then
-    local labelRect, progressRect = layout.sliceLeft(row3, 11, 1)
-    local processed = (app.session.kept or 0) + (app.session.discarded or 0)
-    local keepRatio = processed > 0 and math.floor(((app.session.kept or 0) / processed) * 100 + 0.5) or 0
-    ctx:drawText(labelRect.x, labelRect.y, ctx:trimText("Keep Ratio", labelRect.w), "muted", nil)
-    widgets.progress(ctx, progressRect, keepRatio, {
-      fill = "success",
-      show_text = true,
-    })
-  end
-
-  if row4.h > 0 then
-    local tone = accent == "danger" and "danger" or "muted"
-    ctx:drawText(row4.x, row4.y, ctx:trimText(shared.nextStep(app), row4.w), tone, nil)
+    ctx:drawText(row3.x, row3.y, ctx:trimText(shared.nextStep(app), row3.w), accent == "danger" and "danger" or "muted", nil)
   end
 end
 
-local function renderDashboard(ctx, rect, app, actions, view)
-  local previewItems = shared.buildPreviewItems(app)
-  local selectedEntry = shared.selectedPreviewEntry(app)
-  local focusType = shared.focusedType(app)
-  view.preview_scroll = shared.ensureVisible(view.preview_scroll, app.ui.preview_selected or 1, math.max(1, rect.h - 2), #previewItems)
+local function renderOverview(ctx, rect, app, actions, view)
+  local storageItems = shared.managedStorageItems(app)
+  if rect.w >= 92 and rect.h >= 10 then
+    local columns = layout.columns(rect, { 0.31, 0.34, 0.35 }, 1)
+    local leftTop, leftBottom = layout.sliceTop(columns[1], 5, 1)
+    local rightTop, rightBottom = layout.sliceTop(columns[3], math.max(4, math.floor(columns[3].h * 0.4)), 1)
 
-  local function handlePreviewSelect(id)
-    local index = tonumber(id) or id
-    view.detail_scroll = 0
-    actions.selectPreview(index)
-    local picked = (app.preview.items or {})[index]
-    if picked and picked.item and picked.item.supported_type and picked.item.item_type ~= app.ui.selected_type then
-      actions.selectType(picked.item.item_type)
-    end
-  end
-
-  if rect.w >= 86 and rect.h >= 10 then
-    local leftRect, rightRect = layout.sliceLeft(rect, math.max(20, math.floor(rect.w * 0.43)), 1)
-    local detailRect, bottomRect = layout.sliceTop(rightRect, math.max(5, math.floor(rightRect.h * 0.6)), 1)
-    local focusRect, recentRect = layout.sliceLeft(bottomRect, math.max(18, math.floor(bottomRect.w * 0.46)), 1)
-
-    local _, previewScroll = shared.renderListCard(ctx, leftRect, {
-      title = "Live Preview",
-      accent = "accent",
-      items = previewItems,
-      selected_id = app.ui.preview_selected,
-      scroll = view.preview_scroll,
-      onScrollChange = function(value)
-        view.preview_scroll = value
-      end,
-      onSelect = handlePreviewSelect,
-      empty_text = "Input inventory is empty",
-    })
-    view.preview_scroll = previewScroll
-
-    local _, detailScroll = shared.renderWrappedTextCard(
-      ctx,
-      detailRect,
-      "Decision",
-      shared.selectedDecisionLines(app, selectedEntry),
-      view.detail_scroll,
-      function(value)
-        view.detail_scroll = value
-      end,
-      { accent = "accent_alt" }
-    )
-    view.detail_scroll = detailScroll
-
-    shared.renderWrappedTextCard(ctx, focusRect, "Focus", shared.summaryLinesForProfile(app, focusType), 0, nil, {
-      accent = "gold",
+    shared.renderWrappedTextCard(ctx, leftTop, "System", shared.liveSummaryLines(app), 0, nil, {
+      accent = shared.accentForApp(app),
       actions = {
         {
-          label = "Rules",
+          label = "Storages",
           background = "surface_alt",
           foreground = "text",
           onClick = function()
-            actions.selectType(focusType)
-            actions.setPage("rules")
-          end,
-        },
-        {
-          label = "Mods",
-          background = "surface_alt",
-          foreground = "text",
-          onClick = function()
-            actions.selectType(focusType)
-            actions.setPage("modifiers")
+            actions.setPage("storages")
           end,
         },
       },
     })
 
-    local _, recentScroll = shared.renderListCard(ctx, recentRect, {
-      title = "Recent Activity",
+    shared.renderWrappedTextCard(ctx, leftBottom, "Selected Storage", shared.selectionSummaryLines(app), 0, nil, {
       accent = "accent_alt",
       actions = {
         {
-          label = "Reset",
+          label = "Open",
           background = "surface_alt",
           foreground = "text",
-          onClick = actions.resetSession,
+          onClick = function()
+            actions.setPage("storages")
+          end,
         },
       },
-      items = shared.buildRecentItems(app),
+    })
+
+    local _, storageScroll = shared.renderListCard(ctx, columns[2], {
+      title = "Managed Storages",
+      accent = "gold",
+      items = storageItems,
+      selected_id = shared.selectedStorage(app) and shared.selectedStorage(app).id or nil,
+      scroll = view.storage_scroll,
+      onScrollChange = function(value)
+        view.storage_scroll = value
+      end,
+      onSelect = function(id)
+        for _, storage in ipairs(app.config.storages or {}) do
+          if storage.id == id then
+            actions.selectInventory(storage.inventory)
+            actions.setPage("storages")
+            break
+          end
+        end
+      end,
+      empty_text = "No managed storages yet",
+    })
+    view.storage_scroll = storageScroll
+
+    local _, healthScroll = shared.renderListCard(ctx, rightTop, {
+      title = "Health",
+      accent = shared.accentForApp(app),
+      items = shared.healthItems(app),
+      scroll = view.health_scroll,
+      onScrollChange = function(value)
+        view.health_scroll = value
+      end,
+      empty_text = "All checks passed",
+    })
+    view.health_scroll = healthScroll
+
+    local _, recentScroll = shared.renderListCard(ctx, rightBottom, {
+      title = "Recent Activity",
+      accent = "accent_alt",
+      items = shared.recentItems(app),
       scroll = view.recent_scroll,
       onScrollChange = function(value)
         view.recent_scroll = value
@@ -351,437 +494,277 @@ local function renderDashboard(ctx, rect, app, actions, view)
     return
   end
 
-  local previewRect, detailRect = layout.sliceTop(rect, math.max(5, math.floor(rect.h * 0.46)), 1)
-  local _, previewScroll = shared.renderListCard(ctx, previewRect, {
-    title = "Live Preview",
-    accent = "accent",
-    items = previewItems,
-    selected_id = app.ui.preview_selected,
-    scroll = view.preview_scroll,
-    onScrollChange = function(value)
-      view.preview_scroll = value
-    end,
-    onSelect = handlePreviewSelect,
-    empty_text = "Input inventory is empty",
-  })
-  view.preview_scroll = previewScroll
+  local topRect, remainder = layout.sliceTop(rect, 5, 1)
+  local midRect, bottomRect = layout.sliceTop(remainder, math.max(4, math.floor(remainder.h * 0.45)), 1)
 
-  local detailLines = shared.selectedDecisionLines(app, selectedEntry)
-  detailLines[#detailLines + 1] = ""
-  for _, line in ipairs(shared.summaryLinesForProfile(app, focusType)) do
-    detailLines[#detailLines + 1] = line
+  shared.renderWrappedTextCard(ctx, topRect, "System", shared.liveSummaryLines(app), 0, nil, {
+    accent = shared.accentForApp(app),
+  })
+
+  local _, storageScroll = shared.renderListCard(ctx, midRect, {
+    title = "Managed Storages",
+    accent = "gold",
+    items = storageItems,
+    selected_id = shared.selectedStorage(app) and shared.selectedStorage(app).id or nil,
+    scroll = view.storage_scroll,
+    onScrollChange = function(value)
+      view.storage_scroll = value
+    end,
+    onSelect = function(id)
+      for _, storage in ipairs(app.config.storages or {}) do
+        if storage.id == id then
+          actions.selectInventory(storage.inventory)
+          actions.setPage("storages")
+          break
+        end
+      end
+    end,
+    empty_text = "No managed storages yet",
+  })
+  view.storage_scroll = storageScroll
+
+  local _, recentScroll = shared.renderListCard(ctx, bottomRect, {
+    title = "Recent Activity",
+    accent = "accent_alt",
+    items = shared.recentItems(app),
+    scroll = view.recent_scroll,
+    onScrollChange = function(value)
+      view.recent_scroll = value
+    end,
+    empty_text = "Waiting for activity",
+  })
+  view.recent_scroll = recentScroll
+end
+
+local function renderStorages(ctx, rect, app, actions, view)
+  local inventoryItems = shared.inventoryItems(app)
+  local sampleItems = shared.sampleItems(app)
+  local selectedStorage = shared.selectedStorage(app)
+  local summaryLines = shared.selectionSummaryLines(app)
+  local rows = buildStorageRows(app, actions, view)
+  local selectedEntry = shared.selectedSample(app, view)
+
+  view.sample_scroll = shared.ensureVisible(view.sample_scroll, view.sample_selected, math.max(1, rect.h - 4), #sampleItems)
+
+  if rect.w >= 92 and rect.h >= 11 then
+    local listRect, rightRect = layout.sliceLeft(rect, math.max(22, math.floor(rect.w * 0.31)), 1)
+    local summaryRect, lowerRect = layout.sliceTop(rightRect, 5, 1)
+    local sampleRect, formRect = layout.sliceLeft(lowerRect, math.max(20, math.floor(lowerRect.w * 0.38)), 1)
+
+    local _, inventoryScroll = shared.renderListCard(ctx, listRect, {
+      title = "Connected Inventories",
+      accent = "accent",
+      items = inventoryItems,
+      selected_id = app.ui.selected_inventory,
+      scroll = view.inventory_scroll,
+      onScrollChange = function(value)
+        view.inventory_scroll = value
+      end,
+      onSelect = actions.selectInventory,
+      empty_text = "No inventories detected",
+    })
+    view.inventory_scroll = inventoryScroll
+
+    shared.renderWrappedTextCard(ctx, summaryRect, shared.selectedInventoryLabel(app), summaryLines, 0, nil, {
+      accent = selectedStorage and (selectedStorage.role == "home" and "gold" or "accent") or "accent_alt",
+      actions = {
+        {
+          label = "Live",
+          background = "surface_alt",
+          foreground = "text",
+          onClick = function()
+            actions.setPage("live")
+          end,
+        },
+      },
+    })
+
+    local _, sampleScroll = shared.renderListCard(ctx, sampleRect, {
+      title = "Sample",
+      accent = "accent_alt",
+      items = sampleItems,
+      selected_id = view.sample_selected,
+      scroll = view.sample_scroll,
+      onScrollChange = function(value)
+        view.sample_scroll = value
+      end,
+      onSelect = function(id)
+        view.sample_selected = id
+        view.detail_scroll = 0
+      end,
+      empty_text = "This storage is empty or unreadable",
+    })
+    view.sample_scroll = sampleScroll
+
+    local cardInner = widgets.card(ctx, formRect, {
+      title = selectedStorage and (shared.roleLabel(selectedStorage.role) .. " Settings") or "Setup",
+      accent = selectedStorage and (selectedStorage.role == "home" and "gold" or "accent") or "accent",
+    })
+    if cardInner.w > 0 and cardInner.h > 0 then
+      local maxScroll, currentScroll = shared.renderFormRows(ctx, cardInner, rows, view.form_scroll, function(value)
+        view.form_scroll = value
+      end)
+      view.form_scroll = util.clamp(currentScroll, 0, maxScroll)
+    end
+    return
   end
 
-  local _, detailScroll = shared.renderWrappedTextCard(
-    ctx,
-    detailRect,
-    "Decision",
-    detailLines,
-    view.detail_scroll,
-    function(value)
-      view.detail_scroll = value
+  local listRect, remainder = layout.sliceTop(rect, math.max(5, math.floor(rect.h * 0.32)), 1)
+  local summaryRect, formRect = layout.sliceTop(remainder, 5, 1)
+
+  local _, inventoryScroll = shared.renderListCard(ctx, listRect, {
+    title = "Connected Inventories",
+    accent = "accent",
+    items = inventoryItems,
+    selected_id = app.ui.selected_inventory,
+    scroll = view.inventory_scroll,
+    onScrollChange = function(value)
+      view.inventory_scroll = value
     end,
-    { accent = "accent_alt" }
-  )
+    onSelect = actions.selectInventory,
+    empty_text = "No inventories detected",
+  })
+  view.inventory_scroll = inventoryScroll
+
+  shared.renderWrappedTextCard(ctx, summaryRect, shared.selectedInventoryLabel(app), summaryLines, 0, nil, {
+    accent = selectedStorage and (selectedStorage.role == "home" and "gold" or "accent") or "accent_alt",
+  })
+
+  local cardInner = widgets.card(ctx, formRect, {
+    title = selectedStorage and (shared.roleLabel(selectedStorage.role) .. " Settings") or "Setup",
+    accent = selectedStorage and (selectedStorage.role == "home" and "gold" or "accent") or "accent",
+  })
+  if cardInner.w > 0 and cardInner.h > 0 then
+    local maxScroll, currentScroll = shared.renderFormRows(ctx, cardInner, rows, view.form_scroll, function(value)
+      view.form_scroll = value
+    end)
+    view.form_scroll = util.clamp(currentScroll, 0, maxScroll)
+  end
+end
+
+local function renderLive(ctx, rect, app, actions, view)
+  local sampleItems = shared.sampleItems(app)
+  local selectedEntry = shared.selectedSample(app, view)
+  local detailLines = shared.sampleDecisionLines(app, selectedEntry)
+
+  view.sample_scroll = shared.ensureVisible(view.sample_scroll, view.sample_selected, math.max(1, rect.h - 4), #sampleItems)
+
+  if rect.w >= 88 and rect.h >= 10 then
+    local leftRect, rightRect = layout.sliceLeft(rect, math.max(24, math.floor(rect.w * 0.36)), 1)
+    local leftTop, leftBottom = layout.sliceTop(leftRect, 5, 1)
+    local rightTop, rightBottom = layout.sliceTop(rightRect, math.max(4, math.floor(rightRect.h * 0.48)), 1)
+
+    shared.renderWrappedTextCard(ctx, leftTop, "Live Summary", shared.liveSummaryLines(app), 0, nil, {
+      accent = shared.accentForApp(app),
+      actions = {
+        {
+          label = "Scan",
+          background = "surface_alt",
+          foreground = "text",
+          onClick = actions.scanNow,
+        },
+      },
+    })
+
+    local _, sampleScroll = shared.renderListCard(ctx, leftBottom, {
+      title = "Selected Storage Sample",
+      accent = "accent_alt",
+      items = sampleItems,
+      selected_id = view.sample_selected,
+      scroll = view.sample_scroll,
+      onScrollChange = function(value)
+        view.sample_scroll = value
+      end,
+      onSelect = function(id)
+        view.sample_selected = id
+        view.detail_scroll = 0
+      end,
+      empty_text = "No sampled items available",
+    })
+    view.sample_scroll = sampleScroll
+
+    local _, recentScroll = shared.renderListCard(ctx, rightTop, {
+      title = "Recent Activity",
+      accent = "accent",
+      items = shared.recentItems(app),
+      scroll = view.recent_scroll,
+      onScrollChange = function(value)
+        view.recent_scroll = value
+      end,
+      empty_text = "Waiting for activity",
+    })
+    view.recent_scroll = recentScroll
+
+    local _, detailScroll = shared.renderWrappedTextCard(ctx, rightBottom, "Selected Item", detailLines, view.detail_scroll, function(value)
+      view.detail_scroll = value
+    end, {
+      accent = "gold",
+      actions = {
+        {
+          label = "Storages",
+          background = "surface_alt",
+          foreground = "text",
+          onClick = function()
+            actions.setPage("storages")
+          end,
+        },
+      },
+    })
+    view.detail_scroll = detailScroll
+    return
+  end
+
+  local topRect, remainder = layout.sliceTop(rect, 5, 1)
+  local midRect, bottomRect = layout.sliceTop(remainder, math.max(4, math.floor(remainder.h * 0.42)), 1)
+
+  shared.renderWrappedTextCard(ctx, topRect, "Live Summary", shared.liveSummaryLines(app), 0, nil, {
+    accent = shared.accentForApp(app),
+  })
+
+  local _, recentScroll = shared.renderListCard(ctx, midRect, {
+    title = "Recent Activity",
+    accent = "accent",
+    items = shared.recentItems(app),
+    scroll = view.recent_scroll,
+    onScrollChange = function(value)
+      view.recent_scroll = value
+    end,
+    empty_text = "Waiting for activity",
+  })
+  view.recent_scroll = recentScroll
+
+  local _, detailScroll = shared.renderWrappedTextCard(ctx, bottomRect, "Selected Item", detailLines, view.detail_scroll, function(value)
+    view.detail_scroll = value
+  end, {
+    accent = "gold",
+  })
   view.detail_scroll = detailScroll
 end
 
-local function renderRules(ctx, rect, app, actions, view)
-  local typeRect, contentRect = layout.sliceLeft(rect, 12, 1)
-  shared.renderTypeRail(ctx, typeRect, app.ui.selected_type, actions.selectType)
-
-  local summary = shared.summaryLinesForProfile(app, app.ui.selected_type)
-  local rows = buildRuleRows(app, actions, app.ui.selected_type)
-  local cardInner = widgets.card(ctx, contentRect, {
-    title = app.ui.selected_type .. " Rules",
-    accent = shared.selectedTypeWarning(app, app.ui.selected_type) and "warning" or "accent",
-    actions = {
-      {
-        label = "Mods",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = function()
-          actions.setPage("modifiers")
-        end,
-      },
-    },
-  })
-
-  if cardInner.w <= 0 or cardInner.h <= 0 then
-    return
-  end
-
-  local summaryRect, formRect = layout.sliceTop(cardInner, math.min(3, cardInner.h), 1)
-  local summaryLines = shared.flattenLines(summary, math.max(8, summaryRect.w), 6)
-  for index = 1, math.min(#summaryLines, summaryRect.h) do
-    local tone = index == 3 and shared.selectedTypeWarning(app, app.ui.selected_type) and "warning" or (index == 1 and "gold" or "text")
-    ctx:drawText(summaryRect.x, summaryRect.y + index - 1, ctx:trimText(summaryLines[index], summaryRect.w), tone, nil)
-  end
-
-  if formRect.h > 0 then
-    local scrollKey = app.ui.selected_type
-    local maxScroll, currentScroll = shared.renderFormRows(
-      ctx,
-      formRect,
-      rows,
-      view.rules_scroll[scrollKey] or 0,
-      function(value)
-        view.rules_scroll[scrollKey] = value
-      end
-    )
-    view.rules_scroll[scrollKey] = util.clamp(currentScroll, 0, maxScroll)
-  end
-end
-
-local function renderModifiers(ctx, rect, app, actions, view)
-  local typeRect, contentRect = layout.sliceLeft(rect, 12, 1)
-  shared.renderTypeRail(ctx, typeRect, app.ui.selected_type, actions.selectType)
-
-  local profile = app.config.type_profiles[app.ui.selected_type] or {}
-  local summaryRect, listRect = layout.sliceTop(contentRect, 5, 1)
-  local summaryCard = widgets.card(ctx, summaryRect, {
-    title = app.ui.selected_type .. " Modifiers",
-    accent = "gold",
-    actions = {
-      {
-        label = "Keep",
-        background = "success",
-        foreground = "text_dark",
-        onClick = function()
-          actions.addRule("wanted_modifiers")
-        end,
-      },
-      {
-        label = "Block",
-        background = "danger",
-        foreground = "text_dark",
-        onClick = function()
-          actions.addRule("blocked_modifiers")
-        end,
-      },
-      {
-        label = "Del",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = function()
-          if app.ui.selected_keep_key then
-            actions.removeRule("wanted_modifiers")
-          elseif app.ui.selected_block_key then
-            actions.removeRule("blocked_modifiers")
-          else
-            actions.removeRule("wanted_modifiers")
-          end
-        end,
-      },
-      {
-        label = "Clear",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = actions.clearRules,
-      },
-    },
-  })
-
-  if summaryCard.w > 0 and summaryCard.h > 0 then
-    local textRect, modeBarRect = layout.sliceTop(summaryCard, math.max(1, summaryCard.h - 1), 0)
-    local lines = shared.flattenLines(shared.selectedModifierLines(app), math.max(8, textRect.w), math.max(1, textRect.h))
-    for index = 1, math.min(#lines, textRect.h) do
-      local tone = index == 1 and "gold" or "text"
-      ctx:drawText(textRect.x, textRect.y + index - 1, ctx:trimText(lines[index], textRect.w), tone, nil)
-    end
-    if modeBarRect.h > 0 then
-      shared.renderSegmentRow(ctx, modeBarRect, "Keep When", shared.choice_options.wanted_modifier_mode, profile.wanted_modifier_mode, function(value)
-        actions.setProfileChoice(app.ui.selected_type, "wanted_modifier_mode", value)
-      end)
-    end
-  end
-
-  local columns = layout.columns(listRect, { 0.34, 0.33, 0.33 }, 1)
-  local scrollKey = app.ui.selected_type
-
-  local _, catalogScroll = shared.renderListCard(ctx, columns[1], {
-    title = "Catalog",
-    accent = "gold",
-    items = shared.buildCatalogItems(app),
-    selected_id = app.ui.selected_modifier_key,
-    scroll = view.catalog_scroll[scrollKey] or 0,
-    onScrollChange = function(value)
-      view.catalog_scroll[scrollKey] = value
-    end,
-    onSelect = function(id)
-      actions.selectCatalogModifier(id)
-    end,
-    empty_text = "Scan Vault gear to discover modifiers",
-  })
-  view.catalog_scroll[scrollKey] = catalogScroll
-
-  local _, keepScroll = shared.renderListCard(ctx, columns[2], {
-    title = "Keep",
-    accent = "success",
-    items = shared.buildRuleItems(profile.wanted_modifiers, "success"),
-    selected_id = app.ui.selected_keep_key,
-    scroll = view.keep_scroll[scrollKey] or 0,
-    onScrollChange = function(value)
-      view.keep_scroll[scrollKey] = value
-    end,
-    onSelect = function(id)
-      actions.selectKeepRule(id)
-    end,
-    empty_text = "No keep modifiers saved",
-  })
-  view.keep_scroll[scrollKey] = keepScroll
-
-  local _, blockScroll = shared.renderListCard(ctx, columns[3], {
-    title = "Block",
-    accent = "danger",
-    items = shared.buildRuleItems(profile.blocked_modifiers, "danger"),
-    selected_id = app.ui.selected_block_key,
-    scroll = view.block_scroll[scrollKey] or 0,
-    onScrollChange = function(value)
-      view.block_scroll[scrollKey] = value
-    end,
-    onSelect = function(id)
-      actions.selectBlockRule(id)
-    end,
-    empty_text = "No blocked modifiers saved",
-  })
-  view.block_scroll[scrollKey] = blockScroll
-end
-
-local function renderSetup(ctx, rect, app, actions, view)
-  local leftRect, rightRect = layout.sliceLeft(rect, math.max(22, math.floor(rect.w * 0.36)), 1)
-  local systemHeight = math.max(6, math.min(7, leftRect.h - 3))
-  local systemRect, healthRect = layout.sliceTop(leftRect, systemHeight, 1)
-
-  local system = widgets.card(ctx, systemRect, {
-    title = "System",
-    accent = shared.accentForApp(app),
-    actions = {
-      {
-        label = "Refresh",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = function()
-          actions.refreshPeripherals(true)
-        end,
-      },
-    },
-  })
-
-  if system.w > 0 and system.h > 0 then
-    local monitorText = nil
-    if app.monitor and app.monitor.peripheral then
-      monitorText = string.format("Display: %s %dx%d", app.monitor.name or "monitor", app.monitor.width or 0, app.monitor.height or 0)
-    elseif app.config.monitor.name then
-      monitorText = "Display missing: " .. tostring(app.config.monitor.name)
-    else
-      monitorText = "Display: auto-detect"
-    end
-
-    local monitorRow, rest = layout.sliceTop(system, 1, 0)
-    local inputRow, rest = layout.sliceTop(rest, 1, 0)
-    local scanRow, batchRow = layout.sliceTop(rest, 1, 0)
-    ctx:drawText(monitorRow.x, monitorRow.y, ctx:trimText(monitorText, monitorRow.w), app.health.monitor_ok and "text" or "warning", nil)
-
-    local inputChoices = shared.buildInventoryChoices(app, {
-      include_none = false,
-      current = app.config.routing.input,
-    })
-    widgets.selector(ctx, inputRow, "Input", shared.inventoryLabelFromChoices(inputChoices, app.config.routing.input), {
-      onPrev = function()
-        actions.setInputInventory(shared.cycleInventory(app, app.config.routing.input, -1, { include_none = false }))
-      end,
-      onNext = function()
-        actions.setInputInventory(shared.cycleInventory(app, app.config.routing.input, 1, { include_none = false }))
-      end,
-    })
-
-    widgets.stepper(ctx, scanRow, "Scan Interval", tostring(app.config.runtime.scan_interval or 1) .. "s", {
-      onMinus = function()
-        actions.adjustRuntime("scan_interval", -1)
-      end,
-      onPlus = function()
-        actions.adjustRuntime("scan_interval", 1)
-      end,
-    })
-
-    if batchRow.h > 0 then
-      widgets.stepper(ctx, batchRow, "Batch Size", tostring(app.config.runtime.batch_size or 1), {
-        onMinus = function()
-          actions.adjustRuntime("batch_size", -1)
-        end,
-        onPlus = function()
-          actions.adjustRuntime("batch_size", 1)
-        end,
-      })
-    end
-  end
-
-  local _, healthScroll = shared.renderListCard(ctx, healthRect, {
-    title = "Checks",
-    accent = shared.accentForApp(app),
-    items = shared.buildHealthItems(app),
-    scroll = view.health_scroll,
-    onScrollChange = function(value)
-      view.health_scroll = value
-    end,
-    empty_text = "All checks passed",
-  })
-  view.health_scroll = healthScroll
-
-  local routingCard = widgets.card(ctx, rightRect, {
-    title = "Routing",
-    accent = "accent_alt",
-    actions = {
-      {
-        label = "Add",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = actions.addDestination,
-      },
-      {
-        label = "Del",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = actions.removeDestination,
-      },
-      {
-        label = "^",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = function()
-          actions.moveDestination(-1)
-        end,
-      },
-      {
-        label = "v",
-        background = "surface_alt",
-        foreground = "text",
-        onClick = function()
-          actions.moveDestination(1)
-        end,
-      },
-    },
-  })
-
-  if routingCard.w <= 0 or routingCard.h <= 0 then
-    return
-  end
-
-  local routeListRect, editorRect = layout.sliceLeft(routingCard, math.max(18, math.floor(routingCard.w * 0.38)), 1)
-  local _, routeScroll = shared.renderListCard(ctx, routeListRect, {
-    title = "Destinations",
-    accent = "accent",
-    items = shared.buildRouteItems(app),
-    selected_id = app.ui.selected_destination_id,
-    scroll = view.route_scroll,
-    onScrollChange = function(value)
-      view.route_scroll = value
-    end,
-    onSelect = function(id)
-      actions.selectDestination(id)
-    end,
-    empty_text = "No destinations configured",
-  })
-  view.route_scroll = routeScroll
-
-  local destination = shared.selectedDestination(app)
-  local selectedConfig = destination or {}
-  local editor = widgets.card(ctx, editorRect, {
-    title = selectedConfig.id and ("Route " .. tostring(selectedConfig.id)) or "Route Details",
-    accent = "gold",
-  })
-
-  if editor.w <= 0 or editor.h <= 0 then
-    return
-  end
-
-  if not selectedConfig.id then
-    ctx:drawText(editor.x, editor.y, ctx:trimText("Select or create a destination to edit it.", editor.w), "muted", nil)
-    return
-  end
-
-  local enabledRow, rest = layout.sliceTop(editor, 1, 0)
-  local inventoryRow, rest = layout.sliceTop(rest, 1, 0)
-  local actionRow, rest = layout.sliceTop(rest, 1, 0)
-  local modeRow, typeRect = layout.sliceTop(rest, 1, 1)
-
-  widgets.toggle(ctx, enabledRow, "Route Enabled", selectedConfig.enabled ~= false, {
-    onClick = function()
-      actions.setDestinationEnabled(selectedConfig.enabled == false)
-    end,
-  })
-
-  local routeInventoryChoices = shared.buildInventoryChoices(app, {
-    include_none = true,
-    exclude_input = true,
-    current = selectedConfig.inventory,
-  })
-  widgets.selector(ctx, inventoryRow, "Inventory", shared.inventoryLabelFromChoices(routeInventoryChoices, selectedConfig.inventory), {
-    onPrev = function()
-      actions.setDestinationChoice("inventory", shared.cycleInventory(app, selectedConfig.inventory, -1, {
-        include_none = true,
-        exclude_input = true,
-      }))
-    end,
-    onNext = function()
-      actions.setDestinationChoice("inventory", shared.cycleInventory(app, selectedConfig.inventory, 1, {
-        include_none = true,
-        exclude_input = true,
-      }))
-    end,
-  })
-
-  shared.renderSegmentRow(ctx, actionRow, "Action", shared.choice_options.route_action, selectedConfig.match_action, function(value)
-    actions.setDestinationChoice("match_action", value)
-  end)
-  shared.renderSegmentRow(ctx, modeRow, "Types", shared.choice_options.route_type_mode, selectedConfig.type_mode, function(value)
-    actions.setDestinationChoice("type_mode", value)
-  end)
-
-  if typeRect.h > 0 then
-    if selectedConfig.type_mode == "selected" then
-      shared.renderTypeMatrix(ctx, typeRect, selectedConfig, actions)
-    else
-      ctx:drawText(typeRect.x, typeRect.y, ctx:trimText("All supported Vault types can use this route.", typeRect.w), "muted", nil)
-    end
-  end
-end
-
 function M.renderApp(ctx, app, actions, view)
-  if view.last_preview_selected ~= app.ui.preview_selected then
-    view.last_preview_selected = app.ui.preview_selected
-    view.detail_scroll = 0
-  end
-  if view.last_selected_type ~= app.ui.selected_type then
-    view.last_selected_type = app.ui.selected_type
-  end
+  shared.syncDraft(view, app)
 
   local root = layout.rect(1, 1, ctx.width, ctx.height)
   ctx:fillRect(root, "bg", "text", " ")
 
-  local headerRect, remainder = layout.sliceTop(root, 6, 1)
+  local headerRect, remainder = layout.sliceTop(root, 5, 1)
   local tabsRect, bodyRect = layout.sliceTop(remainder, 1, 1)
 
   renderHeader(ctx, headerRect, app, actions)
   widgets.nav(ctx, tabsRect, constants.TABS, app.ui.page, {
-    onSelect = function(id)
-      actions.setPage(id)
-    end,
+    onSelect = actions.setPage,
   })
 
   if bodyRect.w <= 0 or bodyRect.h <= 0 then
     return
   end
 
-  if app.ui.page == "rules" then
-    renderRules(ctx, bodyRect, app, actions, view)
-  elseif app.ui.page == "modifiers" then
-    renderModifiers(ctx, bodyRect, app, actions, view)
-  elseif app.ui.page == "setup" then
-    renderSetup(ctx, bodyRect, app, actions, view)
+  if app.ui.page == "storages" then
+    renderStorages(ctx, bodyRect, app, actions, view)
+  elseif app.ui.page == "live" then
+    renderLive(ctx, bodyRect, app, actions, view)
   else
-    renderDashboard(ctx, bodyRect, app, actions, view)
+    renderOverview(ctx, bodyRect, app, actions, view)
   end
 end
 

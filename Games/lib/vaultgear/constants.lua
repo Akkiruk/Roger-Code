@@ -1,8 +1,8 @@
 local M = {}
 
-M.APP_NAME = "Vault Gear Sorter"
-M.CONFIG_SCHEMA_VERSION = 2
-M.STATE_SCHEMA_VERSION = 2
+M.APP_NAME = "Vault Storage Manager"
+M.CONFIG_SCHEMA_VERSION = 3
+M.STATE_SCHEMA_VERSION = 3
 
 M.CONFIG_FILE = "vaultgear_config.lua"
 M.STATE_FILE = "vaultgear_state_settings.lua"
@@ -10,20 +10,31 @@ M.LOG_FILE = "vaultgear_error.log"
 
 M.MIN_MONITOR_WIDTH = 52
 M.MIN_MONITOR_HEIGHT = 18
-M.PREVIEW_LIMIT = 24
-M.RECENT_LIMIT = 14
+M.INSPECT_LIMIT = 12
+M.RECENT_LIMIT = 18
 
 M.TABS = {
-  { id = "dashboard", label = "Dashboard" },
-  { id = "rules", label = "Rules" },
-  { id = "modifiers", label = "Modifiers" },
-  { id = "setup", label = "Setup" },
+  { id = "overview", label = "Overview" },
+  { id = "storages", label = "Storages" },
+  { id = "live", label = "Live" },
 }
 
-M.ACTIONS = { "keep", "discard" }
-M.ROUTE_ACTIONS = { "keep", "discard", "any" }
-M.WANTED_MODES = { "any", "all" }
-M.UNIDENTIFIED_MODES = { "keep", "discard", "evaluate_basic" }
+M.STORAGE_ROLES = {
+  { id = "inbox", label = "Inbox" },
+  { id = "home", label = "Home" },
+}
+
+M.STRICTNESS = {
+  { id = "broad", label = "Broad" },
+  { id = "normal", label = "Normal" },
+  { id = "strict", label = "Strict" },
+}
+
+M.IDENTIFIED_MODES = {
+  { id = "any", label = "Any" },
+  { id = "identified", label = "Identified" },
+  { id = "unidentified", label = "Unidentified" },
+}
 
 M.RARITIES = {
   "ANY",
@@ -65,134 +76,79 @@ end
 M.DEFAULT_RUNTIME = {
   enabled = false,
   scan_interval = 2,
-  batch_size = 4,
+  move_batch = 4,
+  repair_batch = 2,
 }
 
-M.DEFAULT_SAFETY = {
-  non_vault_action = "keep",
-  unsupported_vault_action = "keep",
-  detail_error_action = "keep",
+M.DEFAULT_RULE = {
+  item_types = {},
+  identified_mode = "any",
+  min_rarity = "ANY",
+  min_level = nil,
+  max_level = nil,
+  min_crafting_potential = nil,
+  min_free_repair_slots = nil,
+  min_durability_percent = nil,
+  max_jewel_size = nil,
+  min_uses = nil,
+  allow_legendary = true,
+  allow_soulbound = true,
+  allow_unique = true,
 }
 
-M.PROFILE_LABELS = {
-  enabled = "Profile",
-  miss_action = "Misses Go To",
-  unidentified_mode = "Unidentified",
-  min_rarity = "Min Rarity",
-  min_level = "Min Level",
-  max_level = "Max Level",
-  min_crafting_potential = "Min CP",
-  min_free_repair_slots = "Free Repair",
-  min_durability_percent = "Durability%",
-  max_jewel_size = "Max Jewel Size",
-  min_uses = "Min Uses",
-  keep_legendary = "Always Keep Legendary",
-  keep_soulbound = "Always Keep Soulbound",
-  keep_unique = "Always Keep Unique",
-  wanted_modifier_mode = "Wanted Mode",
-}
-
-M.PROFILE_PRESETS = {
-  Gear = {
-    { id = "keep_all", label = "Keep All" },
-    { id = "common_plus", label = "Common+" },
-    { id = "rare_plus", label = "Rare+" },
-    { id = "trash_unid", label = "Unid Trash" },
+M.NUMERIC_FIELDS = {
+  min_level = {
+    label = "Min Level",
+    step = 1,
+    min = 1,
+    max = 999,
   },
-  Tool = {
-    { id = "keep_all", label = "Keep All" },
-    { id = "common_plus", label = "Common+" },
-    { id = "rare_plus", label = "Rare+" },
-    { id = "trash_unid", label = "Unid Trash" },
+  max_level = {
+    label = "Max Level",
+    step = 1,
+    min = 1,
+    max = 999,
   },
-  Jewel = {
-    { id = "keep_all", label = "Keep All" },
-    { id = "common_plus", label = "Common+" },
-    { id = "rare_plus", label = "Rare+" },
-    { id = "trash_unid", label = "Unid Trash" },
+  min_crafting_potential = {
+    label = "Min CP",
+    step = 5,
+    min = 0,
+    max = 1000,
   },
-  Trinket = {
-    { id = "keep_all", label = "Keep All" },
-    { id = "uses_2", label = "2+ Uses" },
-    { id = "uses_5", label = "5+ Uses" },
-    { id = "trash_unid", label = "Unid Trash" },
+  min_free_repair_slots = {
+    label = "Free Repairs",
+    step = 1,
+    min = 0,
+    max = 50,
   },
-  Charm = {
-    { id = "keep_all", label = "Keep All" },
-    { id = "common_plus", label = "Common+" },
-    { id = "uses_3", label = "3+ Uses" },
-    { id = "trash_unid", label = "Unid Trash" },
+  min_durability_percent = {
+    label = "Durability %",
+    step = 5,
+    min = 0,
+    max = 100,
   },
-  Etching = {
-    { id = "keep_all", label = "Keep All" },
-    { id = "common_plus", label = "Common+" },
-    { id = "rare_plus", label = "Rare+" },
-    { id = "trash_unid", label = "Unid Trash" },
+  max_jewel_size = {
+    label = "Max Jewel Size",
+    step = 1,
+    min = 1,
+    max = 100,
+  },
+  min_uses = {
+    label = "Min Uses",
+    step = 1,
+    min = 1,
+    max = 100,
   },
 }
 
-M.PROFILE_FIELDS = {
-  Gear = {
-    "enabled",
-    "miss_action",
-    "unidentified_mode",
-    "min_rarity",
-    "min_level",
-    "max_level",
-    "min_crafting_potential",
-    "min_free_repair_slots",
-    "min_durability_percent",
-    "keep_legendary",
-    "keep_soulbound",
-    "keep_unique",
-    "wanted_modifier_mode",
-  },
-  Tool = {
-    "enabled",
-    "miss_action",
-    "unidentified_mode",
-    "min_rarity",
-    "min_level",
-    "max_level",
-    "min_free_repair_slots",
-    "min_durability_percent",
-    "wanted_modifier_mode",
-  },
-  Jewel = {
-    "enabled",
-    "miss_action",
-    "unidentified_mode",
-    "min_rarity",
-    "min_level",
-    "max_level",
-    "max_jewel_size",
-    "wanted_modifier_mode",
-  },
-  Trinket = {
-    "enabled",
-    "miss_action",
-    "unidentified_mode",
-    "min_uses",
-    "wanted_modifier_mode",
-  },
-  Charm = {
-    "enabled",
-    "miss_action",
-    "unidentified_mode",
-    "min_rarity",
-    "min_uses",
-    "wanted_modifier_mode",
-  },
-  Etching = {
-    "enabled",
-    "miss_action",
-    "unidentified_mode",
-    "min_rarity",
-    "min_level",
-    "max_level",
-    "keep_legendary",
-    "wanted_modifier_mode",
-  },
+M.NUMERIC_FIELD_ORDER = {
+  "min_level",
+  "max_level",
+  "min_crafting_potential",
+  "min_free_repair_slots",
+  "min_durability_percent",
+  "max_jewel_size",
+  "min_uses",
 }
 
 return M
