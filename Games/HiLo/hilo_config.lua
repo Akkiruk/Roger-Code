@@ -8,15 +8,16 @@ return {
   MIN_CARDS_RESHUFFLE = 10,      -- reshuffle when deck drops below this
   RESHUFFLE_EACH_ROUND = true,   -- start every round from a fresh deck to block shoe counting
 
-  -- Payout multipliers for consecutive correct guesses
+  -- Payout multipliers for consecutive correct guesses.
+  -- Tuned for roughly 90% RTP with round-to-nearest token payouts.
   -- Same-value cards lose, so the ladder can stay exciting without turning
   -- edge cards into a guaranteed profit source for the player.
-  MULTIPLIERS = { 1.25, 1.5, 2, 2.5, 3.5, 4.5, 6, 8, 11, 15 },
+  MULTIPLIERS = { 1.2, 1.45, 1.9, 2.35, 3.3, 4.2, 5.7, 7.6, 10.4, 14.2 },
   MAX_ROUNDS  = 10,              -- cap at 10 correct guesses
 
   -- Economy
-  MAX_BET_PERCENT     = 0.03,    -- conservative table cap; max total return is 15x
-  HOST_COVERAGE_MULT  = 15,      -- total payout multiplier (returned wager + 14x profit)
+  MAX_BET_PERCENT     = 0.03,    -- conservative table cap; max total return is 14.2x
+  HOST_COVERAGE_MULT  = 15,      -- slightly conservative coverage for the 14.2x max return
   INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
   PRE_ROUND_MENU_TIMEOUT = 10000, -- ms before auto-exit on the title/menu screen
 

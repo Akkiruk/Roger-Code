@@ -159,6 +159,10 @@ local function cardValue(cardID)
   return HILO_VALUES[val] or 0
 end
 
+local function roundedPayout(betAmount, multiplier)
+  return math.floor((betAmount * multiplier) + 0.5)
+end
+
 -----------------------------------------------------
 -- Layout (computed once from screen dimensions)
 -----------------------------------------------------
@@ -520,7 +524,7 @@ local function hiloRound(betAmount)
 
     if round > 0 then
       -- Can cash out after first correct guess
-      local winnings = math.floor(betAmount * multiplier) - betAmount
+      local winnings = roundedPayout(betAmount, multiplier) - betAmount
       local cashLabel = "CASH OUT +" .. currency.formatTokens(winnings)
       table.insert(btnRows, {
         { text = cashLabel, color = colors.lime,
@@ -546,7 +550,7 @@ local function hiloRound(betAmount)
 
     if choice == "cashout" then
       -- Cash out: player wins current multiplier
-      local totalPayout = math.floor(betAmount * multiplier)
+      local totalPayout = roundedPayout(betAmount, multiplier)
       local profit = totalPayout - betAmount
 
       if profit > 0 then
@@ -639,7 +643,7 @@ local function hiloRound(betAmount)
 
       if round >= cfg.MAX_ROUNDS then
         -- Max streak reached: auto cash out
-        local totalPayout = math.floor(betAmount * multiplier)
+        local totalPayout = roundedPayout(betAmount, multiplier)
         local profit = totalPayout - betAmount
 
         if profit > 0 then
