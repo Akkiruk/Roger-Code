@@ -525,6 +525,22 @@ local function betSelection()
   })
 end
 
+local function canReplayBet(betAmount)
+  if not betAmount or betAmount <= 0 then
+    return false
+  end
+
+  if currency.getPlayerBalance() < betAmount then
+    return false
+  end
+
+  if getMaxBet() < betAmount then
+    return false
+  end
+
+  return true
+end
+
 -----------------------------------------------------
 -- Hi-Lo round
 -----------------------------------------------------
@@ -791,6 +807,7 @@ refreshPlayer()
 
 local function main()
   local skipPreRoundMenu = false
+  local replayBetAmount = nil
 
   while true do
     updateAutoPlayFromRedstone()
@@ -814,10 +831,14 @@ local function main()
         preRoundMenu()
       end
 
-      -- Run bet screen
-      local selectedBet = betSelection()
-      if selectedBet and selectedBet > 0 then
-        betAmount = selectedBet
+      if skipPreRoundMenu and canReplayBet(replayBetAmount) then
+        betAmount = replayBetAmount
+      else
+        -- Run bet screen
+        local selectedBet = betSelection()
+        if selectedBet and selectedBet > 0 then
+          betAmount = selectedBet
+        end
       end
       skipPreRoundMenu = false
     end
@@ -827,6 +848,7 @@ local function main()
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
       skipPreRoundMenu = (roundChoice == "play_again")
+      replayBetAmount = betAmount
     end
   end
 end
