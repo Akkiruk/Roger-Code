@@ -299,8 +299,12 @@ local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
   -- Draw cards
   for i, cardID in ipairs(hand) do
     local x = handStartX + (i - 1) * deltaX
+    local y = cardY
+    if held[i] then
+      y = cardY - scale:scaledY(LO.HELD_CARD_LIFT or 0, 1, 4)
+    end
     local img = cards.renderCard(cardID)
-    screen:drawSurface(img, x, cardY)
+    screen:drawSurface(img, x, y)
 
     -- HOLD label above held cards
     if showHoldLabels and held[i] then
@@ -308,7 +312,7 @@ local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
       local hw = ui.getTextSize(holdLabel)
       ui.safeDrawText(screen, holdLabel, font,
         x + math.floor((cardBack.width - hw) / 2),
-        cardY - LINE_H - scale:scaledY(LO.HOLD_Y_OFFSET, 1, 4),
+        y - LINE_H - scale:scaledY(LO.HOLD_Y_OFFSET, 1, 4),
         colors.lime)
     end
   end
@@ -367,12 +371,12 @@ local TUTORIAL_PAGES = {
     title = "HOW TO PLAY",
     lines = {
       { text = "You get 5 cards.",       color = colors.white },
-      { text = "Choose which to",        color = colors.white },
+      { text = "Tap cards to",           color = colors.white },
       { text = "HOLD and which to",      color = colors.lime },
       { text = "discard.",               color = colors.white },
       { text = "",                        color = colors.white },
-      { text = "New cards replace",      color = colors.yellow },
-      { text = "the discards.",          color = colors.yellow },
+      { text = "Tap DRAW for new",       color = colors.yellow },
+      { text = "cards in discards.",     color = colors.yellow },
     },
   },
   {
@@ -635,33 +639,34 @@ local function pokerRound(betAmount)
     local confirmed = false
 
     while not confirmed do
-      renderHand(hand, held, betAmount, "Tap 1-5 to HOLD", true)
+      renderHand(hand, held, betAmount, "Tap a card to hold it. Tap DRAW when ready.", true)
 
       ui.clearButtons()
-
-      -- Card touch areas (toggle hold via labeled buttons below each card)
-      for i = 1, cfg.HAND_SIZE do
-        local x = handStartX + (i - 1) * deltaX
-        local idx = i
-        local lblY = cardY + cardBack.height + scale.smallGap
-        -- Keep toggle labels compact so they do not collide on smaller monitor layouts.
-        local label = tostring(i)
-        local lblColor = held[i] and colors.lime or colors.gray
-        ui.fixedWidthButton(screen, label, lblColor,
-          x + math.floor(cardBack.width / 2), lblY, function()
-            held[idx] = not held[idx]
-          end, true, cardBack.width)
-      end
-
       -- Draw button
-      local drawBtnY = cardY + cardBack.height + LINE_H + scale.sectionGap
+      local drawBtnY = cardY + cardBack.height + LINE_H + (scale.sectionGap * 2)
       ui.fixedWidthButton(screen, "DRAW", colors.lime,
         centerX, drawBtnY, function()
           confirmed = true
         end, true, nil)
 
       screen:output()
-      ui.waitForButton(0, 0)
+
+      local _, px, py = ui.waitForMonitorTouch()
+      local buttonCb = ui.checkButtonHit(px, py)
+      if buttonCb then
+        buttonCb()
+      else
+        for i = 1, cfg.HAND_SIZE do
+          local x = handStartX + (i - 1) * deltaX
+          local cardTop = cardY - scale:scaledY(LO.HELD_CARD_LIFT or 0, 1, 4)
+          if px >= x and px <= x + cardBack.width - 1
+             and py >= cardTop and py <= cardY + cardBack.height - 1 then
+            held[i] = not held[i]
+            sound.play(sound.SOUNDS.CARD_PLACE, 0.5)
+            break
+          end
+        end
+      end
     end
   end
 
