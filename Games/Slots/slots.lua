@@ -169,6 +169,9 @@ local REEL_H = min(availableReelH, max(minReelH, desiredReelH))
 local TOTAL_W    = REEL_W * 3 + REEL_GAP * 2
 local REEL_START_X = max(0, floor((width - TOTAL_W) / 2))
 local REEL_Y     = max(TITLE_BAR_H + scale.sectionGap, min(scale:scaledY(LO.REEL_Y, TITLE_BAR_H + scale.smallGap, height - REEL_H - scale.messageLineHeight - scale.edgePad), height - REEL_H - scale.messageLineHeight - scale.edgePad))
+local REEL_INNER_W = REEL_W - 2
+local REEL_INNER_H = REEL_H - 2
+local symbolSurfaceCache = {}
 
 -----------------------------------------------------
 -- Spin a random result from a reel
@@ -177,57 +180,104 @@ local function spinReel(reel)
   return reel[random(1, #reel)]
 end
 
+local function renderSymbolSurface(target, sym, highlight)
+  local bg = highlight and colors.white or LO.REEL_BG
+  local textClr = highlight and colors.black or sym.color
+
+  target:fillRect(0, 0, REEL_INNER_W, REEL_INNER_H, bg)
+
+  if sym.artSurface then
+    local art = sym.artSurface
+    local labelH = max(6, scale.lineHeight - 1)
+    local artSpace = max(1, REEL_INNER_H - labelH)
+    local ax = floor((REEL_INNER_W - art.width) / 2)
+    local ay = floor((artSpace - art.height) / 2)
+    target:drawSurface(art, ax, ay)
+
+    local label = sym.label
+    local tw = ui.getTextSize(label)
+    local tx = floor((REEL_W - tw) / 2) - 1
+    local ty = artSpace
+    ui.safeDrawText(target, label, font, tx, ty, textClr)
+  else
+    local label = sym.label
+    local tw = ui.getTextSize(label)
+    local tx = floor((REEL_W - tw) / 2) - 1
+    local ty = floor((REEL_H - scale.fontHeight) / 2) - 1
+    ui.safeDrawText(target, label, font, tx, ty, textClr)
+  end
+end
+
+local function getSymbolSurface(sym, highlight)
+  local key = sym.id .. (highlight and "#hl" or "#base")
+  local cached = symbolSurfaceCache[key]
+  if cached then
+    return cached
+  end
+
+  local surf = surfaceLib.create(REEL_INNER_W, REEL_INNER_H)
+  renderSymbolSurface(surf, sym, highlight)
+  symbolSurfaceCache[key] = surf
+  return surf
+end
+
+local function drawReelShell(target, x, y, highlight)
+  local bg = highlight and colors.white or LO.REEL_BG
+  local borderClr = highlight and colors.yellow or colors.gray
+  target:fillRect(x, y, REEL_W, REEL_H, bg)
+  target:fillRect(x, y, REEL_W, 1, borderClr)
+  target:fillRect(x, y + REEL_H - 1, REEL_W, 1, borderClr)
+  target:fillRect(x, y, 1, REEL_H, borderClr)
+  target:fillRect(x + REEL_W - 1, y, 1, REEL_H, borderClr)
+end
+
+local function drawReelGlass(target, x, y, highlight, spinning)
+  local innerX = x + 1
+  local innerY = y + 1
+  local sheen = highlight and colors.lightGray or colors.gray
+  local shadow = highlight and colors.gray or colors.black
+  local payLineColor = highlight and colors.yellow or (spinning and colors.lightGray or colors.gray)
+  local payLineY = innerY + floor(REEL_INNER_H / 2)
+
+  target:fillRect(innerX, innerY, REEL_INNER_W, 1, sheen)
+  target:fillRect(innerX, innerY + REEL_INNER_H - 1, REEL_INNER_W, 1, shadow)
+  if REEL_INNER_H > 6 then
+    target:fillRect(innerX, innerY + 1, REEL_INNER_W, 1, sheen)
+  end
+  target:fillRect(innerX + 1, payLineY, max(1, REEL_INNER_W - 2), 1, payLineColor)
+end
+
 -----------------------------------------------------
 -- Draw a single reel cell
 -----------------------------------------------------
 local function drawReelCell(x, y, sym, highlight)
-  local bg = highlight and colors.white or LO.REEL_BG
-  screen:fillRect(x, y, REEL_W, REEL_H, bg)
+  drawReelShell(screen, x, y, highlight)
+  screen:drawSurface(getSymbolSurface(sym, highlight), x + 1, y + 1)
+  drawReelGlass(screen, x, y, highlight, false)
+end
 
-  -- Border
-  local borderClr = highlight and colors.yellow or colors.gray
-  screen:fillRect(x, y, REEL_W, 1, borderClr)
-  screen:fillRect(x, y + REEL_H - 1, REEL_W, 1, borderClr)
-  screen:fillRect(x, y, 1, REEL_H, borderClr)
-  screen:fillRect(x + REEL_W - 1, y, 1, REEL_H, borderClr)
+local function drawAnimatedReel(x, y, state)
+  local offset = max(0, min(REEL_INNER_H - 1, state.offset or 0))
+  local currentSurface = getSymbolSurface(state.current, false)
+  local nextSurface = getSymbolSurface(state.next or state.current, false)
+  local visibleCurrent = REEL_INNER_H - offset
 
-  -- Interior area (inside border)
-  local ix = x + 1
-  local iy = y + 1
-  local iw = REEL_W - 2
-  local ih = REEL_H - 2
+  drawReelShell(screen, x, y, false)
 
-  if sym.artSurface then
-    -- Draw pixel art centered, with label text below
-    local art = sym.artSurface
-    local labelH = max(6, scale.lineHeight - 1)
-    local artSpace = max(1, ih - labelH)
-    local ax = ix + floor((iw - art.width) / 2)
-    local ay = iy + floor((artSpace - art.height) / 2)
-    screen:drawSurface(art, ax, ay)
-
-    -- Label text below the art area
-    local label = sym.label
-    local tw = ui.getTextSize(label)
-    local tx = x + floor((REEL_W - tw) / 2)
-    local ty = iy + artSpace
-    local textClr = highlight and colors.black or sym.color
-    ui.safeDrawText(screen, label, font, tx, ty, textClr)
-  else
-    -- Fallback: text only
-    local label = sym.label
-    local tw = ui.getTextSize(label)
-    local tx = x + floor((REEL_W - tw) / 2)
-    local ty = y + floor((REEL_H - scale.fontHeight) / 2)
-    local textClr = highlight and colors.black or sym.color
-    ui.safeDrawText(screen, label, font, tx, ty, textClr)
+  if visibleCurrent > 0 then
+    screen:drawSurface(currentSurface, x + 1, y + 1, REEL_INNER_W, visibleCurrent, 0, offset, REEL_INNER_W, visibleCurrent)
   end
+  if offset > 0 then
+    screen:drawSurface(nextSurface, x + 1, y + 1 + visibleCurrent, REEL_INNER_W, offset, 0, 0, REEL_INNER_W, offset)
+  end
+
+  drawReelGlass(screen, x, y, false, true)
 end
 
 -----------------------------------------------------
 -- Draw the full machine frame
 -----------------------------------------------------
-local function drawMachine(result, highlights, statusText, currentBet)
+local function drawMachine(result, highlights, statusText, currentBet, animationState)
   screen:clear(LO.TABLE_COLOR)
 
   -- Title bar background
@@ -258,9 +308,14 @@ local function drawMachine(result, highlights, statusText, currentBet)
   -- Draw 3 reels
   for i = 1, 3 do
     local x = REEL_START_X + (i - 1) * (REEL_W + REEL_GAP)
-    local sym = result[i]
-    local hl = highlights and highlights[i]
-    drawReelCell(x, REEL_Y, sym, hl)
+    local reelAnim = animationState and animationState[i]
+    if reelAnim then
+      drawAnimatedReel(x, REEL_Y, reelAnim)
+    else
+      local sym = result[i]
+      local hl = highlights and highlights[i]
+      drawReelCell(x, REEL_Y, sym, hl)
+    end
   end
 
   -- Pay line arrows (left and right of the reels)
@@ -281,36 +336,113 @@ end
 -----------------------------------------------------
 -- Spin animation
 -----------------------------------------------------
-local function animateSpin(finalResult, currentBet)
+local function pickDifferentSymbol(previous, avoid)
+  local candidate = nil
+
+  for _ = 1, #SYMBOLS * 2 do
+    candidate = SYMBOLS[random(1, #SYMBOLS)]
+    if candidate ~= previous and candidate ~= avoid then
+      return candidate
+    end
+  end
+
+  return avoid or previous or SYMBOLS[1]
+end
+
+local function buildSpinSequence(startSym, finalSym, totalSteps)
+  local sequence = { startSym or pickDifferentSymbol(nil, finalSym) }
+  local previous = sequence[1]
+
+  for step = 2, totalSteps - 1 do
+    local avoid = step >= totalSteps - 2 and finalSym or nil
+    local nextSym = pickDifferentSymbol(previous, avoid)
+    sequence[#sequence + 1] = nextSym
+    previous = nextSym
+  end
+
+  sequence[#sequence + 1] = finalSym
+  return sequence
+end
+
+local function easeOutCubic(progress)
+  local inverse = 1 - progress
+  return 1 - (inverse * inverse * inverse)
+end
+
+local function animateSpin(finalResult, currentBet, initialDisplay)
   local spinTicks = cfg.REEL_SPIN_TICKS
-  local maxTicks = spinTicks[3]
-  local display = { SYMBOLS[1], SYMBOLS[1], SYMBOLS[1] }
+  local startDisplay = initialDisplay or { SYMBOLS[1], SYMBOLS[1], SYMBOLS[1] }
+  local frameDelay = min(0.03, max(0.02, cfg.SPIN_FRAME_DELAY * 0.75))
+  local startTime = epoch("local")
+  local animationState = {}
+  local reelPlans = {}
+  local allComplete = false
 
-  for tick = 1, maxTicks do
+  for i = 1, 3 do
+    local durationMs = max(450, floor(spinTicks[i] * cfg.SPIN_FRAME_DELAY * 1000 * 1.45))
+    local totalSteps = max(12, spinTicks[i] + 10)
+    reelPlans[i] = {
+      durationMs = durationMs,
+      totalSteps = totalSteps,
+      sequence = buildSpinSequence(startDisplay[i], finalResult[i], totalSteps),
+      lastIndex = 1,
+      stopped = false,
+    }
+  end
+
+  while not allComplete do
+    allComplete = true
+    local elapsed = epoch("local") - startTime
+
     for i = 1, 3 do
-      if tick <= spinTicks[i] then
-        -- Still spinning: pick random symbol
-        display[i] = SYMBOLS[random(1, #SYMBOLS)]
+      local plan = reelPlans[i]
+      local progress = min(1, elapsed / plan.durationMs)
+      local eased = easeOutCubic(progress)
+      local stepFloat = eased * (plan.totalSteps - 1)
+      local baseIndex = floor(stepFloat)
+      local currentIndex = min(plan.totalSteps, baseIndex + 1)
+      local nextIndex = min(plan.totalSteps, currentIndex + 1)
+      local fraction = stepFloat - baseIndex
+      local offset = floor(fraction * REEL_INNER_H)
+
+      if currentIndex >= plan.totalSteps then
+        nextIndex = plan.totalSteps
+        offset = 0
       else
-        -- Stopped: show final
-        display[i] = finalResult[i]
+        allComplete = false
       end
-    end
 
-    drawMachine(display, nil, nil, currentBet)
+      animationState[i] = {
+        current = plan.sequence[currentIndex],
+        next = plan.sequence[nextIndex],
+        offset = offset,
+      }
 
-    -- Play a tick sound for the last few frames of each reel stopping
-    for i = 1, 3 do
-      if tick == spinTicks[i] then
+      if currentIndex ~= plan.lastIndex then
+        if currentIndex >= plan.totalSteps - 3 then
+          sound.play(sound.SOUNDS.CARD_PLACE, 0.35)
+        elseif currentIndex % 4 == 0 then
+          sound.play(sound.SOUNDS.BOOT, 0.1)
+        end
+        plan.lastIndex = currentIndex
+      end
+
+      if progress >= 1 and not plan.stopped then
         sound.play(sound.SOUNDS.CARD_PLACE, 0.5)
+        plan.stopped = true
       end
     end
 
-    os.sleep(cfg.SPIN_FRAME_DELAY)
+    drawMachine(finalResult, nil, nil, currentBet, animationState)
+
+    if not allComplete then
+      os.sleep(frameDelay)
+    end
   end
 
   -- Brief pause before showing result
-  os.sleep(0.2)
+  drawMachine(finalResult, nil, nil, currentBet)
+  os.sleep(0.15)
 end
 
 -----------------------------------------------------
@@ -594,7 +726,7 @@ local function slotsRound(currentBet, immediateSpin)
   sound.play(sound.SOUNDS.START, 0.6)
 
   -- Animate
-  animateSpin(result, currentBet)
+  animateSpin(result, currentBet, idleResult)
 
   -- Evaluate
   local winAmount, label, isJackpot, isPush = evaluateResult(result, currentBet)
