@@ -303,6 +303,14 @@ local function drawTrackSelector(screen, x, y, width, height, color)
   screen:fillRect(x + width - 1, y, 1, height, color)
 end
 
+local function getBetCountLabel(count)
+  count = tonumber(count) or 0
+  if count == 1 then
+    return "1 bet"
+  end
+  return tostring(count) .. " bets"
+end
+
 local function drawHeader(screen, font, layout, state)
   local header = layout.header
   screen:fillRect(header.x, header.y, header.w, header.h, colors.black)
@@ -547,7 +555,15 @@ local function drawButtons(screen, font, layout, state)
   local selectedChipIndex = state.selectedChipIndex or 1
   local denominations = state.denominations or {}
 
-  if not layout.compact and layout.chipButtons[1] then
+  if layout.wideControls and layout.chipPanel ~= nil then
+    drawFrame(screen, layout.chipPanel, colors.gray, colors.yellow)
+    drawCenteredText(screen, font, {
+      x = layout.chipPanel.x,
+      y = layout.chipPanel.y + 1,
+      w = layout.chipPanel.w,
+      h = layout.panelLabelH,
+    }, "CHIP", colors.lightGray)
+  elseif not layout.compact and layout.chipButtons[1] then
     drawCenteredText(screen, font, {
       x = layout.panel.x,
       y = layout.chipButtons[1].y - layout.panelLabelH,
@@ -564,7 +580,8 @@ local function drawButtons(screen, font, layout, state)
       local fill = isSelected and denom.color or colors.gray
       screen:fillRect(button.x, button.y, button.w, button.h, border)
       screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
-      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), colors.black, layout.compact and -1 or 0)
+      local textColor = (fill == colors.black or fill == colors.gray) and colors.white or colors.black
+      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), textColor, layout.compact and -1 or 0)
     end
   end
 
@@ -576,11 +593,20 @@ local function drawButtons(screen, font, layout, state)
     quit = true,
   }
 
-  if not layout.compact and layout.actionButtons[1] then
+  if layout.wideControls and layout.actionPanel ~= nil then
+    drawFrame(screen, layout.actionPanel, colors.gray, colors.yellow)
     drawCenteredText(screen, font, {
-      x = layout.panel.x,
+      x = layout.actionPanel.x,
+      y = layout.actionPanel.y + 1,
+      w = layout.actionPanel.w,
+      h = layout.panelLabelH,
+    }, "PLAY", colors.lightGray)
+  elseif not layout.compact and layout.actionButtons[1] then
+    local actionPanel = layout.rightRail or layout.panel
+    drawCenteredText(screen, font, {
+      x = actionPanel.x,
       y = layout.actionButtons[1].y - layout.panelLabelH,
-      w = layout.panel.w,
+      w = actionPanel.w,
       h = layout.panelLabelH,
     }, "ACTIONS", colors.lightGray)
   end
@@ -601,6 +627,51 @@ local function drawSlipBox(screen, font, layout, state)
   end
 
   local box = layout.slipBox
+  local bets = state.bets or {}
+
+  if layout.wideControls then
+    drawFrame(screen, box, colors.gray, colors.yellow)
+
+    local sessionText = "Session " .. (state.sessionProfitText or "0")
+    local sessionX = box.x + 3
+    local sessionY = box.y + floor((box.h - 7) / 2)
+    local sessionW = min(max(26, ui.getTextSize(sessionText) + 8), floor(box.w * 0.28))
+    local messageRect = {
+      x = box.x + 2,
+      y = box.y + 1,
+      w = box.w - 4,
+      h = box.h - 2,
+    }
+
+    if box.w >= 72 then
+      ui.safeDrawText(screen, fitTextToWidth(sessionText, max(1, sessionW - 4)), font, sessionX, sessionY, getToneColor(state.sessionProfitTone))
+      messageRect.x = box.x + sessionW
+      messageRect.w = box.w - sessionW - 2
+    end
+
+    if #bets == 0 then
+      drawWrappedCenteredText(
+        screen,
+        font,
+        messageRect,
+        "1 PICK CHIP   2 TAP A NUMBER OR COLOR   3 PRESS SPIN",
+        colors.lightGray,
+        box.h >= 14 and 2 or 1
+      )
+    else
+      local message = getBetCountLabel(#bets) .. " ready. Total " .. formatUiTokens(state.totalStake or 0) .. ". Best " .. formatUiTokens(state.maxExposure or 0) .. "."
+      drawWrappedCenteredText(
+        screen,
+        font,
+        messageRect,
+        message,
+        colors.lightGray,
+        box.h >= 14 and 2 or 1
+      )
+    end
+    return
+  end
+
   local contentX = box.x + 2
   local contentW = max(1, box.w - 4)
   local lineHeight = max(7, layout.scale.lineHeight)
@@ -608,7 +679,6 @@ local function drawSlipBox(screen, font, layout, state)
   local y = box.y + 2
   drawFrame(screen, box, colors.gray, colors.yellow)
 
-  local bets = state.bets or {}
   local title = (#bets == 0) and "STEPS" or "BETS"
   ui.safeDrawText(screen, title, font, contentX, y, colors.white)
   y = y + lineHeight
@@ -756,10 +826,10 @@ local function draw(screen, font, layout, state)
   screen:clear(colors.black)
   drawHeader(screen, font, layout, state)
   drawTrack(screen, font, layout, state)
+  drawTable(screen, font, layout, state)
   drawSummaryBox(screen, font, layout, state)
   drawButtons(screen, font, layout, state)
   drawSlipBox(screen, font, layout, state)
-  drawTable(screen, font, layout, state)
   screen:output()
 end
 
