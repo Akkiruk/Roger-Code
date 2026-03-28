@@ -7,9 +7,9 @@ local floor = math.floor
 local max = math.max
 local min = math.min
 
-local DEFAULT_TRACK_WINDOW_SLOTS = 7
-local DEFAULT_TRACK_COMPACT_WINDOW_SLOTS = 5
-local DEFAULT_TRACK_SLOT_GAP = 1
+local DEFAULT_TRACK_WINDOW_SLOTS = 5
+local DEFAULT_TRACK_COMPACT_WINDOW_SLOTS = 3
+local DEFAULT_TRACK_SLOT_GAP = 3
 local DEFAULT_TRACK_COMPACT_SLOT_GAP = 1
 
 local function getToneColor(tone)
@@ -277,30 +277,82 @@ local function drawChip(screen, font, x, y, amount, toneColor)
   ui.safeDrawText(screen, text, font, x - floor(textW / 2), chipY - 1, colors.white)
 end
 
-local function getDisplayedWheelNumber(wheelOffset)
-  local index = (floor((wheelOffset or 0) + 0.5) % #model.WHEEL_ORDER) + 1
-  return model.WHEEL_ORDER[index]
+local function getTrackCaption(state)
+  if state.phase == "spinning" then
+    return "SPINNING"
+  elseif state.phase == "result" then
+    return "WINNER"
+  elseif (state.totalStake or 0) > 0 then
+    return "READY"
+  end
+  return "WHEEL"
 end
 
-local function drawTrackArrow(screen, centerX, topY, bottomY, color)
-  if bottomY < topY then
+local function drawTrackCard(screen, font, x, y, width, height, number, highlighted)
+  local bg = model.getNumberColor(number)
+  local fg = model.getNumberTextColor(number)
+  local borderColor = highlighted and colors.yellow or colors.black
+  local insetRect = {
+    x = x + 1,
+    y = y + 1,
+    w = max(1, width - 2),
+    h = max(1, height - 2),
+  }
+
+  screen:fillRect(x, y, width, height, borderColor)
+  if width > 2 and height > 2 then
+    screen:fillRect(insetRect.x, insetRect.y, insetRect.w, insetRect.h, colors.black)
+  end
+  if width > 4 and height > 4 then
+    screen:fillRect(x + 2, y + 2, width - 4, height - 4, bg)
+    insetRect = {
+      x = x + 2,
+      y = y + 2,
+      w = width - 4,
+      h = height - 4,
+    }
+  else
+    screen:fillRect(insetRect.x, insetRect.y, insetRect.w, insetRect.h, bg)
+  end
+
+  drawCenteredText(screen, font, insetRect, tostring(number), fg)
+end
+
+local function drawTrackHistory(screen, font, layout, track, recent, rowY)
+  if layout.compact then
     return
   end
 
-  screen:fillRect(centerX - 2, topY, 5, 1, color)
-  if topY + 1 <= bottomY then
-    screen:fillRect(centerX - 1, topY + 1, 3, 1, color)
+  local count = min(layout.compact and 2 or 3, #recent)
+  if count <= 0 then
+    return
   end
-  if topY + 2 <= bottomY then
-    screen:fillRect(centerX, topY + 2, 1, 1, color)
-  end
-end
 
-local function drawTrackSelector(screen, x, y, width, height, color)
-  screen:fillRect(x, y, width, 1, color)
-  screen:fillRect(x, y + height - 1, width, 1, color)
-  screen:fillRect(x, y, 1, height, color)
-  screen:fillRect(x + width - 1, y, 1, height, color)
+  local pillW = layout.compact and 7 or 8
+  local pillH = 7
+  local pillGap = 2
+  local label = layout.compact and "" or "LAST"
+  local labelW = label ~= "" and (ui.getTextSize(label) + 3) or 0
+  local maxWidth = floor(track.w * (layout.compact and 0.32 or 0.42))
+  local totalW = (count * pillW) + ((count - 1) * pillGap) + labelW
+  while count > 1 and totalW > maxWidth do
+    count = count - 1
+    totalW = (count * pillW) + ((count - 1) * pillGap) + labelW
+  end
+  local drawX = track.x + track.w - totalW - 3
+
+  if label ~= "" then
+    ui.safeDrawText(screen, label, font, drawX, rowY, colors.lightGray)
+    drawX = drawX + labelW
+  end
+
+  local index = 1
+  while index <= count do
+    local number = recent[index]
+    drawTrackCard(screen, font, drawX, rowY, pillW, pillH, number, false)
+    drawX = drawX + pillW + pillGap
+    index = index + 1
+  end
 end
 
 local function getBetCountLabel(count)
@@ -363,16 +415,17 @@ local function drawTrack(screen, font, layout, state)
   drawFrame(screen, track, colors.gray, colors.yellow)
 
   local recent = state.history or {}
-  local recentLabelW = (layout.compact or #recent == 0) and 0 or (ui.getTextSize("LAST") + 2)
-  local recentX = track.x + 2 + recentLabelW
-  local recentY = track.y + floor((track.h - 5) / 2)
-  local recentCount = min(layout.ultraCompact and 1 or (layout.compact and 2 or 3), #recent)
-  local recentCellW = layout.ultraCompact and 4 or 5
-  local recentCellH = 5
-  local recentGap = 1
-  local showFocus = not layout.ultraCompact
-  local focusW = showFocus and (layout.compact and 7 or 11) or 0
-  local focusGap = showFocus and 2 or 0
+  local titleY = track.y + 2
+  local title = getTrackCaption(state)
+  local titleColor = colors.lightGray
+  if state.phase == "spinning" then
+    titleColor = colors.yellow
+  elseif state.phase == "result" then
+    titleColor = getToneColor(state.statusTone)
+  end
+  ui.safeDrawText(screen, title, font, track.x + 3, titleY, titleColor)
+  drawTrackHistory(screen, font, layout, track, recent, titleY)
+
   local maxWindowSlots = layout.compact and DEFAULT_TRACK_COMPACT_WINDOW_SLOTS or DEFAULT_TRACK_WINDOW_SLOTS
   local configuredWindowSlots = layout.compact
     and (cfg.TRACK_COMPACT_WINDOW_SLOTS or maxWindowSlots)
@@ -381,74 +434,35 @@ local function drawTrack(screen, font, layout, state)
     and (cfg.TRACK_COMPACT_SLOT_GAP or DEFAULT_TRACK_COMPACT_SLOT_GAP)
     or (cfg.TRACK_SLOT_GAP or DEFAULT_TRACK_SLOT_GAP)
   local windowSlots = max(3, min(maxWindowSlots, configuredWindowSlots))
-  local windowGap = max(1, min(layout.compact and DEFAULT_TRACK_COMPACT_SLOT_GAP or DEFAULT_TRACK_SLOT_GAP, configuredWindowGap))
-  local cellW = max(4, min(track.cellW + (layout.compact and 0 or 2), layout.compact and 6 or 9))
+  local windowGap = layout.compact
+    and max(1, min(2, configuredWindowGap))
+    or max(2, min(4, configuredWindowGap))
+  local laneRect = {
+    x = track.x + 2,
+    y = track.y + (layout.compact and 7 or 10),
+    w = track.w - 4,
+    h = track.h - (layout.compact and 8 or 12),
+  }
+  local laneInnerX = laneRect.x + 2
+  local laneInnerW = max(1, laneRect.w - 4)
+  local laneInnerY = laneRect.y + 2
+  local laneInnerH = max(1, laneRect.h - 4)
+  local minCellW = layout.compact and 5 or 8
+  local cellW = max(minCellW, min(layout.compact and 9 or 13, floor((laneInnerW - ((windowSlots - 1) * windowGap)) / windowSlots)))
+  local cellH = max(1, min(laneInnerH, layout.compact and 8 or 10))
   local windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
-  local bandH = layout.compact and 5 or 7
-  local bandTopY = track.y + floor((track.h - bandH) / 2)
-  local focusX = track.x + track.w - focusW - 2
-  local focusRect = nil
-
-  if showFocus then
-    focusRect = {
-      x = focusX,
-      y = track.y + 2,
-      w = focusW,
-      h = track.h - 4,
-    }
-  end
-
-  local recentReserve = 0
-  if recentCount > 0 then
-    recentReserve = (recentCount * recentCellW) + ((recentCount - 1) * recentGap) + 2
-  end
-
-  local availableLeft = recentX + recentReserve
-  local availableRight = showFocus and (focusX - focusGap - 1) or (track.x + track.w - 2)
-  local windowAreaW = max(1, availableRight - availableLeft + 1)
-
-  if windowW > windowAreaW then
-    cellW = max(3, floor((windowAreaW - ((windowSlots - 1) * windowGap)) / windowSlots))
+  if windowW > laneInnerW then
+    cellW = max(layout.compact and 3 or 7, floor((laneInnerW - ((windowSlots - 1) * windowGap)) / windowSlots))
     windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
   end
 
-  local windowX = availableLeft + floor((windowAreaW - windowW) / 2)
+  drawFrame(screen, laneRect, colors.black, colors.lightGray)
+
+  local windowX = laneInnerX + floor((laneInnerW - windowW) / 2)
+  local cellY = laneInnerY + floor((laneInnerH - cellH) / 2)
   local pointerSlot = floor((windowSlots + 1) / 2)
   local slotPitch = cellW + windowGap
   local pointerX = windowX + floor(cellW / 2) + ((pointerSlot - 1) * slotPitch)
-  local bandRect = {
-    x = windowX - 1,
-    y = bandTopY - 1,
-    w = windowW + 2,
-    h = bandH + 2,
-  }
-
-  drawFrame(screen, bandRect, colors.black, colors.lightGray)
-
-  local recentWidthAvailable = max(0, windowX - recentX - 2)
-  local maxRecentCount = floor((recentWidthAvailable + recentGap) / (recentCellW + recentGap))
-  recentCount = min(recentCount, maxRecentCount)
-
-  if recentCount > 0 then
-    if not layout.compact then
-      ui.safeDrawText(screen, "LAST", font, track.x + 2, recentY - 1, colors.lightGray)
-    end
-
-    local index = 1
-    while index <= recentCount do
-      local number = recent[index]
-      local bg = model.getNumberColor(number)
-      local fg = model.getNumberTextColor(number)
-      local slotX = recentX + ((index - 1) * (recentCellW + recentGap))
-      screen:fillRect(slotX, recentY, recentCellW, recentCellH, bg)
-      local label = tostring(number)
-      local labelW = ui.getTextSize(label)
-      ui.safeDrawText(screen, label, font, slotX + floor((recentCellW - labelW) / 2), recentY - 1, fg)
-      index = index + 1
-    end
-  end
-
-  drawTrackArrow(screen, pointerX, max(track.y + 1, bandTopY - 3), bandTopY - 1, colors.yellow)
 
   local wheelOffset = state.wheelOffset or 0
   local baseIndex = floor(wheelOffset)
@@ -461,45 +475,12 @@ local function drawTrack(screen, font, layout, state)
     local wheelIndex = ((baseIndex + offset) % #model.WHEEL_ORDER) + 1
     local number = model.WHEEL_ORDER[wheelIndex]
     local cellX = pointerX + floor((offset - fraction) * slotPitch) - floor(cellW / 2)
-    if cellX < (windowX + windowW) and (cellX + cellW) > windowX then
-      local bg = model.getNumberColor(number)
-      local fg = model.getNumberTextColor(number)
-      screen:fillRect(cellX, bandTopY, cellW, bandH, bg)
-      local label = tostring(number)
-      local labelW = ui.getTextSize(label)
-      ui.safeDrawText(screen, label, font, cellX + floor((cellW - labelW) / 2), bandTopY - 1, fg)
+    if cellX < (laneInnerX + laneInnerW) and (cellX + cellW) > laneInnerX then
+      drawTrackCard(screen, font, cellX, cellY, cellW, cellH, number, offset == 0)
     end
     offset = offset + 1
   end
 
-  drawTrackSelector(screen, pointerX - floor(cellW / 2) - 1, bandTopY - 1, cellW + 2, bandH + 2, colors.yellow)
-
-  if focusRect then
-    local currentNumber = getDisplayedWheelNumber(wheelOffset)
-    local bg = model.getNumberColor(currentNumber)
-    local fg = model.getNumberTextColor(currentNumber)
-    local focusLabel = "NOW"
-    if state.phase == "result" then
-      focusLabel = "WIN"
-    end
-    drawFrame(screen, focusRect, bg, colors.yellow)
-
-    if not layout.compact then
-      drawCenteredText(screen, font, {
-        x = focusRect.x,
-        y = focusRect.y + 1,
-        w = focusRect.w,
-        h = 7,
-      }, focusLabel, fg)
-    end
-
-    drawCenteredText(screen, font, {
-      x = focusRect.x,
-      y = focusRect.y + (layout.compact and 1 or 7),
-      w = focusRect.w,
-      h = max(7, focusRect.h - (layout.compact and 2 or 8)),
-    }, tostring(currentNumber), fg, layout.compact and 0 or 1)
-  end
 end
 
 local function drawSummaryBox(screen, font, layout, state)

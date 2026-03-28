@@ -118,7 +118,7 @@ local function build(width, height, chipCount, scale)
   end
 
   local trackY = layout.header.h + scale.sectionGap
-  local trackH = layout.compact and scale:scaledY(10, 9, 12) or scale:scaledY(18, 14, 22)
+  local trackH = layout.compact and scale:scaledY(18, 17, 20) or scale:scaledY(28, 24, 34)
   local feltX = layout.margin
   local feltW = width - (layout.margin * 2)
   local feltY = trackY + trackH + scale.sectionGap

@@ -128,8 +128,8 @@
     },
     "roulette": {
       "name": "Roulette",
-      "version": "1.0.29",
-      "content_hash": "c9d3ca0163799280",
+      "version": "1.0.30",
+      "content_hash": "5a3877804243822a",
       "description": "European Roulette with a single-screen felt UI and multi-bet support.",
       "category": "Games",
       "source_dir": "Games/Roulette",
