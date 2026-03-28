@@ -19,6 +19,12 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
+local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
+local CONTENTS_API_ROOT = API_URL .. "/contents/"
+local CONTENTS_API_HEADERS = {
+  ["User-Agent"] = "Roger-Code-Updater",
+  ["Accept"] = "application/vnd.github.raw+json",
+}
 local RESERVED_LOCAL_PATHS = {
   [VERSION_FILE] = true,
   [MANAGED_FILES] = true,
@@ -43,9 +49,9 @@ local function logMsg(msg)
   end
 end
 
-local function download(url)
+local function download(url, headers)
   local ok, response = pcall(function()
-    return http.get(url, nil, true)
+    return http.get(url, headers, true)
   end)
   if not ok or not response then
     return nil, "HTTP request failed: " .. tostring(url)
@@ -216,20 +222,31 @@ local function endWriteWindow(createdUnlock)
   end
 end
 
-local function fetchLatestIndex()
-  local data, err = download(LATEST_URL)
-  if not data then
-    return nil, err or "Could not fetch deploy index"
+local function fetchDeployJson(path, label)
+  local apiUrl = CONTENTS_API_ROOT .. path .. "?ref=" .. DEPLOY_BRANCH
+  local data, err = download(apiUrl, CONTENTS_API_HEADERS)
+  if data then
+    local parsed, parseErr = parseJson(data, label)
+    if parsed then
+      return parsed
+    end
+    err = parseErr
   end
-  return parseJson(data, "deploy index")
+
+  local fallbackUrl = DEPLOY_URL .. path
+  data, err = download(fallbackUrl)
+  if not data then
+    return nil, err or ("Could not fetch " .. tostring(label or "deploy metadata"))
+  end
+  return parseJson(data, label)
+end
+
+local function fetchLatestIndex()
+  return fetchDeployJson("latest.json", "deploy index")
 end
 
 local function fetchProgramSpec(specPath)
-  local data, err = download(DEPLOY_URL .. specPath)
-  if not data then
-    return nil, err or "Could not fetch program spec"
-  end
-  return parseJson(data, "program spec")
+  return fetchDeployJson(specPath, "program spec")
 end
 
 --- Simple lock to prevent concurrent update runs.

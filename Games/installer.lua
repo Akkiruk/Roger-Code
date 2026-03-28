@@ -29,6 +29,11 @@ local API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
   ["Accept"] = "application/vnd.github+json",
 }
+local CONTENTS_API_ROOT = API_URL .. "/contents/"
+local CONTENTS_API_HEADERS = {
+  ["User-Agent"] = "Roger-Code-Installer",
+  ["Accept"] = "application/vnd.github.raw+json",
+}
 local RESERVED_LOCAL_PATHS = {
   [VERSION_FILE] = true,
   [MANAGED_FILES] = true,
@@ -278,20 +283,31 @@ local function downloadAndSaveVerified(url, finalPath, expectedSha)
   return saveFile(finalPath, data)
 end
 
-local function fetchLatestIndex()
-  local data, err = download(LATEST_URL)
+local function fetchDeployJson(path, label)
+  local apiUrl = CONTENTS_API_ROOT .. path .. "?ref=" .. DEPLOY_BRANCH
+  local data, err = download(apiUrl, CONTENTS_API_HEADERS)
+  if data then
+    local parsed, parseErr = parseJson(data, label)
+    if parsed then
+      return parsed
+    end
+    err = parseErr
+  end
+
+  local fallbackUrl = DEPLOY_URL .. path
+  data, err = download(fallbackUrl)
   if not data then
     return nil, err
   end
-  return parseJson(data, "deploy index")
+  return parseJson(data, label)
+end
+
+local function fetchLatestIndex()
+  return fetchDeployJson("latest.json", "deploy index")
 end
 
 local function fetchProgramSpec(specPath)
-  local data, err = download(DEPLOY_URL .. specPath)
-  if not data then
-    return nil, err
-  end
-  return parseJson(data, "program spec")
+  return fetchDeployJson(specPath, "program spec")
 end
 
 local function fetchLatestMainCommit()
