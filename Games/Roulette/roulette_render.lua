@@ -159,10 +159,10 @@ end
 
 local function getSmallRectTextOffset(rect)
   if not rect or (rect.h or 0) <= 7 then
-    return -1
+    return 0
   end
   if (rect.h or 0) <= 10 then
-    return -1
+    return 0
   end
   return 0
 end
@@ -583,7 +583,7 @@ local function drawButtons(screen, font, layout, state)
       screen:fillRect(button.x, button.y, button.w, button.h, border)
       screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
       local textColor = (fill == colors.black or fill == colors.gray) and colors.white or colors.black
-      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), textColor, -1)
+      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), textColor, 0)
     end
   end
 
@@ -619,7 +619,7 @@ local function drawButtons(screen, font, layout, state)
     screen:fillRect(button.x, button.y, button.w, button.h, colors.black)
     screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
     local textColor = (fill == colors.black or fill == colors.gray) and colors.white or colors.black
-    drawCenteredText(screen, font, button, button.label, textColor, -1)
+    drawCenteredText(screen, font, button, button.label, textColor, 0)
   end
 end
 
@@ -768,7 +768,7 @@ local function drawSecondaryRegion(screen, font, region, fill, textColor, hasBet
     end
     screen:fillRect(region.x, region.y, region.w, region.h, baseColor)
     if label ~= "" then
-      drawCenteredText(screen, font, region, label, labelColor, compact and -1 or getSmallRectTextOffset(region))
+      drawCenteredText(screen, font, region, label, labelColor, compact and 0 or getSmallRectTextOffset(region))
     end
     return
   end
