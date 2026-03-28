@@ -411,7 +411,7 @@ local function preRoundMenu()
       local secondsLeft = max(1, ceil((menuTimeout - idleMs) / 1000))
       local timeoutLabel = "Auto-exit in " .. secondsLeft .. "s"
       local timeoutWidth = ui.getTextSize(timeoutLabel)
-      ui.safeDrawText(screen, timeoutLabel, font, math.floor((width - timeoutWidth) / 2), scale.subtitleY + LINE_H + 2, colors.orange)
+      ui.safeDrawText(screen, timeoutLabel, font, math.floor((width - timeoutWidth) / 2), height - LINE_H - scale.edgePad, colors.orange)
     end
 
     ui.clearButtons()
