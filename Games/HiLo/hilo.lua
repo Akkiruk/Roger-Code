@@ -178,6 +178,17 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
+local function getChoiceStatusY()
+  return min(height - LINE_H - scale.edgePad, cardY + cardBack.height + (scale.sectionGap * 2))
+end
+
+local function getChoiceButtonY(rowCount)
+  local rows = math.max(1, rowCount or 1)
+  local preferredY = getChoiceStatusY() + LINE_H + scale.sectionGap
+  local footerTop = scale:buttonBlockTop(scale.footerButtonY, rows, scale.buttonRowSpacing)
+  return min(preferredY, footerTop)
+end
+
 local function renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
   screen:clear(LO.TABLE_COLOR)
 
@@ -219,7 +230,7 @@ local function renderBase(currentCard, revealedCards, betAmount, round, multipli
 
   -- Status text
   if statusText then
-    local statusY = min(height - LINE_H - scale.edgePad, cardY + cardBack.height + (scale.sectionGap * 2))
+    local statusY = getChoiceStatusY()
     drawCenteredLine(statusText, statusY, colors.yellow)
   end
 end
@@ -484,7 +495,7 @@ local function hiloRound(betAmount)
       })
     end
 
-    local btnY = cardY + cardBack.height + scale.sectionGap
+    local btnY = getChoiceButtonY(#btnRows)
     ui.layoutButtonGrid(screen, btnRows, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
