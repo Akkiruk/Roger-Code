@@ -19,8 +19,6 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
-local STAGING_ROOT = ".update_staging"
-
 -----------------------------------------------------
 -- Helpers
 -----------------------------------------------------
@@ -254,15 +252,6 @@ local function releaseLock()
   end
 end
 
-local function makeStageRoot()
-  local root = fs.combine(STAGING_ROOT, tostring(os.epoch("local")))
-  if fs.exists(root) then
-    fs.delete(root)
-  end
-  fs.makeDir(root)
-  return root
-end
-
 local function removePath(path)
   if fs.exists(path) then
     fs.delete(path)
@@ -282,21 +271,6 @@ local function removeStaleFiles(previouslyManaged, desiredPaths)
   end
 end
 
-local function applyStagedFiles(stageRoot, stagedEntries)
-  for _, entry in ipairs(stagedEntries) do
-    local finalPath = entry.install_path
-    local stagePath = fs.combine(stageRoot, finalPath)
-    if fs.exists(finalPath) then
-      fs.delete(finalPath)
-    end
-    local parent = fs.getDir(finalPath)
-    if parent ~= "" and not fs.exists(parent) then
-      fs.makeDir(parent)
-    end
-    fs.copy(stagePath, finalPath)
-  end
-end
-
 -----------------------------------------------------
 -- Update logic
 -----------------------------------------------------
@@ -311,22 +285,28 @@ local function performUpdate(spec, installed)
 
   local build = spec.build or {}
   local program = spec.program or {}
-  local stageRoot = makeStageRoot()
-  local stagedEntries = {}
   local managedPaths = {}
   local success = 0
   local failed = 0
+  local previouslyManaged = readManagedFiles()
 
   for _, entry in ipairs(spec.install.files or {}) do
     managedPaths[#managedPaths + 1] = entry.install_path
+  end
+
+  removeStaleFiles(previouslyManaged, managedPaths)
+
+  for _, entry in ipairs(spec.install.files or {}) do
     if entry.preserve_existing and fs.exists(entry.install_path) then
       success = success + 1
     else
       local data, err = download(buildCommitUrl(build.commit, entry.repo_path))
       if data and verifyHash(data, entry.sha256) then
-        local saveOk, saveErr = saveFile(fs.combine(stageRoot, entry.install_path), data)
+        if fs.exists(entry.install_path) then
+          fs.delete(entry.install_path)
+        end
+        local saveOk, saveErr = saveFile(entry.install_path, data)
         if saveOk then
-          stagedEntries[#stagedEntries + 1] = entry
           success = success + 1
         else
           failed = failed + 1
@@ -341,9 +321,6 @@ local function performUpdate(spec, installed)
   end
 
   if failed == 0 then
-    local previouslyManaged = readManagedFiles()
-    removeStaleFiles(previouslyManaged, managedPaths)
-    applyStagedFiles(stageRoot, stagedEntries)
     saveManagedFiles(managedPaths)
     saveInstalled({
       schema_version = 1,
@@ -359,7 +336,6 @@ local function performUpdate(spec, installed)
     })
   end
 
-  removePath(stageRoot)
   endWriteWindow(createdUnlock)
   return failed == 0, success, failed
 end

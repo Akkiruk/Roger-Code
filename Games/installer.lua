@@ -24,7 +24,6 @@ local PHONE_HOST_MARKER_FILE = ".phone_os_host_claimed"
 local LOG_FILE = "installer_error.log"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
-local STAGING_ROOT = ".install_staging"
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
@@ -173,7 +172,7 @@ local function removePath(path)
   end
 end
 
-local function downloadAndStage(url, stagePath, expectedSha)
+local function downloadAndSaveVerified(url, finalPath, expectedSha)
   local data, err = download(url)
   if not data then
     return false, err
@@ -183,7 +182,11 @@ local function downloadAndStage(url, stagePath, expectedSha)
     return false, "Hash mismatch for " .. tostring(url)
   end
 
-  return saveFile(stagePath, data)
+  if fs.exists(finalPath) then
+    fs.delete(finalPath)
+  end
+
+  return saveFile(finalPath, data)
 end
 
 local function fetchLatestIndex()
@@ -360,15 +363,6 @@ end
 ---------------------------------------------------------------------------
 -- Package install helpers
 ---------------------------------------------------------------------------
-local function makeStageRoot()
-  local root = fs.combine(STAGING_ROOT, tostring(os.epoch("local")))
-  if fs.exists(root) then
-    fs.delete(root)
-  end
-  fs.makeDir(root)
-  return root
-end
-
 local function removeStaleFiles(previouslyManaged, desiredPaths)
   local wanted = {}
   for _, path in ipairs(desiredPaths) do
@@ -379,21 +373,6 @@ local function removeStaleFiles(previouslyManaged, desiredPaths)
     if not wanted[path] and path ~= VERSION_FILE and path ~= MANAGED_FILES then
       removePath(path)
     end
-  end
-end
-
-local function applyStagedFiles(stageRoot, stagedEntries)
-  for _, entry in ipairs(stagedEntries) do
-    local finalPath = entry.install_path
-    local stagePath = fs.combine(stageRoot, finalPath)
-    if fs.exists(finalPath) then
-      fs.delete(finalPath)
-    end
-    local parent = fs.getDir(finalPath)
-    if parent ~= "" and not fs.exists(parent) then
-      fs.makeDir(parent)
-    end
-    fs.copy(stagePath, finalPath)
   end
 end
 
@@ -412,12 +391,17 @@ local function installFromSpec(spec, forceConfig, installedBefore)
     .. " v" .. tostring(program.version or "?"))
 
   local shouldClaimPhoneHost = program.key == "phone_os" and not fs.exists(PHONE_HOST_MARKER_FILE)
-  local stageRoot = makeStageRoot()
-  local stagedEntries = {}
   local managedPaths = {}
   local failed = {}
   local total = #(spec.install and spec.install.files or {})
   local success = 0
+  local previouslyManaged = readManagedFiles()
+
+  for _, entry in ipairs(spec.install.files or {}) do
+    managedPaths[#managedPaths + 1] = entry.install_path
+  end
+
+  removeStaleFiles(previouslyManaged, managedPaths)
 
   print("")
   for index, entry in ipairs(spec.install.files or {}) do
@@ -431,20 +415,16 @@ local function installFromSpec(spec, forceConfig, installedBefore)
     end
     cwrite(colors.white, "  " .. progressBar(index, total) .. "  " .. label .. " ")
 
-    managedPaths[#managedPaths + 1] = entry.install_path
-
     if entry.preserve_existing and not forceConfig and fs.exists(entry.install_path) then
       success = success + 1
       cprint(colors.gray, "")
     else
-      local stagePath = fs.combine(stageRoot, entry.install_path)
-      local ok, err = downloadAndStage(
+      local ok, err = downloadAndSaveVerified(
         buildCommitUrl(build.commit, entry.repo_path),
-        stagePath,
+        entry.install_path,
         entry.sha256
       )
       if ok then
-        stagedEntries[#stagedEntries + 1] = entry
         success = success + 1
       else
         failed[#failed + 1] = entry.install_path
@@ -458,9 +438,6 @@ local function installFromSpec(spec, forceConfig, installedBefore)
 
   local installedOk = false
   if #failed == 0 then
-    local previouslyManaged = readManagedFiles()
-    removeStaleFiles(previouslyManaged, managedPaths)
-    applyStagedFiles(stageRoot, stagedEntries)
     saveManagedFiles(managedPaths)
     saveInstalled({
       schema_version = 1,
@@ -488,8 +465,6 @@ local function installFromSpec(spec, forceConfig, installedBefore)
       logError("Phone host claim failed: " .. tostring(claimInfo))
     end
   end
-
-  removePath(stageRoot)
 
   if installedOk then
     cprint(colors.lime, "  Installed " .. success .. "/" .. total .. " files. All good!")
