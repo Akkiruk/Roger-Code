@@ -246,6 +246,52 @@ local function renderScreen(currentCard, revealedCards, betAmount, round, multip
   screen:output()
 end
 
+local function waitForPostRoundChoice(currentCard, revealedCards, betAmount, round, multiplier, statusText)
+  local choice = nil
+  local lastActivityTime = epoch("local")
+
+  while not choice do
+    renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
+    ui.clearButtons()
+    ui.layoutButtonGrid(screen, {
+      {
+        { text = "PLAY AGAIN", color = colors.lime,
+          func = function() choice = "play_again" end },
+        { text = "MAIN MENU", color = colors.red,
+          func = function() choice = "menu" end },
+      },
+    }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
+    screen:output()
+
+    if AUTO_PLAY then
+      os.sleep(cfg.AUTO_PLAY_DELAY)
+      return "play_again"
+    end
+
+    local timerID = os.startTimer(0.25)
+    while not choice do
+      local event, side, px, py = os.pullEvent()
+      if event == "monitor_touch" then
+        lastActivityTime = epoch("local")
+        local cb = ui.checkButtonHit(px, py)
+        if cb then
+          cb()
+        end
+      elseif event == "timer" and side == timerID then
+        local idleMs = epoch("local") - lastActivityTime
+        if idleMs > cfg.INACTIVITY_TIMEOUT then
+          sound.play(sound.SOUNDS.TIMEOUT)
+          os.sleep(0.5)
+          error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+        end
+        break
+      end
+    end
+  end
+
+  return choice
+end
+
 -----------------------------------------------------
 -- Tutorial / How to play screens
 -----------------------------------------------------
@@ -582,7 +628,14 @@ local function hiloRound(betAmount)
 
       recovery.clearBet()
       dbg("Cash out: round=" .. round .. " mult=" .. multiplier .. " profit=" .. profit)
-      return
+      return waitForPostRoundChoice(
+        currentCard,
+        revealedCards,
+        betAmount,
+        round,
+        multiplier,
+        "Cashed Out! +" .. currency.formatTokens(profit)
+      )
     end
 
     -- Deal next card
@@ -633,7 +686,14 @@ local function hiloRound(betAmount)
       dbg("Same-value loss: round=" .. round
           .. " current=" .. cards.displayValue(currentCard)
           .. " next=" .. cards.displayValue(nextCard))
-      return
+      return waitForPostRoundChoice(
+        nextCard,
+        revealedCards,
+        betAmount,
+        round,
+        multiplier,
+        "Same value loses! " .. cards.displayValue(currentCard) .. " = " .. cards.displayValue(nextCard)
+      )
     elseif correct then
       -- Correct guess: increase multiplier
       multiplier = MULTIPLIERS[round] or MULTIPLIERS[#MULTIPLIERS]
@@ -672,7 +732,14 @@ local function hiloRound(betAmount)
 
         recovery.clearBet()
         dbg("Max streak: mult=" .. multiplier .. " profit=" .. profit)
-        return
+        return waitForPostRoundChoice(
+          currentCard,
+          revealedCards,
+          betAmount,
+          round,
+          multiplier,
+          "MAX STREAK! +" .. currency.formatTokens(profit)
+        )
       end
 
       -- Show updated state and let player choose again
@@ -703,7 +770,14 @@ local function hiloRound(betAmount)
       dbg("Bust: round=" .. round .. " guess=" .. choice
           .. " current=" .. cards.displayValue(currentCard)
           .. " next=" .. cards.displayValue(nextCard))
-      return
+      return waitForPostRoundChoice(
+        currentCard,
+        revealedCards,
+        betAmount,
+        round,
+        multiplier,
+        "Wrong! " .. cards.displayValue(currentCard) .. " vs " .. cards.displayValue(nextCard)
+      )
     end
   end
 end
@@ -716,6 +790,8 @@ recovery.recoverBet(true)
 refreshPlayer()
 
 local function main()
+  local skipPreRoundMenu = false
+
   while true do
     updateAutoPlayFromRedstone()
     refreshPlayer()
@@ -733,20 +809,24 @@ local function main()
         os.sleep(1)
       end
     else
-      -- Show pre-round menu (PLAY / HOW TO PLAY / STATS)
-      preRoundMenu()
+      if not skipPreRoundMenu then
+        -- Show pre-round menu (PLAY / HOW TO PLAY / STATS)
+        preRoundMenu()
+      end
 
       -- Run bet screen
       local selectedBet = betSelection()
       if selectedBet and selectedBet > 0 then
         betAmount = selectedBet
       end
+      skipPreRoundMenu = false
     end
 
     if betAmount and betAmount > 0 then
-      hiloRound(betAmount)
+      local roundChoice = hiloRound(betAmount)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
+      skipPreRoundMenu = (roundChoice == "play_again")
     end
   end
 end
