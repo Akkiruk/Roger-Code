@@ -288,10 +288,15 @@ local function getTrackCaption(state)
   return "WHEEL"
 end
 
-local function drawTrackCard(screen, font, x, y, width, height, number, highlighted)
+local function getTrackPointedNumber(wheelOffset)
+  local offset = tonumber(wheelOffset) or 0
+  local wheelIndex = (floor(offset + 0.5) % #model.WHEEL_ORDER) + 1
+  return model.WHEEL_ORDER[wheelIndex]
+end
+
+local function drawTrackCard(screen, font, x, y, width, height, number)
   local bg = model.getNumberColor(number)
   local fg = model.getNumberTextColor(number)
-  local borderColor = highlighted and colors.yellow or colors.black
   local insetRect = {
     x = x + 1,
     y = y + 1,
@@ -299,7 +304,7 @@ local function drawTrackCard(screen, font, x, y, width, height, number, highligh
     h = max(1, height - 2),
   }
 
-  screen:fillRect(x, y, width, height, borderColor)
+  screen:fillRect(x, y, width, height, colors.black)
   if width > 2 and height > 2 then
     screen:fillRect(insetRect.x, insetRect.y, insetRect.w, insetRect.h, colors.black)
   end
@@ -316,6 +321,12 @@ local function drawTrackCard(screen, font, x, y, width, height, number, highligh
   end
 
   drawCenteredText(screen, font, insetRect, tostring(number), fg)
+end
+
+local function drawTrackArrow(screen, centerX, tipY, color)
+  screen:fillRect(centerX, tipY - 3, 1, 2, color)
+  screen:fillRect(centerX - 1, tipY - 1, 3, 1, color)
+  screen:fillRect(centerX - 2, tipY, 5, 1, color)
 end
 
 local function drawTrackHistory(screen, font, layout, track, recent, rowY)
@@ -349,7 +360,7 @@ local function drawTrackHistory(screen, font, layout, track, recent, rowY)
   local index = 1
   while index <= count do
     local number = recent[index]
-    drawTrackCard(screen, font, drawX, rowY, pillW, pillH, number, false)
+    drawTrackCard(screen, font, drawX, rowY, pillW, pillH, number)
     drawX = drawX + pillW + pillGap
     index = index + 1
   end
@@ -463,6 +474,7 @@ local function drawTrack(screen, font, layout, state)
   local pointerSlot = floor((windowSlots + 1) / 2)
   local slotPitch = cellW + windowGap
   local pointerX = windowX + floor(cellW / 2) + ((pointerSlot - 1) * slotPitch)
+  local pointerColor = state.phase == "spinning" and colors.yellow or colors.lightGray
 
   local wheelOffset = state.wheelOffset or 0
   local baseIndex = floor(wheelOffset)
@@ -476,10 +488,12 @@ local function drawTrack(screen, font, layout, state)
     local number = model.WHEEL_ORDER[wheelIndex]
     local cellX = pointerX + floor((offset - fraction) * slotPitch) - floor(cellW / 2)
     if cellX < (laneInnerX + laneInnerW) and (cellX + cellW) > laneInnerX then
-      drawTrackCard(screen, font, cellX, cellY, cellW, cellH, number, offset == 0)
+      drawTrackCard(screen, font, cellX, cellY, cellW, cellH, number)
     end
     offset = offset + 1
   end
+
+  drawTrackArrow(screen, pointerX, cellY - 1, pointerColor)
 
 end
 
@@ -812,4 +826,5 @@ end
 
 return {
   draw = draw,
+  getTrackPointedNumber = getTrackPointedNumber,
 }

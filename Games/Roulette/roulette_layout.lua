@@ -118,7 +118,7 @@ local function build(width, height, chipCount, scale)
   end
 
   local trackY = layout.header.h + scale.sectionGap
-  local trackH = layout.compact and scale:scaledY(18, 17, 20) or scale:scaledY(28, 24, 34)
+  local trackH = layout.compact and scale:scaledY(18, 17, 20) or scale:scaledY(24, 20, 28)
   local feltX = layout.margin
   local feltW = width - (layout.margin * 2)
   local feltY = trackY + trackH + scale.sectionGap
@@ -126,8 +126,8 @@ local function build(width, height, chipCount, scale)
 
   local colGap = layout.compact and 1 or scale.smallGap
   local rowGap = layout.compact and 1 or scale.smallGap
-  local streetW = max(4, scale:scaledX(layout.compact and 4 or 8, 4, 10))
-  local maxCellW = max(10, scale:scaledX(layout.compact and 12 or 52, 10, layout.compact and 18 or 72))
+  local streetW = max(4, scale:scaledX(layout.compact and 4 or 6, 4, layout.compact and 6 or 9))
+  local maxCellW = max(10, scale:scaledX(layout.compact and 12 or 28, 10, layout.compact and 18 or 32))
   local buttonGap = scale.buttonRowGap
   local buttonH = scale.buttonHeight
   local summaryH = layout.compact and scale:scaledY(18, 15, 20) or scale:scaledY(24, 22, 28)
@@ -211,139 +211,80 @@ local function build(width, height, chipCount, scale)
     local innerY = feltY + railInset
     local innerW = feltW - (railInset * 2)
     local innerH = feltH - (railInset * 2)
-    local topDeckH = layout.panelLabelH + (buttonH * 3) + (buttonGap * 2) + 4
-    local stripH = scale.messageLineHeight + 5
-    local summaryW = max(24, min(32, floor(innerW * 0.20)))
-    local actionW = max(30, min(40, floor(innerW * 0.28)))
-    local chipPanelW = innerW - summaryW - actionW - (scale.sectionGap * 2)
-    local minWideTableH = getTableContentHeight(4, rowGap, 5)
+    local railGap = max(2, scale.sectionGap - 1)
+    local leftRailW = max(30, min(38, floor(innerW * 0.23)))
+    local rightRailW = max(28, min(36, floor(innerW * 0.20)))
+    local minTableW = 54
+    local availableRailW = innerW - minTableW - (railGap * 2)
+    local overflow = max(0, (leftRailW + rightRailW) - availableRailW)
 
-    if chipPanelW >= 40 and innerH >= (topDeckH + stripH + scale.sectionGap + minWideTableH) then
-      layout.wideControls = true
-      layout.ultraCompact = false
-      layout.panel = { x = innerX, y = innerY, w = summaryW, h = topDeckH }
-      layout.summaryBox = { x = innerX, y = innerY, w = summaryW, h = topDeckH }
-      layout.chipPanel = {
-        x = innerX + summaryW + scale.sectionGap,
-        y = innerY,
-        w = chipPanelW,
-        h = topDeckH,
-      }
-      layout.actionPanel = {
-        x = layout.chipPanel.x + layout.chipPanel.w + scale.sectionGap,
-        y = innerY,
-        w = actionW,
-        h = topDeckH,
-      }
-      layout.slipBox = {
-        x = innerX,
-        y = innerY + topDeckH + scale.sectionGap,
-        w = innerW,
-        h = stripH,
-      }
-
-      do
-        local chipColumns = max(1, min(chipCount, 4))
-        local chipRows = max(1, floor((chipCount + chipColumns - 1) / chipColumns))
-        local chipInnerX = layout.chipPanel.x + 2
-        local chipInnerW = layout.chipPanel.w - 4
-        local chipButtonW = max(7, floor((chipInnerW - ((chipColumns - 1) * buttonGap)) / chipColumns))
-        local chipBlockH = (chipRows * buttonH) + ((chipRows - 1) * buttonGap)
-        local chipsStartY = layout.chipPanel.y + layout.panelLabelH + max(2, floor((layout.chipPanel.h - layout.panelLabelH - chipBlockH) / 2))
-        local chipIndex = 1
-        local chipRow = 0
-        while chipIndex <= chipCount do
-          local chipColumn = chipIndex - (chipRow * chipColumns)
-          local chipX = chipInnerX + ((chipColumn - 1) * (chipButtonW + buttonGap))
-          local chipY = chipsStartY + (chipRow * (buttonH + buttonGap))
-          insert(layout.chipButtons, makeActionButton("chip:" .. tostring(chipIndex), "", chipX, chipY, chipButtonW, buttonH, colors.gray))
-          if chipColumn == chipColumns then
-            chipRow = chipRow + 1
-          end
-          chipIndex = chipIndex + 1
-        end
-      end
-
-      do
-        local actionInnerX = layout.actionPanel.x + 2
-        local actionInnerW = layout.actionPanel.w - 4
-        local utilityW = max(8, floor((actionInnerW - buttonGap) / 2))
-        local actionY = layout.actionPanel.y + layout.panelLabelH + 2
-        insert(layout.actionButtons, makeActionButton("spin", "SPIN", actionInnerX, actionY, actionInnerW, buttonH, colors.lime))
-        insert(layout.actionButtons, makeActionButton("undo", "BACK", actionInnerX, actionY + buttonH + buttonGap, utilityW, buttonH, colors.orange))
-        insert(layout.actionButtons, makeActionButton("clear", "CLR", actionInnerX + utilityW + buttonGap, actionY + buttonH + buttonGap, utilityW, buttonH, colors.red))
-        insert(layout.actionButtons, makeActionButton("double", "X2", actionInnerX, actionY + ((buttonH + buttonGap) * 2), utilityW, buttonH, colors.magenta))
-        insert(layout.actionButtons, makeActionButton("quit", "EXIT", actionInnerX + utilityW + buttonGap, actionY + ((buttonH + buttonGap) * 2), utilityW, buttonH, colors.gray))
-      end
-
-      contentAreaX = innerX
-      contentAreaW = innerW
-      contentAreaY = layout.slipBox.y + layout.slipBox.h + scale.sectionGap
-      contentAreaH = (feltY + feltH - railInset) - contentAreaY
-    else
-      local railGap = max(2, scale.smallGap)
-      local railW = max(24, min(30, floor(feltW * 0.18)))
-      local railY = feltY + railInset
-      local railH = feltH - (railInset * 2)
-      local leftRailX = feltX + railInset
-      local rightRailX = feltX + feltW - railInset - railW
-      local chipButtonW = max(7, floor((railW - buttonGap) / 2))
-
-      layout.panel = { x = leftRailX, y = railY, w = railW, h = railH }
-      layout.rightRail = { x = rightRailX, y = railY, w = railW, h = railH }
-      layout.summaryBox = { x = leftRailX, y = railY, w = railW, h = summaryH }
-      layout.ultraCompact = false
-
-      local chipsStartY = railY + summaryH + scale.sectionGap + layout.panelLabelH
-      local chipIndex = 1
-      local chipRow = 0
-      while chipIndex <= chipCount do
-        local baseY = chipsStartY + (chipRow * (buttonH + buttonGap))
-        insert(layout.chipButtons, makeActionButton("chip:" .. tostring(chipIndex), "", leftRailX, baseY, chipButtonW, buttonH, colors.gray))
-        chipIndex = chipIndex + 1
-        if chipIndex <= chipCount then
-          insert(layout.chipButtons, makeActionButton("chip:" .. tostring(chipIndex), "", leftRailX + chipButtonW + buttonGap, baseY, chipButtonW, buttonH, colors.gray))
-          chipIndex = chipIndex + 1
-        end
-        chipRow = chipRow + 1
-      end
-
-      local slipY = chipsStartY + (chipRow * (buttonH + buttonGap)) + scale.sectionGap + layout.panelLabelH
-      layout.slipBox = {
-        x = leftRailX,
-        y = slipY,
-        w = railW,
-        h = max(scale.messageLineHeight + scale.sectionGap, (railY + railH) - slipY),
-      }
-
-      local actionsStartY = railY + layout.panelLabelH
-      local actionIndex = 1
-      local actionKeys = {
-        { key = "spin", label = "SPIN", color = colors.lime },
-        { key = "undo", label = "UNDO", color = colors.orange },
-        { key = "clear", label = "CLEAR", color = colors.red },
-        { key = "double", label = "DOUBLE", color = colors.magenta },
-        { key = "quit", label = "EXIT", color = colors.gray },
-      }
-      while actionIndex <= #actionKeys do
-        local action = actionKeys[actionIndex]
-        insert(layout.actionButtons, makeActionButton(
-          action.key,
-          action.label,
-          rightRailX,
-          actionsStartY + ((actionIndex - 1) * (buttonH + buttonGap)),
-          railW,
-          buttonH,
-          action.color
-        ))
-        actionIndex = actionIndex + 1
-      end
-
-      contentAreaX = leftRailX + railW + railGap
-      contentAreaW = rightRailX - contentAreaX - railGap
-      contentAreaY = feltY + 1
-      contentAreaH = feltH - 2
+    if overflow > 0 then
+      local leftTrim = min(max(0, leftRailW - 28), floor((overflow + 1) / 2))
+      leftRailW = leftRailW - leftTrim
+      overflow = overflow - leftTrim
+      rightRailW = max(26, rightRailW - overflow)
     end
+
+    local leftRailX = innerX
+    local rightRailX = innerX + innerW - rightRailW
+    local leftInnerX = leftRailX + 1
+    local leftInnerW = leftRailW - 2
+    local chipButtonW = max(8, floor((leftInnerW - buttonGap) / 2))
+
+    layout.panel = { x = leftRailX, y = innerY, w = leftRailW, h = innerH }
+    layout.rightRail = { x = rightRailX, y = innerY, w = rightRailW, h = innerH }
+    layout.summaryBox = { x = leftRailX, y = innerY, w = leftRailW, h = summaryH }
+    layout.ultraCompact = false
+
+    local chipsStartY = innerY + summaryH + scale.sectionGap + layout.panelLabelH
+    local chipIndex = 1
+    local chipRow = 0
+    while chipIndex <= chipCount do
+      local baseY = chipsStartY + (chipRow * (buttonH + buttonGap))
+      insert(layout.chipButtons, makeActionButton("chip:" .. tostring(chipIndex), "", leftInnerX, baseY, chipButtonW, buttonH, colors.gray))
+      chipIndex = chipIndex + 1
+      if chipIndex <= chipCount then
+        insert(layout.chipButtons, makeActionButton("chip:" .. tostring(chipIndex), "", leftInnerX + chipButtonW + buttonGap, baseY, chipButtonW, buttonH, colors.gray))
+        chipIndex = chipIndex + 1
+      end
+      chipRow = chipRow + 1
+    end
+
+    local slipY = chipsStartY + (chipRow * (buttonH + buttonGap)) + scale.sectionGap + layout.panelLabelH
+    layout.slipBox = {
+      x = leftRailX,
+      y = slipY,
+      w = leftRailW,
+      h = max(scale.messageLineHeight + scale.sectionGap + 8, (innerY + innerH) - slipY),
+    }
+
+    local actionsStartY = innerY + layout.panelLabelH
+    local actionIndex = 1
+    local actionKeys = {
+      { key = "spin", label = "SPIN", color = colors.lime },
+      { key = "undo", label = "UNDO", color = colors.orange },
+      { key = "clear", label = "CLEAR", color = colors.red },
+      { key = "double", label = "DOUBLE", color = colors.magenta },
+      { key = "quit", label = "EXIT", color = colors.gray },
+    }
+    while actionIndex <= #actionKeys do
+      local action = actionKeys[actionIndex]
+      insert(layout.actionButtons, makeActionButton(
+        action.key,
+        action.label,
+        rightRailX,
+        actionsStartY + ((actionIndex - 1) * (buttonH + buttonGap)),
+        rightRailW,
+        buttonH,
+        action.color
+      ))
+      actionIndex = actionIndex + 1
+    end
+
+    contentAreaX = leftRailX + leftRailW + railGap
+    contentAreaW = rightRailX - contentAreaX - railGap
+    contentAreaY = innerY
+    contentAreaH = innerH
   end
 
   local gridBodyW = contentAreaW
@@ -354,8 +295,8 @@ local function build(width, height, chipCount, scale)
   end
   local cellH = layout.compact and scale:scaledY(5, 4, 6) or max(scale:scaledY(7, 6, 8), min(11, baseCellH))
   if not layout.compact then
-    streetW = max(8, min(12, floor(cellW * 0.30)))
-    cellW = max(10, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
+    streetW = max(7, min(10, floor(cellW * 0.38)))
+    cellW = max(11, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   end
   local minCellHeight = layout.compact and 3 or 4
   while cellH > minCellHeight and getTableContentHeight(cellH, rowGap) > max(8, contentAreaH - 2) do

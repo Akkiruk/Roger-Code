@@ -128,17 +128,17 @@
                                   },
                      "roulette":  {
                                       "name":  "Roulette",
-                                      "version":  "1.0.32",
-                                      "content_hash":  "21a3f079dfe7b231",
+                                      "version":  "1.0.33",
+                                      "content_hash":  "af15c850379c2f06",
                                       "description":  "European Roulette with a single-screen felt UI and multi-bet support.",
                                       "category":  "Games",
                                       "source_dir":  "Games/Roulette",
                                       "uses_lib":  true,
                                       "files":  [
-                                                    "Roulette.lua",
                                                     "roulette_layout.lua",
                                                     "roulette_model.lua",
                                                     "roulette_render.lua",
+                                                    "Roulette.lua",
                                                     "startup.lua"
                                                 ],
                                       "config_files":  [

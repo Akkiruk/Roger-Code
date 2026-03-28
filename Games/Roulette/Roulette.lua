@@ -134,6 +134,12 @@ local function playRouletteSound(name, fallback, volume)
   sound.play(getRouletteSound(name, fallback), volume)
 end
 
+local function playSpinPointerClick(progress)
+  local fallback = getRouletteSound("SPIN_TICK", sound.SOUNDS.CARD_PLACE)
+  local volume = 0.15 + (min(1, max(0, progress or 0)) * 0.10)
+  playRouletteSound("SPIN_POINTER", fallback, volume)
+end
+
 local function getBetPlacementSound(region)
   if not region or not region.kind then
     return getRouletteSound("BET_OUTSIDE", sound.SOUNDS.CARD_PLACE)
@@ -424,6 +430,7 @@ local function animateSpin(finalNumber)
   local currentOffset = startOffset
   local step = 1
   local finalBounce = { 0.32, -0.14, 0.08, 0 }
+  local lastPointedNumber = rouletteRender.getTrackPointedNumber(startOffset)
 
   state.phase = "spinning"
   state.highlightKeys = nil
@@ -439,6 +446,11 @@ local function animateSpin(finalNumber)
 
     while subframe <= subframes do
       local blended = currentOffset + (subframe / subframes)
+      local pointedNumber = rouletteRender.getTrackPointedNumber(blended)
+      if pointedNumber ~= nil and pointedNumber ~= lastPointedNumber then
+        playSpinPointerClick(progress)
+        lastPointedNumber = pointedNumber
+      end
       state.wheelOffset = blended
       renderCurrent(nil)
       os.sleep(delay / subframes)
@@ -449,17 +461,19 @@ local function animateSpin(finalNumber)
 
     if step >= totalSteps then
       playRouletteSound("SPIN_FINAL", sound.SOUNDS.START, 0.65)
-    elseif progress >= 0.78 then
-      playRouletteSound("SPIN_SLOW", sound.SOUNDS.CARD_PLACE, 0.36)
-    else
-      playRouletteSound("SPIN_TICK", sound.SOUNDS.CARD_PLACE, 0.24)
     end
 
     step = step + 1
   end
 
   for _, bounceOffset in ipairs(finalBounce) do
-    state.wheelOffset = targetIndex + bounceOffset
+    local bouncedOffset = targetIndex + bounceOffset
+    local pointedNumber = rouletteRender.getTrackPointedNumber(bouncedOffset)
+    if pointedNumber ~= nil and pointedNumber ~= lastPointedNumber then
+      playSpinPointerClick(1)
+      lastPointedNumber = pointedNumber
+    end
+    state.wheelOffset = bouncedOffset
     renderCurrent(nil)
     os.sleep(spinSettleDelay)
   end
