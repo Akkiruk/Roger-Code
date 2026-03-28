@@ -91,7 +91,7 @@ local state = {
   autoPlay = false,
   phase = "betting",
   currentPlayer = sessionPlayer or env.currentPlayer or "Unknown",
-  statusText = "Choose a chip and touch the felt.",
+  statusText = "Pick a chip, then tap the table.",
   statusTone = "neutral",
   statusUntil = 0,
   selectedChipIndex = min(2, #currency.DENOMINATIONS),
@@ -226,10 +226,10 @@ local function validateBetSet(candidateBets)
   local exposure = rouletteModel.getMaxExposure(candidateBets)
 
   if totalStake <= 0 then
-    return false, "Place a bet first.", totalStake, exposure
+    return false, "Tap a number or color first.", totalStake, exposure
   end
   if totalStake > (state.playerBalance or 0) then
-    return false, "Not enough tokens.", totalStake, exposure
+    return false, "You do not have enough tokens.", totalStake, exposure
   end
   local limitedBet, stakeCap = rouletteModel.findStakeLimitViolation(
     candidateBets,
@@ -268,7 +268,7 @@ end
 local function tryApplyAction(changes, successText, soundID)
   if not changes or #changes == 0 then
     sound.play(sound.SOUNDS.ERROR, 0.4)
-    setStatus("Nothing to place.", "warning")
+    setStatus("Tap a number or color first.", "warning")
     return false
   end
 
@@ -336,13 +336,13 @@ local function updatePassiveStatus(idleMs)
   end
 
   if state.phase == "spinning" then
-    state.statusText = "Spinning the wheel..."
+    state.statusText = "Wheel spinning..."
     state.statusTone = "warning"
     return
   end
 
   if state.totalStake > 0 then
-    state.statusText = "Touch SPIN to lock the table."
+    state.statusText = "Press SPIN when you are ready."
     state.statusTone = "accent"
     return
   end
@@ -356,7 +356,7 @@ local function updatePassiveStatus(idleMs)
     return
   end
 
-  state.statusText = "Choose a chip and touch the felt."
+  state.statusText = "Pick a chip, then tap the table."
   state.statusTone = "neutral"
 end
 
@@ -574,10 +574,10 @@ local function handleActionButton(actionKey)
   if actionKey == "double" then
     if #state.bets == 0 then
       sound.play(sound.SOUNDS.ERROR, 0.4)
-      setStatus("Place chips before DOUBLE.", "warning")
+      setStatus("Place a bet before DOUBLE.", "warning")
       return nil
     end
-    tryApplyAction(buildChangesFromBets(state.bets), "Doubled the current table.", sound.SOUNDS.ALL_IN)
+    tryApplyAction(buildChangesFromBets(state.bets), "Added the same bets again.", sound.SOUNDS.ALL_IN)
     return nil
   end
 
@@ -608,7 +608,7 @@ local function handleTouch(px, py)
     if chipIndex and currency.DENOMINATIONS[chipIndex] then
       state.selectedChipIndex = chipIndex
       playRouletteSound("CHIP_SELECT", currency.DENOMINATIONS[chipIndex].sound, 0.35)
-      setStatus("Selected " .. currency.formatTokens(currency.DENOMINATIONS[chipIndex].value) .. ".", "accent", 900)
+      setStatus("Chip set to " .. currency.formatTokens(currency.DENOMINATIONS[chipIndex].value) .. ".", "accent", 900)
     end
     return nil
   end

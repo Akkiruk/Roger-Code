@@ -105,7 +105,7 @@ local function build(width, height, chipCount, scale)
     width = width,
     height = height,
     margin = scale.edgePad,
-    header = { x = 0, y = 0, w = width, h = scale:scaledY(22, 14, 24) },
+    header = { x = 0, y = 0, w = width, h = scale:scaledY(24, 18, 28) },
     regions = {},
     hitRegions = {},
     scale = scale,
@@ -114,14 +114,14 @@ local function build(width, height, chipCount, scale)
   layout.compact = scale.compact or width < 200 or height < 120
 
   if layout.compact then
-    layout.header.h = max(scale:scaledY(15, 12, 18), scale.lineHeight + scale.smallGap + 3)
+    layout.header.h = max(scale:scaledY(16, 13, 19), scale.lineHeight + scale.smallGap + 4)
   end
 
-  local panelWidth = max(30, min(42, floor(width * 0.34)))
+  local panelWidth = max(24, min(30, floor(width * 0.26)))
   if layout.compact then
     panelWidth = max(18, min(22, floor(width * 0.20)))
-  elseif (width - panelWidth) < 54 then
-    panelWidth = max(28, width - 54)
+  elseif (width - panelWidth) < 62 then
+    panelWidth = max(22, width - 62)
   end
 
   local panelX = layout.margin
@@ -132,7 +132,7 @@ local function build(width, height, chipCount, scale)
   local rightX = panelX + panelW + scale.sectionGap
   local rightW = width - rightX - layout.margin
   local trackY = panelY
-  local trackH = layout.compact and scale:scaledY(9, 8, 10) or scale:scaledY(14, 12, 16)
+  local trackH = layout.compact and scale:scaledY(10, 9, 12) or scale:scaledY(18, 14, 22)
   local feltY = trackY + trackH + scale.sectionGap
   local feltH = height - feltY - layout.margin
 
@@ -149,21 +149,22 @@ local function build(width, height, chipCount, scale)
     y = trackY,
     w = rightW,
     h = trackH,
-    cellW = max(4, min(7, floor(rightW / 13))),
+    cellW = max(5, min(9, floor(rightW / 10))),
   }
   layout.felt = { x = rightX, y = feltY, w = rightW, h = feltH }
 
-  local summaryH = layout.compact and scale:scaledY(16, 14, 18) or scale:scaledY(28, 22, 32)
-  local buttonGap = scale.smallGap
+  local summaryH = layout.compact and scale:scaledY(18, 15, 20) or scale:scaledY(36, 32, 40)
+  local buttonGap = scale.buttonRowGap
   local buttonH = scale.buttonHeight
   local panelInnerX = panelX + 1
   local panelInnerW = panelW - 2
   local gridButtonW = max(layout.compact and 5 or 8, floor((panelInnerW - buttonGap) / 2))
   layout.ultraCompact = layout.compact and (width < 72 or panelW <= 18 or gridButtonW <= 9)
+  layout.panelLabelH = layout.compact and 0 or 7
 
   layout.summaryBox = { x = panelX, y = panelY, w = panelW, h = summaryH }
 
-  local chipsStartY = panelY + summaryH + scale.sectionGap
+  local chipsStartY = panelY + summaryH + scale.sectionGap + layout.panelLabelH
   layout.chipButtons = {}
   local chipIndex = 1
   local chipRow = 0
@@ -180,12 +181,12 @@ local function build(width, height, chipCount, scale)
     chipRow = chipRow + 1
   end
 
-  local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + scale.smallGap
+  local actionsStartY = chipsStartY + (chipRow * (buttonH + buttonGap)) + scale.smallGap + layout.panelLabelH
   local spinLabel = layout.ultraCompact and "GO" or "SPIN"
   local undoLabel = layout.ultraCompact and "UND" or "UNDO"
   local clearLabel = layout.compact and "CLR" or "CLEAR"
   local doubleLabel = layout.compact and "X2" or "DOUBLE"
-  local quitLabel = layout.compact and "OUT" or "QUIT"
+  local quitLabel = "EXIT"
   layout.actionButtons = {
     makeActionButton("spin", spinLabel, panelInnerX, actionsStartY, gridButtonW, buttonH, colors.lime),
     makeActionButton("undo", undoLabel, panelInnerX + gridButtonW + buttonGap, actionsStartY, gridButtonW, buttonH, colors.orange),
@@ -194,7 +195,7 @@ local function build(width, height, chipCount, scale)
     makeActionButton("quit", quitLabel, panelInnerX, actionsStartY + (buttonH + buttonGap) * 2, (gridButtonW * 2) + buttonGap, buttonH, colors.gray),
   }
 
-  local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + scale.sectionGap
+  local slipY = actionsStartY + ((buttonH + buttonGap) * 3) + scale.sectionGap + layout.panelLabelH
   layout.slipBox = {
     x = panelX,
     y = slipY,
