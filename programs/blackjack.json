@@ -10,8 +10,8 @@
     "version": "1.2.21"
   },
   "build": {
-    "commit": "fa0ed9cfadae0ccefa137afe992ac07ea62047af",
-    "generated_at": "2026-03-28T21:12:10Z",
+    "commit": "4a944b239db52dd2f3a30dfb06d267ffec151457",
+    "generated_at": "2026-03-28T21:19:30Z",
     "package_hash": "0015f75b023021d6f0cb0c54b41515d5626118670326a13b68051284acac4493"
   },
   "install": {
