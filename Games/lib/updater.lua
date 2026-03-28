@@ -19,6 +19,18 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
+local RESERVED_LOCAL_PATHS = {
+  [VERSION_FILE] = true,
+  [MANAGED_FILES] = true,
+  [LOG_FILE] = true,
+  ["installer_error.log"] = true,
+  ["crash_recovery.log"] = true,
+  ["phone_os_startup.log"] = true,
+  ["vaultgear_error.log"] = true,
+  ["vhcc_lockdown.txt"] = true,
+  ["installer.lua"] = true,
+  [UNLOCK_FILE] = true,
+}
 -----------------------------------------------------
 -- Helpers
 -----------------------------------------------------
@@ -258,6 +270,80 @@ local function removePath(path)
   end
 end
 
+local function normalizePath(path)
+  return tostring(path or ""):gsub("\\", "/")
+end
+
+local function pathSetFromList(paths)
+  local set = {}
+  for _, path in ipairs(paths or {}) do
+    set[normalizePath(path)] = true
+  end
+  return set
+end
+
+local function listFilesRecursive(root, prefix, out)
+  out = out or {}
+  prefix = prefix or ""
+  if not fs.exists(root) then
+    return out
+  end
+
+  for _, name in ipairs(fs.list(root)) do
+    local child = fs.combine(root, name)
+    local rel = prefix ~= "" and (prefix .. "/" .. name) or name
+    if fs.isDir(child) then
+      listFilesRecursive(child, rel, out)
+    else
+      out[#out + 1] = normalizePath(rel)
+    end
+  end
+
+  return out
+end
+
+local function cleanupStaleRuntimeArtifacts()
+  removePath(".install_staging")
+  removePath(".update_staging")
+end
+
+local function isLegacyPayloadPath(path)
+  if path:sub(1, 4) == "lib/" then
+    return true
+  end
+
+  if path:find("/", 1, true) then
+    return false
+  end
+
+  if path:match("%.lua$") or path:match("%.nfp$") then
+    return true
+  end
+
+  return path == "font"
+    or path == "surface"
+    or path == "gothic"
+    or path == "logo.nfp"
+end
+
+local function pruneLegacyPayload(desiredPaths)
+  local existingManaged = readManagedFiles()
+  if #existingManaged > 0 then
+    return
+  end
+
+  local desired = pathSetFromList(desiredPaths)
+  local files = listFilesRecursive(".", "", {})
+  for _, rel in ipairs(files) do
+    local normalized = normalizePath(rel)
+    if isLegacyPayloadPath(normalized)
+      and not desired[normalized]
+      and not RESERVED_LOCAL_PATHS[normalized] then
+      removePath(normalized)
+    end
+  end
+end
+
 local function removeStaleFiles(previouslyManaged, desiredPaths)
   local wanted = {}
   for _, path in ipairs(desiredPaths) do
@@ -289,12 +375,14 @@ local function performUpdate(spec, installed)
   local success = 0
   local failed = 0
   local previouslyManaged = readManagedFiles()
+  cleanupStaleRuntimeArtifacts()
 
   for _, entry in ipairs(spec.install.files or {}) do
     managedPaths[#managedPaths + 1] = entry.install_path
   end
 
   removeStaleFiles(previouslyManaged, managedPaths)
+  pruneLegacyPayload(managedPaths)
 
   for _, entry in ipairs(spec.install.files or {}) do
     if entry.preserve_existing and fs.exists(entry.install_path) then
