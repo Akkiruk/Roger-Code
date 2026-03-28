@@ -501,10 +501,9 @@ local function drawSummaryBox(screen, font, layout, state)
   local selectedChip = denominations[state.selectedChipIndex or 1]
   local selectedChipValue = selectedChip and selectedChip.value or 0
   local labelX = box.x + 2
-  local valueRight = box.x + box.w - 2
-  local valueLeft = labelX + max(8, floor(box.w * 0.45))
   local rowY = box.y + 10
   local rowGap = max(7, layout.scale.lineHeight)
+  local lineW = max(1, box.w - 4)
 
   drawCenteredText(screen, font, {
     x = box.x,
@@ -516,20 +515,17 @@ local function drawSummaryBox(screen, font, layout, state)
   if layout.compact then
     local compactY = box.y + box.h - 8
     ui.safeDrawText(screen, fitTextToWidth("Chip " .. formatUiTokens(selectedChipValue), max(1, floor(box.w * 0.45))), font, labelX, compactY, colors.lightGray)
-    drawRightText(screen, font, "Bet " .. formatUiTokens(state.totalStake or 0), valueRight, compactY, colors.white, valueLeft)
+    drawRightText(screen, font, "Bet " .. formatUiTokens(state.totalStake or 0), box.x + box.w - 2, compactY, colors.white, labelX + max(8, floor(box.w * 0.45)))
     return
   end
 
-  ui.safeDrawText(screen, fitTextToWidth("Chip", max(1, valueLeft - labelX - 1)), font, labelX, rowY, colors.lightGray)
-  drawRightText(screen, font, formatUiTokens(selectedChipValue), valueRight, rowY, colors.white, valueLeft)
+  ui.safeDrawText(screen, fitTextToWidth("Chip " .. formatUiTokens(selectedChipValue), lineW), font, labelX, rowY, colors.lightGray)
   rowY = rowY + rowGap
 
-  ui.safeDrawText(screen, fitTextToWidth("Bet", max(1, valueLeft - labelX - 1)), font, labelX, rowY, colors.lightGray)
-  drawRightText(screen, font, formatUiTokens(state.totalStake or 0), valueRight, rowY, colors.white, valueLeft)
+  ui.safeDrawText(screen, fitTextToWidth("Bet " .. formatUiTokens(state.totalStake or 0), lineW), font, labelX, rowY, colors.white)
   rowY = rowY + rowGap
 
-  ui.safeDrawText(screen, fitTextToWidth("Best win", max(1, valueLeft - labelX - 1)), font, labelX, rowY, colors.lightGray)
-  drawRightText(screen, font, formatUiTokens(state.maxExposure or 0), valueRight, rowY, colors.white, valueLeft)
+  ui.safeDrawText(screen, fitTextToWidth("Best " .. formatUiTokens(state.maxExposure or 0), lineW), font, labelX, rowY, colors.lightGray)
 end
 
 local function drawButtons(screen, font, layout, state)
@@ -550,7 +546,7 @@ local function drawButtons(screen, font, layout, state)
       y = layout.chipButtons[1].y - layout.panelLabelH,
       w = layout.panel.w,
       h = layout.panelLabelH,
-    }, "PICK CHIP", colors.lightGray)
+    }, "CHIPS", colors.lightGray)
   end
 
   for index, button in ipairs(layout.chipButtons) do
@@ -589,7 +585,7 @@ local function drawButtons(screen, font, layout, state)
       y = layout.actionButtons[1].y - layout.panelLabelH,
       w = actionPanel.w,
       h = layout.panelLabelH,
-    }, "ACTIONS", colors.lightGray)
+    }, "PLAY", colors.lightGray)
   end
 
   for _, button in ipairs(layout.actionButtons) do

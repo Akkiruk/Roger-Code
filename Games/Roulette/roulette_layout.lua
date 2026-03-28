@@ -126,11 +126,11 @@ local function build(width, height, chipCount, scale)
 
   local colGap = layout.compact and 1 or scale.smallGap
   local rowGap = layout.compact and 1 or scale.smallGap
-  local streetW = max(4, scale:scaledX(layout.compact and 4 or 6, 4, 7))
-  local maxCellW = max(10, scale:scaledX(layout.compact and 12 or 28, 10, layout.compact and 16 or 40))
+  local streetW = max(4, scale:scaledX(layout.compact and 4 or 8, 4, 10))
+  local maxCellW = max(10, scale:scaledX(layout.compact and 12 or 52, 10, layout.compact and 18 or 72))
   local buttonGap = scale.buttonRowGap
   local buttonH = scale.buttonHeight
-  local summaryH = layout.compact and scale:scaledY(18, 15, 20) or scale:scaledY(20, 18, 24)
+  local summaryH = layout.compact and scale:scaledY(18, 15, 20) or scale:scaledY(24, 22, 28)
   local contentAreaX = feltX + scale.sectionGap
   local contentAreaW = feltW - (scale.sectionGap * 2)
 
@@ -281,7 +281,8 @@ local function build(width, height, chipCount, scale)
       contentAreaY = layout.slipBox.y + layout.slipBox.h + scale.sectionGap
       contentAreaH = (feltY + feltH - railInset) - contentAreaY
     else
-      local railW = max(18, min(22, floor(feltW * 0.16)))
+      local railGap = max(2, scale.smallGap)
+      local railW = max(24, min(30, floor(feltW * 0.18)))
       local railY = feltY + railInset
       local railH = feltH - (railInset * 2)
       local leftRailX = feltX + railInset
@@ -338,19 +339,24 @@ local function build(width, height, chipCount, scale)
         actionIndex = actionIndex + 1
       end
 
-      contentAreaX = leftRailX + railW + scale.sectionGap
-      contentAreaW = rightRailX - contentAreaX - scale.sectionGap
+      contentAreaX = leftRailX + railW + railGap
+      contentAreaW = rightRailX - contentAreaX - railGap
       contentAreaY = feltY + 1
       contentAreaH = feltH - 2
     end
   end
 
   local gridBodyW = contentAreaW
+  local baseCellH = floor((max(8, contentAreaH - (rowGap * 11) - 12) / 17))
   local cellW = max(8, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   if layout.compact then
     cellW = max(9, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
   end
-  local cellH = layout.compact and scale:scaledY(5, 4, 6) or scale:scaledY(7, 6, 8)
+  local cellH = layout.compact and scale:scaledY(5, 4, 6) or max(scale:scaledY(7, 6, 8), min(11, baseCellH))
+  if not layout.compact then
+    streetW = max(8, min(12, floor(cellW * 0.30)))
+    cellW = max(10, min(maxCellW, floor((gridBodyW - streetW - (colGap * 2)) / 3)))
+  end
   local minCellHeight = layout.compact and 3 or 4
   while cellH > minCellHeight and getTableContentHeight(cellH, rowGap) > max(8, contentAreaH - 2) do
     cellH = cellH - 1
