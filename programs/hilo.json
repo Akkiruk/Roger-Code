@@ -7,12 +7,12 @@
     "description": "Hi-Lo card game for ComputerCraft casino.",
     "source_root": "Games/HiLo",
     "entrypoint": "hilo.lua",
-    "version": "1.0.27"
+    "version": "1.0.28"
   },
   "build": {
-    "commit": "27de296416521dbc6514ce998ef92ce75dcb31c7",
-    "generated_at": "2026-03-28T21:00:57Z",
-    "package_hash": "b174f39634c76cef40eec72afcaf03405b88355331e65c229743f1479ec28ad4"
+    "commit": "fa0ed9cfadae0ccefa137afe992ac07ea62047af",
+    "generated_at": "2026-03-28T21:12:10Z",
+    "package_hash": "71e9f51f93b237c536f4b4a27d21f1b02ecbe5b89ee08757222791cb5df17715"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/HiLo/hilo.lua",
         "install_path": "hilo.lua",
-        "sha256": "4f2f9aec3de766003728813beecce08cb3eda4365c8ac10232404c9f0bbb4ccf"
+        "sha256": "1ce2a3de89cec9770cc927f993c0a958b725966e8e62162a271bc814fd0e9c49"
       },
       {
         "repo_path": "Games/lib/sound.lua",
@@ -157,7 +157,7 @@
       {
         "repo_path": "Games/HiLo/hilo_config.lua",
         "install_path": "hilo_config.lua",
-        "sha256": "d94a56a1bf01ec742bebd331b2c41d7d205b97d4c0387ad1b057e78bdea7ee30",
+        "sha256": "8b34d3d9de334a39356a424c0e08d2959874bc781148cb17cdd28d730e766e71",
         "preserve_existing": true
       },
       {
