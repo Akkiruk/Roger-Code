@@ -10,8 +10,8 @@
     "version": "1.0.28"
   },
   "build": {
-    "commit": "7f0392d93572b43eecc6cacfe2c8afdb8c506f27",
-    "generated_at": "2026-03-28T20:42:47Z",
+    "commit": "89c17f77a2302c8a8b277331354147c4c6549352",
+    "generated_at": "2026-03-28T20:46:24Z",
     "package_hash": "d1f84fa6447f85f787550e5803c00239142f8804224a946d19f3d79d12604a1a"
   },
   "install": {
