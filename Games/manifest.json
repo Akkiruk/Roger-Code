@@ -128,8 +128,8 @@
     },
     "roulette": {
       "name": "Roulette",
-      "version": "1.0.34",
-      "content_hash": "fdd5a8a2695009b9",
+      "version": "1.0.35",
+      "content_hash": "fbe3b6a11e5a775f",
       "description": "European Roulette with a single-screen felt UI and multi-bet support.",
       "category": "Games",
       "source_dir": "Games/Roulette",
@@ -260,8 +260,8 @@
     }
   },
   "lib": {
-    "version": "1.2.27",
-    "content_hash": "f7ed8dcdc2115dbd",
+    "version": "1.2.28",
+    "content_hash": "2458b90387bd8ad9",
     "files": [
       "achievements.lua",
       "alert.lua",

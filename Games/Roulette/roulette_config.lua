@@ -22,10 +22,10 @@ return {
   RECOVERY_FILE = "roulette_recovery.dat",
 
   -- Spin animation
-  SPIN_FULL_ROTATIONS = 4,      -- extra full loops before settling on the winning number
-  SPIN_MIN_DELAY      = 0.018,  -- fastest per-number delay during the early spin
-  SPIN_MAX_DELAY      = 0.120,  -- slowest per-number delay right before the final stop
-  SPIN_SETTLE_DELAY   = 0.045,  -- bounce delay for the final lock-in
+  SPIN_FULL_ROTATIONS = 2,      -- extra full loops before settling on the winning number
+  SPIN_MIN_DELAY      = 0.010,  -- fastest per-number delay during the early spin
+  SPIN_MAX_DELAY      = 0.055,  -- slowest per-number delay right before the final stop
+  SPIN_SETTLE_DELAY   = 0.030,  -- bounce delay for the final lock-in
   RESULT_PAUSE        = 2.4,    -- seconds to display result
   HISTORY_LENGTH      = 10,
 
