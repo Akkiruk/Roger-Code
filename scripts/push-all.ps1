@@ -27,6 +27,11 @@ try {
         $Message = "Codex update $timestamp"
     }
 
+    & (Join-Path $PSScriptRoot "check-lua-forward-declarations.ps1") -RepoRoot $repoRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw "Lua forward-declaration check failed"
+    }
+
     $currentBranch = git rev-parse --abbrev-ref HEAD
     Write-Host "Repo:    $repoRoot"
     Write-Host "Branch:  $currentBranch -> $Remote/$Branch"

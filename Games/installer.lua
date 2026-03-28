@@ -10,7 +10,7 @@
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.1.5"
+local INSTALLER_VERSION = "1.1.6"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
 local SOURCE_BRANCH = "main"
@@ -43,6 +43,9 @@ local RESERVED_LOCAL_PATHS = {
 }
 
 local tArgs = { ... }
+-- Forward declarations keep Lua 5.1 local scope intact for helpers used
+-- by earlier-defined functions in this file.
+local readManagedFiles = nil
 
 ---------------------------------------------------------------------------
 -- Error logging
@@ -342,7 +345,7 @@ local function saveInstalled(info)
   end
 end
 
-local function readManagedFiles()
+readManagedFiles = function()
   if not fs.exists(MANAGED_FILES) then
     return {}
   end

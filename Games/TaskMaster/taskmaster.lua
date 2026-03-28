@@ -85,6 +85,7 @@ local currentPage = 1
 local itemsPerPage = 0
 local selectedCategory = nil
 local totalPages = 1
+local calculateOptimalTextScale = nil
 
 -- Task Definitions with slot IDs
 -- The "slot" field defines which slot in the reward chest contains this task's reward
@@ -561,7 +562,7 @@ local function describeRewardDestination(destinationName)
     return destinationName or "the output chest"
 end
 
-local function calculateOptimalTextScale(mon, linesNeeded)
+calculateOptimalTextScale = function(mon, linesNeeded)
     local scale = monitorScale.pickTextScaleForLines(mon, linesNeeded, 30, {
         maxScale = 2,
         fallback = 0.5,

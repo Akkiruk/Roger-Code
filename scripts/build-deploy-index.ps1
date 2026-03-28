@@ -19,6 +19,11 @@ if ($PreviousIndexDir) {
     $PreviousIndexDir = [System.IO.Path]::GetFullPath($PreviousIndexDir)
 }
 
+& (Join-Path $PSScriptRoot "check-lua-forward-declarations.ps1") -RepoRoot $RepoRoot
+if ($LASTEXITCODE -ne 0) {
+    throw "Lua forward-declaration check failed"
+}
+
 $RepoName = Split-Path $RepoRoot -Leaf
 $RepoOwner = "Akkiruk"
 $PrimaryBranch = "main"
