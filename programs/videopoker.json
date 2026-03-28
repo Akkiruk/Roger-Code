@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "videopoker",
+    "name": "VideoPoker",
+    "category": "Games",
+    "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
+    "source_root": "Games/VideoPoker",
+    "entrypoint": "videopoker.lua",
+    "version": "1.0.20"
+  },
+  "build": {
+    "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+    "generated_at": "2026-03-28T19:37:40Z",
+    "package_hash": "c9786fa112ffde1e97800912b51b2718b5b25ab37f083dafea03aaa0b0b46c72"
+  },
+  "install": {
+    "preserve": [
+      "videopoker_config.lua"
+    ],
+    "files": [
+      {
+        "repo_path": "Games/VideoPoker/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "ee67bb14a918dc2947c002ee37910e688b3559b2a6dbf82d1966f670a4e79ad2"
+      },
+      {
+        "repo_path": "Games/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "3dce6e986fb177b5563854150a643dbdb7723ad9681704bd8c63f3718db54e8c"
+      },
+      {
+        "repo_path": "Games/lib/safe_runner.lua",
+        "install_path": "lib/safe_runner.lua",
+        "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
+      },
+      {
+        "repo_path": "Games/lib/player_detection.lua",
+        "install_path": "lib/player_detection.lua",
+        "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
+      },
+      {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
+        "repo_path": "Games/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+      },
+      {
+        "repo_path": "Games/lib/idle_screen.lua",
+        "install_path": "lib/idle_screen.lua",
+        "sha256": "e0dfb1439c9da8f3e0af5a944b3e5eebb0eb62d4d9a9b6d46628ecd63f4dd781"
+      },
+      {
+        "repo_path": "Games/lib/game_setup.lua",
+        "install_path": "lib/game_setup.lua",
+        "sha256": "2cc85b023e50639cbcedea75b51dbad0ba04299f0564c9b8e05c4e9458050c7c"
+      },
+      {
+        "repo_path": "Games/lib/currency.lua",
+        "install_path": "lib/currency.lua",
+        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+      },
+      {
+        "repo_path": "Games/lib/crash_recovery.lua",
+        "install_path": "lib/crash_recovery.lua",
+        "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
+      },
+      {
+        "repo_path": "Games/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "3170356fc84131fb6e7d43aaecc12a93e3955cfda2dfd358b9eb7180e44f645a"
+      },
+      {
+        "repo_path": "Games/lib/card_anim.lua",
+        "install_path": "lib/card_anim.lua",
+        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+      },
+      {
+        "repo_path": "Games/lib/betting.lua",
+        "install_path": "lib/betting.lua",
+        "sha256": "c5f7155130ca191e19b33036337be42ee63f3f36ab09de47b47ca414321eb620"
+      },
+      {
+        "repo_path": "Games/lib/alert.lua",
+        "install_path": "lib/alert.lua",
+        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+      },
+      {
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "eef026345a234a7a100c5938022c8f2ef7a6e982784c946c728fd920017b761f"
+      },
+      {
+        "repo_path": "Games/VideoPoker/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+      },
+      {
+        "repo_path": "Games/VideoPoker/spades.nfp",
+        "install_path": "spades.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+      },
+      {
+        "repo_path": "Games/VideoPoker/spade.nfp",
+        "install_path": "spade.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+      },
+      {
+        "repo_path": "Games/VideoPoker/hearts.nfp",
+        "install_path": "hearts.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+      },
+      {
+        "repo_path": "Games/VideoPoker/heart.nfp",
+        "install_path": "heart.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+      },
+      {
+        "repo_path": "Games/VideoPoker/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+      },
+      {
+        "repo_path": "Games/VideoPoker/diamonds.nfp",
+        "install_path": "diamonds.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
+      },
+      {
+        "repo_path": "Games/VideoPoker/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
+      },
+      {
+        "repo_path": "Games/VideoPoker/clubs.nfp",
+        "install_path": "clubs.nfp",
+        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/VideoPoker/club.nfp",
+        "install_path": "club.nfp",
+        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/VideoPoker/cardback.nfp",
+        "install_path": "cardback.nfp",
+        "sha256": "ef13a24f19de225a057ee57d09439a57bfa852cc3715788a201881c6d8511164"
+      },
+      {
+        "repo_path": "Games/VideoPoker/card.nfp",
+        "install_path": "card.nfp",
+        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker_config.lua",
+        "install_path": "videopoker_config.lua",
+        "sha256": "4a87f7abdec22d85443fd5748eeafbd6eb2571585e4fd2e69ebda813a2f6e14c",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker.lua",
+        "install_path": "videopoker.lua",
+        "sha256": "6e158bff7371a9f3833c4bceb2d10291a4c8d7460afa9a6d0ddc6097fd06d1e0"
+      },
+      {
+        "repo_path": "Games/VideoPoker/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "a89b8b0395e00a093844354c3aeaaa0ae0303b67e119e00373d9c73a3b165ca3"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.alert",
+      "lib.betting",
+      "lib.card_anim",
+      "lib.cards",
+      "lib.crash_recovery",
+      "lib.currency",
+      "lib.game_setup",
+      "lib.idle_screen",
+      "lib.monitor_scale",
+      "lib.peripherals",
+      "lib.player_detection",
+      "lib.safe_runner",
+      "lib.sound",
+      "lib.ui",
+      "lib.updater"
+    ]
+  }
+}

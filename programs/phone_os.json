@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "phone_os",
+    "name": "Pocket Casino OS",
+    "category": "Utilities",
+    "description": "Pocket casino shell for ComputerCraft pocket computers.",
+    "source_root": "Games/PhoneOS",
+    "entrypoint": "startup.lua",
+    "version": "1.0.25"
+  },
+  "build": {
+    "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+    "generated_at": "2026-03-28T19:37:40Z",
+    "package_hash": "fe384ab0aa423302685936ae063c683482decee1f9c227c679436c6d69ce38a0"
+  },
+  "install": {
+    "preserve": [
+      "blackjack_config.lua",
+      "slots_config.lua"
+    ],
+    "files": [
+      {
+        "repo_path": "Games/PhoneOS/phone_os.lua",
+        "install_path": "phone_os.lua",
+        "sha256": "f1a11348025f22a0f90780ff755d60a11abdf3a7d2e2de2f982d6b98456c2aff"
+      },
+      {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
+        "repo_path": "Games/lib/currency.lua",
+        "install_path": "lib/currency.lua",
+        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+      },
+      {
+        "repo_path": "Games/lib/crash_recovery.lua",
+        "install_path": "lib/crash_recovery.lua",
+        "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
+      },
+      {
+        "repo_path": "Games/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "3170356fc84131fb6e7d43aaecc12a93e3955cfda2dfd358b9eb7180e44f645a"
+      },
+      {
+        "repo_path": "Games/lib/alert.lua",
+        "install_path": "lib/alert.lua",
+        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+      },
+      {
+        "repo_path": "Games/PhoneOS/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+      },
+      {
+        "repo_path": "Games/PhoneOS/slots_config.lua",
+        "install_path": "slots_config.lua",
+        "sha256": "a76a471a9c9522e04219cfd726213dda7f4fa3074d009ec010e85601fc6671c9",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/PhoneOS/blackjack_config.lua",
+        "install_path": "blackjack_config.lua",
+        "sha256": "bc79bd9e115354df9443f95478148806813beda763ea704e5c07ab42a95ef6cf",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/PhoneOS/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "6fae04f7e8bd25583cf7fc01b80c4f04bdc5c1fc04f756da1e177d2e8368abad"
+      },
+      {
+        "repo_path": "Games/PhoneOS/phoneos/ui.lua",
+        "install_path": "phoneos/ui.lua",
+        "sha256": "8dfed28ea10f6a7c20f9f7a15a6955e7edd739a261b975838ce7bb2d1a0dcb67"
+      },
+      {
+        "repo_path": "Games/PhoneOS/phoneos/storage.lua",
+        "install_path": "phoneos/storage.lua",
+        "sha256": "7e1754145f56435707c47c604810421bb372b8d399c57d4ef470dec4b0c646ef"
+      },
+      {
+        "repo_path": "Games/PhoneOS/phoneos/slots.lua",
+        "install_path": "phoneos/slots.lua",
+        "sha256": "d39b553a1b72fae93111fdffdadf710053fa79165e61e2909c40e6a318027fca"
+      },
+      {
+        "repo_path": "Games/PhoneOS/phoneos/slots_defaults.lua",
+        "install_path": "phoneos/slots_defaults.lua",
+        "sha256": "084c238662ed461ca3f65ca1bce14dce4dcac984cd3297f96e345b5b18c203c4"
+      },
+      {
+        "repo_path": "Games/PhoneOS/phoneos/blackjack.lua",
+        "install_path": "phoneos/blackjack.lua",
+        "sha256": "b5afb77a1ce9b55ff69f4d8628af409a3d432a19edfb8f153aaa8b7503cd4b91"
+      },
+      {
+        "repo_path": "Games/PhoneOS/phoneos/blackjack_defaults.lua",
+        "install_path": "phoneos/blackjack_defaults.lua",
+        "sha256": "61d004f855910991c02ed220cf32fc2cca2865022993342152225053f30da3d9"
+      },
+      {
+        "repo_path": "Games/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "3dce6e986fb177b5563854150a643dbdb7723ad9681704bd8c63f3718db54e8c"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "a89b8b0395e00a093844354c3aeaaa0ae0303b67e119e00373d9c73a3b165ca3"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.alert",
+      "lib.cards",
+      "lib.crash_recovery",
+      "lib.currency",
+      "lib.peripherals",
+      "lib.sound",
+      "lib.updater"
+    ]
+  }
+}

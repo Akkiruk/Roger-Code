@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "slots",
+    "name": "Slots",
+    "category": "Games",
+    "description": "Slot Machine game for ComputerCraft casino.",
+    "source_root": "Games/Slots",
+    "entrypoint": "slots.lua",
+    "version": "1.0.24"
+  },
+  "build": {
+    "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+    "generated_at": "2026-03-28T19:37:40Z",
+    "package_hash": "455296983f93ebabcf8f22479eb6397b96490d118675fa22318cad5c57b25dee"
+  },
+  "install": {
+    "preserve": [
+      "slots_config.lua"
+    ],
+    "files": [
+      {
+        "repo_path": "Games/Slots/slots.lua",
+        "install_path": "slots.lua",
+        "sha256": "8a54131c4b7be85e95970906d8da9ac80aa6c7f3582e27afb0f123eee69a1eb4"
+      },
+      {
+        "repo_path": "Games/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "3dce6e986fb177b5563854150a643dbdb7723ad9681704bd8c63f3718db54e8c"
+      },
+      {
+        "repo_path": "Games/lib/safe_runner.lua",
+        "install_path": "lib/safe_runner.lua",
+        "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
+      },
+      {
+        "repo_path": "Games/lib/player_detection.lua",
+        "install_path": "lib/player_detection.lua",
+        "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
+      },
+      {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
+        "repo_path": "Games/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+      },
+      {
+        "repo_path": "Games/lib/idle_screen.lua",
+        "install_path": "lib/idle_screen.lua",
+        "sha256": "e0dfb1439c9da8f3e0af5a944b3e5eebb0eb62d4d9a9b6d46628ecd63f4dd781"
+      },
+      {
+        "repo_path": "Games/lib/game_setup.lua",
+        "install_path": "lib/game_setup.lua",
+        "sha256": "2cc85b023e50639cbcedea75b51dbad0ba04299f0564c9b8e05c4e9458050c7c"
+      },
+      {
+        "repo_path": "Games/lib/currency.lua",
+        "install_path": "lib/currency.lua",
+        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+      },
+      {
+        "repo_path": "Games/lib/crash_recovery.lua",
+        "install_path": "lib/crash_recovery.lua",
+        "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
+      },
+      {
+        "repo_path": "Games/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "3170356fc84131fb6e7d43aaecc12a93e3955cfda2dfd358b9eb7180e44f645a"
+      },
+      {
+        "repo_path": "Games/lib/betting.lua",
+        "install_path": "lib/betting.lua",
+        "sha256": "c5f7155130ca191e19b33036337be42ee63f3f36ab09de47b47ca414321eb620"
+      },
+      {
+        "repo_path": "Games/lib/alert.lua",
+        "install_path": "lib/alert.lua",
+        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+      },
+      {
+        "repo_path": "Games/Slots/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+      },
+      {
+        "repo_path": "Games/Slots/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
+        "repo_path": "Games/Slots/seven.nfp",
+        "install_path": "seven.nfp",
+        "sha256": "b8cf43329b942abf481bee707b243114f69b09b0076636ae21b9baf26312ee2d"
+      },
+      {
+        "repo_path": "Games/Slots/melon.nfp",
+        "install_path": "melon.nfp",
+        "sha256": "ab561b34de2d367386c3501ec37184f7b0f06ab1c99073fd661508710aa25246"
+      },
+      {
+        "repo_path": "Games/Slots/lemon.nfp",
+        "install_path": "lemon.nfp",
+        "sha256": "1a7b27ff3544795e92782775992e4001da6473421d99c848697705c4ab3eeef8"
+      },
+      {
+        "repo_path": "Games/Slots/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+      },
+      {
+        "repo_path": "Games/Slots/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "39ce4a810c5db34ec27c227275bdaf01c425097988ac4663c8957f94e82de37e"
+      },
+      {
+        "repo_path": "Games/Slots/cherry.nfp",
+        "install_path": "cherry.nfp",
+        "sha256": "648a723cb2edf6070f4212d9d45c7d679d24b6ad9796304a27d27ccc0eb3964d"
+      },
+      {
+        "repo_path": "Games/Slots/bell.nfp",
+        "install_path": "bell.nfp",
+        "sha256": "9b7b044579aeabb4837357caa274d1e94d23b9ff59cec1ba546c8be2679bf9c5"
+      },
+      {
+        "repo_path": "Games/Slots/bar.nfp",
+        "install_path": "bar.nfp",
+        "sha256": "381a51a5043e943f00255a566868b6ed5230f96b23f381d1e04e3b6ef309bf1b"
+      },
+      {
+        "repo_path": "Games/Slots/slots_config.lua",
+        "install_path": "slots_config.lua",
+        "sha256": "328cca6b46dbad5b72dd4236180ca78adc1e0a1944a0c80a38b706deddc6878d",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/Slots/view_art.lua",
+        "install_path": "view_art.lua",
+        "sha256": "74436d2bcec5b17c18b14d796f4bc92f656e3d188044fc18a61e2377f3343c60"
+      },
+      {
+        "repo_path": "Games/Slots/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "4c7d72cfe288256ec16a4db7cdacc0606a9de3c6fd447ec5b57bdb67a62302f8"
+      },
+      {
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "eef026345a234a7a100c5938022c8f2ef7a6e982784c946c728fd920017b761f"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "a89b8b0395e00a093844354c3aeaaa0ae0303b67e119e00373d9c73a3b165ca3"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.alert",
+      "lib.betting",
+      "lib.cards",
+      "lib.crash_recovery",
+      "lib.currency",
+      "lib.game_setup",
+      "lib.idle_screen",
+      "lib.monitor_scale",
+      "lib.peripherals",
+      "lib.player_detection",
+      "lib.safe_runner",
+      "lib.sound",
+      "lib.ui",
+      "lib.updater"
+    ]
+  }
+}

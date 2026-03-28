@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "vault_item_analyzer",
+    "name": "vault_item_analyzer",
+    "category": "Utilities",
+    "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
+    "source_root": "Utilities",
+    "entrypoint": "vault_item_analyzer.lua",
+    "version": "1.0.8"
+  },
+  "build": {
+    "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+    "generated_at": "2026-03-28T19:37:40Z",
+    "package_hash": "7a250279a863e575997856948b4dd628013a1da28a5e5d55ee4ab286e607a96d"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "Utilities/vault_item_analyzer.lua",
+        "install_path": "vault_item_analyzer.lua",
+        "sha256": "7554485565b3757b6f179e0b97043e0a2b7a31ab524153dc66d183b2919ef117"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": false,
+    "lib_modules": []
+  }
+}

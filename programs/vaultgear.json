@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "vaultgear",
+    "name": "VaultGear",
+    "category": "Utilities",
+    "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
+    "source_root": "Games/VaultGear",
+    "entrypoint": "vaultgear.lua",
+    "version": "1.0.12"
+  },
+  "build": {
+    "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+    "generated_at": "2026-03-28T19:37:40Z",
+    "package_hash": "f513c41ad28b1d2e1a120f161ffb7467cea5e257d91c5c00ad0f4dda2a5d515a"
+  },
+  "install": {
+    "preserve": [
+      "vaultgear_config.lua",
+      "vaultgear_state_settings.lua"
+    ],
+    "files": [
+      {
+        "repo_path": "Games/VaultGear/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "c09f22d28d4d952337376ca785a985db1d55751947c03b587322f65540ded9a8"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/ui_shared.lua",
+        "install_path": "lib/vaultgear/ui_shared.lua",
+        "sha256": "2865b5c80abae0b01f29765f9bc55e7e16aca15b3d5837de912d373e2ab0912d"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/ui_pages.lua",
+        "install_path": "lib/vaultgear/ui_pages.lua",
+        "sha256": "09397983a389d940392cb5bf70c0145ff791f290506089c82e69c08bca1a9edd"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/store.lua",
+        "install_path": "lib/vaultgear/store.lua",
+        "sha256": "7b5ffa5788366d07294b5c960d1292bc2ae985064c8bd880ec97fb8d4adbe1b7"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/service.lua",
+        "install_path": "lib/vaultgear/service.lua",
+        "sha256": "97d86c04c7db0aa95d5245f8c4be7f7d3c35d590b0711f7e772f10aaac16537f"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/quick_setup.lua",
+        "install_path": "lib/vaultgear/quick_setup.lua",
+        "sha256": "b6652a767b503d05805f8caf58b8cdfe20e59b24006254adcd05bd2625b00cbb"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/presets.lua",
+        "install_path": "lib/vaultgear/presets.lua",
+        "sha256": "b47190b9b4cf1263af863860a40150961ea26e0f4be5b4527fff0cad452295c9"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/planner.lua",
+        "install_path": "lib/vaultgear/planner.lua",
+        "sha256": "bb986b42652cce88199e3d23a3641893ab67a976bd96210a8a50f3ba4d92f8c5"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/peripherals.lua",
+        "install_path": "lib/vaultgear/peripherals.lua",
+        "sha256": "7a757be080d0a39ce10e05728b2a8355e9f136b7536de53a58c16bef24262a26"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/model.lua",
+        "install_path": "lib/vaultgear/model.lua",
+        "sha256": "586df223a4fbb33f8587f44c7fcf1884eb88ba70ef3ed5dcdddcb6556f25f954"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/logger.lua",
+        "install_path": "lib/vaultgear/logger.lua",
+        "sha256": "0656f97a20ad58f6d34b5fdd828533fef0afc0d74de6b46a2d0cf66b5376bc4d"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/constants.lua",
+        "install_path": "lib/vaultgear/constants.lua",
+        "sha256": "15633b430cc17d07a62027cf86a6d97da1d55570c6e68e11e0a93afbec19c364"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/ui.lua",
+        "install_path": "lib/vaultgear/ui.lua",
+        "sha256": "6321cbd0c5a734c5c35094b4ea23c2c97a30ea71e8721bdfe3db70e4ab5e4930"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/catalog.lua",
+        "install_path": "lib/vaultgear/catalog.lua",
+        "sha256": "fc03d92c601ca4d21a32a9a48d5bb81091215ab2f8f538e5aae549c2e64521ad"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "a89b8b0395e00a093844354c3aeaaa0ae0303b67e119e00373d9c73a3b165ca3"
+      },
+      {
+        "repo_path": "Games/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "727c2437bba1d2a97caa052d4cbffcecf75a69170e71b045c76a343756bcd290"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
+      },
+      {
+        "repo_path": "Games/lib/bedrock.lua",
+        "install_path": "lib/bedrock.lua",
+        "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
+      },
+      {
+        "repo_path": "Games/VaultGear/vaultgear_state_settings.lua",
+        "install_path": "vaultgear_state_settings.lua",
+        "sha256": "cf323be681cb9b78348c932b5456127eebedb084731c24922ee6ef82a794f61c",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/VaultGear/vaultgear_config.lua",
+        "install_path": "vaultgear_config.lua",
+        "sha256": "2a1166b417e81db731976326a248583419431438021d5ad62c9fc4c075d0d382",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/VaultGear/vaultgear.lua",
+        "install_path": "vaultgear.lua",
+        "sha256": "fac3bf502d4ad263388da625b0ae75dff2a0f85dd35b673c12064403c92cadf6"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/app.lua",
+        "install_path": "lib/vaultgear/app.lua",
+        "sha256": "1d72644e090e50ce8d65ba93f60ba3a344885de5d209bde3c0258549182157c2"
+      },
+      {
+        "repo_path": "Games/lib/vaultgear/util.lua",
+        "install_path": "lib/vaultgear/util.lua",
+        "sha256": "7c71f8d62cfaa60c6ff1970f44c2dd0df4c9cf8c0fd72acd39ed0288e0d52c0b"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.bedrock",
+      "lib.bedrock.layout",
+      "lib.bedrock.renderer",
+      "lib.bedrock.runtime",
+      "lib.bedrock.theme",
+      "lib.bedrock.widgets",
+      "lib.monitor_scale",
+      "lib.updater",
+      "lib.vaultgear.app",
+      "lib.vaultgear.catalog",
+      "lib.vaultgear.constants",
+      "lib.vaultgear.logger",
+      "lib.vaultgear.model",
+      "lib.vaultgear.peripherals",
+      "lib.vaultgear.planner",
+      "lib.vaultgear.presets",
+      "lib.vaultgear.quick_setup",
+      "lib.vaultgear.service",
+      "lib.vaultgear.store",
+      "lib.vaultgear.ui",
+      "lib.vaultgear.ui_pages",
+      "lib.vaultgear.ui_shared",
+      "lib.vaultgear.util"
+    ]
+  }
+}

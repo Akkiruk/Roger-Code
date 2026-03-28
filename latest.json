@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-03-28T19:37:40Z",
+  "repo": {
+    "owner": "Akkiruk",
+    "name": "Roger-Code",
+    "branch": "main"
+  },
+  "installer": {
+    "version": "1.1.5",
+    "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+    "path": "Games/installer.lua",
+    "sha256": "176d1358d6eade597b8440dc6b4264fad79b1c3df71fe9ebc748851c495039f9"
+  },
+  "programs": {
+    "baccarat": {
+      "name": "Baccarat",
+      "category": "Games",
+      "description": "Baccarat card game for ComputerCraft casino.",
+      "version": "1.2.19",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "b0d9ade4a2339f844a699a23f5b5b04727df804541b6c3a30178b7aea10a3334",
+      "spec_path": "programs/baccarat.json"
+    },
+    "blackjack": {
+      "name": "Blackjack",
+      "category": "Games",
+      "description": "Blackjack card game for ComputerCraft casino.",
+      "version": "1.2.17",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "f7c942f9226029bd497497b094bca45b72f3da37d1969c984aeb0af5cda377ac",
+      "spec_path": "programs/blackjack.json"
+    },
+    "hilo": {
+      "name": "HiLo",
+      "category": "Games",
+      "description": "Hi-Lo card game for ComputerCraft casino.",
+      "version": "1.0.20",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "af09793eeeb5864042d7e4b86c5debddcbc2551e47c70094c14442a410b64c1a",
+      "spec_path": "programs/hilo.json"
+    },
+    "phone_os": {
+      "name": "Pocket Casino OS",
+      "category": "Utilities",
+      "description": "Pocket casino shell for ComputerCraft pocket computers.",
+      "version": "1.0.25",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "fe384ab0aa423302685936ae063c683482decee1f9c227c679436c6d69ce38a0",
+      "spec_path": "programs/phone_os.json"
+    },
+    "roulette": {
+      "name": "Roulette",
+      "category": "Games",
+      "description": "European Roulette with a single-screen felt UI and multi-bet support.",
+      "version": "1.0.36",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "a64a1c8d21b6346b8243597a461be83208eab56938df36c2a08d7b395785e61f",
+      "spec_path": "programs/roulette.json"
+    },
+    "slots": {
+      "name": "Slots",
+      "category": "Games",
+      "description": "Slot Machine game for ComputerCraft casino.",
+      "version": "1.0.24",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "455296983f93ebabcf8f22479eb6397b96490d118675fa22318cad5c57b25dee",
+      "spec_path": "programs/slots.json"
+    },
+    "taskmaster": {
+      "name": "TaskMaster",
+      "category": "Utilities",
+      "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
+      "version": "1.0.4",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "81b53b5ea0a056a79c4183943ea511412ca6b3acacfeb189d63a8c5c17529f8f",
+      "spec_path": "programs/taskmaster.json"
+    },
+    "vault_item_analyzer": {
+      "name": "vault_item_analyzer",
+      "category": "Utilities",
+      "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
+      "version": "1.0.8",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "7a250279a863e575997856948b4dd628013a1da28a5e5d55ee4ab286e607a96d",
+      "spec_path": "programs/vault_item_analyzer.json"
+    },
+    "vaultgear": {
+      "name": "VaultGear",
+      "category": "Utilities",
+      "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
+      "version": "1.0.12",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "f513c41ad28b1d2e1a120f161ffb7467cea5e257d91c5c00ad0f4dda2a5d515a",
+      "spec_path": "programs/vaultgear.json"
+    },
+    "videopoker": {
+      "name": "VideoPoker",
+      "category": "Games",
+      "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
+      "version": "1.0.20",
+      "commit": "ba14602202a56ab573039482f05a4aa5848b03fc",
+      "package_hash": "c9786fa112ffde1e97800912b51b2718b5b25ab37f083dafea03aaa0b0b46c72",
+      "spec_path": "programs/videopoker.json"
+    }
+  }
+}
