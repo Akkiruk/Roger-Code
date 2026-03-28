@@ -7,12 +7,12 @@
     "description": "Hi-Lo card game for ComputerCraft casino.",
     "source_root": "Games/HiLo",
     "entrypoint": "hilo.lua",
-    "version": "1.0.21"
+    "version": "1.0.22"
   },
   "build": {
-    "commit": "5951075b360a3d3d06d09d21040d4989c05b7aea",
-    "generated_at": "2026-03-28T19:44:29Z",
-    "package_hash": "241baac75a1600257c35f56d229a5ffcf68c24bc53f1134ac7674d5a66a422ed"
+    "commit": "a21b097c13d8c669a6ec5da4f9df64fd09868a26",
+    "generated_at": "2026-03-28T19:48:59Z",
+    "package_hash": "3efa4085ff64dbc3d7a36d03ade6d938f9cfd7cf8477e35837775dc00990288d"
   },
   "install": {
     "preserve": [
@@ -173,7 +173,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "a89b8b0395e00a093844354c3aeaaa0ae0303b67e119e00373d9c73a3b165ca3"
+        "sha256": "a3d4142f0c4c8f5910a211499c15c581aed233bebc1b477b76816ddfbcb2335e"
       }
     ]
   },
