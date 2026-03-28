@@ -5,9 +5,11 @@ local cfg = require("roulette_config")
 
 local currency = require("lib.currency")
 local sound = require("lib.sound")
+local ui = require("lib.ui")
 local alert = require("lib.alert")
 local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
+local replayPrompt = require("lib.replay_prompt")
 local safeRunner = require("lib.safe_runner")
 
 local rouletteModel = require("roulette_model")
@@ -41,6 +43,7 @@ end
 
 local AUTO_PLAY = false
 local sessionPlayer = nil
+local renderCurrent = nil
 
 recovery.configure(cfg.RECOVERY_FILE)
 recovery.setGame(cfg.GAME_NAME)
@@ -265,6 +268,89 @@ local function buildChangesFromBets(bets)
   return changes
 end
 
+local function copyReplayChanges(changes)
+  local copied = {}
+
+  for _, change in ipairs(changes or {}) do
+    copied[#copied + 1] = {
+      region = change.region,
+      amount = change.amount,
+    }
+  end
+
+  return copied
+end
+
+local function rebuildBetsFromChanges(changes)
+  local bets = {}
+
+  for _, change in ipairs(changes or {}) do
+    if change.region and change.amount then
+      rouletteModel.addStake(bets, change.region, change.amount)
+    end
+  end
+
+  return bets
+end
+
+local function canReplayChanges(changes)
+  if #(changes or {}) == 0 then
+    return false, "Place a fresh bet to keep going."
+  end
+
+  local ok, err = validateBetSet(rebuildBetsFromChanges(changes))
+  if not ok then
+    return false, err or "Adjust the bet before playing again."
+  end
+
+  return true
+end
+
+local function waitForReplayChoice(replayChanges)
+  local metrics = ui.getMetrics()
+  local choiceHintY = math.max(scale.subtitleY, metrics.footerButtonY - metrics.buttonRowSpacing - scale.lineHeight - 2)
+
+  return replayPrompt.waitForChoice(screen, {
+    render = function()
+      renderCurrent(nil)
+    end,
+    hint = function()
+      local replayAvailable, replayHint = canReplayChanges(replayChanges)
+      if replayAvailable then
+        return "Touch PLAY AGAIN to restore the last layout.", colors.lightGray
+      end
+      return replayHint, colors.orange
+    end,
+    hint_y = choiceHintY,
+    buttons = {
+      {
+        {
+          id = "play_again",
+          text = "PLAY AGAIN",
+          color = colors.lime,
+          enabled = function()
+            return canReplayChanges(replayChanges)
+          end,
+          disabled_message = "Set a new wager before spinning again.",
+        },
+        {
+          id = "new_bet",
+          text = "NEW BET",
+          color = colors.orange,
+        },
+      },
+    },
+    center_x = floor(width / 2),
+    button_y = metrics.footerButtonY,
+    row_spacing = metrics.buttonRowSpacing,
+    col_spacing = metrics.buttonColGap,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = function()
+      return "new_bet"
+    end,
+  })
+end
+
 local function applyChanges(candidateBets, changes)
   for _, change in ipairs(changes) do
     rouletteModel.addStake(candidateBets, change.region, change.amount)
@@ -366,7 +452,7 @@ local function updatePassiveStatus(idleMs)
   state.statusTone = "neutral"
 end
 
-local function renderCurrent(idleMs)
+renderCurrent = function(idleMs)
   refreshDerivedState()
   updatePassiveStatus(idleMs)
   rouletteRender.draw(screen, font, layout, state)
@@ -555,9 +641,22 @@ local function settleRound()
   renderCurrent(nil)
   os.sleep(cfg.RESULT_PAUSE)
 
+  local replayChanges = copyReplayChanges(buildChangesFromBets(state.bets))
+  local nextChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(replayChanges)
+
   recovery.clearBet()
-  state.bets = {}
-  state.betActions = {}
+  if nextChoice == "play_again" and canReplayChanges(replayChanges) then
+    state.bets = rebuildBetsFromChanges(replayChanges)
+    state.betActions = {
+      {
+        changes = replayChanges,
+      },
+    }
+    setStatus("Previous layout restored.", "accent", 1200)
+  else
+    state.bets = {}
+    state.betActions = {}
+  end
   state.highlightKeys = nil
   state.phase = "betting"
   refreshDerivedState()

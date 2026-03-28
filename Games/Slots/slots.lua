@@ -39,6 +39,7 @@ local alert      = require("lib.alert")
 local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
+local replayPrompt = require("lib.replay_prompt")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -584,99 +585,63 @@ local function waitForReplayChoice(result, highlights, statusText, currentBet)
   local metrics = ui.getMetrics()
   local centerX = floor(width / 2)
   local buttonY = metrics.footerButtonY
-  local sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName()
-  local lastActivityTime = epoch("local")
-  local timerID = nil
-  local choice = nil
 
   local buttonTexts = {
     ui.getTextSize("ROLL AGAIN"),
     ui.getTextSize("CHANGE BET"),
   }
   local buttonWidth = metrics:fixedButtonWidth(buttonTexts, 4)
+  local machineLayout = getMachineLayout(statusText ~= nil, true)
+  buttonY = machineLayout.buttonY
 
-  while not choice do
-    local replayAvailable, replayHint = canReplayCurrentBet(currentBet)
-    local hintText = replayAvailable and "Touch ROLL AGAIN to spin the same bet." or replayHint
-    local hintColor = replayAvailable and colors.lightGray or colors.orange
-    local hintWidth = ui.getTextSize(hintText)
-    local machineLayout = getMachineLayout(statusText ~= nil, true)
-    buttonY = machineLayout.buttonY
-
-    drawMachine(result, highlights, statusText, currentBet, nil, {
-      showFooterControls = true,
-    })
-    ui.safeDrawText(screen, hintText, font, max(0, floor((width - hintWidth) / 2)), machineLayout.hintY, hintColor)
-
-    ui.clearButtons()
-    ui.layoutButtonGrid(screen, {
+  local choice = replayPrompt.waitForChoice(screen, {
+    render = function()
+      drawMachine(result, highlights, statusText, currentBet, nil, {
+        showFooterControls = true,
+      })
+    end,
+    hint = function()
+      local replayAvailable, replayHint = canReplayCurrentBet(currentBet)
+      if replayAvailable then
+        return "Touch ROLL AGAIN to spin the same bet.", colors.lightGray
+      end
+      return replayHint, colors.orange
+    end,
+    hint_y = machineLayout.hintY,
+    buttons = {
       {
         {
+          id = "replay",
           text = "ROLL AGAIN",
-          color = replayAvailable and colors.magenta or colors.gray,
+          color = colors.magenta,
           width = buttonWidth,
-          func = function()
-            if replayAvailable then
-              drainHeldMonitorTouches(0.25)
-              choice = "replay"
-              return
-            end
-            sound.play(sound.SOUNDS.ERROR)
-            ui.displayCenteredMessage(screen, replayHint, colors.orange, 1)
-            choice = "bet"
+          enabled = function()
+            return canReplayCurrentBet(currentBet)
           end,
+          onChoose = function()
+            drainHeldMonitorTouches(0.25)
+          end,
+          onDisabled = function()
+            sound.play(sound.SOUNDS.ERROR)
+          end,
+          disabled_message = "Lower the bet or change it before spinning again.",
         },
         {
+          id = "bet",
           text = "CHANGE BET",
           color = colors.orange,
           width = buttonWidth,
-          func = function()
-            choice = "bet"
-          end,
         },
       },
-    }, centerX, buttonY)
-    screen:output()
-
-    if timerID then
-      os.cancelTimer(timerID)
-    end
-    timerID = os.startTimer(0.5)
-
-    while not choice do
-      local event, side, px, py = os.pullEvent()
-      if event == "monitor_touch" then
-        if sessionPlayer then
-          local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
-          local currentPlayer = (currency.getLivePlayerName and currency.getLivePlayerName())
-            or ((sessionInfo and sessionInfo.playerName) or nil)
-          if currentPlayer and currentPlayer ~= sessionPlayer then
-            ui.displayCenteredMessage(screen, "Game in use by " .. sessionPlayer, colors.red, 1.5)
-            break
-          end
-        end
-
-        lastActivityTime = epoch("local")
-        if px and py then
-          local cb = ui.checkButtonHit(px, py)
-          if cb then
-            cb()
-            break
-          end
-        end
-      elseif event == "timer" and side == timerID then
-        if (epoch("local") - lastActivityTime) > cfg.INACTIVITY_TIMEOUT then
-          choice = "bet"
-        end
-        break
-      end
-    end
-  end
-
-  if timerID then
-    os.cancelTimer(timerID)
-  end
-  ui.clearButtons()
+    },
+    center_x = centerX,
+    button_y = buttonY,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    poll_seconds = 0.5,
+    onTimeout = function()
+      return "bet"
+    end,
+  })
 
   return choice == "replay"
 end

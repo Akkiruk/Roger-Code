@@ -19,6 +19,7 @@ local epoch        = os.epoch
 
 -- Forward declarations
 local buildAndRecordResult = nil
+local waitForReplayChoice = nil
 
 settings.define("blackjack.debug", {
   description = "Enable debug messages for the Blackjack game.",
@@ -44,6 +45,7 @@ local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local autoPlayer = require("lib.auto_player")
 local cardAnim   = require("lib.card_anim")
+local replayPrompt = require("lib.replay_prompt")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -459,6 +461,8 @@ local function doCheckNaturals(ctx)
     settleNetChange(ctx.netChange, "Blackjack: round settlement")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
+    ctx.summaryMessage = "Double Blackjack Push!"
+    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
     return nil  -- round over
   end
 
@@ -473,6 +477,8 @@ local function doCheckNaturals(ctx)
     notifyHostOfWin(env.currentPlayer, bonus, "Blackjack: natural")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
+    ctx.summaryMessage = "Blackjack!"
+    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
     return nil
   end
 
@@ -488,6 +494,8 @@ local function doCheckNaturals(ctx)
     settleNetChange(ctx.netChange, "Blackjack: dealer natural settlement")
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
+    ctx.summaryMessage = "Dealer Blackjack!"
+    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
     return nil
   end
 
@@ -882,6 +890,7 @@ local function displayRoundResult(ctx, dealerBusted)
   renderTable(ctx, false, nil)
   ui.displayCenteredMessage(screen, msg, msgClr, 1.5)
   sound.play(snd)
+  ctx.summaryMessage = msg
 end
 
 -----------------------------------------------------
@@ -903,6 +912,8 @@ local function doResolve(ctx)
     sound.play(sound.SOUNDS.FAIL)
     recovery.clearBet()
     buildAndRecordResult(ctx, dealerTotal, dealerBusted)
+    ctx.summaryMessage = "Surrendered"
+    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
     return
   end
 
@@ -938,6 +949,7 @@ local function doResolve(ctx)
 
   -- Record stats
   buildAndRecordResult(ctx, dealerTotal, dealerBusted)
+  ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage or "Round complete")
 end
 
 -----------------------------------------------------
@@ -1156,6 +1168,8 @@ local function blackjackRound(currentBet)
       recovery.saveSnapshot(ctx.hands[1].bet, { phase = state })
     end
   end
+
+  return ctx.postRoundChoice
 end
 
 -----------------------------------------------------
@@ -1178,6 +1192,70 @@ local function betSelection()
   })
 end
 
+local function canReplayBet(betAmount)
+  if not betAmount or betAmount <= 0 then
+    return false, "Choose a new bet first."
+  end
+
+  if currency.getPlayerBalance() < betAmount then
+    return false, "Lower the bet before playing again."
+  end
+
+  if getMaxBet() < betAmount then
+    return false, "House limit changed. Pick a new bet."
+  end
+
+  return true
+end
+
+waitForReplayChoice = function(ctx, statusText)
+  local choiceHintY = math.max(scale.subtitleY, layout.buttonY - scale.buttonRowSpacing - scale.lineHeight - 2)
+
+  return replayPrompt.waitForChoice(screen, {
+    render = function()
+      renderTable(ctx, false, statusText)
+    end,
+    hint = function()
+      local replayAvailable, replayHint = canReplayBet(ctx.hands[1].bet)
+      if replayAvailable then
+        return "Touch PLAY AGAIN to run the same bet.", colors.lightGray
+      end
+      return replayHint, colors.orange
+    end,
+    hint_y = choiceHintY,
+    buttons = {
+      {
+        {
+          id = "play_again",
+          text = "PLAY AGAIN",
+          color = colors.lime,
+          enabled = function()
+            return canReplayBet(ctx.hands[1].bet)
+          end,
+          disabled_message = "Pick a new bet before playing again.",
+        },
+        {
+          id = "bet",
+          text = "CHANGE BET",
+          color = colors.orange,
+        },
+      },
+    },
+    center_x = layout.centerX,
+    button_y = layout.buttonY,
+    row_spacing = scale.buttonRowSpacing,
+    col_spacing = scale.buttonColGap,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = function()
+      sound.play(sound.SOUNDS.TIMEOUT)
+      os.sleep(0.5)
+      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+    end,
+    auto_choice = AUTO_PLAY and "play_again" or nil,
+    auto_delay = cfg.AUTO_PLAY_DELAY,
+  })
+end
+
 -----------------------------------------------------
 -- Main loop
 -----------------------------------------------------
@@ -1187,6 +1265,8 @@ loadStatistics()
 refreshPlayer()
 
 local function main()
+  local replayBetAmount = nil
+
   while true do
     updateAutoPlayFromRedstone()
     refreshPlayer()
@@ -1212,13 +1292,20 @@ local function main()
         dbg("Strategy changed to " .. AUTO_PLAY_STRATEGY)
       end
     else
-      bet = betSelection()
+      if replayBetAmount and canReplayBet(replayBetAmount) then
+        bet = replayBetAmount
+        replayBetAmount = nil
+      else
+        replayBetAmount = nil
+        bet = betSelection()
+      end
     end
 
     if bet and bet > 0 then
-      blackjackRound(bet)
+      local roundChoice = blackjackRound(bet)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
+      replayBetAmount = (roundChoice == "play_again") and bet or nil
     end
   end
 end

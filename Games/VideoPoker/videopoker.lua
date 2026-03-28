@@ -39,6 +39,7 @@ local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local cardAnim   = require("lib.card_anim")
+local replayPrompt = require("lib.replay_prompt")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -572,6 +573,77 @@ local function betSelection()
   })
 end
 
+local function canReplayBet(betAmount)
+  if not betAmount or betAmount <= 0 then
+    return false, "Place a new bet."
+  end
+
+  if currency.getPlayerBalance() < betAmount then
+    return false, "Lower the bet before playing again."
+  end
+
+  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
+    local needed = betAmount * (cfg.HOST_COVERAGE_MULT - 1)
+    if hostBankBalance < needed then
+      return false, "House limit changed. Visit the menu."
+    end
+  end
+
+  if getMaxBet() < betAmount then
+    return false, "House limit changed. Visit the menu."
+  end
+
+  return true
+end
+
+local function waitForReplayChoice(hand, discardSelected, betAmount, statusText)
+  local choiceHintY = math.max(scale.subtitleY, scale.footerButtonY - scale.buttonRowSpacing - LINE_H - 2)
+
+  return replayPrompt.waitForChoice(screen, {
+    render = function()
+      renderHand(hand, discardSelected, betAmount, statusText, false)
+    end,
+    hint = function()
+      local replayAvailable, replayHint = canReplayBet(betAmount)
+      if replayAvailable then
+        return "Touch PLAY AGAIN to deal the same bet.", colors.lightGray
+      end
+      return replayHint, colors.orange
+    end,
+    hint_y = choiceHintY,
+    buttons = {
+      {
+        {
+          id = "play_again",
+          text = "PLAY AGAIN",
+          color = colors.lime,
+          enabled = function()
+            return canReplayBet(betAmount)
+          end,
+          disabled_message = "Visit the menu to set a new bet.",
+        },
+        {
+          id = "menu",
+          text = "MAIN MENU",
+          color = colors.red,
+        },
+      },
+    },
+    center_x = centerX,
+    button_y = scale.footerButtonY,
+    row_spacing = scale.buttonRowSpacing,
+    col_spacing = scale.buttonColGap,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = function()
+      sound.play(sound.SOUNDS.TIMEOUT)
+      os.sleep(0.5)
+      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+    end,
+    auto_choice = AUTO_PLAY and "play_again" or nil,
+    auto_delay = cfg.AUTO_PLAY_DELAY,
+  })
+end
+
 -----------------------------------------------------
 -- Auto-play discard strategy (simple: keep pairs and high cards)
 -----------------------------------------------------
@@ -713,6 +785,7 @@ local function pokerRound(betAmount)
 
   local netChange = 0
   local totalPayout = 0
+  local resultPromptText = handName
 
   if multiplier > 0 then
     -- Win
@@ -732,6 +805,7 @@ local function pokerRound(betAmount)
     ui.displayCenteredMessage(screen,
       handName .. "! +" .. currency.formatTokens(netChange),
       colors.lime, LO.RESULT_PAUSE)
+    resultPromptText = handName .. "! +" .. currency.formatTokens(netChange)
   else
     -- Loss
     netChange = -betAmount
@@ -759,6 +833,10 @@ local function pokerRound(betAmount)
 
   recovery.clearBet()
   dbg("Hand: " .. handName .. " mult=" .. multiplier .. " net=" .. netChange)
+  if AUTO_PLAY then
+    return "play_again"
+  end
+  return waitForReplayChoice(hand, discardSelected, betAmount, resultPromptText)
 end
 
 -----------------------------------------------------
@@ -769,6 +847,8 @@ recovery.recoverBet(true)
 refreshPlayer()
 
 local function main()
+  local replayBetAmount = nil
+
   while true do
     updateAutoPlayFromRedstone()
     refreshPlayer()
@@ -786,18 +866,25 @@ local function main()
         os.sleep(1)
       end
     else
-      preRoundMenu()
+      if replayBetAmount and canReplayBet(replayBetAmount) then
+        betAmount = replayBetAmount
+        replayBetAmount = nil
+      else
+        replayBetAmount = nil
+        preRoundMenu()
 
-      local selectedBet = betSelection()
-      if selectedBet and selectedBet > 0 then
-        betAmount = selectedBet
+        local selectedBet = betSelection()
+        if selectedBet and selectedBet > 0 then
+          betAmount = selectedBet
+        end
       end
     end
 
     if betAmount and betAmount > 0 then
-      pokerRound(betAmount)
+      local roundChoice = pokerRound(betAmount)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
+      replayBetAmount = (roundChoice == "play_again") and betAmount or nil
     end
   end
 end

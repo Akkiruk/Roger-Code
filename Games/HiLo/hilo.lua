@@ -31,6 +31,8 @@ local function dbg(msg)
   if DEBUG then print(ostime(), "[HILO] " .. msg) end
 end
 
+local canReplayBet = nil
+
 -----------------------------------------------------
 -- Shared library imports
 -----------------------------------------------------
@@ -42,6 +44,7 @@ local alert      = require("lib.alert")
 local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
+local replayPrompt = require("lib.replay_prompt")
 local cardAnim   = require("lib.card_anim")
 
 -----------------------------------------------------
@@ -249,49 +252,49 @@ local function renderScreen(currentCard, revealedCards, betAmount, round, multip
 end
 
 local function waitForPostRoundChoice(currentCard, revealedCards, betAmount, round, multiplier, statusText)
-  local choice = nil
-  local lastActivityTime = epoch("local")
-
-  while not choice do
-    renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
-    ui.clearButtons()
-    ui.layoutButtonGrid(screen, {
-      {
-        { text = "PLAY AGAIN", color = colors.lime,
-          func = function() choice = "play_again" end },
-        { text = "MAIN MENU", color = colors.red,
-          func = function() choice = "menu" end },
-      },
-    }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
-    screen:output()
-
-    if AUTO_PLAY then
-      os.sleep(cfg.AUTO_PLAY_DELAY)
-      return "play_again"
-    end
-
-    local timerID = os.startTimer(0.25)
-    while not choice do
-      local event, side, px, py = os.pullEvent()
-      if event == "monitor_touch" then
-        lastActivityTime = epoch("local")
-        local cb = ui.checkButtonHit(px, py)
-        if cb then
-          cb()
-        end
-      elseif event == "timer" and side == timerID then
-        local idleMs = epoch("local") - lastActivityTime
-        if idleMs > cfg.INACTIVITY_TIMEOUT then
-          sound.play(sound.SOUNDS.TIMEOUT)
-          os.sleep(0.5)
-          error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-        end
-        break
+  return replayPrompt.waitForChoice(screen, {
+    render = function()
+      renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
+    end,
+    hint = function()
+      local replayAvailable, replayHint = canReplayBet(betAmount)
+      if replayAvailable then
+        return "Touch PLAY AGAIN to keep the same bet.", colors.lightGray
       end
-    end
-  end
-
-  return choice
+      return replayHint or "Pick a new bet from the menu.", colors.orange
+    end,
+    hint_y = getChoiceStatusY(),
+    buttons = {
+      {
+        {
+          id = "play_again",
+          text = "PLAY AGAIN",
+          color = colors.lime,
+          enabled = function()
+            return canReplayBet(betAmount)
+          end,
+          disabled_message = "Pick a new bet before playing again.",
+        },
+        {
+          id = "menu",
+          text = "MAIN MENU",
+          color = colors.red,
+        },
+      },
+    },
+    center_x = centerX,
+    button_y = scale.footerButtonY,
+    row_spacing = scale.buttonRowSpacing,
+    col_spacing = scale.buttonColGap,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = function()
+      sound.play(sound.SOUNDS.TIMEOUT)
+      os.sleep(0.5)
+      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+    end,
+    auto_choice = AUTO_PLAY and "play_again" or nil,
+    auto_delay = cfg.AUTO_PLAY_DELAY,
+  })
 end
 
 -----------------------------------------------------
@@ -527,7 +530,7 @@ local function betSelection()
   })
 end
 
-local function canReplayBet(betAmount)
+canReplayBet = function(betAmount)
   if not betAmount or betAmount <= 0 then
     return false
   end

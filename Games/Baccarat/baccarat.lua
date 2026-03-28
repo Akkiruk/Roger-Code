@@ -28,6 +28,8 @@ local function dbg(msg)
   if DEBUG then print(ostime(), "[BAC] " .. msg) end
 end
 
+local waitForReplayChoice = nil
+
 -----------------------------------------------------
 -- Shared library imports
 -----------------------------------------------------
@@ -40,6 +42,11 @@ local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local cardAnim   = require("lib.card_anim")
+local cardRules  = require("lib.card_rules")
+local pages      = require("lib.casino_pages")
+local sessionStatsLib = require("lib.session_stats")
+local settlement = require("lib.round_settlement")
+local replayPrompt = require("lib.replay_prompt")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -98,7 +105,7 @@ end
 -----------------------------------------------------
 -- Session statistics
 -----------------------------------------------------
-local sessionStats = {
+local sessionStats = sessionStatsLib.new({
   hands       = 0,
   playerWins  = 0,
   bankerWins  = 0,
@@ -113,17 +120,17 @@ local sessionStats = {
   streak      = 0,
   streakType  = nil,
   bestStreak  = 0,
-}
+})
 
 -----------------------------------------------------
 -- Player detection (shared via game_setup)
 -----------------------------------------------------
 local function refreshPlayer()
-  return gameSetup.refreshPlayer(env)
+  return env.refreshPlayer()
 end
 
 local function drawPlayerOverlay()
-  gameSetup.drawPlayerOverlay(env)
+  env.drawPlayerOverlay()
 end
 
 -----------------------------------------------------
@@ -149,23 +156,8 @@ end
 -----------------------------------------------------
 -- Baccarat card value (0-9 per card, hand total mod 10)
 -----------------------------------------------------
-local BACC_VALUES = {
-  A = 1, ["2"] = 2, ["3"] = 3, ["4"] = 4, ["5"] = 5,
-  ["6"] = 6, ["7"] = 7, ["8"] = 8, ["9"] = 9,
-  T = 0, J = 0, Q = 0, K = 0,
-}
-
-local function baccaratCardValue(cardID)
-  local val = cardID:sub(1, 1)
-  return BACC_VALUES[val] or 0
-end
-
 local function baccaratHandTotal(hand)
-  local total = 0
-  for _, c in ipairs(hand) do
-    total = total + baccaratCardValue(c)
-  end
-  return total % 10
+  return cardRules.baccaratHandTotal(hand)
 end
 
 -----------------------------------------------------
@@ -280,45 +272,35 @@ end
 -- Session stats update
 -----------------------------------------------------
 local function updateSessionStats(outcome, betType, betAmount, netChange)
-  sessionStats.hands = sessionStats.hands + 1
-  sessionStats.totalBet = sessionStats.totalBet + betAmount
-  sessionStats.netProfit = sessionStats.netProfit + netChange
-
-  if netChange > sessionStats.biggestWin then
-    sessionStats.biggestWin = netChange
-  end
-  if netChange > 0 then
-    sessionStats.totalWon = sessionStats.totalWon + netChange
-  end
+  sessionStatsLib.increment(sessionStats, "hands")
+  sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
 
   -- Track bet type counts
   if betType == BET.PLAYER then
-    sessionStats.playerBets = sessionStats.playerBets + 1
+    sessionStatsLib.increment(sessionStats, "playerBets")
   elseif betType == BET.BANKER then
-    sessionStats.bankerBets = sessionStats.bankerBets + 1
+    sessionStatsLib.increment(sessionStats, "bankerBets")
   elseif betType == BET.TIE then
-    sessionStats.tieBets = sessionStats.tieBets + 1
+    sessionStatsLib.increment(sessionStats, "tieBets")
   end
 
   -- Track outcome counts
   if outcome == OUT.PLAYER_WIN then
-    sessionStats.playerWins = sessionStats.playerWins + 1
+    sessionStatsLib.increment(sessionStats, "playerWins")
   elseif outcome == OUT.BANKER_WIN then
-    sessionStats.bankerWins = sessionStats.bankerWins + 1
+    sessionStatsLib.increment(sessionStats, "bankerWins")
   else
-    sessionStats.ties = sessionStats.ties + 1
+    sessionStatsLib.increment(sessionStats, "ties")
   end
 
   -- Streak tracking
   if sessionStats.streakType == outcome then
-    sessionStats.streak = sessionStats.streak + 1
+    sessionStatsLib.increment(sessionStats, "streak")
   else
     sessionStats.streak = 1
     sessionStats.streakType = outcome
   end
-  if sessionStats.streak > sessionStats.bestStreak then
-    sessionStats.bestStreak = sessionStats.streak
-  end
+  sessionStatsLib.setMax(sessionStats, "bestStreak", sessionStats.streak)
 end
 
 -----------------------------------------------------
@@ -383,103 +365,40 @@ local TUTORIAL_PAGES = {
 }
 
 local function showTutorial()
-  local page = 1
-  while true do
-    screen:clear(LO.TABLE_COLOR)
-    local pg = TUTORIAL_PAGES[page]
-
-    drawCenteredLine(pg.title, 1, colors.yellow)
-
-    local indicator = "Page " .. page .. "/" .. #TUTORIAL_PAGES
-    drawCenteredLine(indicator, 1 + LINE_H, colors.lightGray)
-
-    -- Count non-empty content lines
-    local contentLines = 0
-    for _, ln in ipairs(pg.lines) do
-      contentLines = contentLines + 1
-    end
-
-    -- Compute spacing to fit between header and buttons
-    local contentY = 1 + LINE_H * 2 + 2
-    local btnY = scale.footerButtonY
-    local availH = btnY - contentY - 2
-    local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
-
-    local lineIdx = 0
-    for _, ln in ipairs(pg.lines) do
-      if ln.text ~= "" then
-        drawCenteredLine(ln.text, contentY + lineIdx * lineSpacing, ln.color)
-      end
-      lineIdx = lineIdx + 1
-    end
-
-    ui.clearButtons()
-    local navRow = {}
-    if page > 1 then
-      table.insert(navRow, { text = "PREV", color = colors.lightGray,
-        func = function() page = page - 1 end })
-    end
-    table.insert(navRow, { text = "BACK", color = colors.red,
-      func = function() page = nil end })
-    if page < #TUTORIAL_PAGES then
-      table.insert(navRow, { text = "NEXT", color = colors.lime,
-        func = function() page = page + 1 end })
-    end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
-
-    screen:output()
-    ui.waitForButton(0, 0)
-    if not page then return end
-  end
+  pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
 -- Stats display
 -----------------------------------------------------
 local function showStats()
-  screen:clear(LO.TABLE_COLOR)
-
-  drawCenteredLine("SESSION STATS", 1, colors.yellow)
-
-  local y = 1 + LINE_H + 2
-  local statsSpacing = math.min(LINE_H, math.floor((height - y - 10) / 10))
-  local function statLine(label, value, color)
-    drawCenteredLine(label .. ": " .. tostring(value), y, color or colors.white)
-    y = y + statsSpacing
-  end
-
-  statLine("Hands", sessionStats.hands, colors.white)
-
   local profitColor = colors.white
   if sessionStats.netProfit > 0 then
     profitColor = colors.lime
   elseif sessionStats.netProfit < 0 then
     profitColor = colors.red
   end
-  statLine("Profit", currency.formatTokens(sessionStats.netProfit), profitColor)
-  statLine("Wagered", currency.formatTokens(sessionStats.totalBet), colors.white)
-
+  local lines = {
+    { label = "Hands", value = sessionStats.hands, color = colors.white },
+    { label = "Profit", value = currency.formatTokens(sessionStats.netProfit), color = profitColor },
+    { label = "Wagered", value = currency.formatTokens(sessionStats.totalBet), color = colors.white },
+  }
   if sessionStats.biggestWin > 0 then
-    statLine("Best Win", currency.formatTokens(sessionStats.biggestWin), colors.lime)
+    lines[#lines + 1] = { label = "Best Win", value = currency.formatTokens(sessionStats.biggestWin), color = colors.lime }
   end
-
-  y = y + 2
-  drawCenteredLine("-- OUTCOMES --", y, colors.yellow)
-  y = y + statsSpacing
-  statLine("Player", sessionStats.playerWins, colors.cyan)
-  statLine("Banker", sessionStats.bankerWins, colors.red)
-  statLine("Ties", sessionStats.ties, colors.yellow)
-
+  lines[#lines + 1] = { spacer = true }
+  lines[#lines + 1] = { text = "-- OUTCOMES --", color = colors.yellow }
+  lines[#lines + 1] = { label = "Player", value = sessionStats.playerWins, color = colors.cyan }
+  lines[#lines + 1] = { label = "Banker", value = sessionStats.bankerWins, color = colors.red }
+  lines[#lines + 1] = { label = "Ties", value = sessionStats.ties, color = colors.yellow }
   if sessionStats.bestStreak > 1 then
-    statLine("Best Streak", sessionStats.bestStreak, colors.lime)
+    lines[#lines + 1] = { label = "Best Streak", value = sessionStats.bestStreak, color = colors.lime }
   end
-
-  ui.clearButtons()
-  ui.layoutButtonGrid(screen, {
-    {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
-  screen:output()
-  ui.waitForButton(0, 0)
+  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
@@ -625,7 +544,7 @@ local function baccaratRound(betAmount, betType)
     if playerDrawsThird(playerTotal) then
       local third = dealOne()
       table.insert(playerHand, third)
-      playerThirdValue = baccaratCardValue(third)
+      playerThirdValue = cardRules.baccaratCardValue(third)
 
       if not AUTO_PLAY then
         -- Animate the third card
@@ -736,25 +655,17 @@ local function baccaratRound(betAmount, betType)
   end
 
   -- Transfer-at-end settlement
-  if netChange > 0 then
-    local payOk = currency.payout(netChange, "Baccarat: payout")
-    if not payOk then
-      alert.send("CRITICAL: Failed to pay " .. netChange .. " tokens to player!")
-      alert.log("Payout failure: " .. netChange .. " tokens, outcome=" .. outcome)
-      msg = "ERROR: Payout failed! Contact admin."
-      msgClr = colors.red
-      snd = sound.SOUNDS.ERROR
-    end
-  elseif netChange < 0 then
-    local chargeAmt = -netChange
-    local chargeOk = currency.charge(chargeAmt, "Baccarat: loss")
-    if not chargeOk then
-      alert.send("CRITICAL: Failed to charge " .. chargeAmt .. " tokens from player!")
-      alert.log("Charge failure: " .. chargeAmt .. " tokens, outcome=" .. outcome)
-      msg = "ERROR: Charge failed! Contact admin."
-      msgClr = colors.red
-      snd = sound.SOUNDS.ERROR
-    end
+  if not settlement.applyNetChange(netChange, {
+    winReason = "Baccarat: payout",
+    lossReason = "Baccarat: loss",
+    failurePrefix = "CRITICAL",
+    logFailure = function(message)
+      alert.log(message .. ", outcome=" .. tostring(outcome))
+    end,
+  }) then
+    msg = "ERROR: Settlement failed! Contact admin."
+    msgClr = colors.red
+    snd = sound.SOUNDS.ERROR
   end
 
   -- Update session statistics
@@ -772,8 +683,9 @@ local function baccaratRound(betAmount, betType)
   elseif #bankerHand == 3 then
     explanation = " Banker drew a third card"
   end
+  local resultMessage = msg .. naturalTag
   renderTable(playerHand, bankerHand, betType, betAmount, nil)
-  ui.displayCenteredMessage(screen, msg .. naturalTag, msgClr, LO.RESULT_PAUSE)
+  ui.displayCenteredMessage(screen, resultMessage, msgClr, LO.RESULT_PAUSE)
   if explanation ~= "" then
     -- Brief explanation overlay
     drawCenteredLine(explanation, height - 12, colors.lightGray)
@@ -785,6 +697,10 @@ local function baccaratRound(betAmount, betType)
   recovery.clearBet()
   dbg("Round: " .. outcome .. " P:" .. playerTotal .. " B:" .. bankerTotal
       .. " bet=" .. betType .. " net=" .. netChange)
+  if AUTO_PLAY then
+    return "play_again"
+  end
+  return waitForReplayChoice(playerHand, bankerHand, betType, betAmount, resultMessage)
 end
 
 -----------------------------------------------------
@@ -807,6 +723,77 @@ local function betSelection()
   })
 end
 
+local function canReplayBet(betAmount)
+  if not betAmount or betAmount <= 0 then
+    return false, "Pick a new bet from the menu."
+  end
+
+  if currency.getPlayerBalance() < betAmount then
+    return false, "Lower the bet before playing again."
+  end
+
+  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
+    local needed = betAmount * (cfg.HOST_COVERAGE_MULT - 1)
+    if hostBankBalance < needed then
+      return false, "House limit changed. Visit the menu."
+    end
+  end
+
+  if getMaxBet() < betAmount then
+    return false, "House limit changed. Visit the menu."
+  end
+
+  return true
+end
+
+waitForReplayChoice = function(playerHand, bankerHand, betType, betAmount, statusText)
+  local choiceHintY = math.max(scale.subtitleY, scale.footerButtonY - scale.buttonRowSpacing - scale.lineHeight - 2)
+
+  return replayPrompt.waitForChoice(screen, {
+    render = function()
+      renderTable(playerHand, bankerHand, betType, betAmount, statusText)
+    end,
+    hint = function()
+      local replayAvailable, replayHint = canReplayBet(betAmount)
+      if replayAvailable then
+        return "Touch PLAY AGAIN to repeat the same wager.", colors.lightGray
+      end
+      return replayHint, colors.orange
+    end,
+    hint_y = choiceHintY,
+    buttons = {
+      {
+        {
+          id = "play_again",
+          text = "PLAY AGAIN",
+          color = colors.lime,
+          enabled = function()
+            return canReplayBet(betAmount)
+          end,
+          disabled_message = "Visit the menu to set a new wager.",
+        },
+        {
+          id = "menu",
+          text = "MAIN MENU",
+          color = colors.red,
+        },
+      },
+    },
+    center_x = centerX,
+    button_y = scale.footerButtonY,
+    row_spacing = scale.buttonRowSpacing,
+    col_spacing = scale.buttonColGap,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = function()
+      sound.play(sound.SOUNDS.TIMEOUT)
+      os.sleep(0.5)
+      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+    end,
+    auto_choice = AUTO_PLAY and "play_again" or nil,
+    auto_delay = cfg.AUTO_PLAY_DELAY,
+  })
+end
+
 -----------------------------------------------------
 -- Main loop
 -----------------------------------------------------
@@ -815,6 +802,9 @@ recovery.recoverBet(true)
 refreshPlayer()
 
 local function main()
+  local replayBetAmount = nil
+  local replayBetType = nil
+
   while true do
     updateAutoPlayFromRedstone()
     refreshPlayer()
@@ -834,23 +824,40 @@ local function main()
         os.sleep(1)
       end
     else
-      -- Step 1: Choose bet type (Player / Banker / Tie)
-      betType = selectBetType()
-      if not betType then
-        os.sleep(0.1)
+      if replayBetAmount and replayBetType and canReplayBet(replayBetAmount) then
+        betAmount = replayBetAmount
+        betType = replayBetType
+        replayBetAmount = nil
+        replayBetType = nil
       else
-        -- Step 2: Choose bet amount
-        local selectedBet = betSelection()
-        if selectedBet and selectedBet > 0 then
-          betAmount = selectedBet
+        replayBetAmount = nil
+        replayBetType = nil
+
+        -- Step 1: Choose bet type (Player / Banker / Tie)
+        betType = selectBetType()
+        if not betType then
+          os.sleep(0.1)
+        else
+          -- Step 2: Choose bet amount
+          local selectedBet = betSelection()
+          if selectedBet and selectedBet > 0 then
+            betAmount = selectedBet
+          end
         end
       end
     end
 
     if betAmount and betAmount > 0 and betType then
-      baccaratRound(betAmount, betType)
+      local roundChoice = baccaratRound(betAmount, betType)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. hostBankBalance .. " (" .. currency.formatTokens(getMaxBet()) .. " max bet)")
+      if roundChoice == "play_again" then
+        replayBetAmount = betAmount
+        replayBetType = betType
+      else
+        replayBetAmount = nil
+        replayBetType = nil
+      end
     end
   end
 end
