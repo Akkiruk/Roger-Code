@@ -1,6 +1,5 @@
 local constants = require("lib.vaultgear.constants")
 local monitorScale = require("lib.monitor_scale")
-local util = require("lib.vaultgear.util")
 
 local M = {}
 
@@ -128,27 +127,14 @@ end
 
 function M.validateRouting(discovery, routing)
   local errors = {}
-  local roles = { "input", "keep", "trash" }
 
-  for _, role in ipairs(roles) do
-    if not routing[role] or routing[role] == "" then
-      errors[#errors + 1] = "Missing " .. role .. " inventory"
-    elseif not M.findInventory(discovery, routing[role]) then
-      errors[#errors + 1] = role .. " inventory missing: " .. routing[role]
-    end
+  if not routing or not routing.input or routing.input == "" then
+    errors[#errors + 1] = "Missing input inventory"
+  elseif not M.findInventory(discovery, routing.input) then
+    errors[#errors + 1] = "Input inventory missing: " .. routing.input
   end
 
-  if routing.input and routing.keep and routing.input == routing.keep then
-    errors[#errors + 1] = "Input and keep inventories must be different"
-  end
-  if routing.input and routing.trash and routing.input == routing.trash then
-    errors[#errors + 1] = "Input and trash inventories must be different"
-  end
-  if routing.keep and routing.trash and routing.keep == routing.trash then
-    errors[#errors + 1] = "Keep and trash inventories must be different"
-  end
-
-  local inputEntry = M.findInventory(discovery, routing.input)
+  local inputEntry = M.findInventory(discovery, routing and routing.input)
   if inputEntry then
     if not inputEntry.can_detail then
       errors[#errors + 1] = "Input inventory must support getItemDetail"
@@ -158,6 +144,45 @@ function M.validateRouting(discovery, routing)
     end
   end
 
+  local destinations = routing and routing.destinations or nil
+  if type(destinations) ~= "table" or #destinations == 0 then
+    errors[#errors + 1] = "Add at least one destination"
+    return #errors == 0, errors
+  end
+
+  local canKeep = false
+  local canDiscard = false
+
+  for index, destination in ipairs(destinations) do
+    local routeName = "Destination " .. tostring(index)
+
+    if destination.enabled ~= false then
+      if not destination.inventory or destination.inventory == "" then
+        errors[#errors + 1] = routeName .. " is missing an inventory"
+      else
+        local entry = M.findInventory(discovery, destination.inventory)
+        if not entry then
+          errors[#errors + 1] = routeName .. " inventory missing: " .. destination.inventory
+        elseif destination.inventory == routing.input then
+          errors[#errors + 1] = routeName .. " cannot point at the input inventory"
+        end
+      end
+
+      if destination.match_action == "keep" or destination.match_action == "any" then
+        canKeep = true
+      end
+      if destination.match_action == "discard" or destination.match_action == "any" then
+        canDiscard = true
+      end
+    end
+  end
+
+  if not canKeep then
+    errors[#errors + 1] = "No enabled destination accepts Keep decisions"
+  end
+  if not canDiscard then
+    errors[#errors + 1] = "No enabled destination accepts Trash decisions"
+  end
   return #errors == 0, errors
 end
 

@@ -1,4 +1,5 @@
 local constants = require("lib.vaultgear.constants")
+local routing = require("lib.vaultgear.routing")
 local util = require("lib.vaultgear.util")
 
 local M = {}
@@ -44,11 +45,7 @@ function M.buildDefaultConfig()
       text_scale = 0.5,
     },
     runtime = util.deepCopy(constants.DEFAULT_RUNTIME),
-    routing = {
-      input = nil,
-      keep = nil,
-      trash = nil,
-    },
+    routing = routing.normalizeRouting(nil),
     safety = util.deepCopy(constants.DEFAULT_SAFETY),
     type_profiles = profiles,
   }
@@ -64,9 +61,35 @@ function M.buildDefaultState()
       selected_modifier_key = nil,
       selected_keep_key = nil,
       selected_block_key = nil,
+      selected_destination_id = "route_1",
     },
     catalog = {},
   }
+end
+
+local function normalizeLoadedConfig(loaded)
+  if type(loaded) ~= "table" then
+    return nil
+  end
+
+  local normalized = util.deepCopy(loaded)
+  normalized.routing = routing.normalizeRouting(routing.migrateLegacyRouting(normalized.routing))
+  return normalized
+end
+
+local function normalizeLoadedState(loaded)
+  if type(loaded) ~= "table" then
+    return nil
+  end
+
+  local normalized = util.deepCopy(loaded)
+  if type(normalized.ui) ~= "table" then
+    normalized.ui = {}
+  end
+  if type(normalized.ui.selected_destination_id) ~= "string" or normalized.ui.selected_destination_id == "" then
+    normalized.ui.selected_destination_id = "route_1"
+  end
+  return normalized
 end
 
 local function serializeTable(data)
@@ -108,8 +131,10 @@ local function saveLuaTable(path, data)
 end
 
 function M.loadConfig()
-  local loaded = readLuaTable(constants.CONFIG_FILE)
-  return util.mergeDefaults(M.buildDefaultConfig(), loaded)
+  local loaded = normalizeLoadedConfig(readLuaTable(constants.CONFIG_FILE))
+  local merged = util.mergeDefaults(M.buildDefaultConfig(), loaded)
+  merged.routing = routing.normalizeRouting(merged.routing)
+  return merged
 end
 
 function M.saveConfig(config)
@@ -118,7 +143,7 @@ function M.saveConfig(config)
 end
 
 function M.loadState()
-  local loaded = readLuaTable(constants.STATE_FILE)
+  local loaded = normalizeLoadedState(readLuaTable(constants.STATE_FILE))
   return util.mergeDefaults(M.buildDefaultState(), loaded)
 end
 

@@ -1,6 +1,7 @@
 local constants = require("lib.vaultgear.constants")
 local evaluator = require("lib.vaultgear.evaluator")
 local model = require("lib.vaultgear.model")
+local routing = require("lib.vaultgear.routing")
 
 local M = {}
 local unpackArgs = table.unpack or unpack
@@ -67,6 +68,8 @@ function M.buildPreview(inputInventory, config, catalog, catalogLib, limit)
 
     local item = model.normalize(slot, basic, detail, detailError)
     local decision = evaluator.evaluate(item, config)
+    local destination = nil
+    destination = routing.resolveDestination(config, item, decision)
     if catalogLib then
       preview.catalog_changed = catalogLib.observe(catalog, item) or preview.catalog_changed
     end
@@ -75,6 +78,7 @@ function M.buildPreview(inputInventory, config, catalog, catalogLib, limit)
       slot = slot,
       item = item,
       decision = decision,
+      destination = destination,
       lines = model.summaryLines(item),
     }
     preview.scanned = preview.scanned + 1
@@ -116,32 +120,34 @@ function M.processCycle(inputInventory, config, catalog, catalogLib)
 
     local item = model.normalize(slot, basic, detail, detailError)
     local decision = evaluator.evaluate(item, config)
+    local destination = nil
+    destination = routing.resolveDestination(config, item, decision)
     if catalogLib then
       result.catalog_changed = catalogLib.observe(catalog, item) or result.catalog_changed
     end
 
-    local destination = config.routing.keep
-    if decision.action == "discard" then
-      destination = config.routing.trash
-    end
-
-    local moved, moveError = moveFromInput(inputInventory, destination, slot, basic.count or 1)
-    if type(moved) ~= "number" then
-      result.errors[#result.errors + 1] = moveError or ("Move failed for slot " .. tostring(slot))
-    elseif moved < 1 then
-      result.errors[#result.errors + 1] = "Destination blocked for slot " .. tostring(slot)
+    if not destination or not destination.inventory then
+      result.errors[#result.errors + 1] = "No matching destination for slot " .. tostring(slot)
     else
-      result.processed = result.processed + 1
-      if decision.action == "discard" then
-        result.moved_discard = result.moved_discard + moved
+      local moved, moveError = moveFromInput(inputInventory, destination.inventory, slot, basic.count or 1)
+      if type(moved) ~= "number" then
+        result.errors[#result.errors + 1] = moveError or ("Move failed for slot " .. tostring(slot))
+      elseif moved < 1 then
+        result.errors[#result.errors + 1] = "Destination blocked for slot " .. tostring(slot)
       else
-        result.moved_keep = result.moved_keep + moved
+        result.processed = result.processed + 1
+        if decision.action == "discard" then
+          result.moved_discard = result.moved_discard + moved
+        else
+          result.moved_keep = result.moved_keep + moved
+        end
+        result.last_decision = {
+          item = item,
+          decision = decision,
+          destination = destination,
+          moved = moved,
+        }
       end
-      result.last_decision = {
-        item = item,
-        decision = decision,
-        moved = moved,
-      }
     end
 
     os.sleep(0)

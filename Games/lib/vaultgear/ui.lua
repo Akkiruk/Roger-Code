@@ -3,6 +3,7 @@ local catalog = require("lib.vaultgear.catalog")
 local constants = require("lib.vaultgear.constants")
 local evaluator = require("lib.vaultgear.evaluator")
 local peripherals = require("lib.vaultgear.peripherals")
+local routing = require("lib.vaultgear.routing")
 local util = require("lib.vaultgear.util")
 
 local M = {}
@@ -122,6 +123,15 @@ local choice_options = {
     { label = "Any", value = "any" },
     { label = "All", value = "all" },
   },
+  route_action = {
+    { label = "Keep", value = "keep" },
+    { label = "Trash", value = "discard" },
+    { label = "Any", value = "any" },
+  },
+  route_type_mode = {
+    { label = "All Types", value = "all" },
+    { label = "Selected Types", value = "selected" },
+  },
   min_rarity = {
     { label = "Off", value = "ANY" },
     { label = "Scrappy+", value = "SCRAPPY" },
@@ -220,16 +230,27 @@ local function selectedTypeWarning(app, itemType)
   return nil
 end
 
-local function firstConfiguredRoleText(app)
+local function firstConfiguredRouteText(app)
   if not app.config.routing.input or app.config.routing.input == "" then
     return "Setup: choose the input inventory."
   end
-  if not app.config.routing.keep or app.config.routing.keep == "" then
-    return "Setup: choose the keep inventory."
+
+  local destinations = app.config.routing.destinations or {}
+  if #destinations == 0 then
+    return "Setup: add at least one destination."
   end
-  if not app.config.routing.trash or app.config.routing.trash == "" then
-    return "Setup: choose the trash inventory."
+
+  local configured = false
+  for _, destination in ipairs(destinations) do
+    if destination.enabled ~= false and destination.inventory and destination.inventory ~= "" then
+      configured = true
+      break
+    end
   end
+  if not configured then
+    return "Setup: give at least one destination an inventory."
+  end
+
   return nil
 end
 
@@ -238,7 +259,7 @@ local function nextStep(app)
     return app.health.errors[1]
   end
 
-  local routingStep = firstConfiguredRoleText(app)
+  local routingStep = firstConfiguredRouteText(app)
   if routingStep then
     return routingStep
   end
@@ -319,6 +340,38 @@ local function findInventoryLabel(app, inventoryName)
   return inventoryName .. " (missing)"
 end
 
+local function selectedDestination(app)
+  return routing.findDestination(app.config.routing.destinations, app.ui.selected_destination_id)
+end
+
+local function destinationTitle(app, destination, index)
+  local prefix = tostring(index or "?") .. ". "
+  local inventory = findInventoryLabel(app, destination and destination.inventory)
+  if destination and destination.enabled == false then
+    return prefix .. "Paused -> " .. inventory
+  end
+  return prefix .. routing.actionSummary(destination) .. " -> " .. inventory
+end
+
+local function routeFlowSummary(app)
+  local parts = {}
+  for index, destination in ipairs(app.config.routing.destinations or {}) do
+    if destination.enabled ~= false then
+      local inventory = findInventoryLabel(app, destination.inventory)
+      parts[#parts + 1] = string.format("%d:%s->%s", index, routing.actionSummary(destination), inventory)
+      if #parts >= 3 then
+        break
+      end
+    end
+  end
+
+  if #parts == 0 then
+    return "Routes: none configured"
+  end
+
+  return "Routes: " .. table.concat(parts, " | ")
+end
+
 local function formatRecentEntry(entry)
   if not entry then
     return ""
@@ -343,7 +396,7 @@ local function flattenLines(sourceLines, width, limit)
   return lines
 end
 
-local function selectedDecisionLines(entry)
+local function selectedDecisionLines(app, entry)
   if not entry then
     return {
       "No preview item selected yet.",
@@ -353,11 +406,17 @@ local function selectedDecisionLines(entry)
 
   local item = entry.item or {}
   local decision = entry.decision or {}
+  local destination = entry.destination or nil
   local reasons = decision.reasons or {}
   local lines = {}
 
   lines[#lines + 1] = tostring(item.display_name or item.registry_name or "Item")
   lines[#lines + 1] = string.upper(actionText(decision.action)) .. ": " .. tostring(reasons[1] or "No decision details")
+  if destination then
+    lines[#lines + 1] = "Route: " .. routing.actionSummary(destination) .. " -> " .. findInventoryLabel(app, destination.inventory)
+  else
+    lines[#lines + 1] = "Route: no matching destination"
+  end
 
   local stats = {
     item.item_type or "Item",
@@ -603,10 +662,17 @@ local function typeIndex(itemType)
   return 1
 end
 
-local function routingOptions(app, role)
+local function inventoryOptions(app, requireInputCapabilities, allowUnset)
   local items = {}
+  if allowUnset then
+    items[#items + 1] = {
+      label = "Not set",
+      value = "",
+    }
+  end
+
   for _, entry in ipairs(app.discovery.inventories or {}) do
-    local valid = role ~= "input" or (entry.can_detail and entry.can_push)
+    local valid = not requireInputCapabilities or (entry.can_detail and entry.can_push)
     if valid then
       items[#items + 1] = {
         label = entry.label,
@@ -1241,38 +1307,35 @@ local function buildSetupPage(controller, setup)
   local refs = controller.refs
   refs.setup = {}
 
-  refs.setup.flow_card = addCard(setup, {
+  refs.setup.scroll = setup:addScrollFrame({
     x = 1,
     y = 1,
     width = "{parent.width}",
-    height = 8,
-  }, "Flow Setup", palette.accent)
+    height = "{parent.height}",
+    background = palette.bg,
+    showScrollBar = true,
+  })
+
+  refs.setup.flow_card = addCard(refs.setup.scroll, {
+    x = 1,
+    y = 1,
+    width = "{parent.width - 1}",
+    height = 7,
+  }, "Input & Speed", palette.accent)
 
   refs.setup.input_row = addDropdownRow(controller, refs.setup.flow_card, 2, "Input Inventory", function(value)
     if value then
-      controller.actions.assignRouting("input", value)
+      controller.actions.setInputInventory(value)
     end
   end)
 
-  refs.setup.keep_row = addDropdownRow(controller, refs.setup.flow_card, 3, "Keep Inventory", function(value)
-    if value then
-      controller.actions.assignRouting("keep", value)
-    end
-  end)
-
-  refs.setup.trash_row = addDropdownRow(controller, refs.setup.flow_card, 4, "Trash Inventory", function(value)
-    if value then
-      controller.actions.assignRouting("trash", value)
-    end
-  end)
-
-  refs.setup.scan_stepper = addStepperRow(controller, refs.setup.flow_card, 5, "Scan Interval (s)", function()
+  refs.setup.scan_stepper = addStepperRow(controller, refs.setup.flow_card, 3, "Scan Interval (s)", function()
     controller.actions.adjustRuntime("scan_interval", -1)
   end, function()
     controller.actions.adjustRuntime("scan_interval", 1)
   end)
 
-  refs.setup.batch_stepper = addStepperRow(controller, refs.setup.flow_card, 6, "Batch Size", function()
+  refs.setup.batch_stepper = addStepperRow(controller, refs.setup.flow_card, 4, "Batch Size", function()
     controller.actions.adjustRuntime("batch_size", -1)
   end, function()
     controller.actions.adjustRuntime("batch_size", 1)
@@ -1280,7 +1343,7 @@ local function buildSetupPage(controller, setup)
 
   refs.setup.refresh_button = refs.setup.flow_card:addButton({
     x = 2,
-    y = 7,
+    y = 6,
     width = 18,
     height = 1,
     text = "Refresh Peripherals",
@@ -1290,18 +1353,159 @@ local function buildSetupPage(controller, setup)
     controller.actions.refreshPeripherals(true)
   end)
 
-  refs.setup.summary_card = addCard(setup, {
+  refs.setup.route_card = addCard(refs.setup.scroll, {
+    name = "setupRouteCard",
     x = 1,
-    y = 10,
-    width = "{parent.width}",
-    height = "{parent.height - 9}",
-  }, "Current Wiring", palette.warning)
+    y = 9,
+    width = "{parent.width - 1}",
+    height = 8,
+  }, "Destinations", palette.warning)
 
-  refs.setup.summary_lines = {}
+  refs.setup.route_add = refs.setup.route_card:addButton({
+    x = 2,
+    y = 1,
+    width = 5,
+    height = 1,
+    text = "+",
+    background = palette.keep,
+    foreground = palette.text_dark,
+  })
+  refs.setup.route_add:onClick(function()
+    controller.actions.addDestination()
+  end)
+
+  refs.setup.route_remove = refs.setup.route_card:addButton({
+    x = 8,
+    y = 1,
+    width = 5,
+    height = 1,
+    text = "-",
+    background = palette.trash,
+  })
+  refs.setup.route_remove:onClick(function()
+    controller.actions.removeDestination()
+  end)
+
+  refs.setup.route_up = refs.setup.route_card:addButton({
+    x = "{parent.width - 10}",
+    y = 1,
+    width = 4,
+    height = 1,
+    text = "Up",
+    background = palette.surface,
+  })
+  refs.setup.route_up:onClick(function()
+    controller.actions.moveDestination(-1)
+  end)
+
+  refs.setup.route_down = refs.setup.route_card:addButton({
+    x = "{parent.width - 5}",
+    y = 1,
+    width = 5,
+    height = 1,
+    text = "Down",
+    background = palette.surface,
+  })
+  refs.setup.route_down:onClick(function()
+    controller.actions.moveDestination(1)
+  end)
+
+  refs.setup.route_list = refs.setup.route_card:addList({
+    x = 1,
+    y = 2,
+    width = "{parent.width}",
+    height = "{parent.height - 1}",
+    emptyText = "No destinations yet",
+    showScrollBar = true,
+  })
+  refs.setup.route_list:onSelect(function(_, _, item)
+    if controller.suppress_events then
+      return
+    end
+    if item and item.key then
+      controller.actions.selectDestination(item.key)
+    end
+  end)
+
+  refs.setup.editor_card = addCard(refs.setup.scroll, {
+    x = 1,
+    y = 18,
+    width = "{parent.width - 1}",
+    height = 17,
+    name = "setupEditorCard",
+  }, "Selected Route", palette.accent_dark)
+
+  refs.setup.route_enabled = addSwitchRow(controller, refs.setup.editor_card, 2, "Route Enabled", function(checked)
+    controller.actions.setDestinationEnabled(checked)
+  end)
+
+  refs.setup.route_inventory = addDropdownRow(controller, refs.setup.editor_card, 3, "Destination Inventory", function(value)
+    if value ~= nil then
+      controller.actions.setDestinationChoice("inventory", value)
+    end
+  end)
+
+  refs.setup.route_action = addDropdownRow(controller, refs.setup.editor_card, 4, "Decision Match", function(value)
+    controller.actions.setDestinationChoice("match_action", value)
+  end)
+
+  refs.setup.route_type_mode = addDropdownRow(controller, refs.setup.editor_card, 5, "Type Scope", function(value)
+    controller.actions.setDestinationChoice("type_mode", value)
+  end)
+
+  refs.setup.type_title = refs.setup.editor_card:addLabel({
+    x = 2,
+    y = 6,
+    width = "{parent.width - 3}",
+    text = "Type Filters",
+    foreground = palette.muted,
+  })
+
+  refs.setup.type_switches = {}
+  local type_positions = {
+    Gear = { x = 2, y = 7 },
+    Tool = { x = 2, y = 8 },
+    Jewel = { x = 2, y = 9 },
+    Trinket = { x = "{math.max(16, math.floor(parent.width / 2))}", y = 7 },
+    Charm = { x = "{math.max(16, math.floor(parent.width / 2))}", y = 8 },
+    Etching = { x = "{math.max(16, math.floor(parent.width / 2))}", y = 9 },
+  }
+
+  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+    local position = type_positions[itemType]
+    refs.setup.type_switches[itemType] = refs.setup.editor_card:addSwitch({
+      x = position.x,
+      y = position.y,
+      width = 12,
+      height = 1,
+      text = itemType,
+    })
+    refs.setup.type_switches[itemType]:onChange("checked", function(_, checked)
+      if controller.suppress_events then
+        return
+      end
+      controller.actions.setDestinationType(itemType, checked)
+    end)
+  end
+
+  refs.setup.type_reset = refs.setup.editor_card:addButton({
+    x = 2,
+    y = 11,
+    width = 14,
+    height = 1,
+    text = "All Types",
+    background = palette.keep,
+    foreground = palette.text_dark,
+  })
+  refs.setup.type_reset:onClick(function()
+    controller.actions.clearDestinationTypes()
+  end)
+
+  refs.setup.route_lines = {}
   for index = 1, 5 do
-    refs.setup.summary_lines[index] = refs.setup.summary_card:addLabel({
+    refs.setup.route_lines[index] = refs.setup.editor_card:addLabel({
       x = 2,
-      y = index + 1,
+      y = index + 11,
       width = "{parent.width - 3}",
       text = "",
       foreground = index == 1 and palette.text or palette.muted,
@@ -1444,12 +1648,7 @@ local function refreshDashboard(controller)
   local total_moves = app.session.kept + app.session.discarded
   local keep_ratio = total_moves > 0 and math.floor((app.session.kept / total_moves) * 100 + 0.5) or 0
   local show_recent = controller.refs.dashboard.recent_card.get("height") >= 4
-  local flow_text = string.format(
-    "Flow: %s -> %s / %s",
-    findInventoryLabel(app, app.config.routing.input),
-    findInventoryLabel(app, app.config.routing.keep),
-    findInventoryLabel(app, app.config.routing.trash)
-  )
+  local flow_text = "Input: " .. findInventoryLabel(app, app.config.routing.input) .. " | " .. routeFlowSummary(app)
   local cycle_text = app.last_cycle_at
     and ("Last sort: " .. util.formatTime(app.last_cycle_at) .. " | Preview: " .. tostring(#preview))
     or ("Preview: " .. tostring(#preview) .. " | Waiting for first live sort")
@@ -1486,13 +1685,15 @@ local function refreshDashboard(controller)
     refs.preview_list:scrollToItem(selected_index)
   end
 
-  local detail_lines = selectedDecisionLines(selected_entry)
+  local detail_lines = selectedDecisionLines(app, selected_entry)
   refs.detail_list:clear()
   for index, line in ipairs(detail_lines) do
     local color = palette.text
     if index == 2 then
       color = (selected_entry and selected_entry.decision and selected_entry.decision.action == "discard") and palette.trash or palette.keep
     elseif index == 3 then
+      color = palette.warning
+    elseif index == 4 then
       color = palette.muted
     end
 
@@ -1601,24 +1802,81 @@ end
 local function refreshSetup(controller)
   local app = controller.app
   local refs = controller.refs.setup
+  local destination, selected_index = selectedDestination(app)
 
-  setDropdownItems(refs.input_row.dropdown, routingOptions(app, "input"), app.config.routing.input)
-  setDropdownItems(refs.keep_row.dropdown, routingOptions(app, "keep"), app.config.routing.keep)
-  setDropdownItems(refs.trash_row.dropdown, routingOptions(app, "trash"), app.config.routing.trash)
+  controller.suppress_events = true
+
+  setDropdownItems(refs.input_row.dropdown, inventoryOptions(app, true), app.config.routing.input)
 
   refs.scan_stepper.value:setText(tostring(app.config.runtime.scan_interval) .. "s")
   refs.batch_stepper.value:setText(tostring(app.config.runtime.batch_size))
 
-  local summary_lines = {
-    "Input: " .. findInventoryLabel(app, app.config.routing.input),
-    "Keep: " .. findInventoryLabel(app, app.config.routing.keep),
-    "Trash: " .. findInventoryLabel(app, app.config.routing.trash),
-    app.monitor and string.format("Monitor: %s | %dx%d @ %s", app.monitor.name, app.monitor.width, app.monitor.height, tostring(app.monitor.text_scale or "?")) or "Monitor: not available",
-    (#app.health.errors > 0 and app.health.errors[1]) or (#app.health.warnings > 0 and app.health.warnings[1]) or "Routing looks healthy.",
-  }
+  refs.route_list:clear()
+  for index, entry in ipairs(app.config.routing.destinations or {}) do
+    local color = palette.keep
+    if entry.enabled == false then
+      color = palette.muted
+    elseif entry.match_action == "discard" then
+      color = palette.trash
+    elseif entry.match_action == "any" then
+      color = palette.warning
+    end
 
-  setWrappedLabelLines(refs.summary_lines, summary_lines, math.max(16, controller.refs.setup.summary_card.get("width") - 3))
-  refs.summary_lines[5]:setForeground(#app.health.errors > 0 and palette.trash or (#app.health.warnings > 0 and palette.warning or palette.muted))
+    refs.route_list:addItem({
+      text = util.trimText(destinationTitle(app, entry, index) .. " | " .. routing.typeSummary(entry), math.max(14, refs.route_card.get("width") - 2)),
+      key = entry.id,
+      fg = color,
+      selected = app.ui.selected_destination_id == entry.id,
+      selectedBg = palette.accent,
+      selectedFg = palette.text_dark,
+    })
+  end
+  if selected_index then
+    refs.route_list:scrollToItem(selected_index)
+  end
+
+  if destination then
+    refs.route_enabled:setChecked(destination.enabled ~= false)
+    setDropdownItems(refs.route_inventory.dropdown, inventoryOptions(app, false, true), destination.inventory or "")
+    setDropdownItems(refs.route_action.dropdown, choice_options.route_action, destination.match_action)
+    setDropdownItems(refs.route_type_mode.dropdown, choice_options.route_type_mode, destination.type_mode)
+
+    local type_lookup = {}
+    for _, itemType in ipairs(destination.match_types or {}) do
+      type_lookup[itemType] = true
+    end
+    for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+      refs.type_switches[itemType]:setChecked(type_lookup[itemType] == true)
+    end
+
+    local route_lines = {
+      destinationTitle(app, destination, selected_index),
+      "Priority: first matching route wins.",
+      "Decision: " .. routing.actionSummary(destination) .. " | Types: " .. routing.typeSummary(destination),
+      app.monitor and string.format("Monitor: %s | %dx%d @ %s", app.monitor.name, app.monitor.width, app.monitor.height, tostring(app.monitor.text_scale or "?")) or "Monitor: not available",
+      (#app.health.errors > 0 and app.health.errors[1]) or (#app.health.warnings > 0 and app.health.warnings[1]) or "Route looks healthy.",
+    }
+    setWrappedLabelLines(refs.route_lines, route_lines, math.max(16, refs.editor_card.get("width") - 3))
+    refs.route_lines[5]:setForeground(#app.health.errors > 0 and palette.trash or (#app.health.warnings > 0 and palette.warning or palette.muted))
+  else
+    refs.route_enabled:setChecked(false)
+    setDropdownItems(refs.route_inventory.dropdown, inventoryOptions(app, false, true), "")
+    setDropdownItems(refs.route_action.dropdown, choice_options.route_action, nil)
+    setDropdownItems(refs.route_type_mode.dropdown, choice_options.route_type_mode, nil)
+    for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+      refs.type_switches[itemType]:setChecked(false)
+    end
+    setLabelLines(refs.route_lines, {
+      "No destination selected.",
+      "Add a destination or pick one from the list.",
+      "Routes are checked top to bottom.",
+      "",
+      "",
+    })
+    refs.route_lines[5]:setForeground(palette.muted)
+  end
+
+  controller.suppress_events = false
 end
 
 local function refreshAll(controller)

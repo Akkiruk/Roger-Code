@@ -3,6 +3,7 @@ local constants = require("lib.vaultgear.constants")
 local evaluator = require("lib.vaultgear.evaluator")
 local logger = require("lib.vaultgear.logger")
 local peripherals = require("lib.vaultgear.peripherals")
+local routing = require("lib.vaultgear.routing")
 local service = require("lib.vaultgear.service")
 local store = require("lib.vaultgear.store")
 local ui = require("lib.vaultgear.ui")
@@ -247,13 +248,63 @@ local function applyPreset(app, itemType, presetId)
   app.dirty_state = true
 end
 
-local function nextMissingRoutingRole(routing)
-  for _, role in ipairs(constants.ROUTING_ROLES) do
-    if not routing[role.id] or routing[role.id] == "" then
-      return role.id
+local function selectedDestination(app)
+  return routing.findDestination(app.config.routing.destinations, app.ui.selected_destination_id)
+end
+
+local function ensureSelectedDestination(app)
+  local destination = selectedDestination(app)
+  if destination then
+    return destination
+  end
+
+  local destinations = app.config.routing.destinations or {}
+  if #destinations > 0 then
+    app.ui.selected_destination_id = destinations[1].id
+  else
+    app.ui.selected_destination_id = nil
+  end
+  app.dirty_state = true
+  return selectedDestination(app)
+end
+
+local function firstUnusedInventory(app)
+  local used = {}
+  if app.config.routing.input then
+    used[app.config.routing.input] = true
+  end
+
+  for _, destination in ipairs(app.config.routing.destinations or {}) do
+    if destination.inventory then
+      used[destination.inventory] = true
     end
   end
+
+  for _, entry in ipairs(app.discovery.inventories or {}) do
+    if not used[entry.name] then
+      return entry.name
+    end
+  end
+
   return nil
+end
+
+local function setDestinationType(destination, itemType, enabled)
+  local nextTypes = {}
+  local seen = {}
+
+  for _, value in ipairs(destination.match_types or {}) do
+    if value ~= itemType and constants.SUPPORTED_TYPE_SET[value] and not seen[value] then
+      nextTypes[#nextTypes + 1] = value
+      seen[value] = true
+    end
+  end
+
+  if enabled and constants.SUPPORTED_TYPE_SET[itemType] and not seen[itemType] then
+    nextTypes[#nextTypes + 1] = itemType
+  end
+
+  destination.match_types = nextTypes
 end
 
 local function adjustNumericField(profile, field, delta)
@@ -332,6 +383,7 @@ local function initializeUiState(app)
     app.ui.selected_block_key = nil
     app.dirty_state = true
   end
+  ensureSelectedDestination(app)
 end
 
 local function processSortCycle(app)
@@ -357,7 +409,9 @@ local function processSortCycle(app)
 
   if report.last_decision then
     local item = report.last_decision.item
-    recentEvent(app, "info", report.last_decision.decision.action .. ": " .. tostring(item.display_name))
+    local destination = report.last_decision.destination
+    local routeText = destination and destination.inventory and (" -> " .. destination.inventory) or ""
+    recentEvent(app, "info", report.last_decision.decision.action .. routeText .. ": " .. tostring(item.display_name))
   end
   for _, message in ipairs(report.errors) do
     recentEvent(app, "error", message)
@@ -514,24 +568,131 @@ function M.run()
     end
   end
 
-  function actions.assignRouting(role, inventoryName)
-    if role ~= "input" and role ~= "keep" and role ~= "trash" then
+  function actions.setInputInventory(inventoryName)
+    app.config.routing.input = inventoryName
+    app.dirty_config = true
+    app.dirty_state = true
+    recentEvent(app, "info", "Assigned input inventory: " .. tostring(inventoryName))
+    syncFull("input routing update")
+    notify("success", "Input set", tostring(inventoryName))
+  end
+
+  function actions.selectDestination(destinationId)
+    app.ui.selected_destination_id = destinationId
+    app.dirty_state = true
+    refreshUi(app, "setup")
+    saveAll(app, "destination select")
+  end
+
+  function actions.addDestination()
+    local destination = routing.newDestination(app.config.routing.destinations)
+    destination.inventory = firstUnusedInventory(app)
+    app.config.routing.destinations[#app.config.routing.destinations + 1] = destination
+    app.ui.selected_destination_id = destination.id
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("destination add")
+    notify("success", "Destination added", "Choose what this route should catch.")
+  end
+
+  function actions.removeDestination()
+    local destination, index = selectedDestination(app)
+    if not destination or not index then
+      notify("warning", "No destination selected", "Pick a destination first.")
       return
     end
 
-    app.config.routing[role] = inventoryName
+    table.remove(app.config.routing.destinations, index)
+    local nextDestination = app.config.routing.destinations[index] or app.config.routing.destinations[index - 1]
+    app.ui.selected_destination_id = nextDestination and nextDestination.id or nil
     app.dirty_config = true
     app.dirty_state = true
+    syncFull("destination remove")
+    notify("warning", "Destination removed", destination.inventory or destination.id)
+  end
 
-    local nextRole = nextMissingRoutingRole(app.config.routing)
-    recentEvent(app, "info", string.format("Assigned %s inventory: %s", role, tostring(inventoryName)))
-
-    syncFull("routing update")
-    if nextRole then
-      notify("success", role:gsub("^%l", string.upper) .. " set", "Next up: choose the " .. nextRole .. " inventory.")
-    else
-      notify("success", role:gsub("^%l", string.upper) .. " set", tostring(inventoryName))
+  function actions.moveDestination(delta)
+    local destination, index = selectedDestination(app)
+    if not destination or not index then
+      return
     end
+
+    local target = index + delta
+    if target < 1 or target > #(app.config.routing.destinations or {}) then
+      return
+    end
+
+    local destinations = app.config.routing.destinations
+    destinations[index], destinations[target] = destinations[target], destinations[index]
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("destination reorder")
+  end
+
+  function actions.setDestinationChoice(field, value)
+    local destination = ensureSelectedDestination(app)
+    if not destination then
+      return
+    end
+
+    if field ~= "inventory" and field ~= "match_action" and field ~= "type_mode" then
+      return
+    end
+
+    if field == "inventory" and (value == "" or value == nil) then
+      destination.inventory = nil
+    else
+      destination[field] = value
+    end
+    if field == "type_mode" and value == "all" then
+      destination.match_types = {}
+    end
+
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("destination choice")
+  end
+
+  function actions.setDestinationEnabled(value)
+    local destination = ensureSelectedDestination(app)
+    if not destination then
+      return
+    end
+
+    destination.enabled = value == true
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("destination enabled")
+  end
+
+  function actions.setDestinationType(itemType, enabled)
+    local destination = ensureSelectedDestination(app)
+    if not destination then
+      return
+    end
+
+    setDestinationType(destination, itemType, enabled == true)
+    if enabled == true then
+      destination.type_mode = "selected"
+    elseif #(destination.match_types or {}) == 0 then
+      destination.type_mode = "all"
+    end
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("destination type")
+  end
+
+  function actions.clearDestinationTypes()
+    local destination = ensureSelectedDestination(app)
+    if not destination then
+      return
+    end
+
+    destination.type_mode = "all"
+    destination.match_types = {}
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("destination type reset")
   end
 
   function actions.adjustRuntime(field, delta)

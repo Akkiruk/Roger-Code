@@ -1,8 +1,8 @@
 local M = {}
 
 M.APP_NAME = "Vault Gear Sorter"
-M.CONFIG_SCHEMA_VERSION = 1
-M.STATE_SCHEMA_VERSION = 1
+M.CONFIG_SCHEMA_VERSION = 2
+M.STATE_SCHEMA_VERSION = 2
 
 M.CONFIG_FILE = "vaultgear_config.lua"
 M.STATE_FILE = "vaultgear_state_settings.lua"
@@ -20,13 +20,8 @@ M.TABS = {
   { id = "setup", label = "Setup" },
 }
 
-M.ROUTING_ROLES = {
-  { id = "input", label = "Input" },
-  { id = "keep", label = "Keep" },
-  { id = "trash", label = "Trash" },
-}
-
 M.ACTIONS = { "keep", "discard" }
+M.ROUTE_ACTIONS = { "keep", "discard", "any" }
 M.WANTED_MODES = { "any", "all" }
 M.UNIDENTIFIED_MODES = { "keep", "discard", "evaluate_basic" }
 

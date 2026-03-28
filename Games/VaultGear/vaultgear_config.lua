@@ -2,7 +2,7 @@
 -- Preserved across installer updates. Edited by the monitor UI at runtime.
 
 return {
-  schema_version = 1,
+  schema_version = 2,
   monitor = {
     name = nil,
     text_scale = 0.5,
@@ -14,8 +14,24 @@ return {
   },
   routing = {
     input = nil,
-    keep = nil,
-    trash = nil,
+    destinations = {
+      {
+        id = "route_1",
+        inventory = nil,
+        enabled = true,
+        match_action = "keep",
+        type_mode = "all",
+        match_types = {},
+      },
+      {
+        id = "route_2",
+        inventory = nil,
+        enabled = true,
+        match_action = "discard",
+        type_mode = "all",
+        match_types = {},
+      },
+    },
   },
   safety = {
     non_vault_action = "keep",
