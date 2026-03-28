@@ -1,3 +1,4 @@
+local constants = require("lib.vaultgear.constants")
 local evaluator = require("lib.vaultgear.evaluator")
 local model = require("lib.vaultgear.model")
 
@@ -41,7 +42,7 @@ local function readDetail(inputInventory, slot)
 end
 
 function M.buildPreview(inputInventory, config, catalog, catalogLib, limit)
-  limit = limit or 8
+  limit = limit or constants.PREVIEW_LIMIT
 
   local ok, slotMap = safeCall(inputInventory, "list")
   if not ok or type(slotMap) ~= "table" then

@@ -15,7 +15,8 @@ local function recentEvent(app, level, message)
     at = os.epoch("local"),
     level = level,
     message = message,
-  }, 10)
+  }, constants.RECENT_LIMIT)
+
   if level == "error" then
     logger.error(message)
   else
@@ -141,7 +142,7 @@ local function rebuildPreview(app)
     return
   end
 
-  app.preview = service.buildPreview(input, app.config, app.state.catalog, catalog, 8)
+  app.preview = service.buildPreview(input, app.config, app.state.catalog, catalog, constants.PREVIEW_LIMIT)
   if (app.ui.preview_selected or 1) > #app.preview.items then
     app.ui.preview_selected = math.max(1, #app.preview.items)
   end
@@ -244,8 +245,6 @@ local function applyPreset(app, itemType, presetId)
 
   app.dirty_config = true
   app.dirty_state = true
-  refreshHealth(app)
-  rebuildPreview(app)
 end
 
 local function nextMissingRoutingRole(routing)
@@ -287,264 +286,51 @@ local function adjustNumericField(profile, field, delta)
   profile[field] = util.clamp(nextValue, minValue, maxValue)
 end
 
-local function cycleProfileField(app, field, delta)
-  local profile = app.config.type_profiles[app.ui.selected_type]
-
-  if field == "enabled" or field == "keep_legendary" or field == "keep_soulbound" or field == "keep_unique" then
-    profile[field] = not profile[field]
-  elseif field == "miss_action" then
-    profile[field] = util.cycleValue(constants.ACTIONS, profile[field], delta)
-  elseif field == "unidentified_mode" then
-    profile[field] = util.cycleValue(constants.UNIDENTIFIED_MODES, profile[field], delta)
-  elseif field == "min_rarity" then
-    profile[field] = util.cycleValue(constants.RARITIES, profile[field], delta)
-  elseif field == "wanted_modifier_mode" then
-    profile[field] = util.cycleValue(constants.WANTED_MODES, profile[field], delta)
-  else
-    adjustNumericField(profile, field, delta)
+local function normalizePage(page)
+  if page == "run" then
+    return "dashboard"
+  end
+  if page == "routing" then
+    return "setup"
+  end
+  if page == "profiles" then
+    return "rules"
+  end
+  if page == "modifiers" then
+    return "modifiers"
   end
 
-  app.dirty_config = true
-  app.dirty_state = true
-  refreshHealth(app)
-  rebuildPreview(app)
-end
-
-local function addRule(app, listName)
-  local key = app.ui.selected_modifier_key
-  if not key then
-    return
-  end
-
-  local entries = app.catalog_entries or {}
-  local picked = nil
-  for _, entry in ipairs(entries) do
-    if entry.key == key then
-      picked = entry
-      break
+  for _, tab in ipairs(constants.TABS) do
+    if tab.id == page then
+      return page
     end
   end
-  if not picked then
-    return
-  end
 
-  local profile = app.config.type_profiles[app.ui.selected_type]
-  if not util.findByKey(profile[listName], picked.key) then
-    profile[listName][#profile[listName] + 1] = {
-      key = picked.key,
-      label = picked.label,
-    }
-    app.dirty_config = true
-    app.dirty_state = true
-    refreshHealth(app)
-    rebuildPreview(app)
-  end
+  return "dashboard"
 end
 
-local function removeRule(app, listName)
-  local key = app.ui.selected_modifier_key
-  if not key then
-    return
-  end
+local function initializeUiState(app)
+  app.ui.page = normalizePage(app.ui.page)
 
-  local profile = app.config.type_profiles[app.ui.selected_type]
-  local _, index = util.findByKey(profile[listName], key)
-  if index then
-    table.remove(profile[listName], index)
-    app.dirty_config = true
+  if not constants.SUPPORTED_TYPE_SET[app.ui.selected_type] then
+    app.ui.selected_type = "Gear"
     app.dirty_state = true
-    refreshHealth(app)
-    rebuildPreview(app)
-  end
-end
-
-local function handleZone(app, zone)
-  if not zone then
-    return
   end
 
-  if zone.id == "tab" then
-    app.ui.page = zone.data.tab
+  if app.ui.preview_selected == nil then
+    app.ui.preview_selected = 1
     app.dirty_state = true
-    return
   end
-
-  if zone.id == "run_toggle" then
-    app.config.runtime.enabled = not app.config.runtime.enabled
-    app.dirty_config = true
-    if app.config.runtime.enabled then
-      recentEvent(app, "info", "Sorter enabled")
-    else
-      recentEvent(app, "info", "Sorter disabled")
-    end
-    return
-  end
-
-  if zone.id == "run_scan_now" then
-    rebuildPreview(app)
-    return
-  end
-
-  if zone.id == "apply_preset" then
-    applyPreset(app, zone.data.item_type or app.ui.selected_type, zone.data.preset_id)
-    return
-  end
-
-  if zone.id == "run_reset_stats" then
-    resetStats(app)
-    return
-  end
-
-  if zone.id == "run_select_preview" then
-    app.ui.preview_selected = zone.data.index
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "routing_role" then
-    app.ui.routing_role = zone.data.role
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "routing_refresh" then
-    refreshDiscovery(app)
-    rebuildPreview(app)
-    return
-  end
-
-  if zone.id == "routing_assign" then
-    app.config.routing[app.ui.routing_role] = zone.data.name
-    app.dirty_config = true
-    app.dirty_state = true
-    local nextRole = nextMissingRoutingRole(app.config.routing)
-    if nextRole then
-      app.ui.routing_role = nextRole
-    end
-    refreshHealth(app)
-    rebuildPreview(app)
-    return
-  end
-
-  if zone.id == "routing_inventory_up" then
-    app.ui.inventory_scroll = math.max(0, (app.ui.inventory_scroll or 0) - 1)
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "routing_inventory_down" then
-    app.ui.inventory_scroll = math.min(math.max(0, #app.discovery.inventories - 1), (app.ui.inventory_scroll or 0) + 1)
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "runtime_interval_down" then
-    app.config.runtime.scan_interval = math.max(1, app.config.runtime.scan_interval - 1)
-    app.dirty_config = true
-    return
-  end
-
-  if zone.id == "runtime_interval_up" then
-    app.config.runtime.scan_interval = math.min(30, app.config.runtime.scan_interval + 1)
-    app.dirty_config = true
-    return
-  end
-
-  if zone.id == "runtime_batch_down" then
-    app.config.runtime.batch_size = math.max(1, app.config.runtime.batch_size - 1)
-    app.dirty_config = true
-    return
-  end
-
-  if zone.id == "runtime_batch_up" then
-    app.config.runtime.batch_size = math.min(32, app.config.runtime.batch_size + 1)
-    app.dirty_config = true
-    return
-  end
-
-  if zone.id == "profiles_type" or zone.id == "modifiers_type" then
-    app.ui.selected_type = zone.data.item_type
-    app.ui.profile_scroll = 0
-    app.ui.catalog_scroll = 0
+  if app.ui.selected_modifier_key == nil then
     app.ui.selected_modifier_key = nil
+  end
+  if app.ui.selected_keep_key == nil then
+    app.ui.selected_keep_key = nil
     app.dirty_state = true
-    refreshCatalogEntries(app)
-    return
   end
-
-  if zone.id == "profiles_scroll_up" then
-    app.ui.profile_scroll = math.max(0, (app.ui.profile_scroll or 0) - 1)
+  if app.ui.selected_block_key == nil then
+    app.ui.selected_block_key = nil
     app.dirty_state = true
-    return
-  end
-
-  if zone.id == "profiles_scroll_down" then
-    app.ui.profile_scroll = (app.ui.profile_scroll or 0) + 1
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "profiles_cycle" then
-    cycleProfileField(app, zone.data.field, zone.data.delta)
-    return
-  end
-
-  if zone.id == "modifiers_mode_cycle" then
-    local profile = app.config.type_profiles[app.ui.selected_type]
-    profile.wanted_modifier_mode = util.cycleValue(constants.WANTED_MODES, profile.wanted_modifier_mode, 1)
-    app.dirty_config = true
-    refreshHealth(app)
-    rebuildPreview(app)
-    return
-  end
-
-  if zone.id == "modifiers_catalog_up" then
-    app.ui.catalog_scroll = math.max(0, (app.ui.catalog_scroll or 0) - 1)
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "modifiers_catalog_down" then
-    app.ui.catalog_scroll = (app.ui.catalog_scroll or 0) + 1
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "modifiers_select_catalog" then
-    app.ui.selected_modifier_key = zone.data.key
-    app.dirty_state = true
-    return
-  end
-
-  if zone.id == "modifiers_add_keep" then
-    addRule(app, "wanted_modifiers")
-    return
-  end
-
-  if zone.id == "modifiers_add_block" then
-    addRule(app, "blocked_modifiers")
-    return
-  end
-
-  if zone.id == "modifiers_remove_keep" then
-    removeRule(app, "wanted_modifiers")
-    return
-  end
-
-  if zone.id == "modifiers_remove_block" then
-    removeRule(app, "blocked_modifiers")
-    return
-  end
-
-  if zone.id == "modifiers_clear_all" then
-    local profile = app.config.type_profiles[app.ui.selected_type]
-    profile.wanted_modifiers = {}
-    profile.blocked_modifiers = {}
-    app.dirty_config = true
-    app.dirty_state = true
-    refreshHealth(app)
-    rebuildPreview(app)
-    return
   end
 end
 
@@ -583,6 +369,42 @@ local function processSortCycle(app)
   end
 end
 
+local function setSelectedType(app, itemType)
+  if not constants.SUPPORTED_TYPE_SET[itemType] then
+    return
+  end
+
+  app.ui.selected_type = itemType
+  app.ui.selected_modifier_key = nil
+  app.ui.selected_keep_key = nil
+  app.ui.selected_block_key = nil
+  app.dirty_state = true
+  refreshCatalogEntries(app)
+end
+
+local function refreshUi(app, mode)
+  local controller = app.controller
+  if not controller then
+    return
+  end
+
+  controller:rebindTerm()
+
+  if mode == "dashboard" then
+    controller:refreshDashboard()
+  elseif mode == "modifiers" then
+    controller:refreshModifiers()
+  elseif mode == "setup" then
+    controller:refreshSetup()
+  elseif mode == "header" then
+    controller:refreshHeader()
+  elseif mode == "live" then
+    controller:refreshLive()
+  else
+    controller:refreshAll()
+  end
+end
+
 function M.run()
   logger.configure(constants.LOG_FILE)
 
@@ -597,7 +419,6 @@ function M.run()
     },
     recent = {},
     preview = { items = {} },
-    frame = { zones = {} },
     health = {
       monitor_ok = false,
       monitor_error = "Monitor unavailable",
@@ -606,64 +427,316 @@ function M.run()
     },
     dirty_config = false,
     dirty_state = false,
+    controller = nil,
   }
 
   app.ui = app.state.ui
-  if app.ui.page ~= "run" and app.ui.page ~= "routing" and app.ui.page ~= "profiles" and app.ui.page ~= "modifiers" then
-    app.ui.page = "run"
-    app.dirty_state = true
-  end
-  if not constants.SUPPORTED_TYPE_SET[app.ui.selected_type] then
-    app.ui.selected_type = "Gear"
-    app.dirty_state = true
-  end
-  if app.ui.routing_role ~= "input" and app.ui.routing_role ~= "keep" and app.ui.routing_role ~= "trash" then
-    app.ui.routing_role = nextMissingRoutingRole(app.config.routing) or "input"
-    app.dirty_state = true
-  end
-
+  initializeUiState(app)
   refreshDiscovery(app)
   rebuildPreview(app)
-  saveAll(app, "startup")
 
-  local redrawTimer = os.startTimer(0.2)
-  local previewTimer = os.startTimer(2)
-  local sortTimer = os.startTimer(app.config.runtime.scan_interval)
-  local saveTimer = os.startTimer(10)
+  local actions = {}
 
-  while true do
-    app.frame = ui.render(app)
-    local event, p1, p2, p3 = os.pullEventRaw()
+  local function syncFull(context)
+    refreshHealth(app)
+    rebuildPreview(app)
+    refreshUi(app)
+    saveAll(app, context)
+  end
 
-    if event == "terminate" then
-      saveAll(app, "terminate")
-      return
-    elseif event == "monitor_touch" then
-      if app.monitor and p1 == app.monitor.name then
-        handleZone(app, ui.hit(app.frame, p2, p3))
-        saveAll(app, "monitor touch")
-      end
-    elseif event == "peripheral" or event == "peripheral_detach" then
-      refreshDiscovery(app)
-      rebuildPreview(app)
-      saveAll(app, "peripheral refresh")
-    elseif event == "timer" and p1 == redrawTimer then
-      redrawTimer = os.startTimer(0.2)
-    elseif event == "timer" and p1 == previewTimer then
-      rebuildPreview(app)
-      saveAll(app, "preview refresh")
-      previewTimer = os.startTimer(2)
-    elseif event == "timer" and p1 == sortTimer then
-      processSortCycle(app)
-      saveAll(app, "sort cycle")
-      sortTimer = os.startTimer(app.config.runtime.scan_interval)
-    elseif event == "timer" and p1 == saveTimer then
-      if app.dirty_config or app.dirty_state then
-        saveAll(app, "periodic backup")
-      end
-      saveTimer = os.startTimer(10)
+  local function notify(level, title, message)
+    if app.controller then
+      app.controller:notify(level, title, message)
     end
   end
+
+  function actions.setPage(page)
+    local nextPage = normalizePage(page)
+    if app.ui.page == nextPage then
+      return
+    end
+    app.ui.page = nextPage
+    app.dirty_state = true
+    saveAll(app, "page switch")
+  end
+
+  function actions.toggleRuntime()
+    app.config.runtime.enabled = not app.config.runtime.enabled
+    app.dirty_config = true
+
+    if app.config.runtime.enabled then
+      recentEvent(app, "info", "Sorter enabled")
+      notify("success", "Sorting enabled", "The sorter is live and watching the input inventory.")
+    else
+      recentEvent(app, "info", "Sorter disabled")
+      notify("warning", "Sorting paused", "The sorter will keep scanning previews but will not move items.")
+    end
+
+    refreshHealth(app)
+    refreshUi(app, "header")
+    refreshUi(app, "dashboard")
+    saveAll(app, "runtime toggle")
+  end
+
+  function actions.scanNow()
+    rebuildPreview(app)
+    refreshUi(app, "live")
+    saveAll(app, "manual scan")
+    notify("info", "Preview refreshed", "The input inventory was rescanned.")
+  end
+
+  function actions.resetSession()
+    resetStats(app)
+    refreshUi(app, "dashboard")
+    notify("info", "Session reset", "Session counters were cleared.")
+  end
+
+  function actions.selectPreview(index)
+    app.ui.preview_selected = util.clamp(index or 1, 1, math.max(1, #(app.preview.items or {})))
+    app.dirty_state = true
+    refreshUi(app, "dashboard")
+    saveAll(app, "preview select")
+  end
+
+  function actions.selectType(itemType)
+    setSelectedType(app, itemType)
+    refreshUi(app)
+    saveAll(app, "type select")
+  end
+
+  function actions.refreshPeripherals(showToast)
+    refreshDiscovery(app)
+    rebuildPreview(app)
+    refreshUi(app)
+    saveAll(app, "peripheral refresh")
+    if showToast ~= false then
+      notify("info", "Peripherals refreshed", "Monitor and inventory choices were rescanned.")
+    end
+  end
+
+  function actions.assignRouting(role, inventoryName)
+    if role ~= "input" and role ~= "keep" and role ~= "trash" then
+      return
+    end
+
+    app.config.routing[role] = inventoryName
+    app.dirty_config = true
+    app.dirty_state = true
+
+    local nextRole = nextMissingRoutingRole(app.config.routing)
+    recentEvent(app, "info", string.format("Assigned %s inventory: %s", role, tostring(inventoryName)))
+
+    syncFull("routing update")
+    if nextRole then
+      notify("success", role:gsub("^%l", string.upper) .. " set", "Next up: choose the " .. nextRole .. " inventory.")
+    else
+      notify("success", role:gsub("^%l", string.upper) .. " set", tostring(inventoryName))
+    end
+  end
+
+  function actions.adjustRuntime(field, delta)
+    if field == "scan_interval" then
+      app.config.runtime.scan_interval = math.min(30, math.max(1, app.config.runtime.scan_interval + delta))
+    elseif field == "batch_size" then
+      app.config.runtime.batch_size = math.min(32, math.max(1, app.config.runtime.batch_size + delta))
+    else
+      return
+    end
+
+    app.dirty_config = true
+    refreshUi(app, "setup")
+    saveAll(app, "runtime tuning")
+  end
+
+  function actions.applyPreset(itemType, presetId)
+    applyPreset(app, itemType, presetId)
+    syncFull("preset")
+    notify("success", "Preset applied", tostring(itemType) .. " updated to " .. tostring(presetId))
+  end
+
+  function actions.setProfileChoice(itemType, field, value)
+    local profile = app.config.type_profiles[itemType]
+    if not profile then
+      return
+    end
+
+    profile[field] = value
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("profile choice")
+  end
+
+  function actions.setProfileFlag(itemType, field, value)
+    local profile = app.config.type_profiles[itemType]
+    if not profile then
+      return
+    end
+
+    profile[field] = value == true
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("profile flag")
+  end
+
+  function actions.adjustProfileNumber(itemType, field, delta)
+    local profile = app.config.type_profiles[itemType]
+    if not profile then
+      return
+    end
+
+    adjustNumericField(profile, field, delta)
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("profile number")
+  end
+
+  function actions.selectCatalogModifier(key)
+    app.ui.selected_modifier_key = key
+    app.ui.selected_keep_key = nil
+    app.ui.selected_block_key = nil
+    app.dirty_state = true
+    refreshUi(app, "modifiers")
+    saveAll(app, "catalog select")
+  end
+
+  function actions.selectKeepRule(key)
+    app.ui.selected_keep_key = key
+    app.ui.selected_block_key = nil
+    app.dirty_state = true
+    refreshUi(app, "modifiers")
+    saveAll(app, "keep rule select")
+  end
+
+  function actions.selectBlockRule(key)
+    app.ui.selected_block_key = key
+    app.ui.selected_keep_key = nil
+    app.dirty_state = true
+    refreshUi(app, "modifiers")
+    saveAll(app, "block rule select")
+  end
+
+  function actions.addRule(listName)
+    local key = app.ui.selected_modifier_key
+    if not key then
+      notify("warning", "Pick a modifier", "Choose a discovered modifier before adding it to Keep or Block.")
+      return
+    end
+
+    local entries = app.catalog_entries or {}
+    local picked = nil
+    for _, entry in ipairs(entries) do
+      if entry.key == key then
+        picked = entry
+        break
+      end
+    end
+    if not picked then
+      return
+    end
+
+    local profile = app.config.type_profiles[app.ui.selected_type]
+    if util.findByKey(profile[listName], picked.key) then
+      notify("info", "Already added", picked.label)
+      return
+    end
+
+    profile[listName][#profile[listName] + 1] = {
+      key = picked.key,
+      label = picked.label,
+    }
+
+    if listName == "wanted_modifiers" then
+      app.ui.selected_keep_key = picked.key
+      notify("success", "Added to Keep", picked.label)
+    else
+      app.ui.selected_block_key = picked.key
+      notify("warning", "Added to Block", picked.label)
+    end
+
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("modifier add")
+  end
+
+  function actions.removeRule(listName)
+    local selectedKey = nil
+    if listName == "wanted_modifiers" then
+      selectedKey = app.ui.selected_keep_key
+    else
+      selectedKey = app.ui.selected_block_key
+    end
+
+    if not selectedKey then
+      notify("warning", "Nothing selected", "Select a saved rule first.")
+      return
+    end
+
+    local profile = app.config.type_profiles[app.ui.selected_type]
+    local entry, index = util.findByKey(profile[listName], selectedKey)
+    if not index then
+      return
+    end
+
+    table.remove(profile[listName], index)
+    if listName == "wanted_modifiers" then
+      app.ui.selected_keep_key = nil
+      notify("info", "Removed keep rule", entry.label or entry.key)
+    else
+      app.ui.selected_block_key = nil
+      notify("info", "Removed block rule", entry.label or entry.key)
+    end
+
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("modifier remove")
+  end
+
+  function actions.clearRules()
+    local profile = app.config.type_profiles[app.ui.selected_type]
+    profile.wanted_modifiers = {}
+    profile.blocked_modifiers = {}
+    app.ui.selected_keep_key = nil
+    app.ui.selected_block_key = nil
+    app.dirty_config = true
+    app.dirty_state = true
+    syncFull("modifier clear")
+    notify("warning", "Modifier rules cleared", app.ui.selected_type .. " now has no keep/block modifier filters.")
+  end
+
+  function actions.onPreviewTimer()
+    rebuildPreview(app)
+    refreshUi(app, "live")
+    saveAll(app, "preview refresh")
+  end
+
+  function actions.onSortTimer()
+    processSortCycle(app)
+    refreshUi(app, "live")
+    saveAll(app, "sort cycle")
+  end
+
+  function actions.onSaveTimer()
+    if app.dirty_config or app.dirty_state then
+      saveAll(app, "periodic backup")
+    end
+    refreshUi(app, "header")
+  end
+
+  function actions.onPeripheralEvent(kind)
+    refreshDiscovery(app)
+    rebuildPreview(app)
+    refreshUi(app)
+    saveAll(app, kind or "peripheral event")
+  end
+
+  function actions.onTerminate()
+    saveAll(app, "terminate")
+  end
+
+  app.controller = ui.create(app, actions)
+  refreshUi(app)
+  saveAll(app, "startup")
+  app.controller:run()
 end
 
 return M

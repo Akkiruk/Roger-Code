@@ -58,16 +58,12 @@ function M.buildDefaultState()
   return {
     schema_version = constants.STATE_SCHEMA_VERSION,
     ui = {
-      page = "run",
+      page = "dashboard",
       selected_type = "Gear",
-      routing_role = "input",
-      inventory_scroll = 0,
-      profile_scroll = 0,
-      catalog_scroll = 0,
-      keep_scroll = 0,
-      block_scroll = 0,
       preview_selected = 1,
       selected_modifier_key = nil,
+      selected_keep_key = nil,
+      selected_block_key = nil,
     },
     catalog = {},
   }

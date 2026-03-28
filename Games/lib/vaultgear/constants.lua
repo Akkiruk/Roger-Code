@@ -10,12 +10,14 @@ M.LOG_FILE = "vaultgear_error.log"
 
 M.MIN_MONITOR_WIDTH = 52
 M.MIN_MONITOR_HEIGHT = 18
+M.PREVIEW_LIMIT = 24
+M.RECENT_LIMIT = 14
 
 M.TABS = {
-  { id = "run", label = "Home" },
-  { id = "routing", label = "Setup" },
-  { id = "profiles", label = "Rules" },
-  { id = "modifiers", label = "Mods" },
+  { id = "dashboard", label = "Dashboard" },
+  { id = "rules", label = "Rules" },
+  { id = "modifiers", label = "Modifiers" },
+  { id = "setup", label = "Setup" },
 }
 
 M.ROUTING_ROLES = {

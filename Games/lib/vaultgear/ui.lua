@@ -1,131 +1,149 @@
+local basalt = require("lib.basalt")
+local catalog = require("lib.vaultgear.catalog")
 local constants = require("lib.vaultgear.constants")
 local evaluator = require("lib.vaultgear.evaluator")
+local peripherals = require("lib.vaultgear.peripherals")
 local util = require("lib.vaultgear.util")
 
 local M = {}
 
-local theme = {
-  background = colors.black,
-  panel = colors.black,
-  header = colors.lightBlue,
-  header_text = colors.black,
-  title = colors.gray,
-  tab = colors.gray,
-  tab_text = colors.white,
-  tab_selected = colors.lightGray,
-  tab_selected_text = colors.black,
-  accent = colors.blue,
-  accent_text = colors.white,
-  positive = colors.green,
-  negative = colors.red,
-  warning = colors.yellow,
+local palette = {
+  bg = colors.black,
+  surface = colors.gray,
+  surface_alt = colors.lightGray,
+  text = colors.white,
+  text_dark = colors.black,
   muted = colors.lightGray,
-  preview_selected = colors.lightGray,
-  preview_selected_text = colors.black,
+  accent = colors.lightBlue,
+  accent_dark = colors.blue,
+  keep = colors.green,
+  trash = colors.red,
+  warning = colors.orange,
+  gold = colors.yellow,
 }
 
-local function addZone(frame, id, x1, y1, x2, y2, data)
-  frame.zones[#frame.zones + 1] = {
-    id = id,
-    x1 = x1,
-    y1 = y1,
-    x2 = x2,
-    y2 = y2,
-    data = data,
-  }
-end
+local theme = {
+  default = {
+    background = palette.bg,
+    foreground = palette.text,
+  },
+  BaseFrame = {
+    background = palette.bg,
+    foreground = palette.text,
+    Frame = {
+      background = palette.bg,
+      foreground = palette.text,
+    },
+    Label = {
+      foreground = palette.text,
+    },
+    Button = {
+      background = palette.accent_dark,
+      foreground = palette.text,
+      states = {
+        clicked = {
+          background = palette.accent,
+          foreground = palette.text_dark,
+        },
+      },
+    },
+    List = {
+      background = palette.bg,
+      foreground = palette.text,
+      selectedBackground = palette.accent,
+      selectedForeground = palette.text_dark,
+      scrollBarColor = palette.text,
+      scrollBarBackgroundColor = palette.surface_alt,
+    },
+    DropDown = {
+      background = palette.surface,
+      foreground = palette.text,
+      selectedBackground = palette.accent,
+      selectedForeground = palette.text_dark,
+      scrollBarColor = palette.text,
+      scrollBarBackgroundColor = palette.surface_alt,
+      states = {
+        opened = {
+          background = palette.surface_alt,
+          foreground = palette.text_dark,
+        },
+      },
+    },
+    ScrollFrame = {
+      background = palette.bg,
+      foreground = palette.text,
+      scrollBarColor = palette.text,
+      scrollBarBackgroundColor = palette.surface_alt,
+      scrollBarBackgroundColor2 = palette.bg,
+    },
+    TabControl = {
+      background = palette.bg,
+      foreground = palette.muted,
+      headerBackground = palette.bg,
+      activeTabBackground = palette.accent,
+      activeTabTextColor = palette.text_dark,
+    },
+    SideNav = {
+      background = palette.bg,
+      foreground = palette.muted,
+      sidebarBackground = palette.bg,
+      activeTabBackground = palette.accent,
+      activeTabTextColor = palette.text_dark,
+    },
+    ProgressBar = {
+      background = palette.surface,
+      foreground = palette.text,
+      progressColor = palette.accent,
+    },
+    Switch = {
+      background = palette.text,
+      foreground = palette.text_dark,
+      onBackground = palette.keep,
+      offBackground = palette.trash,
+    },
+    Toast = {
+      background = palette.bg,
+      foreground = palette.text,
+    },
+  },
+}
 
-local function fillLine(x, y, width, bg)
-  if width <= 0 then
-    return
-  end
-  term.setCursorPos(x, y)
-  term.setBackgroundColor(bg)
-  term.write(string.rep(" ", width))
-end
+local choice_options = {
+  miss_action = {
+    { label = "Keep", value = "keep" },
+    { label = "Trash", value = "discard" },
+  },
+  unidentified_mode = {
+    { label = "Keep", value = "keep" },
+    { label = "Trash", value = "discard" },
+    { label = "Basic", value = "evaluate_basic" },
+  },
+  wanted_modifier_mode = {
+    { label = "Any", value = "any" },
+    { label = "All", value = "all" },
+  },
+  min_rarity = {
+    { label = "Off", value = "ANY" },
+    { label = "Scrappy+", value = "SCRAPPY" },
+    { label = "Common+", value = "COMMON" },
+    { label = "Rare+", value = "RARE" },
+    { label = "Epic+", value = "EPIC" },
+    { label = "Omega+", value = "OMEGA" },
+    { label = "Unique+", value = "UNIQUE" },
+    { label = "Special+", value = "SPECIAL" },
+    { label = "Chaotic+", value = "CHAOTIC" },
+  },
+}
 
-local function fillRect(x, y, width, height, bg)
-  for row = 0, math.max(0, height - 1) do
-    fillLine(x, y + row, width, bg)
-  end
-end
-
-local function writeAt(x, y, text, width, fg, bg)
-  local value = tostring(text or "")
-  if width and width > 0 then
-    value = util.trimText(value, width)
-    value = value .. string.rep(" ", math.max(0, width - #value))
-  end
-
-  if bg then
-    term.setBackgroundColor(bg)
-  end
-  if fg then
-    term.setTextColor(fg)
-  end
-
-  term.setCursorPos(x, y)
-  term.write(value)
-end
-
-local function button(frame, id, x, y, width, label, fg, bg, data)
-  if width <= 0 then
-    return
-  end
-
-  local text = util.trimText(label or "", math.max(1, width - 2))
-  local leftPad = math.max(0, math.floor((width - #text) / 2))
-  local rendered = string.rep(" ", leftPad) .. text
-  rendered = rendered .. string.rep(" ", math.max(0, width - #rendered))
-
-  writeAt(x, y, rendered, nil, fg or theme.accent_text, bg or theme.accent)
-  addZone(frame, id, x, y, x + width - 1, y, data)
-end
-
-local function panel(x, y, width, height, title, headerColor)
-  if width <= 0 or height <= 0 then
-    return
-  end
-
-  fillRect(x, y, width, height, theme.panel)
-  fillLine(x, y, width, headerColor or theme.header)
-  writeAt(x + 1, y, tostring(title or ""), math.max(1, width - 2), theme.header_text, headerColor or theme.header)
-end
-
-local function header(frame, app, width)
-  local runLabel = app.config.runtime.enabled and " RUNNING " or " STOPPED "
-  local runColor = app.config.runtime.enabled and theme.positive or theme.negative
-
-  fillLine(1, 1, width, theme.title)
-  writeAt(2, 1, constants.APP_NAME, math.max(1, width - 14), colors.white, theme.title)
-  writeAt(width - 10, 1, runLabel, 10, colors.white, runColor)
-
-  local gap = 1
-  local tabCount = #constants.TABS
-  local tabWidth = math.max(8, math.floor((width - ((tabCount - 1) * gap)) / tabCount))
-  local x = 1
-  for index, tab in ipairs(constants.TABS) do
-    if index == tabCount then
-      tabWidth = width - x + 1
-    end
-
-    local selected = app.ui.page == tab.id
-    button(
-      frame,
-      "tab",
-      x,
-      2,
-      tabWidth,
-      tab.label,
-      selected and theme.tab_selected_text or theme.tab_text,
-      selected and theme.tab_selected or theme.tab,
-      { tab = tab.id }
-    )
-    x = x + tabWidth + gap
-  end
-
-  fillLine(1, 3, width, theme.background)
-end
+local numeric_labels = {
+  min_level = "Min Level",
+  max_level = "Max Level",
+  min_crafting_potential = "Min CP",
+  min_free_repair_slots = "Free Repairs",
+  min_durability_percent = "Durability %",
+  max_jewel_size = "Max Jewel Size",
+  min_uses = "Min Uses",
+}
 
 local function actionText(action)
   if action == "discard" then
@@ -204,13 +222,13 @@ end
 
 local function firstConfiguredRoleText(app)
   if not app.config.routing.input or app.config.routing.input == "" then
-    return "Setup: choose the input inventory"
+    return "Setup: choose the input inventory."
   end
   if not app.config.routing.keep or app.config.routing.keep == "" then
-    return "Setup: choose the keep inventory"
+    return "Setup: choose the keep inventory."
   end
   if not app.config.routing.trash or app.config.routing.trash == "" then
-    return "Setup: choose the trash inventory"
+    return "Setup: choose the trash inventory."
   end
   return nil
 end
@@ -227,65 +245,22 @@ local function nextStep(app)
 
   local gearProfile = app.config.type_profiles.Gear
   if gearProfile and evaluator.profileHasActiveFilters(gearProfile) and gearProfile.miss_action == "keep" then
-    return "Rules: Gear misses still go to Keep. Tap Common+ to trash scrappy gear."
+    return "Gear misses still go to Keep. Flip Misses Go To if you want misses trashed."
   end
 
   if gearProfile and evaluator.profileHasActiveFilters(gearProfile) and gearProfile.unidentified_mode == "keep" then
-    return "Rules: unidentified gear still bypasses filters. Use Basic or Trash."
+    return "Unidentified gear is bypassing your rules. Use Basic or Trash when you are ready."
   end
 
   if not app.config.runtime.enabled then
-    return "Press Start once setup and rules look right."
+    return "Review the flow, then hit Start Sorting when everything feels right."
   end
 
   if #(app.preview.items or {}) == 0 then
-    return "Put Vault gear in the input inventory, then tap Scan Now."
+    return "Drop Vault gear into the input inventory to generate a live preview."
   end
 
-  return "Tap a preview item to see exactly why it moves."
-end
-
-local function roleLabel(roleId)
-  for _, role in ipairs(constants.ROUTING_ROLES) do
-    if role.id == roleId then
-      return role.label
-    end
-  end
-  return tostring(roleId or "-")
-end
-
-local function selectedDecisionLines(entry)
-  if not entry then
-    return {
-      "No preview item selected.",
-      "Put gear in the input inventory.",
-      "Then tap Scan Now.",
-    }
-  end
-
-  local decision = entry.decision or {}
-  local reasons = decision.reasons or {}
-  local item = entry.item or {}
-  local primaryReason = reasons[1] or "No decision details"
-  local hint = reasons[#reasons] or ""
-
-  if primaryReason == "Unidentified -> keep" then
-    hint = "Rules: set Unidentified to Basic or Trash."
-  elseif primaryReason == "Unidentified -> discard" then
-    hint = "This item is being trashed before other checks."
-  elseif hint == "Miss -> keep" then
-    hint = "Rules: change Misses Go To if you want failed items trashed."
-  elseif hint == "Miss -> discard" then
-    hint = "This item failed the rule and is going to Trash."
-  elseif hint == "Profile matched" then
-    hint = "This item passed the active keep rule."
-  end
-
-  return {
-    tostring(item.display_name or item.registry_name or "Item"),
-    string.upper(actionText(decision.action)) .. ": " .. primaryReason,
-    hint ~= "" and hint or ((item.item_type or "Item") .. " | " .. (item.rarity or "-") .. " | Lv" .. tostring(item.level or "-")),
-  }
+  return "Tap any preview item to inspect the exact keep or trash decision."
 end
 
 local function summaryLinesForProfile(app, itemType)
@@ -294,7 +269,7 @@ local function summaryLinesForProfile(app, itemType)
     return {
       "No profile loaded.",
       "Misses -> Keep | Unidentified -> Keep",
-      "Tap a preset to start.",
+      "Apply a preset to start shaping the profile.",
     }
   end
 
@@ -315,7 +290,7 @@ local function summaryLinesForProfile(app, itemType)
     end
 
     if #alwaysKeep > 0 then
-      line3 = "Always keep: " .. table.concat(alwaysKeep, ", ")
+      line3 = "Safety keeps: " .. table.concat(alwaysKeep, ", ")
     else
       line3 = string.format("Modifiers: Keep %d | Block %d", #(profile.wanted_modifiers or {}), #(profile.blocked_modifiers or {}))
     end
@@ -326,101 +301,328 @@ end
 
 local function previewBadge(entry)
   if entry and entry.decision and entry.decision.action == "discard" then
-    return "TRASH", theme.negative
+    return "TRASH", palette.trash
   end
-  return "KEEP", theme.positive
+  return "KEEP", palette.keep
 end
 
-local function renderPreviewList(frame, app, x, y, width, rows)
-  local preview = app.preview.items or {}
-  local selectedIndex = util.clamp(app.ui.preview_selected or 1, 1, math.max(1, #preview))
+local function findInventoryLabel(app, inventoryName)
+  if not inventoryName or inventoryName == "" then
+    return "Not set"
+  end
 
-  for row = 0, rows - 1 do
-    local index = row + 1
-    local drawY = y + row
-    fillLine(x, drawY, width, theme.panel)
+  local entry = peripherals.findInventory(app.discovery, inventoryName)
+  if entry then
+    return entry.label
+  end
 
-    local entry = preview[index]
-    if entry then
-      local selected = index == selectedIndex
-      local bg = selected and theme.preview_selected or theme.panel
-      local fg = selected and theme.preview_selected_text or colors.white
-      local badgeText, badgeColor = previewBadge(entry)
+  return inventoryName .. " (missing)"
+end
 
-      fillLine(x, drawY, width, bg)
-      writeAt(x, drawY, " " .. badgeText .. " ", 7, colors.white, badgeColor)
-      writeAt(x + 8, drawY, tostring(entry.item.display_name or "?"), math.max(1, width - 8), fg, bg)
-      addZone(frame, "run_select_preview", x, drawY, x + width - 1, drawY, { index = index })
+local function formatRecentEntry(entry)
+  if not entry then
+    return ""
+  end
+
+  local stamp = util.formatTime(entry.at)
+  local prefix = "[" .. stamp .. "] "
+  return prefix .. tostring(entry.message or "")
+end
+
+local function flattenLines(sourceLines, width, limit)
+  local lines = {}
+  for _, source in ipairs(sourceLines or {}) do
+    local wrapped = util.wrapText(source, width, limit - #lines)
+    for _, wrappedLine in ipairs(wrapped) do
+      lines[#lines + 1] = wrappedLine
+      if #lines >= limit then
+        return lines
+      end
     end
   end
+  return lines
+end
 
-  if #preview == 0 and rows > 0 then
-    writeAt(x, y, "No preview yet. Finish setup, add gear, then tap Scan Now.", width, theme.muted, theme.panel)
+local function selectedDecisionLines(entry)
+  if not entry then
+    return {
+      "No preview item selected yet.",
+      "Scan the input inventory to populate the preview list.",
+    }
+  end
+
+  local item = entry.item or {}
+  local decision = entry.decision or {}
+  local reasons = decision.reasons or {}
+  local lines = {}
+
+  lines[#lines + 1] = tostring(item.display_name or item.registry_name or "Item")
+  lines[#lines + 1] = string.upper(actionText(decision.action)) .. ": " .. tostring(reasons[1] or "No decision details")
+
+  local stats = {
+    item.item_type or "Item",
+    item.rarity or "-",
+    "Lv" .. tostring(item.level or "-"),
+  }
+  if item.identified == false then
+    stats[#stats + 1] = "Unidentified"
+  end
+  lines[#lines + 1] = table.concat(stats, " | ")
+
+  if type(item.crafting_potential_current) == "number" and type(item.crafting_potential_max) == "number" then
+    lines[#lines + 1] = "Crafting potential: " .. item.crafting_potential_current .. "/" .. item.crafting_potential_max
+  end
+  if type(item.repair_free) == "number" and type(item.repair_total) == "number" then
+    lines[#lines + 1] = "Repair slots: " .. item.repair_free .. " free of " .. item.repair_total
+  end
+  if type(item.durability_percent) == "number" then
+    lines[#lines + 1] = "Durability: " .. util.formatPercent(item.durability_percent)
+  end
+  if type(item.jewel_size) == "number" then
+    lines[#lines + 1] = "Jewel size: " .. tostring(item.jewel_size)
+  end
+  if type(item.uses) == "number" then
+    lines[#lines + 1] = "Uses: " .. tostring(item.uses)
+  end
+
+  local tags = {}
+  if item.is_soulbound then
+    tags[#tags + 1] = "Soulbound"
+  end
+  if item.is_unique then
+    tags[#tags + 1] = "Unique"
+  end
+  if item.is_legendary then
+    tags[#tags + 1] = "Legendary"
+  end
+  if #tags > 0 then
+    lines[#lines + 1] = "Tags: " .. table.concat(tags, ", ")
+  end
+
+  for index = 2, math.min(#reasons, 5) do
+    lines[#lines + 1] = "Reason: " .. reasons[index]
+  end
+
+  local modifiers = {}
+  for _, modifier in ipairs(item.modifiers and item.modifiers.all or {}) do
+    modifiers[#modifiers + 1] = modifier.label
+    if #modifiers >= 3 then
+      break
+    end
+  end
+  if #modifiers > 0 then
+    lines[#lines + 1] = "Seen mods: " .. table.concat(modifiers, ", ")
+  end
+
+  return lines
+end
+
+local function setLabelLines(labels, lines)
+  for index, label in ipairs(labels or {}) do
+    label:setText(lines[index] or "")
   end
 end
 
-local function renderTypeButtons(frame, app, y, width, zoneId)
-  local x = 1
-  local maxRows = 2
-  local row = 0
+local function setWrappedLabelLines(labels, sourceLines, width)
+  local lines = flattenLines(sourceLines, width, #labels)
+  setLabelLines(labels, lines)
+end
 
-  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
-    local buttonWidth = math.max(8, #itemType + 3)
-    if x + buttonWidth - 1 > width then
-      row = row + 1
-      if row >= maxRows then
+local function chooseColor(level)
+  if level == "error" then
+    return palette.trash
+  end
+  if level == "warning" then
+    return palette.warning
+  end
+  return palette.text
+end
+
+local function setDropdownItems(dropdown, options, selectedValue)
+  dropdown:clear()
+  for _, option in ipairs(options or {}) do
+    dropdown:addItem({
+      text = option.label,
+      value = option.value,
+      selected = option.value == selectedValue,
+    })
+  end
+
+  if selectedValue ~= nil then
+    for index, option in ipairs(options or {}) do
+      if option.value == selectedValue then
+        dropdown:selectItem(index)
         break
       end
-      y = y + 1
-      x = 1
     end
-
-    local selected = app.ui.selected_type == itemType
-    button(
-      frame,
-      zoneId,
-      x,
-      y,
-      buttonWidth,
-      itemType,
-      selected and colors.black or colors.white,
-      selected and colors.lightGray or theme.accent,
-      { item_type = itemType }
-    )
-    x = x + buttonWidth + 1
   end
-
-  return y
 end
 
-local function renderPresetButtons(frame, app, itemType, y, width)
-  local presets = constants.PROFILE_PRESETS[itemType] or {}
-  local count = #presets
-  if count == 0 then
-    return
-  end
+local function addCard(parent, props, title, accent)
+  local card = parent:addFrame(props)
+  card:setBackground(palette.surface)
+  card:addBorder(palette.surface_alt, {
+    left = true,
+    right = true,
+    bottom = true,
+  })
+  card:addLabel({
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    text = " " .. tostring(title or ""),
+    background = accent or palette.accent,
+    foreground = palette.text_dark,
+  })
+  return card
+end
 
-  local gap = 1
-  local buttonWidth = math.max(8, math.floor((width - ((count - 1) * gap)) / count))
-  local x = 1
-  for index, preset in ipairs(presets) do
-    if index == count then
-      buttonWidth = width - x + 1
+local function addDropdownRow(controller, parent, y, labelText, onSelect)
+  local label = parent:addLabel({
+    x = 2,
+    y = y,
+    width = "{parent.width - 22}",
+    text = labelText,
+    foreground = palette.muted,
+  })
+
+  local dropdown = parent:addDropDown({
+    x = "{parent.width - 18}",
+    y = y,
+    width = 17,
+    dropdownHeight = 6,
+    selectedText = "Select",
+    background = palette.surface,
+  })
+
+  dropdown:onSelect(function(_, _, item)
+    if controller.suppress_events then
+      return
     end
+    if item and item.value ~= nil then
+      onSelect(item.value)
+    end
+  end)
 
-    button(
-      frame,
-      "apply_preset",
-      x,
-      y,
-      buttonWidth,
-      preset.label,
-      colors.white,
-      index == 1 and colors.green or theme.accent,
-      { item_type = itemType, preset_id = preset.id }
-    )
-    x = x + buttonWidth + gap
+  return {
+    label = label,
+    dropdown = dropdown,
+  }
+end
+
+local function addStepperRow(controller, parent, y, labelText, onMinus, onPlus)
+  local label = parent:addLabel({
+    x = 2,
+    y = y,
+    width = "{parent.width - 16}",
+    text = labelText,
+    foreground = palette.muted,
+  })
+
+  local minus = parent:addButton({
+    x = "{parent.width - 13}",
+    y = y,
+    width = 3,
+    height = 1,
+    text = "-",
+    background = palette.surface,
+  })
+  minus:onClick(function()
+    if controller.suppress_events then
+      return
+    end
+    onMinus()
+  end)
+
+  local value = parent:addLabel({
+    x = "{parent.width - 9}",
+    y = y,
+    width = 6,
+    text = "Off",
+    foreground = palette.text,
+    background = palette.bg,
+  })
+
+  local plus = parent:addButton({
+    x = "{parent.width - 2}",
+    y = y,
+    width = 3,
+    height = 1,
+    text = "+",
+    background = palette.surface,
+  })
+  plus:onClick(function()
+    if controller.suppress_events then
+      return
+    end
+    onPlus()
+  end)
+
+  return {
+    label = label,
+    value = value,
+    minus = minus,
+    plus = plus,
+  }
+end
+
+local function addSwitchRow(controller, parent, y, labelText, onChange)
+  local switch = parent:addSwitch({
+    x = 2,
+    y = y,
+    width = 5,
+    height = 1,
+    text = labelText,
+  })
+
+  switch:onChange("checked", function(_, checked)
+    if controller.suppress_events then
+      return
+    end
+    onChange(checked)
+  end)
+
+  return switch
+end
+
+local function pageIndex(pageId)
+  for index, tab in ipairs(constants.TABS) do
+    if tab.id == pageId then
+      return index
+    end
   end
+  return 1
+end
+
+local function typeIndex(itemType)
+  for index, value in ipairs(constants.SUPPORTED_TYPES) do
+    if value == itemType then
+      return index
+    end
+  end
+  return 1
+end
+
+local function routingOptions(app, role)
+  local items = {}
+  for _, entry in ipairs(app.discovery.inventories or {}) do
+    local valid = role ~= "input" or (entry.can_detail and entry.can_push)
+    if valid then
+      items[#items + 1] = {
+        label = entry.label,
+        value = entry.name,
+      }
+    end
+  end
+
+  if #items == 0 then
+    items[1] = {
+      label = "No inventory found",
+      value = nil,
+    }
+  end
+
+  return items
 end
 
 local function friendlyProfileValue(profile, field)
@@ -440,6 +642,9 @@ local function friendlyProfileValue(profile, field)
     end
     return "Any"
   end
+  if field == "min_rarity" and (value == nil or value == "ANY") then
+    return "Off"
+  end
   if type(value) == "boolean" then
     return value and "Yes" or "No"
   end
@@ -449,304 +654,1085 @@ local function friendlyProfileValue(profile, field)
   return tostring(value)
 end
 
-local function ruleListText(list)
-  if not list or #list == 0 then
-    return "-"
-  end
+local function buildHeader(controller)
+  local refs = controller.refs
+  local frame = controller.frame
 
-  local labels = {}
-  for _, entry in ipairs(list) do
-    labels[#labels + 1] = entry.label or entry.key
-  end
-  return util.trimText(table.concat(labels, ", "), 999)
+  refs.header = frame:addFrame({
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    height = 3,
+    background = palette.bg,
+  })
+
+  refs.header:addLabel({
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    text = string.rep(" ", 1),
+    background = palette.accent,
+  })
+
+  refs.title = refs.header:addLabel({
+    x = 2,
+    y = 1,
+    width = "{parent.width - 16}",
+    text = constants.APP_NAME,
+    foreground = palette.text_dark,
+    background = palette.accent,
+  })
+
+  refs.runtime_pill = refs.header:addLabel({
+    x = "{parent.width - 11}",
+    y = 1,
+    width = 10,
+    text = " STOPPED ",
+    foreground = palette.text,
+    background = palette.trash,
+  })
+
+  refs.subtitle = refs.header:addLabel({
+    x = 2,
+    y = 2,
+    width = "{parent.width - 25}",
+    text = "Preparing the sorter UI...",
+    foreground = palette.muted,
+  })
+
+  refs.run_button = refs.header:addButton({
+    x = "{parent.width - 21}",
+    y = 2,
+    width = 10,
+    height = 1,
+    text = "Start",
+    background = palette.keep,
+    foreground = palette.text_dark,
+  })
+  refs.run_button:onClick(function()
+    controller.actions.toggleRuntime()
+  end)
+
+  refs.scan_button = refs.header:addButton({
+    x = "{parent.width - 10}",
+    y = 2,
+    width = 10,
+    height = 1,
+    text = "Scan Now",
+  })
+  refs.scan_button:onClick(function()
+    controller.actions.scanNow()
+  end)
+
+  refs.toast = frame:addToast({
+    x = "{parent.width - self.width}",
+    y = 1,
+    width = 28,
+    height = 3,
+  })
 end
 
-local function selectedModifierLabel(app)
-  local selectedKey = app.ui.selected_modifier_key
-  if not selectedKey then
-    return "None"
+local function buildNotice(controller)
+  local refs = controller.refs
+  refs.notice = controller.frame:addFrame({
+    x = 1,
+    y = 4,
+    width = "{parent.width}",
+    height = "{parent.height - 3}",
+    background = palette.bg,
+  })
+
+  local notice_card = addCard(refs.notice, {
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    height = "{parent.height}",
+  }, "Monitor Needed", palette.warning)
+
+  refs.notice_lines = {}
+  for index = 1, 6 do
+    refs.notice_lines[index] = notice_card:addLabel({
+      x = 2,
+      y = index + 1,
+      width = "{parent.width - 3}",
+      text = "",
+      foreground = index == 1 and palette.warning or palette.text,
+    })
+  end
+end
+
+local function buildDashboard(controller, dashboard)
+  local refs = controller.refs
+
+  refs.dashboard = {}
+  refs.dashboard.hero = addCard(dashboard, {
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    height = 5,
+  }, "Live Status", palette.accent)
+
+  refs.dashboard.status_lines = {}
+  for index = 1, 3 do
+    refs.dashboard.status_lines[index] = refs.dashboard.hero:addLabel({
+      x = 2,
+      y = index + 1,
+      width = "{parent.width - 3}",
+      text = "",
+      foreground = index == 1 and palette.text or palette.muted,
+    })
   end
 
-  for _, entry in ipairs(app.catalog_entries or {}) do
-    if entry.key == selectedKey then
-      return entry.label
+  refs.dashboard.progress = refs.dashboard.hero:addProgressBar({
+    x = 2,
+    y = 5,
+    width = "{parent.width - 3}",
+    height = 1,
+    background = palette.surface,
+    progressColor = palette.keep,
+  })
+
+  refs.dashboard.preview_card = addCard(dashboard, {
+    name = "dashboardPreviewCard",
+    x = 1,
+    y = 7,
+    width = "{math.max(24, math.floor(parent.width * 0.56))}",
+    height = "{parent.height - 6}",
+  }, "Input Preview", palette.accent_dark)
+
+  refs.dashboard.preview_list = refs.dashboard.preview_card:addList({
+    x = 1,
+    y = 2,
+    width = "{parent.width}",
+    height = "{parent.height - 1}",
+    emptyText = "No preview yet",
+    showScrollBar = true,
+  })
+  refs.dashboard.preview_list:onSelect(function(_, index)
+    if controller.suppress_events then
+      return
     end
-  end
+    controller.actions.selectPreview(index)
+  end)
 
-  return selectedKey
+  refs.dashboard.detail_card = addCard(dashboard, {
+    name = "dashboardDetailCard",
+    x = "{dashboardPreviewCard.x + dashboardPreviewCard.width + 1}",
+    y = 7,
+    width = "{parent.width - dashboardPreviewCard.width - 1}",
+    height = "{math.max(6, math.floor((parent.height - 6) * 0.62))}",
+  }, "Decision Breakdown", palette.keep)
+
+  refs.dashboard.detail_list = refs.dashboard.detail_card:addList({
+    x = 1,
+    y = 2,
+    width = "{parent.width}",
+    height = "{parent.height - 1}",
+    emptyText = "Select a preview item",
+    showScrollBar = true,
+    selectable = false,
+  })
+
+  refs.dashboard.recent_card = addCard(dashboard, {
+    name = "dashboardRecentCard",
+    x = "{dashboardPreviewCard.x + dashboardPreviewCard.width + 1}",
+    y = "{dashboardDetailCard.y + dashboardDetailCard.height + 1}",
+    width = "{parent.width - dashboardPreviewCard.width - 1}",
+    height = "{parent.height - dashboardDetailCard.height - 7}",
+  }, "Recent Activity", palette.warning)
+
+  refs.dashboard.recent_list = refs.dashboard.recent_card:addList({
+    x = 1,
+    y = 2,
+    width = "{parent.width}",
+    height = "{parent.height - 1}",
+    emptyText = "No activity yet",
+    showScrollBar = true,
+    selectable = false,
+  })
 end
 
-local function roleMarks(app, inventoryName)
-  local marks = {}
-  if app.config.routing.input == inventoryName then
-    marks[#marks + 1] = "I"
-  end
-  if app.config.routing.keep == inventoryName then
-    marks[#marks + 1] = "K"
-  end
-  if app.config.routing.trash == inventoryName then
-    marks[#marks + 1] = "T"
-  end
+local function buildRulesPage(controller, rules_tab)
+  local refs = controller.refs
+  refs.rules = {}
 
-  if #marks == 0 then
-    return "-"
-  end
+  refs.rules.types = rules_tab:addSideNav({
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    height = "{parent.height}",
+    sidebarBackground = palette.bg,
+    activeTabBackground = palette.accent,
+    activeTabTextColor = palette.text_dark,
+    foreground = palette.muted,
+    sidebarWidth = 10,
+  })
 
-  return table.concat(marks, "")
+  refs.rules.types:registerCallback("tabChanged", function(_, new_tab)
+    if controller.suppress_events then
+      return
+    end
+    controller.actions.selectType(constants.SUPPORTED_TYPES[new_tab])
+  end)
+
+  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+    local type_tab = refs.rules.types:newTab(itemType)
+    local page = {
+      summary = {},
+      presets = {},
+      choices = {},
+      switches = {},
+      numbers = {},
+    }
+
+    local scroll = type_tab:addScrollFrame({
+      x = 1,
+      y = 1,
+      width = "{parent.width}",
+      height = "{parent.height}",
+      background = palette.bg,
+      showScrollBar = true,
+    })
+
+    local y = 1
+    page.summary_card = addCard(scroll, {
+      x = 1,
+      y = y,
+      width = "{parent.width - 1}",
+      height = 5,
+    }, "Live Summary", palette.accent)
+    for index = 1, 3 do
+      page.summary[index] = page.summary_card:addLabel({
+        x = 2,
+        y = index + 1,
+        width = "{parent.width - 3}",
+        text = "",
+      })
+    end
+    y = y + 6
+
+    page.preset_card = addCard(scroll, {
+      x = 1,
+      y = y,
+      width = "{parent.width - 1}",
+      height = 3,
+    }, "Starter Presets", palette.gold)
+    do
+      local presets = constants.PROFILE_PRESETS[itemType] or {}
+      local count = math.max(1, #presets)
+      local button_formula = string.format("math.max(8, math.floor((parent.width - %d) / %d))", count + 2, count)
+      for index, preset in ipairs(presets) do
+        local x_formula = "2"
+        if index > 1 then
+          x_formula = string.format("2 + (%d * ((%s) + 1))", index - 1, button_formula)
+        end
+        local button = page.preset_card:addButton({
+          x = "{" .. x_formula .. "}",
+          y = 2,
+          width = "{" .. button_formula .. "}",
+          height = 1,
+          text = preset.label,
+          background = index == 1 and palette.keep or palette.surface,
+          foreground = index == 1 and palette.text_dark or palette.text,
+        })
+        button:onClick(function()
+          controller.actions.applyPreset(itemType, preset.id)
+        end)
+        page.presets[preset.id] = button
+      end
+    end
+    y = y + 4
+
+    page.policy_card = addCard(scroll, {
+      x = 1,
+      y = y,
+      width = "{parent.width - 1}",
+      height = 5,
+    }, "Core Policy", palette.accent_dark)
+
+    page.switches.enabled = addSwitchRow(controller, page.policy_card, 2, "Profile Enabled", function(checked)
+      controller.actions.setProfileFlag(itemType, "enabled", checked)
+    end)
+
+    page.choices.miss_action = addDropdownRow(controller, page.policy_card, 3, "Misses Go To", function(value)
+      controller.actions.setProfileChoice(itemType, "miss_action", value)
+    end)
+
+    page.choices.unidentified_mode = addDropdownRow(controller, page.policy_card, 4, "Unidentified", function(value)
+      controller.actions.setProfileChoice(itemType, "unidentified_mode", value)
+    end)
+
+    y = y + 6
+
+    local numeric_fields = {}
+    if itemType == "Gear" or itemType == "Tool" or itemType == "Jewel" or itemType == "Charm" or itemType == "Etching" then
+      numeric_fields[#numeric_fields + 1] = "min_rarity"
+    end
+    if itemType == "Gear" or itemType == "Tool" or itemType == "Jewel" or itemType == "Etching" then
+      numeric_fields[#numeric_fields + 1] = "min_level"
+      numeric_fields[#numeric_fields + 1] = "max_level"
+    end
+    if itemType == "Gear" then
+      numeric_fields[#numeric_fields + 1] = "min_crafting_potential"
+    end
+    if itemType == "Gear" or itemType == "Tool" then
+      numeric_fields[#numeric_fields + 1] = "min_free_repair_slots"
+      numeric_fields[#numeric_fields + 1] = "min_durability_percent"
+    end
+    if itemType == "Jewel" then
+      numeric_fields[#numeric_fields + 1] = "max_jewel_size"
+    end
+    if itemType == "Trinket" or itemType == "Charm" then
+      numeric_fields[#numeric_fields + 1] = "min_uses"
+    end
+
+    local threshold_height = 2 + #numeric_fields
+    page.threshold_card = addCard(scroll, {
+      x = 1,
+      y = y,
+      width = "{parent.width - 1}",
+      height = threshold_height,
+    }, "Thresholds", palette.warning)
+
+    local row_y = 2
+    for _, field in ipairs(numeric_fields) do
+      if field == "min_rarity" then
+        page.choices.min_rarity = addDropdownRow(controller, page.threshold_card, row_y, "Min Rarity", function(value)
+          controller.actions.setProfileChoice(itemType, "min_rarity", value)
+        end)
+      else
+        page.numbers[field] = addStepperRow(controller, page.threshold_card, row_y, numeric_labels[field], function()
+          controller.actions.adjustProfileNumber(itemType, field, -1)
+        end, function()
+          controller.actions.adjustProfileNumber(itemType, field, 1)
+        end)
+      end
+      row_y = row_y + 1
+    end
+
+    y = y + threshold_height + 1
+
+    local safety_fields = {}
+    if itemType == "Gear" or itemType == "Etching" then
+      safety_fields[#safety_fields + 1] = {
+        field = "keep_legendary",
+        label = "Always Keep Legendary",
+      }
+    end
+    if itemType == "Gear" then
+      safety_fields[#safety_fields + 1] = {
+        field = "keep_soulbound",
+        label = "Always Keep Soulbound",
+      }
+      safety_fields[#safety_fields + 1] = {
+        field = "keep_unique",
+        label = "Always Keep Unique",
+      }
+    end
+
+    page.safety_card = addCard(scroll, {
+      x = 1,
+      y = y,
+      width = "{parent.width - 1}",
+      height = math.max(3, 2 + #safety_fields),
+    }, "Safety Overrides", palette.keep)
+
+    if #safety_fields == 0 then
+      page.safety_empty = page.safety_card:addLabel({
+        x = 2,
+        y = 2,
+        width = "{parent.width - 3}",
+        text = "No extra safety toggles for this type.",
+        foreground = palette.muted,
+      })
+    else
+      for index, field_info in ipairs(safety_fields) do
+        page.switches[field_info.field] = addSwitchRow(controller, page.safety_card, index + 1, field_info.label, function(checked)
+          controller.actions.setProfileFlag(itemType, field_info.field, checked)
+        end)
+      end
+    end
+
+    refs.rules[itemType] = page
+  end
 end
 
-local function renderHome(frame, app, width, height)
-  local halfWidth = math.floor((width - 2) / 2)
-  local rightX = width - halfWidth + 1
-  local gearProfile = app.config.type_profiles.Gear or {}
-  local preview = app.preview.items or {}
-  local selectedIndex = util.clamp(app.ui.preview_selected or 1, 1, math.max(1, #preview))
-  local selected = preview[selectedIndex]
-  local selectedStart = math.max(15, height - 3)
-  local previewRows = math.max(2, selectedStart - 11)
-  local detailLines = selectedDecisionLines(selected)
-  local flowText = "Gear: " .. currentFilterText("Gear", gearProfile)
-    .. " | Miss " .. actionText(gearProfile.miss_action)
-    .. " | Unid " .. unidentifiedText(gearProfile.unidentified_mode)
+local function buildModifiersPage(controller, modifiers_tab)
+  local refs = controller.refs
+  refs.modifiers = {}
 
-  button(frame, "run_toggle", 1, 4, halfWidth, app.config.runtime.enabled and "Stop Sorting" or "Start Sorting", colors.white, app.config.runtime.enabled and colors.red or colors.green)
-  button(frame, "run_scan_now", rightX, 4, halfWidth, "Scan Now", colors.white, theme.accent)
-  button(frame, "apply_preset", 1, 5, halfWidth, "Gear Common+", colors.white, colors.orange, { item_type = "Gear", preset_id = "common_plus" })
-  button(frame, "apply_preset", rightX, 5, halfWidth, "Gear Keep All", colors.white, colors.brown, { item_type = "Gear", preset_id = "keep_all" })
+  refs.modifiers.types = modifiers_tab:addSideNav({
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    height = "{parent.height}",
+    sidebarBackground = palette.bg,
+    activeTabBackground = palette.accent,
+    activeTabTextColor = palette.text_dark,
+    foreground = palette.muted,
+    sidebarWidth = 10,
+  })
 
-  panel(1, 6, width, 4, "Status", theme.header)
+  refs.modifiers.types:registerCallback("tabChanged", function(_, new_tab)
+    if controller.suppress_events then
+      return
+    end
+    controller.actions.selectType(constants.SUPPORTED_TYPES[new_tab])
+  end)
+
+  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+    local type_tab = refs.modifiers.types:newTab(itemType)
+    local page = {}
+
+    page.catalog_card = addCard(type_tab, {
+      name = itemType .. "ModifierCatalog",
+      x = 1,
+      y = 1,
+      width = "{math.max(22, math.floor(parent.width * 0.52))}",
+      height = "{parent.height}",
+    }, "Discovered Modifiers", palette.accent)
+
+    page.catalog_list = page.catalog_card:addList({
+      x = 1,
+      y = 2,
+      width = "{parent.width}",
+      height = "{parent.height - 1}",
+      emptyText = "No modifiers discovered yet",
+      showScrollBar = true,
+    })
+    page.catalog_list:onSelect(function(_, _, item)
+      if controller.suppress_events then
+        return
+      end
+      if item and item.key then
+        controller.actions.selectCatalogModifier(item.key)
+      end
+    end)
+
+    page.actions_card = addCard(type_tab, {
+      name = itemType .. "ModifierActions",
+      x = "{" .. itemType .. "ModifierCatalog.x + " .. itemType .. "ModifierCatalog.width + 1}",
+      y = 1,
+      width = "{parent.width - " .. itemType .. "ModifierCatalog.width - 1}",
+      height = 4,
+    }, "Rule Actions", palette.gold)
+
+    page.mode_row = addDropdownRow(controller, page.actions_card, 2, "Wanted Match", function(value)
+      controller.actions.setProfileChoice(itemType, "wanted_modifier_mode", value)
+    end)
+
+    page.keep_button = page.actions_card:addButton({
+      x = 2,
+      y = 3,
+      width = "{math.max(10, math.floor((parent.width - 4) / 2))}",
+      height = 1,
+      text = "+ Keep",
+      background = palette.keep,
+      foreground = palette.text_dark,
+    })
+    page.keep_button:onClick(function()
+      controller.actions.addRule("wanted_modifiers")
+    end)
+
+    page.block_button = page.actions_card:addButton({
+      x = "{parent.width - math.max(10, math.floor((parent.width - 4) / 2))}",
+      y = 3,
+      width = "{math.max(10, math.floor((parent.width - 4) / 2))}",
+      height = 1,
+      text = "+ Block",
+      background = palette.trash,
+    })
+    page.block_button:onClick(function()
+      controller.actions.addRule("blocked_modifiers")
+    end)
+
+    page.keep_card = addCard(type_tab, {
+      name = itemType .. "KeepRules",
+      x = "{" .. itemType .. "ModifierCatalog.x + " .. itemType .. "ModifierCatalog.width + 1}",
+      y = 6,
+      width = "{parent.width - " .. itemType .. "ModifierCatalog.width - 1}",
+      height = "{math.max(4, math.floor((parent.height - 5) / 2))}",
+    }, "Keep Rules", palette.keep)
+
+    page.keep_list = page.keep_card:addList({
+      x = 1,
+      y = 2,
+      width = "{parent.width}",
+      height = "{parent.height - 1}",
+      emptyText = "No keep rules",
+      showScrollBar = true,
+    })
+    page.keep_list:onSelect(function(_, _, item)
+      if controller.suppress_events then
+        return
+      end
+      if item and item.key then
+        controller.actions.selectKeepRule(item.key)
+      end
+    end)
+
+    page.keep_remove = page.keep_card:addButton({
+      x = "{parent.width - 11}",
+      y = 1,
+      width = 11,
+      height = 1,
+      text = "Remove",
+      background = palette.surface,
+    })
+    page.keep_remove:onClick(function()
+      controller.actions.removeRule("wanted_modifiers")
+    end)
+
+    page.block_card = addCard(type_tab, {
+      name = itemType .. "BlockRules",
+      x = "{" .. itemType .. "ModifierCatalog.x + " .. itemType .. "ModifierCatalog.width + 1}",
+      y = "{" .. itemType .. "KeepRules.y + " .. itemType .. "KeepRules.height + 1}",
+      width = "{parent.width - " .. itemType .. "ModifierCatalog.width - 1}",
+      height = "{math.max(4, parent.height - " .. itemType .. "KeepRules.height - 6)}",
+    }, "Block Rules", palette.trash)
+
+    page.block_list = page.block_card:addList({
+      x = 1,
+      y = 2,
+      width = "{parent.width}",
+      height = "{parent.height - 1}",
+      emptyText = "No block rules",
+      showScrollBar = true,
+    })
+    page.block_list:onSelect(function(_, _, item)
+      if controller.suppress_events then
+        return
+      end
+      if item and item.key then
+        controller.actions.selectBlockRule(item.key)
+      end
+    end)
+
+    page.block_remove = page.block_card:addButton({
+      x = "{parent.width - 11}",
+      y = 1,
+      width = 11,
+      height = 1,
+      text = "Remove",
+      background = palette.surface,
+    })
+    page.block_remove:onClick(function()
+      controller.actions.removeRule("blocked_modifiers")
+    end)
+
+    page.clear_button = page.block_card:addButton({
+      x = 2,
+      y = 1,
+      width = 10,
+      height = 1,
+      text = "Clear All",
+      background = palette.warning,
+      foreground = palette.text_dark,
+    })
+    page.clear_button:onClick(function()
+      controller.actions.clearRules()
+    end)
+
+    refs.modifiers[itemType] = page
+  end
+end
+
+local function buildSetupPage(controller, setup)
+  local refs = controller.refs
+  refs.setup = {}
+
+  refs.setup.flow_card = addCard(setup, {
+    x = 1,
+    y = 1,
+    width = "{parent.width}",
+    height = 8,
+  }, "Flow Setup", palette.accent)
+
+  refs.setup.input_row = addDropdownRow(controller, refs.setup.flow_card, 2, "Input Inventory", function(value)
+    if value then
+      controller.actions.assignRouting("input", value)
+    end
+  end)
+
+  refs.setup.keep_row = addDropdownRow(controller, refs.setup.flow_card, 3, "Keep Inventory", function(value)
+    if value then
+      controller.actions.assignRouting("keep", value)
+    end
+  end)
+
+  refs.setup.trash_row = addDropdownRow(controller, refs.setup.flow_card, 4, "Trash Inventory", function(value)
+    if value then
+      controller.actions.assignRouting("trash", value)
+    end
+  end)
+
+  refs.setup.scan_stepper = addStepperRow(controller, refs.setup.flow_card, 5, "Scan Interval (s)", function()
+    controller.actions.adjustRuntime("scan_interval", -1)
+  end, function()
+    controller.actions.adjustRuntime("scan_interval", 1)
+  end)
+
+  refs.setup.batch_stepper = addStepperRow(controller, refs.setup.flow_card, 6, "Batch Size", function()
+    controller.actions.adjustRuntime("batch_size", -1)
+  end, function()
+    controller.actions.adjustRuntime("batch_size", 1)
+  end)
+
+  refs.setup.refresh_button = refs.setup.flow_card:addButton({
+    x = 2,
+    y = 7,
+    width = 18,
+    height = 1,
+    text = "Refresh Peripherals",
+    background = palette.surface,
+  })
+  refs.setup.refresh_button:onClick(function()
+    controller.actions.refreshPeripherals(true)
+  end)
+
+  refs.setup.summary_card = addCard(setup, {
+    x = 1,
+    y = 10,
+    width = "{parent.width}",
+    height = "{parent.height - 9}",
+  }, "Current Wiring", palette.warning)
+
+  refs.setup.summary_lines = {}
+  for index = 1, 5 do
+    refs.setup.summary_lines[index] = refs.setup.summary_card:addLabel({
+      x = 2,
+      y = index + 1,
+      width = "{parent.width - 3}",
+      text = "",
+      foreground = index == 1 and palette.text or palette.muted,
+    })
+  end
+end
+
+local function buildPages(controller)
+  local refs = controller.refs
+
+  refs.pages = controller.frame:addTabControl({
+    x = 1,
+    y = 4,
+    width = "{parent.width}",
+    height = "{parent.height - 3}",
+    headerBackground = palette.bg,
+    activeTabBackground = palette.accent,
+    activeTabTextColor = palette.text_dark,
+    foreground = palette.muted,
+  })
+
+  refs.pages:registerCallback("tabChanged", function(_, new_tab)
+    if controller.suppress_events then
+      return
+    end
+    controller.actions.setPage(constants.TABS[new_tab].id)
+  end)
+
+  local dashboard = refs.pages:newTab("Dashboard")
+  local rules = refs.pages:newTab("Rules")
+  local modifiers = refs.pages:newTab("Modifiers")
+  local setup = refs.pages:newTab("Setup")
+
+  buildDashboard(controller, dashboard)
+  buildRulesPage(controller, rules)
+  buildModifiersPage(controller, modifiers)
+  buildSetupPage(controller, setup)
+end
+
+local function buildTimers(controller)
+  local refs = controller.refs
+
+  refs.preview_timer = controller.frame:addTimer({
+    interval = 2,
+    running = true,
+    action = function()
+      controller.actions.onPreviewTimer()
+    end,
+  })
+  refs.preview_timer:start()
+
+  refs.sort_timer = controller.frame:addTimer({
+    interval = controller.app.config.runtime.scan_interval,
+    running = true,
+    action = function()
+      controller.actions.onSortTimer()
+    end,
+  })
+  refs.sort_timer:start()
+
+  refs.save_timer = controller.frame:addTimer({
+    interval = 10,
+    running = true,
+    action = function()
+      controller.actions.onSaveTimer()
+    end,
+  })
+  refs.save_timer:start()
+end
+
+local function buildGlobalHandlers(controller)
+  basalt.onEvent("peripheral", function()
+    controller.actions.onPeripheralEvent("peripheral")
+  end)
+
+  basalt.onEvent("peripheral_detach", function()
+    controller.actions.onPeripheralEvent("peripheral_detach")
+  end)
+
+  basalt.onEvent("terminate", function()
+    controller.actions.onTerminate()
+  end)
+end
+
+local function refreshHeader(controller)
+  local app = controller.app
+  local refs = controller.refs
+  local running = app.config.runtime.enabled
+  local status_text = running and " RUNNING " or " STOPPED "
+  local status_bg = running and palette.keep or palette.trash
+  local subtitle = nextStep(app)
+  local subtitle_color = palette.muted
+  local subtitle_width = math.max(10, controller.frame.get("width") - 27)
+
   if #app.health.errors > 0 then
-    writeAt(2, 7, app.health.errors[1], width - 2, theme.negative, theme.panel)
+    subtitle_color = palette.trash
   elseif #app.health.warnings > 0 then
-    writeAt(2, 7, app.health.warnings[1], width - 2, theme.warning, theme.panel)
-  else
-    writeAt(2, 7, string.format("Scanned %d | Keep %d | Trash %d | Errors %d", app.session.scanned, app.session.kept, app.session.discarded, app.session.errors), width - 2, colors.white, theme.panel)
+    subtitle_color = palette.warning
   end
-  writeAt(2, 8, flowText, width - 2, colors.white, theme.panel)
-  writeAt(2, 9, nextStep(app), width - 2, theme.muted, theme.panel)
 
-  panel(1, 10, width, math.max(2, selectedStart - 10), "Input Preview", theme.header)
-  renderPreviewList(frame, app, 1, 11, width, previewRows)
+  refs.runtime_pill:setText(status_text)
+  refs.runtime_pill:setBackground(status_bg)
 
-  panel(1, selectedStart, width, math.max(2, height - selectedStart + 1), "Selected Decision", theme.header)
-  for index = 1, math.min(height - selectedStart, #detailLines) do
-    local fg = colors.white
-    if index == 2 then
-      fg = selected and selected.decision and selected.decision.action == "discard" and theme.negative or theme.positive
-    elseif index == 3 then
-      fg = theme.muted
+  refs.run_button:setText(running and "Pause" or "Start")
+  refs.run_button:setBackground(running and palette.trash or palette.keep)
+  refs.run_button:setForeground(palette.text_dark)
+
+  refs.subtitle:setForeground(subtitle_color)
+  if controller.last_subtitle ~= subtitle or controller.last_subtitle_width ~= subtitle_width then
+    refs.subtitle:stopAnimation()
+    if #subtitle > subtitle_width then
+      refs.subtitle:setText(util.trimText(subtitle, subtitle_width))
+      refs.subtitle:animate():scrollText("text", subtitle, 0.25, "easeOutQuad"):start()
+    else
+      refs.subtitle:setText(subtitle)
     end
-    writeAt(2, selectedStart + index, detailLines[index], width - 2, fg, theme.panel)
-  end
-end
-
-local function renderSetup(frame, app, width, height)
-  local gap = 1
-  local roleWidth = math.floor((width - (2 * gap)) / 3)
-  local currentX = 1
-
-  for index, role in ipairs(constants.ROUTING_ROLES) do
-    if index == #constants.ROUTING_ROLES then
-      roleWidth = width - currentX + 1
-    end
-
-    local selected = app.ui.routing_role == role.id
-    button(
-      frame,
-      "routing_role",
-      currentX,
-      4,
-      roleWidth,
-      role.label,
-      selected and colors.black or colors.white,
-      selected and colors.lightGray or theme.accent,
-      { role = role.id }
-    )
-    currentX = currentX + roleWidth + gap
+    controller.last_subtitle = subtitle
+    controller.last_subtitle_width = subtitle_width
   end
 
-  panel(1, 6, width, 5, "Current Setup", theme.header)
-  writeAt(2, 7, "Input: " .. tostring(app.config.routing.input or "Not set"), width - 2, colors.white, theme.panel)
-  writeAt(2, 8, "Keep:  " .. tostring(app.config.routing.keep or "Not set"), width - 2, colors.white, theme.panel)
-  writeAt(2, 9, "Trash: " .. tostring(app.config.routing.trash or "Not set"), width - 2, colors.white, theme.panel)
-  writeAt(2, 10, "Selected: " .. roleLabel(app.ui.routing_role) .. " | " .. tostring(app.config.runtime.scan_interval) .. "s | batch " .. tostring(app.config.runtime.batch_size), width - 2, theme.muted, theme.panel)
-
-  button(frame, "routing_refresh", 1, 11, 10, "Refresh", colors.white, theme.accent)
-  button(frame, "runtime_interval_down", 13, 11, 4, "S-", colors.white, colors.gray)
-  button(frame, "runtime_interval_up", 18, 11, 4, "S+", colors.white, colors.gray)
-  button(frame, "runtime_batch_down", 24, 11, 4, "B-", colors.white, colors.gray)
-  button(frame, "runtime_batch_up", 29, 11, 4, "B+", colors.white, colors.gray)
-
-  panel(1, 12, width, math.max(2, height - 11), "Available Inventories", theme.header)
-
-  local startY = 13
-  local visibleRows = math.max(1, height - startY + 1)
-  local scroll = app.ui.inventory_scroll or 0
-  local inventories = app.discovery.inventories or {}
-
-  for row = 0, visibleRows - 1 do
-    local index = scroll + row + 1
-    local drawY = startY + row
-    fillLine(1, drawY, width, theme.panel)
-
-    local entry = inventories[index]
-    if entry then
-      local marks = roleMarks(app, entry.name)
-      local validForRole = app.ui.routing_role ~= "input" or (entry.can_detail and entry.can_push)
-      local fg = validForRole and colors.white or theme.warning
-      local prefix = "[" .. marks .. "] "
-      writeAt(2, drawY, prefix .. entry.label, width - 2, fg, theme.panel)
-      addZone(frame, "routing_assign", 1, drawY, width, drawY, { name = entry.name })
-    end
-  end
-end
-
-local function renderRules(frame, app, width, height)
-  local lastTypeRow = renderTypeButtons(frame, app, 4, width, "profiles_type")
-  local selectedType = app.ui.selected_type
-  local profile = app.config.type_profiles[selectedType]
-  local summaryY = lastTypeRow + 1
-  local summaryLines = summaryLinesForProfile(app, selectedType)
-  local presetY = summaryY + 4
-  local fieldsY = presetY + 2
-  local fields = constants.PROFILE_FIELDS[selectedType] or {}
-  local visibleRows = math.max(1, height - fieldsY)
-  local scroll = app.ui.profile_scroll or 0
-  local labelWidth = math.max(12, math.floor(width * 0.36))
-  local leftButtonX = labelWidth + 3
-  local rightButtonX = width - 2
-  local valueX = leftButtonX + 4
-  local valueWidth = math.max(1, rightButtonX - valueX - 1)
-
-  panel(1, summaryY, width, 4, "Rule Summary", theme.header)
-  writeAt(2, summaryY + 1, summaryLines[1], width - 2, colors.white, theme.panel)
-  writeAt(2, summaryY + 2, summaryLines[2], width - 2, colors.white, theme.panel)
-  writeAt(2, summaryY + 3, summaryLines[3], width - 2, selectedTypeWarning(app, selectedType) and theme.warning or theme.muted, theme.panel)
-
-  panel(1, presetY, width, 2, "Starter Presets", theme.header)
-  renderPresetButtons(frame, app, selectedType, presetY + 1, width)
-
-  fillLine(1, fieldsY, width, theme.header)
-  writeAt(2, fieldsY, "Fine Tune", width - 12, theme.header_text, theme.header)
-  button(frame, "profiles_scroll_up", width - 8, fieldsY, 4, "Up", colors.white, colors.gray)
-  button(frame, "profiles_scroll_down", width - 3, fieldsY, 3, "Dn", colors.white, colors.gray)
-
-  for row = 0, visibleRows - 1 do
-    local index = scroll + row + 1
-    local field = fields[index]
-    local drawY = fieldsY + row + 1
-    fillLine(1, drawY, width, theme.panel)
-
-    if field then
-      local label = constants.PROFILE_LABELS[field] or field
-      writeAt(2, drawY, label, labelWidth, colors.white, theme.panel)
-      button(frame, "profiles_cycle", leftButtonX, drawY, 3, "<", colors.white, theme.accent, {
-        field = field,
-        delta = -1,
-      })
-      writeAt(valueX, drawY, friendlyProfileValue(profile, field), valueWidth, colors.yellow, theme.panel)
-      button(frame, "profiles_cycle", rightButtonX, drawY, 3, ">", colors.white, theme.accent, {
-        field = field,
-        delta = 1,
-      })
-    end
-  end
-end
-
-local function renderMods(frame, app, width, height)
-  local lastTypeRow = renderTypeButtons(frame, app, 4, width, "modifiers_type")
-  local selectedType = app.ui.selected_type
-  local profile = app.config.type_profiles[selectedType]
-  local controlsY = lastTypeRow + 1
-  local listHeaderY = controlsY + 3
-  local listStartY = listHeaderY + 1
-  local rulesY = math.max(listStartY + 4, height - 4)
-  local visibleRows = math.max(2, rulesY - listStartY)
-  local catalogEntries = app.catalog_entries or {}
-  local scroll = app.ui.catalog_scroll or 0
-  local selectedLabel = selectedModifierLabel(app)
-
-  panel(1, controlsY, width, 3, "Modifier Rules", theme.header)
-  writeAt(2, controlsY + 1, "Wanted match: " .. friendlyProfileValue(profile, "wanted_modifier_mode") .. " | Selected: " .. selectedLabel, width - 2, colors.white, theme.panel)
-  button(frame, "modifiers_mode_cycle", 1, controlsY + 2, 12, "Mode", colors.white, theme.accent)
-  button(frame, "modifiers_add_keep", 14, controlsY + 2, 12, "+ Keep", colors.white, colors.green)
-  button(frame, "modifiers_add_block", 27, controlsY + 2, 12, "+ Block", colors.white, colors.red)
-  button(frame, "modifiers_clear_all", 40, controlsY + 2, width - 39, "Clear All", colors.white, colors.gray)
-
-  fillLine(1, listHeaderY, width, theme.header)
-  writeAt(2, listHeaderY, "Discovered Modifiers", width - 12, theme.header_text, theme.header)
-  button(frame, "modifiers_catalog_up", width - 8, listHeaderY, 4, "Up", colors.white, colors.gray)
-  button(frame, "modifiers_catalog_down", width - 3, listHeaderY, 3, "Dn", colors.white, colors.gray)
-
-  for row = 0, visibleRows - 1 do
-    local index = scroll + row + 1
-    local drawY = listStartY + row
-    fillLine(1, drawY, width, theme.panel)
-
-    local entry = catalogEntries[index]
-    if entry then
-      local selected = app.ui.selected_modifier_key == entry.key
-      local bg = selected and theme.preview_selected or theme.panel
-      local fg = selected and theme.preview_selected_text or colors.white
-      writeAt(2, drawY, entry.label, width - 2, fg, bg)
-      addZone(frame, "modifiers_select_catalog", 1, drawY, width, drawY, { key = entry.key })
-    end
-  end
-
-  panel(1, rulesY, width, math.max(2, height - rulesY + 1), "Current Rules", theme.header)
-  writeAt(2, rulesY + 1, "Keep:  " .. ruleListText(profile.wanted_modifiers), width - 2, colors.green, theme.panel)
-  writeAt(2, rulesY + 2, "Block: " .. ruleListText(profile.blocked_modifiers), width - 2, colors.red, theme.panel)
-  button(frame, "modifiers_remove_keep", 1, height, math.floor((width - 1) / 2), "- Keep", colors.white, colors.gray)
-  button(frame, "modifiers_remove_block", width - math.floor((width - 1) / 2) + 1, height, math.floor((width - 1) / 2), "- Block", colors.white, colors.gray)
-end
-
-function M.render(app)
-  local frame = {
-    zones = {},
-  }
-
-  if not app.monitor or not app.monitor.peripheral then
-    return frame
-  end
-
-  local oldTerm = term.current()
-  term.redirect(app.monitor.peripheral)
-  term.setBackgroundColor(theme.background)
-  term.setTextColor(colors.white)
-  term.clear()
-  term.setCursorPos(1, 1)
-
-  local width, height = term.getSize()
-  frame.width = width
-  frame.height = height
-
-  header(frame, app, width)
+  refs.notice:setVisible(not app.health.monitor_ok)
+  refs.pages:setVisible(app.health.monitor_ok)
 
   if not app.health.monitor_ok then
-    writeAt(1, 5, app.health.monitor_error or "Monitor missing or too small", width, theme.negative, theme.background)
-  else
-    if app.ui.page == "run" then
-      renderHome(frame, app, width, height)
-    elseif app.ui.page == "routing" then
-      renderSetup(frame, app, width, height)
-    elseif app.ui.page == "profiles" then
-      renderRules(frame, app, width, height)
-    elseif app.ui.page == "modifiers" then
-      renderMods(frame, app, width, height)
-    end
+    setWrappedLabelLines(refs.notice_lines, {
+      app.health.monitor_error or "Monitor unavailable.",
+      "This UI is designed for a monitor and will reattach automatically when one becomes available.",
+      "Attach or resize a monitor, then tap Refresh Peripherals if needed.",
+      "Minimum size: " .. constants.MIN_MONITOR_WIDTH .. "x" .. constants.MIN_MONITOR_HEIGHT .. " characters.",
+    }, math.max(16, controller.frame.get("width") - 6))
   end
-
-  term.redirect(oldTerm)
-  return frame
 end
 
-function M.hit(frame, x, y)
-  for _, zone in ipairs(frame.zones or {}) do
-    if x >= zone.x1 and x <= zone.x2 and y >= zone.y1 and y <= zone.y2 then
-      return zone
+local function refreshDashboard(controller)
+  local app = controller.app
+  local refs = controller.refs.dashboard
+  local preview = app.preview.items or {}
+  local selected_index = util.clamp(app.ui.preview_selected or 1, 1, math.max(1, #preview))
+  local selected_entry = preview[selected_index]
+  local total_moves = app.session.kept + app.session.discarded
+  local keep_ratio = total_moves > 0 and math.floor((app.session.kept / total_moves) * 100 + 0.5) or 0
+  local show_recent = controller.refs.dashboard.recent_card.get("height") >= 4
+  local flow_text = string.format(
+    "Flow: %s -> %s / %s",
+    findInventoryLabel(app, app.config.routing.input),
+    findInventoryLabel(app, app.config.routing.keep),
+    findInventoryLabel(app, app.config.routing.trash)
+  )
+  local cycle_text = app.last_cycle_at
+    and ("Last sort: " .. util.formatTime(app.last_cycle_at) .. " | Preview: " .. tostring(#preview))
+    or ("Preview: " .. tostring(#preview) .. " | Waiting for first live sort")
+
+  if #app.health.errors > 0 then
+    refs.status_lines[1]:setText(app.health.errors[1])
+    refs.status_lines[1]:setForeground(palette.trash)
+  elseif #app.health.warnings > 0 then
+    refs.status_lines[1]:setText(app.health.warnings[1])
+    refs.status_lines[1]:setForeground(palette.warning)
+  else
+    refs.status_lines[1]:setText(string.format("Scanned %d | Keep %d | Trash %d | Errors %d", app.session.scanned, app.session.kept, app.session.discarded, app.session.errors))
+    refs.status_lines[1]:setForeground(palette.text)
+  end
+
+  refs.status_lines[2]:setText(util.trimText(flow_text, math.max(12, refs.hero.get("width") - 3)))
+  refs.status_lines[3]:setText(util.trimText(cycle_text, math.max(12, refs.hero.get("width") - 3)))
+  refs.progress:setProgress(keep_ratio)
+  refs.progress:setProgressColor(total_moves > 0 and palette.keep or palette.surface)
+
+  refs.preview_list:clear()
+  for index, entry in ipairs(preview) do
+    local badge, badge_color = previewBadge(entry)
+    refs.preview_list:addItem({
+      text = string.format("[%s] %s", badge, tostring(entry.item.display_name or "?")),
+      key = tostring(index),
+      fg = badge_color,
+      selected = index == selected_index,
+      selectedBg = palette.accent,
+      selectedFg = palette.text_dark,
+    })
+  end
+  if #preview > 0 then
+    refs.preview_list:scrollToItem(selected_index)
+  end
+
+  local detail_lines = selectedDecisionLines(selected_entry)
+  refs.detail_list:clear()
+  for index, line in ipairs(detail_lines) do
+    local color = palette.text
+    if index == 2 then
+      color = (selected_entry and selected_entry.decision and selected_entry.decision.action == "discard") and palette.trash or palette.keep
+    elseif index == 3 then
+      color = palette.muted
+    end
+
+    refs.detail_list:addItem({
+      text = line,
+      fg = color,
+    })
+  end
+  refs.detail_list:scrollToTop()
+  refs.recent_card:setVisible(show_recent)
+
+  refs.recent_list:clear()
+  for _, entry in ipairs(app.recent or {}) do
+    refs.recent_list:addItem({
+      text = formatRecentEntry(entry),
+      fg = chooseColor(entry.level),
+    })
+  end
+  refs.recent_list:scrollToBottom()
+end
+
+local function refreshRules(controller)
+  local app = controller.app
+  controller.suppress_events = true
+  controller.refs.rules.types:setActiveTab(typeIndex(app.ui.selected_type))
+  controller.suppress_events = false
+
+  for _, itemType in ipairs(constants.SUPPORTED_TYPES) do
+    local page = controller.refs.rules[itemType]
+    local profile = app.config.type_profiles[itemType]
+    local summary = summaryLinesForProfile(app, itemType)
+
+    setLabelLines(page.summary, summary)
+    page.summary[3]:setForeground(selectedTypeWarning(app, itemType) and palette.warning or palette.muted)
+
+    page.switches.enabled:setChecked(profile.enabled == true)
+    setDropdownItems(page.choices.miss_action.dropdown, choice_options.miss_action, profile.miss_action)
+    setDropdownItems(page.choices.unidentified_mode.dropdown, choice_options.unidentified_mode, profile.unidentified_mode)
+
+    if page.choices.min_rarity then
+      setDropdownItems(page.choices.min_rarity.dropdown, choice_options.min_rarity, profile.min_rarity)
+    end
+
+    for field, row in pairs(page.numbers) do
+      row.value:setText(friendlyProfileValue(profile, field))
+    end
+
+    if page.switches.keep_legendary then
+      page.switches.keep_legendary:setChecked(profile.keep_legendary == true)
+    end
+    if page.switches.keep_soulbound then
+      page.switches.keep_soulbound:setChecked(profile.keep_soulbound == true)
+    end
+    if page.switches.keep_unique then
+      page.switches.keep_unique:setChecked(profile.keep_unique == true)
     end
   end
-  return nil
+end
+
+local function refreshModifiers(controller)
+  local app = controller.app
+  local itemType = app.ui.selected_type
+
+  controller.suppress_events = true
+  controller.refs.modifiers.types:setActiveTab(typeIndex(itemType))
+  controller.suppress_events = false
+
+  for _, supportedType in ipairs(constants.SUPPORTED_TYPES) do
+    local page = controller.refs.modifiers[supportedType]
+    local profile = app.config.type_profiles[supportedType]
+    local catalog_entries = catalog.listForType(app.state.catalog, supportedType)
+
+    setDropdownItems(page.mode_row.dropdown, choice_options.wanted_modifier_mode, profile.wanted_modifier_mode)
+
+    page.catalog_list:clear()
+    for _, entry in ipairs(catalog_entries) do
+      page.catalog_list:addItem({
+        text = entry.label,
+        key = entry.key,
+        selected = supportedType == itemType and app.ui.selected_modifier_key == entry.key,
+      })
+    end
+
+    page.keep_list:clear()
+    for _, entry in ipairs(profile.wanted_modifiers or {}) do
+      page.keep_list:addItem({
+        text = entry.label or entry.key,
+        key = entry.key,
+        selected = supportedType == itemType and app.ui.selected_keep_key == entry.key,
+        fg = palette.keep,
+      })
+    end
+
+    page.block_list:clear()
+    for _, entry in ipairs(profile.blocked_modifiers or {}) do
+      page.block_list:addItem({
+        text = entry.label or entry.key,
+        key = entry.key,
+        selected = supportedType == itemType and app.ui.selected_block_key == entry.key,
+        fg = palette.trash,
+      })
+    end
+  end
+end
+
+local function refreshSetup(controller)
+  local app = controller.app
+  local refs = controller.refs.setup
+
+  setDropdownItems(refs.input_row.dropdown, routingOptions(app, "input"), app.config.routing.input)
+  setDropdownItems(refs.keep_row.dropdown, routingOptions(app, "keep"), app.config.routing.keep)
+  setDropdownItems(refs.trash_row.dropdown, routingOptions(app, "trash"), app.config.routing.trash)
+
+  refs.scan_stepper.value:setText(tostring(app.config.runtime.scan_interval) .. "s")
+  refs.batch_stepper.value:setText(tostring(app.config.runtime.batch_size))
+
+  local summary_lines = {
+    "Input: " .. findInventoryLabel(app, app.config.routing.input),
+    "Keep: " .. findInventoryLabel(app, app.config.routing.keep),
+    "Trash: " .. findInventoryLabel(app, app.config.routing.trash),
+    app.monitor and string.format("Monitor: %s | %dx%d @ %s", app.monitor.name, app.monitor.width, app.monitor.height, tostring(app.monitor.text_scale or "?")) or "Monitor: not available",
+    (#app.health.errors > 0 and app.health.errors[1]) or (#app.health.warnings > 0 and app.health.warnings[1]) or "Routing looks healthy.",
+  }
+
+  setWrappedLabelLines(refs.summary_lines, summary_lines, math.max(16, controller.refs.setup.summary_card.get("width") - 3))
+  refs.summary_lines[5]:setForeground(#app.health.errors > 0 and palette.trash or (#app.health.warnings > 0 and palette.warning or palette.muted))
+end
+
+local function refreshAll(controller)
+  refreshHeader(controller)
+  if controller.app.health.monitor_ok then
+    controller.suppress_events = true
+    controller.refs.pages:setActiveTab(pageIndex(controller.app.ui.page))
+    controller.suppress_events = false
+    refreshDashboard(controller)
+    refreshRules(controller)
+    refreshModifiers(controller)
+    refreshSetup(controller)
+  end
+end
+
+local function refreshLive(controller)
+  refreshHeader(controller)
+  if controller.app.health.monitor_ok then
+    refreshDashboard(controller)
+    refreshModifiers(controller)
+    refreshSetup(controller)
+  end
+end
+
+local function rebindTerm(controller)
+  local target_term = term.current()
+  if controller.app.monitor and controller.app.monitor.peripheral then
+    target_term = controller.app.monitor.peripheral
+  end
+
+  controller.frame:setTerm(target_term)
+  if controller.refs.sort_timer then
+    controller.refs.sort_timer:setInterval(controller.app.config.runtime.scan_interval)
+  end
+end
+
+local function notify(controller, level, title, message)
+  if not controller.refs.toast then
+    return
+  end
+
+  if level == "success" then
+    controller.refs.toast:success(title, message, 2.5)
+  elseif level == "warning" then
+    controller.refs.toast:warning(title, message, 3)
+  elseif level == "error" then
+    controller.refs.toast:error(title, message, 4)
+  else
+    controller.refs.toast:info(title, message, 2.5)
+  end
+end
+
+function M.create(app, actions)
+  local theme_api = basalt.getAPI("theme")
+  if theme_api and theme_api.setTheme then
+    theme_api.setTheme(theme)
+  end
+
+  local controller = {
+    app = app,
+    actions = actions,
+    refs = {},
+    suppress_events = false,
+    last_subtitle = nil,
+    last_subtitle_width = nil,
+  }
+
+  controller.frame = basalt.createFrame()
+
+  controller.rebindTerm = function(self)
+    rebindTerm(self)
+  end
+
+  controller.refreshHeader = function(self)
+    refreshHeader(self)
+  end
+
+  controller.refreshDashboard = function(self)
+    refreshDashboard(self)
+  end
+
+  controller.refreshModifiers = function(self)
+    refreshModifiers(self)
+  end
+
+  controller.refreshSetup = function(self)
+    refreshSetup(self)
+  end
+
+  controller.refreshLive = function(self)
+    refreshLive(self)
+  end
+
+  controller.refreshAll = function(self)
+    refreshAll(self)
+  end
+
+  controller.notify = function(self, level, title, message)
+    notify(self, level, title, message)
+  end
+
+  controller.run = function()
+    basalt.run()
+  end
+
+  controller:rebindTerm()
+  buildHeader(controller)
+  buildNotice(controller)
+  buildPages(controller)
+  buildTimers(controller)
+  buildGlobalHandlers(controller)
+  controller:refreshAll()
+
+  return controller
 end
 
 return M
