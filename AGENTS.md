@@ -20,7 +20,7 @@
 
 - The primary deployment flow is the generated deploy index published from `scripts/build-deploy-index.ps1`.
 - On every push to `main`, GitHub Actions publishes the current deploy metadata to the `deploy-index` branch.
-- `Games/manifest.json` is legacy compatibility output and is not the source of truth for installer or updater behavior.
+- `Games/manifest.json` and the old manifest generator have been retired from the deployment flow.
 - Use `scripts/sync-roger-code.ps1 -Game <Name>` only when the user explicitly asks for a local PrismLauncher deployment.
 - `scripts/deploy-to-world.ps1` is the manual deploy entry point for live ComputerCraft saves; do not run it by default.
 - The legacy `.vscode/deploy-to-emulator.ps1` path now forwards into the live PrismLauncher deploy flow for compatibility.

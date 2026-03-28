@@ -85,10 +85,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Regenerate Manifest",
+      "label": "Build Deploy Index",
       "type": "shell",
       "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/generate-manifest.ps1"],
+      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/build-deploy-index.ps1"],
       "group": "none",
       "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
       "problemMatcher": []

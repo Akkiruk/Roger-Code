@@ -115,8 +115,8 @@ local installInfo = updater.getInstallInfo()
 if installInfo then
   debugLog("Installed: " .. tostring(installInfo.program)
     .. " v" .. tostring(installInfo.version)
-    .. " | lib v" .. tostring(installInfo.lib_version)
-    .. " | hash=" .. tostring(installInfo.content_hash))
+    .. " | commit=" .. tostring(installInfo.source_commit):sub(1, 8)
+    .. " | pkg=" .. tostring(installInfo.package_hash or installInfo.content_hash):sub(1, 8))
 else
   debugLog("WARNING: No .installed_program record found!")
 end

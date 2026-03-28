@@ -6,9 +6,7 @@ param(
     [switch]$ResetConfig,
     [switch]$AllInstalled,
     [switch]$ListTargets,
-    [switch]$DryRun,
-    [switch]$SkipDeployIndex,
-    [switch]$SkipManifest
+    [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
@@ -284,10 +282,6 @@ function Get-ComputerTargets {
 
 function Get-DeployIndex {
     param()
-
-    if ($SkipDeployIndex -or $SkipManifest) {
-        throw "Skipping deploy-index generation is no longer supported for the primary deployment flow."
-    }
 
     & $buildScript -RepoRoot $repoRoot -OutputDir $indexDir
     if ($LASTEXITCODE -ne 0) {

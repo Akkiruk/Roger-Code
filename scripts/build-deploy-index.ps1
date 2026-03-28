@@ -327,23 +327,11 @@ function Get-LibDependencyClosure {
 function Get-VersionSeedData {
     param(
         [string]$Key,
-        [hashtable]$PreviousPrograms,
-        [pscustomobject]$LegacyManifest
+        [hashtable]$PreviousPrograms
     )
 
     if ($PreviousPrograms.ContainsKey($Key)) {
         return $PreviousPrograms[$Key]
-    }
-
-    if ($LegacyManifest -and $LegacyManifest.programs) {
-        foreach ($property in $LegacyManifest.programs.PSObject.Properties) {
-            if ($property.Name.ToLowerInvariant() -eq $Key.ToLowerInvariant()) {
-                return @{
-                    version = [string]$property.Value.version
-                    package_hash = [string]$property.Value.content_hash
-                }
-            }
-        }
     }
 
     return @{
@@ -368,11 +356,10 @@ function Resolve-DisplayVersion {
     param(
         [string]$Key,
         [string]$PackageHash,
-        [hashtable]$PreviousPrograms,
-        [pscustomobject]$LegacyManifest
+        [hashtable]$PreviousPrograms
     )
 
-    $seed = Get-VersionSeedData -Key $Key -PreviousPrograms $PreviousPrograms -LegacyManifest $LegacyManifest
+    $seed = Get-VersionSeedData -Key $Key -PreviousPrograms $PreviousPrograms
     if (-not $seed.package_hash) {
         return $seed.version
     }
@@ -395,16 +382,6 @@ if ($PreviousIndexDir) {
                 package_hash = [string]$property.Value.package_hash
             }
         }
-    }
-}
-
-$legacyManifest = $null
-$legacyManifestPath = Join-Path $GamesDir "manifest.json"
-if (Test-Path $legacyManifestPath) {
-    try {
-        $legacyManifest = Get-Content $legacyManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    } catch {
-        $legacyManifest = $null
     }
 }
 
@@ -497,7 +474,7 @@ foreach ($dir in ($programDirs | Sort-Object FullName)) {
         "$($_.install_path)|$($_.repo_path)|$([bool]$_.preserve_existing)|$($_.sha256)"
     }) -join "`n"
     $packageHash = Get-StringSha256 -Value $packageHashInput
-    $version = Resolve-DisplayVersion -Key $meta.key -PackageHash $packageHash -PreviousPrograms $previousPrograms -LegacyManifest $legacyManifest
+    $version = Resolve-DisplayVersion -Key $meta.key -PackageHash $packageHash -PreviousPrograms $previousPrograms
 
     $spec = [ordered]@{
         schema_version = $SchemaVersion
@@ -553,8 +530,29 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
         sha256 = Get-FileSha256 -Path $fullPath
     }
 
-    $packageHash = Get-StringSha256 -Value "$($installFile.install_path)|$($installFile.repo_path)|False|$($installFile.sha256)"
-    $version = Resolve-DisplayVersion -Key $key -PackageHash $packageHash -PreviousPrograms $previousPrograms -LegacyManifest $legacyManifest
+    $libClosure = Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $UtilitiesDir -LuaRelativePaths @($file.Name)
+    $installFiles = New-Object System.Collections.Generic.List[object]
+    $installFiles.Add($installFile)
+    $libModules = New-Object System.Collections.Generic.List[string]
+
+    foreach ($libFile in $libClosure) {
+        $libFullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
+        $installFiles.Add([ordered]@{
+            repo_path = "Games/lib/$libFile"
+            install_path = "lib/$libFile"
+            sha256 = Get-FileSha256 -Path $libFullPath
+        })
+
+        $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
+        $libModules.Add($moduleName)
+    }
+
+    $orderedInstallFiles = @($installFiles | Sort-Object install_path, repo_path)
+    $packageHashInput = ($orderedInstallFiles | ForEach-Object {
+        "$($_.install_path)|$($_.repo_path)|$([bool]$_.preserve_existing)|$($_.sha256)"
+    }) -join "`n"
+    $packageHash = Get-StringSha256 -Value $packageHashInput
+    $version = Resolve-DisplayVersion -Key $key -PackageHash $packageHash -PreviousPrograms $previousPrograms
 
     $programSpecs.Add([ordered]@{
         schema_version = $SchemaVersion
@@ -574,11 +572,11 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
         }
         install = [ordered]@{
             preserve = @()
-            files = @($installFile)
+            files = $orderedInstallFiles
         }
         runtime = [ordered]@{
-            requires_updater = $false
-            lib_modules = @()
+            requires_updater = [bool]($libModules -contains "lib.updater")
+            lib_modules = @($libModules | Sort-Object -Unique)
         }
     })
 }
