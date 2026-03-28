@@ -7,12 +7,12 @@
     "description": "European Roulette with a single-screen felt UI and multi-bet support.",
     "source_root": "Games/Roulette",
     "entrypoint": "Roulette.lua",
-    "version": "1.0.40"
+    "version": "1.0.41"
   },
   "build": {
-    "commit": "89c17f77a2302c8a8b277331354147c4c6549352",
-    "generated_at": "2026-03-28T20:46:24Z",
-    "package_hash": "9bfd61800c6fc165ec17480ac45cdada710277638d56171aeae38de1584b7d8a"
+    "commit": "d90707d5f84707116e792c0f25f20995ea44be4b",
+    "generated_at": "2026-03-28T20:57:46Z",
+    "package_hash": "7d5789032c8b1e099458baf437ed6baac927035b2257212117184b96c26ee65a"
   },
   "install": {
     "preserve": [
@@ -123,7 +123,7 @@
       {
         "repo_path": "Games/Roulette/roulette_render.lua",
         "install_path": "roulette_render.lua",
-        "sha256": "ba942b19bc5b8f04d2342c0cb319ca5c7353e62c138f9bb4b4f0c8d0d1ed7114"
+        "sha256": "022dd444491fd5a9a4211a2e8b353b46f3869a8941050a6cf3cde64f49f61b8e"
       },
       {
         "repo_path": "Games/Roulette/roulette_model.lua",
