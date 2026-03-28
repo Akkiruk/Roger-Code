@@ -20,7 +20,7 @@ if ($PreviousIndexDir) {
 }
 
 & (Join-Path $PSScriptRoot "check-lua-forward-declarations.ps1") -RepoRoot $RepoRoot
-if ($LASTEXITCODE -ne 0) {
+if (-not $?) {
     throw "Lua forward-declaration check failed"
 }
 
