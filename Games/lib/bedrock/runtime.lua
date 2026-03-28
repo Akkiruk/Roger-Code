@@ -1,6 +1,8 @@
 local layout = require("lib.bedrock.layout")
 local renderer = require("lib.bedrock.renderer")
 local theme = require("lib.bedrock.theme")
+local text = require("lib.ui_text")
+local touch = require("lib.ui_touch")
 
 local M = {}
 
@@ -25,53 +27,6 @@ Runtime.__index = Runtime
 
 local function nowMs()
   return os.epoch("local")
-end
-
-local function trimText(text, maxLen)
-  local value = tostring(text or "")
-  if maxLen <= 0 then
-    return ""
-  end
-  if #value <= maxLen then
-    return value
-  end
-  if maxLen <= 2 then
-    return value:sub(1, maxLen)
-  end
-  return value:sub(1, maxLen - 2) .. ".."
-end
-
-local function wrapText(text, width, maxLines)
-  local source = tostring(text or "")
-  local lines = {}
-  local limit = maxLines or 999
-  width = math.max(1, width)
-
-  local current = ""
-  for word in source:gmatch("%S+") do
-    local candidate = current == "" and word or (current .. " " .. word)
-    if #candidate <= width then
-      current = candidate
-    else
-      if current ~= "" then
-        lines[#lines + 1] = current
-      end
-      current = #word <= width and word or trimText(word, width)
-      if #lines >= limit then
-        return lines
-      end
-    end
-  end
-
-  if current ~= "" and #lines < limit then
-    lines[#lines + 1] = current
-  end
-
-  if #lines == 0 then
-    lines[1] = ""
-  end
-
-  return lines
 end
 
 local function safeInvoke(fn, ...)
@@ -334,12 +289,12 @@ function Runtime:createContext()
     }
   end
 
-  function ctx:trimText(text, maxLen)
-    return trimText(text, maxLen)
+  function ctx:trimText(value, maxLen)
+    return text.trimText(value, maxLen)
   end
 
-  function ctx:wrapText(text, width, maxLines)
-    return wrapText(text, width, maxLines)
+  function ctx:wrapText(value, width, maxLines)
+    return text.wrapText(value, width, maxLines)
   end
 
   return ctx
@@ -406,11 +361,11 @@ function Runtime:drawDialog(ctx)
   ctx:fillRect(layout.rect(1, 1, ctx.width, ctx.height), "overlay", "text", " ")
   ctx:fillRect(card, "surface", "text", " ")
   ctx:fillRect(layout.rect(card.x, card.y, card.w, 1), dialog.accent, "text_dark", " ")
-  ctx:drawText(card.x + 1, card.y, " " .. trimText(dialog.title or "Notice", math.max(1, card.w - 3)), "text_dark", dialog.accent)
+  ctx:drawText(card.x + 1, card.y, " " .. text.trimText(dialog.title or "Notice", math.max(1, card.w - 3)), "text_dark", dialog.accent)
 
   local maxLines = math.max(1, buttonsTop - body.y - 1)
   for index = 1, math.min(#wrapped, maxLines) do
-    ctx:drawText(body.x, body.y + index - 1, trimText(wrapped[index], body.w), "text", nil)
+    ctx:drawText(body.x, body.y + index - 1, text.trimText(wrapped[index], body.w), "text", nil)
   end
 
   if dialog.dismiss_on_backdrop then
@@ -425,7 +380,7 @@ function Runtime:drawDialog(ctx)
     local rect = actionRects[index]
     if rect then
       ctx:fillRect(rect, button.background, button.foreground, " ")
-      ctx:drawText(rect.x + math.max(0, math.floor((rect.w - #button.label) / 2)), rect.y, trimText(button.label, rect.w), button.foreground, button.background)
+      ctx:drawText(rect.x + math.max(0, math.floor((rect.w - #button.label) / 2)), rect.y, text.trimText(button.label, rect.w), button.foreground, button.background)
       ctx:addHit(rect, {
         onClick = function()
           if button.dismiss ~= false then
@@ -465,8 +420,8 @@ function Runtime:drawToasts(ctx)
 
     ctx:fillRect(layout.rect(x, y, width, 3), "surface", "text", " ")
     ctx:fillRect(layout.rect(x, y, width, 1), accent, "text_dark", " ")
-    ctx:drawText(x + 1, y, " " .. trimText(toast.title, width - 3), "text_dark", accent)
-    ctx:drawText(x + 1, y + 1, trimText(toast.message, width - 2), "text", nil)
+    ctx:drawText(x + 1, y, " " .. text.trimText(toast.title, width - 3), "text_dark", accent)
+    ctx:drawText(x + 1, y + 1, text.trimText(toast.message, width - 2), "text", nil)
     y = y + 3
   end
 end
@@ -588,7 +543,7 @@ function Runtime:handleEvent(eventName, ...)
 
   if eventName == "monitor_touch" then
     local side, x, y = ...
-    if self.term_name and side == self.term_name then
+    if self.term_name and side == self.term_name and self.authorizeTouch() then
       self:dispatchClick(x, y, 1)
     end
     return
@@ -679,6 +634,7 @@ function M.create(opts)
     running = false,
     error_state = nil,
     dialog = nil,
+    authorizeTouch = options.authorizeTouch or touch.isAuthorizedMonitorTouch,
   }, Runtime)
 
   return instance

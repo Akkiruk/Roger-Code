@@ -1,25 +1,6 @@
-local currency = require("lib.currency")
 local ui = require("lib.ui")
 
 local M = {}
-
-local function isAuthorizedTouch()
-  local sessionPlayer = currency.getAuthenticatedPlayerName and currency.getAuthenticatedPlayerName() or nil
-  if not sessionPlayer or sessionPlayer == "" then
-    return true
-  end
-
-  local currentPlayer = nil
-  if currency.getLivePlayerName then
-    currentPlayer = currency.getLivePlayerName()
-  end
-  if (not currentPlayer or currentPlayer == "") and currency.getSessionInfo then
-    local info = currency.getSessionInfo()
-    currentPlayer = info and info.playerName or nil
-  end
-
-  return (not currentPlayer) or currentPlayer == sessionPlayer
-end
 
 local function drawCenteredLine(screen, text, y, color)
   local font = ui.getFont()
@@ -131,7 +112,7 @@ function M.waitForChoice(screen, opts)
       local event, param1, param2, param3 = os.pullEvent()
 
       if event == "monitor_touch" then
-        if isAuthorizedTouch() then
+        if ui.isAuthorizedMonitorTouch() then
           lastActivityTime = os.epoch("local")
           local callback = ui.checkButtonHit(param2, param3)
           if callback then

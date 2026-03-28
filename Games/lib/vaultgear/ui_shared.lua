@@ -1,4 +1,4 @@
-local bedrock = require("lib.bedrock")
+local ui = require("lib.ui")
 local constants = require("lib.vaultgear.constants")
 local planner = require("lib.vaultgear.planner")
 local presets = require("lib.vaultgear.presets")
@@ -8,8 +8,8 @@ local util = require("lib.vaultgear.util")
 
 local M = {}
 
-M.layout = bedrock.layout
-M.widgets = bedrock.widgets
+M.layout = ui.layout
+M.widgets = ui.widgets
 
 M.theme = {
   bg = colors.black,

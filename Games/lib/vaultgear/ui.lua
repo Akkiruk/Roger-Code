@@ -1,11 +1,11 @@
-local bedrock = require("lib.bedrock")
+local ui = require("lib.ui")
 local pages = require("lib.vaultgear.ui_pages")
 local shared = require("lib.vaultgear.ui_shared")
 
 local M = {}
 
 function M.create(app, actions)
-  local runtime = bedrock.createRuntime({
+  local runtime = ui.createRuntime({
     theme = shared.theme,
     term = term.current(),
   })
