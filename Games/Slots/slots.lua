@@ -231,20 +231,17 @@ local function drawReelShell(target, x, y, highlight)
   target:fillRect(x + REEL_W - 1, y, 1, REEL_H, borderClr)
 end
 
-local function drawReelGlass(target, x, y, highlight, spinning)
+local function drawReelGlass(target, x, y, highlight)
   local innerX = x + 1
   local innerY = y + 1
   local sheen = highlight and colors.lightGray or colors.gray
   local shadow = highlight and colors.gray or colors.black
-  local payLineColor = highlight and colors.yellow or (spinning and colors.lightGray or colors.gray)
-  local payLineY = innerY + floor(REEL_INNER_H / 2)
 
   target:fillRect(innerX, innerY, REEL_INNER_W, 1, sheen)
   target:fillRect(innerX, innerY + REEL_INNER_H - 1, REEL_INNER_W, 1, shadow)
   if REEL_INNER_H > 6 then
     target:fillRect(innerX, innerY + 1, REEL_INNER_W, 1, sheen)
   end
-  target:fillRect(innerX + 1, payLineY, max(1, REEL_INNER_W - 2), 1, payLineColor)
 end
 
 -----------------------------------------------------
@@ -253,7 +250,7 @@ end
 local function drawReelCell(x, y, sym, highlight)
   drawReelShell(screen, x, y, highlight)
   screen:drawSurface(getSymbolSurface(sym, highlight), x + 1, y + 1)
-  drawReelGlass(screen, x, y, highlight, false)
+  drawReelGlass(screen, x, y, highlight)
 end
 
 local function drawAnimatedReel(x, y, state)
@@ -271,7 +268,7 @@ local function drawAnimatedReel(x, y, state)
     screen:drawSurface(nextSurface, x + 1, y + 1 + visibleCurrent, REEL_INNER_W, offset, 0, 0, REEL_INNER_W, offset)
   end
 
-  drawReelGlass(screen, x, y, false, true)
+  drawReelGlass(screen, x, y, false)
 end
 
 -----------------------------------------------------

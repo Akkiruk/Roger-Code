@@ -10,28 +10,28 @@
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 
-local INSTALLER_VERSION = "1.1.4"
+local INSTALLER_VERSION = "1.1.5"
 local REPO_OWNER = "Akkiruk"
-local REPO_NAME  = "Roger-Code"
-local BRANCH     = "main"
-local API_URL    = "https://api.github.com/repos/"
-                    .. REPO_OWNER .. "/" .. REPO_NAME
-local RAW_ROOT   = "https://raw.githubusercontent.com/"
-                    .. REPO_OWNER .. "/" .. REPO_NAME .. "/"
-local REPO_URL   = RAW_ROOT .. BRANCH .. "/"
-local MANIFEST_URL = REPO_URL .. "Games/manifest.json"
+local REPO_NAME = "Roger-Code"
+local SOURCE_BRANCH = "main"
+local DEPLOY_BRANCH = "deploy-index"
+local RAW_ROOT = "https://raw.githubusercontent.com/" .. REPO_OWNER .. "/" .. REPO_NAME .. "/"
+local DEPLOY_URL = RAW_ROOT .. DEPLOY_BRANCH .. "/"
+local LATEST_URL = DEPLOY_URL .. "latest.json"
 local VERSION_FILE = ".installed_program"
+local MANAGED_FILES = ".roger_managed_files"
 local PHONE_HOST_MARKER_FILE = ".phone_os_host_claimed"
-local LOG_FILE     = "installer_error.log"
+local LOG_FILE = "installer_error.log"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
-local UNLOCK_FILE   = ".vhcc_unlock"
-local API_HEADERS  = {
+local UNLOCK_FILE = ".vhcc_unlock"
+local STAGING_ROOT = ".install_staging"
+local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
+local API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
   ["Accept"] = "application/vnd.github+json",
 }
 
 local tArgs = { ... }
-local resolvedRawBase = nil
 
 ---------------------------------------------------------------------------
 -- Error logging
@@ -77,17 +77,17 @@ end
 
 local function progressBar(current, total, width)
   width = width or 20
-  local filled = math.floor((current / total) * width)
+  local safeTotal = total > 0 and total or 1
+  local filled = math.floor((current / safeTotal) * width)
   return "[" .. string.rep("=", filled)
-       .. string.rep(" ", width - filled) .. "] "
-       .. current .. "/" .. total
+    .. string.rep(" ", width - filled) .. "] "
+    .. current .. "/" .. total
 end
 
 ---------------------------------------------------------------------------
 -- HTTP / file helpers
 ---------------------------------------------------------------------------
 local function download(url, headers)
-  -- Always binary to preserve precompiled assets (surface, fonts)
   local ok, response = pcall(function()
     return http.get(url, headers, true)
   end)
@@ -106,6 +106,19 @@ local function download(url, headers)
   return data
 end
 
+local function parseJson(data, label)
+  if type(data) ~= "string" then
+    return nil, "Unexpected " .. tostring(label or "JSON") .. " data type"
+  end
+
+  local decoded = textutils.unserialiseJSON(data)
+  if type(decoded) ~= "table" then
+    return nil, "Failed to parse " .. tostring(label or "JSON")
+  end
+
+  return decoded
+end
+
 local function saveFile(path, data)
   local dir = fs.getDir(path)
   if dir ~= "" and not fs.exists(dir) then
@@ -120,33 +133,79 @@ local function saveFile(path, data)
   return true
 end
 
-local function downloadAndSave(url, path)
+local function readFile(path, binary)
+  if not fs.exists(path) then
+    return nil
+  end
+  local mode = binary and "rb" or "r"
+  local f = fs.open(path, mode)
+  if not f then
+    return nil
+  end
+  local data = f.readAll()
+  f.close()
+  return data
+end
+
+local function computeSha256(data)
+  if textutils and type(textutils.sha256) == "function" then
+    return textutils.sha256(data)
+  end
+  return nil
+end
+
+local function verifyHash(data, expected)
+  if type(expected) ~= "string" or expected == "" then
+    return true
+  end
+
+  local actual = computeSha256(data)
+  if not actual then
+    return true
+  end
+
+  return string.lower(actual) == string.lower(expected)
+end
+
+local function removePath(path)
+  if fs.exists(path) then
+    fs.delete(path)
+  end
+end
+
+local function downloadAndStage(url, stagePath, expectedSha)
   local data, err = download(url)
-  if not data then return false, err end
-  return saveFile(path, data)
-end
-
-local function parseJson(data, label)
-  if type(data) ~= "string" then
-    return nil, "Unexpected " .. tostring(label or "JSON") .. " data type"
-  end
-
-  local decoded = textutils.unserialiseJSON(data)
-  if type(decoded) ~= "table" then
-    return nil, "Failed to parse " .. tostring(label or "JSON")
-  end
-
-  return decoded
-end
-
-local function resolveRawBase()
-  if resolvedRawBase then
-    return resolvedRawBase
-  end
-
-  local data, err = download(API_URL .. "/commits/" .. BRANCH, API_HEADERS)
   if not data then
-    return nil, err or "Could not resolve latest repo commit"
+    return false, err
+  end
+
+  if not verifyHash(data, expectedSha) then
+    return false, "Hash mismatch for " .. tostring(url)
+  end
+
+  return saveFile(stagePath, data)
+end
+
+local function fetchLatestIndex()
+  local data, err = download(LATEST_URL)
+  if not data then
+    return nil, err
+  end
+  return parseJson(data, "deploy index")
+end
+
+local function fetchProgramSpec(specPath)
+  local data, err = download(DEPLOY_URL .. specPath)
+  if not data then
+    return nil, err
+  end
+  return parseJson(data, "program spec")
+end
+
+local function fetchLatestMainCommit()
+  local data, err = download(API_URL .. "/commits/" .. SOURCE_BRANCH, API_HEADERS)
+  if not data then
+    return nil, err
   end
 
   local info, parseErr = parseJson(data, "commit metadata")
@@ -158,58 +217,31 @@ local function resolveRawBase()
     return nil, "Commit metadata did not include a SHA"
   end
 
-  resolvedRawBase = RAW_ROOT .. info.sha .. "/"
-  return resolvedRawBase
+  return info.sha
 end
 
-local function buildRepoUrl(path, rawBase)
-  return (rawBase or REPO_URL) .. path
-end
-
----------------------------------------------------------------------------
--- Manifest
----------------------------------------------------------------------------
-local function fetchManifest()
-  local urls = {}
-  local rawBase, baseErr = resolveRawBase()
-  if rawBase then
-    urls[#urls + 1] = { url = buildRepoUrl("Games/manifest.json", rawBase), rawBase = rawBase }
-  end
-  urls[#urls + 1] = { url = MANIFEST_URL, rawBase = REPO_URL }
-
-  local lastErr = baseErr
-
-  for _, candidate in ipairs(urls) do
-    local data, err = download(candidate.url)
-    if data then
-      local manifest, parseErr = parseJson(data, "manifest JSON")
-      if manifest then
-        if not manifest.programs and manifest.games then
-          manifest.programs = manifest.games
-        end
-        manifest._raw_base = candidate.rawBase
-        return manifest
-      end
-      lastErr = parseErr
-    else
-      lastErr = err
-    end
-  end
-
-  return nil, lastErr or "Could not fetch manifest"
+local function buildCommitUrl(commit, repoPath)
+  return RAW_ROOT .. commit .. "/" .. repoPath
 end
 
 ---------------------------------------------------------------------------
 -- Installed state
 ---------------------------------------------------------------------------
 local function loadInstalled()
-  if not fs.exists(VERSION_FILE) then return nil end
-  local f = fs.open(VERSION_FILE, "r")
-  if not f then return nil end
-  local raw = f.readAll()
-  f.close()
-  local ok, info = pcall(function() return textutils.unserialise(raw) end)
-  if ok and type(info) == "table" then return info end
+  if not fs.exists(VERSION_FILE) then
+    return nil
+  end
+  local raw = readFile(VERSION_FILE, false)
+  if not raw then
+    return nil
+  end
+
+  local ok, info = pcall(function()
+    return textutils.unserialise(raw)
+  end)
+  if ok and type(info) == "table" then
+    return info
+  end
   return nil
 end
 
@@ -219,6 +251,41 @@ local function saveInstalled(info)
     f.write(textutils.serialise(info))
     f.close()
   end
+end
+
+local function readManagedFiles()
+  if not fs.exists(MANAGED_FILES) then
+    return {}
+  end
+
+  local raw = readFile(MANAGED_FILES, false) or ""
+  local items = {}
+  local seen = {}
+  for line in raw:gmatch("[^\r\n]+") do
+    local path = line:gsub("\\", "/"):gsub("^%s+", ""):gsub("%s+$", "")
+    if path ~= "" and not seen[path] then
+      seen[path] = true
+      items[#items + 1] = path
+    end
+  end
+  table.sort(items)
+  return items
+end
+
+local function saveManagedFiles(paths)
+  local seen = {}
+  table.sort(paths)
+  local f = fs.open(MANAGED_FILES, "w")
+  if not f then
+    return
+  end
+  for _, path in ipairs(paths) do
+    if path ~= "" and not seen[path] then
+      seen[path] = true
+      f.writeLine(path)
+    end
+  end
+  f.close()
 end
 
 local function beginWriteWindow(tag)
@@ -291,15 +358,46 @@ local function claimPhoneHostIfNeeded(shouldClaim)
 end
 
 ---------------------------------------------------------------------------
--- Install / update a game
+-- Package install helpers
 ---------------------------------------------------------------------------
-local function installProgram(manifest, progKey, forceConfig)
-  local prog = manifest.programs[progKey]
-  if not prog then
-    cprint(colors.red, "Unknown program: " .. tostring(progKey))
-    return false
+local function makeStageRoot()
+  local root = fs.combine(STAGING_ROOT, tostring(os.epoch("local")))
+  if fs.exists(root) then
+    fs.delete(root)
+  end
+  fs.makeDir(root)
+  return root
+end
+
+local function removeStaleFiles(previouslyManaged, desiredPaths)
+  local wanted = {}
+  for _, path in ipairs(desiredPaths) do
+    wanted[path] = true
   end
 
+  for _, path in ipairs(previouslyManaged) do
+    if not wanted[path] and path ~= VERSION_FILE and path ~= MANAGED_FILES then
+      removePath(path)
+    end
+  end
+end
+
+local function applyStagedFiles(stageRoot, stagedEntries)
+  for _, entry in ipairs(stagedEntries) do
+    local finalPath = entry.install_path
+    local stagePath = fs.combine(stageRoot, finalPath)
+    if fs.exists(finalPath) then
+      fs.delete(finalPath)
+    end
+    local parent = fs.getDir(finalPath)
+    if parent ~= "" and not fs.exists(parent) then
+      fs.makeDir(parent)
+    end
+    fs.copy(stagePath, finalPath)
+  end
+end
+
+local function installFromSpec(spec, forceConfig, installedBefore)
   local unlockOk, unlockResult = beginWriteWindow("install")
   if not unlockOk then
     cprint(colors.red, "Could not open update window: " .. tostring(unlockResult))
@@ -308,97 +406,80 @@ local function installProgram(manifest, progKey, forceConfig)
   end
   local createdUnlock = unlockResult == true
 
-  header("Installing " .. prog.name .. " v" .. prog.version)
+  local program = spec.program or {}
+  local build = spec.build or {}
+  header("Installing " .. tostring(program.name or program.key or "program")
+    .. " v" .. tostring(program.version or "?"))
 
-  local installedBefore = loadInstalled()
-  local shouldClaimPhoneHost = progKey == "phone_os"
-    and not fs.exists(PHONE_HOST_MARKER_FILE)
-
-  -- Build download list: { url, destPath }
-  local downloads = {}
-  local srcDir = prog.source_dir
-  local rawBase = manifest._raw_base or REPO_URL
-
-  -- Code files (always overwrite)
-  for _, file in ipairs(prog.files or {}) do
-    downloads[#downloads + 1] = {
-      url  = buildRepoUrl(srcDir .. "/" .. file, rawBase),
-      path = file,
-    }
-  end
-
-  -- Config files (preserve existing on updates unless forced)
-  for _, file in ipairs(prog.config_files or {}) do
-    if forceConfig or not fs.exists(file) then
-      downloads[#downloads + 1] = {
-        url  = buildRepoUrl(srcDir .. "/" .. file, rawBase),
-        path = file,
-        tag  = "config",
-      }
-    else
-      cprint(colors.gray, "  Keeping config: " .. file)
-    end
-  end
-
-  -- Asset files (nfp, fonts, surface, etc.)
-  for _, file in ipairs(prog.assets or {}) do
-    downloads[#downloads + 1] = {
-      url  = buildRepoUrl(srcDir .. "/" .. file, rawBase),
-      path = file,
-    }
-  end
-
-  -- Shared libraries (only if this program uses them)
-  if prog.uses_lib and manifest.lib and manifest.lib.files then
-    for _, file in ipairs(manifest.lib.files) do
-      downloads[#downloads + 1] = {
-        url  = buildRepoUrl("Games/lib/" .. file, rawBase),
-        path = "lib/" .. file,
-      }
-    end
-  end
-
-  -- Download everything
-  local total   = #downloads
+  local shouldClaimPhoneHost = program.key == "phone_os" and not fs.exists(PHONE_HOST_MARKER_FILE)
+  local stageRoot = makeStageRoot()
+  local stagedEntries = {}
+  local managedPaths = {}
+  local failed = {}
+  local total = #(spec.install and spec.install.files or {})
   local success = 0
-  local failed  = {}
 
   print("")
-  for i, entry in ipairs(downloads) do
+  for index, entry in ipairs(spec.install.files or {}) do
     local _, row = term.getCursorPos()
     term.setCursorPos(1, row)
     term.clearLine()
 
-    local label = entry.path
-    if entry.tag == "config" then label = label .. " (config)" end
+    local label = entry.install_path or "?"
+    if entry.preserve_existing then
+      label = label .. " (config)"
+    end
+    cwrite(colors.white, "  " .. progressBar(index, total) .. "  " .. label .. " ")
 
-    cwrite(colors.white, "  " .. progressBar(i, total) .. "  " .. label .. " ")
+    managedPaths[#managedPaths + 1] = entry.install_path
 
-    local ok, err = downloadAndSave(entry.url, entry.path)
-    if ok then
+    if entry.preserve_existing and not forceConfig and fs.exists(entry.install_path) then
       success = success + 1
+      cprint(colors.gray, "")
     else
-      failed[#failed + 1] = entry.path
-      logError(tostring(err))
+      local stagePath = fs.combine(stageRoot, entry.install_path)
+      local ok, err = downloadAndStage(
+        buildCommitUrl(build.commit, entry.repo_path),
+        stagePath,
+        entry.sha256
+      )
+      if ok then
+        stagedEntries[#stagedEntries + 1] = entry
+        success = success + 1
+      else
+        failed[#failed + 1] = entry.install_path
+        logError(tostring(err))
+      end
     end
     os.sleep(0)
   end
 
-  -- Ensure we move past the progress line
   print("")
 
-  -- Save install record
-  saveInstalled({
-    program      = progKey,
-    version      = prog.version,
-    lib_version  = prog.uses_lib and manifest.lib and manifest.lib.version or nil,
-    installed_at = installedBefore and installedBefore.installed_at or os.epoch("local"),
-    updated_at   = os.epoch("local"),
-  })
+  local installedOk = false
+  if #failed == 0 then
+    local previouslyManaged = readManagedFiles()
+    removeStaleFiles(previouslyManaged, managedPaths)
+    applyStagedFiles(stageRoot, stagedEntries)
+    saveManagedFiles(managedPaths)
+    saveInstalled({
+      schema_version = 1,
+      program = program.key,
+      name = program.name,
+      version = program.version,
+      source_commit = build.commit,
+      package_hash = build.package_hash,
+      content_hash = build.package_hash,
+      spec_path = (spec._spec_path or ""),
+      installed_at = installedBefore and installedBefore.installed_at or os.epoch("local"),
+      updated_at = os.epoch("local"),
+    })
+    installedOk = true
+  end
 
   local phoneHostResult = nil
   local phoneHostErr = nil
-  if #failed == 0 then
+  if installedOk then
     local claimOk, claimInfo = claimPhoneHostIfNeeded(shouldClaimPhoneHost)
     if claimOk then
       phoneHostResult = claimInfo
@@ -408,8 +489,9 @@ local function installProgram(manifest, progKey, forceConfig)
     end
   end
 
-  print("")
-  if #failed == 0 then
+  removePath(stageRoot)
+
+  if installedOk then
     cprint(colors.lime, "  Installed " .. success .. "/" .. total .. " files. All good!")
   else
     cprint(colors.yellow, "  Installed " .. success .. "/" .. total .. " files.")
@@ -427,16 +509,21 @@ local function installProgram(manifest, progKey, forceConfig)
   end
 
   print("")
-  cprint(colors.white, "Run 'startup' to launch " .. prog.name .. ".")
+  if installedOk then
+    cprint(colors.white, "Run 'startup' to launch " .. tostring(program.name or program.key) .. ".")
+  end
+
   endWriteWindow(createdUnlock)
-  return #failed == 0
+  return installedOk
 end
 
 ---------------------------------------------------------------------------
--- Version comparison (same as updater.lua)
+-- Version comparison
 ---------------------------------------------------------------------------
 local function isNewer(remoteVer, localVer)
-  if not remoteVer or not localVer then return remoteVer ~= localVer end
+  if not remoteVer or not localVer then
+    return remoteVer ~= localVer
+  end
   local rParts = {}
   for p in tostring(remoteVer):gmatch("(%d+)") do
     rParts[#rParts + 1] = tonumber(p) or 0
@@ -448,30 +535,36 @@ local function isNewer(remoteVer, localVer)
   for i = 1, math.max(#rParts, #lParts) do
     local r = rParts[i] or 0
     local l = lParts[i] or 0
-    if r > l then return true end
-    if r < l then return false end
+    if r > l then
+      return true
+    end
+    if r < l then
+      return false
+    end
   end
   return false
 end
 
 ---------------------------------------------------------------------------
--- Self-update (auto-restarts if updated)
+-- Self-update
 ---------------------------------------------------------------------------
-local function selfUpdate(manifest, silent)
-  local remoteVer = manifest.installer_version
-  local remoteHash = manifest.installer_hash
-  if not remoteVer then
-    if not silent then cprint(colors.gray, "No installer version in manifest.") end
+local function selfUpdate(index, silent)
+  local installer = index and index.installer or nil
+  if type(installer) ~= "table" then
+    if not silent then
+      cprint(colors.gray, "No installer metadata in deploy index.")
+    end
     return false
   end
 
-  local needsUpdate = isNewer(remoteVer, INSTALLER_VERSION)
-
-  -- Also check content hash if versions match but hash differs
-  if not needsUpdate and remoteHash then
-    -- Read our own file to compute a simple length check as fallback
-    -- (full hash comparison requires the manifest generator to provide it)
-    needsUpdate = false -- version-based is authoritative when hashes aren't stored locally
+  local needsUpdate = isNewer(installer.version, INSTALLER_VERSION)
+  if not needsUpdate then
+    local myPath = shell.getRunningProgram()
+    local currentData = readFile(myPath, true)
+    local currentHash = currentData and computeSha256(currentData) or nil
+    if currentHash and installer.sha256 then
+      needsUpdate = string.lower(currentHash) ~= string.lower(installer.sha256)
+    end
   end
 
   if not needsUpdate then
@@ -483,35 +576,55 @@ local function selfUpdate(manifest, silent)
 
   if not silent then
     cwrite(colors.yellow, "Updating installer v"
-      .. INSTALLER_VERSION .. " -> v" .. remoteVer .. "... ")
+      .. INSTALLER_VERSION .. " -> v" .. tostring(installer.version or "?") .. "... ")
   end
 
   local unlockOk, unlockResult = beginWriteWindow("installer-self-update")
   if not unlockOk then
-    if not silent then cprint(colors.red, "Failed!") end
+    if not silent then
+      cprint(colors.red, "Failed!")
+    end
     logError("Self-update unlock failed: " .. tostring(unlockResult))
     return false
   end
   local createdUnlock = unlockResult == true
 
-  local myPath = shell.getRunningProgram()
-  local rawBase = manifest and manifest._raw_base or REPO_URL
-  local ok, err = downloadAndSave(buildRepoUrl("Games/installer.lua", rawBase), myPath)
-  if ok then
+  local commit = installer.commit
+  if not commit or commit == "" then
+    commit = fetchLatestMainCommit()
+  end
+  if not commit then
     if not silent then
-      cprint(colors.lime, "Done! Restarting...")
+      cprint(colors.red, "Failed!")
     end
     endWriteWindow(createdUnlock)
-    -- Re-run ourselves with the same arguments
-    shell.run(myPath, table.unpack(tArgs))
-    -- Exit this (old) instance after the new one finishes
-    return true
-  else
-    if not silent then cprint(colors.red, "Failed!") end
-    endWriteWindow(createdUnlock)
-    logError("Self-update failed: " .. tostring(err))
+    logError("Self-update could not resolve source commit")
     return false
   end
+
+  local myPath = shell.getRunningProgram()
+  local data, err = download(buildCommitUrl(commit, installer.path))
+  if data and verifyHash(data, installer.sha256) then
+    local ok, saveErr = saveFile(myPath, data)
+    if ok then
+      if not silent then
+        cprint(colors.lime, "Done! Restarting...")
+      end
+      endWriteWindow(createdUnlock)
+      shell.run(myPath, table.unpack(tArgs))
+      return true
+    end
+    err = saveErr
+  elseif data then
+    err = "Installer hash mismatch"
+  end
+
+  if not silent then
+    cprint(colors.red, "Failed!")
+  end
+  endWriteWindow(createdUnlock)
+  logError("Self-update failed: " .. tostring(err))
+  return false
 end
 
 ---------------------------------------------------------------------------
@@ -526,36 +639,30 @@ local function getProgramCategory(prog)
     return prog.category
   end
 
-  local sourceDir = tostring(prog.source_dir or "")
-  if sourceDir:match("^Utilities/") or sourceDir == "Utilities" then
-    return "Utilities"
-  end
-  if sourceDir:match("^Games/") then
-    return "Games"
-  end
-
   return "Other"
 end
 
-local function buildProgramGroups(manifest)
+local function buildProgramGroups(index)
   local grouped = {}
 
-  for key, prog in pairs(manifest.programs or {}) do
+  for key, prog in pairs(index.programs or {}) do
     local category = getProgramCategory(prog)
     if not grouped[category] then
       grouped[category] = {}
     end
 
     grouped[category][#grouped[category] + 1] = {
-      key  = key,
+      key = key,
       name = prog.name,
-      ver  = prog.version,
+      ver = prog.version,
       desc = prog.description or "",
     }
   end
 
   for _, entries in pairs(grouped) do
-    table.sort(entries, function(a, b) return a.name < b.name end)
+    table.sort(entries, function(a, b)
+      return a.name < b.name
+    end)
   end
 
   local folders = {}
@@ -587,7 +694,9 @@ end
 
 local function selectFromList(title, items, renderEntry)
   local perPage = H - 7
-  if perPage < 3 then perPage = 3 end
+  if perPage < 3 then
+    perPage = 3
+  end
 
   local totalPages = math.max(1, math.ceil(#items / perPage))
   local page = 1
@@ -596,7 +705,7 @@ local function selectFromList(title, items, renderEntry)
     header(title)
 
     local startIdx = (page - 1) * perPage + 1
-    local endIdx   = math.min(page * perPage, #items)
+    local endIdx = math.min(page * perPage, #items)
 
     for i = startIdx, endIdx do
       renderEntry(i, items[i])
@@ -606,20 +715,26 @@ local function selectFromList(title, items, renderEntry)
 
     if totalPages > 1 then
       local nav = "Page " .. page .. "/" .. totalPages
-      if page < totalPages then nav = nav .. "  [n]ext" end
-      if page > 1 then nav = nav .. "  [p]rev" end
+      if page < totalPages then
+        nav = nav .. "  [n]ext"
+      end
+      if page > 1 then
+        nav = nav .. "  [p]rev"
+      end
       cprint(colors.lightGray, "  " .. nav)
     end
     cprint(colors.gray, "  0. Back")
     cwrite(colors.white, "Select: ")
 
     local input = read()
-    if not input then return nil end
+    if not input then
+      return nil
+    end
     input = input:lower():gsub("^%s+", ""):gsub("%s+$", "")
 
     if input == "n" and page < totalPages then
       page = page + 1
-    elseif input == "p" and page > 1 then
+    elseif input == "p" and page > totalPages then
       page = page - 1
     else
       local choice = tonumber(input)
@@ -636,7 +751,7 @@ end
 local function selectProgramFromFolder(folder)
   return selectFromList(folder.name, folder.entries, function(i, p)
     local prefix = string.format("  %d. ", i)
-    local nameVer = p.name .. " v" .. p.ver
+    local nameVer = p.name .. " v" .. tostring(p.ver or "?")
     local remaining = W - #prefix - #nameVer - 2
     local suffix = ""
     if remaining > 5 and p.desc ~= "" then
@@ -652,9 +767,9 @@ local function selectProgramFromFolder(folder)
   end)
 end
 
-local function selectProgram(manifest)
+local function selectProgram(index)
   while true do
-    local folders = buildProgramGroups(manifest)
+    local folders = buildProgramGroups(index)
     local folder = selectFromList("Select Folder", folders, function(i, entry)
       cwrite(colors.yellow, string.format("  %d. ", i))
       cwrite(colors.white, entry.name)
@@ -672,83 +787,89 @@ local function selectProgram(manifest)
   end
 end
 
+local function installByKey(index, programKey, forceConfig)
+  local programEntry = index.programs and index.programs[programKey] or nil
+  if not programEntry then
+    cprint(colors.red, "Unknown program: " .. tostring(programKey))
+    return false
+  end
+
+  local spec, specErr = fetchProgramSpec(programEntry.spec_path)
+  if not spec then
+    cprint(colors.red, "Could not fetch package spec: " .. tostring(specErr))
+    logError("Spec fetch failed for " .. tostring(programKey) .. ": " .. tostring(specErr))
+    return false
+  end
+  spec._spec_path = programEntry.spec_path
+
+  return installFromSpec(spec, forceConfig, loadInstalled())
+end
+
 ---------------------------------------------------------------------------
 -- Main
 ---------------------------------------------------------------------------
 local function main()
-  -- Always self-update first, regardless of CLI mode
-  -- Fetch manifest early so we can check installer version
-  local earlyManifest, earlyErr = fetchManifest()
-  if earlyManifest then
-    local didUpdate = selfUpdate(earlyManifest, false)
-    if didUpdate then return end -- new version already ran and finished
+  local index, indexErr = fetchLatestIndex()
+  if index then
+    local didUpdate = selfUpdate(index, false)
+    if didUpdate then
+      return
+    end
   end
 
-  -- Use the already-fetched manifest for subsequent operations
-  local manifest = earlyManifest
-
-  -- CLI: installer self-update
   if tArgs[1] == "self-update" then
-    if not manifest then
-      cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
-      logError(tostring(earlyErr))
+    if not index then
+      cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
+      logError(tostring(indexErr))
     end
-    -- Already handled above
     return
   end
 
-  -- CLI: installer update
   if tArgs[1] == "update" then
     local installed = loadInstalled()
     if not installed then
       cprint(colors.red, "No program installed. Run 'installer' to install.")
       return
     end
-    if not manifest then
-      cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
-      logError(tostring(earlyErr))
+    if not index then
+      cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
+      logError(tostring(indexErr))
       return
     end
-    -- Support old .casino_installed format (game key) and new format (program key)
     local key = installed.program or installed.game
-    installProgram(manifest, key, false)
+    installByKey(index, key, false)
     return
   end
 
-  -- CLI: installer <name>
   if tArgs[1] and tArgs[1] ~= "" then
-    if not manifest then
-      cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
-      logError(tostring(earlyErr))
+    if not index then
+      cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
+      logError(tostring(indexErr))
       return
     end
-    installProgram(manifest, string.lower(tArgs[1]), false)
+    installByKey(index, string.lower(tArgs[1]), false)
     return
   end
 
-  -- Interactive mode
   header("Program Installer v" .. INSTALLER_VERSION)
 
-  if not manifest then
-    cprint(colors.red, "Could not fetch manifest: " .. tostring(earlyErr))
-    logError(tostring(earlyErr))
+  if not index then
+    cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
+    logError(tostring(indexErr))
     print("")
     cprint(colors.gray, "Check that HTTP is enabled in the server config")
     cprint(colors.gray, "and that github.com is allowed.")
     return
   end
-  cprint(colors.lime, "Manifest loaded. " .. INSTALLER_VERSION)
+  cprint(colors.lime, "Deploy index loaded. " .. INSTALLER_VERSION)
 
-  -- Check if a program is already installed
   local installed = loadInstalled()
-
-  -- Support old .casino_installed format
   if not installed and fs.exists(".casino_installed") then
-    local f = fs.open(".casino_installed", "r")
-    if f then
-      local raw = f.readAll()
-      f.close()
-      local parseOk, info = pcall(function() return textutils.unserialise(raw) end)
+    local raw = readFile(".casino_installed", false)
+    if raw then
+      local parseOk, info = pcall(function()
+        return textutils.unserialise(raw)
+      end)
       if parseOk and type(info) == "table" then
         installed = info
       end
@@ -757,18 +878,19 @@ local function main()
 
   if installed then
     local key = installed.program or installed.game
-    local prog = manifest.programs[key]
+    local prog = index.programs and index.programs[key] or nil
     local progName = prog and prog.name or key
-    local instVer = installed.version or installed.game_version or "?"
+    local instVer = installed.version or "?"
     print("")
 
-    if prog and prog.version ~= instVer then
+    if prog and ((installed.source_commit or "") ~= (prog.commit or "")
+        or (installed.package_hash or installed.content_hash or "") ~= (prog.package_hash or "")) then
       cprint(colors.yellow, progName .. " v" .. instVer .. " installed")
-      cprint(colors.lime, "  Update available: v" .. prog.version)
+      cprint(colors.lime, "  Update available: v" .. tostring(prog.version or "?"))
     elseif prog then
       cprint(colors.lime, progName .. " v" .. instVer .. " - up to date")
     else
-      cprint(colors.gray, "Installed: " .. tostring(key) .. " v" .. instVer)
+      cprint(colors.gray, "Installed: " .. tostring(key) .. " v" .. tostring(instVer))
     end
 
     print("")
@@ -782,26 +904,24 @@ local function main()
     local choice = tonumber(read())
 
     if choice == 1 or choice == 2 then
-      installProgram(manifest, key, false)
+      installByKey(index, key, false)
       return
     elseif choice == 3 then
-      installProgram(manifest, key, true)
+      installByKey(index, key, true)
       return
     elseif choice == 4 then
-      -- fall through to program selection
+      -- fall through
     else
       return
     end
   end
 
-  -- Program selection
-  local progKey = selectProgram(manifest)
-  if progKey then
-    installProgram(manifest, progKey, true)
+  local programKey = selectProgram(index)
+  if programKey then
+    installByKey(index, programKey, true)
   end
 end
 
--- Top-level error handler with logging
 local ok, err = pcall(main)
 if not ok then
   logError("CRASH: " .. tostring(err))
