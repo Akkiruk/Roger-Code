@@ -46,7 +46,7 @@ return {
     CARD_Y        = 18,          -- vertical position for hand
     CARD_SPACING  = 5,           -- gap between cards
     HOLD_Y_OFFSET = 2,           -- pixels above card for HOLD label
-    HELD_CARD_LIFT = 3,          -- lift held cards slightly for better readability
+    DISCARD_CARD_DROP = 2,       -- drop discarded cards slightly for better readability
   },
 
   -- Exit codes

@@ -289,7 +289,7 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
-local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
+local function renderHand(hand, discardSelected, betAmount, statusText, showDiscardLabels)
   screen:clear(LO.TABLE_COLOR)
 
   -- Bet display
@@ -300,20 +300,20 @@ local function renderHand(hand, held, betAmount, statusText, showHoldLabels)
   for i, cardID in ipairs(hand) do
     local x = handStartX + (i - 1) * deltaX
     local y = cardY
-    if held[i] then
-      y = cardY - scale:scaledY(LO.HELD_CARD_LIFT or 0, 1, 4)
+    if discardSelected[i] then
+      y = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
     end
     local img = cards.renderCard(cardID)
     screen:drawSurface(img, x, y)
 
-    -- HOLD label above held cards
-    if showHoldLabels and held[i] then
-      local holdLabel = "HOLD"
-      local hw = ui.getTextSize(holdLabel)
-      ui.safeDrawText(screen, holdLabel, font,
-        x + math.floor((cardBack.width - hw) / 2),
-        y - LINE_H - scale:scaledY(LO.HOLD_Y_OFFSET, 1, 4),
-        colors.lime)
+    -- DISCARD label above selected cards
+    if showDiscardLabels and discardSelected[i] then
+      local discardLabel = "DISCARD"
+      local dw = ui.getTextSize(discardLabel)
+      ui.safeDrawText(screen, discardLabel, font,
+        x + math.floor((cardBack.width - dw) / 2),
+        cardY - LINE_H - scale:scaledY(LO.HOLD_Y_OFFSET, 1, 4),
+        colors.red)
     end
   end
 
@@ -372,11 +372,11 @@ local TUTORIAL_PAGES = {
     lines = {
       { text = "You get 5 cards.",       color = colors.white },
       { text = "Tap cards to",           color = colors.white },
-      { text = "HOLD and which to",      color = colors.lime },
-      { text = "discard.",               color = colors.white },
+      { text = "MARK for discard",       color = colors.red },
+      { text = "and redraw.",            color = colors.white },
       { text = "",                        color = colors.white },
       { text = "Tap DRAW for new",       color = colors.yellow },
-      { text = "cards in discards.",     color = colors.yellow },
+      { text = "cards in those slots.",  color = colors.yellow },
     },
   },
   {
@@ -397,8 +397,8 @@ local TUTORIAL_PAGES = {
       { text = "Always hold pairs",      color = colors.white },
       { text = "of Jacks or better!",    color = colors.white },
       { text = "",                        color = colors.white },
-      { text = "Hold 4 to a flush",      color = colors.cyan },
-      { text = "or straight.",           color = colors.cyan },
+      { text = "Leave 4 to a flush",     color = colors.cyan },
+      { text = "or straight alone.",     color = colors.cyan },
       { text = "",                        color = colors.white },
       { text = "Royal Flush = 250x!",    color = colors.yellow },
     },
@@ -573,10 +573,10 @@ local function betSelection()
 end
 
 -----------------------------------------------------
--- Auto-play hold strategy (simple: keep pairs and high cards)
+-- Auto-play discard strategy (simple: keep pairs and high cards)
 -----------------------------------------------------
-local function autoSelectHolds(hand)
-  local held = { false, false, false, false, false }
+local function autoSelectDiscards(hand)
+  local discardSelected = { true, true, true, true, true }
   local rankCounts = {}
 
   for i, cardID in ipairs(hand) do
@@ -586,13 +586,13 @@ local function autoSelectHolds(hand)
 
   for i, cardID in ipairs(hand) do
     local r = getRank(cardID)
-    -- Hold any pair or better, or high cards (J+)
+    -- Keep any pair or better, or high cards (J+); everything else is discarded.
     if rankCounts[r] >= 2 or r >= 11 then
-      held[i] = true
+      discardSelected[i] = false
     end
   end
 
-  return held
+  return discardSelected
 end
 
 -----------------------------------------------------
@@ -610,7 +610,7 @@ local function pokerRound(betAmount)
     hand[i] = dealOne()
   end
 
-  local held = { false, false, false, false, false }
+  local discardSelected = { false, false, false, false, false }
 
   -- Animate initial deal
   if not AUTO_PLAY then
@@ -633,13 +633,13 @@ local function pokerRound(betAmount)
 
   -- Hold/discard phase
   if AUTO_PLAY then
-    held = autoSelectHolds(hand)
+    discardSelected = autoSelectDiscards(hand)
     os.sleep(cfg.AUTO_PLAY_DELAY)
   else
     local confirmed = false
 
     while not confirmed do
-      renderHand(hand, held, betAmount, "Tap a card to hold it. Tap DRAW when ready.", true)
+      renderHand(hand, discardSelected, betAmount, "Tap cards you want to replace, then tap DRAW.", true)
 
       ui.clearButtons()
       -- Draw button
@@ -658,10 +658,13 @@ local function pokerRound(betAmount)
       else
         for i = 1, cfg.HAND_SIZE do
           local x = handStartX + (i - 1) * deltaX
-          local cardTop = cardY - scale:scaledY(LO.HELD_CARD_LIFT or 0, 1, 4)
+          local cardTop = cardY
+          if discardSelected[i] then
+            cardTop = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
+          end
           if px >= x and px <= x + cardBack.width - 1
-             and py >= cardTop and py <= cardY + cardBack.height - 1 then
-            held[i] = not held[i]
+             and py >= cardTop and py <= cardTop + cardBack.height - 1 then
+            discardSelected[i] = not discardSelected[i]
             sound.play(sound.SOUNDS.CARD_PLACE, 0.5)
             break
           end
@@ -670,10 +673,10 @@ local function pokerRound(betAmount)
     end
   end
 
-  -- Replace non-held cards
+  -- Replace selected discard cards
   local replaced = false
   for i = 1, cfg.HAND_SIZE do
-    if not held[i] then
+    if discardSelected[i] then
       hand[i] = dealOne()
       replaced = true
     end
@@ -682,7 +685,7 @@ local function pokerRound(betAmount)
   -- Animate replacement cards
   if replaced and not AUTO_PLAY then
     for i = 1, cfg.HAND_SIZE do
-      if not held[i] then
+      if discardSelected[i] then
         local x = handStartX + (i - 1) * deltaX
         local img = cards.renderCard(hand[i])
         cardAnim.slideIn(img, x, cardY, function()
@@ -690,7 +693,7 @@ local function pokerRound(betAmount)
           ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
           for j, cid in ipairs(hand) do
             local cx = handStartX + (j - 1) * deltaX
-            if j < i or held[j] then
+            if j < i or not discardSelected[j] then
               screen:drawSurface(cards.renderCard(cid), cx, cardY)
             end
           end
@@ -725,7 +728,7 @@ local function pokerRound(betAmount)
     end
 
     sound.play(sound.SOUNDS.SUCCESS)
-    renderHand(hand, held, betAmount, nil, false)
+    renderHand(hand, discardSelected, betAmount, nil, false)
     ui.displayCenteredMessage(screen,
       handName .. "! +" .. currency.formatTokens(netChange),
       colors.lime, LO.RESULT_PAUSE)
@@ -738,7 +741,7 @@ local function pokerRound(betAmount)
     end
 
     sound.play(sound.SOUNDS.FAIL)
-    renderHand(hand, held, betAmount, nil, false)
+    renderHand(hand, discardSelected, betAmount, nil, false)
     ui.displayCenteredMessage(screen, handName, colors.red, LO.RESULT_PAUSE)
   end
 
