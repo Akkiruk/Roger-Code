@@ -144,6 +144,20 @@ local function moveItem(sourceInventory, destinationName, slot, count)
   return movedOrErr, nil
 end
 
+local function classifyMoveFailure(sourceName, destinationName, moveError)
+  local message = tostring(moveError or "Unknown move failure")
+  local missingTarget = "Target '" .. tostring(destinationName) .. "' does not exist"
+  if message:find(missingTarget, 1, true) then
+    return {
+      code = "missing_target",
+      source = sourceName,
+      destination = destinationName,
+      error = message,
+    }
+  end
+  return nil
+end
+
 local function buildMoveAction(kind, sourceName, destination, item, reason, moved)
   return {
     kind = kind,
@@ -163,6 +177,7 @@ function M.processInboxes(storages, connectedSet, catalog, catalogLib, moveLimit
     moved_items = 0,
     unresolved = 0,
     errors = {},
+    route_failures = {},
     action = nil,
     target_inventory = nil,
     catalog_changed = false,
@@ -193,6 +208,10 @@ function M.processInboxes(storages, connectedSet, catalog, catalogLib, moveLimit
           local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
           if type(moved) ~= "number" or moved < 1 then
             report.errors[#report.errors + 1] = moveError or ("Move failed from " .. tostring(storage.inventory))
+            local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
+            if routeFailure then
+              report.route_failures[#report.route_failures + 1] = routeFailure
+            end
           else
             report.kind = "routing"
             report.moved_stacks = report.moved_stacks + 1
@@ -217,6 +236,7 @@ function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogL
     moved_stacks = 0,
     moved_items = 0,
     errors = {},
+    route_failures = {},
     action = nil,
     target_inventory = nil,
     catalog_changed = false,
@@ -263,6 +283,10 @@ function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogL
       local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
       if type(moved) ~= "number" or moved < 1 then
         report.errors[#report.errors + 1] = moveError or ("Repair move failed from " .. tostring(storage.inventory))
+        local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
+        if routeFailure then
+          report.route_failures[#report.route_failures + 1] = routeFailure
+        end
       else
         report.kind = "repair"
         report.moved_stacks = report.moved_stacks + 1

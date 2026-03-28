@@ -12,6 +12,46 @@ local util = require("lib.vaultgear.util")
 
 local M = {}
 
+local function routeFailureKey(sourceName, destinationName)
+  return tostring(sourceName or "?") .. "->" .. tostring(destinationName or "?")
+end
+
+local function clearRouteFailures(runtimeState)
+  if runtimeState then
+    runtimeState.route_failures = {}
+  end
+end
+
+local function rememberRouteFailure(runtimeState, failure)
+  if type(runtimeState) ~= "table" or type(failure) ~= "table" then
+    return nil
+  end
+
+  if type(runtimeState.route_failures) ~= "table" then
+    runtimeState.route_failures = {}
+  end
+
+  local key = routeFailureKey(failure.source, failure.destination)
+  local existing = runtimeState.route_failures[key]
+  runtimeState.route_failures[key] = {
+    source = failure.source,
+    destination = failure.destination,
+    code = failure.code or "move_failed",
+    error = failure.error,
+    seen = existing and ((existing.seen or 0) + 1) or 1,
+    last_seen = os.epoch("local"),
+  }
+  return existing == nil, runtimeState.route_failures[key]
+end
+
+local function routeFailureSummary(failure)
+  return string.format(
+    "Route blocked: %s cannot push to %s. Refresh peripherals or reconfigure that storage.",
+    tostring(failure.source or "?"),
+    tostring(failure.destination or "?")
+  )
+end
+
 local function recentEvent(app, level, message)
   util.pushRecent(app.recent, {
     at = os.epoch("local"),
@@ -182,6 +222,10 @@ local function refreshHealth(app)
     end
   end
 
+  for _, failure in pairs(app.state.runtime.route_failures or {}) do
+    app.health.errors[#app.health.errors + 1] = routeFailureSummary(failure)
+  end
+
   for priority, count in pairs(priorityUse) do
     if count > 1 then
       app.health.warnings[#app.health.warnings + 1] = "Multiple homes share priority " .. tostring(priority) .. "."
@@ -191,6 +235,8 @@ end
 
 local function refreshDiscovery(app)
   app.discovery = peripherals.discover()
+  clearRouteFailures(app.state.runtime)
+  app.dirty_state = true
   bindMonitor(app)
   refreshHealth(app)
   refreshInspector(app)
@@ -231,6 +277,9 @@ local function initializeState(app)
   app.config.storages = planner.normalizeStorages(app.config.storages)
   app.ui.page = normalizePage(app.ui.page)
   app.ui.advanced = app.ui.advanced == true
+  if type(app.state.runtime.route_failures) ~= "table" then
+    app.state.runtime.route_failures = {}
+  end
 end
 
 local function sortStorages(app)
@@ -316,12 +365,21 @@ local function processWork(app, allowPaused)
     app.session.unresolved = report.unresolved
   end
 
+  for _, failure in ipairs(report.route_failures or {}) do
+    local isNew, remembered = rememberRouteFailure(app.state.runtime, failure)
+    app.dirty_state = true
+    if isNew and remembered then
+      recentEvent(app, "error", routeFailureSummary(remembered))
+    end
+  end
+
   for _, message in ipairs(report.errors or {}) do
     app.session.errors = app.session.errors + 1
     recentEvent(app, "error", message)
   end
 
   updateRuntimeState(app, report)
+  refreshHealth(app)
   refreshInspector(app)
 end
 
