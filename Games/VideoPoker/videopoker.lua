@@ -635,7 +635,7 @@ local function pokerRound(betAmount)
     local confirmed = false
 
     while not confirmed do
-      renderHand(hand, held, betAmount, "Tap cards to HOLD", true)
+      renderHand(hand, held, betAmount, "Tap 1-5 to HOLD", true)
 
       ui.clearButtons()
 
@@ -644,7 +644,8 @@ local function pokerRound(betAmount)
         local x = handStartX + (i - 1) * deltaX
         local idx = i
         local lblY = cardY + cardBack.height + scale.smallGap
-        local label = held[i] and "HELD" or ("Card" .. i)
+        -- Keep toggle labels compact so they do not collide on smaller monitor layouts.
+        local label = tostring(i)
         local lblColor = held[i] and colors.lime or colors.gray
         ui.fixedWidthButton(screen, label, lblColor,
           x + math.floor(cardBack.width / 2), lblY, function()
