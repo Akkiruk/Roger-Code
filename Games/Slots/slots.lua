@@ -156,7 +156,8 @@ local reels = { buildReel(), buildReel(), buildReel() }
 -- Layout calculations
 -----------------------------------------------------
 local TITLE_Y    = scale:scaledY(LO.TITLE_Y, scale.edgePad, scale.lineHeight)
-local TITLE_BAR_H = max(scale.buttonHeight, scale.lineHeight + scale.smallGap + 1)
+local BET_Y      = TITLE_Y + scale.lineHeight + scale.smallGap
+local HEADER_BAR_H = max(scale.buttonHeight, BET_Y + scale.lineHeight + scale.smallGap)
 local REEL_GAP   = scale:scaledX(LO.REEL_SPACING, 1, 8)
 local desiredReelW = scale:scaledX(LO.REEL_WIDTH, 10, 32)
 local availableReelW = width - (scale.edgePad * 2) - (REEL_GAP * 2)
@@ -164,14 +165,50 @@ local REEL_W = max(10, floor(availableReelW / 3))
 REEL_W = min(REEL_W, max(maxArtW + (scale.buttonPadX * 2) + 2, desiredReelW))
 local minReelH = max(12, maxArtH + scale.lineHeight + 4)
 local desiredReelH = scale:scaledY(LO.REEL_HEIGHT, minReelH, height)
-local availableReelH = max(minReelH, height - TITLE_BAR_H - scale.messageLineHeight - (scale.edgePad * 4))
+local availableReelH = max(minReelH, height - HEADER_BAR_H - scale.messageLineHeight - (scale.edgePad * 4))
 local REEL_H = min(availableReelH, max(minReelH, desiredReelH))
 local TOTAL_W    = REEL_W * 3 + REEL_GAP * 2
 local REEL_START_X = max(0, floor((width - TOTAL_W) / 2))
-local REEL_Y     = max(TITLE_BAR_H + scale.sectionGap, min(scale:scaledY(LO.REEL_Y, TITLE_BAR_H + scale.smallGap, height - REEL_H - scale.messageLineHeight - scale.edgePad), height - REEL_H - scale.messageLineHeight - scale.edgePad))
 local REEL_INNER_W = REEL_W - 2
 local REEL_INNER_H = REEL_H - 2
 local symbolSurfaceCache = {}
+
+local function getMachineLayout(showStatus, showFooterControls)
+  local metrics = ui.getMetrics()
+  local frameInset = max(2, scale.edgePad + 1)
+  local frameH = REEL_H + (frameInset * 2)
+  local buttonY = metrics.footerButtonY
+  local hintY = nil
+  local statusY = nil
+  local machineBottom = height - scale.edgePad
+
+  if showFooterControls then
+    hintY = max(HEADER_BAR_H + scale.sectionGap, buttonY - scale.lineHeight - scale.smallGap)
+    machineBottom = hintY - scale.smallGap
+  end
+
+  if showStatus then
+    statusY = machineBottom - scale.lineHeight
+    machineBottom = statusY - scale.smallGap
+  end
+
+  local minFrameY = HEADER_BAR_H + scale.sectionGap
+  local maxFrameY = max(minFrameY, machineBottom - frameH)
+  local frameY = floor((minFrameY + maxFrameY) / 2)
+  local reelY = frameY + frameInset
+
+  return {
+    buttonY = buttonY,
+    frameH = frameH,
+    frameInset = frameInset,
+    frameW = TOTAL_W + (frameInset * 2),
+    frameX = REEL_START_X - frameInset,
+    frameY = frameY,
+    hintY = hintY,
+    reelY = reelY,
+    statusY = statusY,
+  }
+end
 
 -----------------------------------------------------
 -- Spin a random result from a reel
@@ -274,11 +311,14 @@ end
 -----------------------------------------------------
 -- Draw the full machine frame
 -----------------------------------------------------
-local function drawMachine(result, highlights, statusText, currentBet, animationState)
+local function drawMachine(result, highlights, statusText, currentBet, animationState, opts)
+  opts = opts or {}
+  local machineLayout = getMachineLayout(statusText ~= nil, opts.showFooterControls == true)
+
   screen:clear(LO.TABLE_COLOR)
 
   -- Title bar background
-  screen:fillRect(0, 0, width, TITLE_BAR_H, colors.black)
+  screen:fillRect(0, 0, width, HEADER_BAR_H, colors.black)
   local title = "SLOT MACHINE"
   local ttw = ui.getTextSize(title)
   ui.safeDrawText(screen, title, font, floor((width - ttw) / 2), TITLE_Y, colors.yellow)
@@ -286,18 +326,17 @@ local function drawMachine(result, highlights, statusText, currentBet, animation
   -- Bet display
   if currentBet then
     local betStr = "Bet: " .. currency.formatTokens(currentBet)
-    ui.safeDrawText(screen, betStr, font, scale.edgePad, TITLE_Y, colors.lightGray)
+    ui.safeDrawText(screen, betStr, font, scale.edgePad, BET_Y, colors.lightGray)
   end
 
   -- Decorative gold trim below title
-  screen:fillRect(0, TITLE_BAR_H, width, 1, colors.yellow)
+  screen:fillRect(0, HEADER_BAR_H, width, 1, colors.yellow)
 
   -- Machine outer frame (gold border > gray > inner black)
-  local frameInset = max(2, scale.edgePad + 1)
-  local frameX = REEL_START_X - frameInset
-  local frameY = REEL_Y - frameInset
-  local frameW = TOTAL_W + (frameInset * 2)
-  local frameH = REEL_H + (frameInset * 2)
+  local frameX = machineLayout.frameX
+  local frameY = machineLayout.frameY
+  local frameW = machineLayout.frameW
+  local frameH = machineLayout.frameH
   screen:fillRect(frameX, frameY, frameW, frameH, colors.yellow)
   screen:fillRect(frameX + 1, frameY + 1, frameW - 2, frameH - 2, colors.gray)
   screen:fillRect(frameX + 2, frameY + 2, frameW - 4, frameH - 4, colors.black)
@@ -307,24 +346,23 @@ local function drawMachine(result, highlights, statusText, currentBet, animation
     local x = REEL_START_X + (i - 1) * (REEL_W + REEL_GAP)
     local reelAnim = animationState and animationState[i]
     if reelAnim then
-      drawAnimatedReel(x, REEL_Y, reelAnim)
+      drawAnimatedReel(x, machineLayout.reelY, reelAnim)
     else
       local sym = result[i]
       local hl = highlights and highlights[i]
-      drawReelCell(x, REEL_Y, sym, hl)
+      drawReelCell(x, machineLayout.reelY, sym, hl)
     end
   end
 
   -- Pay line arrows (left and right of the reels)
-  local payLineY = REEL_Y + floor(REEL_H / 2)
+  local payLineY = machineLayout.reelY + floor(REEL_H / 2)
   screen:fillRect(frameX - scale.edgePad, payLineY - 1, scale.edgePad, 3, colors.red)
   screen:fillRect(frameX + frameW, payLineY - 1, scale.edgePad, 3, colors.red)
 
   -- Status text below machine frame
   if statusText then
     local stw = ui.getTextSize(statusText.text)
-    ui.safeDrawText(screen, statusText.text, font, floor((width - stw) / 2),
-                    frameY + frameH + scale.sectionGap, statusText.color)
+    ui.safeDrawText(screen, statusText.text, font, floor((width - stw) / 2), machineLayout.statusY, statusText.color)
   end
 
   screen:output()
@@ -562,10 +600,13 @@ local function waitForReplayChoice(result, highlights, statusText, currentBet)
     local hintText = replayAvailable and "Touch ROLL AGAIN to spin the same bet." or replayHint
     local hintColor = replayAvailable and colors.lightGray or colors.orange
     local hintWidth = ui.getTextSize(hintText)
-    local hintY = max(TITLE_BAR_H + scale.smallGap, buttonY - metrics.lineHeight - metrics.smallGap)
+    local machineLayout = getMachineLayout(statusText ~= nil, true)
+    buttonY = machineLayout.buttonY
 
-    drawMachine(result, highlights, statusText, currentBet)
-    ui.safeDrawText(screen, hintText, font, max(0, floor((width - hintWidth) / 2)), hintY, hintColor)
+    drawMachine(result, highlights, statusText, currentBet, nil, {
+      showFooterControls = true,
+    })
+    ui.safeDrawText(screen, hintText, font, max(0, floor((width - hintWidth) / 2)), machineLayout.hintY, hintColor)
 
     ui.clearButtons()
     ui.layoutButtonGrid(screen, {
