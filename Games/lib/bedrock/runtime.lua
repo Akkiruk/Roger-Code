@@ -81,6 +81,42 @@ local function safeInvoke(fn, ...)
   return pcall(fn, ...)
 end
 
+local function normalizeDialogLines(message)
+  local lines = {}
+
+  if type(message) == "table" then
+    for _, entry in ipairs(message) do
+      lines[#lines + 1] = tostring(entry or "")
+    end
+  elseif message ~= nil then
+    lines[1] = tostring(message)
+  end
+
+  if #lines == 0 then
+    lines[1] = ""
+  end
+
+  return lines
+end
+
+local function normalizeDialogButtons(buttons)
+  local normalized = {}
+
+  for _, button in ipairs(buttons or {}) do
+    if type(button) == "table" and button.label ~= nil then
+      normalized[#normalized + 1] = {
+        label = tostring(button.label),
+        background = button.background or "accent",
+        foreground = button.foreground or "text_dark",
+        onClick = button.onClick,
+        dismiss = button.dismiss ~= false,
+      }
+    end
+  end
+
+  return normalized
+end
+
 function Runtime:setBuild(fn)
   self.build = fn
   self:invalidate()
@@ -105,6 +141,57 @@ end
 
 function Runtime:invalidate()
   self.dirty = true
+end
+
+function Runtime:setDialog(dialog)
+  if type(dialog) ~= "table" then
+    self.dialog = nil
+    self:invalidate()
+    return
+  end
+
+  self.dialog = {
+    title = tostring(dialog.title or "Notice"),
+    message = normalizeDialogLines(dialog.message),
+    accent = dialog.accent or "accent",
+    buttons = normalizeDialogButtons(dialog.buttons),
+    dismiss_on_backdrop = dialog.dismiss_on_backdrop == true,
+  }
+
+  self:invalidate()
+end
+
+function Runtime:clearDialog()
+  if self.dialog ~= nil then
+    self.dialog = nil
+    self:invalidate()
+  end
+end
+
+function Runtime:showPlayAgain(opts)
+  local options = opts or {}
+  self:setDialog({
+    title = options.title or "Round Complete",
+    message = options.message or "Want another run?",
+    accent = options.accent or "success",
+    dismiss_on_backdrop = options.dismiss_on_backdrop == true,
+    buttons = {
+      {
+        label = options.play_again_label or "Play Again",
+        background = options.play_again_background or "success",
+        foreground = options.play_again_foreground or "text_dark",
+        onClick = options.onPlayAgain,
+        dismiss = options.play_again_dismiss ~= false,
+      },
+      options.secondary_label and {
+        label = options.secondary_label,
+        background = options.secondary_background or "surface_alt",
+        foreground = options.secondary_foreground or "text",
+        onClick = options.onSecondary,
+        dismiss = options.secondary_dismiss ~= false,
+      } or nil,
+    },
+  })
 end
 
 function Runtime:addToast(level, title, message, duration)
@@ -281,6 +368,83 @@ function Runtime:drawErrorOverlay(ctx)
   })
 end
 
+function Runtime:drawDialog(ctx)
+  local dialog = self.dialog
+  if not dialog then
+    return
+  end
+
+  local wrapped = {}
+  local maxWidth = math.max(18, math.min(ctx.width - 6, 36))
+  local sideInset = math.max(2, math.floor((ctx.width - maxWidth) / 2))
+  local cardWidth = math.max(16, ctx.width - (sideInset * 2))
+
+  for _, line in ipairs(dialog.message or {}) do
+    local bits = ctx:wrapText(line, math.max(8, cardWidth - 4), ctx.height)
+    for _, bit in ipairs(bits) do
+      wrapped[#wrapped + 1] = bit
+    end
+  end
+
+  local buttonCount = math.max(1, #(dialog.buttons or {}))
+  local contentHeight = math.max(2, #wrapped)
+  local cardHeight = math.min(ctx.height - 2, math.max(6, contentHeight + 5))
+  local topInset = math.max(1, math.floor((ctx.height - cardHeight) / 2))
+  local card = layout.rect(sideInset + 1, topInset + 1, cardWidth, cardHeight)
+  local body = layout.inset(card, 2, 2)
+  local buttonsTop = card.y + card.h - 2
+  local actionRects = layout.columns(layout.rect(card.x + 2, buttonsTop, math.max(1, card.w - 4), 1), (function()
+    local fractions = {}
+    local index = 1
+    while index <= buttonCount do
+      fractions[index] = 1 / buttonCount
+      index = index + 1
+    end
+    return fractions
+  end)(), 1)
+
+  ctx:fillRect(layout.rect(1, 1, ctx.width, ctx.height), "overlay", "text", " ")
+  ctx:fillRect(card, "surface", "text", " ")
+  ctx:fillRect(layout.rect(card.x, card.y, card.w, 1), dialog.accent, "text_dark", " ")
+  ctx:drawText(card.x + 1, card.y, " " .. trimText(dialog.title or "Notice", math.max(1, card.w - 3)), "text_dark", dialog.accent)
+
+  local maxLines = math.max(1, buttonsTop - body.y - 1)
+  for index = 1, math.min(#wrapped, maxLines) do
+    ctx:drawText(body.x, body.y + index - 1, trimText(wrapped[index], body.w), "text", nil)
+  end
+
+  if dialog.dismiss_on_backdrop then
+    ctx:addHit(layout.rect(1, 1, ctx.width, ctx.height), {
+      onClick = function()
+        self:clearDialog()
+      end,
+    })
+  end
+
+  for index, button in ipairs(dialog.buttons or {}) do
+    local rect = actionRects[index]
+    if rect then
+      ctx:fillRect(rect, button.background, button.foreground, " ")
+      ctx:drawText(rect.x + math.max(0, math.floor((rect.w - #button.label) / 2)), rect.y, trimText(button.label, rect.w), button.foreground, button.background)
+      ctx:addHit(rect, {
+        onClick = function()
+          if button.dismiss ~= false then
+            self.dialog = nil
+          end
+          local ok, err = safeInvoke(button.onClick)
+          if not ok then
+            self.error_state = {
+              title = "Dialog Action Failed",
+              message = tostring(err),
+            }
+          end
+          self:invalidate()
+        end,
+      })
+    end
+  end
+end
+
 function Runtime:drawToasts(ctx)
   self:removeExpiredToasts()
 
@@ -344,6 +508,10 @@ function Runtime:buildFrame()
   self:drawToasts(ctx)
   if self.debug_visible then
     self:drawDebugOverlay(ctx)
+  end
+
+  if self.dialog then
+    self:drawDialog(ctx)
   end
 
   self.renderer:render()
@@ -510,6 +678,7 @@ function M.create(opts)
     dirty = true,
     running = false,
     error_state = nil,
+    dialog = nil,
   }, Runtime)
 
   return instance
