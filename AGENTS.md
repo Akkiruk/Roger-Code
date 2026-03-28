@@ -46,7 +46,9 @@
 ## Git Workflow Preference
 
 - Default behavior after changes: commit and push directly to `main` without waiting for user review.
+- Never create a feature branch or PR-only flow for routine repo changes unless the user explicitly asks for one.
 - After any completed repo change, finish the loop in the same turn by pushing the full change set unless the user explicitly says not to push yet.
+- Do not stop to ask for verification or review before pushing to `main` unless a failed git operation forces recovery work.
 - Do not auto-deploy changes into the local PrismLauncher save. Push to GitHub and let the user's installer/update flow pull the new version unless the user explicitly asks for a local deploy.
 - Skip tests, linting, emulator runs, and other verification by default. Only run verification when the user explicitly asks for it or when it is required to recover from a failed git operation.
 - Use `scripts/push-all.ps1` for the default fast path unless the task needs a custom flow.
