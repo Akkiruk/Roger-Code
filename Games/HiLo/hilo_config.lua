@@ -18,6 +18,7 @@ return {
   MAX_BET_PERCENT     = 0.03,    -- conservative table cap; max total return is 15x
   HOST_COVERAGE_MULT  = 15,      -- total payout multiplier (returned wager + 14x profit)
   INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
+  PRE_ROUND_MENU_TIMEOUT = 10000, -- ms before auto-exit on the title/menu screen
 
   -- Peripheral sides
   MONITOR             = "right",

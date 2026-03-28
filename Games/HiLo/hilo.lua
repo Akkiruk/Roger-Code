@@ -16,7 +16,9 @@ local ostime       = os.time
 local settings_get = settings.get
 local r_getInput   = redstone.getInput
 local epoch        = os.epoch
+local max          = math.max
 local min          = math.min
+local ceil         = math.ceil
 
 settings.define("hilo.debug", {
   description = "Enable debug messages for the Hi-Lo game.",
@@ -383,6 +385,10 @@ end
 -- Pre-round menu: PLAY, HOW TO PLAY, STATS
 -----------------------------------------------------
 local function preRoundMenu()
+  local menuTimeout = cfg.PRE_ROUND_MENU_TIMEOUT or 10000
+  local warningThreshold = max(0, menuTimeout - 10000)
+  local lastActivityTime = epoch("local")
+
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -393,6 +399,20 @@ local function preRoundMenu()
     local subtitle = "Higher or Lower?"
     local sw = ui.getTextSize(subtitle)
     ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
+
+    local idleMs = epoch("local") - lastActivityTime
+    if idleMs > menuTimeout then
+      sound.play(sound.SOUNDS.TIMEOUT)
+      os.sleep(0.5)
+      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+    end
+
+    if idleMs >= warningThreshold then
+      local secondsLeft = max(1, ceil((menuTimeout - idleMs) / 1000))
+      local timeoutLabel = "Auto-exit in " .. secondsLeft .. "s"
+      local timeoutWidth = ui.getTextSize(timeoutLabel)
+      ui.safeDrawText(screen, timeoutLabel, font, math.floor((width - timeoutWidth) / 2), scale.subtitleY + LINE_H + 2, colors.orange)
+    end
 
     ui.clearButtons()
     local chosen = nil
@@ -414,7 +434,20 @@ local function preRoundMenu()
 
     if AUTO_PLAY then return end
 
-    ui.waitForButton(0, 0)
+    local timerID = os.startTimer(0.25)
+    while true do
+      local event, side, px, py = os.pullEvent()
+      if event == "monitor_touch" then
+        lastActivityTime = epoch("local")
+        local cb = ui.checkButtonHit(px, py)
+        if cb then
+          cb()
+          break
+        end
+      elseif event == "timer" and side == timerID then
+        break
+      end
+    end
 
     if chosen == "play" then return end
     if chosen == "tutorial" then showTutorial() end
