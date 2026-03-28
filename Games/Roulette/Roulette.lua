@@ -77,6 +77,10 @@ local height = env.height
 local font = env.font
 local scale = env.scale
 local layout = rouletteLayout.build(width, height, #currency.DENOMINATIONS, scale)
+local spinFullRotations = cfg.SPIN_FULL_ROTATIONS or 4
+local spinMinDelay = cfg.SPIN_MIN_DELAY or cfg.SPIN_FRAME_DELAY or 0.018
+local spinMaxDelay = cfg.SPIN_MAX_DELAY or cfg.SPIN_FRAME_DELAY or 0.120
+local spinSettleDelay = cfg.SPIN_SETTLE_DELAY or cfg.SPIN_FRAME_DELAY or 0.045
 
 sound.addSounds(cfg.SOUND_IDS or {})
 
@@ -416,7 +420,7 @@ local function animateSpin(finalNumber)
     diff = diff + wheelSize
   end
 
-  local totalSteps = diff + (wheelSize * (cfg.SPIN_FULL_ROTATIONS or 4))
+  local totalSteps = diff + (wheelSize * spinFullRotations)
   local currentOffset = startOffset
   local step = 1
   local finalBounce = { 0.32, -0.14, 0.08, 0 }
@@ -428,7 +432,7 @@ local function animateSpin(finalNumber)
 
   while step <= totalSteps do
     local progress = step / totalSteps
-    local delay = cfg.SPIN_MIN_DELAY + ((progress * progress) * (cfg.SPIN_MAX_DELAY - cfg.SPIN_MIN_DELAY))
+    local delay = spinMinDelay + ((progress * progress) * (spinMaxDelay - spinMinDelay))
     local subframes = progress < 0.70 and 2 or 3
     local nextOffset = currentOffset + 1
     local subframe = 1
@@ -457,7 +461,7 @@ local function animateSpin(finalNumber)
   for _, bounceOffset in ipairs(finalBounce) do
     state.wheelOffset = targetIndex + bounceOffset
     renderCurrent(nil)
-    os.sleep(cfg.SPIN_SETTLE_DELAY)
+    os.sleep(spinSettleDelay)
   end
 
   state.wheelOffset = targetIndex

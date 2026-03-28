@@ -7,6 +7,11 @@ local floor = math.floor
 local max = math.max
 local min = math.min
 
+local DEFAULT_TRACK_WINDOW_SLOTS = 9
+local DEFAULT_TRACK_COMPACT_WINDOW_SLOTS = 7
+local DEFAULT_TRACK_SLOT_GAP = 2
+local DEFAULT_TRACK_COMPACT_SLOT_GAP = 1
+
 local function getToneColor(tone)
   if tone == "error" then
     return colors.red
@@ -356,8 +361,12 @@ local function drawTrack(screen, font, layout, state)
   local showFocus = not layout.ultraCompact
   local focusW = showFocus and (layout.compact and 7 or 9) or 0
   local focusGap = showFocus and 2 or 0
-  local windowSlots = layout.compact and cfg.TRACK_COMPACT_WINDOW_SLOTS or cfg.TRACK_WINDOW_SLOTS
-  local windowGap = layout.compact and cfg.TRACK_COMPACT_SLOT_GAP or cfg.TRACK_SLOT_GAP
+  local windowSlots = layout.compact
+    and (cfg.TRACK_COMPACT_WINDOW_SLOTS or DEFAULT_TRACK_COMPACT_WINDOW_SLOTS)
+    or (cfg.TRACK_WINDOW_SLOTS or DEFAULT_TRACK_WINDOW_SLOTS)
+  local windowGap = layout.compact
+    and (cfg.TRACK_COMPACT_SLOT_GAP or DEFAULT_TRACK_COMPACT_SLOT_GAP)
+    or (cfg.TRACK_SLOT_GAP or DEFAULT_TRACK_SLOT_GAP)
   local cellW = max(4, min(track.cellW + (layout.compact and 0 or 1), layout.compact and 5 or 7))
   local windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
   local bandTopY = track.y + (layout.compact and 4 or 6)
