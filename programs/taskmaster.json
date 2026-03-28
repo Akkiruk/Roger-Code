@@ -7,12 +7,12 @@
     "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
     "source_root": "Games/TaskMaster",
     "entrypoint": "taskmaster.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "940d1b3c37c383ad82260cfcef1d29a5bb319199",
-    "generated_at": "2026-03-28T20:26:16Z",
-    "package_hash": "81b53b5ea0a056a79c4183943ea511412ca6b3acacfeb189d63a8c5c17529f8f"
+    "commit": "d0b580d49b4389292a40dd16c863dfe430aea382",
+    "generated_at": "2026-03-28T20:34:41Z",
+    "package_hash": "804264b2fc69b7f0b1eefbdf6806cf87f2fb2bd063f76eb75f08e0eae6b8bd7a"
   },
   "install": {
     "preserve": [],
@@ -20,7 +20,7 @@
       {
         "repo_path": "Games/TaskMaster/taskmaster.lua",
         "install_path": "taskmaster.lua",
-        "sha256": "baf2b0e8a4d6ee098852548af7bda21b13a30a24d266fc7f343792c32e573a0f"
+        "sha256": "3cb1b929f21bb5a3d6432870a69cecf0c9422582c1b9ab744b5fbd6b85d51c36"
       },
       {
         "repo_path": "Games/lib/monitor_scale.lua",
