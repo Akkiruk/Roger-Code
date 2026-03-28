@@ -227,12 +227,17 @@ local function drawHand(hand, centerHandX, y)
   end
 end
 
+local function drawBetLabel(betType, betAmount)
+  local betLabel = "Bet: " .. currency.formatTokens(betAmount) .. " on " .. string.upper(betType)
+  local betWidth = ui.getTextSize(betLabel)
+  ui.safeDrawText(screen, betLabel, font, math.floor((width - betWidth) / 2), scale.bottomTextY, colors.white)
+end
+
 local function renderTableBase(playerHand, bankerHand, betType, betAmount, statusText)
   screen:clear(LO.TABLE_COLOR)
 
   -- Bet display
-  local betLabel = "Bet: " .. currency.formatTokens(betAmount) .. " on " .. string.upper(betType)
-  ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
+  drawBetLabel(betType, betAmount)
 
   -- "PLAYER" and "BANKER" labels
   local playerLabel = "PLAYER"
@@ -568,13 +573,12 @@ local function baccaratRound(betAmount, betType)
     local visPlayer = {}
     local visBanker = {}
 
-    local betLabel = "Bet: " .. currency.formatTokens(betAmount) .. " on " .. string.upper(betType)
     local plW = ui.getTextSize("PLAYER")
     local blW = ui.getTextSize("BANKER")
 
     local function bgRender()
       screen:clear(LO.TABLE_COLOR)
-      ui.safeDrawText(screen, betLabel, font, 1, 0, colors.white)
+      drawBetLabel(betType, betAmount)
       ui.safeDrawText(screen, "PLAYER", font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
       ui.safeDrawText(screen, "BANKER", font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
       for i, cid in ipairs(visPlayer) do
