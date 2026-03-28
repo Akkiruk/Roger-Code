@@ -11,6 +11,7 @@ local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
 local replayPrompt = require("lib.replay_prompt")
 local safeRunner = require("lib.safe_runner")
+local settlement = require("lib.round_settlement")
 
 local rouletteModel = require("roulette_model")
 local rouletteLayout = require("roulette_layout")
@@ -199,7 +200,7 @@ local function refreshAutoPlay()
 end
 
 local function refreshPlayerState(forceBalances)
-  local detectedPlayer = gameSetup.refreshPlayer(env)
+  local detectedPlayer = env.refreshPlayer()
   local sessionInfo = currency.getSessionInfo and currency.getSessionInfo() or nil
   local currentSessionPlayer = (sessionInfo and sessionInfo.playerName) or currency.getPlayerName()
 
@@ -593,14 +594,20 @@ local function settleRound()
   local reasonBase = "Roulette: " .. tostring(winningNumber) .. " " .. string.lower(summary.winningColor)
 
   if summary.net > 0 then
-    local paid = currency.payout(summary.net, reasonBase .. " payout")
+    local paid = settlement.applyNetChange(summary.net, {
+      winReason = reasonBase .. " payout",
+      failurePrefix = "CRITICAL",
+    })
     if not paid then
       alert.send("CRITICAL: Roulette payout failed for " .. tostring(summary.net) .. " tokens")
       setStatus("Payout failed. Admin alerted.", "error", 3000)
     end
     playRouletteSound("RESULT_WIN", sound.SOUNDS.SUCCESS, 0.8)
   elseif summary.net < 0 then
-    local charged = currency.charge(-summary.net, reasonBase .. " loss")
+    local charged = settlement.applyNetChange(summary.net, {
+      lossReason = reasonBase .. " loss",
+      failurePrefix = "CRITICAL",
+    })
     if not charged then
       alert.send("CRITICAL: Roulette charge failed for " .. tostring(-summary.net) .. " tokens")
       setStatus("Charge failed. Admin alerted.", "error", 3000)

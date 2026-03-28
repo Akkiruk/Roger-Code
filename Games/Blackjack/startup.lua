@@ -1,202 +1,61 @@
----------------------------------------
--- startup.lua (Blackjack)
--- Idle animation until user clicks,
--- then launches blackjack.lua or statistics.lua
--- Uses shared idle_screen lib for animation boilerplate.
----------------------------------------
+local launcher = require("lib.casino_launcher")
+local ui = require("lib.ui")
 
-local alertLib   = require("lib.alert")
-local idleScreen = require("lib.idle_screen")
-local updater    = require("lib.updater")
-local ui         = require("lib.ui")
-
------------------------------------------------------
--- Config
------------------------------------------------------
-local MONITOR_NAME = "right"
-
-alertLib.configure({
-  gameName  = "Casino Startup",
-  logFile   = "debug.txt",
-})
-alertLib.addPlannedExits({
-  "inactivity_timeout",
-  "main_menu",
-  "user_terminated",
-})
-
-local debugEnabled = true
-local debugTerm = term.native()
-
-local function debugLog(msg)
-  if debugEnabled then
-    local line = "[" .. os.date("%H:%M:%S") .. "] " .. msg
-    local prev = term.redirect(debugTerm)
-    print(line)
-    term.redirect(prev)
-    alertLib.log(msg)
-  end
-end
-
------------------------------------------------------
--- Stats button overlay (drawn on top of bouncing cards)
------------------------------------------------------
 local statsButton = nil
 
 local function drawOverlay(env, screen)
   local scale = env.scale
-  -- Logo drawn after cards but before button
   local logo = env.assets.logo
   if logo then
     screen:drawSurface(logo, 0, 0)
   end
 
-  -- Statistics button
-  local buttonText   = "STATISTICS"
+  local buttonText = "STATISTICS"
   local textWidth = env.surface.getTextSize(buttonText, env.font)
   local buttonWidth = math.max(scale:buttonWidth(textWidth, scale:scaledX(18, 8, 24)), math.floor(env.width * (scale.compact and 0.42 or 0.34)))
   local buttonHeight = scale.buttonHeight + scale:scaledY(6, 2, 10)
-  local buttonX      = math.floor((env.width - buttonWidth) / 2)
-  local buttonY      = math.max(scale.edgePad, scale:bottom(buttonHeight, scale.edgePad * 2))
+  local buttonX = math.floor((env.width - buttonWidth) / 2)
+  local buttonY = math.max(scale.edgePad, scale:bottom(buttonHeight, scale.edgePad * 2))
 
   screen:fillRect(buttonX, buttonY, buttonWidth, buttonHeight, colors.gray)
   screen:fillRect(buttonX + 2, buttonY + 2, buttonWidth - 4, buttonHeight - 4, colors.lime)
-  ui.safeDrawText(screen,
-    buttonText, env.font,
+  ui.safeDrawText(
+    screen,
+    buttonText,
+    env.font,
     buttonX + math.floor((buttonWidth - env.surface.getTextSize(buttonText, env.font)) / 2),
-    buttonY + 5, colors.black
+    buttonY + 5,
+    colors.black
   )
 
   statsButton = {
-    x      = buttonX,
-    y      = buttonY,
-    width  = buttonWidth,
+    x = buttonX,
+    y = buttonY,
+    width = buttonWidth,
     height = buttonHeight,
   }
 end
 
-local function checkHit(x, y, env)
+local function checkHit(x, y)
   if statsButton
-     and x >= statsButton.x and x <= statsButton.x + statsButton.width
-     and y >= statsButton.y and y <= statsButton.y + statsButton.height then
+    and x >= statsButton.x and x <= statsButton.x + statsButton.width
+    and y >= statsButton.y and y <= statsButton.y + statsButton.height then
     return "statistics"
   end
-  return nil  -- fall through to "play"
+  return nil
 end
 
------------------------------------------------------
--- Setup
------------------------------------------------------
-local idleEnv = nil
-
-local function setupIdle()
-  idleEnv = idleScreen.setup({
-    monitorName = MONITOR_NAME,
-    extraAssets = { logo = "logo.nfp" },
-  })
-end
-
------------------------------------------------------
--- Main
------------------------------------------------------
-local ok, err = pcall(setupIdle)
-if not ok then
-  debugLog("Fatal error in setupIdle: " .. tostring(err))
-  alertLib.send("Fatal setupIdle: " .. tostring(err))
-  error(err)
-end
-
--- Initialize ui module so safeDrawText works in the idle overlay
-ui.init(idleEnv.surface, idleEnv.font, idleEnv.scale)
-
-debugLog("Blackjack idle setup complete.")
-
-local installInfo = updater.getInstallInfo()
-if installInfo then
-  debugLog("Installed: " .. tostring(installInfo.program)
-    .. " v" .. tostring(installInfo.version)
-    .. " | commit=" .. tostring(installInfo.source_commit):sub(1, 8)
-    .. " | pkg=" .. tostring(installInfo.package_hash or installInfo.content_hash):sub(1, 8))
-else
-  debugLog("WARNING: No .installed_program record found!")
-end
-
-debugLog("Checking for updates...")
-updater.checkForUpdates({
-  callback = function(status, msg)
-    debugLog("Updater [" .. status .. "] " .. tostring(msg))
-  end,
+launcher.run({
+  startupName = "Casino Startup",
+  logFile = "debug.txt",
+  monitorName = "right",
+  programs = {
+    play = "blackjack.lua",
+    statistics = "statistics.lua",
+  },
+  drawOverlay = drawOverlay,
+  checkHit = checkHit,
+  extraAssets = {
+    logo = "logo.nfp",
+  },
 })
-
-debugLog("Entering idle loop...")
-
-local function mainLoop()
-  while true do
-    local idleOk, actionOrError = pcall(idleScreen.runLoop, idleEnv, {
-      drawOverlay = drawOverlay,
-      checkHit    = checkHit,
-    })
-    if not idleOk then
-      debugLog("Error in idle loop: " .. tostring(actionOrError))
-      alertLib.send("Idle loop error: " .. tostring(actionOrError))
-      os.sleep(5)
-      os.reboot()
-    end
-
-    local action = actionOrError
-
-    if action == "play" then
-      debugLog("startup.lua: Starting blackjack game...")
-      local runOk, runErr = pcall(shell.run, "blackjack.lua")
-      if not runOk then
-        debugLog("startup.lua: Error in blackjack.lua: " .. tostring(runErr))
-        alertLib.send("blackjack.lua error: " .. tostring(runErr))
-        if idleEnv.monitor then
-          term.clear()
-          term.setCursorPos(1, 1)
-          term.setTextColor(colors.red)
-          term.write("Game crashed! Error reported to admin.")
-          term.setCursorPos(1, 3)
-          term.setTextColor(colors.white)
-          term.write("The game will restart in 10 seconds...")
-          os.sleep(10)
-        end
-      end
-      debugLog("startup.lua: blackjack.lua finished, returning to idle.")
-
-    elseif action == "statistics" then
-      debugLog("startup.lua: Starting statistics viewer...")
-      local oldTerm = term.current()
-      local runOk, runErr = pcall(shell.run, "statistics.lua")
-      if not runOk then
-        debugLog("startup.lua: Error running statistics.lua: " .. tostring(runErr))
-        alertLib.send("statistics.lua error: " .. tostring(runErr))
-        term.clear()
-        term.setCursorPos(1, 1)
-        term.setTextColor(colors.red)
-        term.write("Error running statistics")
-        term.setCursorPos(1, 3)
-        term.setTextColor(colors.white)
-        term.write(tostring(runErr))
-        term.setCursorPos(1, 5)
-        term.write("The system will restart in 5 seconds...")
-        os.sleep(5)
-      end
-      term.redirect(oldTerm)
-      debugLog("startup.lua: statistics.lua finished, returning to idle.")
-    end
-
-    -- Re-setup idle for clean state
-    setupIdle()
-  end
-end
-
-local function updateWatcher()
-  updater.watchForUpdates({
-    callback = function(status, msg)
-      debugLog("BG Updater [" .. status .. "] " .. tostring(msg))
-    end,
-  })
-end
-
-parallel.waitForAny(mainLoop, updateWatcher)

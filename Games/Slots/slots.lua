@@ -40,6 +40,7 @@ local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local replayPrompt = require("lib.replay_prompt")
+local settlement = require("lib.round_settlement")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -104,11 +105,11 @@ end
 -- Player detection
 -----------------------------------------------------
 local function refreshPlayer()
-  return gameSetup.refreshPlayer(env)
+  return env.refreshPlayer()
 end
 
 local function drawPlayerOverlay()
-  gameSetup.drawPlayerOverlay(env)
+  env.drawPlayerOverlay()
 end
 
 -----------------------------------------------------
@@ -740,13 +741,19 @@ local function slotsRound(currentBet, immediateSpin)
     resultHighlights, resultStatus = displayPush(result, label or "Pair", currentBet)
     dbg("PUSH: " .. tostring(label))
   elseif winAmount > 0 then
-    if not currency.payout(winAmount, isJackpot and "Slots: jackpot payout" or "Slots: payout") then
+    if not settlement.applyNetChange(winAmount, {
+      winReason = isJackpot and "Slots: jackpot payout" or "Slots: payout",
+      failurePrefix = "CRITICAL",
+    }) then
       alert.send("CRITICAL: Failed to pay " .. winAmount .. " tokens (slots)")
     end
     resultHighlights, resultStatus = displayWin(result, winAmount, label, isJackpot, currentBet)
     dbg("WIN: " .. label .. " net=" .. winAmount)
   else
-    local charged = currency.charge(currentBet, "Slots: loss")
+    local charged = settlement.applyNetChange(-currentBet, {
+      lossReason = "Slots: loss",
+      failurePrefix = "CRITICAL",
+    })
     if not charged then
       alert.send("CRITICAL: Failed to charge " .. currentBet .. " tokens (slots)")
     end

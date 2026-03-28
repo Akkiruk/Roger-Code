@@ -20,6 +20,8 @@ local ui              = require("lib.ui")
 local playerDet       = require("lib.player_detection")
 local currency        = require("lib.currency")
 local monitorScale    = require("lib.monitor_scale")
+local refreshPlayer   = nil
+local drawPlayerOverlay = nil
 
 -- Default palette overrides used by all casino games
 local DEFAULT_PALETTE = {
@@ -132,6 +134,12 @@ local function init(cfg)
 
   -- Player state (shared by refreshPlayer/drawPlayerOverlay helpers)
   env.currentPlayer = currency.getAuthenticatedPlayerName() or "Unknown"
+  env.refreshPlayer = function()
+    return refreshPlayer(env)
+  end
+  env.drawPlayerOverlay = function()
+    drawPlayerOverlay(env)
+  end
 
   return env
 end
@@ -140,7 +148,7 @@ end
 -- Updates env.currentPlayer and returns the name.
 -- @param env table  The environment from init()
 -- @return string
-local function refreshPlayer(env)
+refreshPlayer = function(env)
   local name = playerDet.refresh()
   if name and name ~= "" then
     env.currentPlayer = name
@@ -150,7 +158,7 @@ end
 
 --- Draw the player overlay on the monitor.
 -- @param env table  The environment from init()
-local function drawPlayerOverlay(env)
+drawPlayerOverlay = function(env)
   ui.drawPlayerOverlay(env.monitor, env.currentPlayer)
 end
 

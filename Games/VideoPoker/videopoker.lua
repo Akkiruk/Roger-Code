@@ -40,6 +40,10 @@ local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
+local cardRules  = require("lib.card_rules")
+local pages      = require("lib.casino_pages")
+local sessionStatsLib = require("lib.session_stats")
+local settlement = require("lib.round_settlement")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -98,14 +102,14 @@ end
 -----------------------------------------------------
 -- Session statistics
 -----------------------------------------------------
-local sessionStats = {
+local sessionStats = sessionStatsLib.new({
   hands       = 0,
   totalBet    = 0,
   totalWon    = 0,
   netProfit   = 0,
   biggestWin  = 0,
   handCounts  = {},  -- keyed by hand name
-}
+})
 
 -- Initialize hand counts
 for _, p in ipairs(PAYOUTS) do
@@ -117,11 +121,11 @@ sessionStats.handCounts["No Win"] = 0
 -- Player detection (shared via game_setup)
 -----------------------------------------------------
 local function refreshPlayer()
-  return gameSetup.refreshPlayer(env)
+  return env.refreshPlayer()
 end
 
 local function drawPlayerOverlay()
-  gameSetup.drawPlayerOverlay(env)
+  env.drawPlayerOverlay()
 end
 
 -----------------------------------------------------
@@ -142,132 +146,19 @@ end
 -----------------------------------------------------
 
 --- Get numeric rank for a card value character (2=2, ..., A=14)
-local RANK_MAP = {
-  ["2"] = 2, ["3"] = 3, ["4"] = 4, ["5"] = 5,
-  ["6"] = 6, ["7"] = 7, ["8"] = 8, ["9"] = 9,
-  ["T"] = 10, ["J"] = 11, ["Q"] = 12, ["K"] = 13, ["A"] = 14,
-}
-
 local function getRank(cardID)
-  return RANK_MAP[cardID:sub(1, 1)] or 0
+  return cardRules.pokerRank(cardID)
 end
 
 local function getSuit(cardID)
-  return cardID:sub(2)
+  return cardRules.pokerSuit(cardID)
 end
 
 --- Evaluate a 5-card hand. Returns the hand name and payout index (1-based into PAYOUTS, nil if no win).
 -- @param hand table  Array of 5 card ID strings
 -- @return string handName, number|nil payoutIndex
 local function evaluateHand(hand)
-  assert(#hand == 5, "Hand must have exactly 5 cards")
-
-  -- Count ranks and suits
-  local rankCounts = {}  -- rank -> count
-  local suitCounts = {}  -- suit -> count
-  local ranks = {}       -- sorted list of numeric ranks
-
-  for _, cardID in ipairs(hand) do
-    local r = getRank(cardID)
-    local s = getSuit(cardID)
-    rankCounts[r] = (rankCounts[r] or 0) + 1
-    suitCounts[s] = (suitCounts[s] or 0) + 1
-    table.insert(ranks, r)
-  end
-
-  table.sort(ranks)
-
-  -- Check for flush (all same suit)
-  local isFlush = false
-  for _, count in pairs(suitCounts) do
-    if count == 5 then isFlush = true end
-  end
-
-  -- Check for straight (5 consecutive ranks)
-  local isStraight = false
-  local uniqueRanks = {}
-  local seen = {}
-  for _, r in ipairs(ranks) do
-    if not seen[r] then
-      table.insert(uniqueRanks, r)
-      seen[r] = true
-    end
-  end
-
-  if #uniqueRanks == 5 then
-    local span = ranks[5] - ranks[1]
-    if span == 4 then
-      isStraight = true
-    end
-    -- Special case: A-2-3-4-5 (wheel)
-    if ranks[1] == 2 and ranks[2] == 3 and ranks[3] == 4 and ranks[4] == 5 and ranks[5] == 14 then
-      isStraight = true
-    end
-  end
-
-  -- Check for royal (T-J-Q-K-A)
-  local isRoyal = (ranks[1] == 10 and ranks[2] == 11 and ranks[3] == 12
-                   and ranks[4] == 13 and ranks[5] == 14)
-
-  -- Count pairs, trips, quads
-  local pairCount = 0
-  local trips = 0
-  local quads = 0
-  local pairRanks = {}
-
-  for rank, count in pairs(rankCounts) do
-    if count == 2 then
-      pairCount = pairCount + 1
-      table.insert(pairRanks, rank)
-    elseif count == 3 then
-      trips = 1
-    elseif count == 4 then
-      quads = 1
-    end
-  end
-
-  -- Evaluate from best to worst
-  if isRoyal and isFlush then
-    return "Royal Flush", 1
-  end
-
-  if isStraight and isFlush then
-    return "Straight Flush", 2
-  end
-
-  if quads == 1 then
-    return "Four of a Kind", 3
-  end
-
-  if trips == 1 and pairCount == 1 then
-    return "Full House", 4
-  end
-
-  if isFlush then
-    return "Flush", 5
-  end
-
-  if isStraight then
-    return "Straight", 6
-  end
-
-  if trips == 1 then
-    return "Three of a Kind", 7
-  end
-
-  if pairCount == 2 then
-    return "Two Pair", 8
-  end
-
-  if pairCount == 1 then
-    -- Jacks or Better: pair must be J, Q, K, or A
-    local pairRank = pairRanks[1]
-    if pairRank >= 11 then  -- J=11, Q=12, K=13, A=14
-      return "Jacks or Better", 9
-    end
-  end
-
-  return "No Win", nil
+  return cardRules.evaluateJacksOrBetter(hand)
 end
 
 -----------------------------------------------------
@@ -329,39 +220,22 @@ end
 -- Payout table display
 -----------------------------------------------------
 local function showPayoutTable()
-  screen:clear(LO.TABLE_COLOR)
-  drawCenteredLine("PAYOUT TABLE", 1, colors.yellow)
-  drawCenteredLine("Jacks or Better", 1 + LINE_H, colors.lightGray)
-
-  local payStartY = 1 + LINE_H * 2 + 2
-  local paySpacing = math.min(LINE_H, math.floor((height - payStartY - 10) / #PAYOUTS))
-  local y = payStartY
+  local lines = {
+    { text = "Jacks or Better", color = colors.lightGray },
+    { spacer = true },
+  }
   for _, p in ipairs(PAYOUTS) do
-    local line = p.name
-    local dots = ""
-    local nameW = ui.getTextSize(p.name)
-    local multStr = tostring(p.multiplier) .. "x"
-    local multW = ui.getTextSize(multStr)
-    local totalW = nameW + multW + 8
-
     local color = colors.white
     if p.multiplier >= 25 then
       color = colors.yellow
     elseif p.multiplier >= 4 then
       color = colors.cyan
     end
-
-    ui.safeDrawText(screen, p.name, font, 4, y, color)
-    ui.safeDrawText(screen, multStr, font, width - multW - 4, y, color)
-  y = y + paySpacing
+    lines[#lines + 1] = { text = p.name .. " - " .. tostring(p.multiplier) .. "x", color = color }
   end
-
-  ui.clearButtons()
-  ui.layoutButtonGrid(screen, {
-    {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
-  screen:output()
-  ui.waitForButton(0, 0)
+  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUT TABLE", lines, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
@@ -407,102 +281,40 @@ local TUTORIAL_PAGES = {
 }
 
 local function showTutorial()
-  local page = 1
-  while true do
-    screen:clear(LO.TABLE_COLOR)
-    local pg = TUTORIAL_PAGES[page]
-
-    drawCenteredLine(pg.title, 1, colors.yellow)
-
-    local indicator = "Page " .. page .. "/" .. #TUTORIAL_PAGES
-    drawCenteredLine(indicator, 1 + LINE_H, colors.lightGray)
-
-    -- Count non-empty content lines
-    local contentLines = 0
-    for _, ln in ipairs(pg.lines) do
-      contentLines = contentLines + 1
-    end
-
-    -- Compute spacing to fit between header and buttons
-    local contentY = 1 + LINE_H * 2 + 2
-    local btnY = scale.footerButtonY
-    local availH = btnY - contentY - 2
-    local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
-
-    local lineIdx = 0
-    for _, ln in ipairs(pg.lines) do
-      if ln.text ~= "" then
-        drawCenteredLine(ln.text, contentY + lineIdx * lineSpacing, ln.color)
-      end
-      lineIdx = lineIdx + 1
-    end
-
-    ui.clearButtons()
-    local navRow = {}
-    if page > 1 then
-      table.insert(navRow, { text = "PREV", color = colors.lightGray,
-        func = function() page = page - 1 end })
-    end
-    table.insert(navRow, { text = "BACK", color = colors.red,
-      func = function() page = nil end })
-    if page < #TUTORIAL_PAGES then
-      table.insert(navRow, { text = "NEXT", color = colors.lime,
-        func = function() page = page + 1 end })
-    end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
-
-    screen:output()
-    ui.waitForButton(0, 0)
-    if not page then return end
-  end
+  pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
 -- Stats display
 -----------------------------------------------------
 local function showStats()
-  screen:clear(LO.TABLE_COLOR)
-  drawCenteredLine("SESSION STATS", 1, colors.yellow)
-
-  local y = 1 + LINE_H + 2
-  local statsSpacing = math.min(LINE_H, math.floor((height - y - 10) / 12))
-  local function statLine(label, value, color)
-    drawCenteredLine(label .. ": " .. tostring(value), y, color or colors.white)
-    y = y + statsSpacing
-  end
-
-  statLine("Hands", sessionStats.hands, colors.white)
-
   local profitColor = colors.white
   if sessionStats.netProfit > 0 then
     profitColor = colors.lime
   elseif sessionStats.netProfit < 0 then
     profitColor = colors.red
   end
-  statLine("Profit", currency.formatTokens(sessionStats.netProfit), profitColor)
-  statLine("Wagered", currency.formatTokens(sessionStats.totalBet), colors.white)
-
+  local lines = {
+    { label = "Hands", value = sessionStats.hands, color = colors.white },
+    { label = "Profit", value = currency.formatTokens(sessionStats.netProfit), color = profitColor },
+    { label = "Wagered", value = currency.formatTokens(sessionStats.totalBet), color = colors.white },
+  }
   if sessionStats.biggestWin > 0 then
-    statLine("Best Win", currency.formatTokens(sessionStats.biggestWin), colors.lime)
+    lines[#lines + 1] = { label = "Best Win", value = currency.formatTokens(sessionStats.biggestWin), color = colors.lime }
   end
-
-  -- Show top winning hands
-  y = y + 2
-  drawCenteredLine("-- HANDS HIT --", y, colors.yellow)
-  y = y + statsSpacing
+  lines[#lines + 1] = { spacer = true }
+  lines[#lines + 1] = { text = "-- HANDS HIT --", color = colors.yellow }
   for _, p in ipairs(PAYOUTS) do
     local count = sessionStats.handCounts[p.name] or 0
     if count > 0 then
-      statLine(p.name, count, colors.cyan)
+      lines[#lines + 1] = { label = p.name, value = count, color = colors.cyan }
     end
   end
-
-  ui.clearButtons()
-  ui.layoutButtonGrid(screen, {
-    {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
-  screen:output()
-  ui.waitForButton(0, 0)
+  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
@@ -793,10 +605,15 @@ local function pokerRound(betAmount)
     netChange = betAmount * multiplier
 
     if netChange > 0 then
-      local payOk = currency.payout(netChange, "VideoPoker: " .. handName .. " payout")
+      local payOk = settlement.applyNetChange(netChange, {
+        winReason = "VideoPoker: " .. handName .. " payout",
+        failurePrefix = "CRITICAL",
+        logFailure = function(message)
+          alert.log(message .. ", hand=" .. tostring(handName))
+        end,
+      })
       if not payOk then
         alert.send("CRITICAL: Failed to pay " .. netChange .. " tokens to player!")
-        alert.log("Payout failure: " .. netChange .. " tokens, hand=" .. handName)
       end
     end
 
@@ -809,7 +626,13 @@ local function pokerRound(betAmount)
   else
     -- Loss
     netChange = -betAmount
-    local charged = currency.charge(betAmount, "VideoPoker: no win")
+    local charged = settlement.applyNetChange(-betAmount, {
+      lossReason = "VideoPoker: no win",
+      failurePrefix = "CRITICAL",
+      logFailure = function(message)
+        alert.log(message .. ", hand=" .. tostring(handName))
+      end,
+    })
     if not charged then
       alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (video poker)")
     end
@@ -820,16 +643,9 @@ local function pokerRound(betAmount)
   end
 
   -- Update session stats
-  sessionStats.hands = sessionStats.hands + 1
-  sessionStats.totalBet = sessionStats.totalBet + betAmount
-  sessionStats.netProfit = sessionStats.netProfit + netChange
-  if netChange > 0 then
-    sessionStats.totalWon = sessionStats.totalWon + netChange
-    if netChange > sessionStats.biggestWin then
-      sessionStats.biggestWin = netChange
-    end
-  end
-  sessionStats.handCounts[handName] = (sessionStats.handCounts[handName] or 0) + 1
+  sessionStatsLib.increment(sessionStats, "hands")
+  sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
+  sessionStatsLib.bumpMap(sessionStats, "handCounts", handName, 1)
 
   recovery.clearBet()
   dbg("Hand: " .. handName .. " mult=" .. multiplier .. " net=" .. netChange)

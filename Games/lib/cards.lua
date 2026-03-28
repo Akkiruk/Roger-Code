@@ -152,6 +152,8 @@ end
 local _surface  = nil
 local _font     = nil
 local _cardBg   = nil
+local _suitCache = {}
+local _cardCache = {}
 
 --- Initialize the card renderer with a surface API and assets.
 -- Call this once after loading the surface library.
@@ -162,6 +164,8 @@ local function initRenderer(surfaceAPI, font, cardBgImg)
   _surface = surfaceAPI
   _font    = font
   _cardBg  = cardBgImg
+  _suitCache = {}
+  _cardCache = {}
 end
 
 --- Render a card to a surface object (12x15 pixels).
@@ -172,15 +176,24 @@ local function renderCard(cardID)
   assert(_surface, "Call cards.initRenderer() before renderCard()")
   assert(isValid(cardID), "Invalid card: " .. tostring(cardID))
 
+  if _cardCache[cardID] then
+    return _cardCache[cardID]
+  end
+
   local number = displayValue(cardID)
   local suit   = getSuit(cardID)
   local card   = _surface.create(12, 15)
-  local suitImg = _surface.load(suit .. ".nfp")
+  local suitImg = _suitCache[suit]
+  if suitImg == nil then
+    suitImg = _surface.load(suit .. ".nfp")
+    _suitCache[suit] = suitImg or false
+  end
   card:drawSurface(_cardBg, 0, 0)
-  if suitImg then
+  if suitImg and suitImg ~= false then
     card:drawSurface(suitImg, 5, 2)
   end
   card:drawText(number, _font, 2, 8, colors.black)
+  _cardCache[cardID] = card
   return card
 end
 

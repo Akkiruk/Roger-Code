@@ -11,6 +11,8 @@ local _surface = nil
 local _font    = nil
 local _metrics = nil
 local buttons  = {}
+local buttonSurfaceCache = {}
+local fixedButtonSurfaceCache = {}
 local currency = require("lib.currency")
 local monitorScale = require("lib.monitor_scale")
 local max = math.max
@@ -45,6 +47,8 @@ local function init(surfaceAPI, font, metrics)
   _surface = surfaceAPI
   _font    = font
   _metrics = metrics or monitorScale.forSurface(160, 96)
+  buttonSurfaceCache = {}
+  fixedButtonSurfaceCache = {}
 end
 
 --- Clear all registered buttons (call at the start of each screen redraw).
@@ -64,6 +68,11 @@ end
 -- @return surface, number width, number height
 local function getButtonSurface(text, bg)
   assert(_surface, "Call ui.init() first")
+  local cacheKey = tostring(text) .. "|" .. tostring(bg)
+  local cached = buttonSurfaceCache[cacheKey]
+  if cached then
+    return cached
+  end
   local textSize = _surface.getTextSize(text, _font)
   local btnWidth = textSize + (_metrics.buttonPadX * 2)
   local btn = _surface.create(btnWidth, _metrics.buttonHeight)
@@ -73,6 +82,7 @@ local function getButtonSurface(text, bg)
     fg = colors.white
   end
   btn:drawText(text, _font, _metrics.buttonPadX, _metrics.buttonTextY, fg)
+  buttonSurfaceCache[cacheKey] = btn
   return btn
 end
 
@@ -83,6 +93,11 @@ end
 -- @return surface
 local function getFixedWidthButtonSurface(text, bg, fixedWidth)
   assert(_surface, "Call ui.init() first")
+  local cacheKey = tostring(text) .. "|" .. tostring(bg) .. "|" .. tostring(fixedWidth or "")
+  local cached = fixedButtonSurfaceCache[cacheKey]
+  if cached then
+    return cached
+  end
   local textSize = _surface.getTextSize(text, _font)
   local minWidth = textSize + (_metrics.buttonPadX * 2)
   local btnWidth = max(fixedWidth or minWidth, minWidth)
@@ -94,6 +109,7 @@ local function getFixedWidthButtonSurface(text, bg, fixedWidth)
     fg = colors.white
   end
   btn:drawText(text, _font, textX, _metrics.buttonTextY, fg)
+  fixedButtonSurfaceCache[cacheKey] = btn
   return btn
 end
 

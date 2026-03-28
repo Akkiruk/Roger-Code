@@ -1,161 +1,27 @@
----------------------------------------
--- startup.lua (Roulette)
--- Idle animation until user clicks,
--- then launches Roulette.lua
--- Uses shared idle_screen lib for animation boilerplate.
----------------------------------------
+local launcher = require("lib.casino_launcher")
+local ui = require("lib.ui")
 
-local alertLib   = require("lib.alert")
-local idleScreen = require("lib.idle_screen")
-local updater    = require("lib.updater")
-local ui         = require("lib.ui")
-
------------------------------------------------------
--- Config
------------------------------------------------------
-local MONITOR_NAME = "right"
-
-alertLib.configure({
-  gameName  = "Roulette Startup",
-  logFile   = "roulette_error.log",
-})
-alertLib.addPlannedExits({
-  "inactivity_timeout",
-  "main_menu",
-  "user_terminated",
-})
-
-local debugEnabled = true
-local debugTerm = term.native()
-
-local function debugLog(msg)
-  if debugEnabled then
-    local line = "[" .. os.date("%H:%M:%S") .. "] " .. msg
-    local prev = term.redirect(debugTerm)
-    print(line)
-    term.redirect(prev)
-    alertLib.log(msg)
-  end
-end
-
------------------------------------------------------
--- Title overlay (drawn on top of bouncing cards)
------------------------------------------------------
 local function drawOverlay(env, screen)
   local scale = env.scale
   local title = "ROULETTE"
   local tw = env.surface.getTextSize(title, env.font)
-  ui.safeDrawText(screen, title, env.font,
-    math.floor((env.width - tw) / 2) + 1,
-    scale.idleTitleY + 1, colors.black)
-  ui.safeDrawText(screen, title, env.font,
-    math.floor((env.width - tw) / 2),
-    scale.idleTitleY, colors.yellow)
+  ui.safeDrawText(screen, title, env.font, math.floor((env.width - tw) / 2) + 1, scale.idleTitleY + 1, colors.black)
+  ui.safeDrawText(screen, title, env.font, math.floor((env.width - tw) / 2), scale.idleTitleY, colors.yellow)
 
   local subtitle = "Touch felt to open table"
   local sw = env.surface.getTextSize(subtitle, env.font)
-  ui.safeDrawText(screen, subtitle, env.font,
-    math.floor((env.width - sw) / 2),
-    scale.idleSubtitleY, colors.lightGray)
+  ui.safeDrawText(screen, subtitle, env.font, math.floor((env.width - sw) / 2), scale.idleSubtitleY, colors.lightGray)
 
   local strap = "Single-zero European roulette"
   local strapW = env.surface.getTextSize(strap, env.font)
-  ui.safeDrawText(screen, strap, env.font,
-    math.floor((env.width - strapW) / 2),
-    scale.idleAccentY, colors.cyan)
+  ui.safeDrawText(screen, strap, env.font, math.floor((env.width - strapW) / 2), scale.idleAccentY, colors.cyan)
 end
 
------------------------------------------------------
--- Setup
------------------------------------------------------
-local idleEnv = nil
-
-local function setupIdle()
-  idleEnv = idleScreen.setup({
-    monitorName = MONITOR_NAME,
-    -- Roulette package does not include suit sprite assets; keep idle stable.
-    cardCount = 0,
-  })
-end
-
------------------------------------------------------
--- Main
------------------------------------------------------
-local ok, err = pcall(setupIdle)
-if not ok then
-  debugLog("Fatal error in setupIdle: " .. tostring(err))
-  alertLib.send("Fatal setupIdle: " .. tostring(err))
-  error(err)
-end
-
--- Initialize ui module so safeDrawText works in the idle overlay
-ui.init(idleEnv.surface, idleEnv.font, idleEnv.scale)
-
-debugLog("Roulette idle setup complete.")
-
-local installInfo = updater.getInstallInfo()
-if installInfo then
-  debugLog("Installed: " .. tostring(installInfo.program)
-    .. " v" .. tostring(installInfo.version)
-    .. " | commit=" .. tostring(installInfo.source_commit):sub(1, 8)
-    .. " | pkg=" .. tostring(installInfo.package_hash or installInfo.content_hash):sub(1, 8))
-else
-  debugLog("WARNING: No .installed_program record found!")
-end
-
-debugLog("Checking for updates...")
-updater.checkForUpdates({
-  callback = function(status, msg)
-    debugLog("Updater [" .. status .. "] " .. tostring(msg))
-  end,
+launcher.run({
+  startupName = "Roulette Startup",
+  logFile = "roulette_error.log",
+  monitorName = "right",
+  program = "Roulette.lua",
+  drawOverlay = drawOverlay,
+  cardCount = 0,
 })
-
-debugLog("Entering idle loop...")
-
-local function mainLoop()
-  while true do
-    local idleOk, actionOrError = pcall(idleScreen.runLoop, idleEnv, {
-      drawOverlay = drawOverlay,
-    })
-    if not idleOk then
-      debugLog("Error in idle loop: " .. tostring(actionOrError))
-      alertLib.send("Idle loop error: " .. tostring(actionOrError))
-      os.sleep(5)
-      os.reboot()
-    end
-
-    local action = actionOrError
-
-    if action == "play" then
-      debugLog("startup.lua: Starting roulette game...")
-      local runOk, runErr = pcall(shell.run, "Roulette.lua")
-      if not runOk then
-        debugLog("startup.lua: Error in Roulette.lua: " .. tostring(runErr))
-        alertLib.send("Roulette.lua error: " .. tostring(runErr))
-        if idleEnv.monitor then
-          term.clear()
-          term.setCursorPos(1, 1)
-          term.setTextColor(colors.red)
-          term.write("Game crashed! Error reported to admin.")
-          term.setCursorPos(1, 3)
-          term.setTextColor(colors.white)
-          term.write("The game will restart in 10 seconds...")
-          os.sleep(10)
-        end
-      end
-      debugLog("startup.lua: Roulette.lua finished, returning to idle.")
-    end
-
-    setupIdle()
-  end
-end
-
-local function updateWatcher()
-  updater.watchForUpdates({
-    callback = function(status, msg)
-      debugLog("BG Updater [" .. status .. "] " .. tostring(msg))
-    end,
-  })
-end
-
-parallel.waitForAny(mainLoop, updateWatcher)

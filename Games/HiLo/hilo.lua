@@ -46,6 +46,10 @@ local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
 local replayPrompt = require("lib.replay_prompt")
 local cardAnim   = require("lib.card_anim")
+local cardRules  = require("lib.card_rules")
+local pages      = require("lib.casino_pages")
+local sessionStatsLib = require("lib.session_stats")
+local settlement = require("lib.round_settlement")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -104,7 +108,7 @@ end
 -----------------------------------------------------
 -- Session statistics
 -----------------------------------------------------
-local sessionStats = {
+local sessionStats = sessionStatsLib.new({
   rounds       = 0,
   totalBet     = 0,
   totalWon     = 0,
@@ -114,17 +118,17 @@ local sessionStats = {
   cashOuts     = 0,
   busts        = 0,
   sameValueLosses = 0,
-}
+})
 
 -----------------------------------------------------
 -- Player detection (shared via game_setup)
 -----------------------------------------------------
 local function refreshPlayer()
-  return gameSetup.refreshPlayer(env)
+  return env.refreshPlayer()
 end
 
 local function drawPlayerOverlay()
-  gameSetup.drawPlayerOverlay(env)
+  env.drawPlayerOverlay()
 end
 
 -----------------------------------------------------
@@ -151,19 +155,12 @@ end
 -----------------------------------------------------
 -- Card numeric value for comparison (A=14 high for Hi-Lo)
 -----------------------------------------------------
-local HILO_VALUES = {
-  ["2"] = 2, ["3"] = 3, ["4"] = 4, ["5"] = 5,
-  ["6"] = 6, ["7"] = 7, ["8"] = 8, ["9"] = 9,
-  ["T"] = 10, ["J"] = 11, ["Q"] = 12, ["K"] = 13, ["A"] = 14,
-}
-
 local function cardValue(cardID)
-  local val = cardID:sub(1, 1)
-  return HILO_VALUES[val] or 0
+  return cardRules.hiloValue(cardID)
 end
 
 local function roundedPayout(betAmount, multiplier)
-  return math.floor((betAmount * multiplier) + 0.5)
+  return cardRules.roundedPayout(betAmount, multiplier)
 end
 
 -----------------------------------------------------
@@ -340,100 +337,39 @@ local TUTORIAL_PAGES = {
 }
 
 local function showTutorial()
-  local page = 1
-  while true do
-    screen:clear(LO.TABLE_COLOR)
-    local pg = TUTORIAL_PAGES[page]
-
-    drawCenteredLine(pg.title, 1, colors.yellow)
-
-    local indicator = "Page " .. page .. "/" .. #TUTORIAL_PAGES
-    drawCenteredLine(indicator, 1 + LINE_H, colors.lightGray)
-
-    -- Count non-empty content lines
-    local contentLines = 0
-    for _, ln in ipairs(pg.lines) do
-      contentLines = contentLines + 1
-    end
-
-    -- Compute spacing to fit between header and buttons
-    local contentY = 1 + LINE_H * 2 + 2
-    local btnY = scale.footerButtonY
-    local availH = btnY - contentY - 2
-    local lineSpacing = math.min(LINE_H, math.floor(availH / math.max(contentLines, 1)))
-
-    local lineIdx = 0
-    for _, ln in ipairs(pg.lines) do
-      if ln.text ~= "" then
-        drawCenteredLine(ln.text, contentY + lineIdx * lineSpacing, ln.color)
-      end
-      lineIdx = lineIdx + 1
-    end
-
-    ui.clearButtons()
-    local navRow = {}
-    if page > 1 then
-      table.insert(navRow, { text = "PREV", color = colors.lightGray,
-        func = function() page = page - 1 end })
-    end
-    table.insert(navRow, { text = "BACK", color = colors.red,
-      func = function() page = nil end })
-    if page < #TUTORIAL_PAGES then
-      table.insert(navRow, { text = "NEXT", color = colors.lime,
-        func = function() page = page + 1 end })
-    end
-    ui.layoutButtonGrid(screen, { navRow }, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
-
-    screen:output()
-    ui.waitForButton(0, 0)
-    if not page then return end
-  end
+  pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
 -- Stats display
 -----------------------------------------------------
 local function showStats()
-  screen:clear(LO.TABLE_COLOR)
-  drawCenteredLine("SESSION STATS", 1, colors.yellow)
-
-  local y = 1 + LINE_H + 2
-  local statsSpacing = math.min(LINE_H, math.floor((height - y - 10) / 9))
-  local function statLine(label, value, color)
-    drawCenteredLine(label .. ": " .. tostring(value), y, color or colors.white)
-    y = y + statsSpacing
-  end
-
-  statLine("Rounds", sessionStats.rounds, colors.white)
-
   local profitColor = colors.white
   if sessionStats.netProfit > 0 then
     profitColor = colors.lime
   elseif sessionStats.netProfit < 0 then
     profitColor = colors.red
   end
-  statLine("Profit", currency.formatTokens(sessionStats.netProfit), profitColor)
-  statLine("Wagered", currency.formatTokens(sessionStats.totalBet), colors.white)
-
+  local lines = {
+    { label = "Rounds", value = sessionStats.rounds, color = colors.white },
+    { label = "Profit", value = currency.formatTokens(sessionStats.netProfit), color = profitColor },
+    { label = "Wagered", value = currency.formatTokens(sessionStats.totalBet), color = colors.white },
+  }
   if sessionStats.biggestWin > 0 then
-    statLine("Best Win", currency.formatTokens(sessionStats.biggestWin), colors.lime)
+    lines[#lines + 1] = { label = "Best Win", value = currency.formatTokens(sessionStats.biggestWin), color = colors.lime }
   end
-
-  y = y + 2
-  statLine("Cash Outs", sessionStats.cashOuts, colors.lime)
-  statLine("Busts", sessionStats.busts, colors.red)
-  statLine("Same-Value Losses", sessionStats.sameValueLosses, colors.yellow)
-
+  lines[#lines + 1] = { spacer = true }
+  lines[#lines + 1] = { label = "Cash Outs", value = sessionStats.cashOuts, color = colors.lime }
+  lines[#lines + 1] = { label = "Busts", value = sessionStats.busts, color = colors.red }
+  lines[#lines + 1] = { label = "Same-Value Losses", value = sessionStats.sameValueLosses, color = colors.yellow }
   if sessionStats.bestStreak > 1 then
-    statLine("Best Streak", sessionStats.bestStreak, colors.cyan)
+    lines[#lines + 1] = { label = "Best Streak", value = sessionStats.bestStreak, color = colors.cyan }
   end
-
-  ui.clearButtons()
-  ui.layoutButtonGrid(screen, {
-    {{ text = "BACK", color = colors.red, func = function() end }},
-  }, centerX, scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
-  screen:output()
-  ui.waitForButton(0, 0)
+  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
+    centerX = centerX,
+  })
 end
 
 -----------------------------------------------------
@@ -621,25 +557,24 @@ local function hiloRound(betAmount)
       local profit = totalPayout - betAmount
 
       if profit > 0 then
-        local payOk = currency.payout(profit, "HiLo: cash out profit")
+        local payOk = settlement.applyNetChange(profit, {
+          winReason = "HiLo: cash out profit",
+          failurePrefix = "CRITICAL",
+          logFailure = function(message)
+            alert.log(message .. " tokens, round=" .. tostring(round))
+          end,
+        })
         if not payOk then
           alert.send("CRITICAL: Failed to pay " .. profit .. " tokens to player!")
           alert.log("Payout failure: " .. profit .. " tokens, round=" .. round)
         end
       end
 
-      sessionStats.cashOuts = sessionStats.cashOuts + 1
-      sessionStats.rounds = sessionStats.rounds + 1
-      sessionStats.totalBet = sessionStats.totalBet + betAmount
+      sessionStatsLib.increment(sessionStats, "cashOuts")
+      sessionStatsLib.increment(sessionStats, "rounds")
       local netChange = profit
-      sessionStats.netProfit = sessionStats.netProfit + netChange
-      sessionStats.totalWon = sessionStats.totalWon + netChange
-      if netChange > sessionStats.biggestWin then
-        sessionStats.biggestWin = netChange
-      end
-      if round > sessionStats.bestStreak then
-        sessionStats.bestStreak = round
-      end
+      sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
+      sessionStatsLib.setMax(sessionStats, "bestStreak", round)
 
       sound.play(sound.SOUNDS.SUCCESS)
       renderScreen(currentCard, revealedCards, betAmount, round, multiplier, nil)
@@ -688,14 +623,11 @@ local function hiloRound(betAmount)
     end
 
     if sameValueLoss then
-      sessionStats.sameValueLosses = sessionStats.sameValueLosses + 1
-      sessionStats.busts = sessionStats.busts + 1
-      sessionStats.rounds = sessionStats.rounds + 1
-      sessionStats.totalBet = sessionStats.totalBet + betAmount
-      sessionStats.netProfit = sessionStats.netProfit - betAmount
-      if round - 1 > sessionStats.bestStreak then
-        sessionStats.bestStreak = round - 1
-      end
+      sessionStatsLib.increment(sessionStats, "sameValueLosses")
+      sessionStatsLib.increment(sessionStats, "busts")
+      sessionStatsLib.increment(sessionStats, "rounds")
+      sessionStatsLib.recordNet(sessionStats, betAmount, -betAmount)
+      sessionStatsLib.setMax(sessionStats, "bestStreak", round - 1)
 
       sound.play(sound.SOUNDS.FAIL)
       renderScreen(nextCard, revealedCards, betAmount, round, multiplier, nil)
@@ -728,21 +660,19 @@ local function hiloRound(betAmount)
         local profit = totalPayout - betAmount
 
         if profit > 0 then
-          local payOk = currency.payout(profit, "HiLo: max streak profit")
+          local payOk = settlement.applyNetChange(profit, {
+            winReason = "HiLo: max streak profit",
+            failurePrefix = "CRITICAL",
+          })
           if not payOk then
             alert.send("CRITICAL: Failed to pay " .. profit .. " tokens to player!")
           end
         end
 
-        sessionStats.cashOuts = sessionStats.cashOuts + 1
-        sessionStats.rounds = sessionStats.rounds + 1
-        sessionStats.totalBet = sessionStats.totalBet + betAmount
+        sessionStatsLib.increment(sessionStats, "cashOuts")
+        sessionStatsLib.increment(sessionStats, "rounds")
         local netChange = profit
-        sessionStats.netProfit = sessionStats.netProfit + netChange
-        sessionStats.totalWon = sessionStats.totalWon + netChange
-        if netChange > sessionStats.biggestWin then
-          sessionStats.biggestWin = netChange
-        end
+        sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
         sessionStats.bestStreak = cfg.MAX_ROUNDS
 
         sound.play(sound.SOUNDS.SUCCESS)
@@ -768,18 +698,18 @@ local function hiloRound(betAmount)
       os.sleep(0.8)
     else
       -- Wrong guess: player loses
-      local charged = currency.charge(betAmount, "HiLo: wrong guess round " .. round)
+      local charged = settlement.applyNetChange(-betAmount, {
+        lossReason = "HiLo: wrong guess round " .. round,
+        failurePrefix = "CRITICAL",
+      })
       if not charged then
         alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (HiLo)")
       end
 
-      sessionStats.busts = sessionStats.busts + 1
-      sessionStats.rounds = sessionStats.rounds + 1
-      sessionStats.totalBet = sessionStats.totalBet + betAmount
-      sessionStats.netProfit = sessionStats.netProfit - betAmount
-      if round - 1 > sessionStats.bestStreak then
-        sessionStats.bestStreak = round - 1
-      end
+      sessionStatsLib.increment(sessionStats, "busts")
+      sessionStatsLib.increment(sessionStats, "rounds")
+      sessionStatsLib.recordNet(sessionStats, betAmount, -betAmount)
+      sessionStatsLib.setMax(sessionStats, "bestStreak", round - 1)
 
       sound.play(sound.SOUNDS.FAIL)
       renderScreen(currentCard, revealedCards, betAmount, round, multiplier, nil)

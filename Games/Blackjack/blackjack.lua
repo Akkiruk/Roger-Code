@@ -46,6 +46,7 @@ local betting    = require("lib.betting")
 local autoPlayer = require("lib.auto_player")
 local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
+local settlement = require("lib.round_settlement")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -135,11 +136,11 @@ end
 -- Player detection (shared via game_setup)
 -----------------------------------------------------
 local function refreshPlayer()
-  return gameSetup.refreshPlayer(env)
+  return env.refreshPlayer()
 end
 
 local function drawPlayerOverlay()
-  gameSetup.drawPlayerOverlay(env)
+  env.drawPlayerOverlay()
 end
 
 -----------------------------------------------------
@@ -387,21 +388,11 @@ local function hasHostCapacityForAdditionalBet(ctx, additionalBet)
 end
 
 local function settleNetChange(netChange, reason)
-  if netChange > 0 then
-    if not currency.payout(netChange, reason) then
-      alert.send("CRITICAL: Failed to pay " .. netChange .. " tokens")
-      return false
-    end
-    return true
-  elseif netChange < 0 then
-    local chargeAmt = -netChange
-    local ok = currency.charge(chargeAmt, reason)
-    if not ok then
-      alert.send("CRITICAL: Failed to charge " .. chargeAmt .. " tokens")
-      return false
-    end
-  end
-  return true
+  return settlement.applyNetChange(netChange, {
+    winReason = reason,
+    lossReason = reason,
+    failurePrefix = "CRITICAL",
+  })
 end
 
 -----------------------------------------------------
