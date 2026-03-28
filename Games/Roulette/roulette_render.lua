@@ -157,6 +157,16 @@ local function drawCenteredText(screen, font, rect, text, color, yOffset)
   ui.safeDrawText(screen, text, font, textX, textY, color)
 end
 
+local function getSmallRectTextOffset(rect)
+  if not rect or (rect.h or 0) <= 7 then
+    return -1
+  end
+  if (rect.h or 0) <= 10 then
+    return -1
+  end
+  return 0
+end
+
 local function drawWrappedCenteredText(screen, font, rect, text, color, maxLines, yOffset)
   local inset = rect.w > 4 and 2 or 0
   local maxWidth = max(1, rect.w - inset)
@@ -324,9 +334,10 @@ local function drawTrackCard(screen, font, x, y, width, height, number)
 end
 
 local function drawTrackArrow(screen, centerX, tipY, color)
-  screen:fillRect(centerX, tipY - 3, 1, 2, color)
-  screen:fillRect(centerX - 1, tipY - 1, 3, 1, color)
-  screen:fillRect(centerX - 2, tipY, 5, 1, color)
+  screen:fillRect(centerX, tipY - 5, 1, 2, color)
+  screen:fillRect(centerX - 2, tipY - 3, 5, 1, color)
+  screen:fillRect(centerX - 1, tipY - 2, 3, 1, color)
+  screen:fillRect(centerX, tipY - 1, 1, 1, color)
 end
 
 local function drawTrackHistory(screen, font, layout, track, recent, rowY)
@@ -493,7 +504,7 @@ local function drawTrack(screen, font, layout, state)
     offset = offset + 1
   end
 
-  drawTrackArrow(screen, pointerX, cellY - 1, pointerColor)
+  drawTrackArrow(screen, pointerX, cellY, pointerColor)
 
 end
 
@@ -515,8 +526,8 @@ local function drawSummaryBox(screen, font, layout, state)
   local selectedChip = denominations[state.selectedChipIndex or 1]
   local selectedChipValue = selectedChip and selectedChip.value or 0
   local labelX = box.x + 2
-  local rowY = box.y + 10
-  local rowGap = max(7, layout.scale.lineHeight)
+  local rowY = box.y + 8
+  local rowGap = max(7, layout.scale.lineHeight - 1)
   local lineW = max(1, box.w - 4)
 
   drawCenteredText(screen, font, {
@@ -572,7 +583,7 @@ local function drawButtons(screen, font, layout, state)
       screen:fillRect(button.x, button.y, button.w, button.h, border)
       screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
       local textColor = (fill == colors.black or fill == colors.gray) and colors.white or colors.black
-      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), textColor, layout.compact and -1 or 0)
+      drawCenteredText(screen, font, button, formatCompactAmount(denom.value), textColor, -1)
     end
   end
 
@@ -608,7 +619,7 @@ local function drawButtons(screen, font, layout, state)
     screen:fillRect(button.x, button.y, button.w, button.h, colors.black)
     screen:fillRect(button.x + 1, button.y + 1, button.w - 2, button.h - 2, fill)
     local textColor = (fill == colors.black or fill == colors.gray) and colors.white or colors.black
-    drawCenteredText(screen, font, button, button.label, textColor, layout.compact and -1 or 0)
+    drawCenteredText(screen, font, button, button.label, textColor, -1)
   end
 end
 
@@ -736,9 +747,9 @@ local function drawPrimaryRegion(screen, font, region, fill, textColor, hasBet, 
   end
 
   if maxLines > 1 then
-    drawWrappedCenteredText(screen, font, region, region.displayText, textColor, maxLines)
+    drawWrappedCenteredText(screen, font, region, region.displayText, textColor, maxLines, getSmallRectTextOffset(region))
   else
-    drawCenteredText(screen, font, region, region.displayText, textColor)
+    drawCenteredText(screen, font, region, region.displayText, textColor, getSmallRectTextOffset(region))
   end
 end
 
@@ -757,7 +768,7 @@ local function drawSecondaryRegion(screen, font, region, fill, textColor, hasBet
     end
     screen:fillRect(region.x, region.y, region.w, region.h, baseColor)
     if label ~= "" then
-      drawCenteredText(screen, font, region, label, labelColor, compact and -1 or 0)
+      drawCenteredText(screen, font, region, label, labelColor, compact and -1 or getSmallRectTextOffset(region))
     end
     return
   end

@@ -118,7 +118,7 @@ local function build(width, height, chipCount, scale)
   end
 
   local trackY = layout.header.h + scale.sectionGap
-  local trackH = layout.compact and scale:scaledY(18, 17, 20) or scale:scaledY(24, 20, 28)
+  local trackH = layout.compact and scale:scaledY(18, 17, 20) or scale:scaledY(22, 19, 26)
   local feltX = layout.margin
   local feltW = width - (layout.margin * 2)
   local feltY = trackY + trackH + scale.sectionGap
@@ -236,7 +236,7 @@ local function build(width, height, chipCount, scale)
     layout.summaryBox = { x = leftRailX, y = innerY, w = leftRailW, h = summaryH }
     layout.ultraCompact = false
 
-    local chipsStartY = innerY + summaryH + scale.sectionGap + layout.panelLabelH
+    local chipsStartY = innerY + summaryH + scale.sectionGap + layout.panelLabelH + 3
     local chipIndex = 1
     local chipRow = 0
     while chipIndex <= chipCount do
@@ -255,10 +255,10 @@ local function build(width, height, chipCount, scale)
       x = leftRailX,
       y = slipY,
       w = leftRailW,
-      h = max(scale.messageLineHeight + scale.sectionGap + 8, (innerY + innerH) - slipY),
+      h = 0,
     }
 
-    local actionsStartY = innerY + layout.panelLabelH
+    local actionsStartY = innerY + layout.panelLabelH + 2
     local actionIndex = 1
     local actionKeys = {
       { key = "spin", label = "SPIN", color = colors.lime },
