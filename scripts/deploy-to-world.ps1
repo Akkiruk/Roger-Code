@@ -6,13 +6,17 @@ param(
     [switch]$ResetConfig,
     [switch]$AllInstalled,
     [switch]$ListTargets,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$SkipDeployIndex,
+    [switch]$SkipManifest
 )
 
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestPath = Join-Path $repoRoot "Games\manifest.json"
+$buildScript = Join-Path $PSScriptRoot "build-deploy-index.ps1"
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("roger-deploy-" + [guid]::NewGuid().ToString("N"))
+$indexDir = Join-Path $tempRoot "deploy-index"
 
 function Resolve-MinecraftDir {
     param([string]$ExplicitPath)
@@ -44,14 +48,11 @@ function Resolve-MinecraftDir {
 
     $seen = @{}
     foreach ($candidate in $candidates) {
-        if (-not $candidate) {
+        if (-not $candidate -or $seen.ContainsKey($candidate)) {
             continue
         }
-        if ($seen.ContainsKey($candidate)) {
-            continue
-        }
-        $seen[$candidate] = $true
 
+        $seen[$candidate] = $true
         if (-not (Test-Path $candidate)) {
             continue
         }
@@ -113,13 +114,13 @@ function Read-LuaInfoFile {
 
     $raw = Get-Content $Path -Raw
     $info = [ordered]@{}
-    foreach ($key in @("program", "game", "version", "lib_version", "content_hash")) {
+    foreach ($key in @("program", "game", "name", "version", "source_commit", "package_hash", "content_hash", "spec_path")) {
         $match = [regex]::Match($raw, $key + '\s*=\s*"([^"]*)"')
         if ($match.Success) {
             $info[$key] = $match.Groups[1].Value
         }
     }
-    foreach ($key in @("installed_at", "updated_at")) {
+    foreach ($key in @("schema_version", "installed_at", "updated_at")) {
         $match = [regex]::Match($raw, $key + '\s*=\s*(\d+)')
         if ($match.Success) {
             $info[$key] = [int64]$match.Groups[1].Value
@@ -168,26 +169,23 @@ function Write-ManagedFiles {
 function Write-InstalledProgramInfo {
     param(
         [string]$ComputerDir,
-        [string]$ProgramKey,
-        [pscustomobject]$ProgramEntry,
-        [pscustomobject]$Manifest,
+        [pscustomobject]$Spec,
+        [string]$SpecPath,
         [int64]$InstalledAt
     )
 
     $lines = @(
         "{",
-        "  updated_at = $([int64](Get-Date -UFormat %s) * 1000),",
-        "  program = `"$ProgramKey`",",
+        "  schema_version = 1,",
+        "  program = `"$($Spec.program.key)`",",
+        "  name = `"$($Spec.program.name)`",",
+        "  version = `"$($Spec.program.version)`",",
+        "  source_commit = `"$($Spec.build.commit)`",",
+        "  package_hash = `"$($Spec.build.package_hash)`",",
+        "  content_hash = `"$($Spec.build.package_hash)`",",
+        "  spec_path = `"$SpecPath`",",
         "  installed_at = $InstalledAt,",
-        "  version = `"$($ProgramEntry.version)`","
-    )
-
-    if ($ProgramEntry.uses_lib -and $Manifest.lib -and $Manifest.lib.version) {
-        $lines += "  lib_version = `"$($Manifest.lib.version)`","
-    }
-
-    $lines += @(
-        "  content_hash = `"$($ProgramEntry.content_hash)`",",
+        "  updated_at = $([int64](Get-Date -UFormat %s) * 1000),",
         "}"
     )
 
@@ -197,76 +195,43 @@ function Write-InstalledProgramInfo {
 
 function Ensure-ParentDirectory {
     param([string]$TargetPath)
+
     $parent = Split-Path -Parent $TargetPath
     if ($parent -and -not (Test-Path $parent)) {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
 }
 
-function Get-ProgramEntry {
+function Remove-StaleFiles {
     param(
-        [pscustomobject]$Manifest,
-        [string]$ProgramKey
+        [string]$ComputerDir,
+        [string[]]$PreviousPaths,
+        [string[]]$DesiredPaths,
+        [switch]$DryRunMode
     )
 
-    $normalized = $ProgramKey.ToLower()
-    foreach ($property in $Manifest.programs.PSObject.Properties) {
-        if ($property.Name.ToLower() -eq $normalized) {
-            return [pscustomobject]@{
-                Key = $property.Name
-                Entry = $property.Value
-            }
-        }
+    $wanted = @{}
+    foreach ($path in $DesiredPaths) {
+        $wanted[$path] = $true
     }
 
-    throw "Program '$ProgramKey' was not found in Games/manifest.json"
-}
+    foreach ($relativePath in $PreviousPaths) {
+        if ($wanted.ContainsKey($relativePath)) {
+            continue
+        }
 
-function Get-DesiredDeployment {
-    param(
-        [string]$RepoRoot,
-        [pscustomobject]$Manifest,
-        [pscustomobject]$ProgramEntry
-    )
+        $fullPath = Join-Path $ComputerDir ($relativePath.Replace('/', '\'))
+        if (-not (Test-Path $fullPath)) {
+            continue
+        }
 
-    $desired = @()
-    $sourceBase = Join-Path $RepoRoot $ProgramEntry.source_dir
-
-    foreach ($file in @($ProgramEntry.files)) {
-        $desired += [pscustomobject]@{
-            RelativePath = $file.Replace('\', '/')
-            SourcePath = Join-Path $sourceBase $file
-            Kind = "code"
+        if ($DryRunMode) {
+            Write-Host "  [dry-run] Remove $relativePath" -ForegroundColor DarkYellow
+        } else {
+            Remove-Item $fullPath -Force -Recurse -ErrorAction SilentlyContinue
+            Write-Host "  Removed $relativePath" -ForegroundColor DarkGray
         }
     }
-
-    foreach ($file in @($ProgramEntry.assets)) {
-        $desired += [pscustomobject]@{
-            RelativePath = $file.Replace('\', '/')
-            SourcePath = Join-Path $sourceBase $file
-            Kind = "asset"
-        }
-    }
-
-    foreach ($file in @($ProgramEntry.config_files)) {
-        $desired += [pscustomobject]@{
-            RelativePath = $file.Replace('\', '/')
-            SourcePath = Join-Path $sourceBase $file
-            Kind = "config"
-        }
-    }
-
-    if ($ProgramEntry.uses_lib -and $Manifest.lib -and $Manifest.lib.files) {
-        foreach ($file in @($Manifest.lib.files)) {
-            $desired += [pscustomobject]@{
-                RelativePath = ("lib/" + $file.Replace('\', '/'))
-                SourcePath = Join-Path $RepoRoot ("Games\lib\" + $file.Replace('/', '\'))
-                Kind = "lib"
-            }
-        }
-    }
-
-    return $desired
 }
 
 function Get-ComputerTargets {
@@ -274,7 +239,7 @@ function Get-ComputerTargets {
         [string]$ComputerRoot,
         [string]$ProgramKey,
         [int[]]$Ids,
-        [switch]$AllInstalled
+        [switch]$AllInstalledMode
     )
 
     $directories = @(Get-ChildItem $ComputerRoot -Directory -ErrorAction SilentlyContinue | Sort-Object Name)
@@ -305,7 +270,7 @@ function Get-ComputerTargets {
         }
 
         $installedKey = ($info.program, $info.game | Where-Object { $_ } | Select-Object -First 1)
-        if ($AllInstalled -or ($ProgramKey -and $installedKey -and $installedKey.ToLower() -eq $ProgramKey.ToLower())) {
+        if ($AllInstalledMode -or ($ProgramKey -and $installedKey -and $installedKey.ToLower() -eq $ProgramKey.ToLower())) {
             $targets += [pscustomobject]@{
                 Id = $dir.Name
                 Dir = $dir.FullName
@@ -317,119 +282,161 @@ function Get-ComputerTargets {
     return $targets
 }
 
-if (-not (Test-Path $manifestPath)) {
-    throw "Manifest not found: $manifestPath"
+function Get-DeployIndex {
+    param()
+
+    if ($SkipDeployIndex -or $SkipManifest) {
+        throw "Skipping deploy-index generation is no longer supported for the primary deployment flow."
+    }
+
+    & $buildScript -RepoRoot $repoRoot -OutputDir $indexDir
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to build deploy index"
+    }
+
+    $latestPath = Join-Path $indexDir "latest.json"
+    if (-not (Test-Path $latestPath)) {
+        throw "Generated deploy index is missing latest.json"
+    }
+
+    return (Get-Content $latestPath -Raw -Encoding UTF8 | ConvertFrom-Json)
 }
 
-$manifest = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-$minecraftRoot = Resolve-MinecraftDir -ExplicitPath $MinecraftDir
-$saveDir = Resolve-SaveDir -MinecraftRoot $minecraftRoot -RequestedSaveName $SaveName
-$computerRoot = Join-Path $saveDir "computercraft\computer"
+function Get-ProgramSpec {
+    param(
+        [pscustomobject]$Latest,
+        [string]$ProgramKey
+    )
 
-if (-not (Test-Path $computerRoot)) {
-    throw "Computer directory not found: $computerRoot"
+    $normalized = $ProgramKey.ToLower()
+    $programEntry = $null
+    foreach ($property in $Latest.programs.PSObject.Properties) {
+        if ($property.Name.ToLower() -eq $normalized) {
+            $programEntry = $property.Value
+            break
+        }
+    }
+
+    if (-not $programEntry) {
+        throw "Program '$ProgramKey' was not found in the generated deploy index"
+    }
+
+    $specPath = Join-Path $indexDir $programEntry.spec_path
+    if (-not (Test-Path $specPath)) {
+        throw "Program spec not found: $specPath"
+    }
+
+    return [pscustomobject]@{
+        Key = $normalized
+        SpecPath = $programEntry.spec_path
+        Spec = (Get-Content $specPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+    }
 }
 
-if ($ListTargets) {
-    Write-Host "Minecraft: $minecraftRoot" -ForegroundColor Cyan
-    Write-Host "Save:      $saveDir" -ForegroundColor Cyan
-    Write-Host ""
+try {
+    $latest = Get-DeployIndex
+    $minecraftRoot = Resolve-MinecraftDir -ExplicitPath $MinecraftDir
+    $saveDir = Resolve-SaveDir -MinecraftRoot $minecraftRoot -RequestedSaveName $SaveName
+    $computerRoot = Join-Path $saveDir "computercraft\computer"
 
-    $targets = Get-ComputerTargets -ComputerRoot $computerRoot -AllInstalled
-    if (-not $targets -or $targets.Count -eq 0) {
-        Write-Host "No installed ComputerCraft programs were found." -ForegroundColor Yellow
+    if (-not (Test-Path $computerRoot)) {
+        throw "Computer directory not found: $computerRoot"
+    }
+
+    if ($ListTargets) {
+        Write-Host "Minecraft: $minecraftRoot" -ForegroundColor Cyan
+        Write-Host "Save:      $saveDir" -ForegroundColor Cyan
+        Write-Host ""
+
+        $targets = Get-ComputerTargets -ComputerRoot $computerRoot -AllInstalledMode
+        if (-not $targets -or $targets.Count -eq 0) {
+            Write-Host "No installed ComputerCraft programs were found." -ForegroundColor Yellow
+            return
+        }
+
+        foreach ($target in $targets) {
+            $installedKey = ($target.Info.program, $target.Info.game | Where-Object { $_ } | Select-Object -First 1)
+            $version = if ($target.Info.version) { $target.Info.version } else { "?" }
+            Write-Host ("[{0}] {1} v{2}" -f $target.Id, $installedKey, $version) -ForegroundColor Gray
+        }
         return
     }
 
+    if (-not $Game) {
+        throw "Pass -Game <Name> or use -ListTargets."
+    }
+
+    $resolvedProgram = Get-ProgramSpec -Latest $latest -ProgramKey $Game
+    $spec = $resolvedProgram.Spec
+    $desiredFiles = @($spec.install.files)
+    $desiredRelativePaths = @($desiredFiles | ForEach-Object { $_.install_path })
+    $targets = Get-ComputerTargets -ComputerRoot $computerRoot -ProgramKey $resolvedProgram.Key -Ids $ComputerId -AllInstalledMode:$AllInstalled
+
+    if (-not $targets -or $targets.Count -eq 0) {
+        throw "No target computers found for '$($resolvedProgram.Key)' in $saveDir. Pass -ComputerId to target a specific computer."
+    }
+
+    Write-Host "Deploying $($resolvedProgram.Key) to PrismLauncher runtime..." -ForegroundColor Cyan
+    Write-Host "  Minecraft: $minecraftRoot"
+    Write-Host "  Save:      $saveDir"
+    Write-Host "  Targets:   $($targets.Id -join ', ')"
+
     foreach ($target in $targets) {
-        $installedKey = ($target.Info.program, $target.Info.game | Where-Object { $_ } | Select-Object -First 1)
-        $version = if ($target.Info.version) { $target.Info.version } else { "?" }
-        Write-Host ("[{0}] {1} v{2}" -f $target.Id, $installedKey, $version) -ForegroundColor Gray
-    }
-    return
-}
+        $targetDir = $target.Dir
+        $previouslyManaged = Read-ManagedFiles -ComputerDir $targetDir
 
-if (-not $Game) {
-    throw "Pass -Game <Name> or use -ListTargets."
-}
+        Write-Host ""
+        Write-Host "Computer $($target.Id)" -ForegroundColor Yellow
 
-$resolvedProgram = Get-ProgramEntry -Manifest $manifest -ProgramKey $Game
-$programKey = $resolvedProgram.Key
-$programEntry = $resolvedProgram.Entry
-$desiredFiles = Get-DesiredDeployment -RepoRoot $repoRoot -Manifest $manifest -ProgramEntry $programEntry
-$desiredRelativePaths = @($desiredFiles | ForEach-Object { $_.RelativePath })
+        Remove-StaleFiles -ComputerDir $targetDir -PreviousPaths $previouslyManaged -DesiredPaths $desiredRelativePaths -DryRunMode:$DryRun
 
-$targets = Get-ComputerTargets -ComputerRoot $computerRoot -ProgramKey $programKey -Ids $ComputerId -AllInstalled:$AllInstalled
+        $copied = 0
+        foreach ($item in $desiredFiles) {
+            $relativePath = $item.install_path
+            $targetPath = Join-Path $targetDir ($relativePath.Replace('/', '\'))
+            $sourcePath = Join-Path $repoRoot ($item.repo_path.Replace('/', '\'))
 
-if (-not $targets -or $targets.Count -eq 0) {
-    throw "No target computers found for '$programKey' in $saveDir. Pass -ComputerId to target a specific computer."
-}
-
-Write-Host "Deploying $programKey to PrismLauncher runtime..." -ForegroundColor Cyan
-Write-Host "  Minecraft: $minecraftRoot"
-Write-Host "  Save:      $saveDir"
-Write-Host "  Targets:   $($targets.Id -join ', ')"
-
-foreach ($target in $targets) {
-    $targetDir = $target.Dir
-    $previouslyManaged = Read-ManagedFiles -ComputerDir $targetDir
-
-    Write-Host ""
-    Write-Host "Computer $($target.Id)" -ForegroundColor Yellow
-
-    foreach ($relativePath in $previouslyManaged) {
-        if ($desiredRelativePaths -contains $relativePath) {
-            continue
-        }
-
-        $fullPath = Join-Path $targetDir ($relativePath.Replace('/', '\'))
-        if (Test-Path $fullPath) {
-            if ($DryRun) {
-                Write-Host "  [dry-run] Remove $relativePath" -ForegroundColor DarkYellow
-            } else {
-                Remove-Item $fullPath -Force -Recurse -ErrorAction SilentlyContinue
-                Write-Host "  Removed $relativePath" -ForegroundColor DarkGray
+            if ($item.preserve_existing -and -not $ResetConfig -and (Test-Path $targetPath)) {
+                Write-Host "  Keeping config $relativePath" -ForegroundColor DarkGray
+                continue
             }
+
+            if (-not (Test-Path $sourcePath)) {
+                throw "Missing source file for deployment: $sourcePath"
+            }
+
+            if ($DryRun) {
+                Write-Host "  [dry-run] Copy $relativePath" -ForegroundColor DarkYellow
+                $copied++
+                continue
+            }
+
+            Ensure-ParentDirectory -TargetPath $targetPath
+            Copy-Item $sourcePath -Destination $targetPath -Force
+            $copied++
         }
-    }
 
-    $copied = 0
-    foreach ($item in $desiredFiles) {
-        $relativePath = $item.RelativePath
-        $targetPath = Join-Path $targetDir ($relativePath.Replace('/', '\'))
-
-        if ($item.Kind -eq "config" -and -not $ResetConfig -and (Test-Path $targetPath)) {
-            Write-Host "  Keeping config $relativePath" -ForegroundColor DarkGray
-            continue
-        }
-
-        if (-not (Test-Path $item.SourcePath)) {
-            throw "Missing source file for deployment: $($item.SourcePath)"
+        $existingInstalledAt = if ($target.Info -and $target.Info.installed_at) {
+            [int64]$target.Info.installed_at
+        } else {
+            [int64](Get-Date -UFormat %s) * 1000
         }
 
         if ($DryRun) {
-            Write-Host "  [dry-run] Copy $relativePath" -ForegroundColor DarkYellow
-            $copied++
-            continue
+            Write-Host "  [dry-run] Update .installed_program" -ForegroundColor DarkYellow
+            Write-Host "  [dry-run] Update .roger_deployed_files" -ForegroundColor DarkYellow
+        } else {
+            Write-InstalledProgramInfo -ComputerDir $targetDir -Spec $spec -SpecPath $resolvedProgram.SpecPath -InstalledAt $existingInstalledAt
+            Write-ManagedFiles -ComputerDir $targetDir -Paths $desiredRelativePaths
         }
 
-        Ensure-ParentDirectory -TargetPath $targetPath
-        Copy-Item $item.SourcePath -Destination $targetPath -Force
-        $copied++
+        Write-Host "  Synced $copied files" -ForegroundColor Green
     }
 
-    $existingInstalledAt = if ($target.Info -and $target.Info.installed_at) { [int64]$target.Info.installed_at } else { [int64](Get-Date -UFormat %s) * 1000 }
-
-    if ($DryRun) {
-        Write-Host "  [dry-run] Update .installed_program" -ForegroundColor DarkYellow
-        Write-Host "  [dry-run] Update .roger_deployed_files" -ForegroundColor DarkYellow
-    } else {
-        Write-InstalledProgramInfo -ComputerDir $targetDir -ProgramKey $programKey -ProgramEntry $programEntry -Manifest $manifest -InstalledAt $existingInstalledAt
-        Write-ManagedFiles -ComputerDir $targetDir -Paths $desiredRelativePaths
+    Write-Host ""
+    Write-Host "Deployment complete." -ForegroundColor Green
+} finally {
+    if (Test-Path $tempRoot) {
+        Remove-Item $tempRoot -Force -Recurse -ErrorAction SilentlyContinue
     }
-
-    Write-Host "  Synced $copied files" -ForegroundColor Green
 }
-
-Write-Host ""
-Write-Host "Deployment complete." -ForegroundColor Green

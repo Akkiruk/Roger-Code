@@ -1,24 +1,25 @@
 -- Auto-updater module for ComputerCraft programs.
--- Checks the manifest on startup and silently updates
--- code, assets, and shared libs when a new version is available.
--- Config files are always preserved.
+-- Checks the generated deploy index on startup and silently updates
+-- code, assets, and vendored lib files when a new package is available.
+-- Config files are preserved unless missing.
 --
 -- Usage (in startup.lua):
 --   local updater = require("lib.updater")
 --   updater.checkForUpdates()  -- silent, non-blocking on failure
 
 local REPO_OWNER = "Akkiruk"
-local REPO_NAME  = "Roger-Code"
-local BRANCH     = "main"
-local REPO_URL   = "https://raw.githubusercontent.com/"
-                    .. REPO_OWNER .. "/" .. REPO_NAME
-                    .. "/" .. BRANCH .. "/"
-local MANIFEST_URL  = REPO_URL .. "Games/manifest.json"
-local VERSION_FILE  = ".installed_program"
-local LOG_FILE      = "updater.log"
-local UPDATE_LOCK   = ".update_lock"
+local REPO_NAME = "Roger-Code"
+local DEPLOY_BRANCH = "deploy-index"
+local RAW_ROOT = "https://raw.githubusercontent.com/" .. REPO_OWNER .. "/" .. REPO_NAME .. "/"
+local DEPLOY_URL = RAW_ROOT .. DEPLOY_BRANCH .. "/"
+local LATEST_URL = DEPLOY_URL .. "latest.json"
+local VERSION_FILE = ".installed_program"
+local MANAGED_FILES = ".roger_managed_files"
+local LOG_FILE = "updater.log"
+local UPDATE_LOCK = ".update_lock"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
-local UNLOCK_FILE   = ".vhcc_unlock"
+local UNLOCK_FILE = ".vhcc_unlock"
+local STAGING_ROOT = ".update_staging"
 
 -----------------------------------------------------
 -- Helpers
@@ -51,6 +52,19 @@ local function download(url)
   return data
 end
 
+local function parseJson(data, label)
+  if type(data) ~= "string" then
+    return nil, "Unexpected " .. tostring(label or "JSON") .. " data type"
+  end
+
+  local decoded = textutils.unserialiseJSON(data)
+  if type(decoded) ~= "table" then
+    return nil, "Failed to parse " .. tostring(label or "JSON")
+  end
+
+  return decoded
+end
+
 local function saveFile(path, data)
   local dir = fs.getDir(path)
   if dir ~= "" and not fs.exists(dir) then
@@ -65,14 +79,58 @@ local function saveFile(path, data)
   return true
 end
 
-local function loadInstalled()
-  if not fs.exists(VERSION_FILE) then return nil end
-  local f = fs.open(VERSION_FILE, "r")
-  if not f then return nil end
-  local raw = f.readAll()
+local function readFile(path, binary)
+  if not fs.exists(path) then
+    return nil
+  end
+  local mode = binary and "rb" or "r"
+  local f = fs.open(path, mode)
+  if not f then
+    return nil
+  end
+  local data = f.readAll()
   f.close()
-  local ok, info = pcall(function() return textutils.unserialise(raw) end)
-  if ok and type(info) == "table" then return info end
+  return data
+end
+
+local function computeSha256(data)
+  if textutils and type(textutils.sha256) == "function" then
+    return textutils.sha256(data)
+  end
+  return nil
+end
+
+local function verifyHash(data, expected)
+  if type(expected) ~= "string" or expected == "" then
+    return true
+  end
+
+  local actual = computeSha256(data)
+  if not actual then
+    return true
+  end
+
+  return string.lower(actual) == string.lower(expected)
+end
+
+local function buildCommitUrl(commit, repoPath)
+  return RAW_ROOT .. commit .. "/" .. repoPath
+end
+
+local function loadInstalled()
+  if not fs.exists(VERSION_FILE) then
+    return nil
+  end
+  local raw = readFile(VERSION_FILE, false)
+  if not raw then
+    return nil
+  end
+  local ok, info = pcall(function()
+    return textutils.unserialise(raw)
+  end)
+  if ok and type(info) == "table" then
+    return info
+  end
   return nil
 end
 
@@ -82,6 +140,42 @@ local function saveInstalled(info)
     f.write(textutils.serialise(info))
     f.close()
   end
+end
+
+local function readManagedFiles()
+  if not fs.exists(MANAGED_FILES) then
+    return {}
+  end
+
+  local raw = readFile(MANAGED_FILES, false) or ""
+  local items = {}
+  local seen = {}
+  for line in raw:gmatch("[^\r\n]+") do
+    local path = line:gsub("\\", "/"):gsub("^%s+", ""):gsub("%s+$", "")
+    if path ~= "" and not seen[path] then
+      seen[path] = true
+      items[#items + 1] = path
+    end
+  end
+  table.sort(items)
+  return items
+end
+
+local function saveManagedFiles(paths)
+  table.sort(paths)
+  local f = fs.open(MANAGED_FILES, "w")
+  if not f then
+    return
+  end
+
+  local seen = {}
+  for _, path in ipairs(paths) do
+    if path ~= "" and not seen[path] then
+      seen[path] = true
+      f.writeLine(path)
+    end
+  end
+  f.close()
 end
 
 local function beginWriteWindow(tag)
@@ -112,25 +206,25 @@ local function endWriteWindow(createdUnlock)
   end
 end
 
-local function fetchManifest()
-  local data, err = download(MANIFEST_URL)
+local function fetchLatestIndex()
+  local data, err = download(LATEST_URL)
   if not data then
-    return nil, err or "Could not fetch manifest"
+    return nil, err or "Could not fetch deploy index"
   end
-  local manifest = textutils.unserialiseJSON(data)
-  if not manifest then
-    return nil, "Failed to parse manifest JSON"
+  return parseJson(data, "deploy index")
+end
+
+local function fetchProgramSpec(specPath)
+  local data, err = download(DEPLOY_URL .. specPath)
+  if not data then
+    return nil, err or "Could not fetch program spec"
   end
-  if not manifest.programs and manifest.games then
-    manifest.programs = manifest.games
-  end
-  return manifest
+  return parseJson(data, "program spec")
 end
 
 --- Simple lock to prevent concurrent update runs.
 local function acquireLock()
   if fs.exists(UPDATE_LOCK) then
-    -- Check if lock is stale (>5 min old)
     local f = fs.open(UPDATE_LOCK, "r")
     if f then
       local raw = f.readAll()
@@ -143,12 +237,14 @@ local function acquireLock()
       end
     end
   end
+
   local f = fs.open(UPDATE_LOCK, "w")
   if f then
     f.write(tostring(os.epoch("local")))
     f.close()
     return true
   end
+
   return false
 end
 
@@ -158,44 +254,54 @@ local function releaseLock()
   end
 end
 
+local function makeStageRoot()
+  local root = fs.combine(STAGING_ROOT, tostring(os.epoch("local")))
+  if fs.exists(root) then
+    fs.delete(root)
+  end
+  fs.makeDir(root)
+  return root
+end
+
+local function removePath(path)
+  if fs.exists(path) then
+    fs.delete(path)
+  end
+end
+
+local function removeStaleFiles(previouslyManaged, desiredPaths)
+  local wanted = {}
+  for _, path in ipairs(desiredPaths) do
+    wanted[path] = true
+  end
+
+  for _, path in ipairs(previouslyManaged) do
+    if not wanted[path] and path ~= VERSION_FILE and path ~= MANAGED_FILES then
+      removePath(path)
+    end
+  end
+end
+
+local function applyStagedFiles(stageRoot, stagedEntries)
+  for _, entry in ipairs(stagedEntries) do
+    local finalPath = entry.install_path
+    local stagePath = fs.combine(stageRoot, finalPath)
+    if fs.exists(finalPath) then
+      fs.delete(finalPath)
+    end
+    local parent = fs.getDir(finalPath)
+    if parent ~= "" and not fs.exists(parent) then
+      fs.makeDir(parent)
+    end
+    fs.copy(stagePath, finalPath)
+  end
+end
+
 -----------------------------------------------------
 -- Update logic
 -----------------------------------------------------
 
---- Compare two version strings (e.g. "1.0.0" vs "1.1.0").
--- @return boolean  true if remote is newer than local
-local function isNewer(remoteVer, localVer)
-  if not remoteVer or not localVer then return remoteVer ~= localVer end
-  -- Parse major.minor.patch
-  local rParts = {}
-  for p in tostring(remoteVer):gmatch("(%d+)") do
-    rParts[#rParts + 1] = tonumber(p) or 0
-  end
-  local lParts = {}
-  for p in tostring(localVer):gmatch("(%d+)") do
-    lParts[#lParts + 1] = tonumber(p) or 0
-  end
-  for i = 1, math.max(#rParts, #lParts) do
-    local r = rParts[i] or 0
-    local l = lParts[i] or 0
-    if r > l then return true end
-    if r < l then return false end
-  end
-  return false
-end
-
---- Perform the actual file update for a program.
--- Downloads code files, assets, and shared libs. Preserves config files.
--- @param manifest table
--- @param progKey  string
--- @param installed table  Current install info
--- @return boolean updated, number filesUpdated, number filesFailed
-local function performUpdate(manifest, progKey, installed)
-  local prog = manifest.programs[progKey]
-  if not prog then
-    return false, 0, 0
-  end
-
+local function performUpdate(spec, installed)
   local unlockOk, unlockResult = beginWriteWindow("auto-update")
   if not unlockOk then
     logMsg("Update unlock failed: " .. tostring(unlockResult))
@@ -203,107 +309,80 @@ local function performUpdate(manifest, progKey, installed)
   end
   local createdUnlock = unlockResult == true
 
-  local srcDir = prog.source_dir
-  local downloads = {}
-
-  -- Code files (always overwrite)
-  for _, file in ipairs(prog.files or {}) do
-    downloads[#downloads + 1] = {
-      url  = REPO_URL .. srcDir .. "/" .. file,
-      path = file,
-    }
-  end
-
-  -- Config files — NEVER overwrite existing configs during auto-update
-  for _, file in ipairs(prog.config_files or {}) do
-    if not fs.exists(file) then
-      downloads[#downloads + 1] = {
-        url  = REPO_URL .. srcDir .. "/" .. file,
-        path = file,
-        tag  = "config",
-      }
-    end
-  end
-
-  -- Asset files
-  for _, file in ipairs(prog.assets or {}) do
-    downloads[#downloads + 1] = {
-      url  = REPO_URL .. srcDir .. "/" .. file,
-      path = file,
-    }
-  end
-
-  -- Shared libraries
-  if prog.uses_lib and manifest.lib and manifest.lib.files then
-    for _, file in ipairs(manifest.lib.files) do
-      downloads[#downloads + 1] = {
-        url  = REPO_URL .. "Games/lib/" .. file,
-        path = "lib/" .. file,
-      }
-    end
-  end
-
+  local build = spec.build or {}
+  local program = spec.program or {}
+  local stageRoot = makeStageRoot()
+  local stagedEntries = {}
+  local managedPaths = {}
   local success = 0
   local failed = 0
 
-  for _, entry in ipairs(downloads) do
-    local data, err = download(entry.url)
-    if data then
-      local ok, saveErr = saveFile(entry.path, data)
-      if ok then
-        success = success + 1
+  for _, entry in ipairs(spec.install.files or {}) do
+    managedPaths[#managedPaths + 1] = entry.install_path
+    if entry.preserve_existing and fs.exists(entry.install_path) then
+      success = success + 1
+    else
+      local data, err = download(buildCommitUrl(build.commit, entry.repo_path))
+      if data and verifyHash(data, entry.sha256) then
+        local saveOk, saveErr = saveFile(fs.combine(stageRoot, entry.install_path), data)
+        if saveOk then
+          stagedEntries[#stagedEntries + 1] = entry
+          success = success + 1
+        else
+          failed = failed + 1
+          logMsg("Save failed: " .. tostring(entry.install_path) .. " - " .. tostring(saveErr))
+        end
       else
         failed = failed + 1
-        logMsg("Save failed: " .. entry.path .. " - " .. tostring(saveErr))
+        logMsg("Download failed: " .. tostring(entry.install_path) .. " - " .. tostring(err or "hash mismatch"))
       end
-    else
-      failed = failed + 1
-      logMsg("Download failed: " .. entry.path .. " - " .. tostring(err))
     end
     os.sleep(0)
   end
 
-  -- Update install record
-  saveInstalled({
-    program      = progKey,
-    version      = prog.version,
-    content_hash = prog.content_hash,
-    lib_version  = prog.uses_lib and manifest.lib and manifest.lib.version or nil,
-    installed_at = installed.installed_at or os.epoch("local"),
-    updated_at   = os.epoch("local"),
-  })
+  if failed == 0 then
+    local previouslyManaged = readManagedFiles()
+    removeStaleFiles(previouslyManaged, managedPaths)
+    applyStagedFiles(stageRoot, stagedEntries)
+    saveManagedFiles(managedPaths)
+    saveInstalled({
+      schema_version = 1,
+      program = program.key,
+      name = program.name,
+      version = program.version,
+      source_commit = build.commit,
+      package_hash = build.package_hash,
+      content_hash = build.package_hash,
+      spec_path = spec._spec_path or installed.spec_path or "",
+      installed_at = installed.installed_at or os.epoch("local"),
+      updated_at = os.epoch("local"),
+    })
+  end
 
+  removePath(stageRoot)
   endWriteWindow(createdUnlock)
-  return true, success, failed
+  return failed == 0, success, failed
 end
 
 -----------------------------------------------------
 -- Public API
 -----------------------------------------------------
 
---- Check for updates and apply them silently.
--- Safe to call on every startup.
--- Never throws errors; all failures are logged silently.
--- @param opts table|nil  Optional: { callback=function(status,msg) }
--- @return string status  "updated", "up-to-date", "skipped", or "error"
 local function checkForUpdates(opts)
   opts = opts or {}
   local callback = opts.callback or function() end
-
   local status = "skipped"
 
   local ok, err = pcall(function()
-    -- Lock to prevent concurrent runs
     if not acquireLock() then
       status = "skipped"
       callback("skipped", "Another update in progress")
       return
     end
 
-    -- Load install info
     local installed = loadInstalled()
     if not installed then
-      logMsg("No install record found — skipping update check")
+      logMsg("No install record found - skipping update check")
       releaseLock()
       status = "skipped"
       callback("skipped", "No install record")
@@ -319,67 +398,62 @@ local function checkForUpdates(opts)
       return
     end
 
-    -- Fetch manifest
-    callback("checking", "Fetching manifest...")
-    local manifest, fetchErr = fetchManifest()
-    if not manifest then
-      logMsg("Manifest fetch failed: " .. tostring(fetchErr))
+    callback("checking", "Fetching deploy index...")
+    local index, fetchErr = fetchLatestIndex()
+    if not index then
+      logMsg("Deploy index fetch failed: " .. tostring(fetchErr))
       releaseLock()
       status = "error"
-      callback("error", "Manifest fetch failed: " .. tostring(fetchErr))
+      callback("error", "Deploy index fetch failed: " .. tostring(fetchErr))
       return
     end
 
-    local prog = manifest.programs[progKey]
-    if not prog then
-      logMsg("Program '" .. progKey .. "' not found in manifest")
+    local programEntry = index.programs and index.programs[progKey] or nil
+    if not programEntry then
+      logMsg("Program '" .. progKey .. "' not found in deploy index")
       releaseLock()
       status = "error"
-      callback("error", "Program not in manifest")
+      callback("error", "Program not in deploy index")
       return
     end
 
-    -- Compare versions
-    local localVer = installed.version or "0.0.0"
-    local remoteVer = prog.version or "0.0.0"
-    local localLibVer = installed.lib_version
-    local remoteLibVer = (prog.uses_lib and manifest.lib) and manifest.lib.version or nil
+    local localCommit = installed.source_commit or ""
+    local remoteCommit = programEntry.commit or ""
+    local localHash = installed.package_hash or installed.content_hash or ""
+    local remoteHash = programEntry.package_hash or ""
 
-    local needsUpdate = isNewer(remoteVer, localVer)
-    local needsLibUpdate = remoteLibVer and localLibVer and isNewer(remoteLibVer, localLibVer)
-
-    -- Also check content hash for changes without version bumps
-    local localHash = installed.content_hash
-    local remoteHash = prog.content_hash
-    local hashChanged = remoteHash and localHash and remoteHash ~= localHash
-
-    if not needsUpdate and not needsLibUpdate and not hashChanged then
-      logMsg("Up to date: " .. progKey .. " v" .. localVer)
+    if localCommit == remoteCommit and localHash == remoteHash then
+      logMsg("Up to date: " .. progKey .. " v" .. tostring(installed.version or "?"))
       releaseLock()
       status = "up-to-date"
-      callback("up-to-date", progKey .. " local=v" .. localVer .. " remote=v" .. remoteVer
-        .. " hash=" .. tostring(localHash):sub(1, 8) .. "/" .. tostring(remoteHash):sub(1, 8))
+      callback("up-to-date", progKey .. " local=" .. tostring(installed.version or "?")
+        .. " commit=" .. tostring(localCommit):sub(1, 8))
       return
     end
 
-    -- Perform update
     local reason = ""
-    if needsUpdate then
-      reason = "v" .. localVer .. " -> v" .. remoteVer
+    if localCommit ~= remoteCommit then
+      reason = "commit changed"
     end
-    if hashChanged and not needsUpdate then
-      reason = reason ~= "" and (reason .. ", hash changed") or "hash changed"
+    if localHash ~= remoteHash then
+      reason = reason ~= "" and (reason .. ", package changed") or "package changed"
     end
-    if needsLibUpdate then
-      local libReason = "lib v" .. tostring(localLibVer) .. " -> v" .. tostring(remoteLibVer)
-      reason = reason ~= "" and (reason .. ", " .. libReason) or libReason
+
+    callback("updating", "Fetching package spec...")
+    local spec, specErr = fetchProgramSpec(programEntry.spec_path)
+    if not spec then
+      logMsg("Spec fetch failed for " .. progKey .. ": " .. tostring(specErr))
+      releaseLock()
+      status = "error"
+      callback("error", "Spec fetch failed: " .. tostring(specErr))
+      return
     end
+    spec._spec_path = programEntry.spec_path
 
     logMsg("Updating " .. progKey .. ": " .. reason)
     callback("updating", "Updating " .. progKey .. ": " .. reason)
 
-    local updated, filesOk, filesFailed = performUpdate(manifest, progKey, installed)
-
+    local updated, filesOk, filesFailed = performUpdate(spec, installed)
     if updated and filesFailed == 0 then
       logMsg("Update complete: " .. filesOk .. " files updated")
       status = "updated"
@@ -406,22 +480,14 @@ local function checkForUpdates(opts)
   return status
 end
 
---- Get current install info for display.
--- @return table|nil  {program, version, lib_version, installed_at, updated_at}
 local function getInstallInfo()
   return loadInstalled()
 end
 
---- Force an update check.
--- @return string status
 local function forceUpdate()
   return checkForUpdates()
 end
 
---- Background polling loop that checks for updates at a fixed interval.
--- When an update is applied, automatically reboots the computer.
--- Designed to run inside parallel.waitForAny alongside the game loop.
--- @param opts table|nil  Optional: { interval=number (seconds, default 300), callback=function(status,msg) }
 local function watchForUpdates(opts)
   opts = opts or {}
   local interval = opts.interval or 300
@@ -429,7 +495,7 @@ local function watchForUpdates(opts)
 
   while true do
     os.sleep(interval)
-    local status = checkForUpdates({ force = true, callback = callback })
+    local status = checkForUpdates({ callback = callback })
     if status == "updated" then
       callback("rebooting", "Update applied, rebooting...")
       os.sleep(1)
@@ -440,8 +506,7 @@ end
 
 return {
   checkForUpdates = checkForUpdates,
-  forceUpdate     = forceUpdate,
+  forceUpdate = forceUpdate,
   watchForUpdates = watchForUpdates,
-  getInstallInfo  = getInstallInfo,
-  isNewer         = isNewer,
+  getInstallInfo = getInstallInfo,
 }

@@ -6,24 +6,12 @@ param(
     [switch]$ResetConfig,
     [switch]$AllInstalled,
     [switch]$ListTargets,
-    [switch]$SkipManifest,
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$manifestScript = Join-Path $PSScriptRoot "regenerate-manifest.ps1"
 $deployScript = Join-Path $PSScriptRoot "deploy-to-world.ps1"
-
-if (-not $SkipManifest) {
-    if ($DryRun) {
-        Write-Host "[dry-run] Would regenerate Games/manifest.json" -ForegroundColor Yellow
-    } else {
-        & $manifestScript
-    }
-}
-
 if (-not (Test-Path $deployScript)) {
     throw "World deploy script not found: $deployScript"
 }

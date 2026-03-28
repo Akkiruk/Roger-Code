@@ -1,0 +1,72 @@
+name: Publish Deploy Index
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare previous deploy index
+        shell: pwsh
+        run: |
+          $previousDir = Join-Path $env:RUNNER_TEMP "previous-deploy-index"
+          $publishDir = Join-Path $env:RUNNER_TEMP "publish-deploy-index"
+          New-Item -ItemType Directory -Path $previousDir -Force | Out-Null
+
+          git fetch origin deploy-index:deploy-index 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            git worktree add $publishDir deploy-index
+            Copy-Item (Join-Path $publishDir "*") -Destination $previousDir -Recurse -Force -ErrorAction SilentlyContinue
+          } else {
+            git worktree add -b deploy-index $publishDir
+          }
+
+          "PREVIOUS_DIR=$previousDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PUBLISH_DIR=$publishDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build deploy index
+        shell: pwsh
+        run: |
+          $outputDir = Join-Path $env:RUNNER_TEMP "generated-deploy-index"
+          ./scripts/build-deploy-index.ps1 -RepoRoot $PWD -OutputDir $outputDir -PreviousIndexDir $env:PREVIOUS_DIR
+          "OUTPUT_DIR=$outputDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Publish branch contents
+        shell: pwsh
+        run: |
+          Get-ChildItem $env:PUBLISH_DIR -Force | Where-Object { $_.Name -ne ".git" } | Remove-Item -Recurse -Force
+          Copy-Item (Join-Path $env:OUTPUT_DIR "*") -Destination $env:PUBLISH_DIR -Recurse -Force
+
+          Push-Location $env:PUBLISH_DIR
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "No deploy-index changes to publish."
+          } else {
+            git commit -m "Publish deploy index for $env:GITHUB_SHA"
+            git push origin HEAD:deploy-index
+          }
+          Pop-Location
+
+      - name: Clean up worktree
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:PUBLISH_DIR) {
+            git worktree remove $env:PUBLISH_DIR --force
+          }

@@ -734,7 +734,7 @@ local function selectFromList(title, items, renderEntry)
 
     if input == "n" and page < totalPages then
       page = page + 1
-    elseif input == "p" and page > totalPages then
+    elseif input == "p" and page > 1 then
       page = page - 1
     else
       local choice = tonumber(input)
