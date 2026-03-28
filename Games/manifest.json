@@ -270,8 +270,8 @@
                                              }
                  },
     "lib":  {
-                "version":  "1.2.25",
-                "content_hash":  "0ebc6e3cb3b8afe8",
+                "version":  "1.2.26",
+                "content_hash":  "034e55ea0be583c1",
                 "files":  [
                               "achievements.lua",
                               "alert.lua",
@@ -306,6 +306,7 @@
                               "vaultgear/peripherals.lua",
                               "vaultgear/planner.lua",
                               "vaultgear/presets.lua",
+                              "vaultgear/quick_setup.lua",
                               "vaultgear/service.lua",
                               "vaultgear/store.lua",
                               "vaultgear/ui.lua",

@@ -4,6 +4,7 @@ local logger = require("lib.vaultgear.logger")
 local peripherals = require("lib.vaultgear.peripherals")
 local planner = require("lib.vaultgear.planner")
 local presets = require("lib.vaultgear.presets")
+local quickSetup = require("lib.vaultgear.quick_setup")
 local service = require("lib.vaultgear.service")
 local store = require("lib.vaultgear.store")
 local ui = require("lib.vaultgear.ui")
@@ -358,6 +359,46 @@ local function ensureStorage(app, role, presetId, strictness)
   return planner.findStorageByInventory(app.config.storages, app.ui.selected_inventory)
 end
 
+local function configureSelectedHomeQuick(app, spec)
+  if not app.ui.selected_inventory then
+    return nil
+  end
+
+  local normalizedSpec = quickSetup.normalizeConfig(spec, planner.nextHomePriority(app.config.storages))
+  local storage, index = selectedStorage(app)
+  local existingEnabled = storage and storage.enabled ~= false or true
+  local existingRescan = storage and storage.rescan ~= false or true
+
+  if not storage then
+    storage = planner.createStorage(
+      app.config.storages,
+      app.ui.selected_inventory,
+      "home",
+      quickSetup.presetForType(normalizedSpec.item_type),
+      "normal"
+    )
+    app.config.storages[#app.config.storages + 1] = storage
+    storage, index = selectedStorage(app)
+  end
+
+  storage.role = "home"
+  storage.inventory = app.ui.selected_inventory
+  storage.enabled = existingEnabled
+  storage.rescan = existingRescan
+  storage.priority = normalizedSpec.priority
+  storage.preset_id = quickSetup.presetForType(normalizedSpec.item_type)
+  storage.strictness = "normal"
+  storage.rule = quickSetup.buildRule(normalizedSpec)
+
+  app.config.storages[index] = planner.normalizeStorage(storage, index)
+  sortStorages(app)
+  app.dirty_config = true
+  app.dirty_state = true
+  refreshHealth(app)
+  refreshInspector(app)
+  return planner.findStorageByInventory(app.config.storages, app.ui.selected_inventory)
+end
+
 local function refreshUi(app, mode)
   local controller = app.controller
   if not controller then
@@ -530,8 +571,36 @@ function M.run()
       actions.manageSelectedAsInbox()
     else
       local storage = selectedStorage(app)
-      actions.manageSelectedAsHome(storage and storage.preset_id or "overflow", storage and storage.strictness or "normal")
+      local quickSpec = storage and quickSetup.fromStorage(storage) or quickSetup.fromSuggestion(
+        app.suggestion,
+        planner.nextHomePriority(app.config.storages)
+      )
+      local configured = configureSelectedHomeQuick(app, quickSpec)
+      if configured then
+        notify("success", "Home configured", presets.label(configured.preset_id))
+        refreshUi(app, "storages")
+        saveAll(app, "role change")
+      end
     end
+  end
+
+  function actions.configureSelectedHomeQuick(spec)
+    local storage = configureSelectedHomeQuick(app, spec)
+    if storage then
+      notify("success", "Home configured", presets.label(storage.preset_id))
+      refreshUi(app, "storages")
+      saveAll(app, "quick home configure")
+    end
+  end
+
+  function actions.setSelectedQuickType(itemType)
+    local storage = selectedStorage(app)
+    if not storage or storage.role ~= "home" then
+      return
+    end
+
+    local nextSpec = quickSetup.defaultConfig(itemType, storage.priority)
+    actions.configureSelectedHomeQuick(nextSpec)
   end
 
   function actions.setSelectedPreset(presetId)

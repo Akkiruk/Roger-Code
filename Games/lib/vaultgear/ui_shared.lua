@@ -2,6 +2,7 @@ local bedrock = require("lib.bedrock")
 local constants = require("lib.vaultgear.constants")
 local planner = require("lib.vaultgear.planner")
 local presets = require("lib.vaultgear.presets")
+local quickSetup = require("lib.vaultgear.quick_setup")
 local peripherals = require("lib.vaultgear.peripherals")
 local util = require("lib.vaultgear.util")
 
@@ -229,8 +230,7 @@ function M.createViewState()
     live_scroll = 0,
     sample_selected = 1,
     draft_role = nil,
-    draft_preset = nil,
-    draft_strictness = nil,
+    draft_home = nil,
     last_selected_inventory = nil,
     last_storage_signature = nil,
   }
@@ -239,21 +239,19 @@ end
 function M.syncDraft(view, app)
   local storage = selectedStorage(app)
   local signature = storageSignature(storage)
+  local nextPriority = planner.nextHomePriority(app.config.storages)
 
   if storage and view.last_storage_signature ~= signature then
     view.draft_role = storage.role
-    view.draft_preset = storage.preset_id or "overflow"
-    view.draft_strictness = storage.strictness or "normal"
+    if storage.role == "home" then
+      view.draft_home = quickSetup.fromStorage(storage)
+    else
+      view.draft_home = quickSetup.fromSuggestion(app.suggestion, nextPriority)
+    end
     view.form_scroll = 0
   elseif not storage and (view.last_selected_inventory ~= app.ui.selected_inventory or view.draft_role == nil) then
     view.draft_role = "home"
-    if app.suggestion then
-      view.draft_preset = app.suggestion.preset_id
-      view.draft_strictness = app.suggestion.strictness
-    else
-      view.draft_preset = "overflow"
-      view.draft_strictness = "normal"
-    end
+    view.draft_home = quickSetup.fromSuggestion(app.suggestion, nextPriority)
     view.form_scroll = 0
   end
 
@@ -340,6 +338,18 @@ function M.storageSummaryLines(storage)
   return lines
 end
 
+function M.quickSummaryLines(config)
+  return quickSetup.summaryLines(config)
+end
+
+function M.quickFieldsForType(itemType)
+  return quickSetup.fieldsForType(itemType)
+end
+
+function M.quickDraftFromSuggestion(app, priority)
+  return quickSetup.fromSuggestion(app.suggestion, priority)
+end
+
 function M.selectionSummaryLines(app)
   local storage = selectedStorage(app)
   local lines = {
@@ -410,6 +420,21 @@ function M.rarityOptions()
     }
   end
   return items
+end
+
+function M.quickTypeOptions()
+  local items = {}
+  for _, itemType in ipairs(quickSetup.itemTypes()) do
+    items[#items + 1] = {
+      id = itemType,
+      label = itemType,
+    }
+  end
+  return items
+end
+
+function M.cycleItemType(current, delta)
+  return util.cycleValue(quickSetup.itemTypes(), current or "Gear", delta)
 end
 
 function M.presetOptions()

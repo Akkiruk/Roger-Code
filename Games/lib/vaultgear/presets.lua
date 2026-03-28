@@ -24,6 +24,20 @@ local function applyGeneralGear(rule, strictness)
   end
 end
 
+local function applyGear(rule, strictness)
+  setTypes(rule, { "Gear" })
+  if strictness == "strict" then
+    rule.identified_mode = "identified"
+  end
+end
+
+local function applyTools(rule, strictness)
+  setTypes(rule, { "Tool" })
+  if strictness == "strict" then
+    rule.identified_mode = "identified"
+  end
+end
+
 local function applyHighValueGear(rule, strictness)
   setTypes(rule, { "Gear", "Tool" })
   rule.identified_mode = "identified"
@@ -103,6 +117,20 @@ local presets = {
     short_label = "Gear",
     description = "Broad home for most gear and tools.",
     apply = applyGeneralGear,
+  },
+  {
+    id = "gear",
+    label = "Gear",
+    short_label = "Gear",
+    description = "Focused home for vault gear.",
+    apply = applyGear,
+  },
+  {
+    id = "tools",
+    label = "Tools",
+    short_label = "Tools",
+    description = "Focused home for vault tools.",
+    apply = applyTools,
   },
   {
     id = "high_value_gear",
@@ -202,6 +230,28 @@ function M.defaultRule()
   local rule = makeRule()
   setTypes(rule, allSupportedTypes())
   return rule
+end
+
+function M.presetForType(itemType)
+  if itemType == "Gear" then
+    return "gear"
+  end
+  if itemType == "Tool" then
+    return "tools"
+  end
+  if itemType == "Jewel" then
+    return "jewel_storage"
+  end
+  if itemType == "Trinket" then
+    return "trinkets"
+  end
+  if itemType == "Charm" then
+    return "charms"
+  end
+  if itemType == "Etching" then
+    return "etchings"
+  end
+  return "overflow"
 end
 
 function M.apply(presetId, strictness)
@@ -314,18 +364,18 @@ function M.suggest(items)
   end
 
   if bestType == "Jewel" then
-    local averageSize = jewelCount > 0 and (jewelSizeSum / jewelCount) or 0
-    if averageSize > 0 and averageSize <= 24 then
-      return {
-        preset_id = "small_jewels",
-        strictness = averageSize <= 16 and "strict" or "normal",
-        reason = "Most sampled items are smaller jewels.",
-      }
-    end
     return {
       preset_id = "jewel_storage",
       strictness = "normal",
       reason = "Most sampled items are jewels.",
+    }
+  end
+
+  if bestType == "Tool" then
+    return {
+      preset_id = "tools",
+      strictness = "normal",
+      reason = "Most sampled items are tools.",
     }
   end
 
@@ -354,7 +404,7 @@ function M.suggest(items)
   end
 
   local averageRarity = supported > 0 and (rarityScore / supported) or 0
-  if bestType == "Gear" or bestType == "Tool" then
+  if bestType == "Gear" then
     if averageRarity >= constants.RARITY_ORDER.RARE then
       return {
         preset_id = "high_value_gear",
@@ -363,9 +413,9 @@ function M.suggest(items)
       }
     end
     return {
-      preset_id = "general_gear",
+      preset_id = "gear",
       strictness = "normal",
-      reason = "Sampled items look like general gear and tools.",
+      reason = "Most sampled items are gear.",
     }
   end
 

@@ -1,5 +1,5 @@
 local constants = require("lib.vaultgear.constants")
-local presets = require("lib.vaultgear.presets")
+local quickSetup = require("lib.vaultgear.quick_setup")
 local shared = require("lib.vaultgear.ui_shared")
 local util = require("lib.vaultgear.util")
 
@@ -50,11 +50,90 @@ local function addSection(rows, text)
   end)
 end
 
+local function changeDraftType(view, itemType)
+  local current = quickSetup.normalizeConfig(view.draft_home or quickSetup.defaultConfig("Gear", 10))
+  view.draft_home = quickSetup.defaultConfig(itemType, current.priority)
+end
+
+local function appendQuickHomeRows(rows, config, handlers)
+  local rarityOptions = shared.rarityOptions()
+  local identifiedOptions = shared.identifiedOptions()
+  local itemTypeOptions = shared.quickTypeOptions()
+  local normalized = quickSetup.normalizeConfig(config)
+
+  addRow(rows, 1, function(ctx, rect)
+    widgets.stepper(ctx, rect, "Priority", tostring(normalized.priority or 1), {
+      onMinus = function()
+        handlers.adjustPriority(-1)
+      end,
+      onPlus = function()
+        handlers.adjustPriority(1)
+      end,
+    })
+  end)
+
+  addRow(rows, 1, function(ctx, rect)
+    widgets.selector(ctx, rect, "Item Type", shared.optionLabel(itemTypeOptions, normalized.item_type, "Gear"), {
+      onPrev = function()
+        handlers.setType(shared.cycleItemType(normalized.item_type, -1))
+      end,
+      onNext = function()
+        handlers.setType(shared.cycleItemType(normalized.item_type, 1))
+      end,
+    })
+  end)
+
+  for _, field in ipairs(shared.quickFieldsForType(normalized.item_type)) do
+    local currentField = field
+    if currentField.kind == "choice" and currentField.id == "min_rarity" then
+      addRow(rows, 1, function(ctx, rect)
+        widgets.selector(ctx, rect, currentField.label, shared.optionLabel(rarityOptions, normalized.min_rarity, "Any"), {
+          onPrev = function()
+            handlers.setChoice(currentField.id, shared.cycleOption(rarityOptions, normalized.min_rarity, -1))
+          end,
+          onNext = function()
+            handlers.setChoice(currentField.id, shared.cycleOption(rarityOptions, normalized.min_rarity, 1))
+          end,
+        })
+      end)
+    elseif currentField.kind == "choice" and currentField.id == "identified_mode" then
+      addRow(rows, 1, function(ctx, rect)
+        widgets.selector(ctx, rect, currentField.label, shared.optionLabel(identifiedOptions, normalized.identified_mode, "Any"), {
+          onPrev = function()
+            handlers.setChoice(currentField.id, shared.cycleOption(identifiedOptions, normalized.identified_mode, -1))
+          end,
+          onNext = function()
+            handlers.setChoice(currentField.id, shared.cycleOption(identifiedOptions, normalized.identified_mode, 1))
+          end,
+        })
+      end)
+    elseif currentField.kind == "stepper" and currentField.id == "min_uses" then
+      addRow(rows, 1, function(ctx, rect)
+        widgets.stepper(ctx, rect, currentField.label, tostring(normalized.min_uses or "Off"), {
+          onMinus = function()
+            handlers.adjustNumber(currentField.id, -1)
+          end,
+          onPlus = function()
+            handlers.adjustNumber(currentField.id, 1)
+          end,
+        })
+      end)
+    elseif currentField.kind == "toggle" then
+      addRow(rows, 1, function(ctx, rect)
+        widgets.toggle(ctx, rect, currentField.label, normalized[currentField.id] == true, {
+          onClick = function()
+            handlers.setToggle(currentField.id, normalized[currentField.id] ~= true)
+          end,
+        })
+      end)
+    end
+  end
+end
+
 local function buildDraftRows(app, actions, view)
   local rows = {}
-  local presetOptions = shared.presetOptions()
-  local strictnessOptions = shared.strictnessOptions()
   local role = view.draft_role or "home"
+  local draftHome = quickSetup.normalizeConfig(view.draft_home or quickSetup.defaultConfig("Gear", 10))
 
   addSection(rows, "Quick Setup")
   addRow(rows, 1, function(ctx, rect)
@@ -64,30 +143,49 @@ local function buildDraftRows(app, actions, view)
   end)
 
   if role == "home" then
-    addRow(rows, 1, function(ctx, rect)
-      widgets.selector(ctx, rect, "Preset", shared.optionLabel(presetOptions, view.draft_preset, "Overflow"), {
-        onPrev = function()
-          view.draft_preset = shared.cycleOption(presetOptions, view.draft_preset, -1)
-        end,
-        onNext = function()
-          view.draft_preset = shared.cycleOption(presetOptions, view.draft_preset, 1)
-        end,
-      })
-    end)
-
-    addRow(rows, 1, function(ctx, rect)
-      shared.renderSegmentRow(ctx, rect, "Style", strictnessOptions, view.draft_strictness, function(value)
-        view.draft_strictness = value
-      end)
-    end)
+    appendQuickHomeRows(rows, draftHome, {
+      adjustPriority = function(delta)
+        draftHome.priority = math.max(1, draftHome.priority + delta)
+        view.draft_home = quickSetup.normalizeConfig(draftHome)
+      end,
+      setType = function(itemType)
+        changeDraftType(view, itemType)
+      end,
+      setChoice = function(field, value)
+        draftHome[field] = value
+        view.draft_home = quickSetup.normalizeConfig(draftHome)
+      end,
+      adjustNumber = function(field, delta)
+        local current = draftHome[field]
+        if current == nil then
+          if delta > 0 then
+            draftHome[field] = 1
+          end
+        else
+          local nextValue = current + delta
+          if nextValue < 1 then
+            draftHome[field] = nil
+          else
+            draftHome[field] = nextValue
+          end
+        end
+        view.draft_home = quickSetup.normalizeConfig(draftHome)
+      end,
+      setToggle = function(field, value)
+        draftHome[field] = value == true
+        view.draft_home = quickSetup.normalizeConfig(draftHome)
+      end,
+    })
 
     addRow(rows, 2, function(ctx, rect)
-      local preset = presets.find(view.draft_preset or "overflow")
       local lines = {
-        preset and preset.description or "Catch-all home for supported vault items.",
+        "Lower number wins when multiple homes match.",
       }
+      for _, line in ipairs(shared.quickSummaryLines(draftHome)) do
+        lines[#lines + 1] = line
+      end
       if app.suggestion then
-        lines[#lines + 1] = "Suggested here: " .. presets.label(app.suggestion.preset_id) .. " | " .. tostring(app.suggestion.reason or "")
+        lines[#lines + 1] = "Suggestion: " .. tostring(app.suggestion.reason or "")
       end
       drawWrappedLines(ctx, rect, lines, "muted")
     end)
@@ -99,14 +197,17 @@ local function buildDraftRows(app, actions, view)
           background = "success",
           foreground = "text_dark",
           onClick = function()
-            actions.manageSelectedAsHome(view.draft_preset, view.draft_strictness)
+            actions.configureSelectedHomeQuick(view.draft_home)
           end,
         },
         app.suggestion and {
-          label = "Apply Suggest",
-          background = "gold",
-          foreground = "text_dark",
-          onClick = actions.applySuggestion,
+          label = "Use Suggest",
+          background = "surface_alt",
+          foreground = "text",
+          onClick = function()
+            local current = quickSetup.normalizeConfig(view.draft_home or draftHome)
+            view.draft_home = shared.quickDraftFromSuggestion(app, current.priority)
+          end,
         } or nil,
       })
     end)
@@ -177,40 +278,35 @@ end
 
 local function buildHomeRows(app, actions)
   local rows = {}
-  local presetOptions = shared.presetOptions()
-  local strictnessOptions = shared.strictnessOptions()
-  local identifiedOptions = shared.identifiedOptions()
-  local rarityOptions = shared.rarityOptions()
   local storage = shared.selectedStorage(app)
   local rule = storage and storage.rule or nil
+  local quickConfig = quickSetup.fromStorage(storage)
 
-  addSection(rows, "Basic")
+  addSection(rows, "Quick Setup")
   addRow(rows, 1, function(ctx, rect)
     shared.renderSegmentRow(ctx, rect, "Role", shared.roleOptions(), "home", actions.setSelectedRole)
   end)
-  addRow(rows, 1, function(ctx, rect)
-    widgets.selector(ctx, rect, "Preset", shared.optionLabel(presetOptions, storage.preset_id, "Overflow"), {
-      onPrev = function()
-        actions.setSelectedPreset(shared.cycleOption(presetOptions, storage.preset_id, -1))
-      end,
-      onNext = function()
-        actions.setSelectedPreset(shared.cycleOption(presetOptions, storage.preset_id, 1))
-      end,
-    })
+
+  appendQuickHomeRows(rows, quickConfig, {
+    adjustPriority = actions.adjustSelectedPriority,
+    setType = actions.setSelectedQuickType,
+    setChoice = actions.setSelectedRuleChoice,
+    adjustNumber = actions.adjustSelectedRuleNumber,
+    setToggle = actions.setSelectedFlag,
+  })
+
+  addRow(rows, 2, function(ctx, rect)
+    local lines = {
+      "Lower number wins when multiple homes match.",
+    }
+    for _, line in ipairs(shared.quickSummaryLines(quickConfig)) do
+      lines[#lines + 1] = line
+    end
+    drawWrappedLines(ctx, rect, lines, "muted")
   end)
-  addRow(rows, 1, function(ctx, rect)
-    shared.renderSegmentRow(ctx, rect, "Style", strictnessOptions, storage.strictness, actions.setSelectedStrictness)
-  end)
-  addRow(rows, 1, function(ctx, rect)
-    widgets.stepper(ctx, rect, "Priority", tostring(storage.priority or 1), {
-      onMinus = function()
-        actions.adjustSelectedPriority(-1)
-      end,
-      onPlus = function()
-        actions.adjustSelectedPriority(1)
-      end,
-    })
-  end)
+
+  addSpacer(rows, 1)
+  addSection(rows, "Controls")
   addRow(rows, 1, function(ctx, rect)
     widgets.toggle(ctx, rect, "Active", storage.enabled ~= false, {
       onClick = function()
@@ -251,8 +347,8 @@ local function buildHomeRows(app, actions)
   if not app.ui.advanced then
     addRow(rows, 2, function(ctx, rect)
       drawWrappedLines(ctx, rect, {
-        "Advanced rules are hidden to keep setup calm.",
-        "Open Advanced when you want to tune item types or thresholds.",
+        "Advanced view is for deeper filters like durability, free repairs, or extra thresholds.",
+        "Quick setup stays focused on the highest-signal decisions only.",
       }, "muted")
     end)
     return rows
