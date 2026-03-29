@@ -190,10 +190,38 @@ end
 -- Rendering helpers
 -----------------------------------------------------
 local LINE_H = scale.lineHeight
+local statusTextWidth = math.max(1, width - (scale.edgePad * 2))
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
+end
+
+local function wrapStatusText(text)
+  local words = {}
+  local current = ""
+
+  for word in tostring(text or ""):gmatch("%S+") do
+    local candidate = current == "" and word or (current .. " " .. word)
+    if ui.getTextSize(candidate) <= statusTextWidth then
+      current = candidate
+    else
+      if current ~= "" then
+        words[#words + 1] = current
+      end
+      current = word
+    end
+  end
+
+  if current ~= "" then
+    words[#words + 1] = current
+  end
+
+  if #words == 0 then
+    words[1] = ""
+  end
+
+  return words
 end
 
 local function renderHand(hand, discardSelected, betAmount, statusText, showSelectionState)
@@ -227,8 +255,14 @@ local function renderHand(hand, discardSelected, betAmount, statusText, showSele
   -- Status text
   if statusText then
     local statusY = cardY + cardBack.height + scale.sectionGap + scale.smallGap
-    drawCenteredLine(statusText, statusY, colors.yellow)
+    local statusLines = wrapStatusText(statusText)
+    for i, line in ipairs(statusLines) do
+      drawCenteredLine(line, statusY + ((i - 1) * LINE_H), colors.yellow)
+    end
+    return statusY + (#statusLines * LINE_H) - 1
   end
+
+  return cardY + cardBack.height - 1
 end
 
 -----------------------------------------------------
@@ -538,11 +572,11 @@ local function pokerRound(betAmount)
     local confirmed = false
 
     while not confirmed do
-      renderHand(hand, discardSelected, betAmount, "Tap cards you want to replace, then tap DRAW.", true)
+      local statusBottom = renderHand(hand, discardSelected, betAmount, "Tap cards you want to replace, then tap DRAW.", true)
 
       ui.clearButtons()
       -- Draw button
-      local drawBtnY = cardY + cardBack.height + LINE_H + (scale.sectionGap * 2)
+      local drawBtnY = statusBottom + scale.sectionGap + scale.smallGap
       ui.fixedWidthButton(screen, "DRAW", colors.lime,
         centerX, drawBtnY, function()
           confirmed = true
