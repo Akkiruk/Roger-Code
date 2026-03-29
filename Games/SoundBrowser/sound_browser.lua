@@ -1,6 +1,7 @@
 local sound = require("lib.sound")
 local catalog = require("lib.sound_catalog")
 local soundMetadata = require("lib.sound_metadata")
+local soundRecommendations = require("lib.sound_recommendations")
 local soundRoles = require("lib.sound_roles")
 local reviewStore = require("lib.sound_review_store")
 
@@ -27,6 +28,8 @@ local promptLine = nil
 local cycleRole = nil
 local clampSelection = nil
 local ensureScroll = nil
+local buildRecommendations = nil
+local buildQueue = nil
 local matchesFilter = nil
 local recalcMatches = nil
 local refreshSpeaker = nil
@@ -64,6 +67,7 @@ state = {
   status = "Loading sound catalog...",
   speakerSide = nil,
   role_index = 1,
+  queue_mode = false,
   review_data = reviewStore.load(REVIEW_FILE),
 }
 
@@ -97,7 +101,7 @@ end
 
 visibleRows = function()
   local _, height = term.getSize()
-  return math.max(4, height - 10)
+  return math.max(4, height - 12)
 end
 
 setStatus = function(message)
@@ -178,6 +182,7 @@ cycleRole = function(delta)
   end
 
   state.role_index = nextIndex
+  recalcMatches()
   setStatus("Focused role: " .. currentRole().label)
 end
 
@@ -218,11 +223,38 @@ ensureScroll = function()
   end
 end
 
+buildRecommendations = function(limit)
+  local role = currentRole()
+  if not role then
+    return {}
+  end
+
+  return soundRecommendations.getTopCandidates(state.review_data, role.id, limit or 5)
+end
+
+buildQueue = function()
+  local items = {}
+  local candidates = buildRecommendations(200)
+  local index = 1
+  local item = nil
+
+  while index <= #candidates do
+    item = candidates[index]
+    if (item.verdict == nil or item.verdict == "") and item.bucket ~= "reject" then
+      items[#items + 1] = item.sound_id
+    end
+    index = index + 1
+  end
+
+  return items
+end
+
 matchesFilter = function(soundId)
   local filter = string.lower(state.filter or "")
   local meta = soundMetadata.get(soundId)
   local manualTags = reviewStore.getManualTags(state.review_data, soundId)
   local bucket = reviewStore.getBucket(state.review_data, soundId)
+  local role = nil
   local value = nil
   local roleValue = string.match(filter, "^role:(.+)$")
   local tagValue = string.match(filter, "^tag:(.+)$")
@@ -287,8 +319,11 @@ end
 
 recalcMatches = function()
   local matches = {}
+  local source = nil
 
-  for _, soundId in ipairs(catalog.SOUNDS or {}) do
+  source = state.queue_mode and buildQueue() or (catalog.SOUNDS or {})
+
+  for _, soundId in ipairs(source) do
     if matchesFilter(soundId) then
       matches[#matches + 1] = soundId
     end
@@ -504,11 +539,13 @@ end
 drawScreen = function()
   local width, height = term.getSize()
   local rows = visibleRows()
-  local listStartY = 8
+  local listStartY = 10
   local footerY = height - 1
   local soundId = selectedSound()
   local meta = selectedMeta()
   local role = currentRole()
+  local recommendations = buildRecommendations(3)
+  local queueItems = buildQueue()
   local manualTags = soundId and reviewStore.getManualTags(state.review_data, soundId) or {}
   local bucket = soundId and reviewStore.getBucket(state.review_data, soundId) or nil
   local roleVerdict = soundId and currentRoleVerdict(soundId) or ""
@@ -518,6 +555,7 @@ drawScreen = function()
   local summaryLine = nil
   local tagsLine = nil
   local manualLine = nil
+  local recommendationLine = nil
   local row = nil
   local index = nil
   local rowSoundId = nil
@@ -536,7 +574,8 @@ drawScreen = function()
   term.write(trimText(
     "Speaker: " .. (sound.isAvailable() and "ready" or "missing") ..
     "  Showing: " .. tostring(#state.matches) .. "/" .. tostring(catalog.SOUND_COUNT or #(catalog.SOUNDS or {})) ..
-    "  Role: " .. role.label,
+    "  Role: " .. role.label ..
+    "  Mode: " .. (state.queue_mode and "queue" or "all"),
     width
   ))
 
@@ -587,7 +626,25 @@ drawScreen = function()
     term.write(trimText("No sound selected.", width))
   end
 
-  term.setCursorPos(1, listStartY)
+  if #recommendations > 0 then
+    recommendationLine = "Top: "
+    for index = 1, #recommendations do
+      recommendationLine = recommendationLine .. recommendations[index].sound_id .. " (" .. tostring(recommendations[index].score) .. ")"
+      if index < #recommendations then
+        recommendationLine = recommendationLine .. " | "
+      end
+    end
+  else
+    recommendationLine = "Top: no candidates yet"
+  end
+
+  recommendationLine = recommendationLine .. "  Queue: " .. tostring(#queueItems)
+
+  term.setCursorPos(1, 8)
+  term.setTextColor(colors.cyan)
+  term.write(trimText(recommendationLine, width))
+
+  term.setCursorPos(1, 9)
   term.setTextColor(colors.gray)
   term.write(string.rep("-", width))
 
@@ -631,7 +688,7 @@ drawScreen = function()
   term.setCursorPos(1, footerY)
   term.setTextColor(colors.lightGray)
   term.clearLine()
-  term.write(trimText("Enter play  / filter  F/X/M buckets  </> role  B/G/V/C verdict  T tags  N role note  O sound note  S save  Q quit", width))
+  term.write(trimText("Enter play  / filter  Y queue  F/X/M buckets  </> role  B/G/V/C verdict  T tags  N role note  O sound note  S save  Q quit", width))
 
   term.setCursorPos(1, height)
   term.setTextColor(soundId and colors.white or colors.orange)
@@ -663,6 +720,10 @@ runBrowser = function(...)
         toggleBucket("reject")
       elseif p1 == "m" or p1 == "M" then
         toggleBucket("maybe")
+      elseif p1 == "y" or p1 == "Y" then
+        state.queue_mode = not state.queue_mode
+        recalcMatches()
+        setStatus("Queue mode " .. (state.queue_mode and "enabled" or "disabled") .. ".")
       elseif p1 == "s" or p1 == "S" then
         saveReviews()
       elseif p1 == "r" or p1 == "R" then
@@ -683,12 +744,16 @@ runBrowser = function(...)
         cycleRole(1)
       elseif p1 == "b" or p1 == "B" then
         setRoleVerdict("best")
+        recalcMatches()
       elseif p1 == "g" or p1 == "G" then
         setRoleVerdict("good")
+        recalcMatches()
       elseif p1 == "v" or p1 == "V" then
         setRoleVerdict("avoid")
+        recalcMatches()
       elseif p1 == "c" or p1 == "C" then
         setRoleVerdict("")
+        recalcMatches()
       elseif p1 == "t" or p1 == "T" then
         promptManualTags()
       elseif p1 == "n" or p1 == "N" then
