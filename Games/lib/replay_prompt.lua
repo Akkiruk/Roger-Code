@@ -1,6 +1,7 @@
 local ui = require("lib.ui")
 
 local M = {}
+local chooseValue = nil
 
 local function drawCenteredLine(screen, text, y, color)
   local font = ui.getFont()
@@ -22,7 +23,7 @@ local function resolveHint(options)
   return options.hint, options.hint_color
 end
 
-local function buildButtonRows(buttons, setChoice, screen)
+local function buildButtonRows(buttons, chooseValue, screen)
   local rows = {}
 
   for rowIndex, row in ipairs(buttons or {}) do
@@ -45,7 +46,7 @@ local function buildButtonRows(buttons, setChoice, screen)
               if type(entry.onChoose) == "function" then
                 entry.onChoose()
               end
-              setChoice(entry.id)
+              chooseValue(entry.id)
               return
             end
 
@@ -76,7 +77,7 @@ function M.waitForChoice(screen, opts)
   local lastActivityTime = os.epoch("local")
   local pollSeconds = options.poll_seconds or 0.25
 
-  local function setChoice(value)
+  chooseValue = function(value)
     choice = value
   end
 
@@ -93,7 +94,7 @@ function M.waitForChoice(screen, opts)
     ui.clearButtons()
     ui.layoutButtonGrid(
       screen,
-      buildButtonRows(options.buttons, setChoice, screen),
+      buildButtonRows(options.buttons, chooseValue, screen),
       options.center_x,
       options.button_y,
       options.row_spacing,
