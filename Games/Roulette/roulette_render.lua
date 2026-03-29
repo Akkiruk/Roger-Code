@@ -470,13 +470,20 @@ local function drawTrack(screen, font, layout, state)
   local laneInnerY = laneRect.y + 2
   local laneInnerH = max(1, laneRect.h - 4)
   local minCellW = layout.compact and 5 or 8
+  local minTrackLabelW = ui.getTextSize("36") + 2
   local cellW = max(minCellW, min(layout.compact and 9 or 13, floor((laneInnerW - ((windowSlots - 1) * windowGap)) / windowSlots)))
   local cellH = max(1, min(laneInnerH, layout.compact and 8 or 10))
-  local windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
-  if windowW > laneInnerW then
-    cellW = max(layout.compact and 3 or 7, floor((laneInnerW - ((windowSlots - 1) * windowGap)) / windowSlots))
-    windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
+
+  while windowSlots > 3 do
+    local availableCellW = floor((laneInnerW - ((windowSlots - 1) * windowGap)) / windowSlots)
+    if availableCellW >= minTrackLabelW then
+      break
+    end
+    windowSlots = windowSlots - 2
   end
+
+  cellW = max(minTrackLabelW, floor((laneInnerW - ((windowSlots - 1) * windowGap)) / windowSlots))
+  local windowW = (windowSlots * cellW) + ((windowSlots - 1) * windowGap)
 
   drawFrame(screen, laneRect, colors.black, colors.lightGray)
 
