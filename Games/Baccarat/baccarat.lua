@@ -732,18 +732,42 @@ local function canReplayBet(betAmount)
     return false, "Lower the bet before playing again."
   end
 
+  local houseCap = getMaxBet()
   if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
-    local needed = betAmount * (cfg.HOST_COVERAGE_MULT - 1)
-    if hostBankBalance < needed then
-      return false, "House limit changed. Visit the menu."
-    end
+    local coverageCap = math.floor(hostBankBalance / (cfg.HOST_COVERAGE_MULT - 1))
+    houseCap = math.min(houseCap, coverageCap)
   end
 
-  if getMaxBet() < betAmount then
-    return false, "House limit changed. Visit the menu."
+  if houseCap < betAmount then
+    if houseCap <= 0 then
+      return false, "House limit is too low to replay right now."
+    end
+    return true, "House limit changed. Next round will use " .. currency.formatTokens(houseCap) .. "."
   end
 
   return true
+end
+
+local function getReplayBetAmount(betAmount)
+  if not betAmount or betAmount <= 0 then
+    return nil
+  end
+
+  if currency.getPlayerBalance() < betAmount then
+    return nil
+  end
+
+  local houseCap = getMaxBet()
+  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
+    local coverageCap = math.floor(hostBankBalance / (cfg.HOST_COVERAGE_MULT - 1))
+    houseCap = math.min(houseCap, coverageCap)
+  end
+
+  if houseCap <= 0 then
+    return nil
+  end
+
+  return math.min(betAmount, houseCap)
 end
 
 waitForReplayChoice = function(playerHand, bankerHand, betType, betAmount, statusText)
@@ -825,7 +849,7 @@ local function main()
       end
     else
       if replayBetAmount and replayBetType and canReplayBet(replayBetAmount) then
-        betAmount = replayBetAmount
+        betAmount = getReplayBetAmount(replayBetAmount)
         betType = replayBetType
         replayBetAmount = nil
         replayBetType = nil

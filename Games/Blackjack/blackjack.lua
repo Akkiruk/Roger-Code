@@ -1193,10 +1193,30 @@ local function canReplayBet(betAmount)
   end
 
   if getMaxBet() < betAmount then
-    return false, "House limit changed. Pick a new bet."
+    if getMaxBet() <= 0 then
+      return false, "House limit is too low to replay right now."
+    end
+    return true, "House limit changed. Next round will use " .. currency.formatTokens(getMaxBet()) .. "."
   end
 
   return true
+end
+
+local function getReplayBetAmount(betAmount)
+  if not betAmount or betAmount <= 0 then
+    return nil
+  end
+
+  if currency.getPlayerBalance() < betAmount then
+    return nil
+  end
+
+  local maxBet = getMaxBet()
+  if maxBet <= 0 then
+    return nil
+  end
+
+  return math.min(betAmount, maxBet)
 end
 
 waitForReplayChoice = function(ctx, statusText)
@@ -1284,7 +1304,7 @@ local function main()
       end
     else
       if replayBetAmount and canReplayBet(replayBetAmount) then
-        bet = replayBetAmount
+        bet = getReplayBetAmount(replayBetAmount)
         replayBetAmount = nil
       else
         replayBetAmount = nil
