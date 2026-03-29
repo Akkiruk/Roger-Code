@@ -1,3 +1,5 @@
+local soundDecisions = require("lib.sound_decisions")
+
 -- roulette_config.lua
 -- Centralized configuration for the Roulette game.
 -- All tunable constants in one place; nothing else should hardcode these values.
@@ -39,7 +41,7 @@ return {
   TRACK_COMPACT_SLOT_GAP    = 1,
 
   -- Roulette-specific sound effects
-  SOUND_IDS = {
+  SOUND_IDS = soundDecisions.buildGameSoundMap("roulette", {
     BET_INSIDE = "the_vault:coin_single_place",
     BET_OUTSIDE = "lightmanscurrency:coins_clinking",
     CHIP_SELECT = "buildinggadgets:beep",
@@ -51,7 +53,7 @@ return {
     RESULT_WIN = "the_vault:puzzle_completion_major",
     RESULT_LOSS = "the_vault:puzzle_completion_fail",
     RESULT_PUSH = "the_vault:rampage",
-  },
+  }),
 
   -- Bet types with their payouts (payout is net winnings, not including original bet)
   BET_TYPES = {
