@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "sound_browser",
+    "name": "Sound Browser",
+    "category": "Utilities",
+    "description": "Browse the pack's generated sound catalog and save favorites.",
+    "source_root": "Games/SoundBrowser",
+    "entrypoint": "startup.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "ff815987d992d49af4f4c9d6871d0a26d4389b57",
+    "generated_at": "2026-03-29T03:25:15Z",
+    "package_hash": "9480971170a3c5d160a6f8aea368dd0edb4ed200cc6ec45f42d8e1a520a22a26"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "Games/SoundBrowser/sound_browser.lua",
+        "install_path": "sound_browser.lua",
+        "sha256": "a849329ece34170bfbe2c0539aea912cc858db89acfd953ee31aa3a5b54fe767"
+      },
+      {
+        "repo_path": "Games/SoundBrowser/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "953f94f8496b59cde8792a68ff7fdb13d1cb078a2348ed2a0648e7f0665eaf34"
+      },
+      {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
+        "repo_path": "Games/lib/sound_catalog.lua",
+        "install_path": "lib/sound_catalog.lua",
+        "sha256": "65e79173e038fad122246305e05959fd945839893003be94b23a2d4fbdf7936f"
+      },
+      {
+        "repo_path": "Games/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "3d022abb4fe0412543d98b74e5fc74844e9c5cc6a334b8d2f8cb55b7b927e752"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.peripherals",
+      "lib.sound",
+      "lib.sound_catalog",
+      "lib.updater"
+    ]
+  }
+}
