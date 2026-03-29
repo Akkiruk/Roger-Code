@@ -165,10 +165,11 @@ end
 -- Layout (computed once from screen dimensions)
 -----------------------------------------------------
 local centerX = math.floor(width / 2)
-local cardY = scale:scaledY(LO.CARD_Y, scale:ratioY(0.16), scale:ratioY(0.38))
 local selectionOutline = scale:scaledX(1, 1, 2)
 local handOuterPad = scale:scaledX(8, 5, 14)
 local handEdgePad = math.max(scale.edgePad, selectionOutline, handOuterPad)
+local cardBottomGap = scale:scaledY(LO.CARD_BOTTOM_GAP or 18, scale.edgePad + scale.smallGap, scale:ratioY(0.24))
+local cardY = scale:bottom(cardBack.height + selectionOutline, cardBottomGap)
 local handUsableWidth = math.max(0, width - (handEdgePad * 2) - cardBack.width)
 local handStep = 0
 
@@ -192,6 +193,7 @@ end
 -----------------------------------------------------
 local LINE_H = scale.lineHeight
 local statusTextWidth = math.max(1, width - (scale.edgePad * 2))
+local selectionLabelY = cardY - LINE_H - scale.smallGap
 
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
@@ -248,7 +250,7 @@ local function renderHand(hand, discardSelected, betAmount, statusText, showSele
         label,
         font,
         x + math.floor((cardBack.width - labelWidth) / 2),
-        cardY - LINE_H - scale.smallGap,
+        selectionLabelY,
         labelColor
       )
       screen:fillRect(
@@ -583,11 +585,27 @@ local function pokerRound(betAmount)
     local confirmed = false
 
     while not confirmed do
-      local statusBottom = renderHand(hand, discardSelected, betAmount, "Tap cards you want to replace, then tap DRAW.", true)
+      renderHand(hand, discardSelected, betAmount, nil, true)
+
+      local promptText = "Tap cards you want to replace, then tap DRAW."
+      local promptLines = wrapStatusText(promptText)
+      local promptHeight = #promptLines * LINE_H
+      local maxDrawBtnY = selectionLabelY - scale.sectionGap - scale.buttonHeight
+      local promptY = math.max(
+        scale.subtitleY,
+        maxDrawBtnY - scale.sectionGap - promptHeight
+      )
+
+      for i, line in ipairs(promptLines) do
+        drawCenteredLine(line, promptY + ((i - 1) * LINE_H), colors.yellow)
+      end
 
       ui.clearButtons()
       -- Draw button
-      local drawBtnY = statusBottom + scale.sectionGap + scale.smallGap
+      local drawBtnY = math.min(
+        maxDrawBtnY,
+        promptY + promptHeight + scale.smallGap
+      )
       ui.fixedWidthButton(screen, "DRAW", colors.lime,
         centerX, drawBtnY, function()
           confirmed = true
