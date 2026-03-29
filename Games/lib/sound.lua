@@ -41,10 +41,33 @@ end
 --- Play a sound effect.
 -- @param soundID string  Minecraft resource ID
 -- @param volume  number? Volume 0.0-3.0, default 0.5
-local function play(soundID, volume)
-  if not speaker then return end
+-- @param pitch   number? Pitch 0.5-2.0, default 1.0
+-- @return boolean, string|nil
+local function play(soundID, volume, pitch)
+  if not speaker then
+    return false, "No speaker available"
+  end
+
+  if type(soundID) ~= "string" or soundID == "" then
+    return false, "Invalid sound ID"
+  end
+
   volume = volume or 0.5
-  pcall(speaker.playSound, soundID, volume)
+  pitch = pitch or 1.0
+
+  local ok, result = pcall(function()
+    return speaker.playSound(soundID, volume, pitch)
+  end)
+
+  if not ok then
+    return false, tostring(result)
+  end
+
+  if result == false then
+    return false, "Speaker is busy"
+  end
+
+  return true, nil
 end
 
 --- Register additional named sounds (game-specific).
