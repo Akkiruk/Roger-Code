@@ -43,7 +43,7 @@ return {
     BET_INSIDE = "the_vault:coin_single_place",
     BET_OUTSIDE = "lightmanscurrency:coins_clinking",
     CHIP_SELECT = "buildinggadgets:beep",
-    SPIN_START = "the_vault:artifact_complete",
+    SPIN_START = "the_vault:raid_gate_open",
     SPIN_POINTER = "quark:ambient.clock",
     SPIN_TICK = "quark:ambient.clock",
     SPIN_SLOW = "lightmanscurrency:coins_clinking",
