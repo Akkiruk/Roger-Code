@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Games/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "7b4b2d5376618abf3a32a144a92632e867c2954e",
-    "generated_at": "2026-03-29T03:26:08Z",
-    "package_hash": "9480971170a3c5d160a6f8aea368dd0edb4ed200cc6ec45f42d8e1a520a22a26"
+    "commit": "0bd882380c2087082e5cb2b7dae5089958fea435",
+    "generated_at": "2026-03-29T03:50:16Z",
+    "package_hash": "ac36c6a9aa8724bd4dc93b0d290616e9256224e149745321901749d8b801a8b8"
   },
   "install": {
     "preserve": [],
@@ -20,7 +20,7 @@
       {
         "repo_path": "Games/SoundBrowser/sound_browser.lua",
         "install_path": "sound_browser.lua",
-        "sha256": "a849329ece34170bfbe2c0539aea912cc858db89acfd953ee31aa3a5b54fe767"
+        "sha256": "e2347777344bf0adc5c35b95f80bc1b4c25f451962c654d1faff28fe7d19c8f4"
       },
       {
         "repo_path": "Games/SoundBrowser/startup.lua",
@@ -36,6 +36,21 @@
         "repo_path": "Games/lib/sound_catalog.lua",
         "install_path": "lib/sound_catalog.lua",
         "sha256": "65e79173e038fad122246305e05959fd945839893003be94b23a2d4fbdf7936f"
+      },
+      {
+        "repo_path": "Games/lib/sound_metadata.lua",
+        "install_path": "lib/sound_metadata.lua",
+        "sha256": "f0021103aeae589371af8bc2ebd235ae0b4e87ff3c9379b401a012ef595cb252"
+      },
+      {
+        "repo_path": "Games/lib/sound_review_store.lua",
+        "install_path": "lib/sound_review_store.lua",
+        "sha256": "b1e7e35b0d158168b1fe5adf6451829a17ac2ae8b5afa1c9a0d55614a75f61cd"
+      },
+      {
+        "repo_path": "Games/lib/sound_roles.lua",
+        "install_path": "lib/sound_roles.lua",
+        "sha256": "f140ac21913119e9c48ada11a04ded6561ef9a5491ce62926f4fe3faab05fbd2"
       },
       {
         "repo_path": "Games/lib/sound.lua",
@@ -55,6 +70,9 @@
       "lib.peripherals",
       "lib.sound",
       "lib.sound_catalog",
+      "lib.sound_metadata",
+      "lib.sound_review_store",
+      "lib.sound_roles",
       "lib.updater"
     ]
   }
