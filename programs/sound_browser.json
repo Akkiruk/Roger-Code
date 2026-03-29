@@ -7,16 +7,21 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Games/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "0bd882380c2087082e5cb2b7dae5089958fea435",
-    "generated_at": "2026-03-29T03:50:16Z",
-    "package_hash": "ac36c6a9aa8724bd4dc93b0d290616e9256224e149745321901749d8b801a8b8"
+    "commit": "7c4d5b62eabe39e9a3a8021172882ce40839af94",
+    "generated_at": "2026-03-29T03:57:49Z",
+    "package_hash": "e4d6000c5c99fda1ea972e17d4d13033dd511846d2ce3a3675fc704f002ed5f7"
   },
   "install": {
     "preserve": [],
     "files": [
+      {
+        "repo_path": "Games/SoundBrowser/export_report.lua",
+        "install_path": "export_report.lua",
+        "sha256": "069d19b7c94a149d8f711995c90115f4554b97b8178f11a7f076fb8dc14f8028"
+      },
       {
         "repo_path": "Games/SoundBrowser/sound_browser.lua",
         "install_path": "sound_browser.lua",
@@ -41,6 +46,11 @@
         "repo_path": "Games/lib/sound_metadata.lua",
         "install_path": "lib/sound_metadata.lua",
         "sha256": "f0021103aeae589371af8bc2ebd235ae0b4e87ff3c9379b401a012ef595cb252"
+      },
+      {
+        "repo_path": "Games/lib/sound_recommendations.lua",
+        "install_path": "lib/sound_recommendations.lua",
+        "sha256": "4ebe1dd168f711cd5419aaed3615775fd2e4fa46ae2eab4c4df8e2edbe9469ee"
       },
       {
         "repo_path": "Games/lib/sound_review_store.lua",
@@ -71,6 +81,7 @@
       "lib.sound",
       "lib.sound_catalog",
       "lib.sound_metadata",
+      "lib.sound_recommendations",
       "lib.sound_review_store",
       "lib.sound_roles",
       "lib.updater"

@@ -7,12 +7,12 @@
     "description": "European Roulette with a single-screen felt UI and multi-bet support.",
     "source_root": "Games/Roulette",
     "entrypoint": "Roulette.lua",
-    "version": "1.0.45"
+    "version": "1.0.46"
   },
   "build": {
-    "commit": "0bd882380c2087082e5cb2b7dae5089958fea435",
-    "generated_at": "2026-03-29T03:50:16Z",
-    "package_hash": "482d173aaa171a13bc2d5dafdf9763843bc36d7eb0dddd14b00b40af47e2ac50"
+    "commit": "7c4d5b62eabe39e9a3a8021172882ce40839af94",
+    "generated_at": "2026-03-29T03:57:49Z",
+    "package_hash": "0c6e491149e9e76efdefe68e43bc4258af9b3646a7c4a4352dd87ac521207242"
   },
   "install": {
     "preserve": [
@@ -55,14 +55,14 @@
         "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
-        "repo_path": "Games/lib/casino_launcher.lua",
-        "install_path": "lib/casino_launcher.lua",
-        "sha256": "c14740f5836bb9c9f164e58f220738a291742741509bffd131906c349466ed54"
-      },
-      {
         "repo_path": "Games/lib/player_detection.lua",
         "install_path": "lib/player_detection.lua",
         "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
+      },
+      {
+        "repo_path": "Games/lib/replay_prompt.lua",
+        "install_path": "lib/replay_prompt.lua",
+        "sha256": "4e258dca3f1008a58d9e2a03cf1d63ca29da13805986c5d03549539464e70b82"
       },
       {
         "repo_path": "Games/lib/round_settlement.lua",
@@ -73,6 +73,11 @@
         "repo_path": "Games/lib/safe_runner.lua",
         "install_path": "lib/safe_runner.lua",
         "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
+      },
+      {
+        "repo_path": "Games/lib/sound_decisions.lua",
+        "install_path": "lib/sound_decisions.lua",
+        "sha256": "6c5b1814c5093b4df585d1d3ae601b1b93086d86a879e9f0595932e9341c8fe8"
       },
       {
         "repo_path": "Games/lib/sound.lua",
@@ -95,19 +100,19 @@
         "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
-        "repo_path": "Games/lib/replay_prompt.lua",
-        "install_path": "lib/replay_prompt.lua",
-        "sha256": "4e258dca3f1008a58d9e2a03cf1d63ca29da13805986c5d03549539464e70b82"
+        "repo_path": "Games/lib/casino_launcher.lua",
+        "install_path": "lib/casino_launcher.lua",
+        "sha256": "c14740f5836bb9c9f164e58f220738a291742741509bffd131906c349466ed54"
+      },
+      {
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
       },
       {
         "repo_path": "Games/lib/cards.lua",
         "install_path": "lib/cards.lua",
         "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
-      },
-      {
-        "repo_path": "Games/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
         "repo_path": "Games/lib/bedrock/theme.lua",
@@ -137,7 +142,7 @@
       {
         "repo_path": "Games/Roulette/roulette_config.lua",
         "install_path": "roulette_config.lua",
-        "sha256": "59394405ce418b6a2ba55e65de50241bc92f8350b25f5c302016ec0ff5b99c5b",
+        "sha256": "b35c91574eb0ea4c9d4fd9f3f05c74edfbb27090477f6489c58f9f51131717c5",
         "preserve_existing": true
       },
       {
@@ -191,9 +196,9 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Games/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
+        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
         "repo_path": "Games/lib/updater.lua",
@@ -225,6 +230,7 @@
       "lib.round_settlement",
       "lib.safe_runner",
       "lib.sound",
+      "lib.sound_decisions",
       "lib.ui",
       "lib.ui_surface",
       "lib.ui_text",
