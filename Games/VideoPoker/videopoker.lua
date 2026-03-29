@@ -165,11 +165,26 @@ end
 -- Layout (computed once from screen dimensions)
 -----------------------------------------------------
 local centerX = math.floor(width / 2)
-local cardSpacing = scale:scaledX(LO.CARD_SPACING, 1, 6)
-local deltaX  = cardBack.width + cardSpacing
-local totalHandWidth = 5 * deltaX - cardSpacing
-local handStartX = centerX - math.floor(totalHandWidth / 2)
 local cardY = scale:scaledY(LO.CARD_Y, scale:ratioY(0.16), scale:ratioY(0.38))
+local selectionOutline = scale:scaledX(1, 1, 2)
+local handEdgePad = math.max(scale.edgePad, selectionOutline)
+local handUsableWidth = math.max(0, width - (handEdgePad * 2) - cardBack.width)
+local handStep = 0
+
+if cfg.HAND_SIZE > 1 then
+  handStep = handUsableWidth / (cfg.HAND_SIZE - 1)
+end
+
+local function roundToNearest(value)
+  return math.floor(value + 0.5)
+end
+
+local function getCardX(index)
+  if cfg.HAND_SIZE <= 1 then
+    return math.floor((width - cardBack.width) / 2)
+  end
+  return handEdgePad + roundToNearest((index - 1) * handStep)
+end
 
 -----------------------------------------------------
 -- Rendering helpers
@@ -181,7 +196,7 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
-local function renderHand(hand, discardSelected, betAmount, statusText, showDiscardLabels)
+local function renderHand(hand, discardSelected, betAmount, statusText, showSelectionState)
   screen:clear(LO.TABLE_COLOR)
 
   -- Bet display
@@ -190,23 +205,23 @@ local function renderHand(hand, discardSelected, betAmount, statusText, showDisc
 
   -- Draw cards
   for i, cardID in ipairs(hand) do
-    local x = handStartX + (i - 1) * deltaX
+    local x = getCardX(i)
     local y = cardY
     if discardSelected[i] then
       y = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
     end
+    if showSelectionState then
+      local outlineColor = discardSelected[i] and colors.red or colors.lime
+      screen:fillRect(
+        x - selectionOutline,
+        y - selectionOutline,
+        cardBack.width + (selectionOutline * 2),
+        cardBack.height + (selectionOutline * 2),
+        outlineColor
+      )
+    end
     local img = cards.renderCard(cardID)
     screen:drawSurface(img, x, y)
-
-    -- DISCARD label above selected cards
-    if showDiscardLabels and discardSelected[i] then
-      local discardLabel = "DISCARD"
-      local dw = ui.getTextSize(discardLabel)
-      ui.safeDrawText(screen, discardLabel, font,
-        x + math.floor((cardBack.width - dw) / 2),
-        cardY - LINE_H - scale:scaledY(LO.HOLD_Y_OFFSET, 1, 4),
-        colors.red)
-    end
   end
 
   -- Status text
@@ -500,13 +515,13 @@ local function pokerRound(betAmount)
   if not AUTO_PLAY then
     local visCards = {}
     for i, cardID in ipairs(hand) do
-      local x = handStartX + (i - 1) * deltaX
+      local x = getCardX(i)
       local img = cards.renderCard(cardID)
       cardAnim.slideIn(img, x, cardY, function()
         screen:clear(LO.TABLE_COLOR)
         ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
         for j, cid in ipairs(visCards) do
-          screen:drawSurface(cards.renderCard(cid), handStartX + (j - 1) * deltaX, cardY)
+          screen:drawSurface(cards.renderCard(cid), getCardX(j), cardY)
         end
       end)
       table.insert(visCards, cardID)
@@ -541,7 +556,7 @@ local function pokerRound(betAmount)
         buttonCb()
       else
         for i = 1, cfg.HAND_SIZE do
-          local x = handStartX + (i - 1) * deltaX
+          local x = getCardX(i)
           local cardTop = cardY
           if discardSelected[i] then
             cardTop = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
@@ -570,13 +585,13 @@ local function pokerRound(betAmount)
   if replaced and not AUTO_PLAY then
     for i = 1, cfg.HAND_SIZE do
       if discardSelected[i] then
-        local x = handStartX + (i - 1) * deltaX
+        local x = getCardX(i)
         local img = cards.renderCard(hand[i])
         cardAnim.slideIn(img, x, cardY, function()
           screen:clear(LO.TABLE_COLOR)
           ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
           for j, cid in ipairs(hand) do
-            local cx = handStartX + (j - 1) * deltaX
+            local cx = getCardX(j)
             if j < i or not discardSelected[j] then
               screen:drawSurface(cards.renderCard(cid), cx, cardY)
             end
