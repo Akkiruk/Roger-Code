@@ -85,6 +85,9 @@ local spinFullRotations = cfg.SPIN_FULL_ROTATIONS or 4
 local spinMinDelay = cfg.SPIN_MIN_DELAY or cfg.SPIN_FRAME_DELAY or 0.018
 local spinMaxDelay = cfg.SPIN_MAX_DELAY or cfg.SPIN_FRAME_DELAY or 0.120
 local spinSettleDelay = cfg.SPIN_SETTLE_DELAY or cfg.SPIN_FRAME_DELAY or 0.045
+local spinFastSubframes = max(1, cfg.SPIN_FAST_SUBFRAMES or 1)
+local spinSlowSubframes = max(spinFastSubframes, cfg.SPIN_SLOW_SUBFRAMES or 2)
+local spinSlowdownAt = cfg.SPIN_SLOWDOWN_AT or 0.78
 
 sound.addSounds(cfg.SOUND_IDS or {})
 
@@ -527,7 +530,7 @@ local function animateSpin(finalNumber)
   while step <= totalSteps do
     local progress = step / totalSteps
     local delay = spinMinDelay + ((progress * progress) * (spinMaxDelay - spinMinDelay))
-    local subframes = progress < 0.70 and 2 or 3
+    local subframes = progress < spinSlowdownAt and spinFastSubframes or spinSlowSubframes
     local nextOffset = currentOffset + 1
     local subframe = 1
 
