@@ -7,12 +7,12 @@
     "description": "Blackjack card game for ComputerCraft casino.",
     "source_root": "Games/Blackjack",
     "entrypoint": "blackjack.lua",
-    "version": "1.2.21"
+    "version": "1.2.22"
   },
   "build": {
-    "commit": "657c2d2255079f960a575f785eca9ff1961691a8",
-    "generated_at": "2026-03-28T22:05:07Z",
-    "package_hash": "0015f75b023021d6f0cb0c54b41515d5626118670326a13b68051284acac4493"
+    "commit": "93237c090a417a076fa409dacf2c8693ff422664",
+    "generated_at": "2026-03-29T02:53:24Z",
+    "package_hash": "35b3547f714fe29c5bed78e28df09c6a885230cb783ea201f4ffb17219e76c2f"
   },
   "install": {
     "preserve": [
@@ -22,17 +22,17 @@
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
         "install_path": "blackjack.lua",
-        "sha256": "c88c3797623346d97e48effebe942c4c9e46db358a29ffd97079b730b18142ec"
+        "sha256": "3f7bd9726754dce0a4fb66ee9d939ec058147d728319b67b8b95bbbd6c624316"
       },
       {
-        "repo_path": "Games/lib/alert.lua",
-        "install_path": "lib/alert.lua",
-        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+        "repo_path": "Games/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
-        "repo_path": "Games/lib/auto_player.lua",
-        "install_path": "lib/auto_player.lua",
-        "sha256": "b40ca33e482e3081b6065f0cf8fc8275abf0e6d69054d87cfc3f62898a2552e4"
+        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
         "repo_path": "Games/lib/betting.lua",
@@ -47,7 +47,12 @@
       {
         "repo_path": "Games/lib/cards.lua",
         "install_path": "lib/cards.lua",
-        "sha256": "3170356fc84131fb6e7d43aaecc12a93e3955cfda2dfd358b9eb7180e44f645a"
+        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
+      },
+      {
+        "repo_path": "Games/lib/casino_launcher.lua",
+        "install_path": "lib/casino_launcher.lua",
+        "sha256": "c14740f5836bb9c9f164e58f220738a291742741509bffd131906c349466ed54"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -62,7 +67,7 @@
       {
         "repo_path": "Games/lib/game_setup.lua",
         "install_path": "lib/game_setup.lua",
-        "sha256": "2cc85b023e50639cbcedea75b51dbad0ba04299f0564c9b8e05c4e9458050c7c"
+        "sha256": "e1912ef3a0a9878c4a42f7cf754cabd20dde2f80914c15342ff70d2aee75040c"
       },
       {
         "repo_path": "Games/lib/idle_screen.lua",
@@ -90,6 +95,16 @@
         "sha256": "11057a038ca11fcaa49a95f4beacfd9a34bca3863c6eb2aa0ddeec501883dd2f"
       },
       {
+        "repo_path": "Games/lib/replay_prompt.lua",
+        "install_path": "lib/replay_prompt.lua",
+        "sha256": "4e258dca3f1008a58d9e2a03cf1d63ca29da13805986c5d03549539464e70b82"
+      },
+      {
+        "repo_path": "Games/lib/round_settlement.lua",
+        "install_path": "lib/round_settlement.lua",
+        "sha256": "f2286102f91ed771c442bb8a4719808ced0431ba23fe967d35243acd8a2561a1"
+      },
+      {
         "repo_path": "Games/lib/safe_runner.lua",
         "install_path": "lib/safe_runner.lua",
         "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
@@ -100,29 +115,44 @@
         "sha256": "3dce6e986fb177b5563854150a643dbdb7723ad9681704bd8c63f3718db54e8c"
       },
       {
-        "repo_path": "Games/lib/achievements.lua",
-        "install_path": "lib/achievements.lua",
-        "sha256": "ee3d446a0d88d38b0a6f76bc76ad30a84aca53705dbb017c139bc9c2364bde15"
+        "repo_path": "Games/lib/ui_surface.lua",
+        "install_path": "lib/ui_surface.lua",
+        "sha256": "cfb822023fc9e431c0ea34cdf9fe55420cc6814320f08eb9ab8653c994a5af49"
       },
       {
-        "repo_path": "Games/Blackjack/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+        "repo_path": "Games/lib/ui_text.lua",
+        "install_path": "lib/ui_text.lua",
+        "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Games/Blackjack/surface",
-        "install_path": "surface",
-        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+        "repo_path": "Games/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
-        "repo_path": "Games/Blackjack/spades.nfp",
-        "install_path": "spades.nfp",
-        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+        "repo_path": "Games/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
+      },
+      {
+        "repo_path": "Games/lib/bedrock.lua",
+        "install_path": "lib/bedrock.lua",
+        "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
       },
       {
         "repo_path": "Games/Blackjack/startup.lua",
         "install_path": "startup.lua",
-        "sha256": "87c5b501a0ea93332e5b7e3c55ce74987757771955466b086362951225c09232"
+        "sha256": "47bd15a40ba11680b0b2e074510fdaab5291f8a0f72f7122380eff3902c1abfc"
       },
       {
         "repo_path": "Games/Blackjack/statistics.lua",
@@ -156,14 +186,14 @@
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
       },
       {
-        "repo_path": "Games/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "eef026345a234a7a100c5938022c8f2ef7a6e982784c946c728fd920017b761f"
-      },
-      {
         "repo_path": "Games/Blackjack/clubs.nfp",
         "install_path": "clubs.nfp",
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/Blackjack/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Games/Blackjack/diamonds.nfp",
@@ -171,14 +201,14 @@
         "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
+      },
+      {
         "repo_path": "Games/Blackjack/font",
         "install_path": "font",
         "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
-      },
-      {
-        "repo_path": "Games/Blackjack/gothic",
-        "install_path": "gothic",
-        "sha256": "ac5dde6a4d7c281fa76818dc83e2e1952fa1dcf0ceba5f48cfc5af4a7abf7b97"
       },
       {
         "repo_path": "Games/Blackjack/heart.nfp",
@@ -201,9 +231,39 @@
         "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
       },
       {
-        "repo_path": "Games/Blackjack/diamond.nfp",
-        "install_path": "diamond.nfp",
-        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
+        "repo_path": "Games/Blackjack/spades.nfp",
+        "install_path": "spades.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+      },
+      {
+        "repo_path": "Games/Blackjack/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
+        "repo_path": "Games/Blackjack/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+      },
+      {
+        "repo_path": "Games/lib/achievements.lua",
+        "install_path": "lib/achievements.lua",
+        "sha256": "ee3d446a0d88d38b0a6f76bc76ad30a84aca53705dbb017c139bc9c2364bde15"
+      },
+      {
+        "repo_path": "Games/lib/alert.lua",
+        "install_path": "lib/alert.lua",
+        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+      },
+      {
+        "repo_path": "Games/lib/auto_player.lua",
+        "install_path": "lib/auto_player.lua",
+        "sha256": "b40ca33e482e3081b6065f0cf8fc8275abf0e6d69054d87cfc3f62898a2552e4"
+      },
+      {
+        "repo_path": "Games/Blackjack/gothic",
+        "install_path": "gothic",
+        "sha256": "ac5dde6a4d7c281fa76818dc83e2e1952fa1dcf0ceba5f48cfc5af4a7abf7b97"
       },
       {
         "repo_path": "Games/lib/updater.lua",
@@ -218,9 +278,16 @@
       "lib.achievements",
       "lib.alert",
       "lib.auto_player",
+      "lib.bedrock",
+      "lib.bedrock.layout",
+      "lib.bedrock.renderer",
+      "lib.bedrock.runtime",
+      "lib.bedrock.theme",
+      "lib.bedrock.widgets",
       "lib.betting",
       "lib.card_anim",
       "lib.cards",
+      "lib.casino_launcher",
       "lib.crash_recovery",
       "lib.currency",
       "lib.game_setup",
@@ -229,9 +296,14 @@
       "lib.peripherals",
       "lib.player_detection",
       "lib.player_stats",
+      "lib.replay_prompt",
+      "lib.round_settlement",
       "lib.safe_runner",
       "lib.sound",
       "lib.ui",
+      "lib.ui_surface",
+      "lib.ui_text",
+      "lib.ui_touch",
       "lib.updater"
     ]
   }

@@ -7,12 +7,12 @@
     "description": "Baccarat card game for ComputerCraft casino.",
     "source_root": "Games/Baccarat",
     "entrypoint": "baccarat.lua",
-    "version": "1.2.24"
+    "version": "1.2.25"
   },
   "build": {
-    "commit": "657c2d2255079f960a575f785eca9ff1961691a8",
-    "generated_at": "2026-03-28T22:05:07Z",
-    "package_hash": "6a03004bd596270aed1632f1912eb691006dbfc7545a004c9de16dd90276a6bf"
+    "commit": "93237c090a417a076fa409dacf2c8693ff422664",
+    "generated_at": "2026-03-29T02:53:24Z",
+    "package_hash": "34bbd797eda3ef644cc506c039a1cda30cb3e7e50c7358b1f2306604d5085949"
   },
   "install": {
     "preserve": [
@@ -22,47 +22,27 @@
       {
         "repo_path": "Games/Baccarat/baccarat.lua",
         "install_path": "baccarat.lua",
-        "sha256": "e8972f4f4872fb42a278f5801bf4301be91a07f5cfd198a29e55cc3ef6167176"
+        "sha256": "317314d1a744e81eab5412fed01d6a4bdba9a698cfe3c08ba4eddabcbc744253"
       },
       {
-        "repo_path": "Games/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "3dce6e986fb177b5563854150a643dbdb7723ad9681704bd8c63f3718db54e8c"
+        "repo_path": "Games/lib/card_rules.lua",
+        "install_path": "lib/card_rules.lua",
+        "sha256": "cb44781c572fd997c3f39aa5046ab905bcd29194c0990c093f2bf1f88b5fcbef"
       },
       {
-        "repo_path": "Games/lib/safe_runner.lua",
-        "install_path": "lib/safe_runner.lua",
-        "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
+        "repo_path": "Games/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
       },
       {
-        "repo_path": "Games/lib/player_detection.lua",
-        "install_path": "lib/player_detection.lua",
-        "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
+        "repo_path": "Games/lib/casino_launcher.lua",
+        "install_path": "lib/casino_launcher.lua",
+        "sha256": "c14740f5836bb9c9f164e58f220738a291742741509bffd131906c349466ed54"
       },
       {
-        "repo_path": "Games/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
-      },
-      {
-        "repo_path": "Games/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
-      },
-      {
-        "repo_path": "Games/lib/idle_screen.lua",
-        "install_path": "lib/idle_screen.lua",
-        "sha256": "e0dfb1439c9da8f3e0af5a944b3e5eebb0eb62d4d9a9b6d46628ecd63f4dd781"
-      },
-      {
-        "repo_path": "Games/lib/game_setup.lua",
-        "install_path": "lib/game_setup.lua",
-        "sha256": "2cc85b023e50639cbcedea75b51dbad0ba04299f0564c9b8e05c4e9458050c7c"
-      },
-      {
-        "repo_path": "Games/lib/currency.lua",
-        "install_path": "lib/currency.lua",
-        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+        "repo_path": "Games/lib/casino_pages.lua",
+        "install_path": "lib/casino_pages.lua",
+        "sha256": "90ff6d0256d04d8f2bf213ff60409c57d1cbdd3c3eba3f548231f7d1bd541057"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -70,9 +50,74 @@
         "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
       },
       {
-        "repo_path": "Games/lib/cards.lua",
-        "install_path": "lib/cards.lua",
-        "sha256": "3170356fc84131fb6e7d43aaecc12a93e3955cfda2dfd358b9eb7180e44f645a"
+        "repo_path": "Games/lib/currency.lua",
+        "install_path": "lib/currency.lua",
+        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+      },
+      {
+        "repo_path": "Games/lib/game_setup.lua",
+        "install_path": "lib/game_setup.lua",
+        "sha256": "e1912ef3a0a9878c4a42f7cf754cabd20dde2f80914c15342ff70d2aee75040c"
+      },
+      {
+        "repo_path": "Games/lib/idle_screen.lua",
+        "install_path": "lib/idle_screen.lua",
+        "sha256": "e0dfb1439c9da8f3e0af5a944b3e5eebb0eb62d4d9a9b6d46628ecd63f4dd781"
+      },
+      {
+        "repo_path": "Games/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+      },
+      {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
+        "repo_path": "Games/lib/player_detection.lua",
+        "install_path": "lib/player_detection.lua",
+        "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
+      },
+      {
+        "repo_path": "Games/lib/replay_prompt.lua",
+        "install_path": "lib/replay_prompt.lua",
+        "sha256": "4e258dca3f1008a58d9e2a03cf1d63ca29da13805986c5d03549539464e70b82"
+      },
+      {
+        "repo_path": "Games/lib/round_settlement.lua",
+        "install_path": "lib/round_settlement.lua",
+        "sha256": "f2286102f91ed771c442bb8a4719808ced0431ba23fe967d35243acd8a2561a1"
+      },
+      {
+        "repo_path": "Games/lib/safe_runner.lua",
+        "install_path": "lib/safe_runner.lua",
+        "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
+      },
+      {
+        "repo_path": "Games/lib/session_stats.lua",
+        "install_path": "lib/session_stats.lua",
+        "sha256": "a4d2258eb68ed12c792e3db88a7c54c67745ddca19eb20a38c569ce6bc6524bd"
+      },
+      {
+        "repo_path": "Games/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "3dce6e986fb177b5563854150a643dbdb7723ad9681704bd8c63f3718db54e8c"
+      },
+      {
+        "repo_path": "Games/lib/ui_surface.lua",
+        "install_path": "lib/ui_surface.lua",
+        "sha256": "cfb822023fc9e431c0ea34cdf9fe55420cc6814320f08eb9ab8653c994a5af49"
+      },
+      {
+        "repo_path": "Games/lib/ui_text.lua",
+        "install_path": "lib/ui_text.lua",
+        "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
+      },
+      {
+        "repo_path": "Games/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Games/lib/card_anim.lua",
@@ -85,74 +130,19 @@
         "sha256": "c5f7155130ca191e19b33036337be42ee63f3f36ab09de47b47ca414321eb620"
       },
       {
-        "repo_path": "Games/lib/alert.lua",
-        "install_path": "lib/alert.lua",
-        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
-        "repo_path": "Games/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "eef026345a234a7a100c5938022c8f2ef7a6e982784c946c728fd920017b761f"
+        "repo_path": "Games/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
-        "repo_path": "Games/Baccarat/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
-      },
-      {
-        "repo_path": "Games/Baccarat/spades.nfp",
-        "install_path": "spades.nfp",
-        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
-      },
-      {
-        "repo_path": "Games/Baccarat/spade.nfp",
-        "install_path": "spade.nfp",
-        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
-      },
-      {
-        "repo_path": "Games/Baccarat/hearts.nfp",
-        "install_path": "hearts.nfp",
-        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
-      },
-      {
-        "repo_path": "Games/Baccarat/heart.nfp",
-        "install_path": "heart.nfp",
-        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
-      },
-      {
-        "repo_path": "Games/Baccarat/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
-      },
-      {
-        "repo_path": "Games/Baccarat/diamonds.nfp",
-        "install_path": "diamonds.nfp",
-        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
-      },
-      {
-        "repo_path": "Games/Baccarat/diamond.nfp",
-        "install_path": "diamond.nfp",
-        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
-      },
-      {
-        "repo_path": "Games/Baccarat/clubs.nfp",
-        "install_path": "clubs.nfp",
-        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
-      },
-      {
-        "repo_path": "Games/Baccarat/club.nfp",
-        "install_path": "club.nfp",
-        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
-      },
-      {
-        "repo_path": "Games/Baccarat/cardback.nfp",
-        "install_path": "cardback.nfp",
-        "sha256": "ef13a24f19de225a057ee57d09439a57bfa852cc3715788a201881c6d8511164"
-      },
-      {
-        "repo_path": "Games/Baccarat/card.nfp",
-        "install_path": "card.nfp",
-        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
+        "repo_path": "Games/Baccarat/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "d0bb23ddac037a1aadec85dd36611f6261bbffbe747682a2c961b74dc07e988d"
       },
       {
         "repo_path": "Games/Baccarat/baccarat_config.lua",
@@ -161,14 +151,99 @@
         "preserve_existing": true
       },
       {
-        "repo_path": "Games/Baccarat/startup.lua",
-        "install_path": "startup.lua",
-        "sha256": "243d92719845d3a1ce6d5d7e433ac72376db7c6c00a3cd83cfb4d45e86e49030"
+        "repo_path": "Games/Baccarat/card.nfp",
+        "install_path": "card.nfp",
+        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
+      },
+      {
+        "repo_path": "Games/Baccarat/cardback.nfp",
+        "install_path": "cardback.nfp",
+        "sha256": "ef13a24f19de225a057ee57d09439a57bfa852cc3715788a201881c6d8511164"
+      },
+      {
+        "repo_path": "Games/Baccarat/club.nfp",
+        "install_path": "club.nfp",
+        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/Baccarat/clubs.nfp",
+        "install_path": "clubs.nfp",
+        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/Baccarat/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
+      },
+      {
+        "repo_path": "Games/Baccarat/diamonds.nfp",
+        "install_path": "diamonds.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
+      },
+      {
+        "repo_path": "Games/Baccarat/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+      },
+      {
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
+      },
+      {
+        "repo_path": "Games/Baccarat/heart.nfp",
+        "install_path": "heart.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+      },
+      {
+        "repo_path": "Games/Baccarat/spade.nfp",
+        "install_path": "spade.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+      },
+      {
+        "repo_path": "Games/Baccarat/spades.nfp",
+        "install_path": "spades.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
       },
       {
         "repo_path": "Games/Baccarat/surface",
         "install_path": "surface",
         "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
+        "repo_path": "Games/Baccarat/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+      },
+      {
+        "repo_path": "Games/lib/alert.lua",
+        "install_path": "lib/alert.lua",
+        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+      },
+      {
+        "repo_path": "Games/lib/bedrock.lua",
+        "install_path": "lib/bedrock.lua",
+        "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
+      },
+      {
+        "repo_path": "Games/Baccarat/hearts.nfp",
+        "install_path": "hearts.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
       },
       {
         "repo_path": "Games/lib/updater.lua",
@@ -181,9 +256,18 @@
     "requires_updater": true,
     "lib_modules": [
       "lib.alert",
+      "lib.bedrock",
+      "lib.bedrock.layout",
+      "lib.bedrock.renderer",
+      "lib.bedrock.runtime",
+      "lib.bedrock.theme",
+      "lib.bedrock.widgets",
       "lib.betting",
       "lib.card_anim",
+      "lib.card_rules",
       "lib.cards",
+      "lib.casino_launcher",
+      "lib.casino_pages",
       "lib.crash_recovery",
       "lib.currency",
       "lib.game_setup",
@@ -191,9 +275,15 @@
       "lib.monitor_scale",
       "lib.peripherals",
       "lib.player_detection",
+      "lib.replay_prompt",
+      "lib.round_settlement",
       "lib.safe_runner",
+      "lib.session_stats",
       "lib.sound",
       "lib.ui",
+      "lib.ui_surface",
+      "lib.ui_text",
+      "lib.ui_touch",
       "lib.updater"
     ]
   }
