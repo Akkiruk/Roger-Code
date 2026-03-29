@@ -167,7 +167,8 @@ end
 local centerX = math.floor(width / 2)
 local cardY = scale:scaledY(LO.CARD_Y, scale:ratioY(0.16), scale:ratioY(0.38))
 local selectionOutline = scale:scaledX(1, 1, 2)
-local handEdgePad = math.max(scale.edgePad, selectionOutline)
+local handOuterPad = scale:scaledX(8, 5, 14)
+local handEdgePad = math.max(scale.edgePad, selectionOutline, handOuterPad)
 local handUsableWidth = math.max(0, width - (handEdgePad * 2) - cardBack.width)
 local handStep = 0
 
@@ -235,17 +236,27 @@ local function renderHand(hand, discardSelected, betAmount, statusText, showSele
   for i, cardID in ipairs(hand) do
     local x = getCardX(i)
     local y = cardY
+    local label = discardSelected[i] and "Trash" or "Keep"
+    local labelColor = discardSelected[i] and colors.red or colors.lime
     if discardSelected[i] then
       y = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
     end
     if showSelectionState then
-      local outlineColor = discardSelected[i] and colors.red or colors.lime
+      local labelWidth = ui.getTextSize(label)
+      ui.safeDrawText(
+        screen,
+        label,
+        font,
+        x + math.floor((cardBack.width - labelWidth) / 2),
+        cardY - LINE_H - scale.smallGap,
+        labelColor
+      )
       screen:fillRect(
         x - selectionOutline,
         y - selectionOutline,
         cardBack.width + (selectionOutline * 2),
         cardBack.height + (selectionOutline * 2),
-        outlineColor
+        labelColor
       )
     end
     local img = cards.renderCard(cardID)
