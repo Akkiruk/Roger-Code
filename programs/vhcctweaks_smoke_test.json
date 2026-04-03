@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "vhcctweaks_smoke_test",
+    "name": "VH CC Tweaks Smoke Test",
+    "category": "Utilities",
+    "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
+    "source_root": "Utilities/VHCCTweaksSmokeTest",
+    "entrypoint": "startup.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "5cb73d8116f386bdb3d6fa23ddb9e3ffe9a59203",
+    "generated_at": "2026-04-03T03:18:05Z",
+    "package_hash": "d378ec73152884a2273cb28335f1ab6adae67aa71deaf8ca587736cc42bc8428"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "Utilities/VHCCTweaksSmokeTest/startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "7a5eff076b55b00b97b4e9018ef18d91eadeb7103a03aa19cba931b2fdd0ab65"
+      },
+      {
+        "repo_path": "Utilities/VHCCTweaksSmokeTest/test_ccvault_full.lua",
+        "install_path": "test_ccvault_full.lua",
+        "sha256": "cd3e41901b68a8b086a36fcc49a03b283cacdc5826592a377144f2ec467132d3"
+      },
+      {
+        "repo_path": "Utilities/VHCCTweaksSmokeTest/test_ccvault.lua",
+        "install_path": "test_ccvault.lua",
+        "sha256": "cd3e41901b68a8b086a36fcc49a03b283cacdc5826592a377144f2ec467132d3"
+      },
+      {
+        "repo_path": "Utilities/VHCCTweaksSmokeTest/vhcctweaks_smoke_test.lua",
+        "install_path": "vhcctweaks_smoke_test.lua",
+        "sha256": "77cb73c2a2bd35d788173df47431d2e8f141d58d4af96b6aa0ae06c36c70eefc"
+      }
+    ]
+  },
+  "runtime": {
+    "requires_updater": false,
+    "lib_modules": []
+  }
+}
