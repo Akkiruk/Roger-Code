@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
     "source_root": "Games/VaultGear",
     "entrypoint": "vaultgear.lua",
-    "version": "1.0.18"
+    "version": "1.0.19"
   },
   "build": {
-    "commit": "7c7ce760cc3b59fb2aa539f6eceb3212189d7e5d",
-    "generated_at": "2026-04-04T22:41:46Z",
-    "package_hash": "e84c3bfee913823faa7398030ea8f053d43a2d4cb3685dc1a2801f633ef991f6"
+    "commit": "f10f84ad51dfd97084f9cba7f2c0b871a483282d",
+    "generated_at": "2026-04-04T22:47:56Z",
+    "package_hash": "4fa3adbc7214600251f69137f3314bd05ce9868a690e559d9379159c00f65dff"
   },
   "install": {
     "preserve": [
@@ -123,7 +123,7 @@
       {
         "repo_path": "Games/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+        "sha256": "da8df6656d5b0ac81f31ff47c7d6eec4b4bcc21c91631e6b614209c8923c9b45"
       },
       {
         "repo_path": "Games/lib/bedrock/widgets.lua",

@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.31"
+    "version": "1.0.32"
   },
   "build": {
-    "commit": "7c7ce760cc3b59fb2aa539f6eceb3212189d7e5d",
-    "generated_at": "2026-04-04T22:41:46Z",
-    "package_hash": "bedece830be4c0f77bd9d20a4d312cc87ca6ffaf4bdd149624000effd0c4bb75"
+    "commit": "f10f84ad51dfd97084f9cba7f2c0b871a483282d",
+    "generated_at": "2026-04-04T22:47:56Z",
+    "package_hash": "16b6a5f94a1784222978acd625a04776a7b770244d17a6665c745e25d963f128"
   },
   "install": {
     "preserve": [
@@ -33,7 +33,7 @@
       {
         "repo_path": "Games/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "e49eaec8d6fe4f0d6766ee9e7a1396d8420d2ff5b00987578e2af3a0335018a0"
+        "sha256": "da8df6656d5b0ac81f31ff47c7d6eec4b4bcc21c91631e6b614209c8923c9b45"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -85,7 +85,7 @@
       {
         "repo_path": "Games/PhoneOS/phoneos/slots.lua",
         "install_path": "phoneos/slots.lua",
-        "sha256": "d39b553a1b72fae93111fdffdadf710053fa79165e61e2909c40e6a318027fca"
+        "sha256": "f506df1e5127fa48f6c2d6d4a33eac9d118b1939d1c1dc3de4ba0dcc74a16110"
       },
       {
         "repo_path": "Games/PhoneOS/phoneos/slots_defaults.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack.lua",
         "install_path": "phoneos/blackjack.lua",
-        "sha256": "b5afb77a1ce9b55ff69f4d8628af409a3d432a19edfb8f153aaa8b7503cd4b91"
+        "sha256": "c8b0cfcac9857735cc19332145c814a6a547f06f837253e123855281992a2c34"
       },
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack_defaults.lua",
