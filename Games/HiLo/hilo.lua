@@ -184,6 +184,12 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
+local function triggerInactivityTimeout()
+  sound.play(sound.SOUNDS.TIMEOUT)
+  os.sleep(0.5)
+  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+end
+
 local function getChoiceStatusY()
   return min(height - LINE_H - scale.edgePad, cardY + cardBack.height + (scale.sectionGap * 2))
 end
@@ -339,6 +345,8 @@ local TUTORIAL_PAGES = {
 local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -369,6 +377,8 @@ local function showStats()
   end
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -393,9 +403,7 @@ local function preRoundMenu()
 
     local idleMs = epoch("local") - lastActivityTime
     if idleMs > menuTimeout then
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+      triggerInactivityTimeout()
     end
 
     if idleMs >= warningThreshold then
@@ -548,7 +556,10 @@ local function hiloRound(betAmount)
       end
       os.sleep(cfg.AUTO_PLAY_DELAY)
     else
-      ui.waitForButton(0, 0)
+      ui.waitForButton(0, 0, {
+        inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+        onTimeout = triggerInactivityTimeout,
+      })
     end
 
     if choice == "cashout" then

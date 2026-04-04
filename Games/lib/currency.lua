@@ -28,6 +28,17 @@ local DENOMINATIONS = {
 }
 
 local HOST_BALANCE_RESERVE = 2000
+local TRANSACTION_AUDIT_FILE = "casino_transactions.log"
+
+local function writeTransactionAudit(entry)
+  local handle = fs.open(TRANSACTION_AUDIT_FILE, "a")
+  if not handle then
+    return
+  end
+
+  handle.writeLine(textutils.serialize(entry))
+  handle.close()
+end
 
 --- Apply configuration overrides.
 -- @param cfg table  Keys: denominations
@@ -261,12 +272,35 @@ local function charge(amount, reason)
   local ready, err = isReady()
   if not ready then
     dbg("charge failed: " .. (err or "unknown"))
+    writeTransactionAudit({
+      timestamp = os.epoch("local"),
+      kind = "charge",
+      amount = amount,
+      reason = reason,
+      success = false,
+      error = err or "not_ready",
+      player = getPlayerName(),
+      host = getHostName(),
+      computerId = getComputerId(),
+    })
     return false, nil
   end
   dbg("Charging player " .. amount .. " tokens: " .. reason)
   local result, txErr = ccvault.transfer("player", "host", amount, reason)
   if result then
     dbg("Charge OK, TX: " .. (result.txId or "?"))
+    writeTransactionAudit({
+      timestamp = os.epoch("local"),
+      kind = "charge",
+      amount = amount,
+      reason = reason,
+      success = true,
+      txId = result.txId,
+      player = getPlayerName(),
+      host = getHostName(),
+      selfPlay = isSelfPlay(),
+      computerId = getComputerId(),
+    })
     return true, result.txId
   end
   -- Self-play: transfer() blocks same-account transfers, use transferSelf()
@@ -275,12 +309,48 @@ local function charge(amount, reason)
     local selfResult, selfErr = ccvault.transferSelf(amount, reason)
     if selfResult then
       dbg("Charge (self) OK, TX: " .. (selfResult.txId or "?"))
+      writeTransactionAudit({
+        timestamp = os.epoch("local"),
+        kind = "charge",
+        amount = amount,
+        reason = reason,
+        success = true,
+        txId = selfResult.txId,
+        player = getPlayerName(),
+        host = getHostName(),
+        selfPlay = true,
+        computerId = getComputerId(),
+      })
       return true, selfResult.txId
     end
     dbg("Charge (self) failed: " .. (selfErr or "unknown"))
+    writeTransactionAudit({
+      timestamp = os.epoch("local"),
+      kind = "charge",
+      amount = amount,
+      reason = reason,
+      success = false,
+      error = selfErr or "self_transfer_failed",
+      player = getPlayerName(),
+      host = getHostName(),
+      selfPlay = true,
+      computerId = getComputerId(),
+    })
     return false, nil
   end
   dbg("Charge failed: " .. (txErr or "unknown"))
+  writeTransactionAudit({
+    timestamp = os.epoch("local"),
+    kind = "charge",
+    amount = amount,
+    reason = reason,
+    success = false,
+    error = txErr or "transfer_failed",
+    player = getPlayerName(),
+    host = getHostName(),
+    selfPlay = isSelfPlay(),
+    computerId = getComputerId(),
+  })
   return false, nil
 end
 
@@ -295,12 +365,35 @@ local function payout(amount, reason)
   local ready, err = isReady()
   if not ready then
     dbg("payout failed: " .. (err or "unknown"))
+    writeTransactionAudit({
+      timestamp = os.epoch("local"),
+      kind = "payout",
+      amount = amount,
+      reason = reason,
+      success = false,
+      error = err or "not_ready",
+      player = getPlayerName(),
+      host = getHostName(),
+      computerId = getComputerId(),
+    })
     return false, nil
   end
   dbg("Paying player " .. amount .. " tokens: " .. reason)
   local result, txErr = ccvault.transfer("host", "player", amount, reason)
   if result then
     dbg("Payout OK, TX: " .. (result.txId or "?"))
+    writeTransactionAudit({
+      timestamp = os.epoch("local"),
+      kind = "payout",
+      amount = amount,
+      reason = reason,
+      success = true,
+      txId = result.txId,
+      player = getPlayerName(),
+      host = getHostName(),
+      selfPlay = isSelfPlay(),
+      computerId = getComputerId(),
+    })
     return true, result.txId
   end
   -- Self-play: transfer() blocks same-account transfers, use transferSelf()
@@ -309,12 +402,48 @@ local function payout(amount, reason)
     local selfResult, selfErr = ccvault.transferSelf(amount, reason)
     if selfResult then
       dbg("Payout (self) OK, TX: " .. (selfResult.txId or "?"))
+      writeTransactionAudit({
+        timestamp = os.epoch("local"),
+        kind = "payout",
+        amount = amount,
+        reason = reason,
+        success = true,
+        txId = selfResult.txId,
+        player = getPlayerName(),
+        host = getHostName(),
+        selfPlay = true,
+        computerId = getComputerId(),
+      })
       return true, selfResult.txId
     end
     dbg("Payout (self) failed: " .. (selfErr or "unknown"))
+    writeTransactionAudit({
+      timestamp = os.epoch("local"),
+      kind = "payout",
+      amount = amount,
+      reason = reason,
+      success = false,
+      error = selfErr or "self_transfer_failed",
+      player = getPlayerName(),
+      host = getHostName(),
+      selfPlay = true,
+      computerId = getComputerId(),
+    })
     return false, nil
   end
   dbg("Payout failed: " .. (txErr or "unknown"))
+  writeTransactionAudit({
+    timestamp = os.epoch("local"),
+    kind = "payout",
+    amount = amount,
+    reason = reason,
+    success = false,
+    error = txErr or "transfer_failed",
+    player = getPlayerName(),
+    host = getHostName(),
+    selfPlay = isSelfPlay(),
+    computerId = getComputerId(),
+  })
   return false, nil
 end
 

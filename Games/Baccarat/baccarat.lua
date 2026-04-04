@@ -313,6 +313,12 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
+local function triggerInactivityTimeout()
+  sound.play(sound.SOUNDS.TIMEOUT)
+  os.sleep(0.5)
+  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+end
+
 local TUTORIAL_PAGES = {
   {
     title = "THE BASICS",
@@ -367,6 +373,8 @@ local TUTORIAL_PAGES = {
 local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -398,6 +406,8 @@ local function showStats()
   end
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -456,7 +466,10 @@ local function selectBetType()
       return chosen
     end
 
-    ui.waitForButton(0, 0)
+    ui.waitForButton(0, 0, {
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = triggerInactivityTimeout,
+    })
 
     if chosen then return chosen end
     if action == "tutorial" then showTutorial() end

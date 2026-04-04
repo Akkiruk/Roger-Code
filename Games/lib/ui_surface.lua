@@ -235,33 +235,100 @@ function M.drawButtonsColumn(screen, btnList, startX, startY, spacing)
   end
 end
 
-function M.waitForButton(ox, oy)
+function M.waitForButton(ox, oy, opts)
+  local options = opts or {}
+  local inactivityTimeout = options.inactivityTimeout
+  local pollSeconds = options.pollSeconds or 0.25
+  local lastActivityTime = options.lastActivityTime or os.epoch("local")
+
   while true do
-    local _, _, px, py = os.pullEvent("monitor_touch")
-    if not touch.isAuthorizedMonitorTouch() then
-      os.sleep(0)
+    if not inactivityTimeout then
+      local _, _, px, py = os.pullEvent("monitor_touch")
+      if not touch.isAuthorizedMonitorTouch() then
+        os.sleep(0)
+      else
+        px = px - (ox or 0)
+        py = py - (oy or 0)
+        for _, button in pairs(buttons) do
+          if px >= button.x and px <= button.x + button.width - 1
+            and py >= button.y and py <= button.y + button.height - 1 then
+            buttons = {}
+            button.cb()
+            return
+          end
+        end
+      end
     else
-      px = px - (ox or 0)
-      py = py - (oy or 0)
-      for _, button in pairs(buttons) do
-        if px >= button.x and px <= button.x + button.width - 1
-          and py >= button.y and py <= button.y + button.height - 1 then
+      local timerID = os.startTimer(pollSeconds)
+      local event, param1, param2, param3 = os.pullEvent()
+      if not (event == "timer" and param1 == timerID) then
+        os.cancelTimer(timerID)
+      end
+
+      if event == "monitor_touch" then
+        if not touch.isAuthorizedMonitorTouch() then
+          os.sleep(0)
+        else
+          local px = param2 - (ox or 0)
+          local py = param3 - (oy or 0)
+          lastActivityTime = os.epoch("local")
+          for _, button in pairs(buttons) do
+            if px >= button.x and px <= button.x + button.width - 1
+              and py >= button.y and py <= button.y + button.height - 1 then
+              buttons = {}
+              button.cb()
+              return px, py, lastActivityTime
+            end
+          end
+        end
+      elseif event == "timer" and param1 == timerID then
+        if (os.epoch("local") - lastActivityTime) > inactivityTimeout then
           buttons = {}
-          button.cb()
-          return
+          if type(options.onTimeout) == "function" then
+            return options.onTimeout()
+          end
+          return nil
         end
       end
     end
   end
 end
 
-function M.waitForMonitorTouch()
+function M.waitForMonitorTouch(opts)
+  local options = opts or {}
+  local inactivityTimeout = options.inactivityTimeout
+  local pollSeconds = options.pollSeconds or 0.25
+  local lastActivityTime = options.lastActivityTime or os.epoch("local")
+
   while true do
-    local _, side, px, py = os.pullEvent("monitor_touch")
-    if touch.isAuthorizedMonitorTouch() then
-      return side, px, py
+    if not inactivityTimeout then
+      local _, side, px, py = os.pullEvent("monitor_touch")
+      if touch.isAuthorizedMonitorTouch() then
+        return side, px, py
+      end
+      os.sleep(0)
+    else
+      local timerID = os.startTimer(pollSeconds)
+      local event, param1, param2, param3 = os.pullEvent()
+      if not (event == "timer" and param1 == timerID) then
+        os.cancelTimer(timerID)
+      end
+
+      if event == "monitor_touch" then
+        if touch.isAuthorizedMonitorTouch() then
+          lastActivityTime = os.epoch("local")
+          return param1, param2, param3, lastActivityTime
+        end
+        os.sleep(0)
+      elseif event == "timer" and param1 == timerID then
+        if (os.epoch("local") - lastActivityTime) > inactivityTimeout then
+          if type(options.onTimeout) == "function" then
+            return options.onTimeout()
+          end
+          return nil
+        end
+      end
     end
-    os.sleep(0)
   end
 end
 

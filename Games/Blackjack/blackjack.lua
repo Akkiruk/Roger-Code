@@ -199,6 +199,12 @@ local layout  = {
 }
 layout.dealerScoreY = layout.dealerY + cardBack.height + scale.smallGap
 
+local function triggerInactivityTimeout()
+  sound.play(sound.SOUNDS.TIMEOUT)
+  os.sleep(0.5)
+  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+end
+
 -----------------------------------------------------
 -- Render
 -----------------------------------------------------
@@ -420,7 +426,10 @@ local function doInsurance(ctx)
       func = function() chosen = false end },
   }}, layout.centerX, layout.buttonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
-  ui.waitForButton(0, 0)
+  ui.waitForButton(0, 0, {
+    inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
 
   if chosen then
     if insBet > 0 then
@@ -753,7 +762,10 @@ local function doPlayerTurn(ctx)
         local startY = scale:buttonBlockTop(layout.buttonY, #rows, scale.buttonRowSpacing)
         ui.layoutButtonGrid(screen, rows, layout.centerX, startY, scale.buttonRowSpacing, scale.buttonColGap)
         screen:output()
-        ui.waitForButton(0, 0)
+        ui.waitForButton(0, 0, {
+          inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+          onTimeout = triggerInactivityTimeout,
+        })
       end
     end
 

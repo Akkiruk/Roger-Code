@@ -206,30 +206,6 @@ local function triggerInactivityTimeout()
   error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
-local function waitForAuthorizedTouchWithTimeout(lastActivityTime)
-  local activityTime = lastActivityTime or epoch("local")
-
-  while true do
-    local timerID = os.startTimer(0.25)
-    local event, param1, param2, param3 = os.pullEvent()
-    if not (event == "timer" and param1 == timerID) then
-      os.cancelTimer(timerID)
-    end
-
-    if event == "monitor_touch" then
-      if ui.isAuthorizedMonitorTouch() then
-        activityTime = epoch("local")
-        return param2, param3, activityTime
-      end
-      os.sleep(0)
-    elseif event == "timer" and param1 == timerID then
-      if (epoch("local") - activityTime) > cfg.INACTIVITY_TIMEOUT then
-        triggerInactivityTimeout()
-      end
-    end
-  end
-end
-
 local function wrapStatusText(text)
   local words = {}
   local current = ""
@@ -327,6 +303,8 @@ local function showPayoutTable()
   end
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUT TABLE", lines, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -375,6 +353,8 @@ local TUTORIAL_PAGES = {
 local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -406,6 +386,8 @@ local function showStats()
   end
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
     centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -413,8 +395,6 @@ end
 -- Pre-round menu
 -----------------------------------------------------
 local function preRoundMenu()
-  local lastActivityTime = epoch("local")
-
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -450,13 +430,10 @@ local function preRoundMenu()
 
     if AUTO_PLAY then return end
 
-    local px, py, activityTime = waitForAuthorizedTouchWithTimeout(lastActivityTime)
-    lastActivityTime = activityTime
-
-    local callback = ui.checkButtonHit(px, py)
-    if callback then
-      callback()
-    end
+    ui.waitForButton(0, 0, {
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = triggerInactivityTimeout,
+    })
 
     if chosen == "play" then return end
     if chosen == "payouts" then showPayoutTable() end
@@ -645,7 +622,11 @@ local function pokerRound(betAmount)
 
       screen:output()
 
-      local px, py, activityTime = waitForAuthorizedTouchWithTimeout(lastActivityTime)
+      local _, px, py, activityTime = ui.waitForMonitorTouch({
+        inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+        onTimeout = triggerInactivityTimeout,
+        lastActivityTime = lastActivityTime,
+      })
       lastActivityTime = activityTime
       local buttonCb = ui.checkButtonHit(px, py)
       if buttonCb then
