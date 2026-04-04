@@ -18,7 +18,7 @@ return {
   -- Economy
   MAX_BET_PERCENT     = 0.18,    -- max bet = 18% of host balance
   HOST_COVERAGE_MULT  = 5,       -- covers split + double exposure from the original wager
-  INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
+  INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no bet
 
   -- Peripheral sides
   MONITOR             = "right",

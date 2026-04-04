@@ -17,7 +17,7 @@ return {
   -- Economy
   MAX_BET_PERCENT     = 0.11,    -- max bet = 11% of host balance (must stay <= 1/9 for 8:1 tie)
   HOST_COVERAGE_MULT  = 9,       -- host must hold bet * this to cover tie payout
-  INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
+  INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no bet
 
   -- Peripheral sides
   MONITOR             = "right",

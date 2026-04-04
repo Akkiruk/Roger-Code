@@ -200,6 +200,36 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
+local function triggerInactivityTimeout()
+  sound.play(sound.SOUNDS.TIMEOUT)
+  os.sleep(0.5)
+  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
+end
+
+local function waitForAuthorizedTouchWithTimeout(lastActivityTime)
+  local activityTime = lastActivityTime or epoch("local")
+
+  while true do
+    local timerID = os.startTimer(0.25)
+    local event, param1, param2, param3 = os.pullEvent()
+    if not (event == "timer" and param1 == timerID) then
+      os.cancelTimer(timerID)
+    end
+
+    if event == "monitor_touch" then
+      if ui.isAuthorizedMonitorTouch() then
+        activityTime = epoch("local")
+        return param2, param3, activityTime
+      end
+      os.sleep(0)
+    elseif event == "timer" and param1 == timerID then
+      if (epoch("local") - activityTime) > cfg.INACTIVITY_TIMEOUT then
+        triggerInactivityTimeout()
+      end
+    end
+  end
+end
+
 local function wrapStatusText(text)
   local words = {}
   local current = ""
@@ -383,6 +413,8 @@ end
 -- Pre-round menu
 -----------------------------------------------------
 local function preRoundMenu()
+  local lastActivityTime = epoch("local")
+
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -418,7 +450,13 @@ local function preRoundMenu()
 
     if AUTO_PLAY then return end
 
-    ui.waitForButton(0, 0)
+    local px, py, activityTime = waitForAuthorizedTouchWithTimeout(lastActivityTime)
+    lastActivityTime = activityTime
+
+    local callback = ui.checkButtonHit(px, py)
+    if callback then
+      callback()
+    end
 
     if chosen == "play" then return end
     if chosen == "payouts" then showPayoutTable() end
@@ -439,11 +477,7 @@ local function betSelection()
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
     hostBalance            = hostBankBalance,
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
-    onTimeout              = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
+    onTimeout              = triggerInactivityTimeout,
   })
 end
 
@@ -508,11 +542,7 @@ local function waitForReplayChoice(hand, discardSelected, betAmount, statusText)
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
+    onTimeout = triggerInactivityTimeout,
     auto_choice = AUTO_PLAY and "play_again" or nil,
     auto_delay = cfg.AUTO_PLAY_DELAY,
   })
@@ -583,6 +613,7 @@ local function pokerRound(betAmount)
     os.sleep(cfg.AUTO_PLAY_DELAY)
   else
     local confirmed = false
+    local lastActivityTime = epoch("local")
 
     while not confirmed do
       renderHand(hand, discardSelected, betAmount, nil, true)
@@ -613,7 +644,8 @@ local function pokerRound(betAmount)
 
       screen:output()
 
-      local _, px, py = ui.waitForMonitorTouch()
+      local px, py, activityTime = waitForAuthorizedTouchWithTimeout(lastActivityTime)
+      lastActivityTime = activityTime
       local buttonCb = ui.checkButtonHit(px, py)
       if buttonCb then
         buttonCb()

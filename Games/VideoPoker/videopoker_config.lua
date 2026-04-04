@@ -24,7 +24,7 @@ return {
   -- Economy
   MAX_BET_PERCENT     = 0.004,   -- max bet = 0.4% of host balance (must cover 250x royal flush)
   HOST_COVERAGE_MULT  = 251,     -- total payout multiplier on a royal (stake + 250x win)
-  INACTIVITY_TIMEOUT  = 30000,   -- ms before auto-exit with no bet
+  INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no input
 
   -- Peripheral sides
   MONITOR             = "right",
