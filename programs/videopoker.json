@@ -7,12 +7,12 @@
     "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "videopoker.lua",
-    "version": "1.0.34"
+    "version": "1.0.35"
   },
   "build": {
-    "commit": "f10f84ad51dfd97084f9cba7f2c0b871a483282d",
-    "generated_at": "2026-04-04T22:47:56Z",
-    "package_hash": "74f8e8e5a9d501391913ccf7348e2ca7c06f89c71804145f118e9a675b9b138e"
+    "commit": "e534a1bb8294cc19bc24264a1cd45dd78fcc1043",
+    "generated_at": "2026-04-04T23:06:20Z",
+    "package_hash": "5cbb4a0c968ea5da8fafd6c998384af58a345a68a0d0f551e79c5fec839424b4"
   },
   "install": {
     "preserve": [
@@ -42,7 +42,7 @@
       {
         "repo_path": "Games/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "90ff6d0256d04d8f2bf213ff60409c57d1cbdd3c3eba3f548231f7d1bd541057"
+        "sha256": "2f9ef142fc43c47e847046225326945cc3d5ada2fc3113e758bc5427965738af"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -52,7 +52,7 @@
       {
         "repo_path": "Games/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "da8df6656d5b0ac81f31ff47c7d6eec4b4bcc21c91631e6b614209c8923c9b45"
+        "sha256": "20952eaf676254fed1a26eae5acb69d7814a5fdb461a4d4ff064602c2c025cd4"
       },
       {
         "repo_path": "Games/lib/game_setup.lua",
@@ -107,7 +107,7 @@
       {
         "repo_path": "Games/lib/ui_surface.lua",
         "install_path": "lib/ui_surface.lua",
-        "sha256": "cfb822023fc9e431c0ea34cdf9fe55420cc6814320f08eb9ab8653c994a5af49"
+        "sha256": "2f4fc13a2291a56ed038d8fac83667ef82082dbc18d2336d231d33368158cf1a"
       },
       {
         "repo_path": "Games/lib/ui_text.lua",
@@ -142,7 +142,7 @@
       {
         "repo_path": "Games/VideoPoker/videopoker.lua",
         "install_path": "videopoker.lua",
-        "sha256": "eed67ae7357d935841da04ebd18259e0f0017681d2ca9820bfa9e00aeed4b3d4"
+        "sha256": "ff63867f66a041ed2b7a1fbc81c500d01e0ba551966f983c7a4aa37483f6d5cf"
       },
       {
         "repo_path": "Games/VideoPoker/videopoker_config.lua",

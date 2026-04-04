@@ -7,12 +7,12 @@
     "description": "Hi-Lo card game for ComputerCraft casino.",
     "source_root": "Games/HiLo",
     "entrypoint": "hilo.lua",
-    "version": "1.0.36"
+    "version": "1.0.37"
   },
   "build": {
-    "commit": "f10f84ad51dfd97084f9cba7f2c0b871a483282d",
-    "generated_at": "2026-04-04T22:47:56Z",
-    "package_hash": "cbe8988f5e6c13b74a008cc4b59056ce7b4d964702c11b6165f55f607951bb9b"
+    "commit": "e534a1bb8294cc19bc24264a1cd45dd78fcc1043",
+    "generated_at": "2026-04-04T23:06:20Z",
+    "package_hash": "ae27a73e341fe12a9b5724a38f9b773c60a481e81f8d6ded48519bba91c52e10"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/HiLo/hilo.lua",
         "install_path": "hilo.lua",
-        "sha256": "4cc35196fb0f4035b88c3db521064d86ac813e535f013e084b4b934800fa62d4"
+        "sha256": "174eee96ded4f96742ad2e1bb4ef8f5b548d92db942d75d837e68601068f9cde"
       },
       {
         "repo_path": "Games/lib/card_rules.lua",
@@ -42,7 +42,7 @@
       {
         "repo_path": "Games/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "90ff6d0256d04d8f2bf213ff60409c57d1cbdd3c3eba3f548231f7d1bd541057"
+        "sha256": "2f9ef142fc43c47e847046225326945cc3d5ada2fc3113e758bc5427965738af"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -52,7 +52,7 @@
       {
         "repo_path": "Games/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "da8df6656d5b0ac81f31ff47c7d6eec4b4bcc21c91631e6b614209c8923c9b45"
+        "sha256": "20952eaf676254fed1a26eae5acb69d7814a5fdb461a4d4ff064602c2c025cd4"
       },
       {
         "repo_path": "Games/lib/game_setup.lua",
@@ -107,7 +107,7 @@
       {
         "repo_path": "Games/lib/ui_surface.lua",
         "install_path": "lib/ui_surface.lua",
-        "sha256": "cfb822023fc9e431c0ea34cdf9fe55420cc6814320f08eb9ab8653c994a5af49"
+        "sha256": "2f4fc13a2291a56ed038d8fac83667ef82082dbc18d2336d231d33368158cf1a"
       },
       {
         "repo_path": "Games/lib/ui_text.lua",
@@ -147,7 +147,7 @@
       {
         "repo_path": "Games/HiLo/hilo_config.lua",
         "install_path": "hilo_config.lua",
-        "sha256": "770af615777dc0c70b90d63c375bb6d4590fd91e98c6eb06abeb42b5009789f8",
+        "sha256": "02f7352c7f7abbc2bfbecbdee6b102ec03be0fd979ca6825d89b180f240d9f6e",
         "preserve_existing": true
       },
       {
