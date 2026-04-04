@@ -190,6 +190,18 @@ local function triggerInactivityTimeout()
   error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
+local function timeoutChoiceForCard(currentCard)
+  local currentVal = cardValue(currentCard)
+  local lowerWins = math.max(0, currentVal - 2)
+  local higherWins = math.max(0, 14 - currentVal)
+
+  if higherWins <= lowerWins then
+    return "higher"
+  end
+
+  return "lower"
+end
+
 local function getChoiceStatusY()
   return min(height - LINE_H - scale.edgePad, cardY + cardBack.height + (scale.sectionGap * 2))
 end
@@ -558,7 +570,10 @@ local function hiloRound(betAmount)
     else
       ui.waitForButton(0, 0, {
         inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-        onTimeout = triggerInactivityTimeout,
+        onTimeout = function()
+          choice = timeoutChoiceForCard(currentCard)
+          alert.log("HiLo timeout: auto-select " .. tostring(choice) .. " on " .. tostring(cards.displayValue(currentCard)))
+        end,
       })
     end
 

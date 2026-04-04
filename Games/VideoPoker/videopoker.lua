@@ -624,9 +624,15 @@ local function pokerRound(betAmount)
 
       local _, px, py, activityTime = ui.waitForMonitorTouch({
         inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-        onTimeout = triggerInactivityTimeout,
+        onTimeout = function()
+          alert.log("Video Poker timeout: auto-draw with current holds")
+          confirmed = true
+        end,
         lastActivityTime = lastActivityTime,
       })
+      if confirmed then
+        break
+      end
       lastActivityTime = activityTime
       local buttonCb = ui.checkButtonHit(px, py)
       if buttonCb then

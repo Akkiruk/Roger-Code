@@ -426,10 +426,16 @@ local function doInsurance(ctx)
       func = function() chosen = false end },
   }}, layout.centerX, layout.buttonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
+  local chosenRef = { value = chosen }
   ui.waitForButton(0, 0, {
     inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
+    onTimeout = function()
+      resolveInsuranceTimeout(chosenRef)
+    end,
   })
+  if chosen == nil and chosenRef.value ~= nil then
+    chosen = chosenRef.value
+  end
 
   if chosen then
     if insBet > 0 then
@@ -657,6 +663,17 @@ local function executeSurrender(ctx, handIdx)
   return true
 end
 
+local function resolveInsuranceTimeout(choiceRef)
+  alert.log("Blackjack timeout: declining insurance offer")
+  choiceRef.value = false
+end
+
+local function resolvePlayerTurnTimeout(ctx, hand, handIdx, actionStart, handDoneRef)
+  table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
+  alert.log("Blackjack timeout: auto-stand on hand " .. tostring(handIdx))
+  handDoneRef.value = executeStand(hand, ctx, handIdx)
+end
+
 -----------------------------------------------------
 -- State: PLAYER_TURN (supports split)
 -----------------------------------------------------
@@ -762,10 +779,16 @@ local function doPlayerTurn(ctx)
         local startY = scale:buttonBlockTop(layout.buttonY, #rows, scale.buttonRowSpacing)
         ui.layoutButtonGrid(screen, rows, layout.centerX, startY, scale.buttonRowSpacing, scale.buttonColGap)
         screen:output()
+        local handDoneRef = { value = handDone }
         ui.waitForButton(0, 0, {
           inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-          onTimeout = triggerInactivityTimeout,
+          onTimeout = function()
+            resolvePlayerTurnTimeout(ctx, hand, handIdx, actionStart, handDoneRef)
+          end,
         })
+        if not handDone then
+          handDone = handDoneRef.value
+        end
       end
     end
 

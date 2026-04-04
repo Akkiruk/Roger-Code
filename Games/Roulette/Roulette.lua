@@ -766,9 +766,13 @@ local function runBettingLoop()
     end
 
     local idleMs = epoch("local") - lastActivity
-    if state.totalStake == 0 and idleMs > cfg.INACTIVITY_TIMEOUT then
+    if idleMs > cfg.INACTIVITY_TIMEOUT then
       sound.play(sound.SOUNDS.TIMEOUT, 0.45)
       os.sleep(0.5)
+      if state.totalStake > 0 then
+        alert.log("Roulette timeout: auto-spin with " .. currency.formatTokens(state.totalStake) .. " on the table")
+        return "spin"
+      end
       error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
     end
 
