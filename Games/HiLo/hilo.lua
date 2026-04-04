@@ -623,6 +623,14 @@ local function hiloRound(betAmount)
     end
 
     if sameValueLoss then
+      local charged = settlement.applyNetChange(-betAmount, {
+        lossReason = "HiLo: same value loss round " .. round,
+        failurePrefix = "CRITICAL",
+      })
+      if not charged then
+        alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (HiLo same-value loss)")
+      end
+
       sessionStatsLib.increment(sessionStats, "sameValueLosses")
       sessionStatsLib.increment(sessionStats, "busts")
       sessionStatsLib.increment(sessionStats, "rounds")
