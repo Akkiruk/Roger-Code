@@ -217,7 +217,7 @@ local function refreshPlayerState(forceBalances)
   local now = epoch("local")
   if forceBalances or (now - state.lastBalanceRefresh) > 1000 then
     state.playerBalance = currency.getPlayerBalance()
-    state.hostBalance = currency.getHostBalance()
+    state.hostBalance = currency.getProtectedHostBalance(currency.getHostBalance())
     state.lastBalanceRefresh = now
   end
 end

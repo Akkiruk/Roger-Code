@@ -98,7 +98,7 @@ local openingBankValue = hostBankBalance
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
 local function getMaxBet()
-  return floor(hostBankBalance * cfg.MAX_BET_PERCENT)
+  return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
 
 -----------------------------------------------------
@@ -557,9 +557,10 @@ local function canReplayCurrentBet(currentBet)
     return false, "Lower the bet to spin again."
   end
 
-  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
+  local protectedHostBalance = currency.getProtectedHostBalance(hostBankBalance)
+  if protectedHostBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
     local needed = currentBet * (cfg.HOST_COVERAGE_MULT - 1)
-    if hostBankBalance < needed then
+    if protectedHostBalance < needed then
       return false, "House limit changed. Pick a new bet."
     end
   end
@@ -783,7 +784,7 @@ local function betSelection()
     confirmLabel           = "SPIN",
     title                  = "PLACE YOUR BET",
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
-    hostBalance            = hostBankBalance,
+    hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
   })
 end

@@ -108,7 +108,7 @@ local openingBankValue = hostBankBalance
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
 local function getMaxBet()
-  return math.floor(hostBankBalance * cfg.MAX_BET_PERCENT)
+  return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
 
 -----------------------------------------------------
@@ -384,7 +384,8 @@ end
 
 local function hasHostCapacityForAdditionalBet(ctx, additionalBet)
   additionalBet = additionalBet or 0
-  return currency.getHostBalance() >= (currentHouseExposure(ctx) + additionalBet)
+  local protectedHostBalance = currency.getProtectedHostBalance(currency.getHostBalance())
+  return protectedHostBalance >= (currentHouseExposure(ctx) + additionalBet)
 end
 
 local function settleNetChange(netChange, reason)
@@ -1173,7 +1174,7 @@ local function betSelection()
     confirmLabel           = "DEAL",
     title                  = "PLACE YOUR BET",
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
-    hostBalance            = hostBankBalance,
+    hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
     onTimeout              = function()
       sound.play(sound.SOUNDS.TIMEOUT)

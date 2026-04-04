@@ -139,11 +139,7 @@ end
 
 local function getHostMaxBet(env, session)
   local hostBalance = session.hostBalance or currency.getHostBalance()
-  local maxBet = math.floor((hostBalance or 0) * env.slotsConfig.MAX_BET_PERCENT)
-  if env.slotsConfig.HOST_COVERAGE_MULT > 1 then
-    maxBet = math.min(maxBet, math.floor((hostBalance or 0) / (env.slotsConfig.HOST_COVERAGE_MULT - 1)))
-  end
-  return math.max(0, maxBet)
+  return currency.getMaxBetLimit(hostBalance, env.slotsConfig.MAX_BET_PERCENT, env.slotsConfig.HOST_COVERAGE_MULT)
 end
 
 local function getReplayCap(env, session)

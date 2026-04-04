@@ -27,6 +27,8 @@ local DENOMINATIONS = {
   { name = "100 Tokens", value = 100,  color = colors.magenta, sound = "the_vault:coin_pile_break" },
 }
 
+local HOST_BALANCE_RESERVE = 2000
+
 --- Apply configuration overrides.
 -- @param cfg table  Keys: denominations
 local function configure(cfg)
@@ -206,6 +208,27 @@ local function getHostBalance()
   return 0
 end
 
+local function getProtectedHostBalance(balance)
+  local rawBalance = balance
+  if rawBalance == nil then
+    rawBalance = getHostBalance()
+  end
+  rawBalance = tonumber(rawBalance) or 0
+  return math.max(0, math.floor(rawBalance) - HOST_BALANCE_RESERVE)
+end
+
+local function getMaxBetLimit(balance, maxBetPercent, hostCoverageMultiplier)
+  local protectedBalance = getProtectedHostBalance(balance)
+  local percent = tonumber(maxBetPercent) or 0
+  local maxBet = math.floor(protectedBalance * percent)
+
+  if hostCoverageMultiplier and hostCoverageMultiplier > 1 then
+    maxBet = math.min(maxBet, math.floor(protectedBalance / (hostCoverageMultiplier - 1)))
+  end
+
+  return math.max(0, maxBet)
+end
+
 -----------------------------------------------------
 -- Session / verification API wrappers
 -----------------------------------------------------
@@ -339,10 +362,13 @@ return {
   getComputerId    = getComputerId,
   getPlayerBalance = getPlayerBalance,
   getHostBalance   = getHostBalance,
+  getProtectedHostBalance = getProtectedHostBalance,
+  getMaxBetLimit   = getMaxBetLimit,
   charge           = charge,
   payout           = payout,
   formatTokens     = formatTokens,
   DENOMINATIONS    = DENOMINATIONS,
+  HOST_BALANCE_RESERVE = HOST_BALANCE_RESERVE,
   -- Session / verification
   getSessionInfo   = getSessionInfo,
   isSelfPlay       = isSelfPlay,

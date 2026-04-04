@@ -99,7 +99,7 @@ local hostBankBalance = currency.getHostBalance()
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
 local function getMaxBet()
-  return math.floor(hostBankBalance * cfg.MAX_BET_PERCENT)
+  return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
 
 -----------------------------------------------------
@@ -713,7 +713,7 @@ local function betSelection()
     confirmLabel           = "CONFIRM",
     title                  = "PLACE YOUR WAGER",
     inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
-    hostBalance            = hostBankBalance,
+    hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
     onTimeout              = function()
       sound.play(sound.SOUNDS.TIMEOUT)
@@ -733,10 +733,6 @@ local function canReplayBet(betAmount)
   end
 
   local houseCap = getMaxBet()
-  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
-    local coverageCap = math.floor(hostBankBalance / (cfg.HOST_COVERAGE_MULT - 1))
-    houseCap = math.min(houseCap, coverageCap)
-  end
 
   if houseCap < betAmount then
     if houseCap <= 0 then
@@ -758,10 +754,6 @@ local function getReplayBetAmount(betAmount)
   end
 
   local houseCap = getMaxBet()
-  if hostBankBalance and cfg.HOST_COVERAGE_MULT and cfg.HOST_COVERAGE_MULT > 1 then
-    local coverageCap = math.floor(hostBankBalance / (cfg.HOST_COVERAGE_MULT - 1))
-    houseCap = math.min(houseCap, coverageCap)
-  end
 
   if houseCap <= 0 then
     return nil

@@ -789,11 +789,7 @@ end
 
 local function maxBetForSession(env, session)
   local hostBalance = session.hostBalance or currency.getHostBalance()
-  local maxBet = math.floor((hostBalance or 0) * env.blackjackConfig.MAX_BET_PERCENT)
-  if env.blackjackConfig.HOST_COVERAGE_MULT > 1 then
-    maxBet = math.min(maxBet, math.floor((hostBalance or 0) / (env.blackjackConfig.HOST_COVERAGE_MULT - 1)))
-  end
-  return math.max(0, maxBet)
+  return currency.getMaxBetLimit(hostBalance, env.blackjackConfig.MAX_BET_PERCENT, env.blackjackConfig.HOST_COVERAGE_MULT)
 end
 
 local function createRoundContext(env, session, bet)
