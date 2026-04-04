@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.30"
+    "version": "1.0.31"
   },
   "build": {
-    "commit": "5cb73d8116f386bdb3d6fa23ddb9e3ffe9a59203",
-    "generated_at": "2026-04-03T03:18:05Z",
-    "package_hash": "3e107a470b6728d5fd5af72f0e07f38c31a56a10436d41eb4acfce3ebfc8f0e2"
+    "commit": "6a4d2a1595534f13e2013dc72e10f6bba9554da2",
+    "generated_at": "2026-04-04T22:39:33Z",
+    "package_hash": "bedece830be4c0f77bd9d20a4d312cc87ca6ffaf4bdd149624000effd0c4bb75"
   },
   "install": {
     "preserve": [
@@ -58,13 +58,13 @@
       {
         "repo_path": "Games/PhoneOS/slots_config.lua",
         "install_path": "slots_config.lua",
-        "sha256": "a76a471a9c9522e04219cfd726213dda7f4fa3074d009ec010e85601fc6671c9",
+        "sha256": "492eafd918c5c1ce06405f51b3f6f4eab8d90acc86c801810dccf0bdf45b5582",
         "preserve_existing": true
       },
       {
         "repo_path": "Games/PhoneOS/blackjack_config.lua",
         "install_path": "blackjack_config.lua",
-        "sha256": "bc79bd9e115354df9443f95478148806813beda763ea704e5c07ab42a95ef6cf",
+        "sha256": "f04a26351e3d532e69ad3e28f545a230f80b21298cc4a497d0d76e169ec190df",
         "preserve_existing": true
       },
       {
@@ -90,7 +90,7 @@
       {
         "repo_path": "Games/PhoneOS/phoneos/slots_defaults.lua",
         "install_path": "phoneos/slots_defaults.lua",
-        "sha256": "084c238662ed461ca3f65ca1bce14dce4dcac984cd3297f96e345b5b18c203c4"
+        "sha256": "98ddcf71db894700eb56d01cfab01eb7839e76a9caf5cc37549bbbcfdaa0f075"
       },
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack.lua",
@@ -100,7 +100,7 @@
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack_defaults.lua",
         "install_path": "phoneos/blackjack_defaults.lua",
-        "sha256": "61d004f855910991c02ed220cf32fc2cca2865022993342152225053f30da3d9"
+        "sha256": "c655df1f0857965a6c9abbd0f926e262e6ef422a7758a4d2f73fa22702c8884f"
       },
       {
         "repo_path": "Games/lib/sound.lua",
