@@ -7,12 +7,12 @@
     "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "videopoker.lua",
-    "version": "1.0.36"
+    "version": "1.0.37"
   },
   "build": {
-    "commit": "ca1bcdc2ade3b9b2366a5ec00a95b50fcf0ebb6c",
-    "generated_at": "2026-04-05T15:09:53Z",
-    "package_hash": "3c67904738fab48e9a62053d1fb9b7454fd69e4a1d09d23b9f106e74f5fe8a8f"
+    "commit": "e65c12af42b9e7811345bacea9317c6f5f6ef511",
+    "generated_at": "2026-04-05T15:24:17Z",
+    "package_hash": "4a5708e1cbe55d56581d40fcdae60170b337ab23fd7feae6d1f57b46b0fbae89"
   },
   "install": {
     "preserve": [
@@ -25,11 +25,6 @@
         "sha256": "80369bc390b225ae9550798ca0d4d84782b3f7f0dbe4c13217b11027c721a744"
       },
       {
-        "repo_path": "Games/lib/card_rules.lua",
-        "install_path": "lib/card_rules.lua",
-        "sha256": "cb44781c572fd997c3f39aa5046ab905bcd29194c0990c093f2bf1f88b5fcbef"
-      },
-      {
         "repo_path": "Games/lib/cards.lua",
         "install_path": "lib/cards.lua",
         "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
@@ -37,7 +32,7 @@
       {
         "repo_path": "Games/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "c14740f5836bb9c9f164e58f220738a291742741509bffd131906c349466ed54"
+        "sha256": "3b1331a9078320f22a2a45213712334fe570733bd22b670c4f5f59ccbc75f3ec"
       },
       {
         "repo_path": "Games/lib/casino_pages.lua",
@@ -60,19 +55,29 @@
         "sha256": "e1912ef3a0a9878c4a42f7cf754cabd20dde2f80914c15342ff70d2aee75040c"
       },
       {
+        "repo_path": "Games/lib/idle_card_animation_presets.lua",
+        "install_path": "lib/idle_card_animation_presets.lua",
+        "sha256": "eeca279ee002f2601b6d141338aa7f1f6a5e4ec6b9bded6530650de88ec2e207"
+      },
+      {
+        "repo_path": "Games/lib/idle_card_animation.lua",
+        "install_path": "lib/idle_card_animation.lua",
+        "sha256": "9ce367924514ca78d7ea937c26cf42af9c2b38c98b7fe599be69f55e60d1f7e0"
+      },
+      {
         "repo_path": "Games/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
-        "sha256": "e0dfb1439c9da8f3e0af5a944b3e5eebb0eb62d4d9a9b6d46628ecd63f4dd781"
+        "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
+      },
+      {
+        "repo_path": "Games/lib/card_rules.lua",
+        "install_path": "lib/card_rules.lua",
+        "sha256": "cb44781c572fd997c3f39aa5046ab905bcd29194c0990c093f2bf1f88b5fcbef"
       },
       {
         "repo_path": "Games/lib/monitor_scale.lua",
         "install_path": "lib/monitor_scale.lua",
         "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
-      },
-      {
-        "repo_path": "Games/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
         "repo_path": "Games/lib/player_detection.lua",
@@ -120,6 +125,11 @@
         "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
         "repo_path": "Games/lib/card_anim.lua",
         "install_path": "lib/card_anim.lua",
         "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
@@ -133,11 +143,6 @@
         "repo_path": "Games/lib/bedrock/widgets.lua",
         "install_path": "lib/bedrock/widgets.lua",
         "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
-      },
-      {
-        "repo_path": "Games/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
         "repo_path": "Games/VideoPoker/videopoker.lua",
@@ -186,13 +191,13 @@
         "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
-        "repo_path": "Games/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
-      },
-      {
         "repo_path": "Games/VideoPoker/heart.nfp",
         "install_path": "heart.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+      },
+      {
+        "repo_path": "Games/VideoPoker/hearts.nfp",
+        "install_path": "hearts.nfp",
         "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
       },
       {
@@ -241,9 +246,14 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Games/VideoPoker/hearts.nfp",
-        "install_path": "hearts.nfp",
-        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+        "repo_path": "Games/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+      },
+      {
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
       },
       {
         "repo_path": "Games/lib/updater.lua",
@@ -271,6 +281,8 @@
       "lib.crash_recovery",
       "lib.currency",
       "lib.game_setup",
+      "lib.idle_card_animation",
+      "lib.idle_card_animation_presets",
       "lib.idle_screen",
       "lib.monitor_scale",
       "lib.peripherals",
