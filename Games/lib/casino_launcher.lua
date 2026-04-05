@@ -59,6 +59,7 @@ function M.run(opts)
     idleEnv = idleScreen.setup({
       monitorName = monitorName,
       cardCount = options.cardCount,
+      cardAnimation = options.cardAnimation,
       extraAssets = options.extraAssets,
       monitorTextScale = options.monitorTextScale,
       palette = options.palette,
