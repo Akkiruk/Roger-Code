@@ -101,11 +101,7 @@ dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 -- Engagement feature config & state
 -----------------------------------------------------
 local GAMBLE_CFG    = cfg.GAMBLE or {}
-local BONUS_CFG     = cfg.BONUS_MULTIPLIER or {}
 local NEAR_MISS_CFG = cfg.NEAR_MISS or {}
-local STREAK_CFG    = cfg.STREAK_BONUS or {}
-
-local lossStreak = 0
 
 local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
@@ -713,30 +709,6 @@ local function displayPush(result, label, currentBet)
   return highlights, status
 end
 
--- Engagement: bonus multiplier
------------------------------------------------------
-local BONUS_CHANCE  = (BONUS_CFG.CHANCE or 4)
-local BONUS_MULT    = (BONUS_CFG.MULT or 2)
-
-local function rollBonusMultiplier()
-  if not BONUS_CFG.ENABLED then return 1, false end
-  if random(1, 100) <= BONUS_CHANCE then
-    return BONUS_MULT, true
-  end
-  return 1, false
-end
-
------------------------------------------------------
--- Engagement: streak comeback bonus
------------------------------------------------------
-local function checkStreakBonus()
-  if not STREAK_CFG.ENABLED then return 1 end
-  if lossStreak >= (STREAK_CFG.THRESHOLD or 5) then
-    return STREAK_CFG.MULTIPLIER or 2
-  end
-  return 1
-end
-
 -----------------------------------------------------
 -- Engagement: near-miss detection
 -----------------------------------------------------
@@ -929,27 +901,6 @@ local function slotsRound(currentBet, immediateSpin)
       label = label .. "  Almost " .. currency.formatTokens(tripleVal) .. "!"
     end
 
-    -- Roll for bonus / streak multipliers
-    local bonusMult, isBonus = rollBonusMultiplier()
-    local streakMult = checkStreakBonus()
-    local totalMult = bonusMult * streakMult
-    if totalMult > 1 then
-      winAmount = floor(winAmount * totalMult)
-    end
-
-    if isBonus then
-      drawMachine(result, nil, { text = "BONUS " .. BONUS_MULT .. "x!", color = colors.yellow }, currentBet)
-      sound.play(sound.SOUNDS.SUCCESS, 0.5)
-      os.sleep(0.5)
-    end
-    if streakMult > 1 then
-      drawMachine(result, nil, { text = "COMEBACK " .. streakMult .. "x!", color = colors.cyan }, currentBet)
-      sound.play(sound.SOUNDS.SUCCESS, 0.5)
-      os.sleep(0.5)
-    end
-
-    lossStreak = 0
-
     if not settlement.applyNetChange(winAmount, {
       winReason = isJackpot and "Slots: jackpot payout" or "Slots: payout",
       failurePrefix = "CRITICAL",
@@ -964,7 +915,6 @@ local function slotsRound(currentBet, immediateSpin)
 
     dbg("WIN: " .. label .. " net=" .. winAmount)
   else
-    lossStreak = lossStreak + 1
     local charged = settlement.applyNetChange(-currentBet, {
       lossReason = "Slots: loss",
       failurePrefix = "CRITICAL",
@@ -973,7 +923,7 @@ local function slotsRound(currentBet, immediateSpin)
       alert.send("CRITICAL: Failed to charge " .. currentBet .. " tokens (slots)")
     end
     resultHighlights, resultStatus = displayLoss(result, currentBet)
-    dbg("LOSS (streak: " .. lossStreak .. ")")
+    dbg("LOSS")
   end
 
   -- Update host balance

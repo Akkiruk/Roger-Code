@@ -90,26 +90,10 @@ return {
     TIMEOUT    = 15000,  -- ms to decide before auto-collect
   },
 
-  -- Random bonus multiplier.
-  -- Disabled by default: true bonus multipliers change RTP, and the prior
-  -- funded/damped model created confusing underpays like 19 on a 20-token win.
-  BONUS_MULTIPLIER = {
-    ENABLED = false,
-    CHANCE  = 4,         -- percentage chance per winning spin
-    MULT    = 2,         -- bonus factor (fixed)
-  },
-
   -- Near-miss feedback (enhanced messaging when 2-of-a-kind of a high-value symbol)
   NEAR_MISS = {
     ENABLED = true,
     SYMBOLS = { "7", "diamond" },  -- symbol IDs that trigger near-miss text
-  },
-
-  -- Streak comeback bonus (mercy multiplier after consecutive losses)
-  STREAK_BONUS = {
-    ENABLED    = false,
-    THRESHOLD  = 8,      -- consecutive losses before bonus activates
-    MULTIPLIER = 2,      -- use an integer multiplier if re-enabled
   },
 
   -- Exit codes
