@@ -97,6 +97,16 @@ local hostBankBalance  = currency.getHostBalance()
 local openingBankValue = hostBankBalance
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
+-----------------------------------------------------
+-- Engagement feature config & state
+-----------------------------------------------------
+local GAMBLE_CFG    = cfg.GAMBLE or {}
+local BONUS_CFG     = cfg.BONUS_MULTIPLIER or {}
+local NEAR_MISS_CFG = cfg.NEAR_MISS or {}
+local STREAK_CFG    = cfg.STREAK_BONUS or {}
+
+local lossStreak = 0
+
 local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
@@ -704,6 +714,174 @@ local function displayPush(result, label, currentBet)
 end
 
 -----------------------------------------------------
+-- Engagement: bonus multiplier (random trigger)
+-----------------------------------------------------
+local function rollBonusMultiplier()
+  if not BONUS_CFG.ENABLED then return 1 end
+  if random(1, 100) <= (BONUS_CFG.CHANCE or 6) then
+    return random(BONUS_CFG.MIN or 2, BONUS_CFG.MAX or 5)
+  end
+  return 1
+end
+
+-----------------------------------------------------
+-- Engagement: streak comeback bonus
+-----------------------------------------------------
+local function checkStreakBonus()
+  if not STREAK_CFG.ENABLED then return 1 end
+  if lossStreak >= (STREAK_CFG.THRESHOLD or 5) then
+    return STREAK_CFG.MULTIPLIER or 2
+  end
+  return 1
+end
+
+-----------------------------------------------------
+-- Engagement: near-miss detection
+-----------------------------------------------------
+local function detectNearMiss(result)
+  if not NEAR_MISS_CFG.ENABLED then return nil end
+  local lookup = {}
+  for _, id in ipairs(NEAR_MISS_CFG.SYMBOLS or {}) do
+    lookup[id] = true
+  end
+  local s1, s2, s3 = result[1].id, result[2].id, result[3].id
+  if s1 == s2 and s1 ~= s3 and lookup[s1] then return result[1] end
+  if s1 == s3 and s1 ~= s2 and lookup[s1] then return result[1] end
+  if s2 == s3 and s2 ~= s1 and lookup[s2] then return result[2] end
+  return nil
+end
+
+-----------------------------------------------------
+-- Engagement: gamble / double-up
+-----------------------------------------------------
+local function waitForGambleChoice(result, highlights, gambleStake, currentBet, round)
+  local metrics = ui.getMetrics()
+  local centerX = floor(width / 2)
+  local machineLayout = getMachineLayout(true, true)
+  local stakeStr = currency.formatTokens(gambleStake)
+  local doubleStr = currency.formatTokens(gambleStake * 2)
+  local statusText = {
+    text = "Gamble " .. stakeStr .. " to win " .. doubleStr .. "?",
+    color = colors.yellow,
+  }
+
+  local sizeList = { ui.getTextSize("GAMBLE"), ui.getTextSize("COLLECT") }
+  local buttonWidth = metrics:fixedButtonWidth(sizeList, 4)
+
+  local choice = replayPrompt.waitForChoice(screen, {
+    render = function()
+      drawMachine(result, highlights, statusText, currentBet, nil, {
+        showFooterControls = true,
+      })
+    end,
+    hint = function()
+      return "Double or nothing! Round " .. round .. "/" .. (GAMBLE_CFG.MAX_ROUNDS or 3), colors.yellow
+    end,
+    hint_y = machineLayout.hintY,
+    buttons = {
+      {
+        {
+          id = "gamble",
+          text = "GAMBLE",
+          color = colors.red,
+          width = buttonWidth,
+        },
+        {
+          id = "collect",
+          text = "COLLECT",
+          color = colors.lime,
+          width = buttonWidth,
+        },
+      },
+    },
+    center_x = centerX,
+    button_y = machineLayout.buttonY,
+    inactivity_timeout = GAMBLE_CFG.TIMEOUT or 15000,
+    onTimeout = function()
+      return "collect"
+    end,
+  })
+
+  return choice
+end
+
+local function animateGambleFlip(result, highlights, currentBet, won, gambleStake)
+  local winText  = "WIN +" .. currency.formatTokens(gambleStake)
+  local loseText = "LOSE -" .. currency.formatTokens(gambleStake)
+  local frames = 12
+
+  for i = 1, frames do
+    local delay = 0.08 + (i / frames) * 0.15
+    local showWin = (i % 2 == 1)
+    if i == frames then showWin = won end
+    local status = showWin
+      and { text = winText, color = colors.lime }
+      or  { text = loseText, color = colors.red }
+    drawMachine(result, highlights, status, currentBet)
+    sound.play(sound.SOUNDS.BOOT, 0.15)
+    os.sleep(delay)
+  end
+
+  if won then
+    drawMachine(result, highlights, {
+      text = "GAMBLE WIN! +" .. currency.formatTokens(gambleStake),
+      color = colors.lime,
+    }, currentBet)
+    sound.play(sound.SOUNDS.SUCCESS, 0.9)
+  else
+    drawMachine(result, highlights, {
+      text = "GAMBLE LOST!",
+      color = colors.red,
+    }, currentBet)
+    sound.play(sound.SOUNDS.FAIL, 0.6)
+  end
+  os.sleep(1.0)
+end
+
+local function runGamble(result, highlights, currentBet, winAmount)
+  if not GAMBLE_CFG.ENABLED then return end
+  if winAmount <= 0 then return end
+
+  local gambleStake = winAmount
+
+  for round = 1, (GAMBLE_CFG.MAX_ROUNDS or 3) do
+    hostBankBalance = currency.getHostBalance()
+    local protectedHost = currency.getProtectedHostBalance(hostBankBalance)
+    if not protectedHost or protectedHost < gambleStake then
+      break
+    end
+
+    local choice = waitForGambleChoice(result, highlights, gambleStake, currentBet, round)
+    if choice ~= "gamble" then
+      break
+    end
+
+    drainHeldMonitorTouches(0.15)
+    local won = random(1, 100) <= (GAMBLE_CFG.WIN_CHANCE or 50)
+    animateGambleFlip(result, highlights, currentBet, won, gambleStake)
+
+    if won then
+      if not settlement.applyNetChange(gambleStake, {
+        winReason = "Slots: gamble win",
+        failurePrefix = "CRITICAL",
+      }) then
+        alert.send("CRITICAL: Failed to pay gamble win " .. gambleStake)
+        break
+      end
+      gambleStake = gambleStake * 2
+    else
+      settlement.applyNetChange(-gambleStake, {
+        lossReason = "Slots: gamble loss",
+        failurePrefix = "CRITICAL",
+      })
+      break
+    end
+
+    hostBankBalance = currency.getHostBalance()
+  end
+end
+
+-----------------------------------------------------
 -- One round of slots
 -----------------------------------------------------
 local function slotsRound(currentBet, immediateSpin)
@@ -742,6 +920,34 @@ local function slotsRound(currentBet, immediateSpin)
     resultHighlights, resultStatus = displayPush(result, label or "Pair", currentBet)
     dbg("PUSH: " .. tostring(label))
   elseif winAmount > 0 then
+    -- Near-miss annotation (2-of-a-kind close to a triple)
+    local nearMissSym = detectNearMiss(result)
+    if nearMissSym then
+      local tripleVal = currentBet * ((PAYOUTS[nearMissSym.id] or 2) - 1)
+      label = label .. "  Almost " .. currency.formatTokens(tripleVal) .. "!"
+    end
+
+    -- Roll for bonus / streak multipliers
+    local bonusMult = rollBonusMultiplier()
+    local streakMult = checkStreakBonus()
+    local totalMult = bonusMult * streakMult
+
+    if totalMult > 1 then
+      winAmount = winAmount * totalMult
+      if bonusMult > 1 then
+        drawMachine(result, nil, { text = "BONUS " .. bonusMult .. "x!", color = colors.yellow }, currentBet)
+        sound.play(sound.SOUNDS.SUCCESS, 0.5)
+        os.sleep(0.5)
+      end
+      if streakMult > 1 then
+        drawMachine(result, nil, { text = "COMEBACK " .. streakMult .. "x!", color = colors.cyan }, currentBet)
+        sound.play(sound.SOUNDS.SUCCESS, 0.5)
+        os.sleep(0.5)
+      end
+    end
+
+    lossStreak = 0
+
     if not settlement.applyNetChange(winAmount, {
       winReason = isJackpot and "Slots: jackpot payout" or "Slots: payout",
       failurePrefix = "CRITICAL",
@@ -749,8 +955,14 @@ local function slotsRound(currentBet, immediateSpin)
       alert.send("CRITICAL: Failed to pay " .. winAmount .. " tokens (slots)")
     end
     resultHighlights, resultStatus = displayWin(result, winAmount, label, isJackpot, currentBet)
+
+    if not AUTO_PLAY then
+      runGamble(result, resultHighlights, currentBet, winAmount)
+    end
+
     dbg("WIN: " .. label .. " net=" .. winAmount)
   else
+    lossStreak = lossStreak + 1
     local charged = settlement.applyNetChange(-currentBet, {
       lossReason = "Slots: loss",
       failurePrefix = "CRITICAL",
@@ -759,7 +971,7 @@ local function slotsRound(currentBet, immediateSpin)
       alert.send("CRITICAL: Failed to charge " .. currentBet .. " tokens (slots)")
     end
     resultHighlights, resultStatus = displayLoss(result, currentBet)
-    dbg("LOSS")
+    dbg("LOSS (streak: " .. lossStreak .. ")")
   end
 
   -- Update host balance

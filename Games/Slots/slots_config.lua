@@ -82,6 +82,35 @@ return {
     TITLE_Y        = 1,
   },
 
+  -- Gamble / Double-Up (post-win coin flip)
+  GAMBLE = {
+    ENABLED    = true,
+    MAX_ROUNDS = 3,      -- max consecutive double-or-nothing rounds
+    WIN_CHANCE = 50,     -- percentage (50 = fair coin flip)
+    TIMEOUT    = 15000,  -- ms to decide before auto-collect
+  },
+
+  -- Random bonus multiplier (surprise multiplier on any winning spin)
+  BONUS_MULTIPLIER = {
+    ENABLED = true,
+    CHANCE  = 6,         -- percentage chance per spin
+    MIN     = 2,         -- minimum bonus factor
+    MAX     = 5,         -- maximum bonus factor
+  },
+
+  -- Near-miss feedback (enhanced messaging when 2-of-a-kind of a high-value symbol)
+  NEAR_MISS = {
+    ENABLED = true,
+    SYMBOLS = { "7", "diamond" },  -- symbol IDs that trigger near-miss text
+  },
+
+  -- Streak comeback bonus (mercy multiplier after consecutive losses)
+  STREAK_BONUS = {
+    ENABLED    = true,
+    THRESHOLD  = 5,      -- consecutive losses before bonus activates
+    MULTIPLIER = 2,      -- bonus factor applied to next win
+  },
+
   -- Exit codes
   EXIT_CODES = {
     INACTIVITY_TIMEOUT = "inactivity_timeout",
