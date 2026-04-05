@@ -17,5 +17,6 @@ launcher.run({
   logFile = "hilo_error.log",
   monitorName = "right",
   program = "hilo.lua",
+  cardAnimation = "glide",
   drawOverlay = drawOverlay,
 })

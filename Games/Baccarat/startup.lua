@@ -17,5 +17,6 @@ launcher.run({
   logFile = "baccarat_error.log",
   monitorName = "right",
   program = "baccarat.lua",
+  cardAnimation = "arc",
   drawOverlay = drawOverlay,
 })

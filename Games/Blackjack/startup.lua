@@ -52,6 +52,7 @@ launcher.run({
   startupName = "Casino Startup",
   logFile = "debug.txt",
   monitorName = "right",
+  cardAnimation = "deal",
   programs = {
     play = "blackjack.lua",
     statistics = "statistics.lua",
