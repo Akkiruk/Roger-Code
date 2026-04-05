@@ -90,12 +90,11 @@ return {
     TIMEOUT    = 15000,  -- ms to decide before auto-collect
   },
 
-  -- Random bonus multiplier (surprise multiplier on any winning spin)
+  -- Random bonus multiplier (surprise 2x on any winning spin, funded/damped so EV-neutral)
   BONUS_MULTIPLIER = {
     ENABLED = true,
-    CHANCE  = 6,         -- percentage chance per spin
-    MIN     = 2,         -- minimum bonus factor
-    MAX     = 5,         -- maximum bonus factor
+    CHANCE  = 4,         -- percentage chance per winning spin
+    MULT    = 2,         -- bonus factor (fixed)
   },
 
   -- Near-miss feedback (enhanced messaging when 2-of-a-kind of a high-value symbol)
@@ -107,8 +106,8 @@ return {
   -- Streak comeback bonus (mercy multiplier after consecutive losses)
   STREAK_BONUS = {
     ENABLED    = true,
-    THRESHOLD  = 5,      -- consecutive losses before bonus activates
-    MULTIPLIER = 2,      -- bonus factor applied to next win
+    THRESHOLD  = 8,      -- consecutive losses before bonus activates
+    MULTIPLIER = 1.5,    -- bonus factor applied to next win
   },
 
   -- Exit codes

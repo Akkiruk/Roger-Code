@@ -714,14 +714,23 @@ local function displayPush(result, label, currentBet)
 end
 
 -----------------------------------------------------
--- Engagement: bonus multiplier (random trigger)
+-- Engagement: bonus multiplier (funded/damped — EV-neutral)
+-- When bonus fires, payout is multiplied by MULT.
+-- On non-bonus wins, payout is slightly damped so the
+-- long-run expected value stays unchanged.
 -----------------------------------------------------
+local BONUS_CHANCE  = (BONUS_CFG.CHANCE or 4)
+local BONUS_MULT    = (BONUS_CFG.MULT or 2)
+local BONUS_DAMPING = BONUS_CFG.ENABLED
+  and (100 - BONUS_CHANCE * BONUS_MULT) / (100 - BONUS_CHANCE)
+  or 1
+
 local function rollBonusMultiplier()
-  if not BONUS_CFG.ENABLED then return 1 end
-  if random(1, 100) <= (BONUS_CFG.CHANCE or 6) then
-    return random(BONUS_CFG.MIN or 2, BONUS_CFG.MAX or 5)
+  if not BONUS_CFG.ENABLED then return 1, false end
+  if random(1, 100) <= BONUS_CHANCE then
+    return BONUS_MULT, true
   end
-  return 1
+  return BONUS_DAMPING, false
 end
 
 -----------------------------------------------------
@@ -927,23 +936,21 @@ local function slotsRound(currentBet, immediateSpin)
       label = label .. "  Almost " .. currency.formatTokens(tripleVal) .. "!"
     end
 
-    -- Roll for bonus / streak multipliers
-    local bonusMult = rollBonusMultiplier()
+    -- Roll for bonus / streak multipliers (bonus is EV-neutral via damping)
+    local bonusMult, isBonus = rollBonusMultiplier()
     local streakMult = checkStreakBonus()
     local totalMult = bonusMult * streakMult
+    winAmount = floor(winAmount * totalMult)
 
-    if totalMult > 1 then
-      winAmount = winAmount * totalMult
-      if bonusMult > 1 then
-        drawMachine(result, nil, { text = "BONUS " .. bonusMult .. "x!", color = colors.yellow }, currentBet)
-        sound.play(sound.SOUNDS.SUCCESS, 0.5)
-        os.sleep(0.5)
-      end
-      if streakMult > 1 then
-        drawMachine(result, nil, { text = "COMEBACK " .. streakMult .. "x!", color = colors.cyan }, currentBet)
-        sound.play(sound.SOUNDS.SUCCESS, 0.5)
-        os.sleep(0.5)
-      end
+    if isBonus then
+      drawMachine(result, nil, { text = "BONUS " .. BONUS_MULT .. "x!", color = colors.yellow }, currentBet)
+      sound.play(sound.SOUNDS.SUCCESS, 0.5)
+      os.sleep(0.5)
+    end
+    if streakMult > 1 then
+      drawMachine(result, nil, { text = "COMEBACK " .. streakMult .. "x!", color = colors.cyan }, currentBet)
+      sound.play(sound.SOUNDS.SUCCESS, 0.5)
+      os.sleep(0.5)
     end
 
     lossStreak = 0
