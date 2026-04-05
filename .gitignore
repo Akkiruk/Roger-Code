@@ -7,6 +7,9 @@ debug.txt
 # Logs
 *.log
 
+# Generated local build output
+.generated/
+
 # Emulator runtime data
 emulator/
 

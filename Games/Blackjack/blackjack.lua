@@ -20,6 +20,8 @@ local epoch        = os.epoch
 -- Forward declarations
 local buildAndRecordResult = nil
 local waitForReplayChoice = nil
+local resolveInsuranceTimeout = nil
+local resolvePlayerTurnTimeout = nil
 
 settings.define("blackjack.debug", {
   description = "Enable debug messages for the Blackjack game.",
@@ -663,12 +665,12 @@ local function executeSurrender(ctx, handIdx)
   return true
 end
 
-local function resolveInsuranceTimeout(choiceRef)
+resolveInsuranceTimeout = function(choiceRef)
   alert.log("Blackjack timeout: declining insurance offer")
   choiceRef.value = false
 end
 
-local function resolvePlayerTurnTimeout(ctx, hand, handIdx, actionStart, handDoneRef)
+resolvePlayerTurnTimeout = function(ctx, hand, handIdx, actionStart, handDoneRef)
   table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
   alert.log("Blackjack timeout: auto-stand on hand " .. tostring(handIdx))
   handDoneRef.value = executeStand(hand, ctx, handIdx)
