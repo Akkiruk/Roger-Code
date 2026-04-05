@@ -7,12 +7,12 @@
     "description": "Slot Machine game for ComputerCraft casino.",
     "source_root": "Games/Slots",
     "entrypoint": "slots.lua",
-    "version": "1.0.35"
+    "version": "1.0.36"
   },
   "build": {
-    "commit": "2f969998d0f514a0e9477fd4628a820840b77d8f",
-    "generated_at": "2026-04-05T12:48:51Z",
-    "package_hash": "d1f6a8d214fed18c79295c5a969e7b25527f93d1a9e422486f2746681c6891d5"
+    "commit": "68c83bdb28f9f645d36e65f8113d27d9f3f8597c",
+    "generated_at": "2026-04-05T13:52:23Z",
+    "package_hash": "7a10595a936731c1abf61f48c65c781eadafc0a4d7a115951060009b952214dd"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/Slots/slots.lua",
         "install_path": "slots.lua",
-        "sha256": "d1eb7d85ea302a45c537cf26b1ed053043a097898fb5d02ad5deaa2f3f739a6f"
+        "sha256": "f4a30ffa6add2e385f029019f50f306b7ad2c9f5de69d453710e4ba31aa21903"
       },
       {
         "repo_path": "Games/lib/cards.lua",
@@ -137,7 +137,7 @@
       {
         "repo_path": "Games/Slots/slots_config.lua",
         "install_path": "slots_config.lua",
-        "sha256": "5a9bb6d5c78969de636b3cf71fbfb7517ac24679bb5f0bca6d4f85aba2ab2594",
+        "sha256": "fd74ddc7515af09b53358ad280cb3ca45be06e107dd4d8f1ce539c0a8a00efd3",
         "preserve_existing": true
       },
       {
