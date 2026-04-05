@@ -90,9 +90,11 @@ return {
     TIMEOUT    = 15000,  -- ms to decide before auto-collect
   },
 
-  -- Random bonus multiplier (surprise 2x on any winning spin, funded/damped so EV-neutral)
+  -- Random bonus multiplier.
+  -- Disabled by default: true bonus multipliers change RTP, and the prior
+  -- funded/damped model created confusing underpays like 19 on a 20-token win.
   BONUS_MULTIPLIER = {
-    ENABLED = true,
+    ENABLED = false,
     CHANCE  = 4,         -- percentage chance per winning spin
     MULT    = 2,         -- bonus factor (fixed)
   },
@@ -105,9 +107,9 @@ return {
 
   -- Streak comeback bonus (mercy multiplier after consecutive losses)
   STREAK_BONUS = {
-    ENABLED    = true,
+    ENABLED    = false,
     THRESHOLD  = 8,      -- consecutive losses before bonus activates
-    MULTIPLIER = 1.5,    -- bonus factor applied to next win
+    MULTIPLIER = 2,      -- use an integer multiplier if re-enabled
   },
 
   -- Exit codes

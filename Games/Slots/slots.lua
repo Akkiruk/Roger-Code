@@ -713,24 +713,17 @@ local function displayPush(result, label, currentBet)
   return highlights, status
 end
 
------------------------------------------------------
--- Engagement: bonus multiplier (funded/damped — EV-neutral)
--- When bonus fires, payout is multiplied by MULT.
--- On non-bonus wins, payout is slightly damped so the
--- long-run expected value stays unchanged.
+-- Engagement: bonus multiplier
 -----------------------------------------------------
 local BONUS_CHANCE  = (BONUS_CFG.CHANCE or 4)
 local BONUS_MULT    = (BONUS_CFG.MULT or 2)
-local BONUS_DAMPING = BONUS_CFG.ENABLED
-  and (100 - BONUS_CHANCE * BONUS_MULT) / (100 - BONUS_CHANCE)
-  or 1
 
 local function rollBonusMultiplier()
   if not BONUS_CFG.ENABLED then return 1, false end
   if random(1, 100) <= BONUS_CHANCE then
     return BONUS_MULT, true
   end
-  return BONUS_DAMPING, false
+  return 1, false
 end
 
 -----------------------------------------------------
@@ -936,11 +929,13 @@ local function slotsRound(currentBet, immediateSpin)
       label = label .. "  Almost " .. currency.formatTokens(tripleVal) .. "!"
     end
 
-    -- Roll for bonus / streak multipliers (bonus is EV-neutral via damping)
+    -- Roll for bonus / streak multipliers
     local bonusMult, isBonus = rollBonusMultiplier()
     local streakMult = checkStreakBonus()
     local totalMult = bonusMult * streakMult
-    winAmount = floor(winAmount * totalMult)
+    if totalMult > 1 then
+      winAmount = floor(winAmount * totalMult)
+    end
 
     if isBonus then
       drawMachine(result, nil, { text = "BONUS " .. BONUS_MULT .. "x!", color = colors.yellow }, currentBet)
