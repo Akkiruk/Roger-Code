@@ -7,12 +7,12 @@
     "description": "Slot Machine game for ComputerCraft casino.",
     "source_root": "Games/Slots",
     "entrypoint": "slots.lua",
-    "version": "1.0.39"
+    "version": "1.0.40"
   },
   "build": {
-    "commit": "fdb91a50dc1fcf9ba84461de5b83197c3fd2387a",
-    "generated_at": "2026-04-05T15:29:00Z",
-    "package_hash": "e08a7d4cff3ca9420f150530dd938d6ab7dcb36ac4dd98a89b30c6c37d7913da"
+    "commit": "e24ed1d2de9385ef9783860c4ecc22452ef83a95",
+    "generated_at": "2026-04-05T15:57:22Z",
+    "package_hash": "22fc50eef49ec3e1be5ed9d48d26c24e9c30cb1e6fd3d2d61705d29c1ca48411"
   },
   "install": {
     "preserve": [
@@ -47,12 +47,12 @@
       {
         "repo_path": "Games/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
-        "sha256": "eeca279ee002f2601b6d141338aa7f1f6a5e4ec6b9bded6530650de88ec2e207"
+        "sha256": "db1ecb507e4f291639db9cdcbb6e1c509dc73918a7990b92fd986cbde21664b7"
       },
       {
         "repo_path": "Games/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
-        "sha256": "9ce367924514ca78d7ea937c26cf42af9c2b38c98b7fe599be69f55e60d1f7e0"
+        "sha256": "aefb78ef64d6969415ad852b1136513a633a8badebd2cf54afc7e229dbf89f4d"
       },
       {
         "repo_path": "Games/lib/idle_screen.lua",

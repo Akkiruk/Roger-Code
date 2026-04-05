@@ -7,12 +7,12 @@
     "description": "European Roulette with a single-screen felt UI and multi-bet support.",
     "source_root": "Games/Roulette",
     "entrypoint": "Roulette.lua",
-    "version": "1.0.52"
+    "version": "1.0.53"
   },
   "build": {
-    "commit": "fdb91a50dc1fcf9ba84461de5b83197c3fd2387a",
-    "generated_at": "2026-04-05T15:29:00Z",
-    "package_hash": "14fe6a1e29c21bdf70678cd9f408f601cabad418c85ce9f5cc484547dd048a2e"
+    "commit": "e24ed1d2de9385ef9783860c4ecc22452ef83a95",
+    "generated_at": "2026-04-05T15:57:22Z",
+    "package_hash": "e896e91556d98af33cf890b3324037ac07ddb525185f8c02063465f6d6e0d5af"
   },
   "install": {
     "preserve": [
@@ -37,12 +37,12 @@
       {
         "repo_path": "Games/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
-        "sha256": "eeca279ee002f2601b6d141338aa7f1f6a5e4ec6b9bded6530650de88ec2e207"
+        "sha256": "db1ecb507e4f291639db9cdcbb6e1c509dc73918a7990b92fd986cbde21664b7"
       },
       {
         "repo_path": "Games/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
-        "sha256": "9ce367924514ca78d7ea937c26cf42af9c2b38c98b7fe599be69f55e60d1f7e0"
+        "sha256": "aefb78ef64d6969415ad852b1136513a633a8badebd2cf54afc7e229dbf89f4d"
       },
       {
         "repo_path": "Games/lib/idle_screen.lua",

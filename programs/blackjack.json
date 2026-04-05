@@ -7,12 +7,12 @@
     "description": "Blackjack card game for ComputerCraft casino.",
     "source_root": "Games/Blackjack",
     "entrypoint": "blackjack.lua",
-    "version": "1.2.30"
+    "version": "1.2.31"
   },
   "build": {
-    "commit": "fdb91a50dc1fcf9ba84461de5b83197c3fd2387a",
-    "generated_at": "2026-04-05T15:29:00Z",
-    "package_hash": "10ad0451b214496dca73a0d1d4172549a12ab53aa13f93eca682f8acf1fdd404"
+    "commit": "e24ed1d2de9385ef9783860c4ecc22452ef83a95",
+    "generated_at": "2026-04-05T15:57:22Z",
+    "package_hash": "a6255c56f53296fbd90819633e90d0544d6de16d1f60fd6ac78a6522497eeabb"
   },
   "install": {
     "preserve": [
@@ -67,12 +67,12 @@
       {
         "repo_path": "Games/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
-        "sha256": "eeca279ee002f2601b6d141338aa7f1f6a5e4ec6b9bded6530650de88ec2e207"
+        "sha256": "db1ecb507e4f291639db9cdcbb6e1c509dc73918a7990b92fd986cbde21664b7"
       },
       {
         "repo_path": "Games/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
-        "sha256": "9ce367924514ca78d7ea937c26cf42af9c2b38c98b7fe599be69f55e60d1f7e0"
+        "sha256": "aefb78ef64d6969415ad852b1136513a633a8badebd2cf54afc7e229dbf89f4d"
       },
       {
         "repo_path": "Games/lib/bedrock/theme.lua",
