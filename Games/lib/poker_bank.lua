@@ -11,19 +11,19 @@ local function loadState()
   local state = pokerStore.load(STATE_FILE, {
     settlements = {},
     activeSession = nil,
-    buyIns = {},
+    stackDeclarations = {},
   })
 
   if type(state) ~= "table" then
     state = {
       settlements = {},
       activeSession = nil,
-      buyIns = {},
+      stackDeclarations = {},
     }
   end
 
   state.settlements = state.settlements or {}
-  state.buyIns = state.buyIns or {}
+  state.stackDeclarations = state.stackDeclarations or {}
   return state
 end
 
@@ -82,8 +82,8 @@ end
 
 function M.ensureHost(expectedHostName)
   assert(type(expectedHostName) == "string", "expectedHostName must be a string")
-  local actualHostName = currency.getHostName()
 
+  local actualHostName = currency.getHostName()
   if actualHostName ~= expectedHostName then
     return false, "Seat host " .. tostring(actualHostName) .. " does not match table host " .. tostring(expectedHostName)
   end
@@ -93,6 +93,7 @@ end
 
 function M.beginSession(session)
   assert(type(session) == "table", "session must be a table")
+
   local state = loadState()
   state.activeSession = session
   saveState(state)
@@ -127,53 +128,52 @@ function M.clearSession()
   return true
 end
 
-function M.buyIn(tableId, amount)
+function M.declareStack(tableId, amount)
   assert(type(tableId) == "string", "tableId must be a string")
 
   amount = math.floor(tonumber(amount) or 0)
   if amount <= 0 then
-    return false, nil, "amount must be positive"
-  end
-
-  local reason = trimReason("poker buyin " .. tableId)
-  local ok, txId = currency.charge(amount, reason)
-  if not ok then
-    return false, nil, "buyin_transfer_failed"
+    return false, "amount must be positive"
   end
 
   local state = loadState()
-  state.buyIns[txId or (tableId .. "-" .. tostring(amount))] = {
+  local declarationId = table.concat({
+    tableId,
+    tostring(os.getComputerID()),
+    tostring(os.epoch("local")),
+    tostring(amount),
+  }, "-")
+
+  state.stackDeclarations[declarationId] = {
     tableId = tableId,
     amount = amount,
-    txId = txId,
+    declarationId = declarationId,
     createdAt = os.epoch("local"),
   }
   saveState(state)
 
-  logger.write("Buy-in recorded for table " .. tableId .. ": " .. tostring(amount) .. " tokens")
-  return true, txId
+  logger.write("Stack declared for table " .. tableId .. ": " .. tostring(amount) .. " virtual chips")
+  return true, declarationId
 end
 
-function M.cashOut(tableId, settlementId, amount)
+function M.settleNetChange(tableId, settlementId, netChange, reason)
   assert(type(tableId) == "string", "tableId must be a string")
   assert(type(settlementId) == "string" and settlementId ~= "", "settlementId must be a string")
 
-  amount = math.floor(tonumber(amount) or 0)
-  if amount < 0 then
-    return false, nil, false, "amount must not be negative"
-  end
+  netChange = math.floor(tonumber(netChange) or 0)
 
   local state = loadState()
   local existing = state.settlements[settlementId]
   if existing and existing.status == "paid" then
-    logger.write("Cash-out settlement replay detected for " .. settlementId)
+    logger.write("Settlement replay detected for " .. settlementId)
     return true, existing.txId, true
   end
 
-  if amount == 0 then
+  if netChange == 0 then
     state.settlements[settlementId] = {
       tableId = tableId,
       amount = 0,
+      netChange = 0,
       txId = nil,
       status = "paid",
       paidAt = os.epoch("local"),
@@ -182,27 +182,38 @@ function M.cashOut(tableId, settlementId, amount)
     return true, nil, false
   end
 
-  local hostBalance = currency.getHostBalance()
-  if hostBalance < amount then
-    return false, nil, false, "host balance is below requested cash-out"
-  end
+  local settlementReason = trimReason(reason or ("poker hand settlement " .. tableId))
+  local ok = nil
+  local txId = nil
 
-  local reason = trimReason("poker cashout " .. tableId)
-  local ok, txId = currency.payout(amount, reason)
-  if not ok then
-    return false, nil, false, "cashout_transfer_failed"
+  if netChange > 0 then
+    local hostBalance = currency.getHostBalance()
+    if hostBalance < netChange then
+      return false, nil, false, "host balance is below requested payout"
+    end
+
+    ok, txId = currency.payout(netChange, settlementReason)
+    if not ok then
+      return false, nil, false, "payout_failed"
+    end
+  else
+    ok, txId = currency.charge(-netChange, settlementReason)
+    if not ok then
+      return false, nil, false, "charge_failed"
+    end
   end
 
   state.settlements[settlementId] = {
     tableId = tableId,
-    amount = amount,
+    amount = math.abs(netChange),
+    netChange = netChange,
     txId = txId,
     status = "paid",
     paidAt = os.epoch("local"),
   }
   saveState(state)
 
-  logger.write("Cash-out recorded for table " .. tableId .. ": " .. tostring(amount) .. " tokens")
+  logger.write("Hand settlement recorded for table " .. tableId .. ": net=" .. tostring(netChange) .. " tokens")
   return true, txId, false
 end
 

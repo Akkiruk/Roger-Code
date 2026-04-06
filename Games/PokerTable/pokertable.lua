@@ -2,7 +2,7 @@
 -- manifest-name: PokerTable
 -- manifest-description: Multiplayer poker table foundation with dealer and seat modes.
 -- manifest-category: Games
--- Multiplayer poker table foundation with rednet transport and CCVault escrow.
+-- Multiplayer poker table foundation with rednet transport and deferred settlement.
 
 local cfg = require("pokertable_config")
 local pokerLog = require("lib.poker_log")
@@ -41,10 +41,11 @@ local function showAuditSummary()
   print("Audit Summary")
   print("")
   print("- Same-host enforcement is required for all seats.")
-  print("- Buy-ins are deduped by CCVault transaction ID.")
-  print("- Cash-outs are deduped by settlement ID.")
-  print("- Dealer owns chip state, seat owns wallet access.")
+  print("- Stack declarations are deduped by declaration ID.")
+  print("- End-of-hand settlements are deduped by settlement ID.")
+  print("- Dealer owns chip state, seat owns wallet access and final settlement.")
   print("- Dealer and seat state are both persisted for reconnects.")
+  print("- No tokens move on join, rebuy, or leave.")
   print("")
 end
 

@@ -12,12 +12,10 @@ local logger = pokerLog.new(cfg.SEAT_LOG_FILE, false)
 local running = false
 local seatState = {
   summary = nil,
-  pendingBuyInId = nil,
-  pendingBuyInReply = nil,
-  pendingCashOutId = nil,
-  pendingCashOutReply = nil,
-  pendingCashOutAckId = nil,
-  pendingCashOutAck = nil,
+  pendingStackSetId = nil,
+  pendingStackSetReply = nil,
+  pendingLeaveId = nil,
+  pendingLeaveReply = nil,
 }
 
 local function printSummary(summary)
@@ -26,7 +24,7 @@ local function printSummary(summary)
   print("Dealer: " .. tostring(summary.dealerId))
   print("Host: " .. tostring(summary.hostName))
   print("Status: " .. tostring(summary.status))
-  print("Buy-in: " .. tostring(summary.minBuyIn) .. " - " .. tostring(summary.maxBuyIn) .. " tokens")
+  print("Declared stack: " .. tostring(summary.minBuyIn) .. " - " .. tostring(summary.maxBuyIn) .. " chips")
   print("Open seats: " .. tostring(summary.openSeats))
   print("")
 
@@ -133,7 +131,7 @@ local function chooseTable(activeSession)
     local summary = tables[index]
     print(
       string.format(
-        "%d. %s | dealer=%d | host=%s | open=%d | buy-in=%d-%d",
+        "%d. %s | dealer=%d | host=%s | open=%d | stack=%d-%d",
         index,
         tostring(summary.tableId),
         tonumber(summary.dealerId) or 0,
@@ -192,53 +190,54 @@ local function joinTable(summary, activeSession)
   return identity, joinReply.payload, nil
 end
 
-local function performInitialBuyIn(summary, joinPayload)
+local function performInitialStackDeclaration(summary, joinPayload)
   local balance = currency.getPlayerBalance()
-  local defaultBuyIn = summary.minBuyIn
+  local defaultStack = summary.minBuyIn
   local amount = nil
-  local buyInOk = nil
-  local txId = nil
-  local buyInEnvelope = nil
-  local buyInReply = nil
+  local declareOk = nil
+  local declarationId = nil
+  local stackEnvelope = nil
+  local stackReply = nil
 
   print("Player balance: " .. tostring(balance) .. " tokens")
-
-  if balance < summary.minBuyIn then
-    return false, "Player balance is below the table minimum buy-in"
-  end
+  print("No tokens move on join. This only declares a virtual table stack.")
 
   if type(joinPayload.stack) == "number" and joinPayload.stack > 0 then
-    print("Reconnected with existing stack: " .. tostring(joinPayload.stack) .. " tokens")
+    print("Reconnected with existing stack: " .. tostring(joinPayload.stack) .. " chips")
     return true, nil, joinPayload.stack
   end
 
-  amount = promptInteger("Buy-in amount", defaultBuyIn, summary.minBuyIn, math.min(summary.maxBuyIn, balance))
-
-  buyInOk, txId = pokerBank.buyIn(summary.tableId, amount)
-  if not buyInOk then
-    return false, "Buy-in transfer failed"
+  if balance < summary.minBuyIn then
+    return false, "Player balance is below the table minimum stack declaration"
   end
 
-  buyInEnvelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.BUYIN_NOTICE, {
+  amount = promptInteger("Initial stack", defaultStack, summary.minBuyIn, math.min(summary.maxBuyIn, balance))
+
+  declareOk, declarationId = pokerBank.declareStack(summary.tableId, amount)
+  if not declareOk then
+    return false, "Stack declaration failed"
+  end
+
+  stackEnvelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.STACK_SET, {
     seatId = joinPayload.seatId,
     amount = amount,
-    txId = txId,
+    declarationId = declarationId,
   }, {
     tableId = summary.tableId,
   })
 
-  buyInReply = pokerTransport.request(
+  stackReply = pokerTransport.request(
     summary.dealerId,
-    buyInEnvelope,
-    pokerProtocol.MESSAGE_TYPES.BUYIN_ACK,
+    stackEnvelope,
+    pokerProtocol.MESSAGE_TYPES.STACK_ACK,
     cfg.NETWORK_TIMEOUT
   )
 
-  if not buyInReply or not buyInReply.payload or not buyInReply.payload.ok then
-    return false, "Dealer did not accept the buy-in notice"
+  if not stackReply or not stackReply.payload or not stackReply.payload.ok then
+    return false, "Dealer did not accept the stack declaration"
   end
 
-  return true, nil, buyInReply.payload.stack
+  return true, nil, stackReply.payload.stack
 end
 
 local function sendReadyUpdate(activeSession, ready)
@@ -262,65 +261,65 @@ local function sendHeartbeat(activeSession)
   pokerTransport.sendEnvelope(activeSession.dealerId, envelope)
 end
 
-local function startRebuy(activeSession)
+local function startStackTopUp(activeSession)
   local balance = currency.getPlayerBalance()
 
-  if seatState.pendingBuyInId or seatState.pendingBuyInReply then
-    print("A rebuy is already waiting for dealer acknowledgement.")
+  if seatState.pendingStackSetId or seatState.pendingStackSetReply then
+    print("A stack update is already waiting for dealer acknowledgement.")
     return
   end
 
   if balance < activeSession.minBuyIn then
-    print("Your balance is below the table minimum buy-in.")
+    print("Your balance is below the table minimum stack declaration.")
     return
   end
 
   local amount = promptInteger(
-    "Rebuy amount",
+    "Stack top-up",
     activeSession.minBuyIn,
     activeSession.minBuyIn,
     math.min(activeSession.maxBuyIn, balance)
   )
   local ok = nil
-  local txId = nil
+  local declarationId = nil
   local envelope = nil
 
-  ok, txId = pokerBank.buyIn(activeSession.tableId, amount)
+  ok, declarationId = pokerBank.declareStack(activeSession.tableId, amount)
   if not ok then
-    print("Rebuy transfer failed.")
+    print("Stack declaration failed.")
     return
   end
 
-  envelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.BUYIN_NOTICE, {
+  envelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.STACK_SET, {
     seatId = activeSession.seatId,
     amount = amount,
-    txId = txId,
+    declarationId = declarationId,
   }, {
     tableId = activeSession.tableId,
   })
 
-  seatState.pendingBuyInId = envelope.messageId
-  seatState.pendingBuyInReply = nil
+  seatState.pendingStackSetId = envelope.messageId
+  seatState.pendingStackSetReply = nil
   pokerTransport.sendEnvelope(activeSession.dealerId, envelope)
-  print("Rebuy sent. Waiting for dealer acknowledgement...")
+  print("Stack top-up sent. Waiting for dealer acknowledgement...")
 end
 
-local function startCashOut(activeSession)
-  if seatState.pendingCashOutId or seatState.pendingCashOutReply or seatState.pendingCashOutAckId then
-    print("A cash-out is already in progress.")
+local function startLeave(activeSession)
+  if seatState.pendingLeaveId or seatState.pendingLeaveReply then
+    print("A leave request is already in progress.")
     return
   end
 
-  local envelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.CASHOUT_REQUEST, {
+  local envelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.LEAVE_REQUEST, {
     seatId = activeSession.seatId,
   }, {
     tableId = activeSession.tableId,
   })
 
-  seatState.pendingCashOutId = envelope.messageId
-  seatState.pendingCashOutReply = nil
+  seatState.pendingLeaveId = envelope.messageId
+  seatState.pendingLeaveReply = nil
   pokerTransport.sendEnvelope(activeSession.dealerId, envelope)
-  print("Cash-out requested. Waiting for dealer authorization...")
+  print("Leave requested. No tokens will move here.")
 end
 
 local function networkLoop(activeSession)
@@ -343,20 +342,15 @@ local function networkLoop(activeSession)
             index = index + 1
           end
         end
-      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.BUYIN_ACK then
-        if envelope.correlationId == seatState.pendingBuyInId then
-          seatState.pendingBuyInReply = envelope.payload
-          seatState.pendingBuyInId = nil
+      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.STACK_ACK then
+        if envelope.correlationId == seatState.pendingStackSetId then
+          seatState.pendingStackSetReply = envelope.payload
+          seatState.pendingStackSetId = nil
         end
-      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.CASHOUT_AUTHORIZED then
-        if envelope.correlationId == seatState.pendingCashOutId then
-          seatState.pendingCashOutReply = envelope.payload
-          seatState.pendingCashOutId = nil
-        end
-      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE_ACK then
-        if envelope.correlationId == seatState.pendingCashOutAckId then
-          seatState.pendingCashOutAck = envelope.payload
-          seatState.pendingCashOutAckId = nil
+      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.LEAVE_ACK then
+        if envelope.correlationId == seatState.pendingLeaveId then
+          seatState.pendingLeaveReply = envelope.payload
+          seatState.pendingLeaveId = nil
         end
       elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.TABLE_CLOSED then
         print("Dealer closed the table.")
@@ -368,49 +362,18 @@ local function networkLoop(activeSession)
       end
     end
 
-    if seatState.pendingBuyInReply and seatState.pendingBuyInReply.ok then
-      local newStack = seatState.pendingBuyInReply.stack or activeSession.stack
+    if seatState.pendingStackSetReply and seatState.pendingStackSetReply.ok then
+      local newStack = seatState.pendingStackSetReply.stack or activeSession.stack
       activeSession.stack = newStack
       pokerBank.updateSession({ stack = newStack })
-      print("Buy-in accepted. New stack: " .. tostring(newStack) .. " tokens")
-      seatState.pendingBuyInReply = nil
+      print("Stack accepted. New table stack: " .. tostring(newStack) .. " chips")
+      seatState.pendingStackSetReply = nil
     end
 
-    if seatState.pendingCashOutReply then
-      local reply = seatState.pendingCashOutReply
-      local settlementId = reply.settlementId
-      local amount = math.floor(tonumber(reply.amount) or 0)
-      local ok = nil
-      local txId = nil
-      local duplicate = nil
-      local ackEnvelope = nil
-
-      seatState.pendingCashOutReply = nil
-
-      ok, txId, duplicate = pokerBank.cashOut(activeSession.tableId, settlementId, amount)
-      if not ok then
-        print("Cash-out failed locally. Session remains open.")
-      else
-        ackEnvelope = pokerProtocol.makeEnvelope(pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE, {
-          seatId = activeSession.seatId,
-          settlementId = settlementId,
-          txId = txId,
-          duplicate = duplicate,
-        }, {
-          tableId = activeSession.tableId,
-        })
-
-        seatState.pendingCashOutAckId = ackEnvelope.messageId
-        seatState.pendingCashOutAck = nil
-        pokerTransport.sendEnvelope(activeSession.dealerId, ackEnvelope)
-        print("Cash-out paid: " .. tostring(amount) .. " tokens. Waiting for dealer acknowledgement...")
-      end
-    end
-
-    if seatState.pendingCashOutAck and seatState.pendingCashOutAck.ok then
+    if seatState.pendingLeaveReply and seatState.pendingLeaveReply.ok then
       pokerBank.clearSession()
-      seatState.pendingCashOutAck = nil
-      print("Cash-out complete. Session closed.")
+      seatState.pendingLeaveReply = nil
+      print("Seat closed. No tokens were moved.")
       running = false
     end
   end
@@ -424,7 +387,7 @@ local function heartbeatLoop(activeSession)
 end
 
 local function commandLoop(activeSession)
-  print("Seat commands: status, ready, unready, rebuy, cashout, help")
+  print("Seat commands: status, ready, unready, rebuy, leave, help")
 
   while running do
     write("seat> ")
@@ -435,7 +398,7 @@ local function commandLoop(activeSession)
       print("")
       print("Seat: " .. tostring(latestSession.seatId))
       print("Player: " .. tostring(latestSession.playerName))
-      print("Stack: " .. tostring(latestSession.stack) .. " tokens")
+      print("Stack: " .. tostring(latestSession.stack) .. " chips")
       print("Host: " .. tostring(latestSession.hostName))
       if seatState.summary then
         printSummary(seatState.summary)
@@ -449,15 +412,16 @@ local function commandLoop(activeSession)
       sendReadyUpdate(activeSession, false)
       print("Marked unready.")
     elseif command == "rebuy" then
-      startRebuy(activeSession)
-    elseif command == "cashout" or command == "quit" then
-      startCashOut(activeSession)
+      startStackTopUp(activeSession)
+    elseif command == "leave" or command == "cashout" or command == "quit" then
+      startLeave(activeSession)
     elseif command == "help" then
       print("status   - show seat and table state")
       print("ready    - mark seat ready")
       print("unready  - clear ready state")
-      print("rebuy    - buy more chips with a new CCVault transfer")
-      print("cashout  - request host -> player payout and leave the table")
+      print("rebuy    - add more virtual chips without moving tokens")
+      print("leave    - leave the table without moving tokens")
+      print("cashout  - alias for leave")
       print("help     - show commands")
     elseif command ~= "" then
       print("Unknown command. Type 'help'.")
@@ -477,8 +441,8 @@ function M.run()
   local identity = nil
   local joinPayload = nil
   local joinErr = nil
-  local buyInOk = nil
-  local buyInErr = nil
+  local stackOk = nil
+  local stackErr = nil
   local stack = nil
   local runOk = nil
   local runErr = nil
@@ -495,9 +459,9 @@ function M.run()
     error(joinErr or "Join failed")
   end
 
-  buyInOk, buyInErr, stack = performInitialBuyIn(summary, joinPayload)
-  if not buyInOk then
-    error(buyInErr or "Buy-in failed")
+  stackOk, stackErr, stack = performInitialStackDeclaration(summary, joinPayload)
+  if not stackOk then
+    error(stackErr or "Stack declaration failed")
   end
 
   activeSession = {
@@ -515,7 +479,7 @@ function M.run()
   seatState.summary = summary
   running = true
 
-  print("Joined seat " .. tostring(activeSession.seatId) .. " with stack " .. tostring(activeSession.stack) .. " tokens.")
+  print("Joined seat " .. tostring(activeSession.seatId) .. " with declared stack " .. tostring(activeSession.stack) .. " chips.")
 
   runOk, runErr = pcall(function()
     parallel.waitForAny(

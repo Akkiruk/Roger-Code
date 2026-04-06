@@ -49,7 +49,7 @@ local function countSeats()
   return count
 end
 
-local function totalLiability()
+local function totalDeclaredChips()
   local total = 0
   local seatId = 1
 
@@ -154,7 +154,7 @@ local function broadcastState(reason)
 
   while seatId <= state.maxSeats do
     local seat = state.seats[seatId]
-    if seat and seat.status ~= "removed" then
+    if seat then
       sendEnvelope(seat.senderId, pokerProtocol.MESSAGE_TYPES.TABLE_STATE, {
         summary = summary,
         reason = reason,
@@ -164,10 +164,13 @@ local function broadcastState(reason)
   end
 end
 
-local function removeSeat(seatId)
+local function removeSeat(seatId, reason)
   local seat = state.seats[seatId]
   if seat then
-    pushEvent("Seat " .. tostring(seatId) .. " closed for " .. tostring(seat.playerName))
+    pushEvent(
+      "Seat " .. tostring(seatId) .. " closed for " .. tostring(seat.playerName) ..
+      " (" .. tostring(reason or "removed") .. ")"
+    )
     state.seats[seatId] = nil
     saveState()
     broadcastState("seat_removed")
@@ -240,7 +243,7 @@ local function handleJoinRequest(senderId, envelope)
     playerName = playerName,
     senderId = senderId,
     stack = 0,
-    totalBuyIn = 0,
+    totalDeclared = 0,
     ready = false,
     status = "connected",
     lastSeen = os.epoch("local"),
@@ -293,34 +296,34 @@ local function handleHeartbeat(senderId)
   end
 end
 
-local function handleBuyInNotice(senderId, envelope)
+local function handleStackSet(senderId, envelope)
   local payload = envelope.payload or {}
   local seat, seatId = findSeatBySender(senderId)
-  local txId = payload.txId
+  local declarationId = payload.declarationId
   local amount = math.floor(tonumber(payload.amount) or 0)
 
   if not seat then
     return
   end
 
-  if type(txId) ~= "string" or txId == "" then
-    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.BUYIN_ACK, {
+  if type(declarationId) ~= "string" or declarationId == "" then
+    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.STACK_ACK, {
       ok = false,
-      reason = "Missing buy-in transaction ID",
+      reason = "Missing stack declaration ID",
     }, envelope.messageId)
     return
   end
 
   if amount < state.minBuyIn or amount > state.maxBuyIn then
-    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.BUYIN_ACK, {
+    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.STACK_ACK, {
       ok = false,
-      reason = "Buy-in is outside table limits",
+      reason = "Stack declaration is outside table limits",
     }, envelope.messageId)
     return
   end
 
-  if state.processedBuyIns[txId] then
-    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.BUYIN_ACK, {
+  if state.processedStackSets[declarationId] then
+    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.STACK_ACK, {
       ok = true,
       stack = seat.stack,
       duplicate = true,
@@ -329,127 +332,47 @@ local function handleBuyInNotice(senderId, envelope)
   end
 
   seat.stack = seat.stack + amount
-  seat.totalBuyIn = seat.totalBuyIn + amount
+  seat.totalDeclared = seat.totalDeclared + amount
   seat.lastSeen = os.epoch("local")
-  state.processedBuyIns[txId] = {
+  state.processedStackSets[declarationId] = {
     seatId = seatId,
     amount = amount,
     processedAt = os.epoch("local"),
   }
 
   saveState()
-  pushEvent("Seat " .. tostring(seatId) .. " bought in for " .. tostring(amount) .. " tokens")
+  pushEvent("Seat " .. tostring(seatId) .. " added " .. tostring(amount) .. " virtual chips")
 
-  sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.BUYIN_ACK, {
+  sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.STACK_ACK, {
     ok = true,
     stack = seat.stack,
     duplicate = false,
   }, envelope.messageId)
 
-  broadcastState("buyin")
+  broadcastState("stack_set")
 end
 
-local function handleCashOutRequest(senderId, envelope)
+local function handleLeaveRequest(senderId, envelope)
   local seat, seatId = findSeatBySender(senderId)
-  local settlementId = nil
-  local amount = 0
-  local pending = nil
-  local pendingId = nil
 
   if not seat then
     return
   end
 
-  for pendingId, pending in pairs(state.pendingSettlements) do
-    if pending.seatId == seatId then
-      sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.CASHOUT_AUTHORIZED, {
-        seatId = seatId,
-        settlementId = pendingId,
-        amount = pending.amount,
-      }, envelope.messageId)
-      return
-    end
-  end
-
-  amount = seat.stack
-  settlementId = pokerProtocol.generateId("cashout")
-
-  state.pendingSettlements[settlementId] = {
-    seatId = seatId,
-    amount = amount,
-    playerName = seat.playerName,
-    createdAt = os.epoch("local"),
-  }
-
-  seat.status = "cashing_out"
+  seat.status = "leaving"
   seat.ready = false
   saveState()
 
-  pushEvent("Seat " .. tostring(seatId) .. " requested cash-out for " .. tostring(amount) .. " tokens")
+  pushEvent("Seat " .. tostring(seatId) .. " left with " .. tostring(seat.stack) .. " virtual chips remaining")
 
-  sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.CASHOUT_AUTHORIZED, {
-    seatId = seatId,
-    settlementId = settlementId,
-    amount = amount,
-  }, envelope.messageId)
-end
-
-local function handleCashOutComplete(senderId, envelope)
-  local payload = envelope.payload or {}
-  local settlementId = payload.settlementId
-  local txId = payload.txId
-  local pending = nil
-  local seat = nil
-
-  if type(settlementId) ~= "string" or settlementId == "" then
-    return
-  end
-
-  if state.processedSettlements[settlementId] then
-    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE_ACK, {
-      ok = true,
-      duplicate = true,
-      settlementId = settlementId,
-    }, envelope.messageId)
-    return
-  end
-
-  pending = state.pendingSettlements[settlementId]
-  if not pending then
-    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE_ACK, {
-      ok = false,
-      reason = "Unknown settlement",
-      settlementId = settlementId,
-    }, envelope.messageId)
-    return
-  end
-
-  seat = state.seats[pending.seatId]
-  if not seat or seat.senderId ~= senderId then
-    sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE_ACK, {
-      ok = false,
-      reason = "Seat does not match settlement",
-      settlementId = settlementId,
-    }, envelope.messageId)
-    return
-  end
-
-  state.processedSettlements[settlementId] = {
-    seatId = pending.seatId,
-    amount = pending.amount,
-    txId = txId,
-    processedAt = os.epoch("local"),
-  }
-  state.pendingSettlements[settlementId] = nil
-  saveState()
-
-  sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE_ACK, {
+  sendEnvelope(senderId, pokerProtocol.MESSAGE_TYPES.LEAVE_ACK, {
     ok = true,
-    duplicate = false,
-    settlementId = settlementId,
+    seatId = seatId,
+    stack = seat.stack,
+    note = "No tokens moved. Real settlement belongs at hand resolution.",
   }, envelope.messageId)
 
-  removeSeat(pending.seatId)
+  removeSeat(seatId, "leave")
 end
 
 local function checkSeatTimeouts()
@@ -479,8 +402,8 @@ local function printStatus()
   print("Table: " .. state.tableId)
   print("Host: " .. tostring(state.hostName))
   print("Seats: " .. tostring(countSeats()) .. "/" .. tostring(state.maxSeats))
-  print("Buy-in: " .. tostring(state.minBuyIn) .. " - " .. tostring(state.maxBuyIn) .. " tokens")
-  print("Table liability: " .. tostring(totalLiability()) .. " tokens")
+  print("Declared stack: " .. tostring(state.minBuyIn) .. " - " .. tostring(state.maxBuyIn) .. " chips")
+  print("Virtual chips in play: " .. tostring(totalDeclaredChips()))
   print("Pending settlements: " .. tostring(next(state.pendingSettlements) ~= nil))
   print("")
 
@@ -519,12 +442,10 @@ local function networkLoop()
         handleReadyUpdate(senderId, envelope)
       elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.HEARTBEAT then
         handleHeartbeat(senderId)
-      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.BUYIN_NOTICE then
-        handleBuyInNotice(senderId, envelope)
-      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.CASHOUT_REQUEST then
-        handleCashOutRequest(senderId, envelope)
-      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.CASHOUT_COMPLETE then
-        handleCashOutComplete(senderId, envelope)
+      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.STACK_SET then
+        handleStackSet(senderId, envelope)
+      elseif envelope.kind == pokerProtocol.MESSAGE_TYPES.LEAVE_REQUEST then
+        handleLeaveRequest(senderId, envelope)
       end
     end
 
@@ -546,9 +467,8 @@ local function commandLoop()
       print("close   - close the table and notify seats")
       print("help    - show commands")
     elseif command == "close" then
-      if countSeats() > 0 or next(state.pendingSettlements) then
-        print("Refusing to close while seats or pending settlements still exist.")
-        print("Cash out all seats first so host liability returns to zero.")
+      if next(state.pendingSettlements) then
+        print("Refusing to close while hand settlements are still pending.")
       else
         state.status = "closed"
         saveState()
@@ -617,8 +537,8 @@ local function newState()
   end
 
   local maxSeats = promptInteger("Max seats", cfg.DEFAULT_MAX_SEATS, 2, 8)
-  local minBuyIn = promptInteger("Minimum buy-in", cfg.DEFAULT_MIN_BUY_IN, 1, 1000000)
-  local maxBuyIn = promptInteger("Maximum buy-in", cfg.DEFAULT_MAX_BUY_IN, minBuyIn, 1000000)
+  local minBuyIn = promptInteger("Minimum stack", cfg.DEFAULT_MIN_BUY_IN, 1, 1000000)
+  local maxBuyIn = promptInteger("Maximum stack top-up", cfg.DEFAULT_MAX_BUY_IN, minBuyIn, 1000000)
 
   return {
     tableId = tableId,
@@ -631,7 +551,7 @@ local function newState()
     seats = {},
     events = {},
     pendingSettlements = {},
-    processedBuyIns = {},
+    processedStackSets = {},
     processedSettlements = {},
     createdAt = os.epoch("local"),
   }
@@ -647,7 +567,7 @@ local function loadOrCreateState()
     if answer == "" or answer == "y" or answer == "yes" then
       savedState.events = savedState.events or {}
       savedState.pendingSettlements = savedState.pendingSettlements or {}
-      savedState.processedBuyIns = savedState.processedBuyIns or {}
+      savedState.processedStackSets = savedState.processedStackSets or savedState.processedBuyIns or {}
       savedState.processedSettlements = savedState.processedSettlements or {}
       savedState.seats = savedState.seats or {}
       return savedState
@@ -677,6 +597,7 @@ function M.run()
   print("Poker table dealer online.")
   print("Table ID: " .. state.tableId)
   print("Host: " .. tostring(state.hostName))
+  print("No tokens move on join or leave; this table only tracks virtual chips.")
   print("")
   printStatus()
 
