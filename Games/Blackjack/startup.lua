@@ -1,9 +1,18 @@
 local launcher = require("lib.casino_launcher")
 local ui = require("lib.ui")
+local cfg = require("blackjack_config")
 
 local statsButton = nil
 local max = math.max
 local floor = math.floor
+
+local HOUSE_RULE_LINES = {
+  "HOUSE RULES",
+  "Dealer draws to " .. tostring(cfg.DEALER_STAND) .. ".",
+  "Blackjack pays 6:5.",
+  "Double on hard 10-11 only.",
+  "No splits. No insurance.",
+}
 
 local function drawOverlay(env, screen)
   local scale = env.scale
@@ -11,6 +20,24 @@ local function drawOverlay(env, screen)
   if logo then
     local logoX = max(0, floor((env.width - logo.width) / 2))
     screen:drawSurface(logo, logoX, 0)
+  end
+
+  local ruleTop = (logo and (logo.height + scale.edgePad + scale.smallGap)) or scale.titleY
+  local panelWidth = max(floor(env.width * 0.62), scale:scaledX(90, 72, 120))
+  local lineHeight = scale.lineHeight
+  local panelHeight = (lineHeight * #HOUSE_RULE_LINES) + (scale.smallGap * 2)
+  local panelX = floor((env.width - panelWidth) / 2)
+  local panelY = ruleTop
+
+  screen:fillRect(panelX, panelY, panelWidth, panelHeight, colors.gray)
+  screen:fillRect(panelX + 1, panelY + 1, panelWidth - 2, panelHeight - 2, colors.black)
+
+  for index, line in ipairs(HOUSE_RULE_LINES) do
+    local textColor = (index == 1) and colors.yellow or colors.white
+    local textWidth = env.surface.getTextSize(line, env.font)
+    local textX = panelX + floor((panelWidth - textWidth) / 2)
+    local textY = panelY + scale.smallGap + ((index - 1) * lineHeight)
+    ui.safeDrawText(screen, line, env.font, textX, textY, textColor)
   end
 
   local buttonText = "STATISTICS"

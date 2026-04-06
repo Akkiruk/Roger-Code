@@ -6,8 +6,8 @@ return {
   -- Game rules
   DECK_COUNT          = 6,
   MIN_CARDS_RESHUFFLE = 156,     -- reshuffle with 3 decks left to starve card counting
-  DEALER_STAND        = 17,
-  DEALER_HIT_SOFT_17  = true,    -- dealer hits on soft 17 (+0.20% house edge)
+  DEALER_STAND        = 18,
+  DEALER_HIT_SOFT_17  = true,    -- dealer hits until 18; soft 17 also draws
   BLACKJACK_PAYOUT    = 1.2,     -- 6:5 payout for natural blackjack
   ALLOW_SPLIT         = false,
   ALLOW_DOUBLE        = true,
