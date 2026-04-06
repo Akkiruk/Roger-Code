@@ -17,6 +17,6 @@ launcher.run({
   logFile = "videopoker_error.log",
   monitorName = "right",
   program = "videopoker.lua",
-  cardAnimation = "arc",
+  cardAnimation = "random",
   drawOverlay = drawOverlay,
 })

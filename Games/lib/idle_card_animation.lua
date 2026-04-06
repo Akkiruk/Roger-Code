@@ -11,7 +11,15 @@ local PRESET_ORDER = {
   "deal",
 }
 
+local function pickRandomPresetName()
+  return PRESET_ORDER[math.random(#PRESET_ORDER)]
+end
+
 local function resolvePreset(name)
+  if name == "random" then
+    local randomName = pickRandomPresetName()
+    return randomName, presets[randomName]
+  end
   if type(name) == "string" and presets[name] then
     return name, presets[name]
   end
