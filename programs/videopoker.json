@@ -7,12 +7,12 @@
     "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "videopoker.lua",
-    "version": "1.0.39"
+    "version": "1.0.40"
   },
   "build": {
-    "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
-    "generated_at": "2026-04-06T02:02:45Z",
-    "package_hash": "cf2ec0ace2aa20affc6693d47fc34800bb9258d9c3d7ffc0e84babd575046de0"
+    "commit": "f45a922f8fa5a828580a6feeb6e4e9b705d22aeb",
+    "generated_at": "2026-04-06T02:28:09Z",
+    "package_hash": "3e02a062cbf641f51fb241753576c5daf2754233e2835c7c334b525609b1780d"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/VideoPoker/startup.lua",
         "install_path": "startup.lua",
-        "sha256": "4e5d49fb640310f18d95a5241ba6462a07d0e5361b531553f25737edc742e096"
+        "sha256": "95b0b8d78243007f1f0c968e19b93f0242a3a9071dcb1c099f7ba2be2d9a94ab"
       },
       {
         "repo_path": "Games/lib/cards.lua",
@@ -62,7 +62,7 @@
       {
         "repo_path": "Games/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
-        "sha256": "aefb78ef64d6969415ad852b1136513a633a8badebd2cf54afc7e229dbf89f4d"
+        "sha256": "d1877aa85f5a1cd79ba51096bdae8729744efe7e8a8a07bfb436e202d2392d12"
       },
       {
         "repo_path": "Games/lib/idle_screen.lua",

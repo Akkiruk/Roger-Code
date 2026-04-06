@@ -7,12 +7,12 @@
     "description": "Baccarat card game for ComputerCraft casino.",
     "source_root": "Games/Baccarat",
     "entrypoint": "baccarat.lua",
-    "version": "1.2.33"
+    "version": "1.2.34"
   },
   "build": {
-    "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
-    "generated_at": "2026-04-06T02:02:45Z",
-    "package_hash": "dfd7fa0c434cb71c49e383f8a400de1afa41a9358f96d7bb0446779cf9cb0498"
+    "commit": "f45a922f8fa5a828580a6feeb6e4e9b705d22aeb",
+    "generated_at": "2026-04-06T02:28:09Z",
+    "package_hash": "bbab2d81d8c80f1ab91ac7586ac9087f64860021c64da3dcf23490d46e97fbbe"
   },
   "install": {
     "preserve": [
@@ -62,7 +62,7 @@
       {
         "repo_path": "Games/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
-        "sha256": "aefb78ef64d6969415ad852b1136513a633a8badebd2cf54afc7e229dbf89f4d"
+        "sha256": "d1877aa85f5a1cd79ba51096bdae8729744efe7e8a8a07bfb436e202d2392d12"
       },
       {
         "repo_path": "Games/lib/idle_screen.lua",
@@ -147,7 +147,7 @@
       {
         "repo_path": "Games/Baccarat/startup.lua",
         "install_path": "startup.lua",
-        "sha256": "136a8bea292383c0589e7b22afdc1ff3f4050ae025053bc9de1ce61673bf1e49"
+        "sha256": "55b0e337449b657940c9e7f2f41aa77be184e6b1876d3cc50d179dfab0488e49"
       },
       {
         "repo_path": "Games/Baccarat/baccarat_config.lua",

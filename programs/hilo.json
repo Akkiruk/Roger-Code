@@ -7,12 +7,12 @@
     "description": "Hi-Lo card game for ComputerCraft casino.",
     "source_root": "Games/HiLo",
     "entrypoint": "hilo.lua",
-    "version": "1.0.41"
+    "version": "1.0.42"
   },
   "build": {
-    "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
-    "generated_at": "2026-04-06T02:02:45Z",
-    "package_hash": "805e4ad1b3897bb9897cb8db76d970a9e5dc687f663faeaf586492dd1d87f447"
+    "commit": "f45a922f8fa5a828580a6feeb6e4e9b705d22aeb",
+    "generated_at": "2026-04-06T02:28:09Z",
+    "package_hash": "392681192141cefa5202dd5eba3571fb2c2c628881c9a2f2e6f5537bc7fc2d29"
   },
   "install": {
     "preserve": [
@@ -62,7 +62,7 @@
       {
         "repo_path": "Games/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
-        "sha256": "aefb78ef64d6969415ad852b1136513a633a8badebd2cf54afc7e229dbf89f4d"
+        "sha256": "d1877aa85f5a1cd79ba51096bdae8729744efe7e8a8a07bfb436e202d2392d12"
       },
       {
         "repo_path": "Games/lib/idle_screen.lua",
@@ -147,7 +147,7 @@
       {
         "repo_path": "Games/HiLo/startup.lua",
         "install_path": "startup.lua",
-        "sha256": "0ef85a6ab28387c00d9ec52b33220efcf290038a9436bdb887d6f10320eee750"
+        "sha256": "de4e258656b1ef95b3bdf3b1adb018169413f763fa69d6acdf179840eabbdd6b"
       },
       {
         "repo_path": "Games/HiLo/hilo_config.lua",
