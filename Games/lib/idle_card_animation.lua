@@ -9,6 +9,14 @@ local PRESET_ORDER = {
   "glide",
   "arc",
   "deal",
+  "fan",
+  "flip",
+  "cascade",
+  "orbit",
+  "cut",
+  "peek",
+  "scatter",
+  "lane_sweep",
 }
 
 local function pickRandomPresetName()
