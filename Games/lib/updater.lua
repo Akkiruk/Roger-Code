@@ -133,6 +133,11 @@ local function buildCommitUrl(commit, repoPath)
   return RAW_ROOT .. commit .. "/" .. repoPath
 end
 
+local function withCacheBust(url)
+  local separator = url:find("?", 1, true) and "&" or "?"
+  return url .. separator .. "t=" .. tostring(os.epoch("local"))
+end
+
 local function loadInstalled()
   if not fs.exists(VERSION_FILE) then
     return nil
@@ -223,8 +228,8 @@ local function endWriteWindow(createdUnlock)
 end
 
 local function fetchDeployJson(path, label)
-  local apiUrl = CONTENTS_API_ROOT .. path .. "?ref=" .. DEPLOY_BRANCH
-  local data, err = download(apiUrl, CONTENTS_API_HEADERS)
+  local rawUrl = withCacheBust(DEPLOY_URL .. path)
+  local data, err = download(rawUrl)
   if data then
     local parsed, parseErr = parseJson(data, label)
     if parsed then
@@ -233,8 +238,8 @@ local function fetchDeployJson(path, label)
     err = parseErr
   end
 
-  local fallbackUrl = DEPLOY_URL .. path
-  data, err = download(fallbackUrl)
+  local apiUrl = withCacheBust(CONTENTS_API_ROOT .. path .. "?ref=" .. DEPLOY_BRANCH)
+  data, err = download(apiUrl, CONTENTS_API_HEADERS)
   if not data then
     return nil, err or ("Could not fetch " .. tostring(label or "deploy metadata"))
   end
