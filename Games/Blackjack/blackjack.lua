@@ -396,6 +396,37 @@ local function hasHostCapacityForAdditionalBet(ctx, additionalBet)
   return protectedHostBalance >= (currentHouseExposure(ctx) + additionalBet)
 end
 
+local function dealerMustHit(hand)
+  local dealerTotal, isSoft = cards.blackjackValue(hand)
+  return dealerTotal < cfg.DEALER_STAND
+    or (cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and isSoft)
+end
+
+local function canDoubleHand(ctx, hand)
+  if not cfg.ALLOW_DOUBLE then return false end
+  if #hand.cards ~= 2 then return false end
+  if hand.fromSplit and not cfg.ALLOW_DOUBLE_AFTER_SPLIT then return false end
+
+  local handTotal, isSoft = cards.blackjackValue(hand.cards)
+  if isSoft and not cfg.ALLOW_SOFT_DOUBLE then return false end
+  if handTotal < cfg.DOUBLE_MIN_TOTAL or handTotal > cfg.DOUBLE_MAX_TOTAL then return false end
+  if availableBalance(ctx) < hand.bet then return false end
+  if not hasHostCapacityForAdditionalBet(ctx, hand.bet) then return false end
+
+  return true
+end
+
+local function canSplitHand(ctx, hand)
+  if not cfg.ALLOW_SPLIT then return false end
+  if #hand.cards ~= 2 then return false end
+  if #ctx.hands >= (cfg.MAX_SPLITS + 1) then return false end
+  if hand.cards[1]:sub(1, 1) ~= hand.cards[2]:sub(1, 1) then return false end
+  if availableBalance(ctx) < hand.bet then return false end
+  if not hasHostCapacityForAdditionalBet(ctx, hand.bet) then return false end
+
+  return true
+end
+
 local function settleNetChange(netChange, reason)
   return settlement.applyNetChange(netChange, {
     winReason = reason,
@@ -562,21 +593,14 @@ local function executeStand(hand, ctx, handIdx)
 end
 
 local function executeDouble(hand, ctx, handIdx)
-  local additionalBet = hand.bet
-  if availableBalance(ctx) < additionalBet then
+  if not canDoubleHand(ctx, hand) then
     if not AUTO_PLAY then
       sound.play(sound.SOUNDS.ERROR)
-      ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red, 0.8)
+      ui.displayCenteredMessage(screen, "Double not allowed", colors.red, 0.8)
     end
     return false
   end
-  if not hasHostCapacityForAdditionalBet(ctx, additionalBet) then
-    if not AUTO_PLAY then
-      sound.play(sound.SOUNDS.ERROR)
-      ui.displayCenteredMessage(screen, "House limit reached!", colors.red, 0.8)
-    end
-    return false
-  end
+
   hand.bet = hand.bet * 2
   hand.doubled = true
   hand.lastAction = ACT.DOUBLE
@@ -603,21 +627,15 @@ local function executeDouble(hand, ctx, handIdx)
 end
 
 local function executeSplit(hand, ctx, handIdx)
+  if not canSplitHand(ctx, hand) then
+    if not AUTO_PLAY then
+      sound.play(sound.SOUNDS.ERROR)
+      ui.displayCenteredMessage(screen, "Split not allowed", colors.red, 0.8)
+    end
+    return false
+  end
+
   local splitBet = hand.bet
-  if availableBalance(ctx) < splitBet then
-    if not AUTO_PLAY then
-      sound.play(sound.SOUNDS.ERROR)
-      ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red, 0.8)
-    end
-    return false
-  end
-  if not hasHostCapacityForAdditionalBet(ctx, splitBet) then
-    if not AUTO_PLAY then
-      sound.play(sound.SOUNDS.ERROR)
-      ui.displayCenteredMessage(screen, "House limit reached!", colors.red, 0.8)
-    end
-    return false
-  end
   local splitCard = table.remove(hand.cards, 2)
   local isSplitAces = (hand.cards[1]:sub(1, 1) == "A")
   local newHand = {
@@ -700,14 +718,8 @@ local function doPlayerTurn(ctx)
 
       if AUTO_PLAY then
         os.sleep(cfg.AUTO_PLAY_DELAY)
-        local canDbl = #hand.cards == 2
-                       and availableBalance(ctx) >= hand.bet
-                       and hasHostCapacityForAdditionalBet(ctx, hand.bet)
-        local canSpl = #hand.cards == 2 and cfg.ALLOW_SPLIT
-                       and #ctx.hands < (cfg.MAX_SPLITS + 1)
-                       and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
-                       and availableBalance(ctx) >= hand.bet
-                       and hasHostCapacityForAdditionalBet(ctx, hand.bet)
+        local canDbl = canDoubleHand(ctx, hand)
+        local canSpl = canSplitHand(ctx, hand)
         local action = autoPlayer.decide(hand.cards, ctx.dealerHand[2], canDbl, canSpl, AUTO_PLAY_STRATEGY)
 
         if action == ACT.HIT then       handDone = executeHit(hand, ctx, handIdx)
@@ -740,9 +752,7 @@ local function doPlayerTurn(ctx)
           end,
         })
 
-        if #hand.cards == 2
-           and availableBalance(ctx) >= hand.bet
-           and hasHostCapacityForAdditionalBet(ctx, hand.bet) then
+        if canDoubleHand(ctx, hand) then
           table.insert(row2, {
             text = "DOUBLE", color = colors.orange,
             func = function()
@@ -752,11 +762,7 @@ local function doPlayerTurn(ctx)
           })
         end
 
-        if #hand.cards == 2 and cfg.ALLOW_SPLIT
-           and #ctx.hands < (cfg.MAX_SPLITS + 1)
-           and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
-            and availableBalance(ctx) >= hand.bet
-            and hasHostCapacityForAdditionalBet(ctx, hand.bet) then
+        if canSplitHand(ctx, hand) then
           table.insert(row2, {
             text = "SPLIT", color = colors.purple,
             func = function()
@@ -820,11 +826,7 @@ local function doDealerTurn(ctx)
   renderTable(ctx, false, nil)
   os.sleep(0.5)
 
-  while true do
-    local dealerTotal, isSoft = cards.blackjackValue(ctx.dealerHand)
-    local mustHit = dealerTotal < cfg.DEALER_STAND
-                    or (cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and isSoft)
-    if not mustHit then break end
+  while dealerMustHit(ctx.dealerHand) do
     table.insert(ctx.dealerHand, dealOne())
 
     if not AUTO_PLAY then

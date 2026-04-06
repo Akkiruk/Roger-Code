@@ -178,6 +178,35 @@ local function availableBalance(ctx, env)
   return math.max(0, balance - currentWager(ctx))
 end
 
+local function dealerMustHit(ctx)
+  local dealerTotal, dealerSoft = cards.blackjackValue(ctx.dealerHand)
+  return dealerTotal < ctx.cfg.DEALER_STAND
+    or (ctx.cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and dealerSoft)
+end
+
+local function canDoubleHand(ctx, env, hand)
+  if not ctx.cfg.ALLOW_DOUBLE then return false end
+  if #hand.cards ~= 2 then return false end
+  if hand.fromSplit and not ctx.cfg.ALLOW_DOUBLE_AFTER_SPLIT then return false end
+
+  local handTotal, handSoft = cards.blackjackValue(hand.cards)
+  if handSoft and not ctx.cfg.ALLOW_SOFT_DOUBLE then return false end
+  if handTotal < ctx.cfg.DOUBLE_MIN_TOTAL or handTotal > ctx.cfg.DOUBLE_MAX_TOTAL then return false end
+  if availableBalance(ctx, env) < hand.bet then return false end
+
+  return true
+end
+
+local function canSplitHand(ctx, env, hand)
+  if not ctx.cfg.ALLOW_SPLIT then return false end
+  if #hand.cards ~= 2 then return false end
+  if #ctx.hands >= (ctx.cfg.MAX_SPLITS + 1) then return false end
+  if hand.cards[1]:sub(1, 1) ~= hand.cards[2]:sub(1, 1) then return false end
+  if availableBalance(ctx, env) < hand.bet then return false end
+
+  return true
+end
+
 local function ensureDeck(ctx)
   if #ctx.deck < 20 then
     ctx.deck = cards.buildDeck(ctx.cfg.DECK_COUNT)
@@ -346,23 +375,16 @@ local function chooseAction(env, ctx, hand)
       { key = keys.two, action = "stand", label = "2 STAND" },
     }
 
-    local available = availableBalance(ctx, env)
     local actionLines = {
       "1 Hit   2 Stand",
     }
 
-    if #hand.cards == 2 and available >= hand.bet then
+    if canDoubleHand(ctx, env, hand) then
       actions[#actions + 1] = { key = keys.three, action = "double", label = "3 DOUBLE" }
       actionLines[#actionLines + 1] = "3 Double"
     end
 
-    local splitAllowed = #hand.cards == 2
-      and ctx.cfg.ALLOW_SPLIT
-      and #ctx.hands < (ctx.cfg.MAX_SPLITS + 1)
-      and cards.FACE_VALUES[hand.cards[1]:sub(1, 1)] == cards.FACE_VALUES[hand.cards[2]:sub(1, 1)]
-      and available >= hand.bet
-
-    if splitAllowed then
+    if canSplitHand(ctx, env, hand) then
       actions[#actions + 1] = { key = keys.four, action = "split", label = "4 SPLIT" }
       actionLines[#actionLines + 1] = "4 Split"
     end
@@ -545,14 +567,7 @@ local function playDealerTurn(env, ctx, animate)
 
   persistRound(env, ctx, "dealer_turn")
 
-  while true do
-    local dealerTotal, dealerSoft = cards.blackjackValue(ctx.dealerHand)
-    local mustHit = dealerTotal < ctx.cfg.DEALER_STAND
-      or (ctx.cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and dealerSoft)
-
-    if not mustHit then
-      break
-    end
+  while dealerMustHit(ctx) do
 
     ctx.dealerHand[#ctx.dealerHand + 1] = dealOne(ctx)
     persistRound(env, ctx, "dealer_turn")
@@ -643,7 +658,7 @@ local function playRound(env, ctx)
           end
         elseif action == "stand" then
           hand.result = "stand"
-        elseif action == "double" then
+        elseif action == "double" and canDoubleHand(ctx, env, hand) then
           hand.bet = hand.bet * 2
           hand.doubled = true
           hand.hitCount = (hand.hitCount or 0) + 1
@@ -652,7 +667,7 @@ local function playRound(env, ctx)
             hand.busted = true
           end
           hand.result = "stand"
-        elseif action == "split" then
+        elseif action == "split" and canSplitHand(ctx, env, hand) then
           local movedCard = table.remove(hand.cards)
           local splitAces = hand.cards[1]:sub(1, 1) == "A"
           local newHand = {

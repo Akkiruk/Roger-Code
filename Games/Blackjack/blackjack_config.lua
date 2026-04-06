@@ -5,11 +5,16 @@
 return {
   -- Game rules
   DECK_COUNT          = 6,
-  MIN_CARDS_RESHUFFLE = 78,      -- reshuffle with 1.5 decks left to curb counting edge
+  MIN_CARDS_RESHUFFLE = 156,     -- reshuffle with 3 decks left to starve card counting
   DEALER_STAND        = 17,
   DEALER_HIT_SOFT_17  = true,    -- dealer hits on soft 17 (+0.20% house edge)
-  BLACKJACK_PAYOUT    = 1.5,    -- 3:2 payout for natural blackjack
-  ALLOW_SPLIT         = true,
+  BLACKJACK_PAYOUT    = 1.2,     -- 6:5 payout for natural blackjack
+  ALLOW_SPLIT         = false,
+  ALLOW_DOUBLE        = true,
+  ALLOW_DOUBLE_AFTER_SPLIT = false,
+  DOUBLE_MIN_TOTAL    = 10,      -- doubles only on hard 10-11
+  DOUBLE_MAX_TOTAL    = 11,
+  ALLOW_SOFT_DOUBLE   = false,
   ALLOW_INSURANCE     = true,
   ALLOW_SURRENDER     = false,
   MAX_SPLITS          = 1,       -- max times a player can split per round
