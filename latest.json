@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-05T21:58:09Z",
+  "generated_at": "2026-04-06T02:02:45Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.6",
-    "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+    "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
     "path": "Games/installer.lua",
     "sha256": "018f2139b297d10b928297451fc129f06b0f9e5172c394979d44187f927b3526"
   },
@@ -18,7 +18,7 @@
       "category": "Games",
       "description": "Baccarat card game for ComputerCraft casino.",
       "version": "1.2.33",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "dfd7fa0c434cb71c49e383f8a400de1afa41a9358f96d7bb0446779cf9cb0498",
       "spec_path": "programs/baccarat.json"
     },
@@ -27,7 +27,7 @@
       "category": "Games",
       "description": "Blackjack card game for ComputerCraft casino.",
       "version": "1.2.32",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "50e6e661840e52dc457bdb9bb2dddb3e33bda677dc0e6a0339ec2b108fc89522",
       "spec_path": "programs/blackjack.json"
     },
@@ -36,7 +36,7 @@
       "category": "Games",
       "description": "Hi-Lo card game for ComputerCraft casino.",
       "version": "1.0.41",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "805e4ad1b3897bb9897cb8db76d970a9e5dc687f663faeaf586492dd1d87f447",
       "spec_path": "programs/hilo.json"
     },
@@ -45,17 +45,17 @@
       "category": "Utilities",
       "description": "Pocket casino shell for ComputerCraft pocket computers.",
       "version": "1.0.34",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "d86b84b0bfb7cb397b0564debd9e83a7542648dcb42178553e5bb69066c5a9f5",
       "spec_path": "programs/phone_os.json"
     },
     "pokertable": {
       "name": "PokerTable",
       "category": "Games",
-      "description": "Multiplayer poker table foundation with rednet transport and CCVault escrow.",
-      "version": "1.0.0",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
-      "package_hash": "c0333c11e2be60a6af05a585c18f7b86d8cf1318f3acf956ea085b2e82514f09",
+      "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
+      "version": "1.0.1",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
+      "package_hash": "1352cf26853d0e0820f280fa5f48dabf94ed2730ba44262bb9b8e18ca2bf7b24",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
@@ -63,7 +63,7 @@
       "category": "Games",
       "description": "European Roulette with a single-screen felt UI and multi-bet support.",
       "version": "1.0.53",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "e896e91556d98af33cf890b3324037ac07ddb525185f8c02063465f6d6e0d5af",
       "spec_path": "programs/roulette.json"
     },
@@ -72,7 +72,7 @@
       "category": "Games",
       "description": "Slot Machine game for ComputerCraft casino.",
       "version": "1.0.41",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "8de6c6f8657e7350e3ef5b99a7a70c52aae65ff069899ce228f732682f5839d4",
       "spec_path": "programs/slots.json"
     },
@@ -81,7 +81,7 @@
       "category": "Utilities",
       "description": "Browse the pack's generated sound catalog and save favorites.",
       "version": "1.0.3",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "a2dfaac31bcadadfeaddf28095a4fee32dea556c35daf7f5ee6679227b1dea07",
       "spec_path": "programs/sound_browser.json"
     },
@@ -90,7 +90,7 @@
       "category": "Utilities",
       "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
       "version": "1.0.5",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "804264b2fc69b7f0b1eefbdf6806cf87f2fb2bd063f76eb75f08e0eae6b8bd7a",
       "spec_path": "programs/taskmaster.json"
     },
@@ -99,7 +99,7 @@
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
       "version": "1.0.8",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "7a250279a863e575997856948b4dd628013a1da28a5e5d55ee4ab286e607a96d",
       "spec_path": "programs/vault_item_analyzer.json"
     },
@@ -108,7 +108,7 @@
       "category": "Utilities",
       "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
       "version": "1.0.20",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "e11741ea34655335e5e38402cde547588aefab335981f65042fa298dc6560a08",
       "spec_path": "programs/vaultgear.json"
     },
@@ -117,7 +117,7 @@
       "category": "Utilities",
       "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
       "version": "1.0.0",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "d378ec73152884a2273cb28335f1ab6adae67aa71deaf8ca587736cc42bc8428",
       "spec_path": "programs/vhcctweaks_smoke_test.json"
     },
@@ -126,7 +126,7 @@
       "category": "Games",
       "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
       "version": "1.0.39",
-      "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
+      "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
       "package_hash": "cf2ec0ace2aa20affc6693d47fc34800bb9258d9c3d7ffc0e84babd575046de0",
       "spec_path": "programs/videopoker.json"
     }

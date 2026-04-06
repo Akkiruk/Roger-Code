@@ -4,15 +4,15 @@
     "key": "pokertable",
     "name": "PokerTable",
     "category": "Games",
-    "description": "Multiplayer poker table foundation with rednet transport and CCVault escrow.",
+    "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
     "source_root": "Games/PokerTable",
     "entrypoint": "pokertable.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "06fe96c2237e0982a49ef779337558d5a2de732f",
-    "generated_at": "2026-04-05T21:58:09Z",
-    "package_hash": "c0333c11e2be60a6af05a585c18f7b86d8cf1318f3acf956ea085b2e82514f09"
+    "commit": "4bc00da6e31e2f1f1d30ea0a4646dc8d30f2e492",
+    "generated_at": "2026-04-06T02:02:45Z",
+    "package_hash": "1352cf26853d0e0820f280fa5f48dabf94ed2730ba44262bb9b8e18ca2bf7b24"
   },
   "install": {
     "preserve": [
@@ -22,17 +22,17 @@
       {
         "repo_path": "Games/PokerTable/dealer.lua",
         "install_path": "dealer.lua",
-        "sha256": "7610595d3189e1ebcde321a7ee8393dc161801e75de17cbb1f1459598a816a87"
+        "sha256": "508a3771a57cb48eef7efd675d9a3218c7b46857ab6ec0d0e11d688b6d16d7c5"
       },
       {
         "repo_path": "Games/PokerTable/pokertable.lua",
         "install_path": "pokertable.lua",
-        "sha256": "aaa2ea2f67d4ddaadef3637c38748ea26a69930011d90155fefffafa41ac67c8"
+        "sha256": "58fe87d4e35d9a26f8f49c0986f1c88b18a890959cb2d4ecf5aedc162b3a44bd"
       },
       {
         "repo_path": "Games/PokerTable/seat.lua",
         "install_path": "seat.lua",
-        "sha256": "9527e7190a3896974e65daf1a2710419745c575d025643c1d148932da7560853"
+        "sha256": "b8db1f280caef840cff624a075cfdc79e5dc90579d42abec982a9c09552a2ab5"
       },
       {
         "repo_path": "Games/PokerTable/startup.lua",
@@ -58,7 +58,7 @@
       {
         "repo_path": "Games/lib/poker_bank.lua",
         "install_path": "lib/poker_bank.lua",
-        "sha256": "ad4018ad7c2ee02208dc58b8b4fb796984befb802c4e4fbf00fd1fbb12d3ec43"
+        "sha256": "6d2d2b3162b77531b44c5a7136115190898f0b6ab35478ee93c43294a893eb62"
       },
       {
         "repo_path": "Games/lib/poker_log.lua",
@@ -68,7 +68,7 @@
       {
         "repo_path": "Games/lib/poker_protocol.lua",
         "install_path": "lib/poker_protocol.lua",
-        "sha256": "98ee7ef3b05dc29686fe4fa0e711a612205e518197230d55d127858976fd3a43"
+        "sha256": "454f6902283fc8167b081e3cf1888740a8dc80fb9ba4db2cff28a6e7b2332774"
       },
       {
         "repo_path": "Games/lib/poker_store.lua",
