@@ -8,6 +8,7 @@ return {
   MIN_CARDS_RESHUFFLE = 156,     -- reshuffle with 3 decks left to starve card counting
   DEALER_STAND        = 18,
   DEALER_HIT_SOFT_17  = true,    -- dealer hits until 18; soft 17 also draws
+  DEALER_CHASE_TOTAL  = 18,      -- dealer draws again on losing totals up to 18
   BLACKJACK_PAYOUT    = 1.2,     -- 6:5 payout for natural blackjack
   ALLOW_SPLIT         = false,
   ALLOW_DOUBLE        = true,

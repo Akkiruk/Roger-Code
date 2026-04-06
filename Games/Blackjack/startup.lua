@@ -9,6 +9,7 @@ local floor = math.floor
 local HOUSE_RULE_LINES = {
   "HOUSE RULES",
   "Dealer draws to " .. tostring(cfg.DEALER_STAND) .. ".",
+  "Dealer hits losing " .. tostring(cfg.DEALER_CHASE_TOTAL) .. "s.",
   "Blackjack pays 6:5.",
   "Double on hard 10-11 only.",
   "No splits. No insurance.",

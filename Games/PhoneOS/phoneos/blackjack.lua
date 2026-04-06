@@ -178,10 +178,25 @@ local function availableBalance(ctx, env)
   return math.max(0, balance - currentWager(ctx))
 end
 
+local function bestLivePlayerTotal(ctx)
+  local bestTotal = 0
+  for _, hand in ipairs(ctx.hands or {}) do
+    if not hand.busted and not hand.surrendered then
+      local total = cards.blackjackValue(hand.cards)
+      if total <= 21 and total > bestTotal then
+        bestTotal = total
+      end
+    end
+  end
+  return bestTotal
+end
+
 local function dealerMustHit(ctx)
   local dealerTotal, dealerSoft = cards.blackjackValue(ctx.dealerHand)
+  local bestPlayerTotal = bestLivePlayerTotal(ctx)
   return dealerTotal < ctx.cfg.DEALER_STAND
     or (ctx.cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and dealerSoft)
+    or (dealerTotal <= ctx.cfg.DEALER_CHASE_TOTAL and dealerTotal < bestPlayerTotal)
 end
 
 local function canDoubleHand(ctx, env, hand)

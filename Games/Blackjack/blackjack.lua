@@ -396,10 +396,25 @@ local function hasHostCapacityForAdditionalBet(ctx, additionalBet)
   return protectedHostBalance >= (currentHouseExposure(ctx) + additionalBet)
 end
 
-local function dealerMustHit(hand)
-  local dealerTotal, isSoft = cards.blackjackValue(hand)
+local function bestLivePlayerTotal(ctx)
+  local bestTotal = 0
+  for _, hand in ipairs(ctx.hands or {}) do
+    if not hand.busted and not hand.surrendered then
+      local total = cards.blackjackValue(hand.cards)
+      if total <= 21 and total > bestTotal then
+        bestTotal = total
+      end
+    end
+  end
+  return bestTotal
+end
+
+local function dealerMustHit(ctx)
+  local dealerTotal, isSoft = cards.blackjackValue(ctx.dealerHand)
+  local bestPlayerTotal = bestLivePlayerTotal(ctx)
   return dealerTotal < cfg.DEALER_STAND
     or (cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and isSoft)
+    or (dealerTotal <= cfg.DEALER_CHASE_TOTAL and dealerTotal < bestPlayerTotal)
 end
 
 local function canDoubleHand(ctx, hand)
@@ -826,7 +841,7 @@ local function doDealerTurn(ctx)
   renderTable(ctx, false, nil)
   os.sleep(0.5)
 
-  while dealerMustHit(ctx.dealerHand) do
+  while dealerMustHit(ctx) do
     table.insert(ctx.dealerHand, dealOne())
 
     if not AUTO_PLAY then
