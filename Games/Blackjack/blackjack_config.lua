@@ -15,7 +15,7 @@ return {
   DOUBLE_MIN_TOTAL    = 10,      -- doubles only on hard 10-11
   DOUBLE_MAX_TOTAL    = 11,
   ALLOW_SOFT_DOUBLE   = false,
-  ALLOW_INSURANCE     = true,
+  ALLOW_INSURANCE     = false,
   ALLOW_SURRENDER     = false,
   MAX_SPLITS          = 1,       -- max times a player can split per round
   RESTRICT_SPLIT_ACES = true,    -- split aces receive only one card each (+0.19% house edge)
