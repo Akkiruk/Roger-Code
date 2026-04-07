@@ -97,7 +97,8 @@ local hostBankBalance = currency.getHostBalance()
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
 local function getMaxBet()
-  return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
+  local hostLimit = currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
+  return math.min(hostLimit, cfg.MAX_BET_TOKENS or hostLimit)
 end
 
 local function refreshPlayer()
