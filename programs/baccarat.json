@@ -7,12 +7,12 @@
     "description": "Baccarat card game for ComputerCraft casino.",
     "source_root": "Games/Baccarat",
     "entrypoint": "baccarat.lua",
-    "version": "1.2.38"
+    "version": "1.2.39"
   },
   "build": {
-    "commit": "1d70229b377268da3142e6b39eb5d60eb7752402",
-    "generated_at": "2026-04-07T01:57:41Z",
-    "package_hash": "cd21f424c913f0bf5ddd43761bf86bb5f9ca2c4067c7a53f6e58b93d3ef52ac7"
+    "commit": "346523cad530b6bb722b0937c6b6459b4a248197",
+    "generated_at": "2026-04-07T02:03:31Z",
+    "package_hash": "b577f981c7227f9489d5741ccb92b0d0f48040709550673a126dbf9e388b4dba"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/Baccarat/baccarat.lua",
         "install_path": "baccarat.lua",
-        "sha256": "526d63e4bbe70cd3f6a9b8b258cbf718da4711cdb691d893186a177d8661cdd6"
+        "sha256": "356fdee36f2f7742e1c01a0e4ad895afab7cdbbf6a293b07c8883c4ec9962f64"
       },
       {
         "repo_path": "Games/lib/card_rules.lua",
