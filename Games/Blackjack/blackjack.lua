@@ -444,7 +444,11 @@ local function canSplitHand(ctx, hand)
   if not cfg.ALLOW_SPLIT then return false end
   if #hand.cards ~= 2 then return false end
   if #ctx.hands >= (cfg.MAX_SPLITS + 1) then return false end
-  if hand.cards[1]:sub(1, 1) ~= hand.cards[2]:sub(1, 1) then return false end
+
+  local firstRank = cards.parseCard(hand.cards[1])
+  local secondRank = cards.parseCard(hand.cards[2])
+  if firstRank ~= secondRank then return false end
+
   if availableBalance(ctx) < hand.bet then return false end
   if not hasHostCapacityForAdditionalBet(ctx, hand.bet) then return false end
 

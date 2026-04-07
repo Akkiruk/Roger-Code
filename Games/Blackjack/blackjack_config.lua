@@ -10,7 +10,7 @@ return {
   DEALER_HIT_SOFT_17  = true,    -- dealer hits until 18; soft 17 also draws
   DEALER_CHASE_TOTAL  = 18,      -- dealer draws again on losing totals up to 18
   BLACKJACK_PAYOUT    = 1.2,     -- 6:5 payout for natural blackjack
-  ALLOW_SPLIT         = false,
+  ALLOW_SPLIT         = true,
   ALLOW_DOUBLE        = true,
   ALLOW_DOUBLE_AFTER_SPLIT = false,
   DOUBLE_MIN_TOTAL    = 10,      -- doubles only on hard 10-11
