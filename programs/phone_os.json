@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.39"
+    "version": "1.0.40"
   },
   "build": {
-    "commit": "3ea0f2d6cf63547d1bcdceb86b50c78108dd77b9",
-    "generated_at": "2026-04-07T00:02:38Z",
-    "package_hash": "bb7c52e68b59cc088fca21dc679595e58515e3940c1b1e6d98ab22be5933bb79"
+    "commit": "d54bfc9281b32544802817bbbe2a8a8c9e0542f8",
+    "generated_at": "2026-04-07T00:03:33Z",
+    "package_hash": "848668c2fa3f225cfdb9fb7e6bafddcc24563088abf1ff946b18710096ba6035"
   },
   "install": {
     "preserve": [
@@ -64,7 +64,7 @@
       {
         "repo_path": "Games/PhoneOS/blackjack_config.lua",
         "install_path": "blackjack_config.lua",
-        "sha256": "ffcce30c1daa0b05803c70f7b162225f688e7cb8be45eb084c908fd4eca66a36",
+        "sha256": "ac1ce324c2ad9d5b575ae2ad92171aaf644902daff617db1c8fcf1f916f64d83",
         "preserve_existing": true
       },
       {
@@ -95,12 +95,12 @@
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack.lua",
         "install_path": "phoneos/blackjack.lua",
-        "sha256": "90e620dc0f2e7bba92bb7c223cbc73c514aec0ded8acdbeb8cd89f644a745b8f"
+        "sha256": "d3bcfac546df9598c63b638d5d26f38961c44bc6e9d0b5d43d0edc1dce9e5636"
       },
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack_defaults.lua",
         "install_path": "phoneos/blackjack_defaults.lua",
-        "sha256": "709bc19f800fee8c2a906e07559fd9e9a2609e14f58f5f05d3c21f104f07dec6"
+        "sha256": "0aafa4bd24ff3ac6549c5cc91a48cde22405d61f3ebd55c669103709d5304656"
       },
       {
         "repo_path": "Games/lib/sound.lua",
