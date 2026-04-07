@@ -486,6 +486,21 @@ local function removeStaleFiles(previouslyManaged, desiredPaths)
   end
 end
 
+local function wipeManagedFiles(paths)
+  local wiped = {}
+  for _, path in ipairs(paths or {}) do
+    local normalized = normalizePath(path)
+    if normalized ~= ""
+      and not wiped[normalized]
+      and normalized ~= VERSION_FILE
+      and normalized ~= MANAGED_FILES
+      and not RESERVED_LOCAL_PATHS[normalized] then
+      removePath(normalized)
+      wiped[normalized] = true
+    end
+  end
+end
+
 local function installFromSpec(spec, forceConfig, installedBefore)
   local unlockOk, unlockResult = beginWriteWindow("install")
   if not unlockOk then
@@ -514,6 +529,17 @@ local function installFromSpec(spec, forceConfig, installedBefore)
 
   removeStaleFiles(previouslyManaged, managedPaths)
   pruneLegacyPayload(managedPaths)
+
+  if forceConfig then
+    local resetPaths = {}
+    for _, path in ipairs(previouslyManaged) do
+      resetPaths[#resetPaths + 1] = path
+    end
+    for _, path in ipairs(managedPaths) do
+      resetPaths[#resetPaths + 1] = path
+    end
+    wipeManagedFiles(resetPaths)
+  end
 
   print("")
   for index, entry in ipairs(spec.install.files or {}) do

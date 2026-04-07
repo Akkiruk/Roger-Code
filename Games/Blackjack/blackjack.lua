@@ -110,7 +110,8 @@ local openingBankValue = hostBankBalance
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
 local function getMaxBet()
-  return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
+  local hostLimit = currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
+  return math.min(hostLimit, cfg.MAX_BET_TOKENS or hostLimit)
 end
 
 -----------------------------------------------------
@@ -409,12 +410,20 @@ local function bestLivePlayerTotal(ctx)
   return bestTotal
 end
 
+local function dealerTargetTotal(ctx)
+  local bestPlayerTotal = bestLivePlayerTotal(ctx)
+  local chaseCeiling = (cfg.DEALER_CHASE_TOTAL or cfg.DEALER_STAND) + 1
+  if bestPlayerTotal > 0 then
+    return math.max(cfg.DEALER_STAND, math.min(bestPlayerTotal, chaseCeiling))
+  end
+  return cfg.DEALER_STAND
+end
+
 local function dealerMustHit(ctx)
   local dealerTotal, isSoft = cards.blackjackValue(ctx.dealerHand)
-  local bestPlayerTotal = bestLivePlayerTotal(ctx)
-  return dealerTotal < cfg.DEALER_STAND
+  local targetTotal = dealerTargetTotal(ctx)
+  return dealerTotal < targetTotal
     or (cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and isSoft)
-    or (dealerTotal <= cfg.DEALER_CHASE_TOTAL and dealerTotal < bestPlayerTotal)
 end
 
 local function canDoubleHand(ctx, hand)

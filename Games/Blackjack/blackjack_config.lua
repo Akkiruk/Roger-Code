@@ -22,6 +22,7 @@ return {
   RESTRICT_SPLIT_ACES = true,    -- split aces receive only one card each (+0.19% house edge)
 
   -- Economy
+  MAX_BET_TOKENS      = 500,     -- absolute cap regardless of host bankroll
   MAX_BET_PERCENT     = 0.18,    -- max bet = 18% of host balance
   HOST_COVERAGE_MULT  = 5,       -- covers split + double exposure from the original wager
   INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no bet

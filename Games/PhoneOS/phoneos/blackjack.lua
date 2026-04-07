@@ -191,12 +191,20 @@ local function bestLivePlayerTotal(ctx)
   return bestTotal
 end
 
+local function dealerTargetTotal(ctx)
+  local bestPlayerTotal = bestLivePlayerTotal(ctx)
+  local chaseCeiling = (ctx.cfg.DEALER_CHASE_TOTAL or ctx.cfg.DEALER_STAND) + 1
+  if bestPlayerTotal > 0 then
+    return math.max(ctx.cfg.DEALER_STAND, math.min(bestPlayerTotal, chaseCeiling))
+  end
+  return ctx.cfg.DEALER_STAND
+end
+
 local function dealerMustHit(ctx)
   local dealerTotal, dealerSoft = cards.blackjackValue(ctx.dealerHand)
-  local bestPlayerTotal = bestLivePlayerTotal(ctx)
-  return dealerTotal < ctx.cfg.DEALER_STAND
+  local targetTotal = dealerTargetTotal(ctx)
+  return dealerTotal < targetTotal
     or (ctx.cfg.DEALER_HIT_SOFT_17 and dealerTotal == 17 and dealerSoft)
-    or (dealerTotal <= ctx.cfg.DEALER_CHASE_TOTAL and dealerTotal < bestPlayerTotal)
 end
 
 local function canDoubleHand(ctx, env, hand)
@@ -819,7 +827,8 @@ end
 
 local function maxBetForSession(env, session)
   local hostBalance = session.hostBalance or currency.getHostBalance()
-  return currency.getMaxBetLimit(hostBalance, env.blackjackConfig.MAX_BET_PERCENT, env.blackjackConfig.HOST_COVERAGE_MULT)
+  local hostLimit = currency.getMaxBetLimit(hostBalance, env.blackjackConfig.MAX_BET_PERCENT, env.blackjackConfig.HOST_COVERAGE_MULT)
+  return math.min(hostLimit, env.blackjackConfig.MAX_BET_TOKENS or hostLimit)
 end
 
 local function createRoundContext(env, session, bet)
