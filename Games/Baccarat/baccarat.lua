@@ -315,8 +315,7 @@ local function showTutorial()
   })
 end
 
------------------------------------------------------
--- Stats display
+-- Bet type selection (Player / Banker / Tie)
 -----------------------------------------------------
 local function selectBetType()
   while true do

@@ -342,9 +342,6 @@ local function showTutorial()
   })
 end
 
------------------------------------------------------
--- Stats display
------------------------------------------------------
 -- Pre-round menu: PLAY, HOW TO PLAY
 -----------------------------------------------------
 local function preRoundMenu()
