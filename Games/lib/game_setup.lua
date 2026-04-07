@@ -118,12 +118,6 @@ local function init(cfg)
   local detectionRange = cfg.playerDetectionRange or 10
   playerDet.init(detectionRange)
 
-  -- Player stats (optional — only if caller provides statsInit)
-  if cfg.initPlayerStats then
-    local ok, pStats = pcall(require, "lib.player_stats")
-    if ok then pcall(pStats.init) end
-  end
-
   -- Build and shuffle deck
   local deckCount = cfg.deckCount or 1
   env.deck = cards.buildDeck(deckCount)

@@ -39,8 +39,6 @@ After deployment, the layout is:
 computer/0/
   blackjack.lua          # Main game
   blackjack_config.lua   # Config with enums
-  statistics.lua         # Stats wrapper
-  stats_ui.lua           # Stats UI
   startup.lua            # <- emulator/emu_startup.lua
   surface, font, gothic  # Graphics assets
   *.nfp                  # Card/suit sprites
@@ -92,12 +90,6 @@ Read logs after a test:
 ```powershell
 Get-Content "$env:APPDATA\CraftOS-PC\computer\0\emulator\mock_log.txt"
 Get-Content "$env:APPDATA\CraftOS-PC\computer\0\blackjack_error.log"
-Get-Content "$env:APPDATA\CraftOS-PC\computer\0\statistics_error.log"
-```
-
-Read player stats data:
-```powershell
-Get-ChildItem "$env:APPDATA\CraftOS-PC\computer\0\player_data" | Get-Content
 ```
 
 Check crash recovery state:

@@ -4,9 +4,7 @@
 unlock-file=.vhcc_unlock
 allow-exact=.vhcc_unlock
 allow-exact=.update_lock
-allow-exact=statistics_log.txt
 allow-prefix=phone_data
-allow-prefix=player_stats
 allow-suffix=.dat
 allow-suffix=.log
 allow-suffix=.tmp

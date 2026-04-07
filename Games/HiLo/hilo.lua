@@ -48,7 +48,6 @@ local replayPrompt = require("lib.replay_prompt")
 local cardAnim   = require("lib.card_anim")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
-local sessionStatsLib = require("lib.session_stats")
 local settlement = require("lib.round_settlement")
 
 -----------------------------------------------------
@@ -75,7 +74,6 @@ local env = gameSetup.init({
   deckCount       = cfg.DECK_COUNT,
   gameName        = cfg.GAME_NAME,
   logFile         = cfg.LOG_FILE,
-  initPlayerStats = false,
 })
 
 alert.addPlannedExits({
@@ -105,24 +103,6 @@ local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
 
------------------------------------------------------
--- Session statistics
------------------------------------------------------
-local sessionStats = sessionStatsLib.new({
-  rounds       = 0,
-  totalBet     = 0,
-  totalWon     = 0,
-  netProfit    = 0,
-  biggestWin   = 0,
-  bestStreak   = 0,
-  cashOuts     = 0,
-  busts        = 0,
-  sameValueLosses = 0,
-})
-
------------------------------------------------------
--- Player detection (shared via game_setup)
------------------------------------------------------
 local function refreshPlayer()
   return env.refreshPlayer()
 end
@@ -365,37 +345,7 @@ end
 -----------------------------------------------------
 -- Stats display
 -----------------------------------------------------
-local function showStats()
-  local profitColor = colors.white
-  if sessionStats.netProfit > 0 then
-    profitColor = colors.lime
-  elseif sessionStats.netProfit < 0 then
-    profitColor = colors.red
-  end
-  local lines = {
-    { label = "Rounds", value = sessionStats.rounds, color = colors.white },
-    { label = "Profit", value = currency.formatTokens(sessionStats.netProfit), color = profitColor },
-    { label = "Wagered", value = currency.formatTokens(sessionStats.totalBet), color = colors.white },
-  }
-  if sessionStats.biggestWin > 0 then
-    lines[#lines + 1] = { label = "Best Win", value = currency.formatTokens(sessionStats.biggestWin), color = colors.lime }
-  end
-  lines[#lines + 1] = { spacer = true }
-  lines[#lines + 1] = { label = "Cash Outs", value = sessionStats.cashOuts, color = colors.lime }
-  lines[#lines + 1] = { label = "Busts", value = sessionStats.busts, color = colors.red }
-  lines[#lines + 1] = { label = "Same-Value Losses", value = sessionStats.sameValueLosses, color = colors.yellow }
-  if sessionStats.bestStreak > 1 then
-    lines[#lines + 1] = { label = "Best Streak", value = sessionStats.bestStreak, color = colors.cyan }
-  end
-  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
-    centerX = centerX,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
-  })
-end
-
------------------------------------------------------
--- Pre-round menu: PLAY, HOW TO PLAY, STATS
+-- Pre-round menu: PLAY, HOW TO PLAY
 -----------------------------------------------------
 local function preRoundMenu()
   local menuTimeout = cfg.PRE_ROUND_MENU_TIMEOUT or 10000
@@ -436,8 +386,6 @@ local function preRoundMenu()
       {
         { text = "HOW TO PLAY", color = colors.lightBlue,
           func = function() chosen = "tutorial" end },
-        { text = "STATS", color = colors.lightGray,
-          func = function() chosen = "stats" end },
       },
     }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
 
@@ -462,7 +410,6 @@ local function preRoundMenu()
 
     if chosen == "play" then return end
     if chosen == "tutorial" then showTutorial() end
-    if chosen == "stats" then showStats() end
   end
 end
 
@@ -596,12 +543,6 @@ local function hiloRound(betAmount)
         end
       end
 
-      sessionStatsLib.increment(sessionStats, "cashOuts")
-      sessionStatsLib.increment(sessionStats, "rounds")
-      local netChange = profit
-      sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
-      sessionStatsLib.setMax(sessionStats, "bestStreak", round)
-
       sound.play(sound.SOUNDS.SUCCESS)
       renderScreen(currentCard, revealedCards, betAmount, round, multiplier, nil)
       ui.displayCenteredMessage(screen,
@@ -657,12 +598,6 @@ local function hiloRound(betAmount)
         alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (HiLo same-value loss)")
       end
 
-      sessionStatsLib.increment(sessionStats, "sameValueLosses")
-      sessionStatsLib.increment(sessionStats, "busts")
-      sessionStatsLib.increment(sessionStats, "rounds")
-      sessionStatsLib.recordNet(sessionStats, betAmount, -betAmount)
-      sessionStatsLib.setMax(sessionStats, "bestStreak", round - 1)
-
       sound.play(sound.SOUNDS.FAIL)
       renderScreen(nextCard, revealedCards, betAmount, round, multiplier, nil)
       ui.displayCenteredMessage(screen,
@@ -703,12 +638,6 @@ local function hiloRound(betAmount)
           end
         end
 
-        sessionStatsLib.increment(sessionStats, "cashOuts")
-        sessionStatsLib.increment(sessionStats, "rounds")
-        local netChange = profit
-        sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
-        sessionStats.bestStreak = cfg.MAX_ROUNDS
-
         sound.play(sound.SOUNDS.SUCCESS)
         renderScreen(currentCard, revealedCards, betAmount, round, multiplier, nil)
         ui.displayCenteredMessage(screen,
@@ -739,11 +668,6 @@ local function hiloRound(betAmount)
       if not charged then
         alert.send("CRITICAL: Failed to charge " .. betAmount .. " tokens (HiLo)")
       end
-
-      sessionStatsLib.increment(sessionStats, "busts")
-      sessionStatsLib.increment(sessionStats, "rounds")
-      sessionStatsLib.recordNet(sessionStats, betAmount, -betAmount)
-      sessionStatsLib.setMax(sessionStats, "bestStreak", round - 1)
 
       sound.play(sound.SOUNDS.FAIL)
       renderScreen(currentCard, revealedCards, betAmount, round, multiplier, nil)
@@ -796,7 +720,7 @@ local function main()
       end
     else
       if not skipPreRoundMenu then
-        -- Show pre-round menu (PLAY / HOW TO PLAY / STATS)
+        -- Show the pre-round menu before opening the bet screen.
         preRoundMenu()
       end
 

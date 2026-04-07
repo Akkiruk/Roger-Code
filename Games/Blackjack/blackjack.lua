@@ -1,7 +1,6 @@
 -- blackjack.lua
 -- Blackjack card game for ComputerCraft casino.
 -- State-machine architecture with split, insurance, and surrender support.
--- Complete GameResult population for all 102 achievements.
 
 -----------------------------------------------------
 -- Configuration & Caching
@@ -82,7 +81,6 @@ local env = gameSetup.init({
   deckCount   = cfg.DECK_COUNT,
   gameName    = cfg.GAME_NAME,
   logFile     = cfg.LOG_FILE,
-  initPlayerStats = true,
 })
 
 alert.addPlannedExits({
@@ -106,33 +104,11 @@ cardAnim.init(screen, cardBack)
 -- Host balance tracking
 -----------------------------------------------------
 local hostBankBalance = currency.getHostBalance()
-local openingBankValue = hostBankBalance
 dbg("Initial host balance: " .. hostBankBalance .. " tokens")
 
 local function getMaxBet()
   local hostLimit = currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
   return math.min(hostLimit, cfg.MAX_BET_TOKENS or hostLimit)
-end
-
------------------------------------------------------
--- Statistics module (optional)
------------------------------------------------------
-local statistics = nil
-local function loadStatistics()
-  local ok, result = pcall(require, "statistics")
-  if ok then
-    statistics = result
-    pcall(statistics.init)
-    return true
-  end
-  dbg("Statistics module unavailable: " .. tostring(result))
-  statistics = {
-    init             = function() return true end,
-    getActivePlayer  = function() return "Unknown" end,
-    loadPlayerStats  = function() return {} end,
-    recordGameResult = function() return {} end,
-  }
-  return false
 end
 
 -----------------------------------------------------
@@ -268,41 +244,6 @@ local function renderTable(ctx, hideDealer, statusText)
   screen:output()
 end
 
------------------------------------------------------
--- Card analysis helpers (for GameResult)
------------------------------------------------------
-local function analyzeHand(hand)
-  local allBlack, allRed = true, true
-  local clubCount, aceCount = 0, 0
-  local hasSeven = false
-  local suitSet = {}
-
-  for _, c in ipairs(hand) do
-    if not cards.isBlack(c) then allBlack = false end
-    if not cards.isRed(c)   then allRed   = false end
-    local suit = cards.getSuit(c)
-    suitSet[suit] = true
-    if suit == "club" then clubCount = clubCount + 1 end
-    if c:sub(1, 1) == "A" then aceCount = aceCount + 1 end
-    if c:sub(1, 1) == "7" then hasSeven = true end
-  end
-
-  local suitCount = 0
-  for _ in pairs(suitSet) do suitCount = suitCount + 1 end
-
-  return {
-    allBlack  = allBlack,
-    allRed    = allRed,
-    clubCount = clubCount,
-    aceCount  = aceCount,
-    hasSeven  = hasSeven,
-    allSuits  = suitCount >= 4,
-  }
-end
-
------------------------------------------------------
--- State: DEAL
------------------------------------------------------
 local function doDeal(ctx)
   -- Pre-deal all 4 cards
   local p1 = dealOne()
@@ -994,7 +935,7 @@ local function doResolve(ctx)
   -- Display result
   displayRoundResult(ctx, dealerBusted)
 
-  -- Determine overall outcome for stats
+  -- Determine overall outcome
   local primary = ctx.hands[1]
   if primary.busted then
     ctx.outcome = OUT.BUST
@@ -1018,168 +959,14 @@ local function doResolve(ctx)
 
   recovery.clearBet()
 
-  -- Record stats
   buildAndRecordResult(ctx, dealerTotal, dealerBusted)
   ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage or "Round complete")
 end
 
------------------------------------------------------
--- Achievement flag computation (extracted for clarity)
------------------------------------------------------
-local function computeAchievementFlags(ctx, dealerTotal, dealerBusted)
-  local primary = ctx.hands[1]
-  local pTotal, pSoft = cards.blackjackValue(primary.cards)
-  local analysis = analyzeHand(primary.cards)
-  local isWin  = ctx.outcome == OUT.PLAYER_WIN or ctx.outcome == OUT.BLACKJACK
-  local isLoss = ctx.outcome == OUT.DEALER_WIN or ctx.outcome == OUT.BUST
-  local isPush = ctx.outcome == OUT.PUSH
-  local cardCount = #primary.cards
-  local hitCount  = primary.hitCount or 0
-  local handDuration = (epoch("local") - ctx.handStartTime) / 1000
-
-  local f = {}
-
-  f.isSevenCardCharlie = isWin and cardCount >= 7
-  f.isRainbowWin       = isWin and analysis.allSuits
-  f.isSoft21Win        = isWin and pTotal == 21 and pSoft
-  f.isEdgeOutWin       = isWin and not dealerBusted and (pTotal - dealerTotal) == 1
-  f.isFiveClubWin      = isWin and analysis.clubCount >= 5
-  f.isHoudini          = isWin and (ctx.initialHandTotal or 99) <= 12 and hitCount >= 3 and pTotal == 21
-  f.isShutout          = isWin and dealerBusted and pTotal <= 12
-  f.isRiskyDouble      = isWin and primary.doubled and ctx.initialHandTotal == 9
-  f.isQuickHand        = isWin and handDuration < 6
-  f.isStonewall        = isPush and pTotal <= 12 and (primary.lastAction == ACT.STAND or hitCount == 0)
-  f.isAllRedLoss       = isLoss and analysis.allRed
-  f.isMirrorMatch      = isPush and pTotal == dealerTotal and cardCount == #ctx.dealerHand
-  f.isQuadAce          = isWin and analysis.aceCount >= 4
-
-  -- Overkill: hit on 20, drew Ace, made 21, won
-  f.isOverkill = false
-  if isWin and pTotal == 21 and hitCount > 0 then
-    local preHitTotal, aces = 0, 0
-    for j = 1, cardCount - 1 do
-      local v = primary.cards[j]:sub(1, 1)
-      preHitTotal = preHitTotal + cards.FACE_VALUES[v]
-      if v == "A" then aces = aces + 1 end
-    end
-    while preHitTotal > 21 and aces > 0 do preHitTotal = preHitTotal - 10; aces = aces - 1 end
-    if preHitTotal == 20 and primary.cards[cardCount]:sub(1, 1) == "A" then f.isOverkill = true end
-  end
-
-  -- Snap decision: all decisions < 0.5s, won
-  f.isSnapDecision = false
-  if isWin and #ctx.decisionTimes > 0 then
-    f.isSnapDecision = true
-    for _, dt in ipairs(ctx.decisionTimes) do
-      if dt >= 0.5 then f.isSnapDecision = false; break end
-    end
-  end
-
-  -- Slow burn: all decisions > 15s, won
-  f.isSlowBurn = false
-  if isWin and #ctx.decisionTimes > 0 then
-    f.isSlowBurn = true
-    for _, dt in ipairs(ctx.decisionTimes) do
-      if dt <= 15 then f.isSlowBurn = false; break end
-    end
-  end
-
-  -- Bank buster
-  local bankAfter = currency.getHostBalance()
-  f.isBankBuster = isWin and openingBankValue > 0 and bankAfter < (openingBankValue * 0.1)
-
-  -- Split-specific flags
-  f.isPerfectPair, f.isTwinBlackjack, f.isPrecisionSplit = false, false, false
-  f.splitWins = 0
-  if #ctx.hands > 1 then
-    local allSplitWin = true
-    for _, h in ipairs(ctx.hands) do
-      if h.outcome == OUT.PLAYER_WIN then f.splitWins = f.splitWins + 1
-      else allSplitWin = false end
-    end
-    f.isPerfectPair = allSplitWin and #ctx.hands == 2
-
-    if ctx.hands[1].fromSplit and #ctx.hands == 2 then
-      local bj1 = cards.isBlackjack(ctx.hands[1].cards)
-      local bj2 = cards.isBlackjack(ctx.hands[2].cards)
-      f.isTwinBlackjack = bj1 and bj2
-    end
-
-    if f.isPerfectPair then
-      local t1 = cards.blackjackValue(ctx.hands[1].cards)
-      local t2 = cards.blackjackValue(ctx.hands[2].cards)
-      local wasEightPair = ctx.initialHandTotal == 16
-      f.isPrecisionSplit = wasEightPair and t1 == 21 and t2 == 21
-    end
-  end
-
-  return f
-end
-
------------------------------------------------------
--- GameResult builder + stat recording
+-- Legacy statistics hook
 -----------------------------------------------------
 buildAndRecordResult = function(ctx, dealerTotal, dealerBusted)
-  if not statistics then return end
-
-  local primary = ctx.hands[1]
-  local pTotal, pSoft = cards.blackjackValue(primary.cards)
-  local analysis = analyzeHand(primary.cards)
-  local cardCount = #primary.cards
-  local hitCount  = primary.hitCount or 0
-
-  local handDuration = (epoch("local") - ctx.handStartTime) / 1000
-  local totalDecisionMs = 0
-  for _, dt in ipairs(ctx.decisionTimes) do totalDecisionMs = totalDecisionMs + dt end
-
-  local flags = computeAchievementFlags(ctx, dealerTotal, dealerBusted)
-
-  -- Determine primary action for stats
-  local primaryAction = primary.lastAction or ACT.STAND
-  if primary.doubled then primaryAction = ACT.DOUBLE end
-  if ctx.splitCount and ctx.splitCount > 0 and not primary.doubled then primaryAction = ACT.SPLIT end
-
-  -- Start from achievement flags, overlay game data
-  local gr = flags
-  gr.outcome          = ctx.outcome
-  gr.bet              = primary.bet
-  gr.netChange        = ctx.netChange
-  gr.handScore        = pTotal
-  gr.cardCount        = cardCount
-  gr.dealerScore      = dealerTotal
-  gr.dealerCardCount  = #ctx.dealerHand
-  gr.dealerUpCard     = cards.displayValue(ctx.dealerHand[2])
-  gr.dealerBusted     = dealerBusted
-  gr.actions          = primaryAction
-  gr.hitCount         = hitCount
-  gr.decisionTime     = totalDecisionMs * 1000
-  gr.decisionTimes    = ctx.decisionTimes
-  gr.handDuration     = handDuration
-
-  -- Card analysis
-  gr.hasSoftHand      = pSoft
-  gr.hasSevenCard     = analysis.hasSeven
-  gr.allBlackCards    = analysis.allBlack
-  gr.allRedCards       = analysis.allRed
-  gr.clubCount        = analysis.clubCount
-  gr.aceCount         = analysis.aceCount
-  gr.hasAllSuits      = analysis.allSuits
-  gr.isMaxBet         = primary.bet >= getMaxBet()
-  gr.isFiveCard21     = cardCount >= 5 and pTotal == 21
-  gr.is21With3Cards   = cardCount == 3 and pTotal == 21
-  gr.tripleHitSuccess = hitCount >= 3 and not primary.busted
-  gr.lost666          = ctx.netChange == -666
-
-  -- Split
-  gr.isSplitHand      = #ctx.hands > 1
-  gr.splitCount       = ctx.splitCount or 0
-
-  -- Insurance / surrender
-  gr.insurancePaid    = ctx.insurancePaid or 0
-  gr.insuranceWon     = ctx.insuranceWon or 0
-  gr.surrendered      = ctx.surrendered or false
-
-  pcall(statistics.recordGameResult, env.currentPlayer, gr)
+  return nil
 end
 
 -----------------------------------------------------
@@ -1352,7 +1139,6 @@ end
 -----------------------------------------------------
 sound.play(sound.SOUNDS.BOOT)
 recovery.recoverBet(true)
-loadStatistics()
 refreshPlayer()
 
 local function main()

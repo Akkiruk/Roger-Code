@@ -44,7 +44,6 @@ local betting    = require("lib.betting")
 local cardAnim   = require("lib.card_anim")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
-local sessionStatsLib = require("lib.session_stats")
 local settlement = require("lib.round_settlement")
 local replayPrompt = require("lib.replay_prompt")
 
@@ -72,7 +71,6 @@ local env = gameSetup.init({
   deckCount       = cfg.DECK_COUNT,
   gameName        = cfg.GAME_NAME,
   logFile         = cfg.LOG_FILE,
-  initPlayerStats = false,
 })
 
 alert.addPlannedExits({
@@ -102,29 +100,6 @@ local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
 
------------------------------------------------------
--- Session statistics
------------------------------------------------------
-local sessionStats = sessionStatsLib.new({
-  hands       = 0,
-  playerWins  = 0,
-  bankerWins  = 0,
-  ties        = 0,
-  playerBets  = 0,
-  bankerBets  = 0,
-  tieBets     = 0,
-  totalBet    = 0,
-  totalWon    = 0,
-  netProfit   = 0,
-  biggestWin  = 0,
-  streak      = 0,
-  streakType  = nil,
-  bestStreak  = 0,
-})
-
------------------------------------------------------
--- Player detection (shared via game_setup)
------------------------------------------------------
 local function refreshPlayer()
   return env.refreshPlayer()
 end
@@ -268,44 +243,6 @@ local function renderTable(playerHand, bankerHand, betType, betAmount, statusTex
   screen:output()
 end
 
------------------------------------------------------
--- Session stats update
------------------------------------------------------
-local function updateSessionStats(outcome, betType, betAmount, netChange)
-  sessionStatsLib.increment(sessionStats, "hands")
-  sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
-
-  -- Track bet type counts
-  if betType == BET.PLAYER then
-    sessionStatsLib.increment(sessionStats, "playerBets")
-  elseif betType == BET.BANKER then
-    sessionStatsLib.increment(sessionStats, "bankerBets")
-  elseif betType == BET.TIE then
-    sessionStatsLib.increment(sessionStats, "tieBets")
-  end
-
-  -- Track outcome counts
-  if outcome == OUT.PLAYER_WIN then
-    sessionStatsLib.increment(sessionStats, "playerWins")
-  elseif outcome == OUT.BANKER_WIN then
-    sessionStatsLib.increment(sessionStats, "bankerWins")
-  else
-    sessionStatsLib.increment(sessionStats, "ties")
-  end
-
-  -- Streak tracking
-  if sessionStats.streakType == outcome then
-    sessionStatsLib.increment(sessionStats, "streak")
-  else
-    sessionStats.streak = 1
-    sessionStats.streakType = outcome
-  end
-  sessionStatsLib.setMax(sessionStats, "bestStreak", sessionStats.streak)
-end
-
------------------------------------------------------
--- Tutorial / How to play screens
------------------------------------------------------
 local LINE_H = scale.lineHeight
 
 local function drawCenteredLine(text, y, color)
@@ -381,39 +318,6 @@ end
 -----------------------------------------------------
 -- Stats display
 -----------------------------------------------------
-local function showStats()
-  local profitColor = colors.white
-  if sessionStats.netProfit > 0 then
-    profitColor = colors.lime
-  elseif sessionStats.netProfit < 0 then
-    profitColor = colors.red
-  end
-  local lines = {
-    { label = "Hands", value = sessionStats.hands, color = colors.white },
-    { label = "Profit", value = currency.formatTokens(sessionStats.netProfit), color = profitColor },
-    { label = "Wagered", value = currency.formatTokens(sessionStats.totalBet), color = colors.white },
-  }
-  if sessionStats.biggestWin > 0 then
-    lines[#lines + 1] = { label = "Best Win", value = currency.formatTokens(sessionStats.biggestWin), color = colors.lime }
-  end
-  lines[#lines + 1] = { spacer = true }
-  lines[#lines + 1] = { text = "-- OUTCOMES --", color = colors.yellow }
-  lines[#lines + 1] = { label = "Player", value = sessionStats.playerWins, color = colors.cyan }
-  lines[#lines + 1] = { label = "Banker", value = sessionStats.bankerWins, color = colors.red }
-  lines[#lines + 1] = { label = "Ties", value = sessionStats.ties, color = colors.yellow }
-  if sessionStats.bestStreak > 1 then
-    lines[#lines + 1] = { label = "Best Streak", value = sessionStats.bestStreak, color = colors.lime }
-  end
-  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
-    centerX = centerX,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
-  })
-end
-
------------------------------------------------------
--- Bet type selection (Player / Banker / Tie)
------------------------------------------------------
 local function selectBetType()
   while true do
     screen:clear(LO.TABLE_COLOR)
@@ -445,8 +349,6 @@ local function selectBetType()
       {
         { text = "HOW TO PLAY", color = colors.lightBlue,
           func = function() action = "tutorial" end },
-        { text = "STATS", color = colors.lightGray,
-          func = function() action = "stats" end },
       },
     }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
 
@@ -473,8 +375,7 @@ local function selectBetType()
 
     if chosen then return chosen end
     if action == "tutorial" then showTutorial() end
-    if action == "stats" then showStats() end
-    -- If tutorial/stats was shown, loop redraws the bet selection
+    -- If the tutorial was shown, loop redraws the bet selection.
   end
 end
 
@@ -680,9 +581,6 @@ local function baccaratRound(betAmount, betType)
     msgClr = colors.red
     snd = sound.SOUNDS.ERROR
   end
-
-  -- Update session statistics
-  updateSessionStats(outcome, betType, betAmount, netChange)
 
   -- Show result with beginner-friendly explanation
   local naturalTag = isNatural and " (Natural)" or ""

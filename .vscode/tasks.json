@@ -70,16 +70,7 @@
       "label": "Read Emulator Logs",
       "type": "shell",
       "command": "powershell",
-      "args": ["-Command", "$logs = @('emulator/mock_log.txt','blackjack_error.log','statistics_error.log','statistics_log.txt','casino_error.log','slots_error.log','roulette_error.log'); foreach($l in $logs) { $p = \"$env:APPDATA\\CraftOS-PC\\computer\\0\\$l\"; if(Test-Path $p) { Write-Host \"=== $l ===\" -ForegroundColor Cyan; Get-Content $p -Tail 30 } }"],
-      "group": "none",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Read Emulator Player Stats",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-Command", "$stats = Join-Path $env:APPDATA 'CraftOS-PC\\computer\\0\\player_data'; if(Test-Path $stats) { Get-ChildItem $stats | ForEach-Object { Write-Host \"=== $($_.Name) ===\" -ForegroundColor Cyan; Get-Content $_.FullName } } else { Write-Host 'No player_data directory yet' }"],
+      "args": ["-Command", "$logs = @('emulator/mock_log.txt','blackjack_error.log','casino_error.log','slots_error.log','roulette_error.log'); foreach($l in $logs) { $p = \"$env:APPDATA\\CraftOS-PC\\computer\\0\\$l\"; if(Test-Path $p) { Write-Host \"=== $l ===\" -ForegroundColor Cyan; Get-Content $p -Tail 30 } }"],
       "group": "none",
       "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
       "problemMatcher": []

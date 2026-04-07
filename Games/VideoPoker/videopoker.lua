@@ -42,7 +42,6 @@ local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
-local sessionStatsLib = require("lib.session_stats")
 local settlement = require("lib.round_settlement")
 
 -----------------------------------------------------
@@ -69,7 +68,6 @@ local env = gameSetup.init({
   deckCount       = cfg.DECK_COUNT,
   gameName        = cfg.GAME_NAME,
   logFile         = cfg.LOG_FILE,
-  initPlayerStats = false,
 })
 
 alert.addPlannedExits({
@@ -99,27 +97,6 @@ local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
 end
 
------------------------------------------------------
--- Session statistics
------------------------------------------------------
-local sessionStats = sessionStatsLib.new({
-  hands       = 0,
-  totalBet    = 0,
-  totalWon    = 0,
-  netProfit   = 0,
-  biggestWin  = 0,
-  handCounts  = {},  -- keyed by hand name
-})
-
--- Initialize hand counts
-for _, p in ipairs(PAYOUTS) do
-  sessionStats.handCounts[p.name] = 0
-end
-sessionStats.handCounts["No Win"] = 0
-
------------------------------------------------------
--- Player detection (shared via game_setup)
------------------------------------------------------
 local function refreshPlayer()
   return env.refreshPlayer()
 end
@@ -358,40 +335,6 @@ local function showTutorial()
   })
 end
 
------------------------------------------------------
--- Stats display
------------------------------------------------------
-local function showStats()
-  local profitColor = colors.white
-  if sessionStats.netProfit > 0 then
-    profitColor = colors.lime
-  elseif sessionStats.netProfit < 0 then
-    profitColor = colors.red
-  end
-  local lines = {
-    { label = "Hands", value = sessionStats.hands, color = colors.white },
-    { label = "Profit", value = currency.formatTokens(sessionStats.netProfit), color = profitColor },
-    { label = "Wagered", value = currency.formatTokens(sessionStats.totalBet), color = colors.white },
-  }
-  if sessionStats.biggestWin > 0 then
-    lines[#lines + 1] = { label = "Best Win", value = currency.formatTokens(sessionStats.biggestWin), color = colors.lime }
-  end
-  lines[#lines + 1] = { spacer = true }
-  lines[#lines + 1] = { text = "-- HANDS HIT --", color = colors.yellow }
-  for _, p in ipairs(PAYOUTS) do
-    local count = sessionStats.handCounts[p.name] or 0
-    if count > 0 then
-      lines[#lines + 1] = { label = p.name, value = count, color = colors.cyan }
-    end
-  end
-  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "SESSION STATS", lines, {
-    centerX = centerX,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
-  })
-end
-
------------------------------------------------------
 -- Pre-round menu
 -----------------------------------------------------
 local function preRoundMenu()
@@ -420,10 +363,6 @@ local function preRoundMenu()
         { text = "HOW TO PLAY", color = colors.lightBlue,
           func = function() chosen = "tutorial" end },
       },
-      {
-        { text = "STATS", color = colors.lightGray,
-          func = function() chosen = "stats" end },
-      },
     }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
 
     screen:output()
@@ -438,7 +377,6 @@ local function preRoundMenu()
     if chosen == "play" then return end
     if chosen == "payouts" then showPayoutTable() end
     if chosen == "tutorial" then showTutorial() end
-    if chosen == "stats" then showStats() end
   end
 end
 
@@ -739,11 +677,6 @@ local function pokerRound(betAmount)
     renderHand(hand, discardSelected, betAmount, nil, false)
     ui.displayCenteredMessage(screen, handName, colors.red, LO.RESULT_PAUSE)
   end
-
-  -- Update session stats
-  sessionStatsLib.increment(sessionStats, "hands")
-  sessionStatsLib.recordNet(sessionStats, betAmount, netChange)
-  sessionStatsLib.bumpMap(sessionStats, "handCounts", handName, 1)
 
   recovery.clearBet()
   dbg("Hand: " .. handName .. " mult=" .. multiplier .. " net=" .. netChange)
