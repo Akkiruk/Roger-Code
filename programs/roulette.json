@@ -7,12 +7,12 @@
     "description": "European Roulette with a single-screen felt UI and multi-bet support.",
     "source_root": "Games/Roulette",
     "entrypoint": "Roulette.lua",
-    "version": "1.0.57"
+    "version": "1.0.58"
   },
   "build": {
-    "commit": "adb9e7852e492c1d15933be73d97d3e63062845a",
-    "generated_at": "2026-04-07T01:40:24Z",
-    "package_hash": "3a68453d487f55522391ba483f9632dc6e6dda40c2b753b38dff92f0be0b818f"
+    "commit": "1d70229b377268da3142e6b39eb5d60eb7752402",
+    "generated_at": "2026-04-07T01:57:41Z",
+    "package_hash": "b6c25c2aff556499824eb32201b64e57b62cec307d86205e8ba3d9f4202a1562"
   },
   "install": {
     "preserve": [
@@ -32,7 +32,7 @@
       {
         "repo_path": "Games/lib/game_setup.lua",
         "install_path": "lib/game_setup.lua",
-        "sha256": "e1912ef3a0a9878c4a42f7cf754cabd20dde2f80914c15342ff70d2aee75040c"
+        "sha256": "dc6fa49b4be3a700dac1b03779359ff223edbc6cf5e58a71c8afdef27c7f34b0"
       },
       {
         "repo_path": "Games/lib/idle_card_animation_presets.lua",
@@ -173,7 +173,7 @@
       {
         "repo_path": "Games/Roulette/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
-        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
         "repo_path": "Games/lib/alert.lua",

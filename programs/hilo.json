@@ -7,12 +7,12 @@
     "description": "Hi-Lo card game for ComputerCraft casino.",
     "source_root": "Games/HiLo",
     "entrypoint": "hilo.lua",
-    "version": "1.0.45"
+    "version": "1.0.46"
   },
   "build": {
-    "commit": "adb9e7852e492c1d15933be73d97d3e63062845a",
-    "generated_at": "2026-04-07T01:40:24Z",
-    "package_hash": "fdf559d4ee9fa43ace8c77c5e3cb12fa0f5971108ecfd2569b8c6fece2549cd9"
+    "commit": "1d70229b377268da3142e6b39eb5d60eb7752402",
+    "generated_at": "2026-04-07T01:57:41Z",
+    "package_hash": "fd1bc19d529eb909bfe7445bfd8b53e46cda9eabca1fce215675cfc562ff22d7"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,12 @@
       {
         "repo_path": "Games/HiLo/hilo.lua",
         "install_path": "hilo.lua",
-        "sha256": "4d2a895fbf992c6744fdc42f499741acd79e10a0aa89b177a0d55dc3cbe1c418"
+        "sha256": "cec717b3edda2eaa3cef8bf52367d47e242ac341f26aee0070c398476ffd76d3"
+      },
+      {
+        "repo_path": "Games/lib/card_rules.lua",
+        "install_path": "lib/card_rules.lua",
+        "sha256": "cb44781c572fd997c3f39aa5046ab905bcd29194c0990c093f2bf1f88b5fcbef"
       },
       {
         "repo_path": "Games/lib/cards.lua",
@@ -52,7 +57,7 @@
       {
         "repo_path": "Games/lib/game_setup.lua",
         "install_path": "lib/game_setup.lua",
-        "sha256": "e1912ef3a0a9878c4a42f7cf754cabd20dde2f80914c15342ff70d2aee75040c"
+        "sha256": "dc6fa49b4be3a700dac1b03779359ff223edbc6cf5e58a71c8afdef27c7f34b0"
       },
       {
         "repo_path": "Games/lib/idle_card_animation_presets.lua",
@@ -65,19 +70,19 @@
         "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
+        "repo_path": "Games/lib/card_anim.lua",
+        "install_path": "lib/card_anim.lua",
+        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+      },
+      {
         "repo_path": "Games/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
       },
       {
-        "repo_path": "Games/lib/card_rules.lua",
-        "install_path": "lib/card_rules.lua",
-        "sha256": "cb44781c572fd997c3f39aa5046ab905bcd29194c0990c093f2bf1f88b5fcbef"
-      },
-      {
-        "repo_path": "Games/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
         "repo_path": "Games/lib/player_detection.lua",
@@ -100,11 +105,6 @@
         "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
       },
       {
-        "repo_path": "Games/lib/session_stats.lua",
-        "install_path": "lib/session_stats.lua",
-        "sha256": "a4d2258eb68ed12c792e3db88a7c54c67745ddca19eb20a38c569ce6bc6524bd"
-      },
-      {
         "repo_path": "Games/lib/sound.lua",
         "install_path": "lib/sound.lua",
         "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
@@ -125,14 +125,14 @@
         "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
-        "repo_path": "Games/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "repo_path": "Games/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
-        "repo_path": "Games/lib/card_anim.lua",
-        "install_path": "lib/card_anim.lua",
-        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
       },
       {
         "repo_path": "Games/lib/betting.lua",
@@ -140,9 +140,9 @@
         "sha256": "c5f7155130ca191e19b33036337be42ee63f3f36ab09de47b47ca414321eb620"
       },
       {
-        "repo_path": "Games/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+        "repo_path": "Games/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
         "repo_path": "Games/HiLo/startup.lua",
@@ -191,13 +191,13 @@
         "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
-        "repo_path": "Games/HiLo/heart.nfp",
-        "install_path": "heart.nfp",
-        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
-        "repo_path": "Games/HiLo/hearts.nfp",
-        "install_path": "hearts.nfp",
+        "repo_path": "Games/HiLo/heart.nfp",
+        "install_path": "heart.nfp",
         "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
       },
       {
@@ -218,7 +218,7 @@
       {
         "repo_path": "Games/HiLo/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
-        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
         "repo_path": "Games/lib/alert.lua",
@@ -246,14 +246,9 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Games/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
-      },
-      {
-        "repo_path": "Games/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
+        "repo_path": "Games/HiLo/hearts.nfp",
+        "install_path": "hearts.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
       },
       {
         "repo_path": "Games/lib/updater.lua",
@@ -290,7 +285,6 @@
       "lib.replay_prompt",
       "lib.round_settlement",
       "lib.safe_runner",
-      "lib.session_stats",
       "lib.sound",
       "lib.ui",
       "lib.ui_surface",

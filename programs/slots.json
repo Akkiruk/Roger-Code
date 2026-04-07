@@ -7,12 +7,12 @@
     "description": "Slot Machine game for ComputerCraft casino.",
     "source_root": "Games/Slots",
     "entrypoint": "slots.lua",
-    "version": "1.0.45"
+    "version": "1.0.46"
   },
   "build": {
-    "commit": "adb9e7852e492c1d15933be73d97d3e63062845a",
-    "generated_at": "2026-04-07T01:40:24Z",
-    "package_hash": "5b2dcd70f08bc1b38d4175824c191f9719c9a86c6b79f3a56631c9f284a1ac2d"
+    "commit": "1d70229b377268da3142e6b39eb5d60eb7752402",
+    "generated_at": "2026-04-07T01:57:41Z",
+    "package_hash": "bfcc5985328e9a2abddc061170b216b01d914195c43f6483793e80e281a39ec2"
   },
   "install": {
     "preserve": [
@@ -42,7 +42,7 @@
       {
         "repo_path": "Games/lib/game_setup.lua",
         "install_path": "lib/game_setup.lua",
-        "sha256": "e1912ef3a0a9878c4a42f7cf754cabd20dde2f80914c15342ff70d2aee75040c"
+        "sha256": "dc6fa49b4be3a700dac1b03779359ff223edbc6cf5e58a71c8afdef27c7f34b0"
       },
       {
         "repo_path": "Games/lib/idle_card_animation_presets.lua",
@@ -193,7 +193,7 @@
       {
         "repo_path": "Games/Slots/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
-        "sha256": "558ef6675b1adc01ff56bf039bf1515e8e2d1cf1f31fd05783ba0bcaea543946"
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
         "repo_path": "Games/lib/alert.lua",

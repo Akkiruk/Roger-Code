@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
     "source_root": "Games/PokerTable",
     "entrypoint": "pokertable.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "adb9e7852e492c1d15933be73d97d3e63062845a",
-    "generated_at": "2026-04-07T01:40:24Z",
-    "package_hash": "219b2beb4c964f726601b8e34c8a664888a00f97bd5dba884a4b18b8dcb4d6f7"
+    "commit": "1d70229b377268da3142e6b39eb5d60eb7752402",
+    "generated_at": "2026-04-07T01:57:41Z",
+    "package_hash": "3b04b6fa176dc534e02af0f6a019a8ba4255c916bf2dac8e63b7884ea140f775"
   },
   "install": {
     "preserve": [
@@ -48,7 +48,7 @@
       {
         "repo_path": "Games/PokerTable/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
-        "sha256": "f9d05ea6e761aacd620026cf8d260017d7e11263814eb47cd36918a4f7889070"
+        "sha256": "68af55dc4b664cf66136653f376d4f318fb8b73b29cb26dec405a3e0e82dee90"
       },
       {
         "repo_path": "Games/lib/currency.lua",
