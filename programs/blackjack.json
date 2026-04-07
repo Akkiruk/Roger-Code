@@ -7,12 +7,12 @@
     "description": "Blackjack card game for ComputerCraft casino.",
     "source_root": "Games/Blackjack",
     "entrypoint": "blackjack.lua",
-    "version": "1.2.43"
+    "version": "1.2.44"
   },
   "build": {
-    "commit": "0802297ac910c363fbf40a8129408db737281bb1",
-    "generated_at": "2026-04-07T00:15:10Z",
-    "package_hash": "b935194c3af2a09573bc6268394563fcf7ef105e0266b8ae1b704dc6a81d9341"
+    "commit": "02b15fd35fff6e2d42fe2b15300d33af81a417c4",
+    "generated_at": "2026-04-07T00:22:36Z",
+    "package_hash": "3014e55b8b6aff4e43576095ae4506f06f1f15b2d0ae5bd666c13bd1b9d0eb7b"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
         "install_path": "blackjack.lua",
-        "sha256": "7767fa1528f14bd4942b35cc93629c64efa660c748561f0a0d4c148826919e7e"
+        "sha256": "38af9f72668ecaa53b3313d3d782e811c5c56399a5238bf9df0e95d8d1ce78cf"
       },
       {
         "repo_path": "Games/lib/bedrock/widgets.lua",
@@ -172,7 +172,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack_config.lua",
         "install_path": "blackjack_config.lua",
-        "sha256": "b3f4738d5b4a43162426ecc7f517487d959f04a7eb6bfac8df0290446d5f2ef9",
+        "sha256": "8b7c92e7baa4224bca0a938bbb832bcffb5c9ef3f8017a642ba793343c4fc43a",
         "preserve_existing": true
       },
       {
