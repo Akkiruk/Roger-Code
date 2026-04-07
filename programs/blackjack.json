@@ -7,12 +7,12 @@
     "description": "Blackjack card game for ComputerCraft casino.",
     "source_root": "Games/Blackjack",
     "entrypoint": "blackjack.lua",
-    "version": "1.2.42"
+    "version": "1.2.43"
   },
   "build": {
-    "commit": "738902772f63298315dee97422d6464ddc528d76",
-    "generated_at": "2026-04-07T00:08:22Z",
-    "package_hash": "bc26ef98326519a03544694e8c81ded56a6e0b7ea1f35cd36cb2f04465c29542"
+    "commit": "0802297ac910c363fbf40a8129408db737281bb1",
+    "generated_at": "2026-04-07T00:15:10Z",
+    "package_hash": "b935194c3af2a09573bc6268394563fcf7ef105e0266b8ae1b704dc6a81d9341"
   },
   "install": {
     "preserve": [
@@ -47,7 +47,7 @@
       {
         "repo_path": "Games/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "3b1331a9078320f22a2a45213712334fe570733bd22b670c4f5f59ccbc75f3ec"
+        "sha256": "241362d16aa8ae3fd48cf928c33ee0aeefbeb207aa7ebcab5b93ea269c7ca4d7"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -278,7 +278,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "bede0b24723b0dabc93e2bd67ced1e82335c08344c0abd58186d5cde13d26d35"
+        "sha256": "a45ff44c252b02c355812bb25a496f30edeef4a455b8fd7a24cacb897caa0ff3"
       }
     ]
   },
