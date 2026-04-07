@@ -411,12 +411,18 @@ local function bestLivePlayerTotal(ctx)
 end
 
 local function dealerTargetTotal(ctx)
-  local bestPlayerTotal = bestLivePlayerTotal(ctx)
-  local chaseCeiling = (cfg.DEALER_CHASE_TOTAL or cfg.DEALER_STAND) + 1
-  if bestPlayerTotal > 0 then
-    return math.max(cfg.DEALER_STAND, math.min(bestPlayerTotal, chaseCeiling))
+  local standTotal = cfg.DEALER_STAND
+  local chaseTotal = tonumber(cfg.DEALER_CHASE_TOTAL)
+  if not chaseTotal or chaseTotal < standTotal then
+    return standTotal
   end
-  return cfg.DEALER_STAND
+
+  local bestPlayerTotal = bestLivePlayerTotal(ctx)
+  local chaseCeiling = chaseTotal + 1
+  if bestPlayerTotal > 0 then
+    return math.max(standTotal, math.min(bestPlayerTotal, chaseCeiling))
+  end
+  return standTotal
 end
 
 local function dealerMustHit(ctx)
@@ -700,6 +706,12 @@ local function executeSplit(hand, ctx, handIdx)
     table.insert(newHand.cards, saved2)
   else
     sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  end
+
+  if cfg.RESTRICT_SPLIT_ACES and isSplitAces then
+    hand.lastAction = ACT.STAND
+    newHand.lastAction = ACT.STAND
+    return true
   end
 
   return false -- stay on current hand
