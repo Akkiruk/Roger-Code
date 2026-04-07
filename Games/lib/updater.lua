@@ -19,6 +19,8 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
+local DEFAULT_WATCH_INTERVAL = 300
+local DEFAULT_STARTUP_INTERVALS = { 5, 5, 10, 10, 15, 15, 30, 30, 60, 60, 120 }
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local CONTENTS_API_ROOT = API_URL .. "/contents/"
 local CONTENTS_API_HEADERS = {
@@ -329,6 +331,32 @@ local function cleanupStaleRuntimeArtifacts()
   removePath(".update_staging")
 end
 
+local function buildWatchSchedule(opts)
+  local options = opts or {}
+  local steadyInterval = tonumber(options.interval) or DEFAULT_WATCH_INTERVAL
+  if steadyInterval < 5 then
+    steadyInterval = 5
+  end
+
+  local startupIntervals = options.startupIntervals
+  if startupIntervals == false then
+    return {}, steadyInterval
+  end
+  if type(startupIntervals) ~= "table" then
+    startupIntervals = DEFAULT_STARTUP_INTERVALS
+  end
+
+  local schedule = {}
+  for _, entry in ipairs(startupIntervals) do
+    local delay = tonumber(entry)
+    if delay and delay > 0 then
+      schedule[#schedule + 1] = delay
+    end
+  end
+
+  return schedule, steadyInterval
+end
+
 local function isLegacyPayloadPath(path)
   if path:sub(1, 4) == "lib/" then
     return true
@@ -457,6 +485,8 @@ end
 local function checkForUpdates(opts)
   opts = opts or {}
   local callback = opts.callback or function() end
+  local rebootOnUpdate = opts.rebootOnUpdate == true
+  local rebootDelay = tonumber(opts.rebootDelay) or 1
   local status = "skipped"
 
   local ok, err = pcall(function()
@@ -553,6 +583,14 @@ local function checkForUpdates(opts)
       callback("error", "Update failed")
     end
 
+    if status == "updated" and rebootOnUpdate then
+      logMsg("Rebooting after update")
+      callback("rebooting", "Update applied, rebooting...")
+      releaseLock()
+      os.sleep(rebootDelay)
+      os.reboot()
+    end
+
     releaseLock()
   end)
 
@@ -576,16 +614,23 @@ end
 
 local function watchForUpdates(opts)
   opts = opts or {}
-  local interval = opts.interval or 300
   local callback = opts.callback or function() end
+  local startupSchedule, steadyInterval = buildWatchSchedule(opts)
+  local startupIndex = 1
 
   while true do
+    local interval = startupSchedule[startupIndex] or steadyInterval
     os.sleep(interval)
+
     local status = checkForUpdates({ callback = callback })
     if status == "updated" then
       callback("rebooting", "Update applied, rebooting...")
       os.sleep(1)
       os.reboot()
+    end
+
+    if startupSchedule[startupIndex] then
+      startupIndex = startupIndex + 1
     end
   end
 end

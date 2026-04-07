@@ -29,6 +29,7 @@ local function sleepRaw(seconds)
 end
 
 updater.checkForUpdates({
+  rebootOnUpdate = true,
   callback = function(status, msg)
     alert.log("Updater [" .. tostring(status) .. "] " .. tostring(msg))
   end,

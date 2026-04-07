@@ -88,6 +88,7 @@ function M.run(opts)
 
   debugLog("Checking for updates...")
   updater.checkForUpdates({
+    rebootOnUpdate = true,
     callback = function(status, message)
       debugLog("Updater [" .. status .. "] " .. tostring(message))
     end,

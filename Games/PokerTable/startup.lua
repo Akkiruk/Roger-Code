@@ -1,7 +1,9 @@
 local ok, updater = pcall(require, "lib.updater")
 if ok and updater and type(updater.checkForUpdates) == "function" then
   pcall(function()
-    updater.checkForUpdates()
+    updater.checkForUpdates({
+      rebootOnUpdate = true,
+    })
   end)
 end
 

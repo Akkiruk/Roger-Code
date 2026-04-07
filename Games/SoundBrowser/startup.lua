@@ -15,5 +15,7 @@ end
 
 PROGRAM = ROOT ~= "" and fs.combine(ROOT, "sound_browser.lua") or "sound_browser.lua"
 
-updater.checkForUpdates()
+updater.checkForUpdates({
+  rebootOnUpdate = true,
+})
 shell.run(PROGRAM, unpack(args))
