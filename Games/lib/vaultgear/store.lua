@@ -151,12 +151,18 @@ function M.loadConfig()
   local loaded = readLuaTable(constants.CONFIG_FILE)
   local normalized = normalizeLoadedConfig(loaded)
   normalized.runtime = util.mergeDefaults(constants.DEFAULT_RUNTIME, normalized.runtime)
+  normalized.runtime.move_batch = nil
+  normalized.runtime.repair_batch = nil
   normalized.storages = planner.normalizeStorages(normalized.storages)
   return normalized
 end
 
 function M.saveConfig(config)
   config.schema_version = constants.CONFIG_SCHEMA_VERSION
+  if type(config.runtime) == "table" then
+    config.runtime.move_batch = nil
+    config.runtime.repair_batch = nil
+  end
   config.storages = planner.normalizeStorages(config.storages)
   return saveLuaTable(constants.CONFIG_FILE, config)
 end

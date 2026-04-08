@@ -76,8 +76,6 @@ end
 M.DEFAULT_RUNTIME = {
   enabled = false,
   scan_interval = 2,
-  move_batch = 4,
-  repair_batch = 2,
 }
 
 M.DEFAULT_RULE = {

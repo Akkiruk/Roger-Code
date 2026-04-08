@@ -170,7 +170,7 @@ local function buildMoveAction(kind, sourceName, destination, item, reason, move
   }
 end
 
-function M.processInboxes(storages, connectedSet, catalog, catalogLib, moveLimit)
+function M.processInboxes(storages, connectedSet, catalog, catalogLib)
   local report = {
     kind = "idle",
     moved_stacks = 0,
@@ -195,10 +195,6 @@ function M.processInboxes(storages, connectedSet, catalog, catalogLib, moveLimit
       report.errors[#report.errors + 1] = err
     else
       for _, slot in ipairs(slotKeys(slotMap)) do
-        if report.moved_stacks >= (moveLimit or 1) then
-          return report
-        end
-
         local basic = slotMap[slot]
         local item = normalizeSlot(inventory, slot, basic)
         report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
@@ -230,7 +226,7 @@ function M.processInboxes(storages, connectedSet, catalog, catalogLib, moveLimit
   return report
 end
 
-function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogLib, moveLimit)
+function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogLib)
   local report = {
     kind = "idle",
     moved_stacks = 0,
@@ -253,52 +249,43 @@ function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogL
     return report
   end
 
-  local cursor = tonumber(runtimeState and runtimeState.repair_cursor) or 1
-  if cursor < 1 or cursor > #homes then
-    cursor = 1
-  end
-
-  local storage = homes[cursor]
   report.kind = "repair_scan"
-  report.target_inventory = storage.inventory
+  report.target_inventory = homes[1].inventory
 
-  local inventory, slotMap, err = loadSlotMap(storage.inventory)
-  if err then
-    report.errors[#report.errors + 1] = err
-    runtimeState.repair_cursor = cursor % #homes + 1
-    return report
-  end
+  for _, storage in ipairs(homes) do
+    report.target_inventory = storage.inventory
 
-  for _, slot in ipairs(slotKeys(slotMap)) do
-    if report.moved_stacks >= (moveLimit or 1) then
-      break
-    end
+    local inventory, slotMap, err = loadSlotMap(storage.inventory)
+    if err then
+      report.errors[#report.errors + 1] = err
+    else
+      for _, slot in ipairs(slotKeys(slotMap)) do
+        local basic = slotMap[slot]
+        local item = normalizeSlot(inventory, slot, basic)
+        report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
 
-    local basic = slotMap[slot]
-    local item = normalizeSlot(inventory, slot, basic)
-    report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
-
-    local picked = planner.pickDestination(homes, item, storage.inventory)
-    if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
-      local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
-      if type(moved) ~= "number" or moved < 1 then
-        report.errors[#report.errors + 1] = moveError or ("Repair move failed from " .. tostring(storage.inventory))
-        local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
-        if routeFailure then
-          report.route_failures[#report.route_failures + 1] = routeFailure
+        local picked = planner.pickDestination(homes, item, storage.inventory)
+        if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
+          local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
+          if type(moved) ~= "number" or moved < 1 then
+            report.errors[#report.errors + 1] = moveError or ("Repair move failed from " .. tostring(storage.inventory))
+            local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
+            if routeFailure then
+              report.route_failures[#report.route_failures + 1] = routeFailure
+            end
+          else
+            report.kind = "repair"
+            report.moved_stacks = report.moved_stacks + 1
+            report.moved_items = report.moved_items + moved
+            report.action = buildMoveAction("repair", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
+          end
         end
-      else
-        report.kind = "repair"
-        report.moved_stacks = report.moved_stacks + 1
-        report.moved_items = report.moved_items + moved
-        report.action = buildMoveAction("repair", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
+
+        os.sleep(0)
       end
     end
-
-    os.sleep(0)
   end
 
-  runtimeState.repair_cursor = cursor % #homes + 1
   return report
 end
 

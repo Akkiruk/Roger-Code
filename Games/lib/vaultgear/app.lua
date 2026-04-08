@@ -157,8 +157,8 @@ local function summarizeWork(report)
   if report.kind == "repair" and report.action then
     return "Repairing " .. tostring(report.action.source), report.action.reason
   end
-  if report.kind == "repair_scan" and report.target_inventory then
-    return "Rescanning " .. tostring(report.target_inventory), nil
+  if report.kind == "repair_scan" then
+    return "Repair scan complete", nil
   end
   return "Idle", nil
 end
@@ -336,8 +336,7 @@ local function processWork(app, allowPaused)
     app.config.storages,
     app.connected,
     app.state.catalog,
-    catalog,
-    app.config.runtime.move_batch
+    catalog
   )
 
   if report.catalog_changed then
@@ -350,8 +349,7 @@ local function processWork(app, allowPaused)
       app.connected,
       app.state.runtime,
       app.state.catalog,
-      catalog,
-      app.config.runtime.repair_batch
+      catalog
     )
 
     if report.catalog_changed then
