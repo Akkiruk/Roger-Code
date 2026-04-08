@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
     "source_root": "Games/VaultGear",
     "entrypoint": "vaultgear.lua",
-    "version": "1.0.24"
+    "version": "1.0.25"
   },
   "build": {
-    "commit": "c4ca065f0e7620b2412ceefc554315f9728224a4",
-    "generated_at": "2026-04-08T02:44:38Z",
-    "package_hash": "598a294063e2f97764c29e8b41a93d9c2029f94ef419aed098d7308814c7fd5d"
+    "commit": "9b79b7da71e85f9e879464eb9ab90c1ed931285a",
+    "generated_at": "2026-04-08T02:58:09Z",
+    "package_hash": "1557892c8b3e8a44718e2e6a5d3d0963afe34586fac5fe53bcaa43e92ac9e117"
   },
   "install": {
     "preserve": [
@@ -28,7 +28,7 @@
       {
         "repo_path": "Games/lib/vaultgear/ui_shared.lua",
         "install_path": "lib/vaultgear/ui_shared.lua",
-        "sha256": "6bd45b711c192025c644420f2e87faba6dae5aa0f500473218cd783119ea7502"
+        "sha256": "74b86d7bff236d57ca766d0c59e7ef060bb82c5d02496cb677c26f88ab825789"
       },
       {
         "repo_path": "Games/lib/vaultgear/ui_pages.lua",
@@ -43,7 +43,7 @@
       {
         "repo_path": "Games/lib/vaultgear/service.lua",
         "install_path": "lib/vaultgear/service.lua",
-        "sha256": "2ea0f6b7217df7024ad208e39a75aa0cdb278c785ca65bb31180983700f8804f"
+        "sha256": "fc5403d688200f03d73d6dea90b04f35d8a27cadcbb5e94b2c23f44b5b8fb351"
       },
       {
         "repo_path": "Games/lib/vaultgear/quick_setup.lua",
@@ -63,7 +63,7 @@
       {
         "repo_path": "Games/lib/vaultgear/peripherals.lua",
         "install_path": "lib/vaultgear/peripherals.lua",
-        "sha256": "7a757be080d0a39ce10e05728b2a8355e9f136b7536de53a58c16bef24262a26"
+        "sha256": "29b33307c9b4232627874ef538f734362010ab7d5d074c74f516b94ec82930a1"
       },
       {
         "repo_path": "Games/lib/vaultgear/model.lua",
@@ -88,7 +88,7 @@
       {
         "repo_path": "Games/lib/vaultgear/app.lua",
         "install_path": "lib/vaultgear/app.lua",
-        "sha256": "4fc42b011c83e406c1096c77b00b1bee102ba217af90ed3797bc2f3c917992a0"
+        "sha256": "38249e6b3f29714d7a5dfe75be80aaafff8890a9a2ff7f85742c3356c2a7f2ef"
       },
       {
         "repo_path": "Games/lib/updater.lua",
