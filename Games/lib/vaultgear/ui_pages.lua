@@ -134,6 +134,37 @@ local function buildDraftRows(app, actions, view)
   local rows = {}
   local role = view.draft_role or "home"
   local draftHome = quickSetup.normalizeConfig(view.draft_home or quickSetup.defaultConfig("Gear", 10))
+  local pending = shared.pendingRelinkStorage(app)
+
+  if pending then
+    addSection(rows, "Missing Storage")
+    addRow(rows, 3, function(ctx, rect)
+      drawWrappedLines(ctx, rect, {
+        "Replacing: " .. shared.inventoryLabel(app, pending.inventory),
+        shared.roleLabel(pending.role) .. " settings will be kept exactly as-is.",
+        shared.canUseSelectedAsReplacement(app)
+          and "Use this live inventory to take over that saved storage."
+          or "Select an open connected inventory to use as the replacement.",
+      }, "muted")
+    end)
+    addRow(rows, 1, function(ctx, rect)
+      shared.renderButtonRow(ctx, rect, {
+        {
+          label = "Use Replacement",
+          background = shared.canUseSelectedAsReplacement(app) and "success" or "surface_alt",
+          foreground = shared.canUseSelectedAsReplacement(app) and "text_dark" or "text",
+          onClick = actions.applyRelinkToSelected,
+        },
+        {
+          label = "Cancel",
+          background = "warning",
+          foreground = "text_dark",
+          onClick = actions.cancelRelink,
+        },
+      })
+    end)
+    return rows
+  end
 
   addSection(rows, "Quick Setup")
   addRow(rows, 1, function(ctx, rect)
@@ -424,10 +455,56 @@ local function buildHomeRows(app, actions)
   return rows
 end
 
+local function buildMissingStorageRows(app, actions)
+  local rows = {}
+  local storage = shared.selectedStorage(app)
+
+  addSection(rows, "Missing Storage")
+  addRow(rows, 3, function(ctx, rect)
+    local lines = {
+      "Saved target: " .. shared.inventoryLabel(app, storage.inventory),
+      "This storage is offline, renamed, or no longer attached to the current network.",
+    }
+    for _, line in ipairs(shared.storageSummaryLines(storage)) do
+      lines[#lines + 1] = line
+      if #lines >= 5 then
+        break
+      end
+    end
+    drawWrappedLines(ctx, rect, lines, "muted")
+  end)
+  addRow(rows, 1, function(ctx, rect)
+    shared.renderButtonRow(ctx, rect, {
+      {
+        label = app.session.pending_relink_storage_id == storage.id and "Replacement Selected" or "Pick Replacement",
+        background = app.session.pending_relink_storage_id == storage.id and "success" or "accent",
+        foreground = "text_dark",
+        onClick = actions.beginRelinkSelected,
+      },
+      app.session.pending_relink_storage_id == storage.id and {
+        label = "Cancel",
+        background = "warning",
+        foreground = "text_dark",
+        onClick = actions.cancelRelink,
+      } or {
+        label = "Stop",
+        background = "warning",
+        foreground = "text_dark",
+        onClick = actions.stopManagingSelected,
+      },
+    })
+  end)
+
+  return rows
+end
+
 local function buildStorageRows(app, actions, view)
   local storage = shared.selectedStorage(app)
   if not storage then
     return buildDraftRows(app, actions, view)
+  end
+  if not app.connected[storage.inventory] then
+    return buildMissingStorageRows(app, actions)
   end
   if storage.role == "inbox" then
     return buildInboxRows(app, actions)

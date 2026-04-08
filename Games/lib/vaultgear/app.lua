@@ -117,6 +117,21 @@ local function selectedStorage(app)
   return planner.findStorageByInventory(app.config.storages, app.ui.selected_inventory)
 end
 
+local function pendingRelinkStorage(app)
+  local storageId = app.session and app.session.pending_relink_storage_id or nil
+  if not storageId then
+    return nil, nil
+  end
+
+  return planner.findStorageById(app.config.storages, storageId)
+end
+
+local function clearPendingRelink(app)
+  if app and app.session then
+    app.session.pending_relink_storage_id = nil
+  end
+end
+
 local function ensureSelectedInventory(app)
   local names = inventoryNames(app)
   if app.ui.selected_inventory then
@@ -239,6 +254,10 @@ local function refreshDiscovery(app)
   app.dirty_state = true
   bindMonitor(app)
   refreshHealth(app)
+  local pendingStorage = pendingRelinkStorage(app)
+  if pendingStorage and app.connected[pendingStorage.inventory] then
+    clearPendingRelink(app)
+  end
   refreshInspector(app)
 end
 
@@ -489,6 +508,7 @@ function M.run()
       repaired = 0,
       errors = 0,
       unresolved = 0,
+      pending_relink_storage_id = nil,
     },
     recent = {},
     inspector = {
@@ -607,6 +627,10 @@ function M.run()
     end
 
     table.remove(app.config.storages, index)
+    local pendingStorage = pendingRelinkStorage(app)
+    if pendingStorage == nil then
+      clearPendingRelink(app)
+    end
     sortStorages(app)
     app.dirty_config = true
     app.dirty_state = true
@@ -615,6 +639,74 @@ function M.run()
     refreshUi(app, "storages")
     saveAll(app, "storage remove")
     notify("warning", "Stopped managing", tostring(app.ui.selected_inventory))
+  end
+
+  function actions.beginRelinkSelected()
+    local storage = selectedStorage(app)
+    if not storage or app.connected[storage.inventory] then
+      return
+    end
+
+    app.session.pending_relink_storage_id = storage.id
+    app.dirty_state = true
+    refreshUi(app, "storages")
+    saveAll(app, "begin relink")
+    notify("info", "Pick replacement", "Select the live inventory that should take over this storage, then confirm.")
+  end
+
+  function actions.cancelRelink()
+    if not pendingRelinkStorage(app) then
+      return
+    end
+
+    clearPendingRelink(app)
+    app.dirty_state = true
+    refreshUi(app, "storages")
+    saveAll(app, "cancel relink")
+    notify("info", "Relink cancelled", "The current storage plan was left unchanged.")
+  end
+
+  function actions.applyRelinkToSelected()
+    local storage, index = pendingRelinkStorage(app)
+    if not storage or not index then
+      return
+    end
+
+    if not app.ui.selected_inventory or not app.connected[app.ui.selected_inventory] then
+      notify("warning", "Select a live inventory", "Choose a connected inventory before applying the replacement.")
+      return
+    end
+
+    local selected, selectedIndex = selectedStorage(app)
+    if selected and selected.id ~= storage.id then
+      notify("warning", "Inventory already managed", "Pick an open connected inventory so the missing storage can be rebound cleanly.")
+      return
+    end
+
+    local previousInventory = storage.inventory
+    storage.inventory = app.ui.selected_inventory
+    app.config.storages[index] = planner.normalizeStorage(storage, index)
+
+    if selectedIndex and selectedIndex ~= index then
+      app.config.storages[selectedIndex] = planner.normalizeStorage(selected, selectedIndex)
+    end
+
+    clearPendingRelink(app)
+    clearRouteFailures(app.state.runtime)
+    sortStorages(app)
+    app.dirty_config = true
+    app.dirty_state = true
+    refreshHealth(app)
+    refreshInspector(app)
+    refreshUi(app, "storages")
+    saveAll(app, "apply relink")
+
+    recentEvent(
+      app,
+      "info",
+      string.format("Relinked %s -> %s", tostring(previousInventory or "?"), tostring(storage.inventory or "?"))
+    )
+    notify("success", "Storage rebound", tostring(storage.inventory))
   end
 
   function actions.applySuggestion()

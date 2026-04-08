@@ -76,6 +76,28 @@ local function selectedStorage(app)
   return planner.findStorageByInventory(app.config.storages, app.ui.selected_inventory)
 end
 
+local function pendingRelinkStorage(app)
+  local storageId = app.session and app.session.pending_relink_storage_id or nil
+  if not storageId then
+    return nil, nil
+  end
+
+  return planner.findStorageById(app.config.storages, storageId)
+end
+
+local function canUseSelectedAsReplacement(app)
+  local pending = pendingRelinkStorage(app)
+  if not pending then
+    return false
+  end
+  if not app.ui.selected_inventory or not app.connected[app.ui.selected_inventory] then
+    return false
+  end
+
+  local storage = selectedStorage(app)
+  return storage == nil or storage.id == pending.id
+end
+
 local function inventoryLabel(app, inventoryName)
   if not inventoryName then
     return "No inventory selected"
@@ -289,6 +311,14 @@ function M.healthLabel(app)
 end
 
 function M.nextStep(app)
+  local pending = pendingRelinkStorage(app)
+  local storage = selectedStorage(app)
+  if pending then
+    return "Choose the live inventory that should replace " .. tostring(pending.inventory or "the missing storage") .. ", then press Use Replacement."
+  end
+  if storage and not app.connected[storage.inventory] then
+    return "This saved storage is missing. Press Pick Replacement, then choose the live inventory that should take over."
+  end
   if not app.health.monitor_ok and app.health.monitor_error then
     return app.health.monitor_error
   end
@@ -352,10 +382,24 @@ end
 
 function M.selectionSummaryLines(app)
   local storage = selectedStorage(app)
+  local pending = pendingRelinkStorage(app)
   local lines = {
     selectedInventoryLabel(app),
     selectionModeLabel(app, storage),
   }
+
+  if pending and storage == nil then
+    lines[#lines + 1] = "Ready to replace: " .. inventoryLabel(app, pending.inventory)
+    if canUseSelectedAsReplacement(app) then
+      lines[#lines + 1] = "This live inventory can take over the saved rules in one tap."
+    else
+      lines[#lines + 1] = "Pick an open connected inventory before applying the replacement."
+    end
+  end
+
+  if storage and not app.connected[storage.inventory] then
+    lines[#lines + 1] = "This saved storage is offline. Pick Replacement to bind its rules to a live inventory."
+  end
 
   if app.inspector.error then
     lines[#lines + 1] = app.inspector.error
@@ -904,5 +948,7 @@ M.selectedStorage = selectedStorage
 M.selectedInventoryLabel = selectedInventoryLabel
 M.roleLabel = roleLabel
 M.inventoryLabel = inventoryLabel
+M.pendingRelinkStorage = pendingRelinkStorage
+M.canUseSelectedAsReplacement = canUseSelectedAsReplacement
 
 return M

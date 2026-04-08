@@ -122,6 +122,15 @@ function M.findStorageByInventory(storages, inventoryName)
   return nil, nil
 end
 
+function M.findStorageById(storages, storageId)
+  for index, storage in ipairs(storages or {}) do
+    if storage.id == storageId then
+      return storage, index
+    end
+  end
+  return nil, nil
+end
+
 function M.nextStorageId(storages)
   local used = {}
   for _, storage in ipairs(storages or {}) do
