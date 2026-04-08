@@ -11,17 +11,34 @@ local function safeWrap(name)
   return nil
 end
 
+local function isMeBridgeType(peripheralType)
+  return peripheralType == "meBridge" or peripheralType == "me_bridge"
+end
+
 local function inventoryEntry(name, wrapped)
+  local peripheralType = peripheral.getType(name) or "unknown"
+  local meBridge = isMeBridgeType(peripheralType)
+  local canList = type(wrapped.list) == "function"
+  local canGetItems = type(wrapped.getItems) == "function" or type(wrapped.listItems) == "function"
+  local canPush = type(wrapped.pushItems) == "function"
+  local canPull = type(wrapped.pullItems) == "function"
+  local canExport = type(wrapped.exportItem) == "function" or type(wrapped.exportItemToPeripheral) == "function"
+  local canImport = type(wrapped.importItem) == "function" or type(wrapped.importItemFromPeripheral) == "function"
+
   local entry = {
     name = name,
-    type = peripheral.getType(name) or "unknown",
-    can_list = type(wrapped.list) == "function",
+    type = peripheralType,
+    is_me_bridge = meBridge,
+    can_list = canList,
+    can_scan = canList or (meBridge and canGetItems),
     can_detail = type(wrapped.getItemDetail) == "function",
-    can_push = type(wrapped.pushItems) == "function",
-    can_pull = type(wrapped.pullItems) == "function",
+    can_push = canPush,
+    can_pull = canPull,
+    can_export = canPush or (meBridge and canExport),
+    can_import = canPull or (meBridge and canImport),
   }
 
-  if type(wrapped.size) == "function" then
+  if not meBridge and type(wrapped.size) == "function" then
     local ok, size = pcall(function()
       return wrapped.size()
     end)
@@ -30,7 +47,7 @@ local function inventoryEntry(name, wrapped)
     end
   end
 
-  entry.label = name .. " [" .. entry.type .. "]"
+  entry.label = name .. " [" .. (meBridge and "ME Bridge" or entry.type) .. "]"
   return entry
 end
 
@@ -52,7 +69,7 @@ function M.discover()
         }
       end
 
-      if type(wrapped.list) == "function" then
+      if type(wrapped.list) == "function" or isMeBridgeType(pType) then
         inventories[#inventories + 1] = inventoryEntry(name, wrapped)
       end
     end

@@ -91,6 +91,13 @@ local function connectedInventorySet(app)
   return map
 end
 
+local function storageEntry(app, storage)
+  if not storage or not storage.inventory then
+    return nil
+  end
+  return peripherals.findInventory(app.discovery, storage.inventory)
+end
+
 local function inventoryNames(app)
   local names = {}
   local seen = {}
@@ -212,6 +219,8 @@ local function refreshHealth(app)
   end
 
   local priorityUse = {}
+  local meBridgeInboxes = 0
+  local physicalInboxBuffers = 0
 
   for _, storage in ipairs(app.config.storages or {}) do
     if storage.inventory == nil then
@@ -219,15 +228,47 @@ local function refreshHealth(app)
     elseif not app.connected[storage.inventory] then
       app.health.warnings[#app.health.warnings + 1] = "Missing storage: " .. tostring(storage.inventory)
     else
-      local entry = peripherals.findInventory(app.discovery, storage.inventory)
-      if entry and not entry.can_list then
-        app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot be scanned with list()."
-      end
-      if entry and not entry.can_push then
-        app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot move items with pushItems()."
-      end
-      if entry and not entry.can_detail then
-        app.health.warnings[#app.health.warnings + 1] = storage.inventory .. " does not support detailed Vault reads."
+      local entry = storageEntry(app, storage)
+      if storage.role == "home" then
+        if entry and entry.is_me_bridge then
+          app.health.errors[#app.health.errors + 1] = storage.inventory .. " is an ME Bridge and can only be used as an inbox."
+        elseif entry and not entry.can_list then
+          app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot be scanned with list()."
+        end
+        if entry and not entry.can_push then
+          app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot move items with pushItems()."
+        end
+        if entry and not entry.can_detail then
+          app.health.warnings[#app.health.warnings + 1] = storage.inventory .. " does not support detailed Vault reads."
+        end
+      elseif storage.role == "inbox" then
+        if entry and entry.is_me_bridge then
+          if storage.enabled ~= false then
+            meBridgeInboxes = meBridgeInboxes + 1
+          end
+          if not entry.can_scan then
+            app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot list ME Bridge items."
+          end
+          if not entry.can_export then
+            app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot export items to homes."
+          end
+          if not entry.can_import then
+            app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot return unresolved items to the ME system."
+          end
+        else
+          if entry and not entry.can_list then
+            app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot be scanned with list()."
+          end
+          if entry and not entry.can_push then
+            app.health.errors[#app.health.errors + 1] = storage.inventory .. " cannot move items with pushItems()."
+          end
+          if storage.enabled ~= false and entry and entry.can_list and entry.can_push and entry.can_detail then
+            physicalInboxBuffers = physicalInboxBuffers + 1
+          end
+          if entry and not entry.can_detail then
+            app.health.warnings[#app.health.warnings + 1] = storage.inventory .. " does not support detailed Vault reads."
+          end
+        end
       end
     end
 
@@ -235,6 +276,10 @@ local function refreshHealth(app)
       local priority = tonumber(storage.priority) or 0
       priorityUse[priority] = (priorityUse[priority] or 0) + 1
     end
+  end
+
+  if meBridgeInboxes > 0 and physicalInboxBuffers == 0 then
+    app.health.errors[#app.health.errors + 1] = "ME Bridge inboxes need another connected inbox with getItemDetail() to inspect Vault items."
   end
 
   for _, failure in pairs(app.state.runtime.route_failures or {}) do

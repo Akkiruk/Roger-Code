@@ -76,6 +76,13 @@ local function selectedStorage(app)
   return planner.findStorageByInventory(app.config.storages, app.ui.selected_inventory)
 end
 
+local function storageEntry(app, storage)
+  if not storage or not storage.inventory then
+    return nil
+  end
+  return peripherals.findInventory(app.discovery, storage.inventory)
+end
+
 local function pendingRelinkStorage(app)
   local storageId = app.session and app.session.pending_relink_storage_id or nil
   if not storageId then
@@ -187,13 +194,21 @@ local function storageSignature(storage)
 end
 
 local function selectionModeLabel(app, storage)
+  local entry = storageEntry(app, storage)
   if not app.ui.selected_inventory then
     return "No storage selected."
   end
   if not storage then
+    local selectedEntry = peripherals.findInventory(app.discovery, app.ui.selected_inventory)
+    if selectedEntry and selectedEntry.is_me_bridge then
+      return "Open ME Bridge. Use it as an inbox so Vault items can be routed out of the ME system."
+    end
     return "Open inventory. Choose a role to start managing it."
   end
   if storage.role == "inbox" then
+    if entry and entry.is_me_bridge then
+      return "ME Bridge inbox. Vault items here are sampled through a physical inbox, then routed into homes."
+    end
     return "Inbox. New items here are routed into homes."
   end
   return "Home. Matching items belong here long-term."
@@ -355,6 +370,14 @@ function M.storageSummaryLines(storage)
   end
 
   if storage.role == "inbox" then
+    local entry = storageEntry(app, storage)
+    if entry and entry.is_me_bridge then
+      return {
+        "ME Bridge Inbox",
+        storage.enabled == false and "Paused" or "Active",
+        "Vault items are sampled through another inbox, then sent straight to matching homes.",
+      }
+    end
     return {
       "Inbox",
       storage.enabled == false and "Paused" or "Active",
