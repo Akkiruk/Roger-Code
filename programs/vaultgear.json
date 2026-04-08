@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
     "source_root": "Games/VaultGear",
     "entrypoint": "vaultgear.lua",
-    "version": "1.0.23"
+    "version": "1.0.24"
   },
   "build": {
-    "commit": "5c843e3311fd281a67adc3b78cd57d75bfad671d",
-    "generated_at": "2026-04-08T01:35:00Z",
-    "package_hash": "0776dfd3ca065f67be0704d77f43bb0e293dfa686434702182b8daef62ba046c"
+    "commit": "c4ca065f0e7620b2412ceefc554315f9728224a4",
+    "generated_at": "2026-04-08T02:44:38Z",
+    "package_hash": "598a294063e2f97764c29e8b41a93d9c2029f94ef419aed098d7308814c7fd5d"
   },
   "install": {
     "preserve": [
@@ -38,12 +38,12 @@
       {
         "repo_path": "Games/lib/vaultgear/store.lua",
         "install_path": "lib/vaultgear/store.lua",
-        "sha256": "616b20b11e65af93e02eac95382e5b13ad9694ad3a31b40dc875f4eff9e8f0d6"
+        "sha256": "27ebbdd9347e192589856c652ec686389ef1ca3565ccd163a431d0a10a8e734e"
       },
       {
         "repo_path": "Games/lib/vaultgear/service.lua",
         "install_path": "lib/vaultgear/service.lua",
-        "sha256": "6b3256dd718904f1ee14eae6ab0ee3025337415ab8d0c7112332f56c606be183"
+        "sha256": "2ea0f6b7217df7024ad208e39a75aa0cdb278c785ca65bb31180983700f8804f"
       },
       {
         "repo_path": "Games/lib/vaultgear/quick_setup.lua",
@@ -78,7 +78,7 @@
       {
         "repo_path": "Games/lib/vaultgear/constants.lua",
         "install_path": "lib/vaultgear/constants.lua",
-        "sha256": "15633b430cc17d07a62027cf86a6d97da1d55570c6e68e11e0a93afbec19c364"
+        "sha256": "7802d72306ec27d8db0bb3efb4c9800810704f7a59e9fd7cb202a7fe3c6d8887"
       },
       {
         "repo_path": "Games/lib/vaultgear/catalog.lua",
@@ -88,7 +88,7 @@
       {
         "repo_path": "Games/lib/vaultgear/app.lua",
         "install_path": "lib/vaultgear/app.lua",
-        "sha256": "72877d342368d6b4c02e5b54ba39e607337c2f7c6bf6180affbc4054cb066611"
+        "sha256": "4fc42b011c83e406c1096c77b00b1bee102ba217af90ed3797bc2f3c917992a0"
       },
       {
         "repo_path": "Games/lib/updater.lua",
@@ -164,7 +164,7 @@
       {
         "repo_path": "Games/VaultGear/vaultgear_config.lua",
         "install_path": "vaultgear_config.lua",
-        "sha256": "2a1166b417e81db731976326a248583419431438021d5ad62c9fc4c075d0d382",
+        "sha256": "94ff1e6ebc3f2548767b754e52c28d977e2d3c886379a4a113741fd405a4d637",
         "preserve_existing": true
       },
       {
