@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.43"
+    "version": "1.0.44"
   },
   "build": {
-    "commit": "5e14831130eb1f196021c352e30455a995657e4e",
-    "generated_at": "2026-04-09T23:09:05Z",
-    "package_hash": "fd8d11afdfd375ebbc4f9657ae8023681e8c9e20e89126c389c99a804598a8e8"
+    "commit": "d1eb2e5c258e383f0094eb18924b63bc8ff94f2d",
+    "generated_at": "2026-04-09T23:17:21Z",
+    "package_hash": "5aab1c1aa2fda86667e24919c6145befc21bbb37ed19917c07172ed02b2cb98f"
   },
   "install": {
     "preserve": [
@@ -110,7 +110,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "a45ff44c252b02c355812bb25a496f30edeef4a455b8fd7a24cacb897caa0ff3"
+        "sha256": "6ca34cb46d16f4475c7e812216bd6645c81567437500162fb23f77f99bb9679e"
       }
     ]
   },
