@@ -9,6 +9,7 @@
 --   installer <name>       -- Install/update a specific program
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
+--   installer wipe         -- Delete everything except the installer script
 
 local INSTALLER_VERSION = "1.1.6"
 local REPO_OWNER = "Akkiruk"
@@ -501,6 +502,116 @@ local function wipeManagedFiles(paths)
   end
 end
 
+local function addPreservedPath(set, path)
+  local normalized = normalizePath(path)
+  if normalized == "" or normalized == "." then
+    return
+  end
+
+  set[normalized] = true
+
+  local current = normalized
+  while true do
+    local parent = fs.getDir(current)
+    if parent == nil or parent == "" or parent == "." or parent == current then
+      break
+    end
+    set[normalizePath(parent)] = true
+    current = parent
+  end
+end
+
+local function wipePathRecursive(path, preserved, stats)
+  local normalized = normalizePath(path)
+  if normalized == "" or normalized == "." or preserved[normalized] then
+    return
+  end
+
+  if not fs.exists(path) then
+    return
+  end
+
+  if fs.isDir(path) then
+    for _, name in ipairs(fs.list(path)) do
+      wipePathRecursive(fs.combine(path, name), preserved, stats)
+    end
+
+    if fs.exists(path) and #fs.list(path) == 0 and not preserved[normalized] then
+      fs.delete(path)
+      stats.removed_dirs = stats.removed_dirs + 1
+    end
+    return
+  end
+
+  fs.delete(path)
+  stats.removed_files = stats.removed_files + 1
+end
+
+local function wipeComputerKeepInstaller()
+  local runningProgram = normalizePath(shell.getRunningProgram() or "installer.lua")
+  if runningProgram == "" then
+    runningProgram = "installer.lua"
+  end
+
+  local preserved = {}
+  addPreservedPath(preserved, runningProgram)
+  addPreservedPath(preserved, "installer.lua")
+
+  local stats = {
+    removed_files = 0,
+    removed_dirs = 0,
+  }
+
+  for _, name in ipairs(fs.list(".")) do
+    wipePathRecursive(name, preserved, stats)
+  end
+
+  return stats, runningProgram
+end
+
+local function confirmFullWipe()
+  cprint(colors.red, "WARNING: this will delete everything on this computer except the installer script.")
+  cprint(colors.red, "Programs, configs, logs, managed files, and local data will be removed.")
+  print("")
+  cwrite(colors.white, "Type WIPE to continue: ")
+  local input = read()
+  return type(input) == "string" and input:upper() == "WIPE"
+end
+
+local function runFullWipe(interactive)
+  header("Wipe Computer")
+
+  if interactive ~= false and not confirmFullWipe() then
+    cprint(colors.yellow, "Wipe cancelled.")
+    return false
+  end
+
+  local unlockOk, unlockResult = beginWriteWindow("installer-wipe")
+  if not unlockOk then
+    cprint(colors.red, "Could not open update window: " .. tostring(unlockResult))
+    logError("Wipe unlock failed: " .. tostring(unlockResult))
+    return false
+  end
+
+  local createdUnlock = unlockResult == true
+  local ok, statsOrErr, installerPath = pcall(wipeComputerKeepInstaller)
+  endWriteWindow(createdUnlock)
+
+  if not ok then
+    cprint(colors.red, "Wipe failed: " .. tostring(statsOrErr))
+    logError("Wipe failed: " .. tostring(statsOrErr))
+    return false
+  end
+
+  cprint(colors.lime, "Computer wiped.")
+  cprint(colors.white, "Kept: " .. tostring(installerPath))
+  cprint(colors.gray, "Removed files: " .. tostring(statsOrErr.removed_files))
+  cprint(colors.gray, "Removed directories: " .. tostring(statsOrErr.removed_dirs))
+  print("")
+  cprint(colors.white, "The installer remains so you can reinstall anything later.")
+  return true
+end
+
 local function installFromSpec(spec, forceConfig, installedBefore)
   local unlockOk, unlockResult = beginWriteWindow("install")
   if not unlockOk then
@@ -954,6 +1065,11 @@ local function main()
     return
   end
 
+  if tArgs[1] == "wipe" then
+    runFullWipe(true)
+    return
+  end
+
   if tArgs[1] and tArgs[1] ~= "" then
     if not index then
       cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
@@ -1011,7 +1127,8 @@ local function main()
     print("  2. Reinstall " .. progName .. " (keep config)")
     print("  3. Reinstall " .. progName .. " (reset config)")
     print("  4. Install different program")
-    print("  5. Exit")
+    print("  5. Wipe computer (keep installer only)")
+    print("  6. Exit")
     print("")
     cwrite(colors.white, "Select: ")
     local choice = tonumber(read())
@@ -1024,9 +1141,29 @@ local function main()
       return
     elseif choice == 4 then
       -- fall through
+    elseif choice == 5 then
+      runFullWipe(true)
+      return
     else
       return
     end
+  end
+
+  print("")
+  print("  1. Install a program")
+  print("  2. Wipe computer (keep installer only)")
+  print("  3. Exit")
+  print("")
+  cwrite(colors.white, "Select: ")
+  local choice = tonumber(read())
+
+  if choice == 2 then
+    runFullWipe(true)
+    return
+  end
+
+  if choice ~= 1 then
+    return
   end
 
   local programKey = selectProgram(index)
