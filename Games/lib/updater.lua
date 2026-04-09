@@ -27,6 +27,7 @@ local CONTENTS_API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Updater",
   ["Accept"] = "application/vnd.github.raw+json",
 }
+local INSTALLER_PATH = "installer.lua"
 local RESERVED_LOCAL_PATHS = {
   [VERSION_FILE] = true,
   [MANAGED_FILES] = true,
@@ -298,6 +299,48 @@ local function normalizePath(path)
   return tostring(path or ""):gsub("\\", "/")
 end
 
+local function refreshInstaller(index)
+  local installer = index and index.installer or nil
+  if type(installer) ~= "table" then
+    return true, false, "No installer metadata"
+  end
+
+  local installerPath = normalizePath(installer.install_path or installer.path or INSTALLER_PATH)
+  if installerPath == "" then
+    installerPath = INSTALLER_PATH
+  end
+
+  local currentData = readFile(installerPath, true)
+  if currentData and verifyHash(currentData, installer.sha256) then
+    return true, false, "Installer up to date"
+  end
+
+  local commit = installer.commit
+  local repoPath = installer.path
+  if type(commit) ~= "string" or commit == "" or type(repoPath) ~= "string" or repoPath == "" then
+    return false, false, "Installer metadata incomplete"
+  end
+
+  local data, err = download(buildCommitUrl(commit, repoPath))
+  if not data then
+    return false, false, err or "Installer download failed"
+  end
+  if not verifyHash(data, installer.sha256) then
+    return false, false, "Installer hash mismatch"
+  end
+
+  if fs.exists(installerPath) then
+    fs.delete(installerPath)
+  end
+
+  local saved, saveErr = saveFile(installerPath, data)
+  if not saved then
+    return false, false, saveErr or "Installer save failed"
+  end
+
+  return true, true, installerPath
+end
+
 local function pathSetFromList(paths)
   local set = {}
   for _, path in ipairs(paths or {}) do
@@ -522,6 +565,15 @@ local function checkForUpdates(opts)
       status = "error"
       callback("error", "Deploy index fetch failed: " .. tostring(fetchErr))
       return
+    end
+
+    local installerOk, installerUpdated, installerMessage = refreshInstaller(index)
+    if installerUpdated then
+      logMsg("Installer refreshed: " .. tostring(installerMessage or INSTALLER_PATH))
+      callback("updating", "Refreshed installer.lua")
+    elseif not installerOk then
+      logMsg("Installer refresh failed: " .. tostring(installerMessage))
+      callback("warning", "Installer refresh failed: " .. tostring(installerMessage))
     end
 
     local programEntry = index.programs and index.programs[progKey] or nil
