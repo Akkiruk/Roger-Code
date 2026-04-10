@@ -7,12 +7,12 @@
     "description": "Blackjack card game for ComputerCraft casino.",
     "source_root": "Games/Blackjack",
     "entrypoint": "blackjack.lua",
-    "version": "1.2.53"
+    "version": "1.2.54"
   },
   "build": {
-    "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
-    "generated_at": "2026-04-10T01:18:46Z",
-    "package_hash": "8831e8dbef6ff4abb9aa16f642576e5b7c09e5238a70ab43f32feb2678d4952a"
+    "commit": "e1e843d823de6da0de664a3a0a94c33ea445259f",
+    "generated_at": "2026-04-10T01:22:45Z",
+    "package_hash": "2ce01ff61084a134c8d96b57c4f774b685f486caca8049d8a5dcfa8ae4aff5cf"
   },
   "install": {
     "preserve": [
@@ -152,7 +152,7 @@
       {
         "repo_path": "Games/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "0056505ede70cd4e730f021c694aca4991b1d5d9442577e500896161d1c640d1"
+        "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
         "repo_path": "Games/lib/updater.lua",

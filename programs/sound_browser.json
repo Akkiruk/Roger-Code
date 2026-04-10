@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Games/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
-    "generated_at": "2026-04-10T01:18:46Z",
-    "package_hash": "154c96617a524cbdfca06f385b04214642f96b754321901e674a5829e2e4e322"
+    "commit": "e1e843d823de6da0de664a3a0a94c33ea445259f",
+    "generated_at": "2026-04-10T01:22:45Z",
+    "package_hash": "ebee18790cc9933038eebf6ba3be71b5aca4676a318d4167f79ae685a00d68f5"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Games/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "0056505ede70cd4e730f021c694aca4991b1d5d9442577e500896161d1c640d1"
+        "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
         "repo_path": "Games/lib/updater.lua",
