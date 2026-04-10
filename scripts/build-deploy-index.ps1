@@ -29,6 +29,10 @@ $RepoOwner = "Akkiruk"
 $PrimaryBranch = "main"
 $SchemaVersion = 1
 $InstallerPath = "Games/installer.lua"
+$RuntimeStartupPath = "Games/runtime_startup.lua"
+$RuntimeSupervisorPath = "Games/lib/roger_supervisor.lua"
+$RuntimeUpdaterPath = "Games/lib/updater.lua"
+$DefaultUpdateInterval = 300
 
 $SkipPatterns = @("*.bak", "*.old", "*.log", "*.md", "manifest.json")
 $SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules", "emulator")
@@ -246,6 +250,80 @@ function Get-ProgramFiles {
     }
 }
 
+function Get-RuntimeEntrypointInstallPath {
+    param(
+        [string]$ProgramKey,
+        [string]$Entrypoint
+    )
+
+    if (-not $Entrypoint) {
+        return ""
+    }
+
+    if ($Entrypoint -ieq "startup.lua") {
+        return "$ProgramKey`_startup.lua"
+    }
+
+    return $Entrypoint.Replace('\\', '/')
+}
+
+function Get-AutoRestartFlag {
+    param(
+        [string]$Category,
+        [string]$Entrypoint,
+        [string]$SourceRoot
+    )
+
+    if ($Category -eq "Games") {
+        return $true
+    }
+
+    if ($Entrypoint -ieq "startup.lua") {
+        return $true
+    }
+
+    if ($SourceRoot -like "Utilities/*") {
+        return $false
+    }
+
+    return $true
+}
+
+function Add-InstallFileEntry {
+    param(
+        [System.Collections.Generic.List[object]]$InstallFiles,
+        [hashtable]$InstallPathMap,
+        [string]$RepoPath,
+        [string]$InstallPath,
+        [string]$Sha256,
+        [bool]$PreserveExisting = $false
+    )
+
+    $normalizedInstallPath = $InstallPath.Replace('\\', '/')
+    $installKey = $normalizedInstallPath.ToLowerInvariant()
+    if ($InstallPathMap.ContainsKey($installKey)) {
+        $existingRepoPath = [string]$InstallPathMap[$installKey]
+        if ($existingRepoPath -ne $RepoPath) {
+            throw "Install path conflict for '$normalizedInstallPath': '$existingRepoPath' vs '$RepoPath'"
+        }
+        return
+    }
+
+    $InstallPathMap[$installKey] = $RepoPath
+
+    $entry = [ordered]@{
+        repo_path = $RepoPath
+        install_path = $normalizedInstallPath
+        sha256 = $Sha256
+    }
+
+    if ($PreserveExisting) {
+        $entry.preserve_existing = $true
+    }
+
+    $InstallFiles.Add($entry)
+}
+
 function Get-RequireLiterals {
     param([string]$Path)
 
@@ -430,45 +508,37 @@ foreach ($dir in ($programDirs | Sort-Object FullName)) {
     $libClosure = Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $dir.FullName -LuaRelativePaths $discovered.lua_files
     $installFiles = New-Object System.Collections.Generic.List[object]
     $libModules = New-Object System.Collections.Generic.List[string]
+    $installPathMap = @{}
+    $runtimeSourceEntrypoint = if (@($discovered.files) -icontains 'startup.lua') { 'startup.lua' } else { $meta.entrypoint }
+    $runtimeEntrypoint = Get-RuntimeEntrypointInstallPath -ProgramKey $meta.key -Entrypoint $runtimeSourceEntrypoint
+    $autoRestart = Get-AutoRestartFlag -Category $category -Entrypoint $runtimeSourceEntrypoint -SourceRoot $sourceRoot
+
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeStartupPath -InstallPath "startup.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeStartupPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeSupervisorPath -InstallPath "lib/roger_supervisor.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeSupervisorPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeUpdaterPath -InstallPath "lib/updater.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeUpdaterPath))
 
     foreach ($file in @($discovered.files)) {
         $repoPath = "$sourceRoot/$file"
         $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
-        $installFiles.Add([ordered]@{
-            repo_path = $repoPath
-            install_path = $file
-            sha256 = Get-FileSha256 -Path $fullPath
-        })
+        $installPath = if ($file -ieq $runtimeSourceEntrypoint) { $runtimeEntrypoint } else { $file }
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $installPath -Sha256 (Get-FileSha256 -Path $fullPath)
     }
 
     foreach ($file in @($discovered.config_files)) {
         $repoPath = "$sourceRoot/$file"
         $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
-        $installFiles.Add([ordered]@{
-            repo_path = $repoPath
-            install_path = $file
-            sha256 = Get-FileSha256 -Path $fullPath
-            preserve_existing = $true
-        })
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath) -PreserveExisting $true
     }
 
     foreach ($file in @($discovered.assets)) {
         $repoPath = "$sourceRoot/$file"
         $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
-        $installFiles.Add([ordered]@{
-            repo_path = $repoPath
-            install_path = $file
-            sha256 = Get-FileSha256 -Path $fullPath
-        })
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath)
     }
 
     foreach ($libFile in $libClosure) {
         $fullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
-        $installFiles.Add([ordered]@{
-            repo_path = "Games/lib/$libFile"
-            install_path = "lib/$libFile"
-            sha256 = Get-FileSha256 -Path $fullPath
-        })
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Games/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $fullPath)
 
         $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
         $libModules.Add($moduleName)
@@ -502,7 +572,12 @@ foreach ($dir in ($programDirs | Sort-Object FullName)) {
             files = $installFileList
         }
         runtime = [ordered]@{
-            requires_updater = [bool]($libModules -contains "lib.updater")
+            boot_mode = "supervisor"
+            system_entrypoint = "startup.lua"
+            app_entrypoint = $runtimeEntrypoint
+            auto_restart = $autoRestart
+            update_interval = $DefaultUpdateInterval
+            requires_updater = $true
             lib_modules = @($libModules | Sort-Object -Unique)
         }
     }
@@ -537,16 +612,17 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
 
     $libClosure = Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $UtilitiesDir -LuaRelativePaths @($file.Name)
     $installFiles = New-Object System.Collections.Generic.List[object]
-    $installFiles.Add($installFile)
     $libModules = New-Object System.Collections.Generic.List[string]
+    $installPathMap = @{}
+
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeStartupPath -InstallPath "startup.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeStartupPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeSupervisorPath -InstallPath "lib/roger_supervisor.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeSupervisorPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeUpdaterPath -InstallPath "lib/updater.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeUpdaterPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $installFile.repo_path -InstallPath $installFile.install_path -Sha256 $installFile.sha256
 
     foreach ($libFile in $libClosure) {
         $libFullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
-        $installFiles.Add([ordered]@{
-            repo_path = "Games/lib/$libFile"
-            install_path = "lib/$libFile"
-            sha256 = Get-FileSha256 -Path $libFullPath
-        })
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Games/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $libFullPath)
 
         $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
         $libModules.Add($moduleName)
@@ -580,7 +656,12 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
             files = $orderedInstallFiles
         }
         runtime = [ordered]@{
-            requires_updater = [bool]($libModules -contains "lib.updater")
+            boot_mode = "supervisor"
+            system_entrypoint = "startup.lua"
+            app_entrypoint = $file.Name
+            auto_restart = $false
+            update_interval = $DefaultUpdateInterval
+            requires_updater = $true
             lib_modules = @($libModules | Sort-Object -Unique)
         }
     })

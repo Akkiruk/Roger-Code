@@ -112,16 +112,22 @@ function Read-LuaInfoFile {
 
     $raw = Get-Content $Path -Raw
     $info = [ordered]@{}
-    foreach ($key in @("program", "game", "name", "version", "source_commit", "package_hash", "content_hash", "spec_path")) {
+    foreach ($key in @("program", "game", "name", "version", "source_commit", "package_hash", "content_hash", "spec_path", "boot_mode", "system_entrypoint", "app_entrypoint")) {
         $match = [regex]::Match($raw, $key + '\s*=\s*"([^"]*)"')
         if ($match.Success) {
             $info[$key] = $match.Groups[1].Value
         }
     }
-    foreach ($key in @("schema_version", "installed_at", "updated_at")) {
+    foreach ($key in @("schema_version", "installed_at", "updated_at", "update_interval")) {
         $match = [regex]::Match($raw, $key + '\s*=\s*(\d+)')
         if ($match.Success) {
             $info[$key] = [int64]$match.Groups[1].Value
+        }
+    }
+    foreach ($key in @("auto_restart")) {
+        $match = [regex]::Match($raw, $key + '\s*=\s*(true|false)')
+        if ($match.Success) {
+            $info[$key] = [bool]::Parse($match.Groups[1].Value)
         }
     }
 
@@ -172,9 +178,15 @@ function Write-InstalledProgramInfo {
         [int64]$InstalledAt
     )
 
+    $runtime = $Spec.runtime
+    $autoRestart = if ($null -ne $runtime.auto_restart) { [bool]$runtime.auto_restart } else { $true }
+    $systemEntrypoint = if ($runtime.system_entrypoint) { [string]$runtime.system_entrypoint } else { 'startup.lua' }
+    $appEntrypoint = if ($runtime.app_entrypoint) { [string]$runtime.app_entrypoint } else { [string]$Spec.program.entrypoint }
+    $updateInterval = if ($runtime.update_interval) { [int]$runtime.update_interval } else { 300 }
+
     $lines = @(
         "{",
-        "  schema_version = 1,",
+        "  schema_version = 2,",
         "  program = `"$($Spec.program.key)`",",
         "  name = `"$($Spec.program.name)`",",
         "  version = `"$($Spec.program.version)`",",
@@ -182,6 +194,11 @@ function Write-InstalledProgramInfo {
         "  package_hash = `"$($Spec.build.package_hash)`",",
         "  content_hash = `"$($Spec.build.package_hash)`",",
         "  spec_path = `"$SpecPath`",",
+        "  boot_mode = `"supervisor`",",
+        "  system_entrypoint = `"$systemEntrypoint`",",
+        "  app_entrypoint = `"$appEntrypoint`",",
+        "  auto_restart = $($autoRestart.ToString().ToLowerInvariant()),",
+        "  update_interval = $updateInterval,",
         "  installed_at = $InstalledAt,",
         "  updated_at = $([int64](Get-Date -UFormat %s) * 1000),",
         "}"

@@ -1,9 +1,31 @@
 local alertLib = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
-local updater = require("lib.updater")
 local ui = require("lib.ui")
 
 local M = {}
+
+local function loadInstallInfo()
+  if not fs.exists(".installed_program") then
+    return nil
+  end
+
+  local handle = fs.open(".installed_program", "r")
+  if not handle then
+    return nil
+  end
+
+  local raw = handle.readAll()
+  handle.close()
+
+  local ok, info = pcall(function()
+    return textutils.unserialise(raw)
+  end)
+  if ok and type(info) == "table" then
+    return info
+  end
+
+  return nil
+end
 
 local function makeLogger(enabled, logFn)
   local debugTerm = term.native()
@@ -76,7 +98,7 @@ function M.run(opts)
 
   debugLog(startupName .. " idle setup complete.")
 
-  local installInfo = updater.getInstallInfo()
+  local installInfo = loadInstallInfo()
   if installInfo then
     debugLog("Installed: " .. tostring(installInfo.program)
       .. " v" .. tostring(installInfo.version)
@@ -85,14 +107,6 @@ function M.run(opts)
   else
     debugLog("WARNING: No .installed_program record found!")
   end
-
-  debugLog("Checking for updates...")
-  updater.checkForUpdates({
-    rebootOnUpdate = true,
-    callback = function(status, message)
-      debugLog("Updater [" .. status .. "] " .. tostring(message))
-    end,
-  })
 
   local function runProgram(action)
     local program = programs[action]
@@ -135,16 +149,7 @@ function M.run(opts)
       setupIdle()
     end
   end
-
-  local function updateWatcher()
-    updater.watchForUpdates({
-      callback = function(status, message)
-        debugLog("BG Updater [" .. status .. "] " .. tostring(message))
-      end,
-    })
-  end
-
-  parallel.waitForAny(mainLoop, updateWatcher)
+  mainLoop()
 end
 
 return M

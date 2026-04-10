@@ -4,7 +4,6 @@
 -- Pocket casino shell for ComputerCraft pocket computers.
 
 local alert = require("lib.alert")
-local updater = require("lib.updater")
 
 local ROOT = fs.getDir(shell.getRunningProgram())
 if ROOT == "" and shell.dir then
@@ -27,13 +26,6 @@ local function sleepRaw(seconds)
     end
   end
 end
-
-updater.checkForUpdates({
-  rebootOnUpdate = true,
-  callback = function(status, msg)
-    alert.log("Updater [" .. tostring(status) .. "] " .. tostring(msg))
-  end,
-})
 
 local function runProgram()
   local ok, shellOk, shellErr = pcall(shell.run, PROGRAM)

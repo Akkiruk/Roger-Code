@@ -35,6 +35,8 @@ local CONTENTS_API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
   ["Accept"] = "application/vnd.github.raw+json",
 }
+local INSTALL_STATE_SCHEMA = 2
+local DEFAULT_UPDATE_INTERVAL = 300
 local RESERVED_LOCAL_PATHS = {
   [VERSION_FILE] = true,
   [MANAGED_FILES] = true,
@@ -367,6 +369,31 @@ local function saveInstalled(info)
   end
 end
 
+local function buildInstalledRecord(spec, previous)
+  local program = spec.program or {}
+  local build = spec.build or {}
+  local runtime = spec.runtime or {}
+  local existing = previous or {}
+
+  return {
+    schema_version = INSTALL_STATE_SCHEMA,
+    program = program.key,
+    name = program.name,
+    version = program.version,
+    source_commit = build.commit,
+    package_hash = build.package_hash,
+    content_hash = build.package_hash,
+    spec_path = spec._spec_path or existing.spec_path or "",
+    installed_at = existing.installed_at or os.epoch("local"),
+    updated_at = os.epoch("local"),
+    boot_mode = runtime.boot_mode or "supervisor",
+    system_entrypoint = runtime.system_entrypoint or "startup.lua",
+    app_entrypoint = runtime.app_entrypoint or program.entrypoint or "",
+    auto_restart = runtime.auto_restart ~= false,
+    update_interval = tonumber(runtime.update_interval) or DEFAULT_UPDATE_INTERVAL,
+  }
+end
+
 readManagedFiles = function()
   if not fs.exists(MANAGED_FILES) then
     return {}
@@ -688,18 +715,7 @@ local function installFromSpec(spec, forceConfig, installedBefore)
   local installedOk = false
   if #failed == 0 then
     saveManagedFiles(managedPaths)
-    saveInstalled({
-      schema_version = 1,
-      program = program.key,
-      name = program.name,
-      version = program.version,
-      source_commit = build.commit,
-      package_hash = build.package_hash,
-      content_hash = build.package_hash,
-      spec_path = (spec._spec_path or ""),
-      installed_at = installedBefore and installedBefore.installed_at or os.epoch("local"),
-      updated_at = os.epoch("local"),
-    })
+    saveInstalled(buildInstalledRecord(spec, installedBefore))
     installedOk = true
   end
 

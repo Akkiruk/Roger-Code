@@ -9,12 +9,15 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $phoneRoot = Join-Path $repoRoot 'Games\PhoneOS'
 
 $filesToCopy = @(
-    @{ Source = Join-Path $phoneRoot 'startup.lua'; Destination = Join-Path $TargetDir 'startup.lua' },
+    @{ Source = Join-Path $repoRoot 'Games\runtime_startup.lua'; Destination = Join-Path $TargetDir 'startup.lua' },
+    @{ Source = Join-Path $phoneRoot 'startup.lua'; Destination = Join-Path $TargetDir 'phone_os_startup.lua' },
     @{ Source = Join-Path $phoneRoot 'phone_os.lua'; Destination = Join-Path $TargetDir 'phone_os.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\blackjack.lua'; Destination = Join-Path $TargetDir 'phoneos\blackjack.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\slots.lua'; Destination = Join-Path $TargetDir 'phoneos\slots.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\storage.lua'; Destination = Join-Path $TargetDir 'phoneos\storage.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\ui.lua'; Destination = Join-Path $TargetDir 'phoneos\ui.lua' },
+    @{ Source = Join-Path $repoRoot 'Games\lib\roger_supervisor.lua'; Destination = Join-Path $TargetDir 'lib\roger_supervisor.lua' },
+    @{ Source = Join-Path $repoRoot 'Games\lib\updater.lua'; Destination = Join-Path $TargetDir 'lib\updater.lua' },
     @{ Source = Join-Path $repoRoot 'Games\lib\alert.lua'; Destination = Join-Path $TargetDir 'lib\alert.lua' },
     @{ Source = Join-Path $repoRoot 'Games\lib\cards.lua'; Destination = Join-Path $TargetDir 'lib\cards.lua' },
     @{ Source = Join-Path $repoRoot 'Games\lib\crash_recovery.lua'; Destination = Join-Path $TargetDir 'lib\crash_recovery.lua' },
@@ -44,10 +47,17 @@ foreach ($entry in $filesToCopy) {
 
 $installedProgram = @"
 {
+    schema_version = 2,
   program = "phone_os",
+    name = "Pocket Casino OS",
   installed_at = 0,
   updated_at = 0,
   version = "1.0.0",
+    boot_mode = "supervisor",
+    system_entrypoint = "startup.lua",
+    app_entrypoint = "phone_os_startup.lua",
+    auto_restart = true,
+    update_interval = 300,
 }
 "@
 
