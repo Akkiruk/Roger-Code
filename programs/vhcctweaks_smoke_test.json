@@ -7,12 +7,12 @@
     "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
     "source_root": "Utilities/VHCCTweaksSmokeTest",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
-    "generated_at": "2026-04-10T00:29:46Z",
-    "package_hash": "21db997aab9b280534004cdab2f5e10ce880411a282a6fd300dbe9ca785bf130"
+    "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
+    "generated_at": "2026-04-10T01:05:22Z",
+    "package_hash": "a6ba0302b4e7db802bc513ed3da206f4e623ccab9fe83226325e17346b3d6610"
   },
   "install": {
     "preserve": [],
@@ -30,7 +30,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "7a603a572625208c0ec8be219b921c575591f0288aef32ce5ae528cc548f0065"
+        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
         "repo_path": "Utilities/VHCCTweaksSmokeTest/startup.lua",

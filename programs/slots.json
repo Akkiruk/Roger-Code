@@ -7,12 +7,12 @@
     "description": "Slot Machine game for ComputerCraft casino.",
     "source_root": "Games/Slots",
     "entrypoint": "slots.lua",
-    "version": "1.0.50"
+    "version": "1.0.51"
   },
   "build": {
-    "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
-    "generated_at": "2026-04-10T00:29:46Z",
-    "package_hash": "fa77b8572fd24e40eb1a67a0978865e0e5809032140183e546f2aac2f9607fd0"
+    "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
+    "generated_at": "2026-04-10T01:05:22Z",
+    "package_hash": "836134ec2aa13c7be691c0803c603d527e59edc16f04a2340e50a371a1a8fa47"
   },
   "install": {
     "preserve": [
@@ -142,7 +142,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "7a603a572625208c0ec8be219b921c575591f0288aef32ce5ae528cc548f0065"
+        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
         "repo_path": "Games/Slots/slots.lua",

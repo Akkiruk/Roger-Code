@@ -7,12 +7,12 @@
     "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "videopoker.lua",
-    "version": "1.0.49"
+    "version": "1.0.50"
   },
   "build": {
-    "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
-    "generated_at": "2026-04-10T00:29:46Z",
-    "package_hash": "ec898a476155d467d7910114ed53bd884d15c3edf46880bc82bf4269ab585910"
+    "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
+    "generated_at": "2026-04-10T01:05:22Z",
+    "package_hash": "898bbcf04ed054a156226832eb0fe53ea52327bfd9e4b6d84774a6bf7669dc43"
   },
   "install": {
     "preserve": [
@@ -157,7 +157,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "7a603a572625208c0ec8be219b921c575591f0288aef32ce5ae528cc548f0065"
+        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
         "repo_path": "Games/VideoPoker/startup.lua",

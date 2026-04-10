@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.47"
+    "version": "1.0.48"
   },
   "build": {
-    "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
-    "generated_at": "2026-04-10T00:29:46Z",
-    "package_hash": "8bbd1ee678d92c821cbbf3903cbd133915d17047e0541a9b9b6de102d128543f"
+    "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
+    "generated_at": "2026-04-10T01:05:22Z",
+    "package_hash": "353522e54d39b48db6c0816a2922d0b2911a4cbe90922da168eb962b3bb585f1"
   },
   "install": {
     "preserve": [
@@ -105,7 +105,7 @@
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "7a603a572625208c0ec8be219b921c575591f0288aef32ce5ae528cc548f0065"
+        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
         "repo_path": "Games/lib/roger_supervisor.lua",
