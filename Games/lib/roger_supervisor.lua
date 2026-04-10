@@ -181,24 +181,6 @@ local function runProgram(entrypoint, args)
   return true, nil
 end
 
-local function runInitialUpdateCheck(callback)
-  local ok, status = pcall(function()
-    return updater.checkForUpdates({
-      rebootOnUpdate = true,
-      callback = callback,
-    })
-  end)
-
-  if not ok then
-    logMessage("Initial update check crashed: " .. tostring(status))
-    return
-  end
-
-  if status == "updated" then
-    return
-  end
-end
-
 local function updateWatcher(updateInterval)
   updater.watchForUpdates({
     interval = updateInterval,
@@ -230,10 +212,6 @@ function M.run(...)
       .. " | commit=" .. tostring(installed.source_commit or ""):sub(1, 8)
       .. " | pkg=" .. tostring(installed.package_hash or installed.content_hash or ""):sub(1, 8)
   )
-
-  runInitialUpdateCheck(function(status, message)
-    logMessage("Initial updater [" .. tostring(status) .. "] " .. tostring(message or ""))
-  end)
 
   local function appLoop()
     while true do
