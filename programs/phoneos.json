@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "program": {
-    "key": "phone_os",
-    "name": "Pocket Casino OS",
-    "category": "Utilities",
-    "description": "Pocket casino shell for ComputerCraft pocket computers.",
+    "key": "phoneos",
+    "name": "PhoneOS",
+    "category": "Games",
+    "description": "manifest-entrypoint: true",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.50"
+    "version": "1.0.0"
   },
   "build": {
-    "commit": "e1e843d823de6da0de664a3a0a94c33ea445259f",
-    "generated_at": "2026-04-10T01:22:45Z",
-    "package_hash": "3071526c5adadaf450ce47fa2ed8ead7a645ae11cfde2419d6bb7cec535a9aa7"
+    "commit": "34241491954863048b16b911cf08e343d281f078",
+    "generated_at": "2026-04-10T01:33:54Z",
+    "package_hash": "e641062e69e3e57a45374d90ecaf3bd7260c772abd4e1e438127907ba2b8ce07"
   },
   "install": {
     "preserve": [
@@ -64,8 +64,8 @@
       },
       {
         "repo_path": "Games/PhoneOS/startup.lua",
-        "install_path": "phone_os_startup.lua",
-        "sha256": "c516a484c2590bf3ab093828b3bec715ffa16cca61c92369af487f46fcc581a4"
+        "install_path": "phoneos_startup.lua",
+        "sha256": "97a86005f1f0a93362fbc117fd44e437b17ad399f1a090548f87f807b230eda8"
       },
       {
         "repo_path": "Games/PhoneOS/phoneos/ui.lua",
@@ -127,7 +127,7 @@
   "runtime": {
     "boot_mode": "supervisor",
     "system_entrypoint": "startup.lua",
-    "app_entrypoint": "phone_os_startup.lua",
+    "app_entrypoint": "phoneos_startup.lua",
     "auto_restart": true,
     "update_interval": 300,
     "requires_updater": true,

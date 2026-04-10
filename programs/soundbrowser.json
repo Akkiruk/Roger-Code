@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "program": {
-    "key": "sound_browser",
-    "name": "Sound Browser",
-    "category": "Utilities",
-    "description": "Browse the pack's generated sound catalog and save favorites.",
+    "key": "soundbrowser",
+    "name": "SoundBrowser",
+    "category": "Games",
+    "description": "manifest-entrypoint: true",
     "source_root": "Games/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.12"
+    "version": "1.0.0"
   },
   "build": {
-    "commit": "e1e843d823de6da0de664a3a0a94c33ea445259f",
-    "generated_at": "2026-04-10T01:22:45Z",
-    "package_hash": "ebee18790cc9933038eebf6ba3be71b5aca4676a318d4167f79ae685a00d68f5"
+    "commit": "34241491954863048b16b911cf08e343d281f078",
+    "generated_at": "2026-04-10T01:33:54Z",
+    "package_hash": "eba7776519a5ecd25ba4369bf195d1755c89aa4334514ddbc32618362da73fee"
   },
   "install": {
     "preserve": [],
@@ -44,8 +44,8 @@
       },
       {
         "repo_path": "Games/SoundBrowser/startup.lua",
-        "install_path": "sound_browser_startup.lua",
-        "sha256": "38321c8fd3c529942dac7eaf2e9bec5ab2d0890869690a1773566c506c258c31"
+        "install_path": "soundbrowser_startup.lua",
+        "sha256": "3c488ca0b7bbdb326e6a324705f013e7e66555c8c638c7e0f049e17adf82908c"
       },
       {
         "repo_path": "Games/lib/peripherals.lua",
@@ -87,7 +87,7 @@
   "runtime": {
     "boot_mode": "supervisor",
     "system_entrypoint": "startup.lua",
-    "app_entrypoint": "sound_browser_startup.lua",
+    "app_entrypoint": "soundbrowser_startup.lua",
     "auto_restart": true,
     "update_interval": 300,
     "requires_updater": true,

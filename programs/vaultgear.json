@@ -3,16 +3,16 @@
   "program": {
     "key": "vaultgear",
     "name": "VaultGear",
-    "category": "Utilities",
-    "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
+    "category": "Games",
+    "description": "manifest-entrypoint: true",
     "source_root": "Games/VaultGear",
-    "entrypoint": "vaultgear.lua",
-    "version": "1.0.32"
+    "entrypoint": "startup.lua",
+    "version": "1.0.33"
   },
   "build": {
-    "commit": "e1e843d823de6da0de664a3a0a94c33ea445259f",
-    "generated_at": "2026-04-10T01:22:45Z",
-    "package_hash": "6ada1a38cb84904ae4d35f4bbaae71c4d5c8c8e65d63c3bccec364b27ac39f9c"
+    "commit": "34241491954863048b16b911cf08e343d281f078",
+    "generated_at": "2026-04-10T01:33:54Z",
+    "package_hash": "4f34216dcbba4da3e8d67fe3168b834553d7b4aa3b5495c822354e0867fe6986"
   },
   "install": {
     "preserve": [
@@ -123,7 +123,7 @@
       {
         "repo_path": "Games/VaultGear/startup.lua",
         "install_path": "vaultgear_startup.lua",
-        "sha256": "042550f9d83db02f996d91d9d7822b3feb06a8eface7d3b17f277c4ab8aaf06c"
+        "sha256": "be909dff1a550e52e16a04e1aad764c178df7a990873bc33b9df82702e912aca"
       },
       {
         "repo_path": "Games/VaultGear/vaultgear.lua",
