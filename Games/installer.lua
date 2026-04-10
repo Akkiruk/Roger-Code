@@ -37,6 +37,7 @@ local CONTENTS_API_HEADERS = {
 }
 local INSTALL_STATE_SCHEMA = 2
 local DEFAULT_UPDATE_INTERVAL = 300
+local UPDATED_ARG = "--installer-updated"
 local RESERVED_LOCAL_PATHS = {
   [VERSION_FILE] = true,
   [MANAGED_FILES] = true,
@@ -105,6 +106,34 @@ local function progressBar(current, total, width)
   return "[" .. string.rep("=", filled)
     .. string.rep(" ", width - filled) .. "] "
     .. current .. "/" .. total
+end
+
+local function unpackArgs(args, startIndex)
+  if table.unpack then
+    return table.unpack(args, startIndex or 1)
+  end
+  return unpack(args, startIndex or 1)
+end
+
+local function parseInstallerArgs(rawArgs)
+  local args = {}
+  local updatedTo = nil
+  local updatedFrom = nil
+  local index = 1
+
+  while index <= #rawArgs do
+    local value = rawArgs[index]
+    if value == UPDATED_ARG then
+      updatedTo = rawArgs[index + 1]
+      updatedFrom = rawArgs[index + 2]
+      index = index + 3
+    else
+      args[#args + 1] = value
+      index = index + 1
+    end
+  end
+
+  return args, updatedTo, updatedFrom
 end
 
 ---------------------------------------------------------------------------
@@ -796,13 +825,13 @@ end
 ---------------------------------------------------------------------------
 -- Self-update
 ---------------------------------------------------------------------------
-local function selfUpdate(index, silent)
+local function selfUpdate(index, silent, commandArgs)
   local installer = index and index.installer or nil
   if type(installer) ~= "table" then
     if not silent then
-      cprint(colors.gray, "No installer metadata in deploy index.")
+      cprint(colors.red, "No installer metadata in deploy index.")
     end
-    return false
+    return "error", "No installer metadata in deploy index"
   end
 
   local needsUpdate = isNewer(installer.version, INSTALLER_VERSION)
@@ -819,7 +848,7 @@ local function selfUpdate(index, silent)
     if not silent then
       cprint(colors.lime, "Installer is up to date (v" .. INSTALLER_VERSION .. ")")
     end
-    return false
+    return "current"
   end
 
   if not silent then
@@ -833,7 +862,7 @@ local function selfUpdate(index, silent)
       cprint(colors.red, "Failed!")
     end
     logError("Self-update unlock failed: " .. tostring(unlockResult))
-    return false
+    return "error", tostring(unlockResult)
   end
   local createdUnlock = unlockResult == true
 
@@ -847,7 +876,7 @@ local function selfUpdate(index, silent)
     end
     endWriteWindow(createdUnlock)
     logError("Self-update could not resolve source commit")
-    return false
+    return "error", "Could not resolve installer source commit"
   end
 
   local myPath = shell.getRunningProgram()
@@ -859,8 +888,9 @@ local function selfUpdate(index, silent)
         cprint(colors.lime, "Done! Restarting...")
       end
       endWriteWindow(createdUnlock)
-      shell.run(myPath, table.unpack(tArgs))
-      return true
+      local args = commandArgs or tArgs
+      shell.run(myPath, UPDATED_ARG, tostring(installer.version or "?"), tostring(INSTALLER_VERSION), unpackArgs(args))
+      return "updated"
     end
     err = saveErr
   elseif data then
@@ -872,7 +902,7 @@ local function selfUpdate(index, silent)
   end
   endWriteWindow(createdUnlock)
   logError("Self-update failed: " .. tostring(err))
-  return false
+  return "error", tostring(err)
 end
 
 ---------------------------------------------------------------------------
@@ -1057,31 +1087,44 @@ end
 -- Main
 ---------------------------------------------------------------------------
 local function main()
+  local commandArgs, updatedTo, updatedFrom = parseInstallerArgs(tArgs)
   local index, indexErr = fetchLatestIndex()
-  if index then
-    local didUpdate = selfUpdate(index, false)
-    if didUpdate then
-      return
-    end
-  end
-
-  if tArgs[1] == "self-update" then
-    if not index then
-      cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
-      logError(tostring(indexErr))
-    end
+  if not index then
+    cprint(colors.red, "Installer self-check failed: " .. tostring(indexErr))
+    cprint(colors.red, "Refusing to continue because installer freshness could not be verified.")
+    print("")
+    cprint(colors.gray, "Check that HTTP is enabled in the server config")
+    cprint(colors.gray, "and that github.com is allowed.")
+    logError("Installer self-check failed: " .. tostring(indexErr))
     return
   end
 
-  if tArgs[1] == "update" then
+  local selfUpdateStatus, selfUpdateErr = selfUpdate(index, true, commandArgs)
+  if selfUpdateStatus == "updated" then
+    return
+  end
+  if selfUpdateStatus == "error" then
+    cprint(colors.red, "Installer self-update failed: " .. tostring(selfUpdateErr or "Unknown error"))
+    cprint(colors.red, "Refusing to continue until the installer is verified current.")
+    logError("Installer self-update failed: " .. tostring(selfUpdateErr))
+    return
+  end
+
+  if updatedTo then
+    cprint(colors.lime, "Installer updated to v" .. tostring(updatedTo)
+      .. (updatedFrom and updatedFrom ~= "" and (" from v" .. tostring(updatedFrom)) or "") .. ".")
+    print("")
+  end
+
+  if commandArgs[1] == "self-update" then
+    cprint(colors.lime, "Installer is up to date (v" .. INSTALLER_VERSION .. ")")
+    return
+  end
+
+  if commandArgs[1] == "update" then
     local installed = loadInstalled()
     if not installed then
       cprint(colors.red, "No program installed. Run 'installer' to install.")
-      return
-    end
-    if not index then
-      cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
-      logError(tostring(indexErr))
       return
     end
     local key = installed.program or installed.game
@@ -1089,31 +1132,17 @@ local function main()
     return
   end
 
-  if tArgs[1] == "wipe" then
+  if commandArgs[1] == "wipe" then
     runFullWipe(true)
     return
   end
 
-  if tArgs[1] and tArgs[1] ~= "" then
-    if not index then
-      cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
-      logError(tostring(indexErr))
-      return
-    end
-    installByKey(index, string.lower(tArgs[1]), false)
+  if commandArgs[1] and commandArgs[1] ~= "" then
+    installByKey(index, string.lower(commandArgs[1]), false)
     return
   end
 
   header("Program Installer v" .. INSTALLER_VERSION)
-
-  if not index then
-    cprint(colors.red, "Could not fetch deploy index: " .. tostring(indexErr))
-    logError(tostring(indexErr))
-    print("")
-    cprint(colors.gray, "Check that HTTP is enabled in the server config")
-    cprint(colors.gray, "and that github.com is allowed.")
-    return
-  end
   cprint(colors.lime, "Deploy index loaded. " .. INSTALLER_VERSION)
 
   local installed = loadInstalled()
