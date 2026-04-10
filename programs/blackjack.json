@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.55"
+    "version": "1.2.56"
   },
   "build": {
-    "commit": "32cc1d6438d72e19d73b4f4d85b60afc65440a31",
-    "generated_at": "2026-04-10T01:50:44Z",
-    "package_hash": "17d79bf6c6e50b09934c4c84b25eedaabf52cdec0513b50d19d5700258465b32"
+    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
+    "generated_at": "2026-04-10T02:02:06Z",
+    "package_hash": "e4d2454beaf7ccc999272bad8779e8cbab5b9dded03d4364964b5e6d08e42cec"
   },
   "install": {
     "preserve": [
@@ -172,7 +172,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack_config.lua",
         "install_path": "blackjack_config.lua",
-        "sha256": "76efce7076b8bb09c74b645b9c6b6722dc9e0fb66b964e641165181ef112c02b",
+        "sha256": "13a57db71d890308ce212d835a0b591626898d5177831ad912ae86de2c1c04c8",
         "preserve_existing": true
       },
       {

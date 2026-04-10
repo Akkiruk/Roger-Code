@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "32cc1d6438d72e19d73b4f4d85b60afc65440a31",
-    "generated_at": "2026-04-10T01:50:44Z",
-    "package_hash": "e641062e69e3e57a45374d90ecaf3bd7260c772abd4e1e438127907ba2b8ce07"
+    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
+    "generated_at": "2026-04-10T02:02:06Z",
+    "package_hash": "f91bbc66ce8d481991d5b9d16c697a89f01ddd4669280f94be5692e04933ba9c"
   },
   "install": {
     "preserve": [
@@ -59,7 +59,7 @@
       {
         "repo_path": "Games/PhoneOS/blackjack_config.lua",
         "install_path": "blackjack_config.lua",
-        "sha256": "c25639c24ad68aff2ac5f36949bbcaa5c521d6eeb26c6106777f48dc631a3be5",
+        "sha256": "7da08a07856269ba7666d3e14fc44d04f72f154bc7eb14f435717b4e63331a33",
         "preserve_existing": true
       },
       {
@@ -95,7 +95,7 @@
       {
         "repo_path": "Games/PhoneOS/phoneos/blackjack_defaults.lua",
         "install_path": "phoneos/blackjack_defaults.lua",
-        "sha256": "2f53061f3708823e0a4022e5c02da2a41dae379b79c94dd1e54c1ba19963ad58"
+        "sha256": "6d14b9e7558c5146cf830b031318dc1928a0329200ecb6d11f9b26378f22d92e"
       },
       {
         "repo_path": "Games/PhoneOS/phone_os.lua",
