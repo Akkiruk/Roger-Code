@@ -558,6 +558,10 @@ local function wipePathRecursive(path, preserved, stats)
     return
   end
 
+  if fs.isReadOnly(path) then
+    return
+  end
+
   if fs.isDir(path) then
     for _, name in ipairs(fs.list(path)) do
       wipePathRecursive(fs.combine(path, name), preserved, stats)
@@ -597,7 +601,7 @@ local function wipeComputerKeepInstaller()
 end
 
 local function confirmFullWipe()
-  cprint(colors.red, "WARNING: this will delete everything on this computer except the installer script.")
+  cprint(colors.red, "WARNING: this will delete everything on this computer except the installer script and protected system files.")
   cprint(colors.red, "Programs, configs, logs, managed files, and local data will be removed.")
   print("")
   cwrite(colors.white, "Type WIPE to continue: ")
@@ -632,6 +636,7 @@ local function runFullWipe(interactive)
 
   cprint(colors.lime, "Computer wiped.")
   cprint(colors.white, "Kept: " .. tostring(installerPath))
+  cprint(colors.gray, "Read-only system paths like rom are preserved.")
   cprint(colors.gray, "Removed files: " .. tostring(statsOrErr.removed_files))
   cprint(colors.gray, "Removed directories: " .. tostring(statsOrErr.removed_dirs))
   print("")
