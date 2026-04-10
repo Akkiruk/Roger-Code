@@ -7,12 +7,12 @@
     "description": "Slot Machine game for ComputerCraft casino.",
     "source_root": "Games/Slots",
     "entrypoint": "slots.lua",
-    "version": "1.0.47"
+    "version": "1.0.48"
   },
   "build": {
-    "commit": "d1eb2e5c258e383f0094eb18924b63bc8ff94f2d",
-    "generated_at": "2026-04-09T23:17:21Z",
-    "package_hash": "512969e28cbf3c1e792c7f8bdfd7f861fa335ac3e8c88f592c51da73a6f61e13"
+    "commit": "6b68171fc6dde658140f7b78ec1bcbad3594ced5",
+    "generated_at": "2026-04-10T00:16:53Z",
+    "package_hash": "203c0a74dabc50e2484a90ce19685cdacbe2a9ca119d06a577e4b774f174a41e"
   },
   "install": {
     "preserve": [
@@ -20,14 +20,24 @@
     ],
     "files": [
       {
-        "repo_path": "Games/Slots/slots.lua",
-        "install_path": "slots.lua",
-        "sha256": "45493c4ebfd7a8e02b0acaa5176d2f738b6a1e5d3e7d4bdfdadedb789fe6d11a"
+        "repo_path": "Games/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "f59aaa412315d320b4b03f8da138f63e186c930798c4499565ff917ed480018d"
+      },
+      {
+        "repo_path": "Games/lib/betting.lua",
+        "install_path": "lib/betting.lua",
+        "sha256": "c5f7155130ca191e19b33036337be42ee63f3f36ab09de47b47ca414321eb620"
+      },
+      {
+        "repo_path": "Games/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
       },
       {
         "repo_path": "Games/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "241362d16aa8ae3fd48cf928c33ee0aeefbeb207aa7ebcab5b93ea269c7ca4d7"
+        "sha256": "f4b4d87085ace92b8aeb6885d6d28201d721f76bc5afc2d73fb95f9363e0c6c6"
       },
       {
         "repo_path": "Games/lib/crash_recovery.lua",
@@ -55,14 +65,14 @@
         "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
+        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+      },
+      {
         "repo_path": "Games/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
-      },
-      {
-        "repo_path": "Games/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "Games/lib/peripherals.lua",
@@ -105,24 +115,9 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Games/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
-      },
-      {
-        "repo_path": "Games/lib/cards.lua",
-        "install_path": "lib/cards.lua",
-        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
-      },
-      {
-        "repo_path": "Games/lib/betting.lua",
-        "install_path": "lib/betting.lua",
-        "sha256": "c5f7155130ca191e19b33036337be42ee63f3f36ab09de47b47ca414321eb620"
-      },
-      {
-        "repo_path": "Games/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+        "repo_path": "Games/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "Games/lib/bedrock/theme.lua",
@@ -130,8 +125,33 @@
         "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
+        "repo_path": "Games/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
+      },
+      {
+        "repo_path": "Games/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Games/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "12e76f7baa3398d1549f17d6b4648dd839a9f58e687d7697dfbb5a9f77511178"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "05a0f1a48894af26985b6eebd990eed2522f89e62ddf45fcb39511bec60e8513"
+      },
+      {
+        "repo_path": "Games/Slots/slots.lua",
+        "install_path": "slots.lua",
+        "sha256": "45493c4ebfd7a8e02b0acaa5176d2f738b6a1e5d3e7d4bdfdadedb789fe6d11a"
+      },
+      {
         "repo_path": "Games/Slots/startup.lua",
-        "install_path": "startup.lua",
+        "install_path": "slots_startup.lua",
         "sha256": "90448842eb6f441ff0424d6a25a419a813292f5b186bb6ed9d4da0a19fb99d19"
       },
       {
@@ -171,14 +191,14 @@
         "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
-        "repo_path": "Games/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
-      },
-      {
         "repo_path": "Games/Slots/lemon.nfp",
         "install_path": "lemon.nfp",
         "sha256": "1a7b27ff3544795e92782775992e4001da6473421d99c848697705c4ab3eeef8"
+      },
+      {
+        "repo_path": "Games/Slots/melon.nfp",
+        "install_path": "melon.nfp",
+        "sha256": "ab561b34de2d367386c3501ec37184f7b0f06ab1c99073fd661508710aa25246"
       },
       {
         "repo_path": "Games/Slots/seven.nfp",
@@ -211,28 +231,23 @@
         "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
-        "repo_path": "Games/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+        "repo_path": "Games/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
-        "repo_path": "Games/lib/bedrock/runtime.lua",
-        "install_path": "lib/bedrock/runtime.lua",
-        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
-      },
-      {
-        "repo_path": "Games/Slots/melon.nfp",
-        "install_path": "melon.nfp",
-        "sha256": "ab561b34de2d367386c3501ec37184f7b0f06ab1c99073fd661508710aa25246"
-      },
-      {
-        "repo_path": "Games/lib/updater.lua",
-        "install_path": "lib/updater.lua",
-        "sha256": "6ca34cb46d16f4475c7e812216bd6645c81567437500162fb23f77f99bb9679e"
+        "repo_path": "Games/lib/ui.lua",
+        "install_path": "lib/ui.lua",
+        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
       }
     ]
   },
   "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "slots_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.alert",
@@ -261,8 +276,7 @@
       "lib.ui",
       "lib.ui_surface",
       "lib.ui_text",
-      "lib.ui_touch",
-      "lib.updater"
+      "lib.ui_touch"
     ]
   }
 }

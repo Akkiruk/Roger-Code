@@ -7,18 +7,33 @@
     "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
     "source_root": "Games/PokerTable",
     "entrypoint": "pokertable.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "d1eb2e5c258e383f0094eb18924b63bc8ff94f2d",
-    "generated_at": "2026-04-09T23:17:21Z",
-    "package_hash": "3b04b6fa176dc534e02af0f6a019a8ba4255c916bf2dac8e63b7884ea140f775"
+    "commit": "6b68171fc6dde658140f7b78ec1bcbad3594ced5",
+    "generated_at": "2026-04-10T00:16:53Z",
+    "package_hash": "66c8c4e6ae46da669296bab35a185d37f05afbc258d2ad4d1035fe120d2112a5"
   },
   "install": {
     "preserve": [
       "pokertable_config.lua"
     ],
     "files": [
+      {
+        "repo_path": "Games/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "f59aaa412315d320b4b03f8da138f63e186c930798c4499565ff917ed480018d"
+      },
+      {
+        "repo_path": "Games/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "12e76f7baa3398d1549f17d6b4648dd839a9f58e687d7697dfbb5a9f77511178"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "05a0f1a48894af26985b6eebd990eed2522f89e62ddf45fcb39511bec60e8513"
+      },
       {
         "repo_path": "Games/PokerTable/dealer.lua",
         "install_path": "dealer.lua",
@@ -36,8 +51,8 @@
       },
       {
         "repo_path": "Games/PokerTable/startup.lua",
-        "install_path": "startup.lua",
-        "sha256": "2010870a31d01e7a969730fee91240e8bc4b462d268424786889e81019439bee"
+        "install_path": "pokertable_startup.lua",
+        "sha256": "721394f6be66303b5dd05cc31e891d682f511af93f412a3cb2687ecfa7f44935"
       },
       {
         "repo_path": "Games/PokerTable/pokertable_config.lua",
@@ -83,7 +98,12 @@
     ]
   },
   "runtime": {
-    "requires_updater": false,
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "pokertable_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
+    "requires_updater": true,
     "lib_modules": [
       "lib.currency",
       "lib.poker_bank",

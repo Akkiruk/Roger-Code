@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Games/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.44"
+    "version": "1.0.45"
   },
   "build": {
-    "commit": "d1eb2e5c258e383f0094eb18924b63bc8ff94f2d",
-    "generated_at": "2026-04-09T23:17:21Z",
-    "package_hash": "5aab1c1aa2fda86667e24919c6145befc21bbb37ed19917c07172ed02b2cb98f"
+    "commit": "6b68171fc6dde658140f7b78ec1bcbad3594ced5",
+    "generated_at": "2026-04-10T00:16:53Z",
+    "package_hash": "201d6787e7f11e77b9553c299832d31373cd2785dfd3eca8025d8ed80821c2f4"
   },
   "install": {
     "preserve": [
@@ -21,14 +21,9 @@
     ],
     "files": [
       {
-        "repo_path": "Games/PhoneOS/phone_os.lua",
-        "install_path": "phone_os.lua",
-        "sha256": "f1a11348025f22a0f90780ff755d60a11abdf3a7d2e2de2f982d6b98456c2aff"
-      },
-      {
-        "repo_path": "Games/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "repo_path": "Games/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "f59aaa412315d320b4b03f8da138f63e186c930798c4499565ff917ed480018d"
       },
       {
         "repo_path": "Games/lib/currency.lua",
@@ -69,8 +64,8 @@
       },
       {
         "repo_path": "Games/PhoneOS/startup.lua",
-        "install_path": "startup.lua",
-        "sha256": "c31683e94043c54f9d9b6dce2e01499065d1745d8c8bf6e3c6eff8f62df41cb2"
+        "install_path": "phone_os_startup.lua",
+        "sha256": "c516a484c2590bf3ab093828b3bec715ffa16cca61c92369af487f46fcc581a4"
       },
       {
         "repo_path": "Games/PhoneOS/phoneos/ui.lua",
@@ -103,18 +98,38 @@
         "sha256": "2f53061f3708823e0a4022e5c02da2a41dae379b79c94dd1e54c1ba19963ad58"
       },
       {
-        "repo_path": "Games/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
+        "repo_path": "Games/PhoneOS/phone_os.lua",
+        "install_path": "phone_os.lua",
+        "sha256": "f1a11348025f22a0f90780ff755d60a11abdf3a7d2e2de2f982d6b98456c2aff"
       },
       {
         "repo_path": "Games/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "6ca34cb46d16f4475c7e812216bd6645c81567437500162fb23f77f99bb9679e"
+        "sha256": "05a0f1a48894af26985b6eebd990eed2522f89e62ddf45fcb39511bec60e8513"
+      },
+      {
+        "repo_path": "Games/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "12e76f7baa3398d1549f17d6b4648dd839a9f58e687d7697dfbb5a9f77511178"
+      },
+      {
+        "repo_path": "Games/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+      },
+      {
+        "repo_path": "Games/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
       }
     ]
   },
   "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "phone_os_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.alert",

@@ -7,16 +7,31 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Games/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "d1eb2e5c258e383f0094eb18924b63bc8ff94f2d",
-    "generated_at": "2026-04-09T23:17:21Z",
-    "package_hash": "b3f4b04138e449cb8726bfb47db503cbcb067a196364505cb092dec930831a9e"
+    "commit": "6b68171fc6dde658140f7b78ec1bcbad3594ced5",
+    "generated_at": "2026-04-10T00:16:53Z",
+    "package_hash": "f3d1e3797a9bc73d97806712b6e002342ef85a41fc21a71491ee66f4a3f0e27a"
   },
   "install": {
     "preserve": [],
     "files": [
+      {
+        "repo_path": "Games/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "f59aaa412315d320b4b03f8da138f63e186c930798c4499565ff917ed480018d"
+      },
+      {
+        "repo_path": "Games/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "12e76f7baa3398d1549f17d6b4648dd839a9f58e687d7697dfbb5a9f77511178"
+      },
+      {
+        "repo_path": "Games/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "05a0f1a48894af26985b6eebd990eed2522f89e62ddf45fcb39511bec60e8513"
+      },
       {
         "repo_path": "Games/SoundBrowser/export_report.lua",
         "install_path": "export_report.lua",
@@ -29,8 +44,8 @@
       },
       {
         "repo_path": "Games/SoundBrowser/startup.lua",
-        "install_path": "startup.lua",
-        "sha256": "698a0fbd1882fdd214d27a057261cb235d9af21006c63897d38237d2fb4614dd"
+        "install_path": "sound_browser_startup.lua",
+        "sha256": "38321c8fd3c529942dac7eaf2e9bec5ab2d0890869690a1773566c506c258c31"
       },
       {
         "repo_path": "Games/lib/peripherals.lua",
@@ -66,15 +81,15 @@
         "repo_path": "Games/lib/sound.lua",
         "install_path": "lib/sound.lua",
         "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
-      },
-      {
-        "repo_path": "Games/lib/updater.lua",
-        "install_path": "lib/updater.lua",
-        "sha256": "6ca34cb46d16f4475c7e812216bd6645c81567437500162fb23f77f99bb9679e"
       }
     ]
   },
   "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "sound_browser_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.peripherals",
@@ -83,8 +98,7 @@
       "lib.sound_metadata",
       "lib.sound_recommendations",
       "lib.sound_review_store",
-      "lib.sound_roles",
-      "lib.updater"
+      "lib.sound_roles"
     ]
   }
 }
