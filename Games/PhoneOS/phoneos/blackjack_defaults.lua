@@ -5,7 +5,7 @@ return {
   DEALER_HIT_SOFT_17 = true,
   DEALER_CHASE_TOTAL = 18,
   BLACKJACK_PAYOUT = 1.2,
-  ALLOW_SPLIT = false,
+  ALLOW_SPLIT = true,
   ALLOW_DOUBLE = true,
   ALLOW_DOUBLE_AFTER_SPLIT = false,
   DOUBLE_MIN_TOTAL = 10,

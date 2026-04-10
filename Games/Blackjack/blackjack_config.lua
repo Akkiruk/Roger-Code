@@ -10,7 +10,7 @@ return {
   DEALER_HIT_SOFT_17  = true,    -- fixed H17 dealer rules
   DEALER_CHASE_TOTAL  = 16,      -- set below DEALER_STAND to disable chase logic
   BLACKJACK_PAYOUT    = 1.0,     -- 1:1 payout for natural blackjack
-  ALLOW_SPLIT         = false,
+  ALLOW_SPLIT         = true,
   ALLOW_DOUBLE        = true,
   ALLOW_DOUBLE_AFTER_SPLIT = false,
   DOUBLE_MIN_TOTAL    = 11,      -- doubles only on hard 11
