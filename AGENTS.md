@@ -11,8 +11,10 @@
 - Keep canonical ComputerCraft source, configs, tests, and shared libraries here.
 - Do not treat the PrismLauncher runtime instance as canonical source unless the user explicitly asks for an instance-local hotfix.
 - Main layout:
-  - `Games/<Name>/` for games and larger programs
-  - `Games/lib/` for shared libraries
+  - `Games/<Name>/` for actual game packages
+  - `Apps/<Name>/` for non-game multi-file installable programs
+  - `Shared/lib/` for shared libraries
+  - `System/` for installer and universal runtime bootstrap files
   - `Utilities/` for standalone tools
   - `Do/` for project docs
 

@@ -1,7 +1,7 @@
 -- manifest-entrypoint: true
 -- manifest-key: sound_browser
 -- manifest-name: Sound Browser
--- manifest-category: Utilities
+-- manifest-category: Apps
 -- Browse the pack's generated sound catalog and save favorites.
 
 local ROOT = fs.getDir(shell.getRunningProgram())

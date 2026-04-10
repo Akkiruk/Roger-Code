@@ -2,7 +2,7 @@
 -- Hi-Lo card game for ComputerCraft casino.
 -- A card is shown; guess whether the next card is HIGHER or LOWER.
 -- Correct guesses build a multiplier; cash out any time or risk it all.
--- Uses shared libraries from Games/lib/.
+-- Uses shared libraries from Shared/lib/.
 
 -----------------------------------------------------
 -- Configuration & Caching

@@ -8,6 +8,8 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = (Resolve-Path $RepoRoot).Path
 $GamesDir = Join-Path $RepoRoot "Games"
+$AppsDir = Join-Path $RepoRoot "Apps"
+$SharedLibDir = Join-Path $RepoRoot "Shared\lib"
 $UtilitiesDir = Join-Path $RepoRoot "Utilities"
 
 if (-not $OutputDir) {
@@ -28,10 +30,10 @@ $RepoName = Split-Path $RepoRoot -Leaf
 $RepoOwner = "Akkiruk"
 $PrimaryBranch = "main"
 $SchemaVersion = 1
-$InstallerPath = "Games/installer.lua"
-$RuntimeStartupPath = "Games/runtime_startup.lua"
-$RuntimeSupervisorPath = "Games/lib/roger_supervisor.lua"
-$RuntimeUpdaterPath = "Games/lib/updater.lua"
+$InstallerPath = "System/installer.lua"
+$RuntimeStartupPath = "System/runtime_startup.lua"
+$RuntimeSupervisorPath = "Shared/lib/roger_supervisor.lua"
+$RuntimeUpdaterPath = "Shared/lib/updater.lua"
 $DefaultUpdateInterval = 300
 
 $SkipPatterns = @("*.bak", "*.old", "*.log", "*.md", "manifest.json")
@@ -351,12 +353,12 @@ function Resolve-LibModulePath {
     )
 
     $relative = $ModuleName.Substring(4).Replace('.', '/')
-    $candidate = Join-Path $RepoRootPath ("Games\lib\" + $relative + ".lua")
+    $candidate = Join-Path $RepoRootPath ("Shared\lib\" + $relative + ".lua")
     if (Test-Path $candidate) {
         return $candidate
     }
 
-    $candidate = Join-Path $RepoRootPath ("Games\lib\" + $relative + "\init.lua")
+    $candidate = Join-Path $RepoRootPath ("Shared\lib\" + $relative + "\init.lua")
     if (Test-Path $candidate) {
         return $candidate
     }
@@ -395,7 +397,7 @@ function Get-LibDependencyClosure {
             throw "Could not resolve required module '$moduleName'"
         }
 
-        $relativeLibPath = Get-RelativeFilePath -BaseDir (Join-Path $RepoRootPath "Games\lib") -FullPath $modulePath
+        $relativeLibPath = Get-RelativeFilePath -BaseDir (Join-Path $RepoRootPath "Shared\lib") -FullPath $modulePath
         if ($resolved -notcontains $relativeLibPath) {
             $resolved.Add($relativeLibPath)
         }
@@ -481,11 +483,25 @@ $programSpecs = New-Object System.Collections.Generic.List[object]
 $seenProgramKeys = New-Object "System.Collections.Generic.HashSet[string]" ([System.StringComparer]::OrdinalIgnoreCase)
 
 $programDirs = @()
-if (Test-Path $GamesDir) {
-    $programDirs += Get-ChildItem $GamesDir -Directory | Where-Object { $_.Name -notin $SkipDirs }
-}
-if (Test-Path $UtilitiesDir) {
-    $programDirs += Get-ChildItem $UtilitiesDir -Directory | Where-Object { $_.Name -notin $SkipDirs }
+$packageRoots = @(
+    @{ Path = $GamesDir; Category = "Games" },
+    @{ Path = $AppsDir; Category = "Apps" },
+    @{ Path = $UtilitiesDir; Category = "Utilities" }
+)
+
+foreach ($packageRoot in $packageRoots) {
+    if (-not (Test-Path $packageRoot.Path)) {
+        continue
+    }
+
+    $programDirs += Get-ChildItem $packageRoot.Path -Directory |
+        Where-Object { $_.Name -notin $SkipDirs } |
+        ForEach-Object {
+            [pscustomobject]@{
+                Directory = $_
+                Category = $packageRoot.Category
+            }
+        }
 }
 
 $standaloneUtilities = @()
@@ -499,8 +515,9 @@ if (Test-Path $UtilitiesDir) {
     )
 }
 
-foreach ($dir in ($programDirs | Sort-Object FullName)) {
-    $category = if ($dir.FullName.StartsWith($UtilitiesDir, [System.StringComparison]::OrdinalIgnoreCase)) { "Utilities" } else { "Games" }
+foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) {
+    $dir = $programDir.Directory
+    $category = $programDir.Category
     $sourceRoot = Get-RelativeFilePath -BaseDir $RepoRoot -FullPath $dir.FullName
     $discovered = Get-ProgramFiles -Dir $dir.FullName
 
@@ -552,8 +569,8 @@ foreach ($dir in ($programDirs | Sort-Object FullName)) {
         }
 
         foreach ($libFile in $libClosure) {
-            $fullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
-            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Games/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $fullPath)
+            $fullPath = Join-Path $SharedLibDir ($libFile.Replace('/', '\'))
+            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Shared/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $fullPath)
 
             $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
             $libModules.Add($moduleName)
@@ -640,8 +657,8 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
     Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $installFile.repo_path -InstallPath $installFile.install_path -Sha256 $installFile.sha256
 
     foreach ($libFile in $libClosure) {
-        $libFullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
-        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Games/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $libFullPath)
+        $libFullPath = Join-Path $SharedLibDir ($libFile.Replace('/', '\'))
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Shared/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $libFullPath)
 
         $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
         $libModules.Add($moduleName)

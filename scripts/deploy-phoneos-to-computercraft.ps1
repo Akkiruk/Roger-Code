@@ -6,24 +6,24 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$phoneRoot = Join-Path $repoRoot 'Games\PhoneOS'
+$phoneRoot = Join-Path $repoRoot 'Apps\PhoneOS'
 
 $filesToCopy = @(
-    @{ Source = Join-Path $repoRoot 'Games\runtime_startup.lua'; Destination = Join-Path $TargetDir 'startup.lua' },
+    @{ Source = Join-Path $repoRoot 'System\runtime_startup.lua'; Destination = Join-Path $TargetDir 'startup.lua' },
     @{ Source = Join-Path $phoneRoot 'startup.lua'; Destination = Join-Path $TargetDir 'phone_os_startup.lua' },
     @{ Source = Join-Path $phoneRoot 'phone_os.lua'; Destination = Join-Path $TargetDir 'phone_os.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\blackjack.lua'; Destination = Join-Path $TargetDir 'phoneos\blackjack.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\slots.lua'; Destination = Join-Path $TargetDir 'phoneos\slots.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\storage.lua'; Destination = Join-Path $TargetDir 'phoneos\storage.lua' },
     @{ Source = Join-Path $phoneRoot 'phoneos\ui.lua'; Destination = Join-Path $TargetDir 'phoneos\ui.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\roger_supervisor.lua'; Destination = Join-Path $TargetDir 'lib\roger_supervisor.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\updater.lua'; Destination = Join-Path $TargetDir 'lib\updater.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\alert.lua'; Destination = Join-Path $TargetDir 'lib\alert.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\cards.lua'; Destination = Join-Path $TargetDir 'lib\cards.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\crash_recovery.lua'; Destination = Join-Path $TargetDir 'lib\crash_recovery.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\currency.lua'; Destination = Join-Path $TargetDir 'lib\currency.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\peripherals.lua'; Destination = Join-Path $TargetDir 'lib\peripherals.lua' },
-    @{ Source = Join-Path $repoRoot 'Games\lib\sound.lua'; Destination = Join-Path $TargetDir 'lib\sound.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\roger_supervisor.lua'; Destination = Join-Path $TargetDir 'lib\roger_supervisor.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\updater.lua'; Destination = Join-Path $TargetDir 'lib\updater.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\alert.lua'; Destination = Join-Path $TargetDir 'lib\alert.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\cards.lua'; Destination = Join-Path $TargetDir 'lib\cards.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\crash_recovery.lua'; Destination = Join-Path $TargetDir 'lib\crash_recovery.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\currency.lua'; Destination = Join-Path $TargetDir 'lib\currency.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\peripherals.lua'; Destination = Join-Path $TargetDir 'lib\peripherals.lua' },
+    @{ Source = Join-Path $repoRoot 'Shared\lib\sound.lua'; Destination = Join-Path $TargetDir 'lib\sound.lua' },
     @{ Source = Join-Path $phoneRoot 'blackjack_config.lua'; Destination = Join-Path $TargetDir 'Blackjack\blackjack_config.lua' },
     @{ Source = Join-Path $phoneRoot 'blackjack_config.lua'; Destination = Join-Path $TargetDir 'blackjack_config.lua' },
     @{ Source = Join-Path $phoneRoot 'slots_config.lua'; Destination = Join-Path $TargetDir 'Slots\slots_config.lua' },

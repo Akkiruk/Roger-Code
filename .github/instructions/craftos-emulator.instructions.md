@@ -123,7 +123,7 @@ Breakpoints work on any `.lua` file. Requires CraftOS-PC v2.7+ (installed: v2.8.
 
 ## AI Workflow for Testing Changes
 
-1. Make code changes to files in `Games/Blackjack/` or `Games/lib/`
+1. Make code changes to files in `Games/Blackjack/` or `Shared/lib/`
 2. Run deploy: `powershell -ExecutionPolicy Bypass -File ".vscode/deploy-to-emulator.ps1"`
 3. Read back the deployed file to verify: `Get-Content "$env:APPDATA\CraftOS-PC\computer\0\<file>"`
 4. After user runs in emulator, read logs: `Get-Content "$env:APPDATA\CraftOS-PC\computer\0\emulator\mock_log.txt"`

@@ -1,6 +1,6 @@
 -- blackjack_config.lua
 -- Pocket-install copy of the shared Blackjack configuration.
--- Keep this aligned with Games/Blackjack/blackjack_config.lua.
+-- Keep this aligned with the Blackjack defaults in Games/Blackjack/blackjack_config.lua.
 
 return {
   -- Game rules

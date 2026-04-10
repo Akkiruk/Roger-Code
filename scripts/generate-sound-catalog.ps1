@@ -1,7 +1,7 @@
 param(
   [string]$InstancePath = 'C:\Users\rboon\AppData\Roaming\PrismLauncher\instances\Vault Paradise',
   [string]$ClientJar = 'C:\Users\rboon\AppData\Roaming\PrismLauncher\libraries\com\mojang\minecraft\1.18.2\minecraft-1.18.2-client.jar',
-  [string]$OutputPath = (Join-Path $PSScriptRoot '..\Games\lib\sound_catalog.lua')
+  [string]$OutputPath = (Join-Path $PSScriptRoot '..\Shared\lib\sound_catalog.lua')
 )
 
 Set-StrictMode -Version Latest

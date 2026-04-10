@@ -1,7 +1,7 @@
 -- videopoker.lua
 -- Video Poker (Jacks or Better) for ComputerCraft casino.
 -- Deal 5 cards, hold/discard, draw replacements, evaluate poker hand.
--- Uses shared libraries from Games/lib/.
+-- Uses shared libraries from Shared/lib/.
 
 -----------------------------------------------------
 -- Configuration & Caching

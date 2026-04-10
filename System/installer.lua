@@ -2,7 +2,7 @@
 -- Program Installer & Updater for ComputerCraft
 --
 -- Bootstrap (paste into CC shell):
---   wget https://raw.githubusercontent.com/Akkiruk/Roger-Code/main/Games/installer.lua
+--   wget https://raw.githubusercontent.com/Akkiruk/Roger-Code/main/System/installer.lua
 --
 -- Usage:
 --   installer              -- Interactive menu
@@ -956,8 +956,9 @@ local function buildProgramGroups(index)
   table.sort(folders, function(a, b)
     local order = {
       Games = 1,
-      Utilities = 2,
-      Other = 3,
+      Apps = 2,
+      Utilities = 3,
+      Other = 4,
     }
     local aOrder = order[a.name] or 99
     local bOrder = order[b.name] or 99

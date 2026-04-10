@@ -1,7 +1,7 @@
 -- baccarat.lua
 -- Baccarat card game for ComputerCraft casino.
 -- Standard punto banco rules with Player, Banker, and Tie bets.
--- Uses shared libraries from Games/lib/.
+-- Uses shared libraries from Shared/lib/.
 
 -----------------------------------------------------
 -- Configuration & Caching

@@ -361,7 +361,7 @@ function M.nextStep(app)
   return "Routing handles new work first, then idle repair quietly fixes drift."
 end
 
-function M.storageSummaryLines(storage)
+function M.storageSummaryLines(app, storage)
   if not storage then
     return {
       "Unmanaged",
@@ -437,7 +437,7 @@ function M.selectionSummaryLines(app)
   )
 
   if storage then
-    local summary = M.storageSummaryLines(storage)
+    local summary = M.storageSummaryLines(app, storage)
     for index = 1, math.min(#summary, 3) do
       lines[#lines + 1] = summary[index]
     end

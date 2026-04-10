@@ -1,4 +1,4 @@
--- manifest-category: Utilities
+-- manifest-category: Apps
 -- Vault Storage Manager monitor app for live multi-storage routing and repair.
 
 local app = require("lib.vaultgear.app")

@@ -465,7 +465,7 @@ local function buildMissingStorageRows(app, actions)
       "Saved target: " .. shared.inventoryLabel(app, storage.inventory),
       "This storage is offline, renamed, or no longer attached to the current network.",
     }
-    for _, line in ipairs(shared.storageSummaryLines(storage)) do
+    for _, line in ipairs(shared.storageSummaryLines(app, storage)) do
       lines[#lines + 1] = line
       if #lines >= 5 then
         break

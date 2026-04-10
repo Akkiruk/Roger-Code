@@ -7,10 +7,12 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path $RepoRoot).Path
 $scanRoots = @(
     (Join-Path $RepoRoot "Games"),
+    (Join-Path $RepoRoot "Apps"),
+    (Join-Path $RepoRoot "Shared"),
     (Join-Path $RepoRoot "Utilities")
 ) | Where-Object { Test-Path $_ }
 $excludedRelativePaths = @(
-    "Games/lib/basalt.lua"
+    "Shared/lib/basalt.lua"
 )
 
 function Get-CodeLine {

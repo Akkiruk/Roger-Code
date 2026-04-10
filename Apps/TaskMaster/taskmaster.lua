@@ -1,6 +1,6 @@
 -- taskmaster_simplified.lua
 -- manifest-entrypoint: true
--- manifest-category: Utilities
+-- manifest-category: Apps
 -- A stateless, anonymous item exchange kiosk for ComputerCraft
 
 -- Configuration

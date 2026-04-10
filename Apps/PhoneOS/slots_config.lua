@@ -1,6 +1,6 @@
 -- slots_config.lua
 -- Pocket-install copy of the shared Slots configuration.
--- Keep this aligned with Games/Slots/slots_config.lua.
+-- Keep this aligned with the Slots defaults in Games/Slots/slots_config.lua.
 
 return {
   -- Peripheral sides

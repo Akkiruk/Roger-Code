@@ -9,10 +9,11 @@ This file covers project-specific context for the Roger-Code repo only. Lua/Comp
 
 ## Project Structure
 
-- `Games/<Name>/` — Casino games (Blackjack, Slots, Roulette, Baccarat, TaskMaster)
-- `Games/lib/` — Shared CC libraries used across games
-- `Games/emulator/` — CraftOS-PC mock framework and stubs
-- `Games/installer.lua` — Universal installer (handles any program, not just casino games)
+- `Games/<Name>/` — Game packages (Blackjack, Slots, Roulette, Baccarat, HiLo, PokerTable, VideoPoker)
+- `Apps/<Name>/` — Non-game installable programs (PhoneOS, SoundBrowser, TaskMaster, VaultGear)
+- `Shared/lib/` — Shared CC libraries used across packages
+- `System/installer.lua` — Universal installer (handles any program, not just games)
+- `System/runtime_startup.lua` — Universal runtime bootstrap installed as `startup.lua`
 - `scripts/build-deploy-index.ps1` — Generated deploy-index builder
 - `deploy-index/latest.json` — Published deployment catalog branch output
 - `Utilities/` — Standalone utility scripts
@@ -21,8 +22,8 @@ This file covers project-specific context for the Roger-Code repo only. Lua/Comp
 ## File Storage Rules
 
 - ALL scripts, configs, and test files live in this repo — never directly in the minecraft save folders.
-- Games in `Games/<Name>/`, standalone utilities in `Utilities/`.
-- Shared CC libraries in `Games/lib/`.
+- Games in `Games/<Name>/`, non-game package folders in `Apps/<Name>/`, standalone utilities in `Utilities/`.
+- Shared CC libraries in `Shared/lib/`.
 
 ## Workflow Preference
 
@@ -36,13 +37,13 @@ This file covers project-specific context for the Roger-Code repo only. Lua/Comp
 - Deployment metadata is published to the `deploy-index` branch and consumed by the installer/updater.
 - Generated JSON must be UTF-8 with NO BOM (`[System.IO.File]::WriteAllText` with `UTF8Encoding($false)`).
 - Config files (`*_config.lua`, `*_settings.lua`) are preserved on updates.
-- Any new subfolder with `.lua` files under `Games/` or `Utilities/` is auto-discovered by the deploy-index builder.
+- Any new subfolder with `.lua` files under `Games/`, `Apps/`, or `Utilities/` is auto-discovered by the deploy-index builder.
 - Folder-based packages must explicitly mark their entrypoint file with `-- manifest-entrypoint: true`; the builder no longer guesses a main file.
 - Standalone top-level `Utilities/*.lua` files are still auto-discovered as single-file packages without the marker.
 
 ## Adding a New Program
 
-1. Create folder under `Games/` or `Utilities/`
+1. Create folder under `Games/`, `Apps/`, or `Utilities/`
 2. Add `.lua` files and mark the installable entrypoint with `-- manifest-entrypoint: true`; add manifest metadata comments as needed
 3. Run "Build Deploy Index" locally if you want to inspect generated package output
 4. Commit the source files
