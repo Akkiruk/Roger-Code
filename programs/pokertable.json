@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
     "source_root": "Games/PokerTable",
     "entrypoint": "pokertable.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "9c18923d4c706ec81c6ecdec07fead540de07681",
-    "generated_at": "2026-04-10T00:24:52Z",
-    "package_hash": "66c8c4e6ae46da669296bab35a185d37f05afbc258d2ad4d1035fe120d2112a5"
+    "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
+    "generated_at": "2026-04-10T00:27:08Z",
+    "package_hash": "64cee8b798325ca195aa498e3338dfd88dc234cd825c5ec92596c494d95736a4"
   },
   "install": {
     "preserve": [
@@ -22,7 +22,7 @@
       {
         "repo_path": "Games/runtime_startup.lua",
         "install_path": "startup.lua",
-        "sha256": "f59aaa412315d320b4b03f8da138f63e186c930798c4499565ff917ed480018d"
+        "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
         "repo_path": "Games/lib/roger_supervisor.lua",

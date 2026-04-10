@@ -7,12 +7,12 @@
     "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
     "source_root": "Games/TaskMaster",
     "entrypoint": "taskmaster.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "9c18923d4c706ec81c6ecdec07fead540de07681",
-    "generated_at": "2026-04-10T00:24:52Z",
-    "package_hash": "7e685acf948c4d37f20994d2b6b5e99afc5642e57912555b9cc46db4b203008c"
+    "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
+    "generated_at": "2026-04-10T00:27:08Z",
+    "package_hash": "22f96f8157b7b8a6109a164895dd73f45f1ff10889e0197c459d7da744192e3a"
   },
   "install": {
     "preserve": [],
@@ -20,7 +20,7 @@
       {
         "repo_path": "Games/runtime_startup.lua",
         "install_path": "startup.lua",
-        "sha256": "f59aaa412315d320b4b03f8da138f63e186c930798c4499565ff917ed480018d"
+        "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
         "repo_path": "Games/lib/roger_supervisor.lua",
