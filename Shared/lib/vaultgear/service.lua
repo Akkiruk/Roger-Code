@@ -1,3 +1,4 @@
+local constants = require("lib.vaultgear.constants")
 local model = require("lib.vaultgear.model")
 local planner = require("lib.vaultgear.planner")
 
@@ -160,6 +161,8 @@ local function inspectWrappedInventory(inventoryName, inventory, slotMap, catalo
     error = nil,
   }
 
+  local sampleLimit = math.max(1, tonumber(limit) or constants.INSPECT_LIMIT)
+
   for _, slot in ipairs(slotKeys(slotMap)) do
     local basic = slotMap[slot]
     local item = normalizeSlot(inventory, slot, basic)
@@ -171,16 +174,15 @@ local function inspectWrappedInventory(inventoryName, inventory, slotMap, catalo
       result.supported_items = result.supported_items + 1
     end
     result.catalog_changed = observeItem(catalog, catalogLib, item) or result.catalog_changed
+    result.items[#result.items + 1] = {
+      slot = slot,
+      item = item,
+      lines = model.summaryLines(item),
+    }
 
-    if #result.items < (limit or 12) then
-      result.items[#result.items + 1] = {
-        slot = slot,
-        item = item,
-        lines = model.summaryLines(item),
-      }
+    if #result.items >= sampleLimit then
+      break
     end
-
-    os.sleep(0)
   end
 
   return result
@@ -201,7 +203,7 @@ function M.inspectInventory(inventoryName, catalog, catalogLib, limit)
 
   local wrapped = safeWrap(inventoryName)
   if wrapped and isMeBridge(inventoryName, wrapped) then
-    local bridge, items, err = loadBridgeItems(inventoryName)
+    local _, items, err = loadBridgeItems(inventoryName)
     if err then
       return {
         inventory = inventoryName,
@@ -223,6 +225,7 @@ function M.inspectInventory(inventoryName, catalog, catalogLib, limit)
       supported_items = 0,
       vault_items = 0,
     }
+    local sampleLimit = math.max(1, tonumber(limit) or constants.INSPECT_LIMIT)
 
     for slot, basic in ipairs(items) do
       if type(basic) == "table" then
@@ -230,16 +233,18 @@ function M.inspectInventory(inventoryName, catalog, catalogLib, limit)
         if isVaultRegistryName(basic.name) then
           result.vault_items = result.vault_items + 1
         end
-        if #result.items < (limit or 12) then
-          local item, lines = summarizeBridgeItem(slot, basic)
-          result.items[#result.items + 1] = {
-            slot = slot,
-            item = item,
-            lines = lines,
-          }
+
+        local item, lines = summarizeBridgeItem(slot, basic)
+        result.items[#result.items + 1] = {
+          slot = slot,
+          item = item,
+          lines = lines,
+        }
+
+        if #result.items >= sampleLimit then
+          break
         end
       end
-      os.sleep(0)
     end
 
     return result
@@ -434,43 +439,85 @@ local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes,
     return
   end
 
-  local movedTotal = movedFromStage
-  local remaining = math.max(0, (tonumber(bridgeItem.count) or 1) - movedFromStage)
-  if remaining > 0 then
-    local directMoved, directError = bridgeExportItem(bridge, buildBridgeFilter(bridgeItem, remaining), picked.storage.inventory)
-    if type(directMoved) == "number" and directMoved > 0 then
-      movedTotal = movedTotal + directMoved
-    elseif directError then
-      report.errors[#report.errors + 1] = directError
-      local routeFailure = classifyMoveFailure(bridgeStorage.inventory, picked.storage.inventory, directError)
-      if routeFailure then
-        report.route_failures[#report.route_failures + 1] = routeFailure
-      end
+  report.kind = "routing"
+  report.moved_stacks = report.moved_stacks + 1
+  report.moved_items = report.moved_items + movedFromStage
+  report.action = buildMoveAction("route", bridgeStorage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], movedFromStage)
+end
+
+local function ensureRuntimeState(runtimeState)
+  if type(runtimeState) ~= "table" then
+    runtimeState = {}
+  end
+
+  runtimeState.inbox_cursor = tonumber(runtimeState.inbox_cursor) or 1
+  runtimeState.inbox_slot = tonumber(runtimeState.inbox_slot) or 0
+  runtimeState.repair_cursor = tonumber(runtimeState.repair_cursor) or 1
+  runtimeState.repair_slot = tonumber(runtimeState.repair_slot) or 0
+  runtimeState.unresolved_scan = tonumber(runtimeState.unresolved_scan) or 0
+  return runtimeState
+end
+
+local function nextCursorIndex(index, count)
+  if count < 1 then
+    return 1
+  end
+  return (index % count) + 1
+end
+
+local function nextSlotPosition(slots, cursorSlot)
+  if #slots == 0 then
+    return nil
+  end
+
+  local current = tonumber(cursorSlot) or 0
+  if current < 1 then
+    return 1
+  end
+
+  for position, slot in ipairs(slots) do
+    if slot > current then
+      return position
     end
   end
 
-  report.kind = "routing"
-  report.moved_stacks = report.moved_stacks + 1
-  report.moved_items = report.moved_items + movedTotal
-  report.action = buildMoveAction("route", bridgeStorage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], movedTotal)
+  return 1
 end
 
-local function processStandardInbox(report, storage, homes, catalog, catalogLib)
+local function processStandardInboxStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
   report.target_inventory = storage.inventory
+
   local inventory, slotMap, err = loadSlotMap(storage.inventory)
   if err then
     report.errors[#report.errors + 1] = err
-    return
+    runtimeState.inbox_slot = 0
+    return true, true, 0
   end
 
-  for _, slot in ipairs(slotKeys(slotMap)) do
+  local slots = slotKeys(slotMap)
+  if #slots == 0 then
+    runtimeState.inbox_slot = 0
+    return false, true, 0
+  end
+
+  local startPosition = nextSlotPosition(slots, runtimeState.inbox_slot)
+  local visited = 0
+  local inspected = 0
+
+  while visited < #slots and inspected < budget do
+    local position = ((startPosition - 1 + visited) % #slots) + 1
+    local slot = slots[position]
     local basic = slotMap[slot]
+    runtimeState.inbox_slot = slot
+    inspected = inspected + 1
+    visited = visited + 1
+
     local item = normalizeSlot(inventory, slot, basic)
     report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
 
     local picked = planner.pickDestination(homes, item, storage.inventory)
     if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
-      local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
+      local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, 1)
       if type(moved) ~= "number" or moved < 1 then
         report.errors[#report.errors + 1] = moveError or ("Move failed from " .. tostring(storage.inventory))
         local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
@@ -483,38 +530,93 @@ local function processStandardInbox(report, storage, homes, catalog, catalogLib)
         report.moved_items = report.moved_items + moved
         report.action = buildMoveAction("route", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
       end
-    elseif item.supported_type then
-      report.unresolved = report.unresolved + 1
+
+      runtimeState.inbox_slot = math.max(0, slot - 1)
+      return true, false, inspected
     end
 
-    os.sleep(0)
+    if item.supported_type then
+      runtimeState.unresolved_scan = runtimeState.unresolved_scan + 1
+    end
   end
+
+  if visited >= #slots then
+    runtimeState.inbox_slot = 0
+    return false, true, inspected
+  end
+
+  return false, false, inspected
 end
 
-local function processBridgeInbox(report, storage, storages, connectedSet, homes, catalog, catalogLib)
+local function processBridgeInboxStep(report, storage, storages, connectedSet, homes, runtimeState, catalog, catalogLib, budget)
   report.target_inventory = storage.inventory
 
   local bridge, items, err = loadBridgeItems(storage.inventory)
   if err then
     report.errors[#report.errors + 1] = err
-    return
+    runtimeState.inbox_slot = 0
+    return true, true, 0
   end
 
   local stagingStorage, stagingInventory = findBridgeInspectionInbox(storages, connectedSet, storage.inventory)
   if not stagingStorage or not stagingInventory then
     report.errors[#report.errors + 1] = "ME Bridge inboxes need another connected inbox with getItemDetail() so Vault items can be inspected before routing."
-    return
+    runtimeState.inbox_slot = 0
+    return true, true, 0
   end
 
-  for _, bridgeItem in ipairs(items) do
+  local totalItems = #items
+  if totalItems == 0 then
+    runtimeState.inbox_slot = 0
+    return false, true, 0
+  end
+
+  local startIndex = tonumber(runtimeState.inbox_slot) or 0
+  if startIndex < 1 or startIndex > totalItems then
+    startIndex = 1
+  else
+    startIndex = nextCursorIndex(startIndex, totalItems)
+  end
+
+  local visited = 0
+  local inspected = 0
+
+  while visited < totalItems and inspected < budget do
+    local index = ((startIndex - 1 + visited) % totalItems) + 1
+    local bridgeItem = items[index]
+    runtimeState.inbox_slot = index
+    inspected = inspected + 1
+    visited = visited + 1
+
     if type(bridgeItem) == "table" and isVaultRegistryName(bridgeItem.name) then
+      local priorMoves = report.moved_stacks
+      local priorErrors = #report.errors
+      local priorUnresolved = report.unresolved
       routeBridgeItem(report, storage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, catalog, catalogLib)
-      os.sleep(0)
+
+      if report.unresolved > priorUnresolved then
+        runtimeState.unresolved_scan = runtimeState.unresolved_scan + (report.unresolved - priorUnresolved)
+        report.unresolved = priorUnresolved
+      end
+
+      if report.moved_stacks > priorMoves or #report.errors > priorErrors then
+        runtimeState.inbox_slot = math.max(0, index - 1)
+        return true, false, inspected
+      end
     end
   end
+
+  if visited >= totalItems then
+    runtimeState.inbox_slot = 0
+    return false, true, inspected
+  end
+
+  return false, false, inspected
 end
 
-function M.processInboxes(storages, connectedSet, catalog, catalogLib)
+function M.processInboxes(storages, connectedSet, runtimeState, catalog, catalogLib)
+  runtimeState = ensureRuntimeState(runtimeState)
+
   local report = {
     kind = "idle",
     moved_stacks = 0,
@@ -525,26 +627,119 @@ function M.processInboxes(storages, connectedSet, catalog, catalogLib)
     action = nil,
     target_inventory = nil,
     catalog_changed = false,
+    inbox_pass_complete = false,
   }
 
   local homes = planner.listHomes(storages, connectedSet)
-  if #homes == 0 then
+  local inboxes = planner.listInboxes(storages, connectedSet)
+  if #homes == 0 or #inboxes == 0 then
+    runtimeState.unresolved_scan = 0
+    report.inbox_pass_complete = true
     return report
   end
 
-  for _, storage in ipairs(planner.listInboxes(storages, connectedSet)) do
+  local cursorIndex = math.min(math.max(tonumber(runtimeState.inbox_cursor) or 1, 1), #inboxes)
+  local budget = math.max(1, tonumber(constants.WORK_SCAN_BUDGET) or 1)
+
+  for offset = 0, #inboxes - 1 do
+    local storageIndex = ((cursorIndex - 1 + offset) % #inboxes) + 1
+    local storage = inboxes[storageIndex]
+    runtimeState.inbox_cursor = storageIndex
+
     local wrapped = safeWrap(storage.inventory)
+    local yielded, exhausted, inspected
     if wrapped and isMeBridge(storage.inventory, wrapped) then
-      processBridgeInbox(report, storage, storages, connectedSet, homes, catalog, catalogLib)
+      yielded, exhausted, inspected = processBridgeInboxStep(report, storage, storages, connectedSet, homes, runtimeState, catalog, catalogLib, budget)
     else
-      processStandardInbox(report, storage, homes, catalog, catalogLib)
+      yielded, exhausted, inspected = processStandardInboxStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
+    end
+
+    budget = budget - (inspected or 0)
+
+    if report.action or #report.errors > 0 or yielded then
+      return report
+    end
+
+    if exhausted then
+      runtimeState.inbox_cursor = nextCursorIndex(storageIndex, #inboxes)
+      runtimeState.inbox_slot = 0
+    end
+
+    if budget < 1 then
+      return report
     end
   end
 
+  report.unresolved = runtimeState.unresolved_scan
+  runtimeState.unresolved_scan = 0
+  report.inbox_pass_complete = true
   return report
 end
 
+local function processRepairStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
+  report.kind = "repair_scan"
+  report.target_inventory = storage.inventory
+
+  local inventory, slotMap, err = loadSlotMap(storage.inventory)
+  if err then
+    report.errors[#report.errors + 1] = err
+    runtimeState.repair_slot = 0
+    return true, true, 0
+  end
+
+  local slots = slotKeys(slotMap)
+  if #slots == 0 then
+    runtimeState.repair_slot = 0
+    return false, true, 0
+  end
+
+  local startPosition = nextSlotPosition(slots, runtimeState.repair_slot)
+  local visited = 0
+  local inspected = 0
+
+  while visited < #slots and inspected < budget do
+    local position = ((startPosition - 1 + visited) % #slots) + 1
+    local slot = slots[position]
+    local basic = slotMap[slot]
+    runtimeState.repair_slot = slot
+    inspected = inspected + 1
+    visited = visited + 1
+
+    local item = normalizeSlot(inventory, slot, basic)
+    report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
+
+    local picked = planner.pickDestination(homes, item, storage.inventory)
+    if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
+      local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, 1)
+      if type(moved) ~= "number" or moved < 1 then
+        report.errors[#report.errors + 1] = moveError or ("Repair move failed from " .. tostring(storage.inventory))
+        local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
+        if routeFailure then
+          report.route_failures[#report.route_failures + 1] = routeFailure
+        end
+      else
+        report.kind = "repair"
+        report.moved_stacks = report.moved_stacks + 1
+        report.moved_items = report.moved_items + moved
+        report.action = buildMoveAction("repair", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
+      end
+
+      runtimeState.repair_slot = math.max(0, slot - 1)
+      return true, false, inspected
+    end
+  end
+
+  if visited >= #slots then
+    runtimeState.repair_slot = 0
+    return false, true, inspected
+  end
+
+  return false, false, inspected
+end
+
 function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogLib)
+  runtimeState = ensureRuntimeState(runtimeState)
+
   local report = {
     kind = "idle",
     moved_stacks = 0,
@@ -567,43 +762,33 @@ function M.processRepair(storages, connectedSet, runtimeState, catalog, catalogL
     return report
   end
 
-  report.kind = "repair_scan"
-  report.target_inventory = homes[1].inventory
+  local cursorIndex = math.min(math.max(tonumber(runtimeState.repair_cursor) or 1, 1), #homes)
+  local budget = math.max(1, tonumber(constants.WORK_SCAN_BUDGET) or 1)
 
-  for _, storage in ipairs(homes) do
-    report.target_inventory = storage.inventory
+  for offset = 0, #homes - 1 do
+    local storageIndex = ((cursorIndex - 1 + offset) % #homes) + 1
+    local storage = homes[storageIndex]
+    runtimeState.repair_cursor = storageIndex
 
-    local inventory, slotMap, err = loadSlotMap(storage.inventory)
-    if err then
-      report.errors[#report.errors + 1] = err
-    else
-      for _, slot in ipairs(slotKeys(slotMap)) do
-        local basic = slotMap[slot]
-        local item = normalizeSlot(inventory, slot, basic)
-        report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
+    local yielded, exhausted, inspected = processRepairStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
+    budget = budget - (inspected or 0)
 
-        local picked = planner.pickDestination(homes, item, storage.inventory)
-        if picked and picked.storage and picked.storage.inventory ~= storage.inventory then
-          local moved, moveError = moveItem(inventory, picked.storage.inventory, slot, basic.count or 1)
-          if type(moved) ~= "number" or moved < 1 then
-            report.errors[#report.errors + 1] = moveError or ("Repair move failed from " .. tostring(storage.inventory))
-            local routeFailure = classifyMoveFailure(storage.inventory, picked.storage.inventory, moveError)
-            if routeFailure then
-              report.route_failures[#report.route_failures + 1] = routeFailure
-            end
-          else
-            report.kind = "repair"
-            report.moved_stacks = report.moved_stacks + 1
-            report.moved_items = report.moved_items + moved
-            report.action = buildMoveAction("repair", storage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
-          end
-        end
+    if report.action or #report.errors > 0 or yielded then
+      return report
+    end
 
-        os.sleep(0)
-      end
+    if exhausted then
+      runtimeState.repair_cursor = nextCursorIndex(storageIndex, #homes)
+      runtimeState.repair_slot = 0
+    end
+
+    if budget < 1 then
+      return report
     end
   end
 
+  report.kind = "repair_scan"
+  report.target_inventory = homes[cursorIndex] and homes[cursorIndex].inventory or nil
   return report
 end
 

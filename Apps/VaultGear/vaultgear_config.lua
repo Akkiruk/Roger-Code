@@ -9,7 +9,7 @@ return {
   },
   runtime = {
     enabled = false,
-    scan_interval = 2,
+    scan_interval = 0.75,
   },
   storages = {},
 }

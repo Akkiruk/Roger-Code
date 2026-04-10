@@ -12,6 +12,11 @@ M.MIN_MONITOR_WIDTH = 52
 M.MIN_MONITOR_HEIGHT = 18
 M.INSPECT_LIMIT = 12
 M.RECENT_LIMIT = 18
+M.WORK_INTERVAL = 0.1
+M.INSPECT_INTERVAL_ACTIVE = 0.75
+M.INSPECT_INTERVAL_BACKGROUND = 3
+M.SAVE_INTERVAL = 1
+M.WORK_SCAN_BUDGET = 8
 
 M.TABS = {
   { id = "overview", label = "Overview" },
@@ -75,7 +80,7 @@ end
 
 M.DEFAULT_RUNTIME = {
   enabled = false,
-  scan_interval = 2,
+  scan_interval = 0.75,
 }
 
 M.DEFAULT_RULE = {

@@ -26,7 +26,11 @@ function M.buildDefaultState()
       advanced = false,
     },
     runtime = {
+      inbox_cursor = 1,
+      inbox_slot = 0,
       repair_cursor = 1,
+      repair_slot = 0,
+      unresolved_scan = 0,
       current_mode = "idle",
       current_target = nil,
       last_summary = "Idle",
@@ -52,6 +56,21 @@ local function readLuaTable(path)
   end
 
   return data
+end
+
+local function readRawFile(path)
+  if not fs.exists(path) then
+    return nil
+  end
+
+  local handle = fs.open(path, "r")
+  if not handle then
+    return nil
+  end
+
+  local content = handle.readAll()
+  handle.close()
+  return content
 end
 
 local function atomicWrite(path, content)
@@ -126,6 +145,23 @@ local function normalizeLoadedConfig(loaded)
   return migrateLegacyConfig(loaded)
 end
 
+local function loadConfigInternal(allowDefaultOnInvalid)
+  local loaded = readLuaTable(constants.CONFIG_FILE)
+  if loaded == nil then
+    if fs.exists(constants.CONFIG_FILE) and not allowDefaultOnInvalid then
+      return nil, "Invalid config file"
+    end
+    loaded = nil
+  end
+
+  local normalized = normalizeLoadedConfig(loaded)
+  normalized.runtime = util.mergeDefaults(constants.DEFAULT_RUNTIME, normalized.runtime)
+  normalized.runtime.move_batch = nil
+  normalized.runtime.repair_batch = nil
+  normalized.storages = planner.normalizeStorages(normalized.storages)
+  return normalized, nil
+end
+
 local function normalizeLoadedState(loaded)
   if type(loaded) ~= "table" then
     return M.buildDefaultState()
@@ -136,7 +172,11 @@ local function normalizeLoadedState(loaded)
     normalized.ui.selected_inventory = nil
   end
   normalized.ui.advanced = normalized.ui.advanced == true
+  normalized.runtime.inbox_cursor = tonumber(normalized.runtime.inbox_cursor) or 1
+  normalized.runtime.inbox_slot = tonumber(normalized.runtime.inbox_slot) or 0
   normalized.runtime.repair_cursor = tonumber(normalized.runtime.repair_cursor) or 1
+  normalized.runtime.repair_slot = tonumber(normalized.runtime.repair_slot) or 0
+  normalized.runtime.unresolved_scan = tonumber(normalized.runtime.unresolved_scan) or 0
   normalized.runtime.current_mode = tostring(normalized.runtime.current_mode or "idle")
   normalized.runtime.current_target = normalized.runtime.current_target and tostring(normalized.runtime.current_target) or nil
   normalized.runtime.last_summary = tostring(normalized.runtime.last_summary or "Idle")
@@ -148,13 +188,12 @@ local function normalizeLoadedState(loaded)
 end
 
 function M.loadConfig()
-  local loaded = readLuaTable(constants.CONFIG_FILE)
-  local normalized = normalizeLoadedConfig(loaded)
-  normalized.runtime = util.mergeDefaults(constants.DEFAULT_RUNTIME, normalized.runtime)
-  normalized.runtime.move_batch = nil
-  normalized.runtime.repair_batch = nil
-  normalized.storages = planner.normalizeStorages(normalized.storages)
+  local normalized = loadConfigInternal(true)
   return normalized
+end
+
+function M.tryLoadConfig()
+  return loadConfigInternal(false)
 end
 
 function M.saveConfig(config)
@@ -169,6 +208,10 @@ end
 
 function M.loadState()
   return normalizeLoadedState(readLuaTable(constants.STATE_FILE))
+end
+
+function M.readConfigSnapshot()
+  return readRawFile(constants.CONFIG_FILE)
 end
 
 function M.saveState(state)

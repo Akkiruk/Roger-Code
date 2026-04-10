@@ -184,6 +184,10 @@ local function refreshInspector(app)
   end
 end
 
+local function shouldAutoInspect(app)
+  return app.ui.page == "storages" or app.ui.page == "live"
+end
+
 local function refreshHealth(app)
   app.health = {
     monitor_ok = true,
@@ -313,6 +317,7 @@ local function saveAll(app, context)
     local ok, err = store.saveConfig(app.config)
     if ok then
       app.dirty_config = false
+      app.config_snapshot = store.readConfigSnapshot()
     else
       recentEvent(app, "error", "Failed to save config after " .. location .. ": " .. tostring(err))
     end
@@ -326,6 +331,29 @@ local function saveAll(app, context)
       recentEvent(app, "error", "Failed to save state after " .. location .. ": " .. tostring(err))
     end
   end
+end
+
+local function syncExternalConfig(app)
+  local diskSnapshot = store.readConfigSnapshot()
+  if not diskSnapshot or diskSnapshot == app.config_snapshot then
+    return false, nil
+  end
+
+  local loaded, err = store.tryLoadConfig()
+  if not loaded then
+    return false, err
+  end
+
+  app.config = loaded
+  app.config_snapshot = diskSnapshot
+  bindMonitor(app)
+  refreshHealth(app)
+  if shouldAutoInspect(app) then
+    refreshInspector(app)
+  else
+    ensureSelectedInventory(app)
+  end
+  return true, nil
 end
 
 local function normalizePage(page)
@@ -352,12 +380,21 @@ end
 
 local function updateRuntimeState(app, report)
   local summary, reason = summarizeWork(report)
-  app.state.runtime.current_mode = report and report.kind or "idle"
-  app.state.runtime.current_target = report and report.target_inventory or nil
-  app.state.runtime.last_summary = summary
-  app.state.runtime.last_reason = reason
+  local nextMode = report and report.kind or "idle"
+  local nextTarget = report and report.target_inventory or nil
+
+  if app.state.runtime.current_mode ~= nextMode
+    or app.state.runtime.current_target ~= nextTarget
+    or app.state.runtime.last_summary ~= summary
+    or app.state.runtime.last_reason ~= reason then
+    app.state.runtime.current_mode = nextMode
+    app.state.runtime.current_target = nextTarget
+    app.state.runtime.last_summary = summary
+    app.state.runtime.last_reason = reason
+    app.dirty_state = true
+  end
+
   app.last_cycle_at = os.epoch("local")
-  app.dirty_state = true
 end
 
 local function processWork(app, allowPaused)
@@ -380,6 +417,7 @@ local function processWork(app, allowPaused)
   local report = service.processInboxes(
     app.config.storages,
     app.connected,
+    app.state.runtime,
     app.state.catalog,
     catalog
   )
@@ -388,7 +426,7 @@ local function processWork(app, allowPaused)
     app.dirty_state = true
   end
 
-  if report.moved_stacks == 0 then
+  if report.moved_stacks == 0 and report.inbox_pass_complete == true then
     report = service.processRepair(
       app.config.storages,
       app.connected,
@@ -423,7 +461,7 @@ local function processWork(app, allowPaused)
     )
   end
 
-  if report.unresolved and report.unresolved > 0 then
+  if report.unresolved ~= nil then
     app.session.unresolved = report.unresolved
   end
 
@@ -442,7 +480,6 @@ local function processWork(app, allowPaused)
 
   updateRuntimeState(app, report)
   refreshHealth(app)
-  refreshInspector(app)
 end
 
 local function ensureStorage(app, role, presetId, strictness)
@@ -543,6 +580,7 @@ function M.run()
 
   local app = {
     config = store.loadConfig(),
+    config_snapshot = store.readConfigSnapshot(),
     state = store.loadState(),
     session = {
       moves = 0,
@@ -568,6 +606,7 @@ function M.run()
     dirty_config = false,
     dirty_state = false,
     controller = nil,
+    last_config_reload_error = nil,
   }
 
   app.ui = app.state.ui
@@ -966,22 +1005,33 @@ function M.run()
   end
 
   function actions.onInspectTimer()
-    refreshInspector(app)
-    refreshUi(app, "storages")
-    saveAll(app, "inspect refresh")
+    if shouldAutoInspect(app) then
+      refreshInspector(app)
+    end
   end
 
   function actions.onWorkTimer()
     processWork(app, false)
-    refreshUi(app, "live")
-    saveAll(app, "work cycle")
   end
 
   function actions.onSaveTimer()
     if app.dirty_config or app.dirty_state then
       saveAll(app, "periodic backup")
     end
-    refreshUi(app, "header")
+
+    local reloaded, reloadError = syncExternalConfig(app)
+    if reloaded then
+      recentEvent(app, "info", "Reloaded settings from disk while VaultGear was running.")
+      notify("info", "Settings reloaded", "External config edits were applied live.")
+      refreshUi(app)
+      app.last_config_reload_error = nil
+    elseif reloadError and app.last_config_reload_error ~= reloadError then
+      app.last_config_reload_error = reloadError
+      recentEvent(app, "error", "Config reload skipped: " .. tostring(reloadError))
+    elseif not reloadError then
+      app.last_config_reload_error = nil
+    end
+
   end
 
   function actions.onPeripheralEvent(kind)
