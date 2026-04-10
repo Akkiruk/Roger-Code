@@ -48,6 +48,7 @@ local RESERVED_LOCAL_PATHS = {
   ["vaultgear_error.log"] = true,
   ["vhcc_lockdown.txt"] = true,
   ["installer.lua"] = true,
+  [UNLOCK_FILE] = true,
 }
 
 local tArgs = { ... }
@@ -446,9 +447,10 @@ local function beginWriteWindow(tag)
   f.write(textutils.serialise({
     source = tag or "installer",
     openedAt = os.epoch("local"),
+    persistent = true,
   }))
   f.close()
-  return true, true
+  return true, false
 end
 
 local function endWriteWindow(createdUnlock)

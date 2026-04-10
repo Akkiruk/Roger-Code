@@ -62,5 +62,6 @@ $installedProgram = @"
 "@
 
 Set-Content -Path (Join-Path $TargetDir '.installed_program') -Value $installedProgram -NoNewline
+Set-Content -Path (Join-Path $TargetDir '.vhcc_unlock') -Value "{`n  source = \"deploy-phoneos\",`n  persistent = true,`n}`n" -NoNewline
 
 Write-Output "Deployed Pocket Casino OS to $TargetDir"

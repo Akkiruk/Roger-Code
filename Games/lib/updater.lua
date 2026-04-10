@@ -263,9 +263,10 @@ local function beginWriteWindow(tag)
   f.write(textutils.serialise({
     source = tag or "updater",
     openedAt = os.epoch("local"),
+    persistent = true,
   }))
   f.close()
-  return true, true
+  return true, false
 end
 
 local function endWriteWindow(createdUnlock)

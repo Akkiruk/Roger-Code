@@ -208,6 +208,20 @@ function Write-InstalledProgramInfo {
     [System.IO.File]::WriteAllText($path, ($lines -join "`n") + "`n", [System.Text.UTF8Encoding]::new($false))
 }
 
+function Write-PersistentUnlockFile {
+    param([string]$ComputerDir)
+
+    $path = Join-Path $ComputerDir ".vhcc_unlock"
+    $content = @(
+        "{",
+        "  source = \"deploy-to-world\" ,",
+        "  persistent = true,",
+        "}"
+    ) -join "`n"
+
+    [System.IO.File]::WriteAllText($path, $content + "`n", [System.Text.UTF8Encoding]::new($false))
+}
+
 function Ensure-ParentDirectory {
     param([string]$TargetPath)
 
@@ -381,6 +395,7 @@ try {
     $spec = $resolvedProgram.Spec
     $desiredFiles = @($spec.install.files)
     $desiredRelativePaths = @($desiredFiles | ForEach-Object { $_.install_path })
+    $needsPersistentUnlock = $desiredRelativePaths -contains 'vhcc_lockdown.txt'
     $targets = Get-ComputerTargets -ComputerRoot $computerRoot -ProgramKey $resolvedProgram.Key -Ids $ComputerId -AllInstalledMode:$AllInstalled
 
     if (-not $targets -or $targets.Count -eq 0) {
@@ -436,9 +451,15 @@ try {
         if ($DryRun) {
             Write-Host "  [dry-run] Update .installed_program" -ForegroundColor DarkYellow
             Write-Host "  [dry-run] Update .roger_deployed_files" -ForegroundColor DarkYellow
+            if ($needsPersistentUnlock -or (Test-Path (Join-Path $targetDir 'vhcc_lockdown.txt'))) {
+                Write-Host "  [dry-run] Create .vhcc_unlock" -ForegroundColor DarkYellow
+            }
         } else {
             Write-InstalledProgramInfo -ComputerDir $targetDir -Spec $spec -SpecPath $resolvedProgram.SpecPath -InstalledAt $existingInstalledAt
             Write-ManagedFiles -ComputerDir $targetDir -Paths $desiredRelativePaths
+            if ($needsPersistentUnlock -or (Test-Path (Join-Path $targetDir 'vhcc_lockdown.txt'))) {
+                Write-PersistentUnlockFile -ComputerDir $targetDir
+            }
         }
 
         Write-Host "  Synced $copied files" -ForegroundColor Green
