@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-10T00:27:08Z",
+  "generated_at": "2026-04-10T00:29:46Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.6",
-    "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
+    "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
     "path": "Games/installer.lua",
     "sha256": "51ef3a5a20455d739c0320f3542ee5d32916fde602d57d237835200bd50e5af6"
   },
@@ -17,117 +17,117 @@
       "name": "Baccarat",
       "category": "Games",
       "description": "Baccarat card game for ComputerCraft casino.",
-      "version": "1.2.43",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "be43a2468b62cd6aa6e3d54f7e99c1625fb868ef829ec246d33a9f7922a519ea",
+      "version": "1.2.44",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "02abd548525e688478e4d6a50153d5d02c6e091e6ed331aa6f66f416c6f806c9",
       "spec_path": "programs/baccarat.json"
     },
     "blackjack": {
       "name": "Blackjack",
       "category": "Games",
       "description": "Blackjack card game for ComputerCraft casino.",
-      "version": "1.2.50",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "503b8126b9d9b244968c91b51edc8eaea6f329b63502f827117f7869dd19231e",
+      "version": "1.2.51",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "a70f7ae64e2563a0920322f00f6ea31f444dfac920556dce4a198225702b39f0",
       "spec_path": "programs/blackjack.json"
     },
     "hilo": {
       "name": "HiLo",
       "category": "Games",
       "description": "Hi-Lo card game for ComputerCraft casino.",
-      "version": "1.0.50",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "59f2d404c07381b1ae8280eafdcb65911303f3e1a4194cfc4912d242985eb561",
+      "version": "1.0.51",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "314bf44c5bcd9a5c5673b76e7c1cba81376ec6adfae7fa87a859c2af6dfe3429",
       "spec_path": "programs/hilo.json"
     },
     "phone_os": {
       "name": "Pocket Casino OS",
       "category": "Utilities",
       "description": "Pocket casino shell for ComputerCraft pocket computers.",
-      "version": "1.0.46",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "db0405fa0707ecab87f7f12024c0db362ae767030d7d8a44f48b3b20bbc7da81",
+      "version": "1.0.47",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "8bbd1ee678d92c821cbbf3903cbd133915d17047e0541a9b9b6de102d128543f",
       "spec_path": "programs/phone_os.json"
     },
     "pokertable": {
       "name": "PokerTable",
       "category": "Games",
       "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
-      "version": "1.0.5",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "64cee8b798325ca195aa498e3338dfd88dc234cd825c5ec92596c494d95736a4",
+      "version": "1.0.6",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "aaada374f332efa7bbb3dd245bdefad035fb38d8a809cc0802f314ad73336a26",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
       "name": "Roulette",
       "category": "Games",
       "description": "European Roulette with a single-screen felt UI and multi-bet support.",
-      "version": "1.0.61",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "1182f3fbd105f55180e0335b65204a5a3d9ca811ef7e90f3c86df4124574ae56",
+      "version": "1.0.62",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "da42bdc737003c889dcf552027ef8915dd60bc07ea2b25fe0970f1bc5f3d126f",
       "spec_path": "programs/roulette.json"
     },
     "slots": {
       "name": "Slots",
       "category": "Games",
       "description": "Slot Machine game for ComputerCraft casino.",
-      "version": "1.0.49",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "4f6aa2c57a3d5577e61c55ff7ed1a6bb247afb009b95b8fc54441e40e19a4e72",
+      "version": "1.0.50",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "fa77b8572fd24e40eb1a67a0978865e0e5809032140183e546f2aac2f9607fd0",
       "spec_path": "programs/slots.json"
     },
     "sound_browser": {
       "name": "Sound Browser",
       "category": "Utilities",
       "description": "Browse the pack's generated sound catalog and save favorites.",
-      "version": "1.0.8",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "d9116d3a0defd7ee45708480037f4d5f0b638003e61dd1d0f85d160bd371e6d4",
+      "version": "1.0.9",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "d792079f1cb00056d7f8291a08b3323a017813705c350dafc7fbac31ecde0f19",
       "spec_path": "programs/sound_browser.json"
     },
     "taskmaster": {
       "name": "TaskMaster",
       "category": "Utilities",
       "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
-      "version": "1.0.7",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "22f96f8157b7b8a6109a164895dd73f45f1ff10889e0197c459d7da744192e3a",
+      "version": "1.0.8",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "420309db9c8d8f9a37053cbafcbb3b28e11d0bc8e6c39309c46a686947688dd7",
       "spec_path": "programs/taskmaster.json"
     },
     "vault_item_analyzer": {
       "name": "vault_item_analyzer",
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
-      "version": "1.0.10",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "298ba72b513c6ff316cf9d08179a9d51e90889596689e1e5d2a078b247cc9786",
+      "version": "1.0.11",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "c98055d86818acadd146452e86370c90a704919e9b46679526d0ab1320dc3c57",
       "spec_path": "programs/vault_item_analyzer.json"
     },
     "vaultgear": {
       "name": "VaultGear",
       "category": "Utilities",
       "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
-      "version": "1.0.28",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "2c0bc5957cfafe1d1c2e490efba50ac7d413be37a147e351f34b8e22df1436ee",
+      "version": "1.0.29",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "3bf9eb33fa6e787792bcb7250ea7019e3a6921dfa6c2b0177d6e6245b78852fa",
       "spec_path": "programs/vaultgear.json"
     },
     "vhcctweaks_smoke_test": {
       "name": "VH CC Tweaks Smoke Test",
       "category": "Utilities",
       "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
-      "version": "1.0.2",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "da5eae513b27d7084486a8889e4e8b730df0a3e917d4c5e701acbbd520aa11df",
+      "version": "1.0.3",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "21db997aab9b280534004cdab2f5e10ce880411a282a6fd300dbe9ca785bf130",
       "spec_path": "programs/vhcctweaks_smoke_test.json"
     },
     "videopoker": {
       "name": "VideoPoker",
       "category": "Games",
       "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
-      "version": "1.0.48",
-      "commit": "80715b5533e22e1d77b2354348c68520fd68fdff",
-      "package_hash": "3d51b346e64fca00d45c941d9352b9086169e660870ba23aa6a717832408c2a1",
+      "version": "1.0.49",
+      "commit": "74bc38e6cb412d09ec2f71de1d3b66518d7985a4",
+      "package_hash": "ec898a476155d467d7910114ed53bd884d15c3edf46880bc82bf4269ab585910",
       "spec_path": "programs/videopoker.json"
     }
   }
