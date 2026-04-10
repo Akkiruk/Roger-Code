@@ -1,3 +1,4 @@
+-- manifest-entrypoint: true
 -- manifest-key: phone_os
 -- manifest-name: Pocket Casino OS
 -- manifest-category: Utilities

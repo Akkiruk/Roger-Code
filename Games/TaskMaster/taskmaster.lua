@@ -1,4 +1,5 @@
 -- taskmaster_simplified.lua
+-- manifest-entrypoint: true
 -- manifest-category: Utilities
 -- A stateless, anonymous item exchange kiosk for ComputerCraft
 

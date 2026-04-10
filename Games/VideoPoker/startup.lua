@@ -1,3 +1,4 @@
+-- manifest-entrypoint: true
 local launcher = require("lib.casino_launcher")
 local ui = require("lib.ui")
 

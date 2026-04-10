@@ -113,30 +113,23 @@ function Get-StringSha256 {
     return ([BitConverter]::ToString($hash).Replace("-", "").ToLowerInvariant())
 }
 
-function Get-ProgramMainFile {
-    param(
-        [string]$Dir,
-        [string]$DirName
-    )
+function Get-PackageEntrypoints {
+    param([string]$Dir)
 
-    $candidates = @(
-        (Join-Path $Dir "$($DirName.ToLowerInvariant()).lua"),
-        (Join-Path $Dir "$DirName.lua"),
-        (Join-Path $Dir "startup.lua")
-    )
+    $entrypoints = New-Object System.Collections.Generic.List[string]
+    $luaFiles = Get-ChildItem $Dir -File -Recurse -Filter "*.lua" -ErrorAction SilentlyContinue | Sort-Object FullName
 
-    foreach ($candidate in $candidates) {
-        if (Test-Path $candidate) {
-            return $candidate
+    foreach ($file in $luaFiles) {
+        $lines = Get-Content $file.FullName -TotalCount 20 -ErrorAction SilentlyContinue
+        foreach ($line in $lines) {
+            if ($line -match '^\s*--\s*manifest-entrypoint:\s*(true|yes|1)\s*$') {
+                $entrypoints.Add((Get-RelativeFilePath -BaseDir $Dir -FullPath $file.FullName))
+                break
+            }
         }
     }
 
-    $first = Get-ChildItem $Dir -File -Filter "*.lua" -ErrorAction SilentlyContinue | Sort-Object Name | Select-Object -First 1
-    if ($first) {
-        return $first.FullName
-    }
-
-    return $null
+    return @($entrypoints | Sort-Object -Unique)
 }
 
 function Get-ProgramMetadata {
@@ -144,22 +137,32 @@ function Get-ProgramMetadata {
         [string]$Dir,
         [string]$DirName,
         [string]$SourceRoot,
-        [string]$DefaultCategory
+        [string]$DefaultCategory,
+        [string]$Entrypoint
     )
 
+    $entrypointName = [System.IO.Path]::GetFileNameWithoutExtension($Entrypoint)
+    $defaultKey = if ($entrypointName -and $entrypointName.ToLowerInvariant() -notin @('startup', $DirName.ToLowerInvariant())) {
+        $entrypointName.ToLowerInvariant()
+    } else {
+        $DirName.ToLowerInvariant()
+    }
+    $defaultName = if ($entrypointName -and $entrypointName.ToLowerInvariant() -notin @('startup', $DirName.ToLowerInvariant())) {
+        $entrypointName
+    } else {
+        $DirName
+    }
+
     $meta = [ordered]@{
-        key         = $DirName.ToLowerInvariant()
-        name        = $DirName
+        key         = $defaultKey
+        name        = $defaultName
         description = ""
         category    = $DefaultCategory
-        entrypoint  = ""
+        entrypoint  = $Entrypoint
         source_root = $SourceRoot
     }
 
-    $mainFile = Get-ProgramMainFile -Dir $Dir -DirName $DirName
-    if ($mainFile) {
-        $meta.entrypoint = Get-RelativeFilePath -BaseDir $Dir -FullPath $mainFile
-    }
+    $mainFile = if ($Entrypoint) { Join-Path $Dir ($Entrypoint.Replace('/', '\')) } else { $null }
 
     if (-not $mainFile) {
         return $meta
@@ -475,6 +478,7 @@ if (-not $gitCommit) {
 
 $generatedAt = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
 $programSpecs = New-Object System.Collections.Generic.List[object]
+$seenProgramKeys = New-Object "System.Collections.Generic.HashSet[string]" ([System.StringComparer]::OrdinalIgnoreCase)
 
 $programDirs = @()
 if (Test-Path $GamesDir) {
@@ -498,95 +502,110 @@ if (Test-Path $UtilitiesDir) {
 foreach ($dir in ($programDirs | Sort-Object FullName)) {
     $category = if ($dir.FullName.StartsWith($UtilitiesDir, [System.StringComparison]::OrdinalIgnoreCase)) { "Utilities" } else { "Games" }
     $sourceRoot = Get-RelativeFilePath -BaseDir $RepoRoot -FullPath $dir.FullName
-    $meta = Get-ProgramMetadata -Dir $dir.FullName -DirName $dir.Name -SourceRoot $sourceRoot -DefaultCategory $category
     $discovered = Get-ProgramFiles -Dir $dir.FullName
 
     if ((@($discovered.files).Count + @($discovered.config_files).Count) -eq 0) {
         continue
     }
 
+    $entrypoints = Get-PackageEntrypoints -Dir $dir.FullName
+    if ($entrypoints.Count -eq 0) {
+        throw "Package root '$sourceRoot' has Lua files but no '-- manifest-entrypoint: true' marker"
+    }
+
     $libClosure = Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $dir.FullName -LuaRelativePaths $discovered.lua_files
-    $installFiles = New-Object System.Collections.Generic.List[object]
-    $libModules = New-Object System.Collections.Generic.List[string]
-    $installPathMap = @{}
-    $runtimeSourceEntrypoint = if (@($discovered.files) -icontains 'startup.lua') { 'startup.lua' } else { $meta.entrypoint }
-    $runtimeEntrypoint = Get-RuntimeEntrypointInstallPath -ProgramKey $meta.key -Entrypoint $runtimeSourceEntrypoint
-    $autoRestart = Get-AutoRestartFlag -Category $category -Entrypoint $runtimeSourceEntrypoint -SourceRoot $sourceRoot
 
-    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeStartupPath -InstallPath "startup.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeStartupPath))
-    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeSupervisorPath -InstallPath "lib/roger_supervisor.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeSupervisorPath))
-    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeUpdaterPath -InstallPath "lib/updater.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeUpdaterPath))
-
-    foreach ($file in @($discovered.files)) {
-        $repoPath = "$sourceRoot/$file"
-        $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
-        $installPath = if ($file -ieq $runtimeSourceEntrypoint) { $runtimeEntrypoint } else { $file }
-        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $installPath -Sha256 (Get-FileSha256 -Path $fullPath)
-    }
-
-    foreach ($file in @($discovered.config_files)) {
-        $repoPath = "$sourceRoot/$file"
-        $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
-        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath) -PreserveExisting $true
-    }
-
-    foreach ($file in @($discovered.assets)) {
-        $repoPath = "$sourceRoot/$file"
-        $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
-        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath)
-    }
-
-    foreach ($libFile in $libClosure) {
-        $fullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
-        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Games/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $fullPath)
-
-        $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
-        $libModules.Add($moduleName)
-    }
-
-    $installFileList = @($installFiles | Sort-Object install_path, repo_path)
-    $packageHashInput = ($installFileList | ForEach-Object {
-        "$($_.install_path)|$($_.repo_path)|$([bool]$_.preserve_existing)|$($_.sha256)"
-    }) -join "`n"
-    $packageHash = Get-StringSha256 -Value $packageHashInput
-    $version = Resolve-DisplayVersion -Key $meta.key -PackageHash $packageHash -PreviousPrograms $previousPrograms
-
-    $spec = [ordered]@{
-        schema_version = $SchemaVersion
-        program = [ordered]@{
-            key = $meta.key
-            name = $meta.name
-            category = $meta.category
-            description = $meta.description
-            source_root = $meta.source_root
-            entrypoint = $meta.entrypoint
-            version = $version
+    foreach ($entrypoint in $entrypoints) {
+        $meta = Get-ProgramMetadata -Dir $dir.FullName -DirName $dir.Name -SourceRoot $sourceRoot -DefaultCategory $category -Entrypoint $entrypoint
+        if (-not $seenProgramKeys.Add($meta.key)) {
+            throw "Duplicate program key '$($meta.key)' discovered in '$sourceRoot'"
         }
-        build = [ordered]@{
-            commit = $gitCommit
-            generated_at = $generatedAt
-            package_hash = $packageHash
-        }
-        install = [ordered]@{
-            preserve = @($discovered.config_files)
-            files = $installFileList
-        }
-        runtime = [ordered]@{
-            boot_mode = "supervisor"
-            system_entrypoint = "startup.lua"
-            app_entrypoint = $runtimeEntrypoint
-            auto_restart = $autoRestart
-            update_interval = $DefaultUpdateInterval
-            requires_updater = $true
-            lib_modules = @($libModules | Sort-Object -Unique)
-        }
-    }
 
-    $programSpecs.Add($spec)
+        $installFiles = New-Object System.Collections.Generic.List[object]
+        $libModules = New-Object System.Collections.Generic.List[string]
+        $installPathMap = @{}
+        $runtimeSourceEntrypoint = $meta.entrypoint
+        $runtimeEntrypoint = Get-RuntimeEntrypointInstallPath -ProgramKey $meta.key -Entrypoint $runtimeSourceEntrypoint
+        $autoRestart = Get-AutoRestartFlag -Category $category -Entrypoint $runtimeSourceEntrypoint -SourceRoot $sourceRoot
+
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeStartupPath -InstallPath "startup.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeStartupPath))
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeSupervisorPath -InstallPath "lib/roger_supervisor.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeSupervisorPath))
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeUpdaterPath -InstallPath "lib/updater.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeUpdaterPath))
+
+        foreach ($file in @($discovered.files)) {
+            $repoPath = "$sourceRoot/$file"
+            $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
+            $installPath = if ($file -ieq $runtimeSourceEntrypoint) { $runtimeEntrypoint } else { $file }
+            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $installPath -Sha256 (Get-FileSha256 -Path $fullPath)
+        }
+
+        foreach ($file in @($discovered.config_files)) {
+            $repoPath = "$sourceRoot/$file"
+            $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
+            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath) -PreserveExisting $true
+        }
+
+        foreach ($file in @($discovered.assets)) {
+            $repoPath = "$sourceRoot/$file"
+            $fullPath = Join-Path $dir.FullName ($file.Replace('/', '\'))
+            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath)
+        }
+
+        foreach ($libFile in $libClosure) {
+            $fullPath = Join-Path $GamesDir ("lib\" + $libFile.Replace('/', '\'))
+            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Games/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $fullPath)
+
+            $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
+            $libModules.Add($moduleName)
+        }
+
+        $installFileList = @($installFiles | Sort-Object install_path, repo_path)
+        $packageHashInput = ($installFileList | ForEach-Object {
+            "$($_.install_path)|$($_.repo_path)|$([bool]$_.preserve_existing)|$($_.sha256)"
+        }) -join "`n"
+        $packageHash = Get-StringSha256 -Value $packageHashInput
+        $version = Resolve-DisplayVersion -Key $meta.key -PackageHash $packageHash -PreviousPrograms $previousPrograms
+
+        $spec = [ordered]@{
+            schema_version = $SchemaVersion
+            program = [ordered]@{
+                key = $meta.key
+                name = $meta.name
+                category = $meta.category
+                description = $meta.description
+                source_root = $meta.source_root
+                entrypoint = $meta.entrypoint
+                version = $version
+            }
+            build = [ordered]@{
+                commit = $gitCommit
+                generated_at = $generatedAt
+                package_hash = $packageHash
+            }
+            install = [ordered]@{
+                preserve = @($discovered.config_files)
+                files = $installFileList
+            }
+            runtime = [ordered]@{
+                boot_mode = "supervisor"
+                system_entrypoint = "startup.lua"
+                app_entrypoint = $runtimeEntrypoint
+                auto_restart = $autoRestart
+                update_interval = $DefaultUpdateInterval
+                requires_updater = $true
+                lib_modules = @($libModules | Sort-Object -Unique)
+            }
+        }
+
+        $programSpecs.Add($spec)
+    }
 }
 
 foreach ($file in $standaloneUtilities | Sort-Object Name) {
     $key = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
+    if (-not $seenProgramKeys.Add($key)) {
+        throw "Duplicate program key '$key' discovered in standalone utilities"
+    }
     if ($programSpecs | Where-Object { $_.program.key -eq $key }) {
         continue
     }

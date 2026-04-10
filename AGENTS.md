@@ -21,6 +21,8 @@
 - The primary deployment flow is the generated deploy index published from `scripts/build-deploy-index.ps1`.
 - On every push to `main`, GitHub Actions publishes the current deploy metadata to the `deploy-index` branch.
 - `Games/manifest.json` and the old manifest generator have been retired from the deployment flow.
+- Folder-based installable packages must mark their entrypoint file with `-- manifest-entrypoint: true`; the deploy-index builder no longer guesses a main file.
+- Top-level standalone `Utilities/*.lua` files remain auto-discovered as single-file install targets without needing the marker.
 - Use `scripts/sync-roger-code.ps1 -Game <Name>` only when the user explicitly asks for a local PrismLauncher deployment.
 - `scripts/deploy-to-world.ps1` is the manual deploy entry point for live ComputerCraft saves; do not run it by default.
 - The legacy `.vscode/deploy-to-emulator.ps1` path now forwards into the live PrismLauncher deploy flow for compatibility.

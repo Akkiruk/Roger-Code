@@ -1,3 +1,4 @@
+-- manifest-entrypoint: true
 -- manifest-key: sound_browser
 -- manifest-name: Sound Browser
 -- manifest-category: Utilities

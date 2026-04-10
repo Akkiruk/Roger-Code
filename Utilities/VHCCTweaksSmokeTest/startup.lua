@@ -1,3 +1,4 @@
+-- manifest-entrypoint: true
 -- manifest-key: vhcctweaks_smoke_test
 -- manifest-name: VH CC Tweaks Smoke Test
 -- manifest-description: Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.

@@ -1,3 +1,4 @@
+-- manifest-entrypoint: true
 -- Vault Storage Manager startup entry point.
 
 local logger = require("lib.vaultgear.logger")

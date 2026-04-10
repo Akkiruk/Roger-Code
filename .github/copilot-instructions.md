@@ -37,11 +37,13 @@ This file covers project-specific context for the Roger-Code repo only. Lua/Comp
 - Generated JSON must be UTF-8 with NO BOM (`[System.IO.File]::WriteAllText` with `UTF8Encoding($false)`).
 - Config files (`*_config.lua`, `*_settings.lua`) are preserved on updates.
 - Any new subfolder with `.lua` files under `Games/` or `Utilities/` is auto-discovered by the deploy-index builder.
+- Folder-based packages must explicitly mark their entrypoint file with `-- manifest-entrypoint: true`; the builder no longer guesses a main file.
+- Standalone top-level `Utilities/*.lua` files are still auto-discovered as single-file packages without the marker.
 
 ## Adding a New Program
 
 1. Create folder under `Games/` or `Utilities/`
-2. Add `.lua` files and entrypoint metadata comments as needed
+2. Add `.lua` files and mark the installable entrypoint with `-- manifest-entrypoint: true`; add manifest metadata comments as needed
 3. Run "Build Deploy Index" locally if you want to inspect generated package output
 4. Commit the source files
 5. Push — GitHub Actions publishes deploy metadata automatically
