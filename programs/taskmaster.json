@@ -3,42 +3,42 @@
   "program": {
     "key": "taskmaster",
     "name": "TaskMaster",
-    "category": "Games",
+    "category": "Apps",
     "description": "manifest-entrypoint: true",
-    "source_root": "Games/TaskMaster",
+    "source_root": "Apps/TaskMaster",
     "entrypoint": "taskmaster.lua",
-    "version": "1.0.12"
+    "version": "1.0.13"
   },
   "build": {
-    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-    "generated_at": "2026-04-10T02:02:06Z",
-    "package_hash": "88306f9cf2af1fd4ceff68ba58d69d7b6ef2d0dd170bcd90123b21bb15888634"
+    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+    "generated_at": "2026-04-10T02:21:29Z",
+    "package_hash": "3a59686cf74d7b9014792edd939177a2b60f3c2b9e773d001048c4bba5693b33"
   },
   "install": {
     "preserve": [],
     "files": [
       {
-        "repo_path": "Games/runtime_startup.lua",
+        "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
-        "repo_path": "Games/lib/roger_supervisor.lua",
+        "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
         "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
-        "repo_path": "Games/lib/updater.lua",
+        "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
         "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
-        "repo_path": "Games/TaskMaster/taskmaster.lua",
+        "repo_path": "Apps/TaskMaster/taskmaster.lua",
         "install_path": "taskmaster.lua",
-        "sha256": "7edfff04f939711cef9eb08706e844690db129756636735490fc534e69238c2b"
+        "sha256": "e53296e83befcec4c6628accb753e5fc5ffae3036dc08975f11011d2fa759f98"
       },
       {
-        "repo_path": "Games/lib/monitor_scale.lua",
+        "repo_path": "Shared/lib/monitor_scale.lua",
         "install_path": "lib/monitor_scale.lua",
         "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       }

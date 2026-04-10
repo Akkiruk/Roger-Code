@@ -3,82 +3,82 @@
   "program": {
     "key": "soundbrowser",
     "name": "SoundBrowser",
-    "category": "Games",
+    "category": "Apps",
     "description": "manifest-entrypoint: true",
-    "source_root": "Games/SoundBrowser",
+    "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-    "generated_at": "2026-04-10T02:02:06Z",
-    "package_hash": "eba7776519a5ecd25ba4369bf195d1755c89aa4334514ddbc32618362da73fee"
+    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+    "generated_at": "2026-04-10T02:21:29Z",
+    "package_hash": "d3e3716b362a0048155e6cb7b40886ed46cf8a34f15b63441f5451829110e4f3"
   },
   "install": {
     "preserve": [],
     "files": [
       {
-        "repo_path": "Games/runtime_startup.lua",
+        "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
-        "repo_path": "Games/lib/roger_supervisor.lua",
+        "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
         "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
-        "repo_path": "Games/lib/updater.lua",
+        "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
         "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
-        "repo_path": "Games/SoundBrowser/export_report.lua",
+        "repo_path": "Apps/SoundBrowser/export_report.lua",
         "install_path": "export_report.lua",
         "sha256": "069d19b7c94a149d8f711995c90115f4554b97b8178f11a7f076fb8dc14f8028"
       },
       {
-        "repo_path": "Games/SoundBrowser/sound_browser.lua",
+        "repo_path": "Apps/SoundBrowser/sound_browser.lua",
         "install_path": "sound_browser.lua",
         "sha256": "6fcf12ca7c961fd61c3c65a0aa296b6389adc482d576df1c8b260d26cac6c29a"
       },
       {
-        "repo_path": "Games/SoundBrowser/startup.lua",
+        "repo_path": "Apps/SoundBrowser/startup.lua",
         "install_path": "soundbrowser_startup.lua",
-        "sha256": "3c488ca0b7bbdb326e6a324705f013e7e66555c8c638c7e0f049e17adf82908c"
+        "sha256": "c70ce90b3b629d46d4783aa8092f7d5aa5db3a5636da51f4999fbb04f6ae3cb8"
       },
       {
-        "repo_path": "Games/lib/peripherals.lua",
+        "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
         "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
-        "repo_path": "Games/lib/sound_catalog.lua",
+        "repo_path": "Shared/lib/sound_catalog.lua",
         "install_path": "lib/sound_catalog.lua",
         "sha256": "65e79173e038fad122246305e05959fd945839893003be94b23a2d4fbdf7936f"
       },
       {
-        "repo_path": "Games/lib/sound_metadata.lua",
+        "repo_path": "Shared/lib/sound_metadata.lua",
         "install_path": "lib/sound_metadata.lua",
         "sha256": "f0021103aeae589371af8bc2ebd235ae0b4e87ff3c9379b401a012ef595cb252"
       },
       {
-        "repo_path": "Games/lib/sound_recommendations.lua",
+        "repo_path": "Shared/lib/sound_recommendations.lua",
         "install_path": "lib/sound_recommendations.lua",
         "sha256": "4ebe1dd168f711cd5419aaed3615775fd2e4fa46ae2eab4c4df8e2edbe9469ee"
       },
       {
-        "repo_path": "Games/lib/sound_review_store.lua",
+        "repo_path": "Shared/lib/sound_review_store.lua",
         "install_path": "lib/sound_review_store.lua",
         "sha256": "b1e7e35b0d158168b1fe5adf6451829a17ac2ae8b5afa1c9a0d55614a75f61cd"
       },
       {
-        "repo_path": "Games/lib/sound_roles.lua",
+        "repo_path": "Shared/lib/sound_roles.lua",
         "install_path": "lib/sound_roles.lua",
         "sha256": "f140ac21913119e9c48ada11a04ded6561ef9a5491ce62926f4fe3faab05fbd2"
       },
       {
-        "repo_path": "Games/lib/sound.lua",
+        "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
         "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
       }

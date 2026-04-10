@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-10T02:02:06Z",
+  "generated_at": "2026-04-10T02:21:29Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,126 +8,126 @@
   },
   "installer": {
     "version": "1.1.6",
-    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-    "path": "Games/installer.lua",
-    "sha256": "70d06a9273b17b484e92b60c86be61da5f078dc7d014e3d082ad90ada4189dd6"
+    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+    "path": "System/installer.lua",
+    "sha256": "a760c24b7e1748d7ab73ef2e93eede8faf983a3a51fcae0aa6096607be0270b2"
   },
   "programs": {
     "baccarat": {
       "name": "Baccarat",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.2.48",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "90dde831211006e68cb1fb24d1c6b9dbfb5f1c300a1525e881561bfad1c2373c",
+      "version": "1.2.49",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "541892f4d98522d368b00e28a7203dc3d2584cdf677b3d32d7446a9062d9af99",
       "spec_path": "programs/baccarat.json"
     },
     "blackjack": {
       "name": "Blackjack",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.2.56",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "e4d2454beaf7ccc999272bad8779e8cbab5b9dded03d4364964b5e6d08e42cec",
+      "version": "1.2.57",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "e62db780505dcd1ff9758bda2fe636e76a0a718366654179a3b8763eb37cbe35",
       "spec_path": "programs/blackjack.json"
     },
     "hilo": {
       "name": "HiLo",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.55",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "bfc5f2f1d4ce15df4df4a696385ca85f2eb41a280d368878c5e0428537fb85be",
+      "version": "1.0.56",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "e1ec61f896f279a52d48cdee3b4d35127b55b75bcf53f4804d795838d8fcac0f",
       "spec_path": "programs/hilo.json"
     },
     "phoneos": {
       "name": "PhoneOS",
-      "category": "Games",
+      "category": "Apps",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.1",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "f91bbc66ce8d481991d5b9d16c697a89f01ddd4669280f94be5692e04933ba9c",
+      "version": "1.0.2",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "b13725f80c1685f894c80f0d854230b3ca57ef898ca9c488e4b94ef71f8a3b1d",
       "spec_path": "programs/phoneos.json"
     },
     "pokertable": {
       "name": "PokerTable",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.10",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "5db578c8a7305381e241f64016d3e32df9ea376ecf373314a7f9b8bc5b759ac5",
+      "version": "1.0.11",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "207cbf018a497d5dfb08e3dcabf29ca74582046108a27719636c501e25b3c3b7",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
       "name": "Roulette",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.66",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "a380012d8a3a393f817ed0d7086ff1221b31d822c243dc884e0bd25768160bd3",
+      "version": "1.0.67",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "dd091d66b010cfc9c5660df1493b689e6e71907dc9303513c71a6e283914240a",
       "spec_path": "programs/roulette.json"
     },
     "slots": {
       "name": "Slots",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.54",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "8c82197a7e93d13125b1579c3bacd3c5c6fc7850deb82c7792c2c059c7242966",
+      "version": "1.0.55",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "8c6809128d9ad3a1bd573a686f8fae63ad3bb7db2aee93b4024b35b9dd1b4f4c",
       "spec_path": "programs/slots.json"
     },
     "soundbrowser": {
       "name": "SoundBrowser",
-      "category": "Games",
+      "category": "Apps",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.0",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "eba7776519a5ecd25ba4369bf195d1755c89aa4334514ddbc32618362da73fee",
+      "version": "1.0.1",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "d3e3716b362a0048155e6cb7b40886ed46cf8a34f15b63441f5451829110e4f3",
       "spec_path": "programs/soundbrowser.json"
     },
     "taskmaster": {
       "name": "TaskMaster",
-      "category": "Games",
+      "category": "Apps",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.12",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "88306f9cf2af1fd4ceff68ba58d69d7b6ef2d0dd170bcd90123b21bb15888634",
+      "version": "1.0.13",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "3a59686cf74d7b9014792edd939177a2b60f3c2b9e773d001048c4bba5693b33",
       "spec_path": "programs/taskmaster.json"
     },
     "vault_item_analyzer": {
       "name": "vault_item_analyzer",
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
-      "version": "1.0.14",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "71d6f24c5eee12d4b5146e3a622c7f24b7e3e8d77572a9cb176124c6d05a6fb9",
+      "version": "1.0.15",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "48e4bc43384892b8ec683a233419fcbba88ee510c12352565708bc05e8300507",
       "spec_path": "programs/vault_item_analyzer.json"
     },
     "vaultgear": {
       "name": "VaultGear",
-      "category": "Games",
+      "category": "Apps",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.33",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "4f34216dcbba4da3e8d67fe3168b834553d7b4aa3b5495c822354e0867fe6986",
+      "version": "1.0.34",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "a1a495d8d217c67044b075daad31945db43345e10d61e81c6f01d236406a28ba",
       "spec_path": "programs/vaultgear.json"
     },
     "vhcctweakssmoketest": {
       "name": "VHCCTweaksSmokeTest",
       "category": "Utilities",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.0",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "1f92722e2e3a9b200b7ac4518c3fbffa081e5ad35bd538f0e6ccc9fefb841e55",
+      "version": "1.0.1",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "0f4bfd9549c21fa9373f0122ac6d886f5e223babdd1378a478438fba31fe5a72",
       "spec_path": "programs/vhcctweakssmoketest.json"
     },
     "videopoker": {
       "name": "VideoPoker",
       "category": "Games",
       "description": "manifest-entrypoint: true",
-      "version": "1.0.53",
-      "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-      "package_hash": "80147d6c8159002613f26e091234eca3730827e71b88b9f7fe62e8aa005f9de0",
+      "version": "1.0.54",
+      "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+      "package_hash": "b6780a99fede64d6f5b249d91efcde35cad993e623a0cf457590c55cbac78e10",
       "spec_path": "programs/videopoker.json"
     }
   }

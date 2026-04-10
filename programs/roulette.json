@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.66"
+    "version": "1.0.67"
   },
   "build": {
-    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-    "generated_at": "2026-04-10T02:02:06Z",
-    "package_hash": "a380012d8a3a393f817ed0d7086ff1221b31d822c243dc884e0bd25768160bd3"
+    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+    "generated_at": "2026-04-10T02:21:29Z",
+    "package_hash": "dd091d66b010cfc9c5660df1493b689e6e71907dc9303513c71a6e283914240a"
   },
   "install": {
     "preserve": [
@@ -20,122 +20,122 @@
     ],
     "files": [
       {
-        "repo_path": "Games/runtime_startup.lua",
+        "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
-        "repo_path": "Games/lib/casino_launcher.lua",
+        "repo_path": "Shared/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
         "sha256": "f4b4d87085ace92b8aeb6885d6d28201d721f76bc5afc2d73fb95f9363e0c6c6"
       },
       {
-        "repo_path": "Games/lib/crash_recovery.lua",
+        "repo_path": "Shared/lib/crash_recovery.lua",
         "install_path": "lib/crash_recovery.lua",
         "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
       },
       {
-        "repo_path": "Games/lib/currency.lua",
+        "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
         "sha256": "20952eaf676254fed1a26eae5acb69d7814a5fdb461a4d4ff064602c2c025cd4"
       },
       {
-        "repo_path": "Games/lib/game_setup.lua",
+        "repo_path": "Shared/lib/game_setup.lua",
         "install_path": "lib/game_setup.lua",
         "sha256": "dc6fa49b4be3a700dac1b03779359ff223edbc6cf5e58a71c8afdef27c7f34b0"
       },
       {
-        "repo_path": "Games/lib/idle_card_animation_presets.lua",
+        "repo_path": "Shared/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
         "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
       },
       {
-        "repo_path": "Games/lib/idle_card_animation.lua",
+        "repo_path": "Shared/lib/idle_card_animation.lua",
         "install_path": "lib/idle_card_animation.lua",
         "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
-        "repo_path": "Games/lib/idle_screen.lua",
+        "repo_path": "Shared/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
       },
       {
-        "repo_path": "Games/lib/monitor_scale.lua",
+        "repo_path": "Shared/lib/monitor_scale.lua",
         "install_path": "lib/monitor_scale.lua",
         "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
-        "repo_path": "Games/lib/peripherals.lua",
+        "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
         "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
-        "repo_path": "Games/lib/player_detection.lua",
+        "repo_path": "Shared/lib/player_detection.lua",
         "install_path": "lib/player_detection.lua",
         "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
       },
       {
-        "repo_path": "Games/lib/replay_prompt.lua",
+        "repo_path": "Shared/lib/replay_prompt.lua",
         "install_path": "lib/replay_prompt.lua",
         "sha256": "4e258dca3f1008a58d9e2a03cf1d63ca29da13805986c5d03549539464e70b82"
       },
       {
-        "repo_path": "Games/lib/round_settlement.lua",
+        "repo_path": "Shared/lib/round_settlement.lua",
         "install_path": "lib/round_settlement.lua",
         "sha256": "f2286102f91ed771c442bb8a4719808ced0431ba23fe967d35243acd8a2561a1"
       },
       {
-        "repo_path": "Games/lib/safe_runner.lua",
+        "repo_path": "Shared/lib/safe_runner.lua",
         "install_path": "lib/safe_runner.lua",
         "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
       },
       {
-        "repo_path": "Games/lib/sound_decisions.lua",
+        "repo_path": "Shared/lib/sound_decisions.lua",
         "install_path": "lib/sound_decisions.lua",
         "sha256": "6c5b1814c5093b4df585d1d3ae601b1b93086d86a879e9f0595932e9341c8fe8"
       },
       {
-        "repo_path": "Games/lib/sound.lua",
+        "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
         "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
       },
       {
-        "repo_path": "Games/lib/ui_surface.lua",
+        "repo_path": "Shared/lib/ui_surface.lua",
         "install_path": "lib/ui_surface.lua",
         "sha256": "2f4fc13a2291a56ed038d8fac83667ef82082dbc18d2336d231d33368158cf1a"
       },
       {
-        "repo_path": "Games/lib/ui_text.lua",
+        "repo_path": "Shared/lib/ui_text.lua",
         "install_path": "lib/ui_text.lua",
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Games/lib/cards.lua",
+        "repo_path": "Shared/lib/cards.lua",
         "install_path": "lib/cards.lua",
         "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
       },
       {
-        "repo_path": "Games/lib/ui_touch.lua",
+        "repo_path": "Shared/lib/ui_touch.lua",
         "install_path": "lib/ui_touch.lua",
         "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
-        "repo_path": "Games/lib/bedrock/widgets.lua",
+        "repo_path": "Shared/lib/bedrock/widgets.lua",
         "install_path": "lib/bedrock/widgets.lua",
         "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
-        "repo_path": "Games/lib/bedrock/runtime.lua",
+        "repo_path": "Shared/lib/bedrock/runtime.lua",
         "install_path": "lib/bedrock/runtime.lua",
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Games/lib/roger_supervisor.lua",
+        "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
         "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
-        "repo_path": "Games/lib/updater.lua",
+        "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
         "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
@@ -196,32 +196,32 @@
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
-        "repo_path": "Games/lib/alert.lua",
+        "repo_path": "Shared/lib/alert.lua",
         "install_path": "lib/alert.lua",
         "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
       },
       {
-        "repo_path": "Games/lib/bedrock.lua",
+        "repo_path": "Shared/lib/bedrock.lua",
         "install_path": "lib/bedrock.lua",
         "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
       },
       {
-        "repo_path": "Games/lib/bedrock/layout.lua",
+        "repo_path": "Shared/lib/bedrock/layout.lua",
         "install_path": "lib/bedrock/layout.lua",
         "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
-        "repo_path": "Games/lib/bedrock/renderer.lua",
+        "repo_path": "Shared/lib/bedrock/renderer.lua",
         "install_path": "lib/bedrock/renderer.lua",
         "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
       },
       {
-        "repo_path": "Games/lib/bedrock/theme.lua",
+        "repo_path": "Shared/lib/bedrock/theme.lua",
         "install_path": "lib/bedrock/theme.lua",
         "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
-        "repo_path": "Games/lib/ui.lua",
+        "repo_path": "Shared/lib/ui.lua",
         "install_path": "lib/ui.lua",
         "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
       }

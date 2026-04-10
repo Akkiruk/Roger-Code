@@ -7,28 +7,28 @@
     "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
     "source_root": "Utilities",
     "entrypoint": "vault_item_analyzer.lua",
-    "version": "1.0.14"
+    "version": "1.0.15"
   },
   "build": {
-    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-    "generated_at": "2026-04-10T02:02:06Z",
-    "package_hash": "71d6f24c5eee12d4b5146e3a622c7f24b7e3e8d77572a9cb176124c6d05a6fb9"
+    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+    "generated_at": "2026-04-10T02:21:29Z",
+    "package_hash": "48e4bc43384892b8ec683a233419fcbba88ee510c12352565708bc05e8300507"
   },
   "install": {
     "preserve": [],
     "files": [
       {
-        "repo_path": "Games/runtime_startup.lua",
+        "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
-        "repo_path": "Games/lib/roger_supervisor.lua",
+        "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
         "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
-        "repo_path": "Games/lib/updater.lua",
+        "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
         "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },

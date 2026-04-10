@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.10"
+    "version": "1.0.11"
   },
   "build": {
-    "commit": "79d1af25147f655b313a682fae5fa23afc5e1390",
-    "generated_at": "2026-04-10T02:02:06Z",
-    "package_hash": "5db578c8a7305381e241f64016d3e32df9ea376ecf373314a7f9b8bc5b759ac5"
+    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
+    "generated_at": "2026-04-10T02:21:29Z",
+    "package_hash": "207cbf018a497d5dfb08e3dcabf29ca74582046108a27719636c501e25b3c3b7"
   },
   "install": {
     "preserve": [
@@ -20,17 +20,17 @@
     ],
     "files": [
       {
-        "repo_path": "Games/runtime_startup.lua",
+        "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
-        "repo_path": "Games/lib/roger_supervisor.lua",
+        "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
         "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
       },
       {
-        "repo_path": "Games/lib/updater.lua",
+        "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
         "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
@@ -66,32 +66,32 @@
         "sha256": "68af55dc4b664cf66136653f376d4f318fb8b73b29cb26dec405a3e0e82dee90"
       },
       {
-        "repo_path": "Games/lib/currency.lua",
+        "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
         "sha256": "20952eaf676254fed1a26eae5acb69d7814a5fdb461a4d4ff064602c2c025cd4"
       },
       {
-        "repo_path": "Games/lib/poker_bank.lua",
+        "repo_path": "Shared/lib/poker_bank.lua",
         "install_path": "lib/poker_bank.lua",
         "sha256": "6d2d2b3162b77531b44c5a7136115190898f0b6ab35478ee93c43294a893eb62"
       },
       {
-        "repo_path": "Games/lib/poker_log.lua",
+        "repo_path": "Shared/lib/poker_log.lua",
         "install_path": "lib/poker_log.lua",
         "sha256": "00914ed97920d7d96822d86d3d0855239cb1f1fc2fac07b9fc7aeae2e11b7dd1"
       },
       {
-        "repo_path": "Games/lib/poker_protocol.lua",
+        "repo_path": "Shared/lib/poker_protocol.lua",
         "install_path": "lib/poker_protocol.lua",
         "sha256": "454f6902283fc8167b081e3cf1888740a8dc80fb9ba4db2cff28a6e7b2332774"
       },
       {
-        "repo_path": "Games/lib/poker_store.lua",
+        "repo_path": "Shared/lib/poker_store.lua",
         "install_path": "lib/poker_store.lua",
         "sha256": "1d238e951d8f4c9f36245421c7b5b7f5b2670c5be3605c8e7d7f465d1ce738e1"
       },
       {
-        "repo_path": "Games/lib/poker_transport.lua",
+        "repo_path": "Shared/lib/poker_transport.lua",
         "install_path": "lib/poker_transport.lua",
         "sha256": "bcbac84b3a2e5a09ae3a9cfe01b255780515d5b2beb22bcf9d115942f3a5186a"
       }
