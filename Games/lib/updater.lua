@@ -88,14 +88,32 @@ end
 local function saveFile(path, data)
   local dir = fs.getDir(path)
   if dir ~= "" and not fs.exists(dir) then
-    fs.makeDir(dir)
+    local makeOk, makeErr = pcall(fs.makeDir, dir)
+    if not makeOk then
+      return false, tostring(makeErr)
+    end
   end
-  local f = fs.open(path, "wb")
+  local openOk, f = pcall(fs.open, path, "wb")
+  if not openOk then
+    return false, tostring(f)
+  end
   if not f then
     return false, "Cannot write: " .. path
   end
-  f.write(data)
-  f.close()
+
+  local writeOk, writeErr = pcall(function()
+    f.write(data)
+    f.close()
+  end)
+  if not writeOk then
+    pcall(function()
+      if f.close then
+        f.close()
+      end
+    end)
+    return false, tostring(writeErr)
+  end
+
   return true
 end
 
@@ -315,6 +333,19 @@ local function releaseLock()
   end
 end
 
+local function deletePath(path)
+  if not fs.exists(path) then
+    return true
+  end
+
+  local ok, err = pcall(fs.delete, path)
+  if not ok then
+    return false, tostring(err)
+  end
+
+  return true
+end
+
 local function removePath(path)
   if fs.exists(path) then
     fs.delete(path)
@@ -347,22 +378,37 @@ local function refreshInstaller(index)
     return false, false, "Installer metadata incomplete"
   end
 
+  local unlockOk, unlockResult = beginWriteWindow("installer-refresh")
+  if not unlockOk then
+    return false, false, "Installer write locked: " .. tostring(unlockResult)
+  end
+  local createdUnlock = unlockResult == true
+
   local data, err = download(buildCommitUrl(commit, repoPath))
   if not data then
+    endWriteWindow(createdUnlock)
     return false, false, err or "Installer download failed"
   end
   if not verifyHash(data, installer.sha256) then
+    endWriteWindow(createdUnlock)
     return false, false, "Installer hash mismatch"
   end
 
   if fs.exists(installerPath) then
-    fs.delete(installerPath)
+    local deleteOk, deleteErr = deletePath(installerPath)
+    if not deleteOk then
+      endWriteWindow(createdUnlock)
+      return false, false, deleteErr or "Installer delete failed"
+    end
   end
 
   local saved, saveErr = saveFile(installerPath, data)
   if not saved then
+    endWriteWindow(createdUnlock)
     return false, false, saveErr or "Installer save failed"
   end
+
+  endWriteWindow(createdUnlock)
 
   return true, true, installerPath
 end
@@ -682,16 +728,35 @@ end
 local function watchForUpdates(opts)
   opts = opts or {}
   local callback = opts.callback or function() end
+  local verbose = opts.verbose == true
   local startupSchedule, steadyInterval = buildWatchSchedule(opts)
   local startupIndex = 1
+  local lastStatus = nil
+  local lastMessage = nil
+
+  local function notify(status, message)
+    local normalizedMessage = tostring(message or "")
+
+    if not verbose and (status == "checking" or status == "up-to-date" or status == "skipped") then
+      return
+    end
+
+    if not verbose and status == lastStatus and normalizedMessage == lastMessage then
+      return
+    end
+
+    lastStatus = status
+    lastMessage = normalizedMessage
+    callback(status, message)
+  end
 
   while true do
     local interval = startupSchedule[startupIndex] or steadyInterval
     os.sleep(interval)
 
-    local status = checkForUpdates({ callback = callback })
+    local status = checkForUpdates({ callback = notify })
     if status == "updated" then
-      callback("rebooting", "Update applied, rebooting...")
+      notify("rebooting", "Update applied, rebooting...")
       os.sleep(1)
       os.reboot()
     end
