@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-10T01:05:22Z",
+  "generated_at": "2026-04-10T01:18:46Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,126 +8,126 @@
   },
   "installer": {
     "version": "1.1.6",
-    "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
+    "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
     "path": "Games/installer.lua",
-    "sha256": "fdc0c01ecbedc6b4ef6a4d7be6a408227ad7c6fa3220544acbaf1271f8554e8c"
+    "sha256": "66736fbb22a8d1e06790458055fde60c2004212bd1aa4ab980d11015862ac42d"
   },
   "programs": {
     "baccarat": {
       "name": "Baccarat",
       "category": "Games",
       "description": "Baccarat card game for ComputerCraft casino.",
-      "version": "1.2.45",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "4c9fc13e216758ac01e1de33b18d60e136bec0085cd9cefccd3594781856e28e",
+      "version": "1.2.46",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "21b8fcea52d7bcc1174b408fec6ad5ff04b4abbbf80d2fc349e436592cae040b",
       "spec_path": "programs/baccarat.json"
     },
     "blackjack": {
       "name": "Blackjack",
       "category": "Games",
       "description": "Blackjack card game for ComputerCraft casino.",
-      "version": "1.2.52",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "50a10c203c9a27c5989830cfb7502c82f28cf773cea5be557207edf8cb5ce081",
+      "version": "1.2.53",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "8831e8dbef6ff4abb9aa16f642576e5b7c09e5238a70ab43f32feb2678d4952a",
       "spec_path": "programs/blackjack.json"
     },
     "hilo": {
       "name": "HiLo",
       "category": "Games",
       "description": "Hi-Lo card game for ComputerCraft casino.",
-      "version": "1.0.52",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "1fd02a47531add645c59114f823c0f1aa48a37f33061cc2aae24b56d6fba2fb9",
+      "version": "1.0.53",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "8350402506cd7c704c42aeed1213b1cf3c3f721e54676f6234d73b946466c3c6",
       "spec_path": "programs/hilo.json"
     },
     "phone_os": {
       "name": "Pocket Casino OS",
       "category": "Utilities",
       "description": "Pocket casino shell for ComputerCraft pocket computers.",
-      "version": "1.0.48",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "353522e54d39b48db6c0816a2922d0b2911a4cbe90922da168eb962b3bb585f1",
+      "version": "1.0.49",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "e620743e94b4fb40684a85afd5b5da22d99805a626c66fe5f756fe0ad7aae80e",
       "spec_path": "programs/phone_os.json"
     },
     "pokertable": {
       "name": "PokerTable",
       "category": "Games",
       "description": "Multiplayer poker table foundation with rednet transport and deferred settlement.",
-      "version": "1.0.7",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "587c8f3c9b6195b7cddb2dd46be9ac85f17f42349a03fc46ab057eadbe0ec7af",
+      "version": "1.0.8",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "8c833211759838ba0b02db3cf5cad25087837e13fce9e8ca50c28c45ad4e1e8d",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
       "name": "Roulette",
       "category": "Games",
       "description": "European Roulette with a single-screen felt UI and multi-bet support.",
-      "version": "1.0.63",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "e5dba1fc7f4c2a84e70701008fa1ce6b4295efbd3100c47141394b23abecf7a0",
+      "version": "1.0.64",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "03fa33dc338840604406c915c6023cf8f47b2e952e60e9ee4f916c03de14eb3e",
       "spec_path": "programs/roulette.json"
     },
     "slots": {
       "name": "Slots",
       "category": "Games",
       "description": "Slot Machine game for ComputerCraft casino.",
-      "version": "1.0.51",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "836134ec2aa13c7be691c0803c603d527e59edc16f04a2340e50a371a1a8fa47",
+      "version": "1.0.52",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "26b8e354c38ab18b3c421fddd323f96b24c719d9908a5007ea9faffec88e04de",
       "spec_path": "programs/slots.json"
     },
     "sound_browser": {
       "name": "Sound Browser",
       "category": "Utilities",
       "description": "Browse the pack's generated sound catalog and save favorites.",
-      "version": "1.0.10",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "831ff919b52b56e214a1e30af801d9ae2a9766fe5f089dfa5f8cc10a4cc6e3e2",
+      "version": "1.0.11",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "154c96617a524cbdfca06f385b04214642f96b754321901e674a5829e2e4e322",
       "spec_path": "programs/sound_browser.json"
     },
     "taskmaster": {
       "name": "TaskMaster",
       "category": "Utilities",
       "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
-      "version": "1.0.9",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "0f4fb3c77528d4a0d3636bd4bba088558b5fe4609a97aef57d719c9906ee68b6",
+      "version": "1.0.10",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "dabad96376c403c2442041a195b6cfaac372d80707f15f925599ca965339f39b",
       "spec_path": "programs/taskmaster.json"
     },
     "vault_item_analyzer": {
       "name": "vault_item_analyzer",
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
-      "version": "1.0.12",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "c88ff6415df3eca4986c11e341ec962f2cca74a9fa39f852074ef4b9795cee7e",
+      "version": "1.0.13",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "9ecc76115939cea180b8939890928f2d91e21db854a41df67219ecd51926061c",
       "spec_path": "programs/vault_item_analyzer.json"
     },
     "vaultgear": {
       "name": "VaultGear",
       "category": "Utilities",
       "description": "Vault Storage Manager monitor app for live multi-storage routing and repair.",
-      "version": "1.0.30",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "29cf15c2b3538d911bc89dd25d2a1816d4e6f0fe6f3969f3923dcb729585db29",
+      "version": "1.0.31",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "532c34c6e1fd32b722db42cc9e986aa02672cbe6d1fb896688897200055e76be",
       "spec_path": "programs/vaultgear.json"
     },
     "vhcctweaks_smoke_test": {
       "name": "VH CC Tweaks Smoke Test",
       "category": "Utilities",
       "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
-      "version": "1.0.4",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "a6ba0302b4e7db802bc513ed3da206f4e623ccab9fe83226325e17346b3d6610",
+      "version": "1.0.5",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "d8164a6090d687e5e3115efe5aa429be4d9cebc8d6113347688c1570837af164",
       "spec_path": "programs/vhcctweaks_smoke_test.json"
     },
     "videopoker": {
       "name": "VideoPoker",
       "category": "Games",
       "description": "Video Poker (Jacks or Better) for ComputerCraft casino.",
-      "version": "1.0.50",
-      "commit": "766cc18b170dc7e6b892ee66ae60207a3f43c001",
-      "package_hash": "898bbcf04ed054a156226832eb0fe53ea52327bfd9e4b6d84774a6bf7669dc43",
+      "version": "1.0.51",
+      "commit": "8728b2267c8eaec0c9e07c56f3640c64b50a571e",
+      "package_hash": "7b83746e3056b731bad77e39c3496fdbed6cc0f7555057588078a8ab758fc50a",
       "spec_path": "programs/videopoker.json"
     }
   }
