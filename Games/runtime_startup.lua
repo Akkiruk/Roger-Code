@@ -1,7 +1,7 @@
 local supervisor = require("lib.roger_supervisor")
 
 local ok, err = pcall(function()
-  supervisor.run({ ... })
+  supervisor.run()
 end)
 
 if not ok then
