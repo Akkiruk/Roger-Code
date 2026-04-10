@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.34"
+    "version": "1.0.35"
   },
   "build": {
-    "commit": "62cd38fb47ffc608d8021469b7c76f31599ed92f",
-    "generated_at": "2026-04-10T02:21:29Z",
-    "package_hash": "a1a495d8d217c67044b075daad31945db43345e10d61e81c6f01d236406a28ba"
+    "commit": "19858b0172896ebbeb47cadaeecab67c2272cb5e",
+    "generated_at": "2026-04-10T03:20:29Z",
+    "package_hash": "d7efb0c6481c3fb7dd3b6ae0a1f0b1ab6be165967f02293a8f46b9b474626799"
   },
   "install": {
     "preserve": [
@@ -38,12 +38,12 @@
       {
         "repo_path": "Shared/lib/vaultgear/store.lua",
         "install_path": "lib/vaultgear/store.lua",
-        "sha256": "27ebbdd9347e192589856c652ec686389ef1ca3565ccd163a431d0a10a8e734e"
+        "sha256": "8119714e50c972486d16faba320f8300a6499b61f7d8977532723f7a1f0535ac"
       },
       {
         "repo_path": "Shared/lib/vaultgear/service.lua",
         "install_path": "lib/vaultgear/service.lua",
-        "sha256": "fc5403d688200f03d73d6dea90b04f35d8a27cadcbb5e94b2c23f44b5b8fb351"
+        "sha256": "4504ce457e82a263fa7265f5e0b65a4fe902db9186bcb5db18568cbc5851f562"
       },
       {
         "repo_path": "Shared/lib/vaultgear/quick_setup.lua",
@@ -78,7 +78,7 @@
       {
         "repo_path": "Shared/lib/vaultgear/constants.lua",
         "install_path": "lib/vaultgear/constants.lua",
-        "sha256": "7802d72306ec27d8db0bb3efb4c9800810704f7a59e9fd7cb202a7fe3c6d8887"
+        "sha256": "a55865ae062aad30eba0a853b9c8c12e04366b94514933b143f3c30b298cfa49"
       },
       {
         "repo_path": "Shared/lib/vaultgear/catalog.lua",
@@ -88,7 +88,7 @@
       {
         "repo_path": "Shared/lib/vaultgear/app.lua",
         "install_path": "lib/vaultgear/app.lua",
-        "sha256": "38249e6b3f29714d7a5dfe75be80aaafff8890a9a2ff7f85742c3356c2a7f2ef"
+        "sha256": "276bbff762310722ab3d142825ba1c6dc951100be8460765399d9facc47656b0"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -133,19 +133,19 @@
       {
         "repo_path": "Apps/VaultGear/vaultgear_config.lua",
         "install_path": "vaultgear_config.lua",
-        "sha256": "94ff1e6ebc3f2548767b754e52c28d977e2d3c886379a4a113741fd405a4d637",
+        "sha256": "c9775e369a07b0c51fcc89562060ec6650a2609301f12bfdb61645cac486b68d",
         "preserve_existing": true
       },
       {
         "repo_path": "Apps/VaultGear/vaultgear_state_settings.lua",
         "install_path": "vaultgear_state_settings.lua",
-        "sha256": "cf323be681cb9b78348c932b5456127eebedb084731c24922ee6ef82a794f61c",
+        "sha256": "bda7b3c6f0963d3fdb58755d79a1c28d92db4cfdfc467fbae606b5e169e6ba48",
         "preserve_existing": true
       },
       {
         "repo_path": "Shared/lib/vaultgear/ui.lua",
         "install_path": "lib/vaultgear/ui.lua",
-        "sha256": "4aa09a08ceea520c5cb3197d10689c1a963eaf5224ae6ad4e13d54c3ee81c1b4"
+        "sha256": "f9e44ff5fd0942dae7d363a087a918d7c9190944de121e935ca5a882e53daac4"
       },
       {
         "repo_path": "Shared/lib/bedrock.lua",
