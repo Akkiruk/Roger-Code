@@ -589,6 +589,7 @@ local function wipeComputerKeepInstaller()
   local preserved = {}
   addPreservedPath(preserved, runningProgram)
   addPreservedPath(preserved, "installer.lua")
+  addPreservedPath(preserved, UNLOCK_FILE)
 
   local stats = {
     removed_files = 0,

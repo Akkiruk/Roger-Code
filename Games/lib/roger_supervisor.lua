@@ -4,6 +4,21 @@ local STATE_FILE = ".installed_program"
 local LOG_FILE = "roger_supervisor.log"
 local DEFAULT_RESTART_DELAY = 5
 local DEFAULT_UPDATE_INTERVAL = 300
+local LEGACY_MAIN_FILES = {
+  baccarat = "baccarat.lua",
+  blackjack = "blackjack.lua",
+  hilo = "hilo.lua",
+  phone_os = "phone_os.lua",
+  pokertable = "pokertable.lua",
+  roulette = "Roulette.lua",
+  slots = "slots.lua",
+  sound_browser = "sound_browser.lua",
+  taskmaster = "taskmaster.lua",
+  vault_item_analyzer = "vault_item_analyzer.lua",
+  vaultgear = "vaultgear.lua",
+  vhcctweaks_smoke_test = "vhcctweaks_smoke_test.lua",
+  videopoker = "videopoker.lua",
+}
 
 local M = {}
 
@@ -38,6 +53,53 @@ local function readInstalledState()
   return nil
 end
 
+local function saveInstalledState(state)
+  if type(state) ~= "table" then
+    return false
+  end
+
+  local handle = fs.open(STATE_FILE, "w")
+  if not handle then
+    return false
+  end
+
+  handle.write(textutils.serialise(state))
+  handle.close()
+  return true
+end
+
+local function resolveLegacyEntrypoint(installed)
+  if type(installed) ~= "table" then
+    return nil
+  end
+
+  local programKey = tostring(installed.program or installed.game or "")
+  local candidates = {}
+
+  if programKey ~= "" then
+    candidates[#candidates + 1] = programKey .. "_startup.lua"
+
+    local legacyMain = LEGACY_MAIN_FILES[programKey]
+    if type(legacyMain) == "string" and legacyMain ~= "" then
+      candidates[#candidates + 1] = legacyMain
+    end
+
+    candidates[#candidates + 1] = programKey .. ".lua"
+  end
+
+  local seen = {}
+  for _, candidate in ipairs(candidates) do
+    if candidate ~= "" and candidate ~= "startup.lua" and not seen[candidate] then
+      seen[candidate] = true
+      if fs.exists(candidate) then
+        return candidate
+      end
+    end
+  end
+
+  return nil
+end
+
 local function loadRuntimeState()
   local installed = updater.getInstallInfo() or readInstalledState()
   if type(installed) ~= "table" then
@@ -45,13 +107,24 @@ local function loadRuntimeState()
   end
 
   local appEntrypoint = installed.app_entrypoint or installed.entrypoint
+  local recoveredLegacyEntrypoint = false
   if type(appEntrypoint) ~= "string" or appEntrypoint == "" then
-    return nil, "Install record is missing app_entrypoint"
+    appEntrypoint = resolveLegacyEntrypoint(installed)
+    if type(appEntrypoint) ~= "string" or appEntrypoint == "" then
+      return nil, "Install record is missing app_entrypoint"
+    end
+
+    recoveredLegacyEntrypoint = true
+    installed.app_entrypoint = appEntrypoint
+    installed.system_entrypoint = installed.system_entrypoint or "startup.lua"
+    installed.boot_mode = installed.boot_mode or "supervisor"
+    saveInstalledState(installed)
   end
 
   return {
     installed = installed,
     appEntrypoint = appEntrypoint,
+    recoveredLegacyEntrypoint = recoveredLegacyEntrypoint,
     autoRestart = installed.auto_restart ~= false,
     restartDelay = tonumber(installed.restart_delay) or DEFAULT_RESTART_DELAY,
     updateInterval = tonumber(installed.update_interval) or DEFAULT_UPDATE_INTERVAL,
@@ -148,6 +221,9 @@ function M.run(...)
   end
 
   local installed = runtime.installed
+  if runtime.recoveredLegacyEntrypoint then
+    logMessage("Recovered legacy app entrypoint: " .. tostring(runtime.appEntrypoint))
+  end
   logMessage(
     "Booting " .. tostring(installed.program or installed.game or installed.name or "program")
       .. " | app=" .. tostring(runtime.appEntrypoint)
