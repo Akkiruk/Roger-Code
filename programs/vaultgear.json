@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.37"
+    "version": "1.0.38"
   },
   "build": {
-    "commit": "02552af322bb764a941371a1cc7d246bb1eefa33",
-    "generated_at": "2026-04-11T02:48:37Z",
-    "package_hash": "6edd258b13456a3ecfb54760a83d22192665ed69bd886231e924b19de9863753"
+    "commit": "d556deae25940103d08bb9aba94f75b237ad1496",
+    "generated_at": "2026-04-11T02:51:37Z",
+    "package_hash": "5a75acaf446923a8188ada902dc31c499d802343efbae111e978118ed2b63daf"
   },
   "install": {
     "preserve": [
@@ -58,7 +58,7 @@
       {
         "repo_path": "Shared/lib/vaultgear/planner.lua",
         "install_path": "lib/vaultgear/planner.lua",
-        "sha256": "955d0df0ac1092bc97c6dce1f75109718b18eab31b599c45c34cbe422e9b3e6e"
+        "sha256": "51fdeb95d29cf706856866d0ff5fe4f7974a6097cd74ba375b50a1e4427c13d2"
       },
       {
         "repo_path": "Shared/lib/vaultgear/peripherals.lua",
