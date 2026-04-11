@@ -2,17 +2,17 @@
   "schema_version": 1,
   "program": {
     "key": "block_reader_vhcctweaks_probe",
-    "name": "block_reader_vhcctweaks_probe",
+    "name": "Block Reader vhcctweaks Probe",
     "category": "Utilities",
     "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
     "source_root": "Utilities",
     "entrypoint": "block_reader_vhcctweaks_probe.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
-    "generated_at": "2026-04-11T02:24:48Z",
-    "package_hash": "c09758bc9416316e4d48335782148ef02195f63de70d73e33e966ee5ee3a8736"
+    "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
+    "generated_at": "2026-04-11T02:32:53Z",
+    "package_hash": "4c16ab703e629aaa8c48979e23898bee79450f9ef4be8fe0ea73229689ffda6a"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Utilities/block_reader_vhcctweaks_probe.lua",
         "install_path": "block_reader_vhcctweaks_probe.lua",
-        "sha256": "f1fd34420112d5536f9150e50ed271e221229ebfffdf6ab430163c993164cc3d"
+        "sha256": "50142be9789be621b6a23234a633358f647d145f927367c2abd0c0c3c88ac89d"
       }
     ]
   },

@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-11T02:24:48Z",
+  "generated_at": "2026-04-11T02:32:53Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
     "branch": "main"
   },
   "installer": {
-    "version": "1.1.6",
-    "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+    "version": "1.1.7",
+    "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
     "path": "System/installer.lua",
-    "sha256": "a760c24b7e1748d7ab73ef2e93eede8faf983a3a51fcae0aa6096607be0270b2"
+    "sha256": "97184f5473cbb713e65e882a7af993583ea263db4b45ca99f1a45ea5881e655d"
   },
   "programs": {
     "baccarat": {
@@ -18,7 +18,7 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.2.49",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "541892f4d98522d368b00e28a7203dc3d2584cdf677b3d32d7446a9062d9af99",
       "spec_path": "programs/baccarat.json"
     },
@@ -27,17 +27,17 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.2.57",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "e62db780505dcd1ff9758bda2fe636e76a0a718366654179a3b8763eb37cbe35",
       "spec_path": "programs/blackjack.json"
     },
     "block_reader_vhcctweaks_probe": {
-      "name": "block_reader_vhcctweaks_probe",
+      "name": "Block Reader vhcctweaks Probe",
       "category": "Utilities",
       "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
-      "version": "1.0.0",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
-      "package_hash": "c09758bc9416316e4d48335782148ef02195f63de70d73e33e966ee5ee3a8736",
+      "version": "1.0.1",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
+      "package_hash": "4c16ab703e629aaa8c48979e23898bee79450f9ef4be8fe0ea73229689ffda6a",
       "spec_path": "programs/block_reader_vhcctweaks_probe.json"
     },
     "hilo": {
@@ -45,7 +45,7 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.0.56",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "e1ec61f896f279a52d48cdee3b4d35127b55b75bcf53f4804d795838d8fcac0f",
       "spec_path": "programs/hilo.json"
     },
@@ -54,7 +54,7 @@
       "category": "Apps",
       "description": "manifest-entrypoint: true",
       "version": "1.0.2",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "b13725f80c1685f894c80f0d854230b3ca57ef898ca9c488e4b94ef71f8a3b1d",
       "spec_path": "programs/phoneos.json"
     },
@@ -63,7 +63,7 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.0.11",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "207cbf018a497d5dfb08e3dcabf29ca74582046108a27719636c501e25b3c3b7",
       "spec_path": "programs/pokertable.json"
     },
@@ -72,7 +72,7 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.0.67",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "dd091d66b010cfc9c5660df1493b689e6e71907dc9303513c71a6e283914240a",
       "spec_path": "programs/roulette.json"
     },
@@ -81,7 +81,7 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.0.55",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "8c6809128d9ad3a1bd573a686f8fae63ad3bb7db2aee93b4024b35b9dd1b4f4c",
       "spec_path": "programs/slots.json"
     },
@@ -90,7 +90,7 @@
       "category": "Apps",
       "description": "manifest-entrypoint: true",
       "version": "1.0.1",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "d3e3716b362a0048155e6cb7b40886ed46cf8a34f15b63441f5451829110e4f3",
       "spec_path": "programs/soundbrowser.json"
     },
@@ -99,7 +99,7 @@
       "category": "Apps",
       "description": "manifest-entrypoint: true",
       "version": "1.0.13",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "3a59686cf74d7b9014792edd939177a2b60f3c2b9e773d001048c4bba5693b33",
       "spec_path": "programs/taskmaster.json"
     },
@@ -108,7 +108,7 @@
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
       "version": "1.0.15",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "48e4bc43384892b8ec683a233419fcbba88ee510c12352565708bc05e8300507",
       "spec_path": "programs/vault_item_analyzer.json"
     },
@@ -117,7 +117,7 @@
       "category": "Apps",
       "description": "manifest-entrypoint: true",
       "version": "1.0.35",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "d7efb0c6481c3fb7dd3b6ae0a1f0b1ab6be165967f02293a8f46b9b474626799",
       "spec_path": "programs/vaultgear.json"
     },
@@ -126,7 +126,7 @@
       "category": "Utilities",
       "description": "manifest-entrypoint: true",
       "version": "1.0.1",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "0f4bfd9549c21fa9373f0122ac6d886f5e223babdd1378a478438fba31fe5a72",
       "spec_path": "programs/vhcctweakssmoketest.json"
     },
@@ -135,7 +135,7 @@
       "category": "Games",
       "description": "manifest-entrypoint: true",
       "version": "1.0.54",
-      "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
+      "commit": "24e4fddd8fce37256f03b89b0132be24f4dcd48f",
       "package_hash": "b6780a99fede64d6f5b249d91efcde35cad993e623a0cf457590c55cbac78e10",
       "spec_path": "programs/videopoker.json"
     }
