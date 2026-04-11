@@ -322,6 +322,102 @@ local function buildBridgeFilter(item, count)
   return filter
 end
 
+local function bridgeIdentityPart(value)
+  if type(value) == "table" then
+    return textutils.serialize(value)
+  end
+  if value == nil then
+    return ""
+  end
+  return tostring(value)
+end
+
+local function bridgeIdentityKey(item)
+  if type(item) ~= "table" then
+    return ""
+  end
+
+  return table.concat({
+    tostring(item.name or ""),
+    bridgeIdentityPart(item.fingerprint),
+    bridgeIdentityPart(item.components),
+    bridgeIdentityPart(item.nbt),
+  }, "|")
+end
+
+local function bridgeSkipBucket(runtimeState, inventoryName, create)
+  if type(runtimeState.bridge_skip) ~= "table" then
+    runtimeState.bridge_skip = {}
+  end
+
+  local key = tostring(inventoryName or "")
+  local bucket = runtimeState.bridge_skip[key]
+  if bucket == nil and create then
+    bucket = {}
+    runtimeState.bridge_skip[key] = bucket
+  end
+  return bucket
+end
+
+local function clearBridgeSkip(runtimeState, inventoryName, item)
+  local bucket = bridgeSkipBucket(runtimeState, inventoryName, false)
+  if not bucket then
+    return
+  end
+
+  local key = bridgeIdentityKey(item)
+  if key ~= "" then
+    bucket[key] = nil
+  end
+
+  if next(bucket) == nil then
+    runtimeState.bridge_skip[tostring(inventoryName or "")] = nil
+  end
+end
+
+local function rememberBridgeSkip(runtimeState, inventoryName, item)
+  local key = bridgeIdentityKey(item)
+  if key == "" then
+    return
+  end
+
+  local bucket = bridgeSkipBucket(runtimeState, inventoryName, true)
+  bucket[key] = {
+    count = tonumber(item and item.count) or 0,
+    retry_after = os.epoch("local") + (math.max(1, tonumber(constants.BRIDGE_RETRY_COOLDOWN) or 1) * 1000),
+  }
+end
+
+local function shouldSkipBridgeItem(runtimeState, inventoryName, item)
+  local bucket = bridgeSkipBucket(runtimeState, inventoryName, false)
+  if not bucket then
+    return false
+  end
+
+  local key = bridgeIdentityKey(item)
+  if key == "" then
+    return false
+  end
+
+  local cached = bucket[key]
+  if type(cached) ~= "table" then
+    return false
+  end
+
+  local currentCount = tonumber(item and item.count) or 0
+  local cachedCount = tonumber(cached.count) or 0
+  local retryAfter = tonumber(cached.retry_after) or 0
+  if currentCount ~= cachedCount or os.epoch("local") >= retryAfter then
+    bucket[key] = nil
+    if next(bucket) == nil then
+      runtimeState.bridge_skip[tostring(inventoryName or "")] = nil
+    end
+    return false
+  end
+
+  return true
+end
+
 local function bridgeExportItem(bridge, filter, targetName)
   local ok, moved, apiError, callError = safeCallAny(bridge, { "exportItem", "exportItemToPeripheral" }, filter, targetName)
   if not ok then
@@ -374,7 +470,7 @@ local function findBridgeInspectionInbox(storages, connectedSet, sourceInventory
   return nil, nil
 end
 
-local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, catalog, catalogLib)
+local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, runtimeState, catalog, catalogLib)
   local baselineInventory, baselineSlots, baselineError = loadSlotMap(stagingStorage.inventory)
   if baselineError then
     report.errors[#report.errors + 1] = baselineError
@@ -421,6 +517,7 @@ local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes,
     if type(restored) ~= "number" or restored < 1 then
       report.errors[#report.errors + 1] = restoreError or "Could not return unresolved ME Bridge item to the system."
     end
+    rememberBridgeSkip(runtimeState, bridgeStorage.inventory, bridgeItem)
     return
   end
 
@@ -443,6 +540,7 @@ local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes,
   report.moved_stacks = report.moved_stacks + 1
   report.moved_items = report.moved_items + movedFromStage
   report.action = buildMoveAction("route", bridgeStorage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], movedFromStage)
+  clearBridgeSkip(runtimeState, bridgeStorage.inventory, bridgeItem)
 end
 
 local function ensureRuntimeState(runtimeState)
@@ -455,6 +553,9 @@ local function ensureRuntimeState(runtimeState)
   runtimeState.repair_cursor = tonumber(runtimeState.repair_cursor) or 1
   runtimeState.repair_slot = tonumber(runtimeState.repair_slot) or 0
   runtimeState.unresolved_scan = tonumber(runtimeState.unresolved_scan) or 0
+  if type(runtimeState.bridge_skip) ~= "table" then
+    runtimeState.bridge_skip = {}
+  end
   return runtimeState
 end
 
@@ -585,14 +686,16 @@ local function processBridgeInboxStep(report, storage, storages, connectedSet, h
     local index = ((startIndex - 1 + visited) % totalItems) + 1
     local bridgeItem = items[index]
     runtimeState.inbox_slot = index
-    inspected = inspected + 1
     visited = visited + 1
 
-    if type(bridgeItem) == "table" and isVaultRegistryName(bridgeItem.name) then
+    if type(bridgeItem) == "table"
+      and isVaultRegistryName(bridgeItem.name)
+      and not shouldSkipBridgeItem(runtimeState, storage.inventory, bridgeItem) then
+      inspected = inspected + 1
       local priorMoves = report.moved_stacks
       local priorErrors = #report.errors
       local priorUnresolved = report.unresolved
-      routeBridgeItem(report, storage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, catalog, catalogLib)
+      routeBridgeItem(report, storage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, runtimeState, catalog, catalogLib)
 
       if report.unresolved > priorUnresolved then
         runtimeState.unresolved_scan = runtimeState.unresolved_scan + (report.unresolved - priorUnresolved)

@@ -36,6 +36,7 @@ function M.buildDefaultState()
       last_summary = "Idle",
       last_reason = nil,
       route_failures = {},
+      bridge_skip = {},
     },
     catalog = {},
   }
@@ -183,6 +184,9 @@ local function normalizeLoadedState(loaded)
   normalized.runtime.last_reason = normalized.runtime.last_reason and tostring(normalized.runtime.last_reason) or nil
   if type(normalized.runtime.route_failures) ~= "table" then
     normalized.runtime.route_failures = {}
+  end
+  if type(normalized.runtime.bridge_skip) ~= "table" then
+    normalized.runtime.bridge_skip = {}
   end
   return normalized
 end

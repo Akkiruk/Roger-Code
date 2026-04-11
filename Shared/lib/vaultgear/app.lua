@@ -22,6 +22,12 @@ local function clearRouteFailures(runtimeState)
   end
 end
 
+local function clearBridgeSkipCache(runtimeState)
+  if runtimeState then
+    runtimeState.bridge_skip = {}
+  end
+end
+
 local function rememberRouteFailure(runtimeState, failure)
   if type(runtimeState) ~= "table" or type(failure) ~= "table" then
     return nil
@@ -300,6 +306,7 @@ end
 local function refreshDiscovery(app)
   app.discovery = peripherals.discover()
   clearRouteFailures(app.state.runtime)
+  clearBridgeSkipCache(app.state.runtime)
   app.dirty_state = true
   bindMonitor(app)
   refreshHealth(app)
@@ -314,6 +321,8 @@ local function saveAll(app, context)
   local location = context or "update"
 
   if app.dirty_config then
+    clearBridgeSkipCache(app.state.runtime)
+    app.dirty_state = true
     local ok, err = store.saveConfig(app.config)
     if ok then
       app.dirty_config = false
