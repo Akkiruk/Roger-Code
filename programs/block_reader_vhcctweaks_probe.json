@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "program": {
-    "key": "taskmaster",
-    "name": "TaskMaster",
-    "category": "Apps",
-    "description": "manifest-entrypoint: true",
-    "source_root": "Apps/TaskMaster",
-    "entrypoint": "taskmaster.lua",
-    "version": "1.0.13"
+    "key": "block_reader_vhcctweaks_probe",
+    "name": "block_reader_vhcctweaks_probe",
+    "category": "Utilities",
+    "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
+    "source_root": "Utilities",
+    "entrypoint": "block_reader_vhcctweaks_probe.lua",
+    "version": "1.0.0"
   },
   "build": {
     "commit": "facd44b1fd7315a8edbaf1c9f24c58f26f3f3c74",
     "generated_at": "2026-04-11T02:24:48Z",
-    "package_hash": "3a59686cf74d7b9014792edd939177a2b60f3c2b9e773d001048c4bba5693b33"
+    "package_hash": "c09758bc9416316e4d48335782148ef02195f63de70d73e33e966ee5ee3a8736"
   },
   "install": {
     "preserve": [],
@@ -33,26 +33,19 @@
         "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
       },
       {
-        "repo_path": "Apps/TaskMaster/taskmaster.lua",
-        "install_path": "taskmaster.lua",
-        "sha256": "e53296e83befcec4c6628accb753e5fc5ffae3036dc08975f11011d2fa759f98"
-      },
-      {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+        "repo_path": "Utilities/block_reader_vhcctweaks_probe.lua",
+        "install_path": "block_reader_vhcctweaks_probe.lua",
+        "sha256": "f1fd34420112d5536f9150e50ed271e221229ebfffdf6ab430163c993164cc3d"
       }
     ]
   },
   "runtime": {
     "boot_mode": "supervisor",
     "system_entrypoint": "startup.lua",
-    "app_entrypoint": "taskmaster.lua",
-    "auto_restart": true,
+    "app_entrypoint": "block_reader_vhcctweaks_probe.lua",
+    "auto_restart": false,
     "update_interval": 300,
     "requires_updater": true,
-    "lib_modules": [
-      "lib.monitor_scale"
-    ]
+    "lib_modules": []
   }
 }
