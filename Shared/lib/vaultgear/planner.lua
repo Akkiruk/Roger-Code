@@ -250,6 +250,9 @@ function M.matchStorage(storage, item)
   if item.is_chaotic and rule.allow_chaotic then
     return true, { "Chaotic override." }
   end
+  if item.is_chaotic then
+    return false, { "Chaotic items need chaotic override." }
+  end
 
   if rule.min_rarity and rule.min_rarity ~= "ANY" then
     if rule.min_rarity == "NONE" then
