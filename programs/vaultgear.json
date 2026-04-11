@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.36"
+    "version": "1.0.37"
   },
   "build": {
-    "commit": "733822c1c6aca992880f7ebe9b45606159f985e6",
-    "generated_at": "2026-04-11T02:38:44Z",
-    "package_hash": "62f4d2b6b644b9143f949d903cb2dc94ee88bb7e66359401fff4da868f194b55"
+    "commit": "02552af322bb764a941371a1cc7d246bb1eefa33",
+    "generated_at": "2026-04-11T02:48:37Z",
+    "package_hash": "6edd258b13456a3ecfb54760a83d22192665ed69bd886231e924b19de9863753"
   },
   "install": {
     "preserve": [
@@ -38,12 +38,12 @@
       {
         "repo_path": "Shared/lib/vaultgear/store.lua",
         "install_path": "lib/vaultgear/store.lua",
-        "sha256": "8119714e50c972486d16faba320f8300a6499b61f7d8977532723f7a1f0535ac"
+        "sha256": "6d10b897639fe75d44c14f1d9e907f598bd81779b78d3a2f82c62a2dca320831"
       },
       {
         "repo_path": "Shared/lib/vaultgear/service.lua",
         "install_path": "lib/vaultgear/service.lua",
-        "sha256": "4504ce457e82a263fa7265f5e0b65a4fe902db9186bcb5db18568cbc5851f562"
+        "sha256": "ba9b3f540245bf402c21b064c7a266c3e524358b484abe315db47d464225cdf9"
       },
       {
         "repo_path": "Shared/lib/vaultgear/quick_setup.lua",
@@ -78,7 +78,7 @@
       {
         "repo_path": "Shared/lib/vaultgear/constants.lua",
         "install_path": "lib/vaultgear/constants.lua",
-        "sha256": "33f2679b73ff23bad6b76737616eea9e6c17dcb1e24cacc213b455994078aeeb"
+        "sha256": "503e4439d87a69c1731650019edef5c25b1a4a7373e465cf4476d9f596ab57f6"
       },
       {
         "repo_path": "Shared/lib/vaultgear/catalog.lua",
@@ -88,7 +88,7 @@
       {
         "repo_path": "Shared/lib/vaultgear/app.lua",
         "install_path": "lib/vaultgear/app.lua",
-        "sha256": "668e4473ce7c1bb0aefd3f099cf874a352320d25136a79cb721fc2e156d0e3a2"
+        "sha256": "076bf3ac8904c2d2b71fe8b9f4cc6c9719ef39711aa3d202843562ea507a06e2"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
