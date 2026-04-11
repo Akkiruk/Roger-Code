@@ -11,7 +11,7 @@
 --   installer self-update  -- Update just the installer
 --   installer wipe         -- Delete everything except the installer script
 
-local INSTALLER_VERSION = "1.1.6"
+local INSTALLER_VERSION = "1.1.7"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
 local SOURCE_BRANCH = "main"
@@ -35,6 +35,17 @@ local CONTENTS_API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
   ["Accept"] = "application/vnd.github.raw+json",
 }
+local HIDDEN_STANDALONE_PROGRAMS = {
+  peripheral_info_collector = true,
+  test_ccvault = true,
+  test_ccvault_full = true,
+}
+local STANDALONE_SKIP_SUFFIXES = {
+  ".bak",
+  ".old",
+  ".log",
+  ".md",
+}
 local INSTALL_STATE_SCHEMA = 2
 local DEFAULT_UPDATE_INTERVAL = 300
 local UPDATED_ARG = "--installer-updated"
@@ -56,6 +67,7 @@ local tArgs = { ... }
 -- Forward declarations keep Lua 5.1 local scope intact for helpers used
 -- by earlier-defined functions in this file.
 local readManagedFiles = nil
+local fetchLatestMainCommit = nil
 
 ---------------------------------------------------------------------------
 -- Error logging
@@ -234,6 +246,32 @@ local function normalizePath(path)
   return tostring(path or ""):gsub("\\", "/")
 end
 
+local function basename(path)
+  local normalized = normalizePath(path)
+  local name = normalized:match("([^/]+)$")
+  return name or normalized
+end
+
+local function fileNameNoExt(path)
+  local name = basename(path)
+  return (name:gsub("%.lua$", ""))
+end
+
+local function shouldSkipStandaloneUtility(path)
+  local name = string.lower(basename(path))
+  if name == "manifest.json" then
+    return true
+  end
+
+  for _, suffix in ipairs(STANDALONE_SKIP_SUFFIXES) do
+    if name:sub(-#suffix) == suffix then
+      return true
+    end
+  end
+
+  return false
+end
+
 local function pathSetFromList(paths)
   local set = {}
   for _, path in ipairs(paths or {}) do
@@ -340,15 +378,387 @@ local function fetchDeployJson(path, label)
   return parseJson(data, label)
 end
 
+local repoTextCache = {}
+
+local function fetchRepoText(path, ref)
+  local repoPath = normalizePath(path)
+  local targetRef = tostring(ref or SOURCE_BRANCH)
+  local cacheKey = targetRef .. ":" .. repoPath
+  if repoTextCache[cacheKey] then
+    return repoTextCache[cacheKey]
+  end
+
+  local rawUrl = withCacheBust(RAW_ROOT .. targetRef .. "/" .. repoPath)
+  local data, err = download(rawUrl)
+  if not data then
+    local apiUrl = withCacheBust(CONTENTS_API_ROOT .. repoPath .. "?ref=" .. targetRef)
+    data, err = download(apiUrl, CONTENTS_API_HEADERS)
+    if not data then
+      return nil, err
+    end
+  end
+
+  repoTextCache[cacheKey] = data
+  return data
+end
+
+local function fetchRepoTree(ref)
+  local url = withCacheBust(API_URL .. "/git/trees/" .. tostring(ref or SOURCE_BRANCH) .. "?recursive=1")
+  local data, err = download(url, API_HEADERS)
+  if not data then
+    return nil, err
+  end
+  return parseJson(data, "repo tree")
+end
+
+local function splitPreviewLines(text, limit)
+  local lines = {}
+  for line in tostring(text or ""):gmatch("[^\r\n]+") do
+    lines[#lines + 1] = line
+    if limit and #lines >= limit then
+      break
+    end
+  end
+  return lines
+end
+
+local function parseStandaloneMetadata(fileName, text)
+  local key = string.lower(fileNameNoExt(fileName))
+  local name = fileNameNoExt(fileName)
+  local description = ""
+
+  for _, line in ipairs(splitPreviewLines(text, 12)) do
+    local value = line:match('^%s*%-%-%s*manifest%-key:%s*(.+)%s*$')
+    if value and value ~= "" then
+      key = value
+    else
+      value = line:match('^%s*%-%-%s*manifest%-name:%s*(.+)%s*$')
+      if value and value ~= "" then
+        name = value
+      else
+        value = line:match('^%s*%-%-%s*manifest%-description:%s*(.+)%s*$')
+        if value and value ~= "" and description == "" then
+          description = value
+        else
+          value = line:match('^%s*%-%-%s*(.+)%s*$')
+          if value
+            and #value > 10
+            and not value:match('^manifest%-(key|name|description|category):')
+            and not value:match('^%S+%.lua$')
+            and not value:match('^[-=]+$')
+            and description == "" then
+            description = value
+          end
+        end
+      end
+    end
+  end
+
+  return {
+    key = key,
+    name = name,
+    description = description,
+    category = "Utilities",
+    entrypoint = fileName,
+    source_root = "Utilities",
+  }
+end
+
+local function findRequiredLibModules(text)
+  local modules = {}
+  local seen = {}
+
+  local function addModule(module)
+    if module and module ~= "" and module:sub(1, 4) == "lib." and not seen[module] then
+      seen[module] = true
+      modules[#modules + 1] = module
+    end
+  end
+
+  for module in tostring(text or ""):gmatch('require%s*%(%s*"(lib%.[^"]+)"%s*%)') do
+    addModule(module)
+  end
+  for module in tostring(text or ""):gmatch("require%s*%(%s*'(lib%.[^']+)'%s*%)") do
+    addModule(module)
+  end
+  for module in tostring(text or ""):gmatch('require%s+"(lib%.[^"]+)"') do
+    addModule(module)
+  end
+  for module in tostring(text or ""):gmatch("require%s+'(lib%.[^']+)'") do
+    addModule(module)
+  end
+
+  table.sort(modules)
+  return modules
+end
+
+local function buildStandaloneLibClosure(fileName, commit)
+  local queue = { "Utilities/" .. fileName }
+  local seenRepoPaths = { ["Utilities/" .. fileName] = true }
+  local closure = {}
+  local seenLibs = {}
+  local index = 1
+
+  while index <= #queue do
+    local repoPath = queue[index]
+    index = index + 1
+
+    local text = fetchRepoText(repoPath, commit)
+    if text then
+      for _, module in ipairs(findRequiredLibModules(text)) do
+        local libRelative = module:sub(5):gsub('%.', '/') .. ".lua"
+        local libRepoPath = "Shared/lib/" .. libRelative
+        if not seenLibs[libRelative] then
+          seenLibs[libRelative] = true
+          closure[#closure + 1] = libRelative
+        end
+        if not seenRepoPaths[libRepoPath] then
+          seenRepoPaths[libRepoPath] = true
+          queue[#queue + 1] = libRepoPath
+        end
+      end
+    end
+  end
+
+  table.sort(closure)
+  return closure
+end
+
+local function buildInstallFileEntry(commit, repoPath, installPath, preserveExisting)
+  local data, err = fetchRepoText(repoPath, commit)
+  if not data then
+    return nil, err
+  end
+
+  local entry = {
+    repo_path = repoPath,
+    install_path = installPath,
+    sha256 = computeSha256(data) or "",
+  }
+  if preserveExisting then
+    entry.preserve_existing = true
+  end
+  return entry
+end
+
+local function buildStandaloneUtilitySpec(repoPath, commit)
+  local fileName = basename(repoPath)
+  local fileData, fileErr = fetchRepoText(repoPath, commit)
+  if not fileData then
+    return nil, fileErr
+  end
+
+  local meta = parseStandaloneMetadata(fileName, fileData)
+  local installFiles = {}
+  local runtimeFiles = {
+    { repo_path = "System/runtime_startup.lua", install_path = "startup.lua" },
+    { repo_path = "Shared/lib/roger_supervisor.lua", install_path = "lib/roger_supervisor.lua" },
+    { repo_path = "Shared/lib/updater.lua", install_path = "lib/updater.lua" },
+    { repo_path = repoPath, install_path = fileName },
+  }
+
+  for _, item in ipairs(runtimeFiles) do
+    local entry, entryErr = buildInstallFileEntry(commit, item.repo_path, item.install_path, item.preserve_existing)
+    if not entry then
+      return nil, entryErr
+    end
+    installFiles[#installFiles + 1] = entry
+  end
+
+  local libModules = {}
+  for _, libRelative in ipairs(buildStandaloneLibClosure(fileName, commit)) do
+    local repoLibPath = "Shared/lib/" .. libRelative
+    local entry, entryErr = buildInstallFileEntry(commit, repoLibPath, "lib/" .. libRelative, false)
+    if not entry then
+      return nil, entryErr
+    end
+    installFiles[#installFiles + 1] = entry
+    libModules[#libModules + 1] = "lib." .. libRelative:gsub('%.lua$', ''):gsub('/', '.')
+  end
+
+  table.sort(installFiles, function(a, b)
+    if a.install_path == b.install_path then
+      return a.repo_path < b.repo_path
+    end
+    return a.install_path < b.install_path
+  end)
+
+  local hashLines = {}
+  for _, entry in ipairs(installFiles) do
+    hashLines[#hashLines + 1] = tostring(entry.install_path) .. "|" .. tostring(entry.repo_path) .. "|"
+      .. tostring(entry.preserve_existing == true) .. "|" .. tostring(entry.sha256 or "")
+  end
+  local packageHash = computeSha256(table.concat(hashLines, "\n")) or tostring(commit) .. ":" .. meta.key
+  local version = "tree-" .. tostring(commit):sub(1, 7)
+
+  return {
+    schema_version = 1,
+    program = {
+      key = meta.key,
+      name = meta.name,
+      category = meta.category,
+      description = meta.description,
+      source_root = meta.source_root,
+      entrypoint = meta.entrypoint,
+      version = version,
+    },
+    build = {
+      commit = commit,
+      generated_at = tostring(os.epoch("utc") or os.epoch("local")),
+      package_hash = packageHash,
+    },
+    install = {
+      preserve = {},
+      files = installFiles,
+    },
+    runtime = {
+      boot_mode = "supervisor",
+      system_entrypoint = "startup.lua",
+      app_entrypoint = fileName,
+      auto_restart = false,
+      update_interval = DEFAULT_UPDATE_INTERVAL,
+      requires_updater = true,
+      lib_modules = libModules,
+    },
+  }
+end
+
+local function buildRepoTreeStandaloneIndex()
+  local commit, commitErr = fetchLatestMainCommit()
+  if not commit then
+    return nil, commitErr
+  end
+
+  local tree, treeErr = fetchRepoTree(SOURCE_BRANCH)
+  if not tree or type(tree.tree) ~= "table" then
+    return nil, treeErr or "Repo tree missing entries"
+  end
+
+  local installerData, installerErr = fetchRepoText("System/installer.lua", commit)
+  if not installerData then
+    return nil, installerErr
+  end
+
+  local installerVersion = installerData:match('local%s+INSTALLER_VERSION%s*=%s*"([^"]+)"') or INSTALLER_VERSION
+  local index = {
+    schema_version = 1,
+    generated_at = tostring(os.epoch("utc") or os.epoch("local")),
+    repo = {
+      owner = REPO_OWNER,
+      name = REPO_NAME,
+      branch = SOURCE_BRANCH,
+    },
+    installer = {
+      version = installerVersion,
+      commit = commit,
+      path = "System/installer.lua",
+      sha256 = computeSha256(installerData) or "",
+    },
+    programs = {},
+    _inline_specs = {},
+    _catalog_source = "repo tree",
+  }
+
+  local repoPaths = {}
+  for _, entry in ipairs(tree.tree) do
+    if entry.type == "blob" and type(entry.path) == "string" then
+      local utilityFile = entry.path:match('^Utilities/([^/]+%.lua)$')
+      if utilityFile and not shouldSkipStandaloneUtility(utilityFile) then
+        local hiddenKey = string.lower(fileNameNoExt(utilityFile))
+        if not HIDDEN_STANDALONE_PROGRAMS[hiddenKey] then
+          repoPaths[#repoPaths + 1] = normalizePath(entry.path)
+        end
+      end
+    end
+  end
+  table.sort(repoPaths)
+
+  for _, repoPath in ipairs(repoPaths) do
+    local spec, specErr = buildStandaloneUtilitySpec(repoPath, commit)
+    if spec then
+      local program = spec.program or {}
+      index.programs[program.key] = {
+        name = program.name,
+        category = program.category,
+        description = program.description,
+        version = program.version,
+        commit = commit,
+        package_hash = spec.build and spec.build.package_hash or "",
+      }
+      index._inline_specs[program.key] = spec
+    else
+      logError("Repo tree utility discovery failed for " .. tostring(repoPath) .. ": " .. tostring(specErr))
+    end
+  end
+
+  return index
+end
+
+local function mergeRepoTreeStandalonePrograms(index, directIndex)
+  if type(index) ~= "table" then
+    return directIndex
+  end
+  if type(directIndex) ~= "table" then
+    return index
+  end
+
+  index.programs = index.programs or {}
+  index._inline_specs = index._inline_specs or {}
+
+  for key, spec in pairs(directIndex._inline_specs or {}) do
+    index._inline_specs[key] = spec
+  end
+
+  for key, program in pairs(directIndex.programs or {}) do
+    local existing = index.programs[key]
+    if not existing then
+      index.programs[key] = program
+    else
+      if existing.name == key then
+        existing.name = program.name
+      end
+      if (not existing.description or existing.description == "") and program.description and program.description ~= "" then
+        existing.description = program.description
+      end
+      if not existing.category or existing.category == "" then
+        existing.category = program.category
+      end
+    end
+  end
+
+  if not index.installer and directIndex.installer then
+    index.installer = directIndex.installer
+  end
+
+  index._catalog_source = "deploy index + repo tree"
+  return index
+end
+
 local function fetchLatestIndex()
-  return fetchDeployJson("latest.json", "deploy index")
+  local deployIndex, deployErr = fetchDeployJson("latest.json", "deploy index")
+  local directIndex, directErr = buildRepoTreeStandaloneIndex()
+
+  if deployIndex and directIndex then
+    return mergeRepoTreeStandalonePrograms(deployIndex, directIndex)
+  end
+
+  if deployIndex then
+    deployIndex._catalog_source = "deploy index"
+    return deployIndex
+  end
+
+  if directIndex then
+    return directIndex
+  end
+
+  return nil, "Deploy index failed: " .. tostring(deployErr) .. "; repo tree failed: " .. tostring(directErr)
 end
 
 local function fetchProgramSpec(specPath)
   return fetchDeployJson(specPath, "program spec")
 end
 
-local function fetchLatestMainCommit()
+fetchLatestMainCommit = function()
   local data, err = download(API_URL .. "/commits/" .. SOURCE_BRANCH, API_HEADERS)
   if not data then
     return nil, err
@@ -1073,13 +1483,19 @@ local function installByKey(index, programKey, forceConfig)
     return false
   end
 
-  local spec, specErr = fetchProgramSpec(programEntry.spec_path)
+  local spec = index._inline_specs and index._inline_specs[programKey] or nil
   if not spec then
-    cprint(colors.red, "Could not fetch package spec: " .. tostring(specErr))
-    logError("Spec fetch failed for " .. tostring(programKey) .. ": " .. tostring(specErr))
-    return false
+    local specErr
+    spec, specErr = fetchProgramSpec(programEntry.spec_path)
+    if not spec then
+      cprint(colors.red, "Could not fetch package spec: " .. tostring(specErr))
+      logError("Spec fetch failed for " .. tostring(programKey) .. ": " .. tostring(specErr))
+      return false
+    end
+    spec._spec_path = programEntry.spec_path
+  else
+    spec._spec_path = programEntry.spec_path or ("repo-tree:" .. tostring(programKey))
   end
-  spec._spec_path = programEntry.spec_path
 
   return installFromSpec(spec, forceConfig, loadInstalled())
 end
@@ -1144,7 +1560,7 @@ local function main()
   end
 
   header("Program Installer v" .. INSTALLER_VERSION)
-  cprint(colors.lime, "Deploy index loaded. " .. INSTALLER_VERSION)
+  cprint(colors.lime, "Catalog loaded from " .. tostring(index._catalog_source or "deploy index") .. ". " .. INSTALLER_VERSION)
 
   local installed = loadInstalled()
   if not installed and fs.exists(".casino_installed") then

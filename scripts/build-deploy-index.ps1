@@ -619,7 +619,8 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
 }
 
 foreach ($file in $standaloneUtilities | Sort-Object Name) {
-    $key = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
+    $defaultKey = [System.IO.Path]::GetFileNameWithoutExtension($file.Name).ToLowerInvariant()
+    $key = $defaultKey
     if (-not $seenProgramKeys.Add($key)) {
         throw "Duplicate program key '$key' discovered in standalone utilities"
     }
@@ -629,11 +630,42 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
 
     $fullPath = $file.FullName
     $content = Get-Utf8Content -Path $fullPath
+    $name = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
     $description = ""
-    foreach ($line in ($content -split "`r?`n" | Select-Object -First 5)) {
+    foreach ($line in ($content -split "`r?`n" | Select-Object -First 12)) {
+        if ($line -match '^\s*--\s*manifest-key:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value) {
+                $seenProgramKeys.Remove($key) | Out-Null
+                $key = $value
+                if (-not $seenProgramKeys.Add($key)) {
+                    throw "Duplicate program key '$key' discovered in standalone utilities"
+                }
+            }
+            continue
+        }
+        if ($line -match '^\s*--\s*manifest-name:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value) {
+                $name = $value
+            }
+            continue
+        }
+        if ($line -match '^\s*--\s*manifest-description:\s*(.+)$') {
+            $value = $Matches[1].Trim()
+            if ($value -and -not $description) {
+                $description = $value
+            }
+            continue
+        }
         if ($line -match '^\s*--\s*(.+)$') {
             $desc = $Matches[1].Trim()
-            if ($desc.Length -gt 10 -and $desc -notmatch '^\S+\.lua$' -and $desc -notmatch '^[-=]{4,}$') {
+            if (
+                $desc.Length -gt 10 -and
+                $desc -notmatch '^manifest-(key|name|description|category):' -and
+                $desc -notmatch '^\S+\.lua$' -and
+                $desc -notmatch '^[-=]{4,}$'
+            ) {
                 $description = $desc
                 break
             }
@@ -675,7 +707,7 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
         schema_version = $SchemaVersion
         program = [ordered]@{
             key = $key
-            name = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+            name = $name
             category = "Utilities"
             description = $description
             source_root = "Utilities"

@@ -1,3 +1,5 @@
+-- manifest-name: Block Reader vhcctweaks Probe
+-- manifest-description: Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.
 -- Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.
 
 local SCRIPT_NAME = "block_reader_vhcctweaks_probe"
