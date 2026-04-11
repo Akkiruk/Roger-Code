@@ -145,6 +145,7 @@ function M.normalize(slot, basic, detail, detailError)
   item.is_soulbound = vaultData.isSoulbound == true
   item.is_unique = vaultData.uniqueKey ~= nil or vaultData.rarity == "UNIQUE"
   item.is_legendary = vaultData.isLegendary == true
+  item.is_chaotic = vaultData.rarity == "CHAOTIC"
 
   if type(vaultData.repairSlots) == "table" then
     item.repair_total = vaultData.repairSlots.total

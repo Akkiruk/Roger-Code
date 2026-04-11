@@ -267,8 +267,9 @@ function M.apply(presetId, strictness)
   rule.max_jewel_size = nil
   rule.min_uses = nil
   rule.allow_legendary = true
-  rule.allow_soulbound = true
+  rule.allow_soulbound = false
   rule.allow_unique = true
+  rule.allow_chaotic = false
   preset.apply(rule, strictness or "normal")
   return rule
 end
@@ -301,7 +302,9 @@ function M.summaryLines(storage)
     lines[#lines + 1] = "Unidentified only"
   end
 
-  if rule.min_rarity and rule.min_rarity ~= "ANY" then
+  if rule.min_rarity == "NONE" then
+    lines[#lines + 1] = "Special only"
+  elseif rule.min_rarity and rule.min_rarity ~= "ANY" then
     lines[#lines + 1] = "Rarity " .. tostring(rule.min_rarity) .. "+"
   elseif rule.max_jewel_size then
     lines[#lines + 1] = "Jewel size <= " .. tostring(rule.max_jewel_size)

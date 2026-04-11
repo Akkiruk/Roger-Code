@@ -483,7 +483,7 @@ function M.rarityOptions()
   for _, rarity in ipairs(constants.RARITIES) do
     items[#items + 1] = {
       id = rarity,
-      label = rarity == "ANY" and "Any" or rarity,
+      label = rarity == "ANY" and "Any" or (rarity == "NONE" and "None" or rarity),
     }
   end
   return items

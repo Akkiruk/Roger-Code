@@ -11,12 +11,14 @@ local field_plans = {
     { id = "allow_soulbound", kind = "toggle", label = "Soulbound" },
     { id = "allow_legendary", kind = "toggle", label = "Legendary" },
     { id = "allow_unique", kind = "toggle", label = "Unique" },
+    { id = "allow_chaotic", kind = "toggle", label = "Chaotic" },
   },
   Tool = {
     { id = "min_rarity", kind = "choice", label = "Rarity" },
     { id = "allow_soulbound", kind = "toggle", label = "Soulbound" },
     { id = "allow_legendary", kind = "toggle", label = "Legendary" },
     { id = "allow_unique", kind = "toggle", label = "Unique" },
+    { id = "allow_chaotic", kind = "toggle", label = "Chaotic" },
   },
   Jewel = {
     { id = "min_rarity", kind = "choice", label = "Rarity" },
@@ -54,7 +56,7 @@ local function normalizeRarity(value)
     return "ANY"
   end
 
-  if value == "ANY" then
+  if value == "ANY" or value == "NONE" then
     return value
   end
 
@@ -90,6 +92,14 @@ local function defaultBooleans()
     allow_soulbound = false,
     allow_legendary = false,
     allow_unique = false,
+    allow_chaotic = false,
+  }
+end
+
+local function defaultEnabledFields()
+  return {
+    allow_legendary = true,
+    allow_unique = true,
   }
 end
 
@@ -134,14 +144,10 @@ function M.defaultConfig(itemType, priority)
     config[key] = value
   end
 
-  if fieldVisible(chosenType, "allow_soulbound") then
-    config.allow_soulbound = true
-  end
-  if fieldVisible(chosenType, "allow_legendary") then
-    config.allow_legendary = true
-  end
-  if fieldVisible(chosenType, "allow_unique") then
-    config.allow_unique = true
+  for key, value in pairs(defaultEnabledFields()) do
+    if value and fieldVisible(chosenType, key) then
+      config[key] = true
+    end
   end
 
   return config
@@ -162,6 +168,7 @@ function M.normalizeConfig(config, fallbackPriority)
   normalized.allow_soulbound = normalized.allow_soulbound == true
   normalized.allow_legendary = normalized.allow_legendary == true
   normalized.allow_unique = normalized.allow_unique == true
+  normalized.allow_chaotic = normalized.allow_chaotic == true
 
   if not contains({ "Trinket", "Charm" }, normalized.item_type) then
     normalized.min_uses = nil
@@ -185,6 +192,7 @@ function M.fromStorage(storage)
     allow_soulbound = rule.allow_soulbound == true,
     allow_legendary = rule.allow_legendary == true,
     allow_unique = rule.allow_unique == true,
+    allow_chaotic = rule.allow_chaotic == true,
   }, storage.priority)
 end
 
@@ -253,6 +261,7 @@ function M.buildRule(config)
   rule.allow_soulbound = normalized.allow_soulbound
   rule.allow_legendary = normalized.allow_legendary
   rule.allow_unique = normalized.allow_unique
+  rule.allow_chaotic = normalized.allow_chaotic
 
   return planner.normalizeRule(rule)
 end
@@ -263,7 +272,9 @@ function M.summaryLines(config)
     string.format("Priority %d | %s", normalized.priority, normalized.item_type),
   }
 
-  if normalized.min_rarity ~= "ANY" then
+  if normalized.min_rarity == "NONE" then
+    lines[#lines + 1] = "Special only"
+  elseif normalized.min_rarity ~= "ANY" then
     lines[#lines + 1] = "Rarity " .. tostring(normalized.min_rarity) .. "+"
   end
 
@@ -286,6 +297,9 @@ function M.summaryLines(config)
   end
   if fieldVisible(normalized.item_type, "allow_unique") and normalized.allow_unique then
     flags[#flags + 1] = "unique"
+  end
+  if fieldVisible(normalized.item_type, "allow_chaotic") and normalized.allow_chaotic then
+    flags[#flags + 1] = "chaotic"
   end
 
   if #flags > 0 then

@@ -50,7 +50,14 @@ function M.normalizeRule(rule)
   end
   if normalized.min_rarity == nil or normalized.min_rarity == "" then
     normalized.min_rarity = "ANY"
+  elseif normalized.min_rarity ~= "NONE" and not constants.RARITY_ORDER[normalized.min_rarity] then
+    normalized.min_rarity = "ANY"
   end
+
+  normalized.allow_legendary = normalized.allow_legendary == true
+  normalized.allow_soulbound = normalized.allow_soulbound == true
+  normalized.allow_unique = normalized.allow_unique == true
+  normalized.allow_chaotic = normalized.allow_chaotic == true
 
   return normalized
 end
@@ -240,8 +247,14 @@ function M.matchStorage(storage, item)
   if item.is_legendary and rule.allow_legendary then
     return true, { "Legendary override." }
   end
+  if item.is_chaotic and rule.allow_chaotic then
+    return true, { "Chaotic override." }
+  end
 
   if rule.min_rarity and rule.min_rarity ~= "ANY" then
+    if rule.min_rarity == "NONE" then
+      return false, { "Normal rarity matching disabled." }
+    end
     local itemRank = constants.RARITY_ORDER[item.rarity] or 0
     local requiredRank = constants.RARITY_ORDER[rule.min_rarity] or 0
     if itemRank < requiredRank then

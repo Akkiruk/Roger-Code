@@ -451,6 +451,13 @@ local function buildHomeRows(app, actions)
       end,
     })
   end)
+  addRow(rows, 1, function(ctx, rect)
+    widgets.toggle(ctx, rect, "Chaotic Override", rule.allow_chaotic == true, {
+      onClick = function()
+        actions.setSelectedFlag("allow_chaotic", rule.allow_chaotic ~= true)
+      end,
+    })
+  end)
 
   return rows
 end

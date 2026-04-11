@@ -43,6 +43,7 @@ M.IDENTIFIED_MODES = {
 
 M.RARITIES = {
   "ANY",
+  "NONE",
   "SCRAPPY",
   "COMMON",
   "RARE",
@@ -95,8 +96,9 @@ M.DEFAULT_RULE = {
   max_jewel_size = nil,
   min_uses = nil,
   allow_legendary = true,
-  allow_soulbound = true,
+  allow_soulbound = false,
   allow_unique = true,
+  allow_chaotic = false,
 }
 
 M.NUMERIC_FIELDS = {

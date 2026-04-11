@@ -992,7 +992,7 @@ function M.run()
       return
     end
 
-    if field ~= "allow_legendary" and field ~= "allow_soulbound" and field ~= "allow_unique" then
+    if field ~= "allow_legendary" and field ~= "allow_soulbound" and field ~= "allow_unique" and field ~= "allow_chaotic" then
       return
     end
 
