@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "program": {
-    "key": "soundbrowser",
-    "name": "SoundBrowser",
+    "key": "sound_browser",
+    "name": "Sound Browser",
     "category": "Apps",
-    "description": "manifest-entrypoint: true",
+    "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.0"
   },
   "build": {
-    "commit": "21133cd3f4f579b7c57e2f12c25757dea89f93a8",
-    "generated_at": "2026-04-13T12:39:09Z",
-    "package_hash": "c7fa3584bffdcc91ab83b27d223ef273bc44f873e6af3baffb79d732f9995877"
+    "commit": "73b4453a33278c87822b75d763ae333062d64c07",
+    "generated_at": "2026-04-13T21:19:35Z",
+    "package_hash": "0c6b86daca82aa69275a28f7f52fcb9ef233efb0e54f1a2159ca03cbe60879d2"
   },
   "install": {
     "preserve": [],
@@ -44,7 +44,7 @@
       },
       {
         "repo_path": "Apps/SoundBrowser/startup.lua",
-        "install_path": "soundbrowser_startup.lua",
+        "install_path": "sound_browser_startup.lua",
         "sha256": "c70ce90b3b629d46d4783aa8092f7d5aa5db3a5636da51f4999fbb04f6ae3cb8"
       },
       {
@@ -87,7 +87,7 @@
   "runtime": {
     "boot_mode": "supervisor",
     "system_entrypoint": "startup.lua",
-    "app_entrypoint": "soundbrowser_startup.lua",
+    "app_entrypoint": "sound_browser_startup.lua",
     "auto_restart": true,
     "update_interval": 300,
     "requires_updater": true,

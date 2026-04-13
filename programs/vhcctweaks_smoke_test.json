@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "program": {
-    "key": "vhcctweakssmoketest",
-    "name": "VHCCTweaksSmokeTest",
+    "key": "vhcctweaks_smoke_test",
+    "name": "VH CC Tweaks Smoke Test",
     "category": "Utilities",
-    "description": "manifest-entrypoint: true",
+    "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
     "source_root": "Utilities/VHCCTweaksSmokeTest",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.0"
   },
   "build": {
-    "commit": "21133cd3f4f579b7c57e2f12c25757dea89f93a8",
-    "generated_at": "2026-04-13T12:39:09Z",
-    "package_hash": "c32931dc2dd313bc3926cb4d76a7514f53e0cd482b6539a47f2309d2daf58eb1"
+    "commit": "73b4453a33278c87822b75d763ae333062d64c07",
+    "generated_at": "2026-04-13T21:19:35Z",
+    "package_hash": "94713bdd73f99430213f7c633a74ba640bdd45ca1188b4ff23482430d9a619f0"
   },
   "install": {
     "preserve": [],
@@ -34,7 +34,7 @@
       },
       {
         "repo_path": "Utilities/VHCCTweaksSmokeTest/startup.lua",
-        "install_path": "vhcctweakssmoketest_startup.lua",
+        "install_path": "vhcctweaks_smoke_test_startup.lua",
         "sha256": "4505c9dc2a41e2d2a293ce932253092a13fb46cd1070539b9aff3438721212d1"
       },
       {
@@ -57,7 +57,7 @@
   "runtime": {
     "boot_mode": "supervisor",
     "system_entrypoint": "startup.lua",
-    "app_entrypoint": "vhcctweakssmoketest_startup.lua",
+    "app_entrypoint": "vhcctweaks_smoke_test_startup.lua",
     "auto_restart": true,
     "update_interval": 300,
     "requires_updater": true,

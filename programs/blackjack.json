@@ -4,15 +4,15 @@
     "key": "blackjack",
     "name": "Blackjack",
     "category": "Games",
-    "description": "manifest-entrypoint: true",
+    "description": "Single-seat blackjack with split, double, and configurable house rules.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.60"
+    "version": "1.2.61"
   },
   "build": {
-    "commit": "21133cd3f4f579b7c57e2f12c25757dea89f93a8",
-    "generated_at": "2026-04-13T12:39:09Z",
-    "package_hash": "29313e9ae1f179edb634f2e92313f24960af999e7ffe9ff8d546d0d2ae68e35c"
+    "commit": "73b4453a33278c87822b75d763ae333062d64c07",
+    "generated_at": "2026-04-13T21:19:35Z",
+    "package_hash": "769a8128b695024ea99c61607f246d4a4c5340f08cc1000de506901b5403e2d9"
   },
   "install": {
     "preserve": [
@@ -55,6 +55,11 @@
         "sha256": "f4b4d87085ace92b8aeb6885d6d28201d721f76bc5afc2d73fb95f9363e0c6c6"
       },
       {
+        "repo_path": "Shared/lib/casino_pages.lua",
+        "install_path": "lib/casino_pages.lua",
+        "sha256": "2f9ef142fc43c47e847046225326945cc3d5ada2fc3113e758bc5427965738af"
+      },
+      {
         "repo_path": "Shared/lib/crash_recovery.lua",
         "install_path": "lib/crash_recovery.lua",
         "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
@@ -70,14 +75,14 @@
         "sha256": "dc6fa49b4be3a700dac1b03779359ff223edbc6cf5e58a71c8afdef27c7f34b0"
       },
       {
+        "repo_path": "Shared/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
+      },
+      {
         "repo_path": "Shared/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
         "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
-      },
-      {
-        "repo_path": "Shared/lib/idle_card_animation.lua",
-        "install_path": "lib/idle_card_animation.lua",
-        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
         "repo_path": "Shared/lib/idle_screen.lua",
@@ -130,19 +135,19 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/bedrock/runtime.lua",
-        "install_path": "lib/bedrock/runtime.lua",
-        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
+        "repo_path": "Shared/lib/idle_card_animation.lua",
+        "install_path": "lib/idle_card_animation.lua",
+        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
+      },
+      {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Shared/lib/bedrock/renderer.lua",
         "install_path": "lib/bedrock/renderer.lua",
         "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Shared/lib/bedrock.lua",
@@ -162,12 +167,12 @@
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
         "install_path": "blackjack.lua",
-        "sha256": "edd6e652c220b3cdd9a655301af777a530c091024cb7aed9092733bcda97dd7f"
+        "sha256": "00db1a6f420f95d4507730bb64e4a7544f7cdb24e0e536383574eebb9233c6af"
       },
       {
         "repo_path": "Games/Blackjack/startup.lua",
         "install_path": "blackjack_startup.lua",
-        "sha256": "6bf2b9af0686c1b247d85e1709bd1f855cd1b0df304a8687f1d8b0938b85f611"
+        "sha256": "2e920a0d409be3c616abf619cdb7f269c5f5c6340ca844a304cd521ddf17c567"
       },
       {
         "repo_path": "Games/Blackjack/blackjack_config.lua",
@@ -201,9 +206,9 @@
         "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Games/Blackjack/diamonds.nfp",
@@ -292,6 +297,7 @@
       "lib.card_anim",
       "lib.cards",
       "lib.casino_launcher",
+      "lib.casino_pages",
       "lib.crash_recovery",
       "lib.currency",
       "lib.game_setup",

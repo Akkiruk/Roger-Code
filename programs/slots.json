@@ -4,15 +4,15 @@
     "key": "slots",
     "name": "Slots",
     "category": "Games",
-    "description": "manifest-entrypoint: true",
+    "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.58"
+    "version": "1.0.59"
   },
   "build": {
-    "commit": "21133cd3f4f579b7c57e2f12c25757dea89f93a8",
-    "generated_at": "2026-04-13T12:39:09Z",
-    "package_hash": "499ed326b1b496184cb178be327a7d89e615dc67ac416fd579b855b8d153bbf5"
+    "commit": "73b4453a33278c87822b75d763ae333062d64c07",
+    "generated_at": "2026-04-13T21:19:35Z",
+    "package_hash": "3e3ea8e5ce99b134c952a8339ea8d40e0834f6545bdc7dfe04de6fb34e0a21c0"
   },
   "install": {
     "preserve": [
@@ -152,7 +152,7 @@
       {
         "repo_path": "Games/Slots/startup.lua",
         "install_path": "slots_startup.lua",
-        "sha256": "efd924eece51a838a5edd4e7b12a621192a4d9a2cf5ce7fc906b04b2e961140c"
+        "sha256": "6f15eac0da74eba8a21ca84b7a83e700651aaef0548c5b80e3d5d78711326d6b"
       },
       {
         "repo_path": "Games/Slots/view_art.lua",

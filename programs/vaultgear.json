@@ -4,14 +4,14 @@
     "key": "vaultgear",
     "name": "VaultGear",
     "category": "Apps",
-    "description": "manifest-entrypoint: true",
+    "description": "Vault Storage Manager startup entry point.",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
     "version": "1.0.40"
   },
   "build": {
-    "commit": "21133cd3f4f579b7c57e2f12c25757dea89f93a8",
-    "generated_at": "2026-04-13T12:39:09Z",
+    "commit": "73b4453a33278c87822b75d763ae333062d64c07",
+    "generated_at": "2026-04-13T21:19:35Z",
     "package_hash": "9486c523da1da9b87a8bc6ac9f992c0a7d250cb3b6e1f3fb46bab3033a5c706b"
   },
   "install": {
