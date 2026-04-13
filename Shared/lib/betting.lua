@@ -243,8 +243,8 @@ local function runBetScreen(screen, opts)
         end
         bet = amt
         sound.play(preset.sound)
-      end,
-    }
+      end
+    end
 
     local quitButton = {
       text = quitLabel,
