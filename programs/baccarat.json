@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.50"
+    "version": "1.2.51"
   },
   "build": {
-    "commit": "cf2b0939b118388832919f742648cff57316fe85",
-    "generated_at": "2026-04-13T03:02:11Z",
-    "package_hash": "c2d82cffaabd56e2b6edde8a1c0bd3d21597f46a464bd8bc7f9b6a1449cafa14"
+    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
+    "generated_at": "2026-04-13T03:06:50Z",
+    "package_hash": "d5a3b6e2e39a9cfcd504314c57a7ec3bbf2f091a3d1069a13821acdc730b1bb5"
   },
   "install": {
     "preserve": [
@@ -27,7 +27,7 @@
       {
         "repo_path": "Shared/lib/betting.lua",
         "install_path": "lib/betting.lua",
-        "sha256": "d7a9ff3c2b415883569ca993797122cbea16cbdb5b38f8c3ff422350199b0868"
+        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
       },
       {
         "repo_path": "Shared/lib/card_anim.lua",

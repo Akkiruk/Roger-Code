@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.57"
+    "version": "1.0.58"
   },
   "build": {
-    "commit": "cf2b0939b118388832919f742648cff57316fe85",
-    "generated_at": "2026-04-13T03:02:11Z",
-    "package_hash": "850570d34b74dbfb1983f5efd762496646b7d76898b61cea290c6c168b186a75"
+    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
+    "generated_at": "2026-04-13T03:06:50Z",
+    "package_hash": "739c9dec0729ed637c9ca33e1912560e1513a5863c4433801893d7cd599b506b"
   },
   "install": {
     "preserve": [
@@ -27,7 +27,7 @@
       {
         "repo_path": "Shared/lib/betting.lua",
         "install_path": "lib/betting.lua",
-        "sha256": "d7a9ff3c2b415883569ca993797122cbea16cbdb5b38f8c3ff422350199b0868"
+        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
       },
       {
         "repo_path": "Shared/lib/card_anim.lua",

@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/VideoPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.55"
+    "version": "1.0.56"
   },
   "build": {
-    "commit": "cf2b0939b118388832919f742648cff57316fe85",
-    "generated_at": "2026-04-13T03:02:11Z",
-    "package_hash": "b004592386586d85655f80e2b10efcc514ba792a304ee08a3b978f88dab6e04b"
+    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
+    "generated_at": "2026-04-13T03:06:50Z",
+    "package_hash": "895e2eff6566b93e6285f6a465890bf6f1d50791cb6c8f4ffba1f60b9dc05936"
   },
   "install": {
     "preserve": [
@@ -27,7 +27,7 @@
       {
         "repo_path": "Shared/lib/betting.lua",
         "install_path": "lib/betting.lua",
-        "sha256": "d7a9ff3c2b415883569ca993797122cbea16cbdb5b38f8c3ff422350199b0868"
+        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
       },
       {
         "repo_path": "Shared/lib/card_anim.lua",

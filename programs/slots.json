@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.56"
+    "version": "1.0.57"
   },
   "build": {
-    "commit": "cf2b0939b118388832919f742648cff57316fe85",
-    "generated_at": "2026-04-13T03:02:11Z",
-    "package_hash": "33f2051e5217d29983282da5b3f80456b9c7755518fe1200bfa2803dd9c8de8b"
+    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
+    "generated_at": "2026-04-13T03:06:50Z",
+    "package_hash": "91b096a721eb65d7f7d4bcaf9096d82da752d1007675d38aae742c8dc63d79f3"
   },
   "install": {
     "preserve": [
@@ -27,7 +27,7 @@
       {
         "repo_path": "Shared/lib/betting.lua",
         "install_path": "lib/betting.lua",
-        "sha256": "d7a9ff3c2b415883569ca993797122cbea16cbdb5b38f8c3ff422350199b0868"
+        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
       },
       {
         "repo_path": "Shared/lib/cards.lua",
