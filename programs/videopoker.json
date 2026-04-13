@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/VideoPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.56"
+    "version": "1.0.57"
   },
   "build": {
-    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
-    "generated_at": "2026-04-13T03:06:50Z",
-    "package_hash": "895e2eff6566b93e6285f6a465890bf6f1d50791cb6c8f4ffba1f60b9dc05936"
+    "commit": "8287b1ceba0885127fd4fb7d5ca0ab92d6ac742e",
+    "generated_at": "2026-04-13T03:16:11Z",
+    "package_hash": "a1de363a0d69879785c75dbb4a8b9be502b76bd018bdb28930141736403fb0b5"
   },
   "install": {
     "preserve": [
@@ -152,7 +152,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
+        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
       },
       {
         "repo_path": "Shared/lib/updater.lua",

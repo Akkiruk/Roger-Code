@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.39"
+    "version": "1.0.40"
   },
   "build": {
-    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
-    "generated_at": "2026-04-13T03:06:50Z",
-    "package_hash": "b10cb04ba5b8c210a5c38302cf269fd9bf88062df73ca768edc85e1f6d16ca96"
+    "commit": "8287b1ceba0885127fd4fb7d5ca0ab92d6ac742e",
+    "generated_at": "2026-04-13T03:16:11Z",
+    "package_hash": "9486c523da1da9b87a8bc6ac9f992c0a7d250cb3b6e1f3fb46bab3033a5c706b"
   },
   "install": {
     "preserve": [
@@ -113,7 +113,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
+        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
       },
       {
         "repo_path": "Shared/lib/updater.lua",

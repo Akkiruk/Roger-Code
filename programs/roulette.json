@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.67"
+    "version": "1.0.68"
   },
   "build": {
-    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
-    "generated_at": "2026-04-13T03:06:50Z",
-    "package_hash": "dd091d66b010cfc9c5660df1493b689e6e71907dc9303513c71a6e283914240a"
+    "commit": "8287b1ceba0885127fd4fb7d5ca0ab92d6ac742e",
+    "generated_at": "2026-04-13T03:16:11Z",
+    "package_hash": "73ccda4d5c90917ace758ae4b0e9b0278bdae8595fc216e24d340af4758578ca"
   },
   "install": {
     "preserve": [
@@ -132,7 +132,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
+        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
       },
       {
         "repo_path": "Shared/lib/updater.lua",

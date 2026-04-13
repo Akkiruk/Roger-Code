@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.57"
+    "version": "1.0.58"
   },
   "build": {
-    "commit": "04adc24c172a5698dcc4efa941f059f72b708f9d",
-    "generated_at": "2026-04-13T03:06:50Z",
-    "package_hash": "91b096a721eb65d7f7d4bcaf9096d82da752d1007675d38aae742c8dc63d79f3"
+    "commit": "8287b1ceba0885127fd4fb7d5ca0ab92d6ac742e",
+    "generated_at": "2026-04-13T03:16:11Z",
+    "package_hash": "499ed326b1b496184cb178be327a7d89e615dc67ac416fd579b855b8d153bbf5"
   },
   "install": {
     "preserve": [
@@ -137,7 +137,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ffa23904a4fa8eb6ff2e98572c9188aa7ac7992e2089530546549a6fba40d150"
+        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
