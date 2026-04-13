@@ -1,4 +1,8 @@
 -- manifest-entrypoint: true
+-- manifest-key: blackjack
+-- manifest-name: Blackjack
+-- manifest-description: Single-seat blackjack with split, double, and configurable house rules.
+-- manifest-category: Games
 local launcher = require("lib.casino_launcher")
 local ui = require("lib.ui")
 

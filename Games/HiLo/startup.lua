@@ -1,4 +1,8 @@
 -- manifest-entrypoint: true
+-- manifest-key: hilo
+-- manifest-name: HiLo
+-- manifest-description: Guess higher or lower across a streak-based payout ladder.
+-- manifest-category: Games
 local launcher = require("lib.casino_launcher")
 local ui = require("lib.ui")
 

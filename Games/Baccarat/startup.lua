@@ -1,4 +1,8 @@
 -- manifest-entrypoint: true
+-- manifest-key: baccarat
+-- manifest-name: Baccarat
+-- manifest-description: Single-seat baccarat with player, banker, and tie bets.
+-- manifest-category: Games
 local launcher = require("lib.casino_launcher")
 local ui = require("lib.ui")
 

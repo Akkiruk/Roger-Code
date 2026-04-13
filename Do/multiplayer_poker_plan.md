@@ -53,3 +53,47 @@ The new `PokerTable` program is a working foundation for multiplayer poker table
 - All in-table value is tracked as virtual chips in dealer state until a future hand-settlement phase is implemented.
 
 That aligns the foundation with the current requirement: no transfers on join, rebuy, or leave. The remaining money work belongs to the hand engine, where the program can settle only the final net outcome after each completed hand.
+
+## Scope Decision
+
+`PokerTable` should stay reserved for true multiplayer poker only.
+
+- `VideoPoker` is a house game.
+- `3 Card Poker` is a house game.
+- `Ultimate Texas Hold'em` is a house game.
+- `PokerTable` is where player-vs-player poker belongs.
+
+That keeps dealer-vs-house math separate from seat/dealer networking, table persistence, and eventual net settlement.
+
+## First Variant Decision
+
+The first real poker variant on top of `PokerTable` should be five-card draw, not Texas Hold'em.
+
+Reasons:
+
+1. It needs fewer betting streets.
+2. It keeps all scoring private to seat hands instead of adding a shared board.
+3. It fits the current dealer-plus-seat topology with less extra rendering work.
+4. It is a cleaner place to prove showdown, reconnect, and idempotent settlement.
+
+Texas Hold'em should come later, after the betting, side-pot, and settlement engine is proven stable.
+
+## Five-Card Draw Implementation Notes
+
+1. Dealer shuffles and deals five private cards to each seated player.
+2. Dealer broadcasts masked table state while each seat receives its own private hand payload.
+3. Run one opening betting round.
+4. Each seat submits a draw request listing discard indices.
+5. Dealer replaces those cards and persists the post-draw hand state.
+6. Run one final betting round.
+7. Dealer resolves showdown, computes net chip changes, and then triggers the existing end-of-hand settlement path.
+
+## Hold'em Later Notes
+
+When Hold'em is added later, it should be treated as a separate game mode with its own table presentation and action sequencing:
+
+1. Blinds and dealer-button rotation.
+2. Preflop, flop, turn, and river betting rounds.
+3. Community board rendering on the dealer display.
+4. Standard side-pot and all-in handling.
+5. Same final net-settlement model as five-card draw.

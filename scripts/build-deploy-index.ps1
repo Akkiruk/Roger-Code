@@ -204,7 +204,7 @@ function Get-ProgramMetadata {
             $desc = $Matches[1].Trim()
             if (
                 $desc.Length -gt 10 -and
-                $desc -notmatch '^manifest-(key|name|description|category):' -and
+                $desc -notmatch '^manifest-(entrypoint|key|name|description|category):' -and
                 $desc -notmatch '^\S+\.lua$' -and
                 $desc -notmatch '^[-=]{4,}$'
             ) {
@@ -662,7 +662,7 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
             $desc = $Matches[1].Trim()
             if (
                 $desc.Length -gt 10 -and
-                $desc -notmatch '^manifest-(key|name|description|category):' -and
+                $desc -notmatch '^manifest-(entrypoint|key|name|description|category):' -and
                 $desc -notmatch '^\S+\.lua$' -and
                 $desc -notmatch '^[-=]{4,}$'
             ) {

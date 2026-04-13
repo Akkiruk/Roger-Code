@@ -1,4 +1,8 @@
 -- manifest-entrypoint: true
+-- manifest-key: slots
+-- manifest-name: Slots
+-- manifest-description: Three-reel slot machine with weighted symbols and pair payouts.
+-- manifest-category: Games
 local launcher = require("lib.casino_launcher")
 local ui = require("lib.ui")
 

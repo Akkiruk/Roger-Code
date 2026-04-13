@@ -48,6 +48,7 @@ local autoPlayer = require("lib.auto_player")
 local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
 local settlement = require("lib.round_settlement")
+local pages      = require("lib.casino_pages")
 
 -----------------------------------------------------
 -- Auto-play state
@@ -242,6 +243,125 @@ end
 local function renderTable(ctx, hideDealer, statusText)
   renderTableBase(ctx, hideDealer, statusText)
   screen:output()
+end
+
+-----------------------------------------------------
+-- Pre-round help screens
+-----------------------------------------------------
+local function showPayoutTable()
+  local lines = {
+    { text = "Blackjack pays +" .. tostring(cfg.BLACKJACK_PAYOUT) .. "x", color = colors.yellow },
+    { text = "Regular win pays +1x", color = colors.white },
+    { text = "Push returns your bet", color = colors.lightGray },
+    { spacer = true },
+    { text = "Current max bet: " .. currency.formatTokens(getMaxBet()), color = colors.cyan },
+  }
+
+  if cfg.ALLOW_SURRENDER then
+    lines[#lines + 1] = { text = "Surrender returns half", color = colors.orange }
+  else
+    lines[#lines + 1] = { text = "Surrender is off", color = colors.orange }
+  end
+
+  if cfg.ALLOW_INSURANCE then
+    lines[#lines + 1] = { text = "Insurance is available", color = colors.lightBlue }
+  else
+    lines[#lines + 1] = { text = "Insurance is off", color = colors.lightBlue }
+  end
+
+  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUTS", lines, {
+    centerX = layout.centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
+local TUTORIAL_PAGES = {
+  {
+    title = "HOW TO PLAY",
+    lines = {
+      { text = "Beat the dealer", color = colors.white },
+      { text = "without going over 21.", color = colors.white },
+      { text = "Aces count as 1 or 11.", color = colors.cyan },
+      { text = "Face cards count as 10.", color = colors.cyan },
+      { text = "Dealer starts with one", color = colors.lightGray },
+      { text = "hidden card.", color = colors.lightGray },
+    },
+  },
+  {
+    title = "TABLE RULES",
+    lines = {
+      { text = cfg.DEALER_HIT_SOFT_17 and "Dealer hits soft 17." or "Dealer stands on all 17s.", color = colors.yellow },
+      { text = cfg.ALLOW_DOUBLE and ("Double: hard " .. tostring(cfg.DOUBLE_MIN_TOTAL) .. " only") or "Double is off.", color = colors.white },
+      { text = cfg.ALLOW_SPLIT and ("Split pairs up to " .. tostring(cfg.MAX_SPLITS + 1) .. " hands") or "Split is off.", color = colors.white },
+      { text = cfg.RESTRICT_SPLIT_ACES and "Split aces get one card." or "Split aces play normally.", color = colors.lightGray },
+      { text = cfg.ALLOW_DOUBLE_AFTER_SPLIT and "Double after split is on." or "Double after split is off.", color = colors.lightGray },
+      { text = cfg.ALLOW_INSURANCE and "Insurance is on." or "Insurance is off.", color = colors.lightBlue },
+      { text = cfg.ALLOW_SURRENDER and "Surrender is on." or "Surrender is off.", color = colors.lightBlue },
+    },
+  },
+  {
+    title = "ACTIONS",
+    lines = {
+      { text = "HIT: take one more card", color = colors.white },
+      { text = "STAND: keep your total", color = colors.white },
+      { text = cfg.ALLOW_DOUBLE and "DOUBLE: one card, double bet" or "DOUBLE: unavailable here", color = colors.cyan },
+      { text = cfg.ALLOW_SPLIT and "SPLIT: turn a pair into 2 hands" or "SPLIT: unavailable here", color = colors.cyan },
+      { text = "Natural blackjack wins", color = colors.yellow },
+      { text = "immediately unless dealer", color = colors.yellow },
+      { text = "also has blackjack.", color = colors.yellow },
+    },
+  },
+}
+
+local function showTutorial()
+  pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
+    centerX = layout.centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
+local function preRoundMenu()
+  while true do
+    screen:clear(LO.TABLE_COLOR)
+
+    local title = "BLACKJACK"
+    local tw = ui.getTextSize(title)
+    ui.safeDrawText(screen, title, font, math.floor((width - tw) / 2), scale.titleY, colors.yellow)
+
+    local subtitle = "Configured house rules"
+    local sw = ui.getTextSize(subtitle)
+    ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
+
+    ui.clearButtons()
+    local chosen = nil
+
+    ui.layoutButtonGrid(screen, {
+      {
+        { text = "PLAY", color = colors.lime, func = function() chosen = "play" end },
+      },
+      {
+        { text = "PAYOUTS", color = colors.yellow, func = function() chosen = "payouts" end },
+        { text = "HOW TO PLAY", color = colors.lightBlue, func = function() chosen = "tutorial" end },
+      },
+    }, layout.centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
+
+    screen:output()
+
+    ui.waitForButton(0, 0, {
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = triggerInactivityTimeout,
+    })
+
+    if chosen == "play" then
+      return
+    elseif chosen == "payouts" then
+      showPayoutTable()
+    elseif chosen == "tutorial" then
+      showTutorial()
+    end
+  end
 end
 
 local function doDeal(ctx)
@@ -1174,6 +1294,7 @@ local function main()
         replayBetAmount = nil
       else
         replayBetAmount = nil
+        preRoundMenu()
         bet = betSelection()
       end
     end
