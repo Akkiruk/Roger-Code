@@ -129,6 +129,7 @@ function M.normalize(slot, basic, detail, detailError)
   item.level = vaultData.level
   item.rarity = vaultData.rarity
   item.rarity_rank = constants.RARITY_ORDER[vaultData.rarity] or 0
+  local normalizedRarity = type(vaultData.rarity) == "string" and string.upper(vaultData.rarity) or ""
   item.state = vaultData.state
   item.identified = vaultData.identified
   if item.identified == nil then
@@ -145,7 +146,7 @@ function M.normalize(slot, basic, detail, detailError)
   item.is_soulbound = vaultData.isSoulbound == true
   item.is_unique = vaultData.uniqueKey ~= nil or vaultData.rarity == "UNIQUE"
   item.is_legendary = vaultData.isLegendary == true
-  item.is_chaotic = vaultData.rarity == "CHAOTIC"
+  item.is_chaotic = vaultData.isChaotic == true or normalizedRarity == "CHAOTIC"
 
   if type(vaultData.repairSlots) == "table" then
     item.repair_total = vaultData.repairSlots.total

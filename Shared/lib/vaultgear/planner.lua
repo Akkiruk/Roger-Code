@@ -219,6 +219,7 @@ end
 
 function M.matchStorage(storage, item)
   local rule = storage and storage.rule or nil
+  local isChaotic = item and (item.is_chaotic == true or item.rarity == "CHAOTIC") or false
   if storage == nil or storage.role ~= "home" or storage.enabled == false then
     return false, { "Storage not active." }
   end
@@ -238,6 +239,13 @@ function M.matchStorage(storage, item)
     return false, { "Needs unidentified items." }
   end
 
+  if isChaotic then
+    if rule.allow_chaotic then
+      return true, { "Chaotic override." }
+    end
+    return false, { "Chaotic items need chaotic override." }
+  end
+
   if item.is_soulbound and rule.allow_soulbound then
     return true, { "Soulbound override." }
   end
@@ -246,12 +254,6 @@ function M.matchStorage(storage, item)
   end
   if item.is_legendary and rule.allow_legendary then
     return true, { "Legendary override." }
-  end
-  if item.is_chaotic and rule.allow_chaotic then
-    return true, { "Chaotic override." }
-  end
-  if item.is_chaotic then
-    return false, { "Chaotic items need chaotic override." }
   end
 
   if rule.min_rarity and rule.min_rarity ~= "ANY" then
