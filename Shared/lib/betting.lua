@@ -1,6 +1,7 @@
 -- betting.lua
 -- Shared betting interface for all casino games.
--- Renders denomination buttons, ALL IN, CLEAR, and a configurable confirm button.
+-- Renders suggested bet presets scaled to each game's max bet, plus CLEAR, QUIT,
+-- and a configurable confirm button.
 -- Uses CCVault token economy via currency module.
 -- Usage:
 --   local betting = require("lib.betting")
@@ -49,6 +50,51 @@ local function compactAmountLabel(value)
     return tostring(value / 1000) .. "K"
   end
   return tostring(value)
+end
+
+local function getPresetBetSound(amount)
+  local chosenSound = sound.SOUNDS.ALL_IN
+  for _, denom in ipairs(currency.DENOMINATIONS) do
+    local denomValue = tonumber(denom.value) or 0
+    if denomValue > 0 and amount >= denomValue and denom.sound then
+      chosenSound = denom.sound
+    end
+  end
+  return chosenSound
+end
+
+local function buildPresetBetSpecs(maxBetAmount, compactLabels)
+  local maxBetValue = max(0, floor(tonumber(maxBetAmount) or 0))
+  local presetSpecs = {}
+  local seenAmounts = {}
+
+  local function addPreset(kind, amount, color)
+    amount = floor(tonumber(amount) or 0)
+    if amount < 1 or amount > maxBetValue or seenAmounts[amount] then
+      return
+    end
+
+    local label = compactLabels and compactAmountLabel(amount) or currency.formatTokens(amount)
+    if kind == "max" then
+      label = compactLabels and ("MAX " .. compactAmountLabel(amount)) or ("MAX " .. currency.formatTokens(amount))
+    end
+
+    seenAmounts[amount] = true
+    presetSpecs[#presetSpecs + 1] = {
+      amount = amount,
+      color = color,
+      label = label,
+      sound = getPresetBetSound(amount),
+    }
+  end
+
+  addPreset("token", 1, colors.white)
+  addPreset("quarter", floor(maxBetValue * 0.25), colors.yellow)
+  addPreset("half", floor(maxBetValue * 0.50), colors.lime)
+  addPreset("three_quarter", floor(maxBetValue * 0.75), colors.cyan)
+  addPreset("max", maxBetValue, colors.orange)
+
+  return presetSpecs
 end
 
 --- Run the full betting screen loop. Returns the confirmed bet in tokens.
@@ -139,25 +185,17 @@ local function runBetScreen(screen, opts)
     local availableWidth = screen.width - (metrics.edgePad * 2)
     local compactLabels = metrics.compact and availableWidth < 120
 
-    local denominationSpecs = {}
-    for _, denom in ipairs(currency.DENOMINATIONS) do
-      denominationSpecs[#denominationSpecs + 1] = {
-        source = denom,
-        label = compactLabels and ("+" .. compactAmountLabel(denom.value)) or denom.name,
-      }
-    end
+    local presetSpecs = buildPresetBetSpecs(maxBet, compactLabels)
 
-    local allInLabel = compactLabels and "ALL" or "ALL IN"
     local clearLabel = compactLabels and "CLR" or "CLEAR"
     local quitLabel = "QUIT"
     local confirmText = compactLabels and confirmLabel:sub(1, min(#confirmLabel, 4)) or confirmLabel
 
     -- Measure widest button to make all uniform
     local buttonTexts = {}
-    for _, denom in ipairs(denominationSpecs) do
-      buttonTexts[#buttonTexts + 1] = denom.label
+    for _, preset in ipairs(presetSpecs) do
+      buttonTexts[#buttonTexts + 1] = preset.label
     end
-    buttonTexts[#buttonTexts + 1] = allInLabel
     buttonTexts[#buttonTexts + 1] = clearLabel
     buttonTexts[#buttonTexts + 1] = quitLabel
     buttonTexts[#buttonTexts + 1] = confirmText
@@ -180,64 +218,31 @@ local function runBetScreen(screen, opts)
       widestButton = max(widestButton, buttonWidthForText(txt))
     end
 
-    -- Add-bet callbacks: counter-based, no transfers until confirm
-    local function addBet(denomination)
+    -- Preset bet callbacks: set the wager directly with no transfers until confirm.
+    local function chooseBet(preset)
       return function()
-        local amt = denomination.value
+        local amt = preset.amount
         local playerBal = currency.getPlayerBalance()
-        local available = playerBal - bet
-        if available < amt then
+        if playerBal < amt then
           sound.play(sound.SOUNDS.ERROR)
           ui.displayCenteredMessage(screen, "Insufficient funds!", colors.red)
           return
         end
-        if bet + amt > maxBet then
+        if amt > maxBet then
           sound.play(sound.SOUNDS.ERROR)
           ui.displayCenteredMessage(screen, "Maximum bet reached!", colors.red)
           return
         end
         if hostBalance then
-          local totalBet = bet + amt
-          local needed = totalBet * (hostCoverageMult - 1)
+          local needed = amt * (hostCoverageMult - 1)
           if hostBalance < needed then
             sound.play(sound.SOUNDS.ERROR)
             ui.displayCenteredMessage(screen, "Maximum wagering threshold exceeded!", colors.red)
             return
           end
         end
-        bet = bet + amt
-        sound.play(denomination.sound)
-      end
-    end
-
-    local allInButton = {
-      text = allInLabel,
-      color = colors.orange,
-      width = maxWidth,
-      func = function()
-        local playerBal = currency.getPlayerBalance()
-        local available = playerBal - bet
-        if available <= 0 then
-          sound.play(sound.SOUNDS.ERROR)
-          ui.displayCenteredMessage(screen, "No tokens!", colors.red)
-          return
-        end
-        local remainingAllowable = maxBet - bet
-        if hostBalance and hostCoverageMult > 1 then
-          local coverageCap = floor(hostBalance / (hostCoverageMult - 1)) - bet
-          remainingAllowable = min(remainingAllowable, coverageCap)
-        end
-        local amountToBet = min(available, remainingAllowable)
-        if amountToBet <= 0 then
-          sound.play(sound.SOUNDS.ERROR)
-          ui.displayCenteredMessage(screen, "Maximum bet reached!", colors.red)
-          return
-        end
-        bet = bet + amountToBet
-        sound.play(sound.SOUNDS.ALL_IN)
-        if amountToBet < available then
-          ui.displayCenteredMessage(screen, "Maximum allowable bet!", colors.yellow, 0.8)
-        end
+        bet = amt
+        sound.play(preset.sound)
       end,
     }
 
@@ -287,49 +292,52 @@ local function runBetScreen(screen, opts)
     }
 
     local availableHeight = screen.height - betY - metrics.messageLineHeight - metrics.edgePad
-    local maxColumns = min(3, #currency.DENOMINATIONS)
-    local denomColumns = 1
+    local maxColumns = min(3, max(1, #presetSpecs))
+    local presetColumns = 1
     local widestFit = 1
-    local controlRowWidth = buttonWidthForText(allInLabel) + buttonWidthForText(quitLabel) + metrics.buttonColGap
-    local controlsCanPair = controlRowWidth <= availableWidth
+    local controlRowWidth = buttonWidthForText(quitLabel) + buttonWidthForText(clearLabel)
+      + buttonWidthForText(confirmText) + (metrics.buttonColGap * 2)
+    local controlsSingleRow = controlRowWidth <= availableWidth
 
     for columns = 1, maxColumns do
       local rowWidth = (columns * widestButton) + ((columns - 1) * metrics.buttonColGap)
       if rowWidth <= availableWidth then
         widestFit = columns
-        local denomRows = ceil(#currency.DENOMINATIONS / columns)
-        local controlRows = controlsCanPair and 2 or 3
-        local totalRows = denomRows + controlRows
+        local presetRows = ceil(max(1, #presetSpecs) / columns)
+        if #presetSpecs == 0 then
+          presetRows = 0
+        end
+        local controlRows = controlsSingleRow and 1 or 2
+        local totalRows = presetRows + controlRows
         local neededHeight = metrics.buttonHeight + ((totalRows - 1) * metrics.buttonRowSpacing)
         if neededHeight <= availableHeight then
-          denomColumns = columns
+          presetColumns = columns
           break
         end
       end
     end
-    if denomColumns == 1 and widestFit > 1 then
-      denomColumns = widestFit
+    if presetColumns == 1 and widestFit > 1 then
+      presetColumns = widestFit
     end
 
     local rows = {}
-    local denominationButtons = {}
-    for _, denom in ipairs(denominationSpecs) do
-      denominationButtons[#denominationButtons + 1] = {
-        text = denom.label,
-        color = denom.source.color,
+    local presetButtons = {}
+    for _, preset in ipairs(presetSpecs) do
+      presetButtons[#presetButtons + 1] = {
+        text = preset.label,
+        color = preset.color,
         width = maxWidth,
-        func = addBet(denom.source),
+        func = chooseBet(preset),
       }
     end
-    appendGridRows(rows, denominationButtons, denomColumns)
+    appendGridRows(rows, presetButtons, presetColumns)
 
-    if controlsCanPair then
-      rows[#rows + 1] = { allInButton, quitButton }
+    if controlsSingleRow then
+      rows[#rows + 1] = { quitButton, clearButton, confirmButton }
     else
-      rows[#rows + 1] = { allInButton }
-      rows[#rows + 1] = { quitButton }
+      rows[#rows + 1] = { quitButton, clearButton }
+      rows[#rows + 1] = { confirmButton }
     end
-    rows[#rows + 1] = { clearButton, confirmButton }
 
     local totalRows = #rows
     local blockHeight = metrics.buttonHeight + ((totalRows - 1) * metrics.buttonRowSpacing)
