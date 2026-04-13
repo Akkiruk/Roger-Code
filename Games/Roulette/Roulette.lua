@@ -111,6 +111,7 @@ local state = {
   totalStake = 0,
   maxExposure = 0,
   wheelOffset = 0,
+  ballAngle = -math.pi / 2,
   resultNumber = nil,
   highlightKeys = nil,
   sessionProfit = 0,
@@ -511,6 +512,8 @@ local function animateSpin(finalNumber)
   local startOffset = state.wheelOffset or random(0, wheelSize - 1)
   local startIndex = floor(startOffset) % wheelSize
   local targetIndex = (rouletteModel.getWheelIndex(finalNumber) or 1) - 1
+  local topAngle = -math.pi / 2
+  local totalBallArc = (spinFullRotations + 5) * math.pi * 2
   local diff = targetIndex - startIndex
   while diff <= 0 do
     diff = diff + wheelSize
@@ -535,6 +538,8 @@ local function animateSpin(finalNumber)
     local subframe = 1
 
     while subframe <= subframes do
+      local overallProgress = ((step - 1) + (subframe / subframes)) / totalSteps
+      local remainingBallTravel = (1 - overallProgress) ^ 1.35
       local blended = currentOffset + (subframe / subframes)
       local pointedNumber = rouletteRender.getTrackPointedNumber(blended)
       if pointedNumber ~= nil and pointedNumber ~= lastPointedNumber then
@@ -542,6 +547,7 @@ local function animateSpin(finalNumber)
         lastPointedNumber = pointedNumber
       end
       state.wheelOffset = blended
+      state.ballAngle = topAngle + (remainingBallTravel * totalBallArc)
       renderCurrent(nil)
       os.sleep(delay / subframes)
       subframe = subframe + 1
@@ -564,11 +570,13 @@ local function animateSpin(finalNumber)
       lastPointedNumber = pointedNumber
     end
     state.wheelOffset = bouncedOffset
+    state.ballAngle = topAngle + (bounceOffset * 0.20)
     renderCurrent(nil)
     os.sleep(spinSettleDelay)
   end
 
   state.wheelOffset = targetIndex
+  state.ballAngle = topAngle
   renderCurrent(nil)
 end
 
