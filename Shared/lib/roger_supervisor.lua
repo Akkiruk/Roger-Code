@@ -4,6 +4,7 @@ local STATE_FILE = ".installed_program"
 local LOG_FILE = "roger_supervisor.log"
 local DEFAULT_RESTART_DELAY = 5
 local DEFAULT_UPDATE_INTERVAL = 300
+local CRASH_UPDATE_CHECK_COOLDOWN = 30
 local LEGACY_MAIN_FILES = {
   baccarat = "baccarat.lua",
   blackjack = "blackjack.lua",
@@ -190,6 +191,26 @@ local function updateWatcher(updateInterval)
   })
 end
 
+local function checkForUpdatesAfterCrash(runErr)
+  local status = updater.checkForUpdates({
+    rebootOnUpdate = true,
+    rebootDelay = 1,
+    callback = function(updateStatus, message)
+      logMessage(
+        "Crash updater [" .. tostring(updateStatus) .. "] "
+          .. tostring(message or "")
+          .. " | error=" .. tostring(runErr or "")
+      )
+    end,
+  })
+
+  if status == "updated" then
+    return
+  end
+
+  logMessage("Crash updater result: " .. tostring(status or "unknown"))
+end
+
 function M.run(...)
   local args = { ... }
   local runtime, err = loadRuntimeState()
@@ -214,6 +235,8 @@ function M.run(...)
   )
 
   local function appLoop()
+    local lastCrashUpdateCheckAt = nil
+
     while true do
       local ok, runErr = runProgram(runtime.appEntrypoint, args)
       if ok then
@@ -225,8 +248,23 @@ function M.run(...)
           end
         end
       else
+        local now = os.epoch("local")
+        local shouldCheckForUpdates = (not lastCrashUpdateCheckAt)
+          or ((now - lastCrashUpdateCheckAt) >= (CRASH_UPDATE_CHECK_COOLDOWN * 1000))
+
         logMessage("Program crash: " .. tostring(runErr))
         showCrashScreen(runtime.appEntrypoint, runErr, runtime.restartDelay)
+
+        if shouldCheckForUpdates then
+          lastCrashUpdateCheckAt = now
+          term.setCursorPos(1, 8)
+          term.setTextColor(colors.lightGray)
+          print("Checking for updates before restart...")
+          checkForUpdatesAfterCrash(runErr)
+        else
+          local secondsUntilRetry = math.ceil(((CRASH_UPDATE_CHECK_COOLDOWN * 1000) - (now - lastCrashUpdateCheckAt)) / 1000)
+          logMessage("Skipping crash update check for " .. tostring(secondsUntilRetry) .. "s cooldown")
+        end
       end
 
       waitSeconds(runtime.restartDelay)
