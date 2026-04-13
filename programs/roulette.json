@@ -7,12 +7,12 @@
     "description": "manifest-entrypoint: true",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.68"
+    "version": "1.0.69"
   },
   "build": {
-    "commit": "69154211524cb8b8520c80048b5c28e42bb794cb",
-    "generated_at": "2026-04-13T04:03:44Z",
-    "package_hash": "73ccda4d5c90917ace758ae4b0e9b0278bdae8595fc216e24d340af4758578ca"
+    "commit": "21133cd3f4f579b7c57e2f12c25757dea89f93a8",
+    "generated_at": "2026-04-13T12:39:09Z",
+    "package_hash": "f379802d645d50af108941c57d9cc276dffb5c58b68ec6e8a8e3879f2ce8b337"
   },
   "install": {
     "preserve": [
@@ -152,12 +152,12 @@
       {
         "repo_path": "Games/Roulette/roulette_render.lua",
         "install_path": "roulette_render.lua",
-        "sha256": "dc4511976d86af6d8f3617dc4781fe9b8bfa5320dd2c6d5628326772fce11253"
+        "sha256": "f8a552076bf32860c0650e3ec9e73fa8986d154dbc6c0cc3ee455a67c63aef03"
       },
       {
         "repo_path": "Games/Roulette/Roulette.lua",
         "install_path": "Roulette.lua",
-        "sha256": "655785e7adfa296d89082a8da03a6df932eabc9fb366d93403391eea660f72d4"
+        "sha256": "a0ac2e8140c023da46e83e4b91c0c7111d9b2c05625cb9053a02d458ae0340e8"
       },
       {
         "repo_path": "Games/Roulette/startup.lua",
