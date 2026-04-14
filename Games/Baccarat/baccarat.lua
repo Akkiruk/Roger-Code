@@ -33,7 +33,6 @@ local waitForReplayChoice = nil
 -- Shared library imports
 -----------------------------------------------------
 local cards      = require("lib.cards")
-local activityTimeout = require("lib.activity_timeout")
 local currency   = require("lib.currency")
 local sound      = require("lib.sound")
 local ui         = require("lib.ui")
@@ -57,7 +56,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -234,12 +232,6 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-end
-
 local TUTORIAL_PAGES = {
   {
     title = "THE BASICS",
@@ -291,20 +283,15 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
 -- Bet type selection (Player / Banker / Tie)
 -----------------------------------------------------
 local function selectBetType()
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
-
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -340,14 +327,10 @@ local function selectBetType()
 
     screen:output()
 
-    ui.waitForButton(0, 0, {
-      timeoutState = timeoutState,
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-      onTimeout = triggerInactivityTimeout,
-    })
+    ui.waitForButton(0, 0)
 
     if chosen then return chosen end
-    if action == "tutorial" then showTutorial(timeoutState) end
+    if action == "tutorial" then showTutorial() end
     -- If the tutorial was shown, loop redraws the bet selection.
   end
 end
@@ -581,14 +564,8 @@ local function betSelection()
     gameName               = "Baccarat",
     confirmLabel           = "CONFIRM",
     title                  = "PLACE YOUR WAGER",
-    inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
     hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
-    onTimeout              = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 
@@ -668,12 +645,6 @@ waitForReplayChoice = function(playerHand, bankerHand, betType, betAmount, statu
     button_y = scale.footerButtonY,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 

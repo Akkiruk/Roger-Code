@@ -35,7 +35,6 @@ local currency   = require("lib.currency")
 local sound      = require("lib.sound")
 local ui         = require("lib.ui")
 local alert      = require("lib.alert")
-local activityTimeout = require("lib.activity_timeout")
 local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
@@ -62,7 +61,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -89,12 +87,6 @@ local NEAR_MISS_CFG = cfg.NEAR_MISS or {}
 
 local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
-end
-
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
 -----------------------------------------------------
@@ -369,7 +361,7 @@ end
 -----------------------------------------------------
 -- Pre-round help screens
 -----------------------------------------------------
-local function showPayoutTable(timeoutState)
+local function showPayoutTable()
   local lines = {
     { text = "3 of a kind payouts", color = colors.yellow },
     { spacer = true },
@@ -410,9 +402,6 @@ local function showPayoutTable(timeoutState)
 
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUTS", lines, {
     centerX = floor(width / 2),
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -454,18 +443,13 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = floor(width / 2),
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
 local function preRoundMenu()
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
-
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -492,18 +476,14 @@ local function preRoundMenu()
 
     screen:output()
 
-    ui.waitForButton(0, 0, {
-      timeoutState = timeoutState,
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-      onTimeout = triggerInactivityTimeout,
-    })
+    ui.waitForButton(0, 0)
 
     if chosen == "play" then
       return
     elseif chosen == "payouts" then
-      showPayoutTable(timeoutState)
+      showPayoutTable()
     elseif chosen == "tutorial" then
-      showTutorial(timeoutState)
+      showTutorial()
     end
   end
 end
@@ -776,11 +756,7 @@ local function waitForReplayChoice(result, highlights, statusText, currentBet)
     },
     center_x = centerX,
     button_y = buttonY,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     poll_seconds = 0.5,
-    onTimeout = function()
-      return "bet"
-    end,
   })
 
   return choice == "replay"
@@ -902,10 +878,6 @@ local function waitForGambleChoice(result, highlights, gambleStake, currentBet, 
     },
     center_x = centerX,
     button_y = machineLayout.buttonY,
-    inactivity_timeout = GAMBLE_CFG.TIMEOUT or 15000,
-    onTimeout = function()
-      return "collect"
-    end,
   })
 
   return choice
@@ -1071,7 +1043,6 @@ local function betSelection()
     gameName               = "Slots",
     confirmLabel           = "SPIN",
     title                  = "PLACE YOUR BET",
-    inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
     hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
   })

@@ -19,8 +19,6 @@ return {
 
   MAX_BET_PERCENT = 0.03,
   HOST_COVERAGE_MULT = 1.52,
-  INACTIVITY_TIMEOUT = 90000,
-  PRE_ROUND_MENU_TIMEOUT = 90000,
 
   MONITOR = "right",
 
@@ -44,7 +42,6 @@ return {
   },
 
   EXIT_CODES = {
-    INACTIVITY_TIMEOUT = "inactivity_timeout",
     MAIN_MENU = "main_menu",
     USER_TERMINATED = "user_terminated",
     PLAYER_QUIT = "player_quit",

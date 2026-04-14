@@ -38,7 +38,6 @@ local alert = require("lib.alert")
 local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
 local betting = require("lib.betting")
-local activityTimeout = require("lib.activity_timeout")
 local replayPrompt = require("lib.replay_prompt")
 local cardAnim = require("lib.card_anim")
 local pages = require("lib.casino_pages")
@@ -57,7 +56,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -98,12 +96,6 @@ end
 
 local function roundedAmount(value)
   return floor((tonumber(value) or 0) + 0.5)
-end
-
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
 local function drawCenteredLine(text, y, color)
@@ -382,6 +374,19 @@ local function getPlayerHandY()
   return scale:bottom(cardBack.height + 2, gap)
 end
 
+local function getActionButtonY(rowCount)
+  local rows = max(1, tonumber(rowCount) or 1)
+  local blockHeight = scale.buttonHeight + ((rows - 1) * scale.buttonRowSpacing)
+  local playerTopY = getPlayerHandY() - 2
+  local preferredY = playerTopY - blockHeight - scale.sectionGap - scale.smallGap
+  local minimumY = centerY + cardBack.height + scale.lineHeight + (scale.smallGap * 2)
+  return max(minimumY, preferredY)
+end
+
+local function getActionHintY(rowCount)
+  return max(scale.edgePad, getActionButtonY(rowCount) - scale.lineHeight - scale.smallGap)
+end
+
 local function getDealerHandY()
   return scale:scaledY(LO.DEALER_Y or 10, scale.subtitleY + scale.smallGap, centerY - cardBack.height - scale.sectionGap)
 end
@@ -492,6 +497,7 @@ local function getTouchedPlayerCard(roundState, px, py)
 end
 
 local function chooseSuitPrompt(roundState, side)
+  local buttonY = getActionButtonY(2)
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
@@ -501,16 +507,11 @@ local function chooseSuitPrompt(roundState, side)
       })
     end,
     hint = "",
-    hint_y = scale.footerButtonY - scale.lineHeight - scale.sectionGap,
+    hint_y = getActionHintY(2),
     center_x = centerX,
-    button_y = scale.footerButtonY - scale.buttonRowSpacing,
+    button_y = buttonY,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      alert.log("CrazyEights timeout: auto-picked best suit for player 8")
-      return chooseBestSuit(roundState.playerHand)
-    end,
     buttons = {
       {
         { id = "heart", text = "HEARTS", color = colors.red },
@@ -658,30 +659,15 @@ local function showTutorial()
 
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, tutorialPages, {
     centerX = centerX,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
 local function preRoundMenu()
-  local timeoutState = activityTimeout.create(
-    activityTimeout.resolveDuration(cfg.PRE_ROUND_MENU_TIMEOUT, cfg.INACTIVITY_TIMEOUT, 90000)
-  )
-
   while true do
     screen:clear(LO.TABLE_COLOR)
     drawCenteredLine("CRAZY EIGHTS", scale.titleY, colors.yellow)
     drawCenteredLine("Fun-first card duel", scale.subtitleY, colors.lightGray)
     drawCenteredLine("Wild 8s, Draw 2s, Ace skips", scale.subtitleY + scale.lineHeight + scale.smallGap, colors.cyan)
-
-    if timeoutState and timeoutState:isExpired() then
-      triggerInactivityTimeout()
-    end
-
-    if timeoutState and timeoutState:isWarning() then
-      local secondsLeft = timeoutState:secondsLeft()
-      drawCenteredLine("Auto-exit in " .. tostring(secondsLeft) .. "s", height - scale.lineHeight - scale.edgePad, colors.orange)
-    end
 
     ui.clearButtons()
     local chosen = nil
@@ -695,22 +681,7 @@ local function preRoundMenu()
     }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
-    local timerID = os.startTimer(0.25)
-    while true do
-      local event, param1, param2, param3 = os.pullEvent()
-      if event == "monitor_touch" and ui.isAuthorizedMonitorTouch() then
-        if timeoutState then
-          timeoutState:touch()
-        end
-        local cb = ui.checkButtonHit(param2, param3)
-        if cb then
-          cb()
-          break
-        end
-      elseif event == "timer" and param1 == timerID then
-        break
-      end
-    end
+    ui.waitForButton(0, 0)
 
     if chosen == "play" then
       return
@@ -728,14 +699,8 @@ local function betSelection()
     gameName = cfg.GAME_NAME,
     confirmLabel = "MATCH",
     title = "ANTE FOR MATCH",
-    inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
     hostBalance = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
-    onTimeout = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 
@@ -802,32 +767,6 @@ local function buildRoundState(matchState)
   return roundState
 end
 
-local function choosePreferredPlayerCardIndex(roundState)
-  local playable = getPlayableIndexes(roundState.playerHand, roundState)
-  if #playable == 0 then
-    return nil
-  end
-
-  local bestIndex = playable[1]
-  local bestScore = -100000
-  for _, index in ipairs(playable) do
-    local cardID = roundState.playerHand[index]
-    local score = 0
-    if #roundState.playerHand == 1 then
-      score = score + 2000
-    end
-    score = score + cardScore(cardID)
-    if cardRank(cardID) == "8" and #playable > 1 then
-      score = score - 20
-    end
-    if score > bestScore then
-      bestScore = score
-      bestIndex = index
-    end
-  end
-  return bestIndex
-end
-
 local function choosePlayableCard(roundState)
   local selectedIndex = nil
   local playable = getPlayableIndexes(roundState.playerHand, roundState)
@@ -836,7 +775,7 @@ local function choosePlayableCard(roundState)
   end
 
   local choice = nil
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
+  local buttonY = getActionButtonY(1)
 
   while not choice do
     renderRound(roundState, {
@@ -885,16 +824,12 @@ local function choosePlayableCard(roundState)
       }
     end
 
-    ui.layoutButtonGrid(screen, buttonRows, centerX, scale.footerButtonY - scale.buttonRowSpacing, scale.buttonRowSpacing, scale.buttonColGap)
+    ui.layoutButtonGrid(screen, buttonRows, centerX, buttonY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
-    local timerID = os.startTimer(0.25)
     while not choice do
-      local event, param1, param2, param3 = os.pullEvent()
+      local event, _, param2, param3 = os.pullEvent()
       if event == "monitor_touch" and ui.isAuthorizedMonitorTouch() then
-        if timeoutState then
-          timeoutState:touch()
-        end
         local cb = ui.checkButtonHit(param2, param3)
         if cb then
           cb()
@@ -907,25 +842,6 @@ local function choosePlayableCard(roundState)
           sound.play(sound.SOUNDS.CARD_PLACE, 0.5, 1.2)
           break
         end
-      elseif event == "timer" and param1 == timerID then
-        if timeoutState and timeoutState:isExpired() then
-          local timeoutIndex = choosePreferredPlayerCardIndex(roundState)
-          if roundState.pendingDraw > 0 and timeoutIndex and cardRank(roundState.playerHand[timeoutIndex]) == "2" then
-            alert.log("CrazyEights timeout: auto-stacked a 2")
-            return { type = "play", index = timeoutIndex }
-          end
-          if timeoutIndex then
-            alert.log("CrazyEights timeout: selected best legal card")
-            return { type = "play", index = timeoutIndex }
-          end
-          if roundState.pendingDraw > 0 then
-            alert.log("CrazyEights timeout: auto-took draw penalty")
-            return { type = "take_penalty" }
-          end
-          alert.log("CrazyEights timeout: auto-drew one card")
-          return { type = "draw" }
-        end
-        break
       end
     end
   end
@@ -934,6 +850,7 @@ local function choosePlayableCard(roundState)
 end
 
 local function choosePostDrawAction(roundState, drawnIndex)
+  local buttonY = getActionButtonY(1)
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
@@ -944,16 +861,11 @@ local function choosePostDrawAction(roundState, drawnIndex)
       })
     end,
     hint = "",
-    hint_y = scale.footerButtonY - scale.lineHeight - scale.sectionGap,
+    hint_y = getActionHintY(1),
     center_x = centerX,
-    button_y = scale.footerButtonY - scale.buttonRowSpacing,
+    button_y = buttonY,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      alert.log("CrazyEights timeout: played drawn card")
-      return "play"
-    end,
     buttons = {
       {
         { id = "play", text = "PLAY IT", color = colors.lime },
@@ -1190,10 +1102,6 @@ local function waitForPostMatchChoice(betAmount, resultLabel, totalReturn, netCh
     button_y = scale.footerButtonY - scale.buttonRowSpacing,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      triggerInactivityTimeout()
-    end,
     buttons = {
       {
         {

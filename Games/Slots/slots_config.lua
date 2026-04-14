@@ -8,7 +8,6 @@ return {
   -- Economy
   MAX_BET_PERCENT     = 0.005,  -- max bet = 0.5% of host balance (jackpot-safe: worst case takes ~50%)
   HOST_COVERAGE_MULT  = 101,    -- conservative coverage buffer for the 100x top line
-  INACTIVITY_TIMEOUT  = 90000,  -- ms before auto-exit
 
   -- Admin & logging
   GAME_NAME     = "Slots",
@@ -82,7 +81,6 @@ return {
     ENABLED    = true,
     MAX_ROUNDS = 3,      -- max consecutive double-or-nothing rounds
     WIN_CHANCE = 50,     -- percentage (50 = fair coin flip)
-    TIMEOUT    = 15000,  -- ms to decide before auto-collect
   },
 
   -- Near-miss feedback (enhanced messaging when 2-of-a-kind of a high-value symbol)
@@ -93,7 +91,6 @@ return {
 
   -- Exit codes
   EXIT_CODES = {
-    INACTIVITY_TIMEOUT = "inactivity_timeout",
     MAIN_MENU          = "main_menu",
     USER_TERMINATED    = "user_terminated",
     PLAYER_QUIT        = "player_quit",

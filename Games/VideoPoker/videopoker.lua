@@ -38,7 +38,6 @@ local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
-local activityTimeout = require("lib.activity_timeout")
 local settlement = require("lib.round_settlement")
 
 recovery.configure(cfg.RECOVERY_FILE)
@@ -51,7 +50,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -157,12 +155,6 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
 end
 
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-end
-
 local function wrapStatusText(text)
   local words = {}
   local current = ""
@@ -244,7 +236,7 @@ end
 -----------------------------------------------------
 -- Payout table display
 -----------------------------------------------------
-local function showPayoutTable(timeoutState)
+local function showPayoutTable()
   local lines = {
     { text = "Jacks or Better", color = colors.lightGray },
     { spacer = true },
@@ -260,9 +252,6 @@ local function showPayoutTable(timeoutState)
   end
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUT TABLE", lines, {
     centerX = centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -308,12 +297,9 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -321,8 +307,6 @@ end
 -- Pre-round menu
 -----------------------------------------------------
 local function preRoundMenu()
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
-
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -352,15 +336,11 @@ local function preRoundMenu()
 
     screen:output()
 
-    ui.waitForButton(0, 0, {
-      timeoutState = timeoutState,
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-      onTimeout = triggerInactivityTimeout,
-    })
+    ui.waitForButton(0, 0)
 
     if chosen == "play" then return end
-    if chosen == "payouts" then showPayoutTable(timeoutState) end
-    if chosen == "tutorial" then showTutorial(timeoutState) end
+    if chosen == "payouts" then showPayoutTable() end
+    if chosen == "tutorial" then showTutorial() end
   end
 end
 
@@ -373,10 +353,8 @@ local function betSelection()
     gameName               = "VideoPoker",
     confirmLabel           = "DEAL",
     title                  = "PLACE YOUR BET",
-    inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
     hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
-    onTimeout              = triggerInactivityTimeout,
   })
 end
 
@@ -441,8 +419,6 @@ local function waitForReplayChoice(hand, discardSelected, betAmount, statusText)
     button_y = scale.footerButtonY,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -477,7 +453,6 @@ local function pokerRound(betAmount)
 
   -- Hold/discard phase
   local confirmed = false
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
 
   while not confirmed do
     renderHand(hand, discardSelected, betAmount, nil, true)
@@ -508,13 +483,7 @@ local function pokerRound(betAmount)
 
     screen:output()
 
-    local _, px, py = ui.waitForMonitorTouch({
-      timeoutState = timeoutState,
-      onTimeout = function()
-        alert.log("Video Poker timeout: auto-draw with current holds")
-        confirmed = true
-      end,
-    })
+    local _, px, py = ui.waitForMonitorTouch()
     if confirmed then
       break
     end

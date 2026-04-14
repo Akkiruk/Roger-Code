@@ -330,6 +330,7 @@ local function buildInstalledRecord(spec, previous)
     schema_version = INSTALL_STATE_SCHEMA,
     program = program.key,
     name = program.name,
+    category = program.category or existing.category,
     version = program.version,
     source_commit = build.commit,
     package_hash = build.package_hash,

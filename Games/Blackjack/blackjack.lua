@@ -18,8 +18,6 @@ local epoch        = os.epoch
 -- Forward declarations
 local buildAndRecordResult = nil
 local waitForReplayChoice = nil
-local resolveInsuranceTimeout = nil
-local resolvePlayerTurnTimeout = nil
 
 settings.define("blackjack.debug", {
   description = "Enable debug messages for the Blackjack game.",
@@ -36,7 +34,6 @@ end
 -- Shared library imports
 -----------------------------------------------------
 local cards      = require("lib.cards")
-local activityTimeout = require("lib.activity_timeout")
 local currency   = require("lib.currency")
 local sound      = require("lib.sound")
 local ui         = require("lib.ui")
@@ -59,7 +56,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -153,12 +149,6 @@ local layout  = {
 }
 layout.dealerScoreY = layout.dealerY + cardBack.height + scale.smallGap
 
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-end
-
 -----------------------------------------------------
 -- Render
 -----------------------------------------------------
@@ -222,7 +212,7 @@ end
 -----------------------------------------------------
 -- Pre-round help screens
 -----------------------------------------------------
-local function showPayoutTable(timeoutState)
+local function showPayoutTable()
   local lines = {
     { text = "Blackjack pays +" .. tostring(cfg.BLACKJACK_PAYOUT) .. "x", color = colors.yellow },
     { text = "Regular win pays +1x", color = colors.white },
@@ -245,9 +235,6 @@ local function showPayoutTable(timeoutState)
 
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUTS", lines, {
     centerX = layout.centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -289,18 +276,13 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = layout.centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
 local function preRoundMenu()
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
-
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -327,18 +309,14 @@ local function preRoundMenu()
 
     screen:output()
 
-    ui.waitForButton(0, 0, {
-      timeoutState = timeoutState,
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-      onTimeout = triggerInactivityTimeout,
-    })
+    ui.waitForButton(0, 0)
 
     if chosen == "play" then
       return
     elseif chosen == "payouts" then
-      showPayoutTable(timeoutState)
+      showPayoutTable()
     elseif chosen == "tutorial" then
-      showTutorial(timeoutState)
+      showTutorial()
     end
   end
 end
@@ -529,16 +507,7 @@ local function doInsurance(ctx)
       func = function() chosen = false end },
   }}, layout.centerX, layout.buttonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
-  local chosenRef = { value = chosen }
-  ui.waitForButton(0, 0, {
-    inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      resolveInsuranceTimeout(chosenRef)
-    end,
-  })
-  if chosen == nil and chosenRef.value ~= nil then
-    chosen = chosenRef.value
-  end
+  ui.waitForButton(0, 0)
 
   if chosen then
     if insBet > 0 then
@@ -743,17 +712,6 @@ local function executeSurrender(ctx, handIdx)
   return true
 end
 
-resolveInsuranceTimeout = function(choiceRef)
-  alert.log("Blackjack timeout: declining insurance offer")
-  choiceRef.value = false
-end
-
-resolvePlayerTurnTimeout = function(ctx, hand, handIdx, actionStart, handDoneRef)
-  table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
-  alert.log("Blackjack timeout: auto-stand on hand " .. tostring(handIdx))
-  handDoneRef.value = executeStand(hand, ctx, handIdx)
-end
-
 -----------------------------------------------------
 -- State: PLAYER_TURN (supports split)
 -----------------------------------------------------
@@ -833,16 +791,7 @@ local function doPlayerTurn(ctx)
       local startY = scale:buttonBlockTop(layout.buttonY, #rows, scale.buttonRowSpacing)
       ui.layoutButtonGrid(screen, rows, layout.centerX, startY, scale.buttonRowSpacing, scale.buttonColGap)
       screen:output()
-      local handDoneRef = { value = handDone }
-      ui.waitForButton(0, 0, {
-        inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-        onTimeout = function()
-          resolvePlayerTurnTimeout(ctx, hand, handIdx, actionStart, handDoneRef)
-        end,
-      })
-      if not handDone then
-        handDone = handDoneRef.value
-      end
+      ui.waitForButton(0, 0)
     end
 
     if ctx.surrendered then
@@ -1097,14 +1046,8 @@ local function betSelection()
     gameName               = "Blackjack",
     confirmLabel           = "DEAL",
     title                  = "PLACE YOUR BET",
-    inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
     hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
-    onTimeout              = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 
@@ -1181,12 +1124,6 @@ waitForReplayChoice = function(ctx, statusText)
     button_y = layout.buttonY,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 

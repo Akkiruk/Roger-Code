@@ -7,7 +7,6 @@ local currency = require("lib.currency")
 local sound = require("lib.sound")
 local ui = require("lib.ui")
 local alert = require("lib.alert")
-local activityTimeout = require("lib.activity_timeout")
 local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
 local pages = require("lib.casino_pages")
@@ -61,7 +60,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -180,12 +178,6 @@ local function setStatus(text, tone, stickyMs)
   state.statusText = text
   state.statusTone = tone or "neutral"
   state.statusUntil = epoch("local") + (stickyMs or 1600)
-end
-
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT, 0.45)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
 local function refreshDerivedState()
@@ -352,10 +344,6 @@ local function waitForReplayChoice(replayChanges)
     button_y = metrics.footerButtonY,
     row_spacing = metrics.buttonRowSpacing,
     col_spacing = metrics.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      return "new_bet"
-    end,
   })
 end
 
@@ -429,7 +417,7 @@ local function clearBets()
   setStatus("Cleared the table.", "warning", 1200)
 end
 
-local function updatePassiveStatus(idleMs)
+local function updatePassiveStatus()
   local now = epoch("local")
   if now < (state.statusUntil or 0) then
     return
@@ -447,26 +435,17 @@ local function updatePassiveStatus(idleMs)
     return
   end
 
-  local warningStart = cfg.INACTIVITY_TIMEOUT - 10000
-  if idleMs and idleMs >= warningStart then
-    local remainingMs = max(0, cfg.INACTIVITY_TIMEOUT - idleMs)
-    local remainingSec = ceil(remainingMs / 1000)
-    state.statusText = "Auto-exit in " .. tostring(remainingSec) .. "s."
-    state.statusTone = "warning"
-    return
-  end
-
   state.statusText = "Pick a chip, then tap the table."
   state.statusTone = "neutral"
 end
 
-renderCurrent = function(idleMs)
+renderCurrent = function()
   refreshDerivedState()
-  updatePassiveStatus(idleMs)
+  updatePassiveStatus()
   rouletteRender.draw(screen, font, layout, state)
 end
 
-local function showPayoutTable(timeoutState)
+local function showPayoutTable()
   local lines = {
     { text = "European single-zero payouts", color = colors.yellow },
     { spacer = true },
@@ -485,9 +464,6 @@ local function showPayoutTable(timeoutState)
 
   pages.showStatsScreen(screen, font, scale, cfg.LAYOUT.TABLE_COLOR, "PAYOUTS", lines, {
     centerX = floor(width / 2),
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -527,18 +503,13 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   pages.showPagedLines(screen, font, scale, cfg.LAYOUT.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = floor(width / 2),
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
 local function preRoundMenu()
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
-
   while true do
     screen:clear(cfg.LAYOUT.TABLE_COLOR)
 
@@ -565,18 +536,14 @@ local function preRoundMenu()
 
     screen:output()
 
-    ui.waitForButton(0, 0, {
-      timeoutState = timeoutState,
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-      onTimeout = triggerInactivityTimeout,
-    })
+    ui.waitForButton(0, 0)
 
     if chosen == "play" then
       return
     elseif chosen == "payouts" then
-      showPayoutTable(timeoutState)
+      showPayoutTable()
     elseif chosen == "tutorial" then
-      showTutorial(timeoutState)
+      showTutorial()
     end
   end
 end
@@ -883,26 +850,13 @@ local function handleTouch(px, py)
 end
 
 local function runBettingLoop()
-  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
-
   while true do
     refreshPlayerState(false)
     refreshDerivedState()
 
-    local idleMs = timeoutState and timeoutState:elapsed() or 0
-    if timeoutState and timeoutState:isExpired() then
-      sound.play(sound.SOUNDS.TIMEOUT, 0.45)
-      os.sleep(0.5)
-      if state.totalStake > 0 then
-        alert.log("Roulette timeout: auto-spin with " .. currency.formatTokens(state.totalStake) .. " on the table")
-        return "spin"
-      end
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end
-
     state.phase = "betting"
     state.wheelOffset = (state.wheelOffset + 0.03) % #rouletteModel.WHEEL_ORDER
-    renderCurrent(idleMs)
+    renderCurrent()
 
     local timerID = os.startTimer(0.20)
     local continueLoop = false
@@ -911,9 +865,6 @@ local function runBettingLoop()
       local event, param1, param2, param3 = os.pullEvent()
 
       if event == "monitor_touch" then
-        if timeoutState then
-          timeoutState:touch()
-        end
         local action = handleTouch(param2, param3)
         continueLoop = true
         if timerID then

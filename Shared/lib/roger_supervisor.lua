@@ -40,6 +40,23 @@ local LOG_FILE = "roger_supervisor.log"
 local DEFAULT_RESTART_DELAY = 5
 local DEFAULT_UPDATE_INTERVAL = 60
 local CRASH_UPDATE_CHECK_COOLDOWN = 30
+local DEFAULT_GAME_MONITOR_IDLE_TIMEOUT = 60
+local MONITOR_IDLE_CHECK_INTERVAL = 1
+local GAME_CATEGORY = "Games"
+local MONITOR_ACTIVITY_EVENTS = {
+  monitor_resize = true,
+  monitor_touch = true,
+}
+local GAME_PROGRAM_KEYS = {
+  baccarat = true,
+  blackjack = true,
+  crazyeights = true,
+  hilo = true,
+  pokertable = true,
+  roulette = true,
+  slots = true,
+  videopoker = true,
+}
 local LEGACY_MAIN_FILES = {
   baccarat = "baccarat.lua",
   blackjack = "blackjack.lua",
@@ -133,6 +150,50 @@ local function resolveLegacyEntrypoint(installed)
   return nil
 end
 
+local function isGameInstall(installed)
+  if type(installed) ~= "table" then
+    return false
+  end
+
+  if tostring(installed.category or "") == GAME_CATEGORY then
+    return true
+  end
+
+  local programKey = string.lower(tostring(installed.program or installed.game or ""))
+  return GAME_PROGRAM_KEYS[programKey] == true
+end
+
+local function monitorIdleWatchdog(timeoutSeconds)
+  local timeoutMs = (tonumber(timeoutSeconds) or DEFAULT_GAME_MONITOR_IDLE_TIMEOUT) * 1000
+  local lastMonitorActivityAt = os.epoch("local")
+  local timerId = os.startTimer(MONITOR_IDLE_CHECK_INTERVAL)
+
+  while true do
+    local event, param1 = os.pullEventRaw()
+    if event == "terminate" then
+      error("Terminated", 0)
+    end
+
+    if MONITOR_ACTIVITY_EVENTS[event] then
+      lastMonitorActivityAt = os.epoch("local")
+    elseif event == "timer" and param1 == timerId then
+      local idleMs = os.epoch("local") - lastMonitorActivityAt
+      if idleMs >= timeoutMs then
+        logMessage("Monitor idle for " .. tostring(math.floor(idleMs / 1000)) .. "s; rebooting")
+        term.setBackgroundColor(colors.black)
+        term.setTextColor(colors.yellow)
+        term.clear()
+        term.setCursorPos(1, 1)
+        print("No monitor activity for 60 seconds.")
+        print("Rebooting...")
+        os.reboot()
+      end
+
+      timerId = os.startTimer(MONITOR_IDLE_CHECK_INTERVAL)
+    end
+  end
+end
+
 local function loadRuntimeState()
   local installed = updater.getInstallInfo() or readInstalledState()
   if type(installed) ~= "table" then
@@ -159,6 +220,7 @@ local function loadRuntimeState()
     appEntrypoint = appEntrypoint,
     recoveredLegacyEntrypoint = recoveredLegacyEntrypoint,
     autoRestart = installed.auto_restart ~= false,
+    monitorIdleTimeout = isGameInstall(installed) and DEFAULT_GAME_MONITOR_IDLE_TIMEOUT or nil,
     restartDelay = tonumber(installed.restart_delay) or DEFAULT_RESTART_DELAY,
     updateInterval = tonumber(installed.update_interval) or DEFAULT_UPDATE_INTERVAL,
   }
@@ -262,9 +324,13 @@ function M.run(...)
   logMessage(
     "Booting " .. tostring(installed.program or installed.game or installed.name or "program")
       .. " | app=" .. tostring(runtime.appEntrypoint)
+      .. " | category=" .. tostring(installed.category or "")
       .. " | commit=" .. tostring(installed.source_commit or ""):sub(1, 8)
       .. " | pkg=" .. tostring(installed.package_hash or installed.content_hash or ""):sub(1, 8)
   )
+  if runtime.monitorIdleTimeout then
+    logMessage("Monitor idle watchdog enabled for " .. tostring(runtime.monitorIdleTimeout) .. "s")
+  end
 
   local function appLoop()
     local lastCrashUpdateCheckAt = nil
@@ -303,9 +369,20 @@ function M.run(...)
     end
   end
 
-  parallel.waitForAny(appLoop, function()
-    updateWatcher(runtime.updateInterval)
-  end)
+  local runners = {
+    appLoop,
+    function()
+      updateWatcher(runtime.updateInterval)
+    end,
+  }
+
+  if runtime.monitorIdleTimeout then
+    runners[#runners + 1] = function()
+      monitorIdleWatchdog(runtime.monitorIdleTimeout)
+    end
+  end
+
+  parallel.waitForAny(unpack(runners))
 end
 
 return M

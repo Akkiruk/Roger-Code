@@ -48,7 +48,6 @@ local cardAnim   = require("lib.card_anim")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
-local activityTimeout = require("lib.activity_timeout")
 
 recovery.configure(cfg.RECOVERY_FILE)
 
@@ -60,7 +59,6 @@ local env = gameSetup.init({
 })
 
 alert.addPlannedExits({
-  cfg.EXIT_CODES.INACTIVITY_TIMEOUT,
   cfg.EXIT_CODES.MAIN_MENU,
   cfg.EXIT_CODES.USER_TERMINATED,
   cfg.EXIT_CODES.PLAYER_QUIT,
@@ -145,24 +143,6 @@ local LINE_H = scale.lineHeight
 local function drawCenteredLine(text, y, color)
   local tw = ui.getTextSize(text)
   ui.safeDrawText(screen, text, font, math.floor((width - tw) / 2), y, color or colors.white)
-end
-
-local function triggerInactivityTimeout()
-  sound.play(sound.SOUNDS.TIMEOUT)
-  os.sleep(0.5)
-  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-end
-
-local function timeoutChoiceForCard(currentCard)
-  local currentVal = cardValue(currentCard)
-  local lowerWins = math.max(0, currentVal - 2)
-  local higherWins = math.max(0, 14 - currentVal)
-
-  if higherWins <= lowerWins then
-    return "higher"
-  end
-
-  return "lower"
 end
 
 local function getChoiceStatusY()
@@ -268,19 +248,13 @@ local function waitForPostRoundChoice(currentCard, revealedCards, betAmount, rou
     button_y = scale.footerButtonY,
     row_spacing = scale.buttonRowSpacing,
     col_spacing = scale.buttonColGap,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 
 -----------------------------------------------------
 -- Tutorial / How to play screens
 -----------------------------------------------------
-local function showPayoutTable(timeoutState)
+local function showPayoutTable()
   local payoutPages = {}
   local roundsPerPage = 5
 
@@ -309,9 +283,6 @@ local function showPayoutTable(timeoutState)
 
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, payoutPages, {
     centerX = centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
@@ -354,22 +325,15 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
-    timeout_state = timeoutState,
-    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
-    onTimeout = triggerInactivityTimeout,
   })
 end
 
 -- Pre-round menu: PLAY, HOW TO PLAY
 -----------------------------------------------------
 local function preRoundMenu()
-  local timeoutState = activityTimeout.create(
-    activityTimeout.resolveDuration(cfg.PRE_ROUND_MENU_TIMEOUT, cfg.INACTIVITY_TIMEOUT, 90000)
-  )
-
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -380,17 +344,6 @@ local function preRoundMenu()
     local subtitle = "Higher or Lower?"
     local sw = ui.getTextSize(subtitle)
     ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
-
-    if timeoutState and timeoutState:isExpired() then
-      triggerInactivityTimeout()
-    end
-
-    if timeoutState and timeoutState:isWarning() then
-      local secondsLeft = timeoutState:secondsLeft()
-      local timeoutLabel = "Auto-exit in " .. secondsLeft .. "s"
-      local timeoutWidth = ui.getTextSize(timeoutLabel)
-      ui.safeDrawText(screen, timeoutLabel, font, math.floor((width - timeoutWidth) / 2), height - LINE_H - scale.edgePad, colors.orange)
-    end
 
     ui.clearButtons()
     local chosen = nil
@@ -410,26 +363,11 @@ local function preRoundMenu()
 
     screen:output()
 
-    local timerID = os.startTimer(0.25)
-    while true do
-      local event, side, px, py = os.pullEvent()
-      if event == "monitor_touch" then
-        if timeoutState then
-          timeoutState:touch()
-        end
-        local cb = ui.checkButtonHit(px, py)
-        if cb then
-          cb()
-          break
-        end
-      elseif event == "timer" and side == timerID then
-        break
-      end
-    end
+    ui.waitForButton(0, 0)
 
     if chosen == "play" then return end
-    if chosen == "payouts" then showPayoutTable(timeoutState) end
-    if chosen == "tutorial" then showTutorial(timeoutState) end
+    if chosen == "payouts" then showPayoutTable() end
+    if chosen == "tutorial" then showTutorial() end
   end
 end
 
@@ -442,14 +380,8 @@ local function betSelection()
     gameName               = "HiLo",
     confirmLabel           = "DEAL",
     title                  = "PLACE YOUR BET",
-    inactivityTimeout      = cfg.INACTIVITY_TIMEOUT,
     hostBalance            = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
-    onTimeout              = function()
-      sound.play(sound.SOUNDS.TIMEOUT)
-      os.sleep(0.5)
-      error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
-    end,
   })
 end
 
@@ -522,13 +454,7 @@ local function hiloRound(betAmount)
     ui.layoutButtonGrid(screen, btnRows, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
-    ui.waitForButton(0, 0, {
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-      onTimeout = function()
-        choice = timeoutChoiceForCard(currentCard)
-        alert.log("HiLo timeout: auto-select " .. tostring(choice) .. " on " .. tostring(cards.displayValue(currentCard)))
-      end,
-    })
+    ui.waitForButton(0, 0)
 
     if choice == "cashout" then
       -- Cash out: player wins current multiplier

@@ -25,7 +25,6 @@ return {
   MAX_BET_TOKENS      = 100,     -- absolute cap regardless of host bankroll
   MAX_BET_PERCENT     = 0.036,   -- max bet = 3.6% of host balance
   HOST_COVERAGE_MULT  = 5,       -- covers split + double exposure from the original wager
-  INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no bet
 
   -- Peripheral sides
   MONITOR             = "right",
@@ -66,7 +65,6 @@ return {
 
   -- Exit codes (intentional, non-error shutdowns)
   EXIT_CODES = {
-    INACTIVITY_TIMEOUT = "inactivity_timeout",
     MAIN_MENU          = "main_menu",
     USER_TERMINATED    = "user_terminated",
     PLAYER_QUIT        = "player_quit",
