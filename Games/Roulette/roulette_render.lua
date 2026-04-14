@@ -13,9 +13,16 @@ local TAU = pi * 2
 local TOP_ANGLE = -pi / 2
 local POCKET_ANGLE = TAU / #model.WHEEL_ORDER
 local WHEEL_VISUAL_Y_SCALE = tonumber(cfg.WHEEL_VISUAL_Y_SCALE) or 1
+local SPIN_LOOKUP_SUBDIVISIONS = max(4, tonumber(cfg.SPIN_LOOKUP_SUBDIVISIONS) or 8)
 local spinFrameCache = nil
+local spinAssetCache = nil
 
 local function invalidateSpinFrameCache()
+  spinFrameCache = nil
+end
+
+local function invalidateSpinAssets()
+  spinAssetCache = nil
   spinFrameCache = nil
 end
 
@@ -578,6 +585,15 @@ local function getBallAngleForOffset(wheelOffset)
   return TOP_ANGLE + ((tonumber(wheelOffset) or 0) * POCKET_ANGLE)
 end
 
+local function normalizeOffset(wheelOffset)
+  local wheelSize = #model.WHEEL_ORDER
+  local offset = (tonumber(wheelOffset) or 0) % wheelSize
+  if offset < 0 then
+    offset = offset + wheelSize
+  end
+  return offset
+end
+
 local function drawWheelShadow(screen, metrics)
   screen:fillEllipse(metrics.outerX + 2, metrics.outerY + 3, metrics.diameter, metrics.diameterY, colors.black)
 end
@@ -656,6 +672,110 @@ local function getShowcaseWheelMetrics(layout)
   }
 end
 
+local function buildBadgeGeometry(metrics)
+  local width = max(13, min(19, floor(metrics.radius * 0.9)))
+  return {
+    width = width,
+    height = 9,
+    x = metrics.centerX - floor(width / 2),
+    y = metrics.centerY - 4,
+  }
+end
+
+local function buildBadgeSurface(surfaceApi, font, badge, number)
+  local surf = surfaceApi.create(badge.width + 2, badge.height + 2)
+  surf:fillRect(0, 0, badge.width + 2, badge.height + 2, colors.lightGray)
+  surf:fillRect(1, 1, badge.width, badge.height, model.getNumberColor(number))
+  drawCenteredText(surf, font, { x = 1, y = 1, w = badge.width, h = badge.height }, tostring(number), model.getNumberTextColor(number), 0)
+  return surf
+end
+
+local function buildBallSurface(surfaceApi, metrics)
+  local width = (metrics.ballRadius * 2) + 3
+  local height = (metrics.ballRadiusY * 2) + 3
+  local surf = surfaceApi.create(width, height)
+  surf:fillEllipse(1, 1, (metrics.ballRadius * 2) + 1, (metrics.ballRadiusY * 2) + 1, colors.black)
+  surf:fillEllipse(0, 0, (metrics.ballRadius * 2) + 1, (metrics.ballRadiusY * 2) + 1, colors.white)
+  return {
+    surface = surf,
+    width = width,
+    height = height,
+  }
+end
+
+local function buildSpinLookup(metrics)
+  local frames = {}
+  local wheelSize = #model.WHEEL_ORDER
+  local total = wheelSize * SPIN_LOOKUP_SUBDIVISIONS
+
+  for index = 0, total - 1 do
+    local offset = index / SPIN_LOOKUP_SUBDIVISIONS
+    local number = getTrackPointedNumber(offset)
+    local angle = getBallAngleForOffset(offset)
+    local x, y = pointOnEllipse(metrics.centerX, metrics.centerY, metrics.ballTrackRadius, metrics.ballTrackRadiusY, angle)
+    frames[index + 1] = {
+      offset = offset,
+      number = number,
+      angle = angle,
+      x = x,
+      y = y,
+    }
+  end
+
+  return {
+    substeps = SPIN_LOOKUP_SUBDIVISIONS,
+    total = total,
+    frames = frames,
+  }
+end
+
+local function ensureSpinAssets(surfaceApi, font, layout)
+  if not surfaceApi then
+    return nil
+  end
+
+  local metrics = getShowcaseWheelMetrics(layout)
+  local badge = buildBadgeGeometry(metrics)
+  local cache = spinAssetCache
+  if cache
+    and cache.width == layout.width
+    and cache.height == layout.height
+    and cache.diameter == metrics.diameter
+    and cache.badgeWidth == badge.width then
+    return cache
+  end
+
+  local badges = {}
+  for _, number in ipairs(model.WHEEL_ORDER) do
+    badges[number] = buildBadgeSurface(surfaceApi, font, badge, number)
+  end
+
+  cache = {
+    width = layout.width,
+    height = layout.height,
+    diameter = metrics.diameter,
+    badge = badge,
+    badgeWidth = badge.width,
+    badges = badges,
+    ball = buildBallSurface(surfaceApi, metrics),
+    lookup = buildSpinLookup(metrics),
+  }
+
+  spinAssetCache = cache
+  return cache
+end
+
+local function getSpinLookupEntry(assets, wheelOffset)
+  if not assets or not assets.lookup then
+    return nil
+  end
+
+  local lookup = assets.lookup
+  local normalized = normalizeOffset(wheelOffset)
+  local index = (floor((normalized * lookup.substeps) + 0.5) % lookup.total) + 1
+  return lookup.frames[index]
+end
+
 local function drawWheelMarker(screen, metrics, angle, fill, border, highlight)
   local markerRadius = highlight and 3 or 2
   local markerRadiusY = scaleVisualY(markerRadius)
@@ -688,40 +808,50 @@ local function drawWheelBody(screen, metrics, winningIndex)
   screen:fillEllipse(metrics.centerX - hubRadius + 1, metrics.centerY - hubRadiusY + 1, max(1, (hubRadius * 2) - 1), max(1, (hubRadiusY * 2) - 1), colors.black)
 end
 
-local function drawWheelBall(screen, centerX, centerY, metrics, ballAngle)
-  local ballRadius = metrics.ballRadius
-  local ballRadiusY = metrics.ballRadiusY
-  local ballTrackRadius = metrics.ballTrackRadius
-  local ballTrackRadiusY = metrics.ballTrackRadiusY
-  local ballX, ballY = pointOnEllipse(centerX, centerY, ballTrackRadius, ballTrackRadiusY, ballAngle)
-  screen:fillEllipse(ballX - ballRadius + 1, ballY - ballRadiusY + 1, (ballRadius * 2) + 1, (ballRadiusY * 2) + 1, colors.black)
-  screen:fillEllipse(ballX - ballRadius, ballY - ballRadiusY, (ballRadius * 2) + 1, (ballRadiusY * 2) + 1, colors.white)
+local function drawWheelBall(screen, metrics, assets, wheelOffset, ballAngle)
+  local entry = getSpinLookupEntry(assets, wheelOffset)
+  if entry and assets.ball then
+    screen:drawSurface(assets.ball.surface, entry.x - metrics.ballRadius, entry.y - metrics.ballRadiusY)
+    return entry
+  end
 
-  return ballTrackRadiusY, ballRadiusY
+  local angle = ballAngle or getBallAngleForOffset(wheelOffset)
+  local ballX, ballY = pointOnEllipse(metrics.centerX, metrics.centerY, metrics.ballTrackRadius, metrics.ballTrackRadiusY, angle)
+  screen:fillEllipse(ballX - metrics.ballRadius + 1, ballY - metrics.ballRadiusY + 1, (metrics.ballRadius * 2) + 1, (metrics.ballRadiusY * 2) + 1, colors.black)
+  screen:fillEllipse(ballX - metrics.ballRadius, ballY - metrics.ballRadiusY, (metrics.ballRadius * 2) + 1, (metrics.ballRadiusY * 2) + 1, colors.white)
+
+  return {
+    number = getTrackPointedNumber(wheelOffset),
+    angle = angle,
+    x = ballX,
+    y = ballY,
+  }
 end
 
-local function drawWheelReadout(screen, font, metrics, state)
-  local displayNumber = state.resultNumber or getTrackPointedNumber(state.wheelOffset)
+local function drawWheelReadout(screen, font, metrics, state, assets, displayNumber)
+  displayNumber = displayNumber or state.resultNumber or getTrackPointedNumber(state.wheelOffset)
   if displayNumber == nil then
     return
   end
 
-  local badgeW = max(13, min(19, floor(metrics.radius * 0.9)))
-  local badgeH = 9
-  local badgeX = metrics.centerX - floor(badgeW / 2)
-  local badgeY = metrics.centerY - 4
+  local badge = (assets and assets.badge) or buildBadgeGeometry(metrics)
+  local badgeX = badge.x
+  local badgeY = badge.y
   local badgeFill = model.getNumberColor(displayNumber)
-  local badgeText = model.getNumberTextColor(displayNumber)
   local labelColor = state.phase == "spinning" and colors.white or badgeFill
 
-  screen:fillRect(badgeX - 1, badgeY - 1, badgeW + 2, badgeH + 2, colors.lightGray)
-  screen:fillRect(badgeX, badgeY, badgeW, badgeH, badgeFill)
-  drawCenteredText(screen, font, { x = badgeX, y = badgeY, w = badgeW, h = badgeH }, tostring(displayNumber), badgeText, 0)
+  if assets and assets.badges and assets.badges[displayNumber] then
+    screen:drawSurface(assets.badges[displayNumber], badgeX - 1, badgeY - 1)
+  else
+    screen:fillRect(badgeX - 1, badgeY - 1, badge.width + 2, badge.height + 2, colors.lightGray)
+    screen:fillRect(badgeX, badgeY, badge.width, badge.height, badgeFill)
+    drawCenteredText(screen, font, { x = badgeX, y = badgeY, w = badge.width, h = badge.height }, tostring(displayNumber), model.getNumberTextColor(displayNumber), 0)
+  end
 
   drawCenteredText(
     screen,
     font,
-    { x = metrics.centerX - 20, y = badgeY + badgeH + 1, w = 40, h = 7 },
+    { x = metrics.centerX - 20, y = badgeY + badge.height + 1, w = 40, h = 7 },
     state.phase == "spinning" and "BALL ON" or model.getColorName(displayNumber),
     labelColor,
     0
@@ -730,13 +860,14 @@ end
 
 local function drawShowcaseWheel(screen, font, layout, state, metrics)
   metrics = metrics or getShowcaseWheelMetrics(layout)
+  local assets = ensureSpinAssets(state.surfaceApi, font, layout)
 
   local winningIndex = state.resultNumber and model.getWheelIndex(state.resultNumber) or nil
 
   drawWheelShadow(screen, metrics)
   drawWheelBody(screen, metrics, winningIndex)
-  drawWheelReadout(screen, font, metrics, state)
-  drawWheelBall(screen, metrics.centerX, metrics.centerY, metrics, state.ballAngle or getBallAngleForOffset(state.wheelOffset))
+  local ballEntry = drawWheelBall(screen, metrics, assets, state.wheelOffset, state.ballAngle or getBallAngleForOffset(state.wheelOffset))
+  drawWheelReadout(screen, font, metrics, state, assets, ballEntry and ballEntry.number or nil)
 end
 
 local function drawShowcaseHeader(screen, font, layout, state)
@@ -775,6 +906,7 @@ end
 
 local function buildSpinFrameCache(screen, font, layout, state)
   local metrics = getShowcaseWheelMetrics(layout)
+  local assets = ensureSpinAssets(state.surfaceApi, font, layout)
 
   screen:clear(colors.black)
   drawShowcaseBackdrop(screen, layout)
@@ -790,6 +922,7 @@ local function buildSpinFrameCache(screen, font, layout, state)
     base = screen:copy(),
     wheelRect = metrics.dynamicRect,
     metrics = metrics,
+    assets = assets,
     needsFullOutput = true,
   }
 
@@ -804,8 +937,8 @@ local function drawSpinningShowcasePage(screen, font, layout, state)
 
   local wheelRect = cache.wheelRect
   screen:drawSurface(cache.base, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
-  drawWheelReadout(screen, font, cache.metrics, state)
-  drawWheelBall(screen, cache.metrics.centerX, cache.metrics.centerY, cache.metrics, state.ballAngle or getBallAngleForOffset(state.wheelOffset))
+  local ballEntry = drawWheelBall(screen, cache.metrics, cache.assets, state.wheelOffset, state.ballAngle or getBallAngleForOffset(state.wheelOffset))
+  drawWheelReadout(screen, font, cache.metrics, state, cache.assets, ballEntry and ballEntry.number or nil)
   if cache.needsFullOutput then
     screen:output()
     cache.needsFullOutput = false
@@ -831,6 +964,10 @@ local function drawShowcasePage(screen, font, layout, state)
 end
 
 local function draw(screen, font, layout, state)
+  if type(state) == "table" and state.surfaceApi then
+    ensureSpinAssets(state.surfaceApi, font, layout)
+  end
+
   if state.phase == "betting" then
     invalidateSpinFrameCache()
     drawBettingPage(screen, font, layout, state)
