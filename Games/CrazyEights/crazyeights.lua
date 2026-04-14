@@ -697,6 +697,7 @@ local function preRoundMenu()
 end
 
 local function betSelection()
+  hostBankBalance = currency.getHostBalance()
   return betting.runBetScreen(screen, {
     maxBet = getMaxBet(),
     gameName = cfg.GAME_NAME,
