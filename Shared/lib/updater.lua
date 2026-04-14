@@ -246,11 +246,85 @@ local function setUpdateInterval(seconds)
   return true, value
 end
 
+local function getLastPackageUpdateAt(installed)
+  local info = installed
+  if type(info) ~= "table" then
+    info = loadInstalled()
+  end
+
+  if type(info) ~= "table" then
+    return nil
+  end
+
+  local timestamp = tonumber(info.last_package_update_at)
+    or tonumber(info.updated_at)
+    or tonumber(info.installed_at)
+
+  if not timestamp or timestamp <= 0 then
+    return nil
+  end
+
+  return math.floor(timestamp)
+end
+
+local function formatDurationParts(totalSeconds)
+  local remaining = math.max(0, math.floor(tonumber(totalSeconds) or 0))
+  local days = math.floor(remaining / 86400)
+  remaining = remaining % 86400
+  local hours = math.floor(remaining / 3600)
+  remaining = remaining % 3600
+  local minutes = math.floor(remaining / 60)
+  local seconds = remaining % 60
+
+  if days > 0 then
+    return string.format("%dd %02dh %02dm %02ds", days, hours, minutes, seconds)
+  end
+
+  if hours > 0 then
+    return string.format("%dh %02dm %02ds", hours, minutes, seconds)
+  end
+
+  if minutes > 0 then
+    return string.format("%dm %02ds", minutes, seconds)
+  end
+
+  return string.format("%ds", seconds)
+end
+
+local function formatElapsedSince(timestamp)
+  local millis = tonumber(timestamp)
+  if not millis or millis <= 0 then
+    return "unknown"
+  end
+
+  local elapsedSeconds = math.floor(math.max(0, os.epoch("local") - millis) / 1000)
+  return formatDurationParts(elapsedSeconds)
+end
+
+local function formatLocalTimestamp(timestamp)
+  local millis = tonumber(timestamp)
+  if not millis or millis <= 0 then
+    return "unknown"
+  end
+
+  if type(os.date) == "function" then
+    local ok, formatted = pcall(function()
+      return os.date("%Y-%m-%d %H:%M:%S", math.floor(millis / 1000))
+    end)
+    if ok and type(formatted) == "string" and formatted ~= "" then
+      return formatted
+    end
+  end
+
+  return tostring(millis)
+end
+
 local function buildInstalledRecord(spec, previous)
   local program = spec.program or {}
   local build = spec.build or {}
   local runtime = spec.runtime or {}
   local existing = previous or {}
+  local now = os.epoch("local")
 
   return {
     schema_version = INSTALL_STATE_SCHEMA,
@@ -261,8 +335,9 @@ local function buildInstalledRecord(spec, previous)
     package_hash = build.package_hash,
     content_hash = build.package_hash,
     spec_path = spec._spec_path or existing.spec_path or "",
-    installed_at = existing.installed_at or os.epoch("local"),
-    updated_at = os.epoch("local"),
+    installed_at = existing.installed_at or now,
+    updated_at = now,
+    last_package_update_at = now,
     boot_mode = runtime.boot_mode or existing.boot_mode or "supervisor",
     system_entrypoint = runtime.system_entrypoint or existing.system_entrypoint or "startup.lua",
     app_entrypoint = runtime.app_entrypoint or existing.app_entrypoint or program.entrypoint or "",
@@ -848,7 +923,10 @@ return {
   forceUpdate = forceUpdate,
   watchForUpdates = watchForUpdates,
   getInstallInfo = getInstallInfo,
+  getLastPackageUpdateAt = getLastPackageUpdateAt,
   setUpdateInterval = setUpdateInterval,
+  formatElapsedSince = formatElapsedSince,
+  formatLocalTimestamp = formatLocalTimestamp,
   getDefaultUpdateInterval = function()
     return DEFAULT_WATCH_INTERVAL
   end,

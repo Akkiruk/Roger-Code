@@ -814,6 +814,7 @@ local function buildInstalledRecord(spec, previous)
   local build = spec.build or {}
   local runtime = spec.runtime or {}
   local existing = previous or {}
+  local now = os.epoch("local")
 
   return {
     schema_version = INSTALL_STATE_SCHEMA,
@@ -824,8 +825,9 @@ local function buildInstalledRecord(spec, previous)
     package_hash = build.package_hash,
     content_hash = build.package_hash,
     spec_path = spec._spec_path or existing.spec_path or "",
-    installed_at = existing.installed_at or os.epoch("local"),
-    updated_at = os.epoch("local"),
+    installed_at = existing.installed_at or now,
+    updated_at = now,
+    last_package_update_at = now,
     boot_mode = runtime.boot_mode or "supervisor",
     system_entrypoint = runtime.system_entrypoint or "startup.lua",
     app_entrypoint = runtime.app_entrypoint or program.entrypoint or "",

@@ -45,25 +45,72 @@ local function printUsage()
   print("Usage:")
   print("  rogerupdate              Check immediately and reboot if updates apply")
   print("  rogerupdate force        Reinstall the latest package even if hashes match")
-  print("  rogerupdate status       Show installed version and polling interval")
+  print("  rogerupdate status       Show installed version and live time since last package update")
   print("  rogerupdate interval 30  Set automatic polling interval in seconds")
   print("  rogerupdate interval default")
   print("  rogerupdate help")
 end
 
-local function printInstallStatus()
+local function renderStatusScreen(install)
+  local lastPackageUpdateAt = updater.getLastPackageUpdateAt(install)
+
+  term.setBackgroundColor(colors.black)
+  term.setTextColor(colors.white)
+  term.clear()
+  term.setCursorPos(1, 1)
+
+  print("Roger-Code Update Status")
+  print("")
+  print("Installed Program: " .. tostring(install.program or install.name or "unknown"))
+  print("Version: " .. tostring(install.version or "?"))
+  print("Commit: " .. tostring(install.source_commit or "unknown"))
+  print("Package Hash: " .. tostring(install.package_hash or install.content_hash or "unknown"))
+  print("Update Interval: " .. tostring(install.update_interval or updater.getDefaultUpdateInterval()) .. "s")
+  print("")
+  print("Last Package Update: " .. updater.formatLocalTimestamp(lastPackageUpdateAt))
+  print("Time Since Last Update: " .. updater.formatElapsedSince(lastPackageUpdateAt))
+  print("")
+  term.setTextColor(colors.lightGray)
+  print("Press any key to exit.")
+  term.setTextColor(colors.white)
+end
+
+local function showLiveInstallStatus()
   local install = updater.getInstallInfo()
   if not install then
     printError("No installed program record was found.")
     return false
   end
 
-  print("Installed Program: " .. tostring(install.program or install.name or "unknown"))
-  print("Version: " .. tostring(install.version or "?"))
-  print("Commit: " .. tostring(install.source_commit or "unknown"))
-  print("Package Hash: " .. tostring(install.package_hash or install.content_hash or "unknown"))
-  print("Update Interval: " .. tostring(install.update_interval or updater.getDefaultUpdateInterval()) .. "s")
-  return true
+  local timerId = nil
+  while true do
+    install = updater.getInstallInfo() or install
+    renderStatusScreen(install)
+
+    if timerId then
+      os.cancelTimer(timerId)
+    end
+    timerId = os.startTimer(1)
+
+    while true do
+      local event, param = os.pullEventRaw()
+      if event == "terminate" then
+        if timerId then
+          os.cancelTimer(timerId)
+        end
+        error("Terminated", 0)
+      end
+      if event == "timer" and param == timerId then
+        break
+      end
+      if event == "key" or event == "char" or event == "mouse_click" or event == "paste" then
+        if timerId then
+          os.cancelTimer(timerId)
+        end
+        return true
+      end
+    end
+  end
 end
 
 local function handleIntervalCommand(rawValue)
@@ -147,7 +194,7 @@ if command == "help" or command == "--help" or command == "-h" then
 end
 
 if command == "status" then
-  printInstallStatus()
+  showLiveInstallStatus()
   return
 end
 
