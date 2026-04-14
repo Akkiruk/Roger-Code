@@ -11,7 +11,6 @@ return {
   -- Economy
   MAX_BET_PERCENT     = 0.10,    -- per-wager net-win cap = 10% of host balance (actual spot limit scales by payout)
   HOST_COVERAGE_MULT  = 36,      -- host must hold bet * this to accept wager
-  INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no bet
 
   -- Admin & logging
   GAME_NAME     = "Roulette",
@@ -99,7 +98,6 @@ return {
 
   -- Exit codes (intentional, non-error shutdowns)
   EXIT_CODES = {
-    INACTIVITY_TIMEOUT = "inactivity_timeout",
     MAIN_MENU          = "main_menu",
     USER_TERMINATED    = "user_terminated",
     PLAYER_QUIT        = "player_quit",
