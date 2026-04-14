@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.56"
+    "version": "1.2.57"
   },
   "build": {
-    "commit": "18fb1f9e2ac0f353375b8a0f5b7ab6dc6cdaf2d0",
-    "generated_at": "2026-04-14T02:50:24Z",
-    "package_hash": "d60ab700ba662af92bf295c3586edd0195dd8f2efd6b187f1964e6b4c33b6a8c"
+    "commit": "551208b097d4affeb127fad99ba2d307c43dc1df",
+    "generated_at": "2026-04-14T02:52:50Z",
+    "package_hash": "46bfa0e9c2399ed6b96400e25f0acd795d8533dd6e84ef3e5992bca28a93afdf"
   },
   "install": {
     "preserve": [
@@ -57,7 +57,7 @@
       {
         "repo_path": "Shared/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "2f9ef142fc43c47e847046225326945cc3d5ada2fc3113e758bc5427965738af"
+        "sha256": "16646047b1f998af70aad0e6d6fdd12ef5c25f1ec8606dd068f4d437fa0ee65b"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
@@ -107,7 +107,7 @@
       {
         "repo_path": "Shared/lib/replay_prompt.lua",
         "install_path": "lib/replay_prompt.lua",
-        "sha256": "988fddbc2b6d4f7412ae89bf17302aff52e705a667720fcbac030349907080f2"
+        "sha256": "2b0fbb04e5e36579ba25e125313d8de24da4f236c731a2a3927d94ab911b4afd"
       },
       {
         "repo_path": "Shared/lib/round_settlement.lua",
@@ -127,7 +127,7 @@
       {
         "repo_path": "Shared/lib/ui_surface.lua",
         "install_path": "lib/ui_surface.lua",
-        "sha256": "444539f690ad04277f5620cfe6cd0b90dfe420266bea5be910058ded9da68260"
+        "sha256": "2d9633af5a2c3527f797517a96ac83894d922bee43d0d6469669ee6ad01ae9d6"
       },
       {
         "repo_path": "Shared/lib/ui_text.lua",

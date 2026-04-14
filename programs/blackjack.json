@@ -7,12 +7,12 @@
     "description": "Single-seat blackjack with split, double, and configurable house rules.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.64"
+    "version": "1.2.65"
   },
   "build": {
-    "commit": "18fb1f9e2ac0f353375b8a0f5b7ab6dc6cdaf2d0",
-    "generated_at": "2026-04-14T02:50:24Z",
-    "package_hash": "2093a811dc3b23a27780faab8e55f2029cf50d12f2b228a030c7041e0893a9e3"
+    "commit": "551208b097d4affeb127fad99ba2d307c43dc1df",
+    "generated_at": "2026-04-14T02:52:50Z",
+    "package_hash": "8a03c9f9b5fca8cfaee970fc7384f115bed5065fd3935c7e73422b4c9faa85be"
   },
   "install": {
     "preserve": [
@@ -57,7 +57,7 @@
       {
         "repo_path": "Shared/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "2f9ef142fc43c47e847046225326945cc3d5ada2fc3113e758bc5427965738af"
+        "sha256": "16646047b1f998af70aad0e6d6fdd12ef5c25f1ec8606dd068f4d437fa0ee65b"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
@@ -107,7 +107,7 @@
       {
         "repo_path": "Shared/lib/replay_prompt.lua",
         "install_path": "lib/replay_prompt.lua",
-        "sha256": "988fddbc2b6d4f7412ae89bf17302aff52e705a667720fcbac030349907080f2"
+        "sha256": "2b0fbb04e5e36579ba25e125313d8de24da4f236c731a2a3927d94ab911b4afd"
       },
       {
         "repo_path": "Shared/lib/round_settlement.lua",
@@ -127,7 +127,7 @@
       {
         "repo_path": "Shared/lib/ui_surface.lua",
         "install_path": "lib/ui_surface.lua",
-        "sha256": "444539f690ad04277f5620cfe6cd0b90dfe420266bea5be910058ded9da68260"
+        "sha256": "2d9633af5a2c3527f797517a96ac83894d922bee43d0d6469669ee6ad01ae9d6"
       },
       {
         "repo_path": "Shared/lib/ui_text.lua",
