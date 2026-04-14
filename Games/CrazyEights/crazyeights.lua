@@ -600,7 +600,7 @@ local function chooseDealerCardIndex(roundState)
   return bestIndex, bestSuitChoice
 end
 
-local function showTutorial()
+local function showTutorial(timeoutState)
   local tutorialPages = {
     {
       title = "Crazy Eights",
@@ -633,6 +633,7 @@ local function showTutorial()
 
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, tutorialPages, {
     centerX = centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -691,7 +692,7 @@ local function preRoundMenu()
       return
     end
     if chosen == "tutorial" then
-      showTutorial()
+      showTutorial(timeoutState)
     end
   end
 end

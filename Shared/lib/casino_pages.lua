@@ -137,6 +137,7 @@ function M.showPagedLines(screen, font, scale, backgroundColor, pages, opts)
     ui.layoutButtonGrid(screen, { row }, options.centerX or floor(screen.width / 2), buttonY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
     ui.waitForButton(0, 0, {
+      timeoutState = options.timeout_state,
       inactivityTimeout = options.inactivity_timeout,
       onTimeout = options.onTimeout,
     })
@@ -184,6 +185,7 @@ function M.showStatsScreen(screen, font, scale, backgroundColor, title, lines, o
   }, options.centerX or floor(screen.width / 2), options.buttonY or scale.footerButtonY, scale.buttonRowSpacing, scale.buttonColGap)
   screen:output()
   ui.waitForButton(0, 0, {
+    timeoutState = options.timeout_state,
     inactivityTimeout = options.inactivity_timeout,
     onTimeout = options.onTimeout,
   })

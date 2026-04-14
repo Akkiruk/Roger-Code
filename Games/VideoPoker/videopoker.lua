@@ -244,7 +244,7 @@ end
 -----------------------------------------------------
 -- Payout table display
 -----------------------------------------------------
-local function showPayoutTable()
+local function showPayoutTable(timeoutState)
   local lines = {
     { text = "Jacks or Better", color = colors.lightGray },
     { spacer = true },
@@ -260,6 +260,7 @@ local function showPayoutTable()
   end
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUT TABLE", lines, {
     centerX = centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -307,9 +308,10 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial()
+local function showTutorial(timeoutState)
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -319,6 +321,8 @@ end
 -- Pre-round menu
 -----------------------------------------------------
 local function preRoundMenu()
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
+
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -349,13 +353,14 @@ local function preRoundMenu()
     screen:output()
 
     ui.waitForButton(0, 0, {
+      timeoutState = timeoutState,
       inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
       onTimeout = triggerInactivityTimeout,
     })
 
     if chosen == "play" then return end
-    if chosen == "payouts" then showPayoutTable() end
-    if chosen == "tutorial" then showTutorial() end
+    if chosen == "payouts" then showPayoutTable(timeoutState) end
+    if chosen == "tutorial" then showTutorial(timeoutState) end
   end
 end
 

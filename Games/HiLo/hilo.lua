@@ -280,7 +280,7 @@ end
 -----------------------------------------------------
 -- Tutorial / How to play screens
 -----------------------------------------------------
-local function showPayoutTable()
+local function showPayoutTable(timeoutState)
   local payoutPages = {}
   local roundsPerPage = 5
 
@@ -309,6 +309,7 @@ local function showPayoutTable()
 
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, payoutPages, {
     centerX = centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -353,9 +354,10 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial()
+local function showTutorial(timeoutState)
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -426,8 +428,8 @@ local function preRoundMenu()
     end
 
     if chosen == "play" then return end
-    if chosen == "payouts" then showPayoutTable() end
-    if chosen == "tutorial" then showTutorial() end
+    if chosen == "payouts" then showPayoutTable(timeoutState) end
+    if chosen == "tutorial" then showTutorial(timeoutState) end
   end
 end
 

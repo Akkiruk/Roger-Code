@@ -36,6 +36,7 @@ end
 -- Shared library imports
 -----------------------------------------------------
 local cards      = require("lib.cards")
+local activityTimeout = require("lib.activity_timeout")
 local currency   = require("lib.currency")
 local sound      = require("lib.sound")
 local ui         = require("lib.ui")
@@ -221,7 +222,7 @@ end
 -----------------------------------------------------
 -- Pre-round help screens
 -----------------------------------------------------
-local function showPayoutTable()
+local function showPayoutTable(timeoutState)
   local lines = {
     { text = "Blackjack pays +" .. tostring(cfg.BLACKJACK_PAYOUT) .. "x", color = colors.yellow },
     { text = "Regular win pays +1x", color = colors.white },
@@ -244,6 +245,7 @@ local function showPayoutTable()
 
   pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUTS", lines, {
     centerX = layout.centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -287,15 +289,18 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial()
+local function showTutorial(timeoutState)
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = layout.centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
 end
 
 local function preRoundMenu()
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
+
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -323,6 +328,7 @@ local function preRoundMenu()
     screen:output()
 
     ui.waitForButton(0, 0, {
+      timeoutState = timeoutState,
       inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
       onTimeout = triggerInactivityTimeout,
     })
@@ -330,9 +336,9 @@ local function preRoundMenu()
     if chosen == "play" then
       return
     elseif chosen == "payouts" then
-      showPayoutTable()
+      showPayoutTable(timeoutState)
     elseif chosen == "tutorial" then
-      showTutorial()
+      showTutorial(timeoutState)
     end
   end
 end

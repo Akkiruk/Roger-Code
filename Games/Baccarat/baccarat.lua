@@ -33,6 +33,7 @@ local waitForReplayChoice = nil
 -- Shared library imports
 -----------------------------------------------------
 local cards      = require("lib.cards")
+local activityTimeout = require("lib.activity_timeout")
 local currency   = require("lib.currency")
 local sound      = require("lib.sound")
 local ui         = require("lib.ui")
@@ -290,9 +291,10 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial()
+local function showTutorial(timeoutState)
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = centerX,
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -301,6 +303,8 @@ end
 -- Bet type selection (Player / Banker / Tie)
 -----------------------------------------------------
 local function selectBetType()
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
+
   while true do
     screen:clear(LO.TABLE_COLOR)
 
@@ -337,12 +341,13 @@ local function selectBetType()
     screen:output()
 
     ui.waitForButton(0, 0, {
+      timeoutState = timeoutState,
       inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
       onTimeout = triggerInactivityTimeout,
     })
 
     if chosen then return chosen end
-    if action == "tutorial" then showTutorial() end
+    if action == "tutorial" then showTutorial(timeoutState) end
     -- If the tutorial was shown, loop redraws the bet selection.
   end
 end

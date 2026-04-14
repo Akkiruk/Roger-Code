@@ -7,6 +7,7 @@ local currency = require("lib.currency")
 local sound = require("lib.sound")
 local ui = require("lib.ui")
 local alert = require("lib.alert")
+local activityTimeout = require("lib.activity_timeout")
 local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
 local pages = require("lib.casino_pages")
@@ -473,7 +474,7 @@ renderCurrent = function(idleMs)
   rouletteRender.draw(screen, font, layout, state)
 end
 
-local function showPayoutTable()
+local function showPayoutTable(timeoutState)
   local lines = {
     { text = "European single-zero payouts", color = colors.yellow },
     { spacer = true },
@@ -492,6 +493,7 @@ local function showPayoutTable()
 
   pages.showStatsScreen(screen, font, scale, cfg.LAYOUT.TABLE_COLOR, "PAYOUTS", lines, {
     centerX = floor(width / 2),
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -533,15 +535,18 @@ local TUTORIAL_PAGES = {
   },
 }
 
-local function showTutorial()
+local function showTutorial(timeoutState)
   pages.showPagedLines(screen, font, scale, cfg.LAYOUT.TABLE_COLOR, TUTORIAL_PAGES, {
     centerX = floor(width / 2),
+    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
 end
 
 local function preRoundMenu()
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
+
   while true do
     screen:clear(cfg.LAYOUT.TABLE_COLOR)
 
@@ -569,6 +574,7 @@ local function preRoundMenu()
     screen:output()
 
     ui.waitForButton(0, 0, {
+      timeoutState = timeoutState,
       inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
       onTimeout = triggerInactivityTimeout,
     })
@@ -576,9 +582,9 @@ local function preRoundMenu()
     if chosen == "play" then
       return
     elseif chosen == "payouts" then
-      showPayoutTable()
+      showPayoutTable(timeoutState)
     elseif chosen == "tutorial" then
-      showTutorial()
+      showTutorial(timeoutState)
     end
   end
 end
@@ -889,14 +895,14 @@ local function handleTouch(px, py)
 end
 
 local function runBettingLoop()
-  local lastActivity = epoch("local")
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
 
   while true do
     refreshPlayerState(false)
     refreshDerivedState()
 
-    local idleMs = epoch("local") - lastActivity
-    if idleMs > cfg.INACTIVITY_TIMEOUT then
+    local idleMs = timeoutState and timeoutState:elapsed() or 0
+    if timeoutState and timeoutState:isExpired() then
       sound.play(sound.SOUNDS.TIMEOUT, 0.45)
       os.sleep(0.5)
       if state.totalStake > 0 then
@@ -917,8 +923,10 @@ local function runBettingLoop()
       local event, param1, param2, param3 = os.pullEvent()
 
       if event == "monitor_touch" then
+        if timeoutState then
+          timeoutState:touch()
+        end
         local action = handleTouch(param2, param3)
-        lastActivity = epoch("local")
         continueLoop = true
         if timerID then
           pcall(os.cancelTimer, timerID)
