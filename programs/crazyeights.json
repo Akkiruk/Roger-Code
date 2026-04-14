@@ -7,12 +7,12 @@
     "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.22"
+    "version": "1.0.23"
   },
   "build": {
-    "commit": "9d06ed74c066f95ca1ea7655cda16fd4c57912e7",
-    "generated_at": "2026-04-14T03:59:53Z",
-    "package_hash": "c1afc30e80c02ef38b0077cd42083e85e01bc02e9dbfd54d27c2137b2508589e"
+    "commit": "7c4cfdc71067db95cb6cdb91ef898c2d6735604b",
+    "generated_at": "2026-04-14T04:07:07Z",
+    "package_hash": "1a14aaf0721106b52ee356ecc849f2b912c0793a59795be43ec2c2545cafbd10"
   },
   "install": {
     "preserve": [
@@ -182,7 +182,7 @@
       {
         "repo_path": "Games/CrazyEights/crazyeights.lua",
         "install_path": "crazyeights.lua",
-        "sha256": "a30a39c8085a69a0712319f9dc9585ba8ba7940a85013ceb8547f3c5e0cbf1f0"
+        "sha256": "45f4843e8f6ea90a5327a997f2cb2e24a5f6628f251717371769032c0c724b8a"
       },
       {
         "repo_path": "Games/CrazyEights/startup.lua",
