@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.84"
+    "version": "1.0.85"
   },
   "build": {
-    "commit": "c56154c65ac94e918bcbed8b71a8f45421a7b484",
-    "generated_at": "2026-04-14T03:25:42Z",
-    "package_hash": "4824c724560af25cf81dfc21c352d210c9e73bc2b80312d5b1e753df9f5475c9"
+    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+    "generated_at": "2026-04-14T03:28:46Z",
+    "package_hash": "ce29b7890cd34003426e39d59cb6f426a9145b3c172c510ab81f18d04f31a552"
   },
   "install": {
     "preserve": [
@@ -23,6 +23,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
         "repo_path": "Shared/lib/cards.lua",
@@ -65,14 +70,14 @@
         "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
+        "repo_path": "Shared/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+      },
+      {
         "repo_path": "Shared/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
-      },
-      {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -120,14 +125,14 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+        "repo_path": "Shared/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
-        "repo_path": "Shared/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Shared/lib/bedrock/runtime.lua",
@@ -135,9 +140,9 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Shared/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -145,9 +150,14 @@
         "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
       },
       {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "b46775f5444427cd0ddb38c585c8ce764348d73ae623ef0a1b46007db901fbdd"
+      },
+      {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+        "sha256": "c4a3599b8a5c6390b10a9c89ceb0215e727c88892d94b9304c2f18a0ae27af98"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -157,7 +167,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
+        "sha256": "dedc326e3c586948db33c250612fb25d65556d100376c9d2e5a2a6fa27ac5105"
       },
       {
         "repo_path": "Games/Roulette/roulette_layout.lua",
@@ -180,20 +190,19 @@
         "sha256": "f2d9e373c8b9fc0ef6313376cc5a27d3c77f235ecc248e3100dd607733592cb4"
       },
       {
+        "repo_path": "Shared/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
         "repo_path": "Games/Roulette/startup.lua",
         "install_path": "roulette_startup.lua",
         "sha256": "62458cd3dbced6776cd84c3b78679c8e9376517de755387e8dee91526f5f40ba"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
-      },
-      {
-        "repo_path": "Games/Roulette/roulette_config.lua",
-        "install_path": "roulette_config.lua",
-        "sha256": "32f1e96a451d92909d014a99f41deb6da7114c52db547855831425c69534196e",
-        "preserve_existing": true
+        "repo_path": "Games/Roulette/card.nfp",
+        "install_path": "card.nfp",
+        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
       },
       {
         "repo_path": "Games/Roulette/cardback.nfp",
@@ -236,14 +245,10 @@
         "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
       },
       {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
-      },
-      {
-        "repo_path": "Games/Roulette/card.nfp",
-        "install_path": "card.nfp",
-        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
+        "repo_path": "Games/Roulette/roulette_config.lua",
+        "install_path": "roulette_config.lua",
+        "sha256": "32f1e96a451d92909d014a99f41deb6da7114c52db547855831425c69534196e",
+        "preserve_existing": true
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -257,7 +262,7 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "roulette_startup.lua",
     "auto_restart": true,
-    "update_interval": 300,
+    "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
       "lib.activity_timeout",

@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.63"
+    "version": "1.2.64"
   },
   "build": {
-    "commit": "c56154c65ac94e918bcbed8b71a8f45421a7b484",
-    "generated_at": "2026-04-14T03:25:42Z",
-    "package_hash": "f6086bd09a1d29d7a1ab41c08e0a0a46e3ba8514c896043381b8a48e788a4565"
+    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+    "generated_at": "2026-04-14T03:28:46Z",
+    "package_hash": "53bb9dca303701db8d4fb25ef50fb07c61af756409c68bd4172589fc7440e088"
   },
   "install": {
     "preserve": [
@@ -145,14 +145,14 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
-      },
-      {
         "repo_path": "Shared/lib/bedrock/renderer.lua",
         "install_path": "lib/bedrock/renderer.lua",
         "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Shared/lib/bedrock.lua",
@@ -165,9 +165,14 @@
         "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
       },
       {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "b46775f5444427cd0ddb38c585c8ce764348d73ae623ef0a1b46007db901fbdd"
+      },
+      {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+        "sha256": "c4a3599b8a5c6390b10a9c89ceb0215e727c88892d94b9304c2f18a0ae27af98"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -177,7 +182,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
+        "sha256": "dedc326e3c586948db33c250612fb25d65556d100376c9d2e5a2a6fa27ac5105"
       },
       {
         "repo_path": "Games/Baccarat/baccarat.lua",
@@ -211,14 +216,14 @@
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
       },
       {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+      },
+      {
         "repo_path": "Games/Baccarat/clubs.nfp",
         "install_path": "clubs.nfp",
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
-      },
-      {
-        "repo_path": "Games/Baccarat/diamond.nfp",
-        "install_path": "diamond.nfp",
-        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Games/Baccarat/diamonds.nfp",
@@ -276,9 +281,9 @@
         "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
       },
       {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
+        "repo_path": "Games/Baccarat/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -292,7 +297,7 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "baccarat_startup.lua",
     "auto_restart": true,
-    "update_interval": 300,
+    "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
       "lib.activity_timeout",

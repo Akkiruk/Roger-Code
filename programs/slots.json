@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.70"
+    "version": "1.0.71"
   },
   "build": {
-    "commit": "c56154c65ac94e918bcbed8b71a8f45421a7b484",
-    "generated_at": "2026-04-14T03:25:42Z",
-    "package_hash": "7225d826c9a93bca6cf75cebd96df46662b6122ee4769c8988a0dab3ed28aef1"
+    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+    "generated_at": "2026-04-14T03:28:46Z",
+    "package_hash": "d7f24a1b5e2cc03c44489eb178ee659d0a1f9b664aa10b25b5904ca8395f029b"
   },
   "install": {
     "preserve": [
@@ -135,14 +135,14 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
-      },
-      {
         "repo_path": "Shared/lib/bedrock/renderer.lua",
         "install_path": "lib/bedrock/renderer.lua",
         "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Shared/lib/bedrock.lua",
@@ -155,9 +155,14 @@
         "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
       },
       {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "b46775f5444427cd0ddb38c585c8ce764348d73ae623ef0a1b46007db901fbdd"
+      },
+      {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+        "sha256": "c4a3599b8a5c6390b10a9c89ceb0215e727c88892d94b9304c2f18a0ae27af98"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -167,7 +172,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
+        "sha256": "dedc326e3c586948db33c250612fb25d65556d100376c9d2e5a2a6fa27ac5105"
       },
       {
         "repo_path": "Games/Slots/slots.lua",
@@ -196,14 +201,14 @@
         "sha256": "381a51a5043e943f00255a566868b6ed5230f96b23f381d1e04e3b6ef309bf1b"
       },
       {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+      },
+      {
         "repo_path": "Games/Slots/bell.nfp",
         "install_path": "bell.nfp",
         "sha256": "9b7b044579aeabb4837357caa274d1e94d23b9ff59cec1ba546c8be2679bf9c5"
-      },
-      {
-        "repo_path": "Games/Slots/cherry.nfp",
-        "install_path": "cherry.nfp",
-        "sha256": "648a723cb2edf6070f4212d9d45c7d679d24b6ad9796304a27d27ccc0eb3964d"
       },
       {
         "repo_path": "Games/Slots/diamond.nfp",
@@ -256,9 +261,9 @@
         "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
       },
       {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
+        "repo_path": "Games/Slots/cherry.nfp",
+        "install_path": "cherry.nfp",
+        "sha256": "648a723cb2edf6070f4212d9d45c7d679d24b6ad9796304a27d27ccc0eb3964d"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -272,7 +277,7 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "slots_startup.lua",
     "auto_restart": true,
-    "update_interval": 300,
+    "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
       "lib.activity_timeout",
