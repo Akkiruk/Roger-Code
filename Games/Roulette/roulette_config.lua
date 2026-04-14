@@ -26,6 +26,7 @@ return {
   SPIN_FAST_SUBFRAMES = 2,      -- early spin interpolation steps per number
   SPIN_SLOW_SUBFRAMES = 4,      -- late spin interpolation steps per number
   SPIN_SLOWDOWN_AT    = 0.78,   -- progress point where the wheel starts using extra interpolation
+  WHEEL_VISUAL_Y_SCALE = 0.88,  -- compensate for monitor cell aspect so the wheel reads as circular
   RESULT_PAUSE        = 2.4,    -- seconds to display result
   HISTORY_LENGTH      = 10,
 
