@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
-    "generated_at": "2026-04-14T03:19:20Z",
-    "package_hash": "0c6b86daca82aa69275a28f7f52fcb9ef233efb0e54f1a2159ca03cbe60879d2"
+    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
+    "generated_at": "2026-04-14T03:21:28Z",
+    "package_hash": "187153d9658016a259adddde3367b7b455870b243db2e4808b1850a6c8c26d55"
   },
   "install": {
     "preserve": [],
@@ -23,14 +23,24 @@
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
+      },
+      {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
+        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
+        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
       },
       {
         "repo_path": "Apps/SoundBrowser/export_report.lua",
@@ -93,6 +103,7 @@
     "requires_updater": true,
     "lib_modules": [
       "lib.peripherals",
+      "lib.roger_logging",
       "lib.sound",
       "lib.sound_catalog",
       "lib.sound_metadata",

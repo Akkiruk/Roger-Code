@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with dealer and seat modes.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.16"
+    "version": "1.0.17"
   },
   "build": {
-    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
-    "generated_at": "2026-04-14T03:19:20Z",
-    "package_hash": "49d0ccf30d1b281eb012bc9d53047c4f377d48528cfd144685d761155fa8cbef"
+    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
+    "generated_at": "2026-04-14T03:21:28Z",
+    "package_hash": "f5bddfa1277ff42e1d68d4dc69b24ba348410e546f9ebdffa9ce9aba37c4fb3d"
   },
   "install": {
     "preserve": [
@@ -32,7 +32,7 @@
       {
         "repo_path": "Shared/lib/poker_log.lua",
         "install_path": "lib/poker_log.lua",
-        "sha256": "00914ed97920d7d96822d86d3d0855239cb1f1fc2fac07b9fc7aeae2e11b7dd1"
+        "sha256": "9bb78eb9b1c2b97c360695da00b21d24ec3329b50b2a8c3be0838b71895d7737"
       },
       {
         "repo_path": "Shared/lib/poker_bank.lua",
@@ -93,12 +93,22 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
+        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
       },
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
+        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
       },
       {
         "repo_path": "Shared/lib/poker_store.lua",
@@ -128,7 +138,8 @@
       "lib.poker_log",
       "lib.poker_protocol",
       "lib.poker_store",
-      "lib.poker_transport"
+      "lib.poker_transport",
+      "lib.roger_logging"
     ]
   }
 }

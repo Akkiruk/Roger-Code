@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.82"
+    "version": "1.0.83"
   },
   "build": {
-    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
-    "generated_at": "2026-04-14T03:19:20Z",
-    "package_hash": "ebf82660415c1dfc803b9e225fe1383821da514b7ebdd2732ea0dff33f1da101"
+    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
+    "generated_at": "2026-04-14T03:21:28Z",
+    "package_hash": "c850670099979ed4cd288c94b70dcbb7c85d92170e156261ea04c99b4c0d181b"
   },
   "install": {
     "preserve": [
@@ -23,6 +23,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
       },
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
@@ -37,7 +42,7 @@
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
         "install_path": "lib/crash_recovery.lua",
-        "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
+        "sha256": "065352942aa275de859eb971e92755fda9b31c5f406f2cc7c763c88a1b3e65a0"
       },
       {
         "repo_path": "Shared/lib/currency.lua",
@@ -65,14 +70,14 @@
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
       },
       {
-        "repo_path": "Shared/lib/cards.lua",
-        "install_path": "lib/cards.lua",
-        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
-      },
-      {
         "repo_path": "Shared/lib/monitor_scale.lua",
         "install_path": "lib/monitor_scale.lua",
         "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+      },
+      {
+        "repo_path": "Shared/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
         "repo_path": "Shared/lib/player_detection.lua",
@@ -115,11 +120,6 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
-      },
-      {
         "repo_path": "Shared/lib/bedrock/widgets.lua",
         "install_path": "lib/bedrock/widgets.lua",
         "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
@@ -135,14 +135,29 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
+        "repo_path": "Shared/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
+      },
+      {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
+        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
+        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
       },
       {
         "repo_path": "Games/Roulette/roulette_layout.lua",
@@ -170,15 +185,15 @@
         "sha256": "62458cd3dbced6776cd84c3b78679c8e9376517de755387e8dee91526f5f40ba"
       },
       {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+      },
+      {
         "repo_path": "Games/Roulette/roulette_config.lua",
         "install_path": "roulette_config.lua",
         "sha256": "32f1e96a451d92909d014a99f41deb6da7114c52db547855831425c69534196e",
         "preserve_existing": true
-      },
-      {
-        "repo_path": "Games/Roulette/card.nfp",
-        "install_path": "card.nfp",
-        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
       },
       {
         "repo_path": "Games/Roulette/cardback.nfp",
@@ -208,7 +223,7 @@
       {
         "repo_path": "Shared/lib/alert.lua",
         "install_path": "lib/alert.lua",
-        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
       },
       {
         "repo_path": "Shared/lib/auth_wait_screen.lua",
@@ -226,14 +241,9 @@
         "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
-        "repo_path": "Shared/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
-      },
-      {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+        "repo_path": "Games/Roulette/card.nfp",
+        "install_path": "card.nfp",
+        "sha256": "2d7be8caffcc31e6cfb9800e46ec171a62ed73e9b43115f038680986058bccb5"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -272,6 +282,7 @@
       "lib.peripherals",
       "lib.player_detection",
       "lib.replay_prompt",
+      "lib.roger_logging",
       "lib.round_settlement",
       "lib.safe_runner",
       "lib.sound",

@@ -7,12 +7,12 @@
     "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
-    "generated_at": "2026-04-14T03:19:20Z",
-    "package_hash": "e785ebe61797a737eab04b00c519a0ff081e94ec1c581d6eb86b170d292af143"
+    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
+    "generated_at": "2026-04-14T03:21:28Z",
+    "package_hash": "b510b1b1c069ea1db76f4b031e10cd68eded976f72cbf3b8cb396fadcb01f277"
   },
   "install": {
     "preserve": [
@@ -23,6 +23,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
       },
       {
         "repo_path": "Shared/lib/bedrock/widgets.lua",
@@ -57,7 +62,7 @@
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
         "install_path": "lib/crash_recovery.lua",
-        "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
+        "sha256": "065352942aa275de859eb971e92755fda9b31c5f406f2cc7c763c88a1b3e65a0"
       },
       {
         "repo_path": "Shared/lib/currency.lua",
@@ -70,14 +75,14 @@
         "sha256": "0759c4f50ece5f4ccaeda2e3b40cc45e76beec1614fdfd7dbb812167571d205a"
       },
       {
-        "repo_path": "Shared/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
-      },
-      {
         "repo_path": "Shared/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
         "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
+      },
+      {
+        "repo_path": "Shared/lib/idle_card_animation.lua",
+        "install_path": "lib/idle_card_animation.lua",
+        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
         "repo_path": "Shared/lib/idle_screen.lua",
@@ -125,11 +130,6 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/idle_card_animation.lua",
-        "install_path": "lib/idle_card_animation.lua",
-        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
-      },
-      {
         "repo_path": "Shared/lib/bedrock/runtime.lua",
         "install_path": "lib/bedrock/runtime.lua",
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
@@ -145,14 +145,29 @@
         "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
+        "repo_path": "Shared/lib/bedrock.lua",
+        "install_path": "lib/bedrock.lua",
+        "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
+      },
+      {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
+        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
+        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
       },
       {
         "repo_path": "Games/CrazyEights/crazyeights.lua",
@@ -186,14 +201,14 @@
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
       },
       {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+      },
+      {
         "repo_path": "Games/CrazyEights/clubs.nfp",
         "install_path": "clubs.nfp",
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
-      },
-      {
-        "repo_path": "Games/CrazyEights/diamond.nfp",
-        "install_path": "diamond.nfp",
-        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Games/CrazyEights/diamonds.nfp",
@@ -238,7 +253,7 @@
       {
         "repo_path": "Shared/lib/alert.lua",
         "install_path": "lib/alert.lua",
-        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
       },
       {
         "repo_path": "Shared/lib/auth_wait_screen.lua",
@@ -246,14 +261,9 @@
         "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
       },
       {
-        "repo_path": "Shared/lib/bedrock.lua",
-        "install_path": "lib/bedrock.lua",
-        "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
-      },
-      {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+        "repo_path": "Games/CrazyEights/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -294,6 +304,7 @@
       "lib.peripherals",
       "lib.player_detection",
       "lib.replay_prompt",
+      "lib.roger_logging",
       "lib.round_settlement",
       "lib.sound",
       "lib.ui",

@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
-    "generated_at": "2026-04-14T03:19:20Z",
-    "package_hash": "c08cfa6c71368501175be09b3c86ab09adbd134f41049bfe3055967321b75997"
+    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
+    "generated_at": "2026-04-14T03:21:28Z",
+    "package_hash": "bb842cccf97bd15fca20403a60c45a3dbc3631fa1ac5415649b05d81e5bbd022"
   },
   "install": {
     "preserve": [
@@ -38,7 +38,7 @@
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
         "install_path": "lib/crash_recovery.lua",
-        "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
+        "sha256": "065352942aa275de859eb971e92755fda9b31c5f406f2cc7c763c88a1b3e65a0"
       },
       {
         "repo_path": "Shared/lib/cards.lua",
@@ -53,7 +53,7 @@
       {
         "repo_path": "Shared/lib/alert.lua",
         "install_path": "lib/alert.lua",
-        "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
+        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
       },
       {
         "repo_path": "Apps/PhoneOS/vhcc_lockdown.txt",
@@ -115,12 +115,22 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "24cdbe25b4970053f66a2deeab23d3e37ffd729d9c080e5b7e171cfbe6bacc58"
+        "sha256": "ca3e0a5489ab9696940f34de59b6407402a4d594894b0fc04fd55b24eaad676f"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
       },
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "4274ba1c57628265c3c96815d5187ceaa901c5c8e6b752e100c69b4f1844bfe8"
+        "sha256": "b53269cbf85c0d40512b00b33d130c2f186c48daa25a47fac11bbec76c450904"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "50e41da620c815baeb4dc30550474b3a49ec28d7ecff78a5ca7179a98ff8cbeb"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -149,6 +159,7 @@
       "lib.currency",
       "lib.monitor_scale",
       "lib.peripherals",
+      "lib.roger_logging",
       "lib.sound",
       "lib.updater"
     ]
