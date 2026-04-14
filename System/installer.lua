@@ -47,7 +47,7 @@ local STANDALONE_SKIP_SUFFIXES = {
   ".md",
 }
 local INSTALL_STATE_SCHEMA = 2
-local DEFAULT_UPDATE_INTERVAL = 300
+local DEFAULT_UPDATE_INTERVAL = 60
 local UPDATED_ARG = "--installer-updated"
 local RESERVED_LOCAL_PATHS = {
   [VERSION_FILE] = true,

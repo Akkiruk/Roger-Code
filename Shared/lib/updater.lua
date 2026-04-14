@@ -21,8 +21,8 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
-local DEFAULT_WATCH_INTERVAL = 300
-local DEFAULT_STARTUP_INTERVALS = { 5, 5, 10, 10, 15, 15, 30, 30, 60, 60, 120 }
+local DEFAULT_WATCH_INTERVAL = 60
+local DEFAULT_STARTUP_INTERVALS = { 5, 10, 15, 30, 45 }
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local CONTENTS_API_ROOT = API_URL .. "/contents/"
 local CONTENTS_API_HEADERS = {
@@ -182,6 +182,29 @@ local function saveInstalled(info)
     f.write(textutils.serialise(info))
     f.close()
   end
+end
+
+local function setUpdateInterval(seconds)
+  local installed = loadInstalled()
+  if not installed then
+    return false, "No install record found"
+  end
+
+  local value = tonumber(seconds)
+  if not value then
+    return false, "Interval must be a number"
+  end
+
+  value = math.floor(value)
+  if value < 5 then
+    return false, "Interval must be at least 5 seconds"
+  end
+
+  installed.update_interval = value
+  installed.updated_at = os.epoch("local")
+  saveInstalled(installed)
+  logMsg("Update interval changed to " .. tostring(value) .. " seconds")
+  return true, value
 end
 
 local function buildInstalledRecord(spec, previous)
@@ -651,7 +674,9 @@ local function checkForUpdates(opts)
     local localHash = installed.package_hash or installed.content_hash or ""
     local remoteHash = programEntry.package_hash or ""
 
-    if localCommit == remoteCommit and localHash == remoteHash then
+    local forceMode = opts.force == true
+
+    if localCommit == remoteCommit and localHash == remoteHash and not forceMode then
       logMsg("Up to date: " .. progKey .. " v" .. tostring(installed.version or "?"))
       releaseLock()
       status = "up-to-date"
@@ -661,6 +686,9 @@ local function checkForUpdates(opts)
     end
 
     local reason = ""
+    if forceMode then
+      reason = "forced reinstall"
+    end
     if localCommit ~= remoteCommit then
       reason = "commit changed"
     end
@@ -722,7 +750,7 @@ local function getInstallInfo()
 end
 
 local function forceUpdate()
-  return checkForUpdates()
+  return checkForUpdates({ force = true })
 end
 
 local function watchForUpdates(opts)
@@ -733,6 +761,7 @@ local function watchForUpdates(opts)
   local startupIndex = 1
   local lastStatus = nil
   local lastMessage = nil
+  local immediate = opts.immediate ~= false
 
   local function notify(status, message)
     local normalizedMessage = tostring(message or "")
@@ -750,16 +779,24 @@ local function watchForUpdates(opts)
     callback(status, message)
   end
 
-  while true do
-    local interval = startupSchedule[startupIndex] or steadyInterval
-    os.sleep(interval)
-
+  local function runOneCheck()
     local status = checkForUpdates({ callback = notify })
     if status == "updated" then
       notify("rebooting", "Update applied, rebooting...")
       os.sleep(1)
       os.reboot()
     end
+  end
+
+  if immediate then
+    runOneCheck()
+  end
+
+  while true do
+    local interval = startupSchedule[startupIndex] or steadyInterval
+    os.sleep(interval)
+
+    runOneCheck()
 
     if startupSchedule[startupIndex] then
       startupIndex = startupIndex + 1
@@ -772,4 +809,8 @@ return {
   forceUpdate = forceUpdate,
   watchForUpdates = watchForUpdates,
   getInstallInfo = getInstallInfo,
+  setUpdateInterval = setUpdateInterval,
+  getDefaultUpdateInterval = function()
+    return DEFAULT_WATCH_INTERVAL
+  end,
 }
