@@ -378,7 +378,7 @@ local function getActionButtonY(rowCount)
   local rows = max(1, tonumber(rowCount) or 1)
   local blockHeight = scale.buttonHeight + ((rows - 1) * scale.buttonRowSpacing)
   local playerTopY = getPlayerHandY() - 2
-  local preferredY = playerTopY - blockHeight - scale.sectionGap - scale.smallGap
+  local preferredY = playerTopY - blockHeight - scale.lineHeight - scale.sectionGap - scale.smallGap
   local minimumY = centerY + cardBack.height + scale.lineHeight + (scale.smallGap * 2)
   return max(minimumY, preferredY)
 end
