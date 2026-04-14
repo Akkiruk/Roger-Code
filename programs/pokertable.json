@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with dealer and seat modes.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.23"
+    "version": "1.0.24"
   },
   "build": {
-    "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-    "generated_at": "2026-04-14T04:20:55Z",
-    "package_hash": "9aafc4f495d908bf372851bda2c3e1de960daa32226b16af06628c5c1f23f218"
+    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
+    "generated_at": "2026-04-14T04:25:15Z",
+    "package_hash": "f0634f83ce1007f8087c0c35937f7a0f3be1c89e156e4f1cce0bb1cb369da8c8"
   },
   "install": {
     "preserve": [
@@ -103,7 +103,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c596da80b4506aa9992c1fa5aaf231f9af7621c4533f3c8dafeab17d9506df5e"
+        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
       },
       {
         "repo_path": "System/roger_update.lua",

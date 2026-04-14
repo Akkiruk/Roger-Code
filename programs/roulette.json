@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.93"
+    "version": "1.0.94"
   },
   "build": {
-    "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-    "generated_at": "2026-04-14T04:20:55Z",
-    "package_hash": "c3f600729751afafdcfb1d70cfee910b65dc33e9c27ec86e6be3fb8f5965c60a"
+    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
+    "generated_at": "2026-04-14T04:25:15Z",
+    "package_hash": "d023ab7126cf9834a8324f071e5e10e52af1bcfc0081b171fe404cbf33abb861"
   },
   "install": {
     "preserve": [
@@ -37,7 +37,7 @@
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "2af406eab177ed589c962ee5815c94d0089475f1f8d3b073ffdf3f58e710b006"
+        "sha256": "0e32304c849449585bf6ad0c108b63ce0fa45da32663c98e12fd6833c7120540"
       },
       {
         "repo_path": "Shared/lib/casino_pages.lua",
@@ -157,7 +157,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c596da80b4506aa9992c1fa5aaf231f9af7621c4533f3c8dafeab17d9506df5e"
+        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -182,12 +182,12 @@
       {
         "repo_path": "Games/Roulette/roulette_render.lua",
         "install_path": "roulette_render.lua",
-        "sha256": "cd04d9492c4d2626be8e2ed348989f9d77615ba00376f8e2d47f669e1f276748"
+        "sha256": "34ffb69d9d3d09a959cd9b47b3be44ba4a42c82f77155bf33bcf6b688b16d24c"
       },
       {
         "repo_path": "Games/Roulette/Roulette.lua",
         "install_path": "Roulette.lua",
-        "sha256": "690bbe4e53964a1481e985780ea4f486664f0786f627a38a4c6ce6c36e788671"
+        "sha256": "ad9769c88d61f23621b2e282a4d041098ff12c152c5b0c4b154fb7d90caf3959"
       },
       {
         "repo_path": "Shared/lib/bedrock/renderer.lua",
@@ -247,7 +247,7 @@
       {
         "repo_path": "Games/Roulette/roulette_config.lua",
         "install_path": "roulette_config.lua",
-        "sha256": "0a12d48b37c02a627108fc0cd6a7c91a74c0d875630c3446b984fbc4fb8d3f6e",
+        "sha256": "64c35269dea06326f5ed3694c95a130fad5423c1e193ccdb0df81403cff23c26",
         "preserve_existing": true
       },
       {
@@ -295,7 +295,8 @@
       "lib.ui",
       "lib.ui_surface",
       "lib.ui_text",
-      "lib.ui_touch"
+      "lib.ui_touch",
+      "lib.updater"
     ]
   }
 }

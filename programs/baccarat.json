@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.71"
+    "version": "1.2.72"
   },
   "build": {
-    "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
-    "generated_at": "2026-04-14T04:20:55Z",
-    "package_hash": "aa04e9248377cf6872e0704c1788e86bee3bb0bb7fa31380465859db0c0a17c7"
+    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
+    "generated_at": "2026-04-14T04:25:15Z",
+    "package_hash": "f033d8f99625fd90f270c87fc07ea3edc9e67d3fe197d135b28c28b1738b18ff"
   },
   "install": {
     "preserve": [
@@ -57,7 +57,7 @@
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "2af406eab177ed589c962ee5815c94d0089475f1f8d3b073ffdf3f58e710b006"
+        "sha256": "0e32304c849449585bf6ad0c108b63ce0fa45da32663c98e12fd6833c7120540"
       },
       {
         "repo_path": "Shared/lib/casino_pages.lua",
@@ -172,7 +172,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c596da80b4506aa9992c1fa5aaf231f9af7621c4533f3c8dafeab17d9506df5e"
+        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -332,7 +332,8 @@
       "lib.ui",
       "lib.ui_surface",
       "lib.ui_text",
-      "lib.ui_touch"
+      "lib.ui_touch",
+      "lib.updater"
     ]
   }
 }

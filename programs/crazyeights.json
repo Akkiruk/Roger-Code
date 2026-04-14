@@ -7,12 +7,12 @@
     "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.26"
+    "version": "1.0.27"
   },
   "build": {
-    "commit": "5cd5bf2f5506bc43bea83a1efbff4a321424b6ee",
-    "generated_at": "2026-04-14T04:20:55Z",
-    "package_hash": "75205ba0b72e5c9ec328ec3ad460753e706267bc0a918f942028594d126897d9"
+    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
+    "generated_at": "2026-04-14T04:25:15Z",
+    "package_hash": "ea2831bb2833f4207d3823bf32a6dfbf881fa52d55c9ad46cbacc56349772c49"
   },
   "install": {
     "preserve": [
@@ -57,7 +57,7 @@
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "2af406eab177ed589c962ee5815c94d0089475f1f8d3b073ffdf3f58e710b006"
+        "sha256": "0e32304c849449585bf6ad0c108b63ce0fa45da32663c98e12fd6833c7120540"
       },
       {
         "repo_path": "Shared/lib/casino_pages.lua",
@@ -167,7 +167,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c596da80b4506aa9992c1fa5aaf231f9af7621c4533f3c8dafeab17d9506df5e"
+        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -315,7 +315,8 @@
       "lib.ui",
       "lib.ui_surface",
       "lib.ui_text",
-      "lib.ui_touch"
+      "lib.ui_touch",
+      "lib.updater"
     ]
   }
 }
