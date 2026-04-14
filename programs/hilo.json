@@ -7,12 +7,12 @@
     "description": "Guess higher or lower across a streak-based payout ladder.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.63"
+    "version": "1.0.64"
   },
   "build": {
-    "commit": "a3d3c0dbb99503683a7bc96c7da536409bce2ac3",
-    "generated_at": "2026-04-14T02:39:27Z",
-    "package_hash": "7038d435448c8c31d371a36df90e7cf9b1b9baeec153f0fc611a113382ef3bca"
+    "commit": "3d75f9b4cfdb74be8b76e55b57fef72e5b23c576",
+    "generated_at": "2026-04-14T02:43:31Z",
+    "package_hash": "f624b8fc0eb5471ea6102ed094d09c5501937f1acf76b9641ba4bc8f73c9bf90"
   },
   "install": {
     "preserve": [
@@ -162,7 +162,7 @@
       {
         "repo_path": "Games/HiLo/hilo.lua",
         "install_path": "hilo.lua",
-        "sha256": "2ab40e407a598a42c3badba7dec805d426a203bf04b7235eeecd773fd4d5675b"
+        "sha256": "9c7f672fe0a6c2df9916d79e547d64e5f3fc96ab639120b3ee78a9ecbf3720fa"
       },
       {
         "repo_path": "Games/HiLo/startup.lua",
