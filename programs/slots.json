@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.59"
+    "version": "1.0.60"
   },
   "build": {
-    "commit": "73b4453a33278c87822b75d763ae333062d64c07",
-    "generated_at": "2026-04-13T21:19:35Z",
-    "package_hash": "3e3ea8e5ce99b134c952a8339ea8d40e0834f6545bdc7dfe04de6fb34e0a21c0"
+    "commit": "486455af46ddf7236ebaf6ca9952d0f7603bd9a7",
+    "generated_at": "2026-04-14T00:23:48Z",
+    "package_hash": "d83bc379b8e37b800cbe325cd0a0ade26e7456d41066cb776f5d77f243c5ece9"
   },
   "install": {
     "preserve": [
@@ -40,6 +40,11 @@
         "sha256": "f4b4d87085ace92b8aeb6885d6d28201d721f76bc5afc2d73fb95f9363e0c6c6"
       },
       {
+        "repo_path": "Shared/lib/casino_pages.lua",
+        "install_path": "lib/casino_pages.lua",
+        "sha256": "2f9ef142fc43c47e847046225326945cc3d5ada2fc3113e758bc5427965738af"
+      },
+      {
         "repo_path": "Shared/lib/crash_recovery.lua",
         "install_path": "lib/crash_recovery.lua",
         "sha256": "6977dcce940662cfd7ac79490173c78ccc24ee5550e696837551ce704a99718a"
@@ -65,14 +70,14 @@
         "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
-        "repo_path": "Shared/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
-      },
-      {
         "repo_path": "Shared/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
+      },
+      {
+        "repo_path": "Shared/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -115,19 +120,19 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+        "repo_path": "Shared/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+      },
+      {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Shared/lib/bedrock/theme.lua",
         "install_path": "lib/bedrock/theme.lua",
         "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/runtime.lua",
-        "install_path": "lib/bedrock/runtime.lua",
-        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
         "repo_path": "Shared/lib/bedrock/renderer.lua",
@@ -147,7 +152,7 @@
       {
         "repo_path": "Games/Slots/slots.lua",
         "install_path": "slots.lua",
-        "sha256": "45493c4ebfd7a8e02b0acaa5176d2f738b6a1e5d3e7d4bdfdadedb789fe6d11a"
+        "sha256": "1abdc567894b0efc2ecffab33a05783f9ff21eae453c319cd0c36ad2d59fb9a9"
       },
       {
         "repo_path": "Games/Slots/startup.lua",
@@ -231,9 +236,9 @@
         "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+        "repo_path": "Shared/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -260,6 +265,7 @@
       "lib.betting",
       "lib.cards",
       "lib.casino_launcher",
+      "lib.casino_pages",
       "lib.crash_recovery",
       "lib.currency",
       "lib.game_setup",
