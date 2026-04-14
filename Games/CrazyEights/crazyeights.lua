@@ -10,7 +10,6 @@ local SCORE_VALUES = cfg.SCORE_VALUES
 
 local settings_get = settings.get
 local epoch = os.epoch
-local r_getInput = redstone.getInput
 local floor = math.floor
 local max = math.max
 local min = math.min
@@ -45,17 +44,6 @@ local pages = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
 
 local canReplayBet = nil
-
-local AUTO_PLAY = false
-
-local function updateAutoPlayFromRedstone()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg(AUTO_PLAY and "Auto-play ON" or "Auto-play OFF")
-  end
-  return AUTO_PLAY
-end
 
 recovery.configure(cfg.RECOVERY_FILE)
 recovery.setGame(cfg.GAME_NAME)
@@ -480,15 +468,6 @@ local function getTouchedPlayerCard(roundState, px, py)
 end
 
 local function chooseSuitPrompt(roundState, side)
-  if AUTO_PLAY and side ~= "player" then
-    local hand = side == "player" and roundState.playerHand or roundState.dealerHand
-    return chooseBestSuit(hand)
-  end
-
-  if AUTO_PLAY and side == "player" then
-    return chooseBestSuit(roundState.playerHand)
-  end
-
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
@@ -691,10 +670,6 @@ local function preRoundMenu()
     }, centerX, scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
-    if AUTO_PLAY then
-      return
-    end
-
     local timerID = os.startTimer(0.25)
     while true do
       local event, param1, param2, param3 = os.pullEvent()
@@ -799,7 +774,7 @@ local function buildRoundState(matchState)
   return roundState
 end
 
-local function autoPlayerCardIndex(roundState)
+local function choosePreferredPlayerCardIndex(roundState)
   local playable = getPlayableIndexes(roundState.playerHand, roundState)
   if #playable == 0 then
     return nil
@@ -830,23 +805,6 @@ local function choosePlayableCard(roundState)
   local playable = getPlayableIndexes(roundState.playerHand, roundState)
   if #playable > 0 then
     selectedIndex = playable[1]
-  end
-
-  if AUTO_PLAY then
-    os.sleep(cfg.AUTO_PLAY_DELAY)
-    if roundState.pendingDraw > 0 then
-      local autoIndex = autoPlayerCardIndex(roundState)
-      if autoIndex and cardRank(roundState.playerHand[autoIndex]) == "2" then
-        return { type = "play", index = autoIndex }
-      end
-      return { type = "take_penalty" }
-    end
-
-    if #playable > 0 then
-      return { type = "play", index = autoPlayerCardIndex(roundState) }
-    end
-
-    return { type = "draw" }
   end
 
   local choice = nil
@@ -919,13 +877,13 @@ local function choosePlayableCard(roundState)
         end
       elseif event == "timer" and param1 == timerID then
         if (epoch("local") - lastActivityTime) > cfg.INACTIVITY_TIMEOUT then
-          local timeoutIndex = autoPlayerCardIndex(roundState)
+          local timeoutIndex = choosePreferredPlayerCardIndex(roundState)
           if roundState.pendingDraw > 0 and timeoutIndex and cardRank(roundState.playerHand[timeoutIndex]) == "2" then
             alert.log("CrazyEights timeout: auto-stacked a 2")
             return { type = "play", index = timeoutIndex }
           end
           if timeoutIndex then
-            alert.log("CrazyEights timeout: auto-played best legal card")
+            alert.log("CrazyEights timeout: selected best legal card")
             return { type = "play", index = timeoutIndex }
           end
           if roundState.pendingDraw > 0 then
@@ -944,11 +902,6 @@ local function choosePlayableCard(roundState)
 end
 
 local function choosePostDrawAction(roundState, drawnIndex)
-  if AUTO_PLAY then
-    os.sleep(cfg.AUTO_PLAY_DELAY)
-    return true
-  end
-
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
@@ -964,7 +917,7 @@ local function choosePostDrawAction(roundState, drawnIndex)
     col_spacing = scale.buttonColGap,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = function()
-      alert.log("CrazyEights timeout: auto-played drawn card")
+      alert.log("CrazyEights timeout: played drawn card")
       return "play"
     end,
     buttons = {
@@ -1048,7 +1001,7 @@ local function executeDealerTurn(roundState)
     statusText = roundState.statusText,
   })
   screen:output()
-  os.sleep(AUTO_PLAY and cfg.AUTO_PLAY_DELAY or 0.8)
+  os.sleep(0.8)
 
   if roundState.skipSide == "dealer" then
     roundState.skipSide = nil
@@ -1288,35 +1241,24 @@ local function main()
   local replayBetAmount = nil
 
   while true do
-    updateAutoPlayFromRedstone()
     refreshPlayer()
     drawPlayerOverlay()
 
     local betAmount = nil
 
-    if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      local autoBet = min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if autoBet > 0 then
-        betAmount = autoBet
-      else
-        os.sleep(1)
-      end
-    else
-      if not skipPreRoundMenu then
-        preRoundMenu()
-      end
-
-      if skipPreRoundMenu and canReplayBet(replayBetAmount) then
-        betAmount = replayBetAmount
-      else
-        local selectedBet = betSelection()
-        if selectedBet and selectedBet > 0 then
-          betAmount = selectedBet
-        end
-      end
-      skipPreRoundMenu = false
+    if not skipPreRoundMenu then
+      preRoundMenu()
     end
+
+    if skipPreRoundMenu and canReplayBet(replayBetAmount) then
+      betAmount = replayBetAmount
+    else
+      local selectedBet = betSelection()
+      if selectedBet and selectedBet > 0 then
+        betAmount = selectedBet
+      end
+    end
+    skipPreRoundMenu = false
 
     if betAmount and betAmount > 0 then
       local roundChoice = playMatch(betAmount)

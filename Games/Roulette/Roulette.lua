@@ -25,7 +25,6 @@ local min = math.min
 local max = math.max
 local random = math.random
 local randomseed = math.randomseed
-local r_getInput = redstone.getInput
 local settings_get = settings.get
 local insert = table.insert
 
@@ -43,7 +42,6 @@ local function dbg(message)
   end
 end
 
-local AUTO_PLAY = false
 local sessionPlayer = nil
 local renderCurrent = nil
 
@@ -96,7 +94,6 @@ sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName(
 recovery.setPlayer(sessionPlayer or "Unknown")
 
 local state = {
-  autoPlay = false,
   phase = "betting",
   currentPlayer = sessionPlayer or env.currentPlayer or "Unknown",
   statusText = "Pick a chip, then tap the table.",
@@ -178,7 +175,6 @@ local function triggerInactivityTimeout()
 end
 
 local function refreshDerivedState()
-  state.autoPlay = AUTO_PLAY
   state.denominations = currency.DENOMINATIONS
   state.totalStake = rouletteModel.getTotalStake(state.bets)
   state.maxExposure = rouletteModel.getMaxExposure(state.bets)
@@ -194,20 +190,6 @@ local function refreshDerivedState()
     state.sessionProfitText = "0"
     state.sessionProfitTone = "neutral"
   end
-end
-
-local function refreshAutoPlay()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg("Auto-play " .. (AUTO_PLAY and "enabled" or "disabled"))
-    if AUTO_PLAY then
-      setStatus("Auto play enabled.", "accent", 1200)
-    else
-      setStatus("Manual play restored.", "accent", 1200)
-    end
-  end
-  return AUTO_PLAY
 end
 
 local function refreshPlayerState(forceBalances)
@@ -777,7 +759,7 @@ local function settleRound()
   os.sleep(cfg.RESULT_PAUSE)
 
   local replayChanges = copyReplayChanges(buildChangesFromBets(state.bets))
-  local nextChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(replayChanges)
+  local nextChoice = waitForReplayChoice(replayChanges)
 
   recovery.clearBet()
   if nextChoice == "play_again" and canReplayChanges(replayChanges) then
@@ -882,13 +864,8 @@ local function runBettingLoop()
   local lastActivity = epoch("local")
 
   while true do
-    refreshAutoPlay()
     refreshPlayerState(false)
     refreshDerivedState()
-
-    if AUTO_PLAY then
-      return "auto"
-    end
 
     local idleMs = epoch("local") - lastActivity
     if idleMs > cfg.INACTIVITY_TIMEOUT then
@@ -946,56 +923,6 @@ local function runBettingLoop()
   end
 end
 
-local function runAutoRound()
-  refreshPlayerState(true)
-  refreshDerivedState()
-
-  state.phase = "betting"
-  state.bets = {}
-  state.betActions = {}
-  refreshDerivedState()
-
-  local autoStake = min(cfg.AUTO_PLAY_BET, state.playerBalance)
-  if autoStake <= 0 then
-    setStatus("Auto play waiting for tokens.", "warning", 1200)
-    renderCurrent(nil)
-    os.sleep(1)
-    return
-  end
-
-  local attempt = 1
-  while attempt <= 25 do
-    local region = layout.regions[random(1, #layout.regions)]
-    local candidateBets = {}
-    rouletteModel.addStake(candidateBets, region, autoStake)
-    local ok = validateBetSet(candidateBets)
-    if ok then
-      state.bets = candidateBets
-      state.betActions = {
-        {
-          changes = {
-            {
-              region = region,
-              amount = autoStake,
-            },
-          },
-        },
-      }
-      refreshDerivedState()
-      setStatus("Auto: " .. region.label .. " for " .. currency.formatTokens(autoStake) .. ".", "accent", 900)
-      renderCurrent(nil)
-      os.sleep(cfg.AUTO_PLAY_DELAY)
-      settleRound()
-      return
-    end
-    attempt = attempt + 1
-  end
-
-  setStatus("Auto play found no safe table.", "warning", 1200)
-  renderCurrent(nil)
-  os.sleep(1)
-end
-
 local function main()
   dbg("Roulette starting")
   randomseed(epoch("local"))
@@ -1006,17 +933,12 @@ local function main()
   recovery.recoverBet(true)
 
   while true do
-    refreshAutoPlay()
-    if AUTO_PLAY then
-      runAutoRound()
-    else
-      if #state.bets == 0 then
-        preRoundMenu()
-      end
-      local action = runBettingLoop()
-      if action == "spin" then
-        settleRound()
-      end
+    if #state.bets == 0 then
+      preRoundMenu()
+    end
+    local action = runBettingLoop()
+    if action == "spin" then
+      settleRound()
     end
     os.sleep(0)
   end

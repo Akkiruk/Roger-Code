@@ -7,16 +7,11 @@ local soundDecisions = require("lib.sound_decisions")
 return {
   -- Peripheral sides
   MONITOR  = "right",
-  REDSTONE = "left",
 
   -- Economy
   MAX_BET_PERCENT     = 0.10,    -- per-wager net-win cap = 10% of host balance (actual spot limit scales by payout)
   HOST_COVERAGE_MULT  = 36,      -- host must hold bet * this to accept wager
   INACTIVITY_TIMEOUT  = 90000,   -- ms before auto-exit with no bet
-
-  -- Auto-play (redstone-driven bot testing)
-  AUTO_PLAY_DELAY = 0.3,
-  AUTO_PLAY_BET   = 9,
 
   -- Admin & logging
   GAME_NAME     = "Roulette",

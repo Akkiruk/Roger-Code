@@ -13,7 +13,6 @@ local LO  = cfg.LAYOUT
 
 local ostime       = os.time
 local settings_get = settings.get
-local r_getInput   = redstone.getInput
 local epoch        = os.epoch
 
 -- Forward declarations
@@ -44,37 +43,11 @@ local alert      = require("lib.alert")
 local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
-local autoPlayer = require("lib.auto_player")
 local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
 local settlement = require("lib.round_settlement")
 local pages      = require("lib.casino_pages")
 
------------------------------------------------------
--- Auto-play state
------------------------------------------------------
-local AUTO_PLAY          = false
-local AUTO_PLAY_COUNTER  = 0
-local AUTO_PLAY_STRATEGY = 1
-
-local function updateAutoPlayFromRedstone()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    if AUTO_PLAY then
-      AUTO_PLAY_COUNTER  = 0
-      AUTO_PLAY_STRATEGY = autoPlayer.randomStrategy()
-      dbg("Auto-play ON, strategy " .. AUTO_PLAY_STRATEGY)
-    else
-      dbg("Auto-play OFF")
-    end
-  end
-  return AUTO_PLAY
-end
-
------------------------------------------------------
--- Initialize game environment
------------------------------------------------------
 recovery.configure(cfg.RECOVERY_FILE)
 
 local env = gameSetup.init({
@@ -371,44 +344,40 @@ local function doDeal(ctx)
   local p2 = dealOne()
   local d2 = dealOne()
 
-  if not AUTO_PLAY then
-    -- Animated deal: slide each card in one at a time
-    -- Precompute final positions (2 cards each, centered)
-    local playerStartX = math.floor((width - (2 * deltaX)) / 2)
-    local dealerStartX = math.floor((width - (2 * deltaX)) / 2)
+  -- Animated deal: slide each card in one at a time
+  -- Precompute final positions (2 cards each, centered)
+  local playerStartX = math.floor((width - (2 * deltaX)) / 2)
+  local dealerStartX = math.floor((width - (2 * deltaX)) / 2)
 
-    -- Track which cards are visible for the background render
-    local visiblePlayer = {}
-    local visibleDealer = {}
+  -- Track which cards are visible for the background render
+  local visiblePlayer = {}
+  local visibleDealer = {}
 
-    local betStr = "Bet: " .. currency.formatTokens(ctx.hands[1].bet)
-    local function bgRender()
-      screen:clear(LO.TABLE_COLOR)
-      ui.safeDrawText(screen, betStr, font, 1, 0, colors.white)
-      for i, cid in ipairs(visiblePlayer) do
-        screen:drawSurface(cards.renderCard(cid), playerStartX + (i - 1) * deltaX, layout.playerY)
-      end
-      for i, cid in ipairs(visibleDealer) do
-        local img = (i == 1) and cardBack or cards.renderCard(cid)
-        screen:drawSurface(img, dealerStartX + (i - 1) * deltaX, layout.dealerY)
-      end
+  local betStr = "Bet: " .. currency.formatTokens(ctx.hands[1].bet)
+  local function bgRender()
+    screen:clear(LO.TABLE_COLOR)
+    ui.safeDrawText(screen, betStr, font, 1, 0, colors.white)
+    for i, cid in ipairs(visiblePlayer) do
+      screen:drawSurface(cards.renderCard(cid), playerStartX + (i - 1) * deltaX, layout.playerY)
     end
-
-    -- Deal order: player1, dealer1 (face-down), player2, dealer2 (face-up)
-    cardAnim.slideIn(cards.renderCard(p1), playerStartX, layout.playerY, bgRender)
-    table.insert(visiblePlayer, p1)
-
-    cardAnim.slideIn(cardBack, dealerStartX, layout.dealerY, bgRender)
-    table.insert(visibleDealer, d1)
-
-    cardAnim.slideIn(cards.renderCard(p2), playerStartX + deltaX, layout.playerY, bgRender)
-    table.insert(visiblePlayer, p2)
-
-    cardAnim.slideIn(cards.renderCard(d2), dealerStartX + deltaX, layout.dealerY, bgRender)
-    table.insert(visibleDealer, d2)
-  else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+    for i, cid in ipairs(visibleDealer) do
+      local img = (i == 1) and cardBack or cards.renderCard(cid)
+      screen:drawSurface(img, dealerStartX + (i - 1) * deltaX, layout.dealerY)
+    end
   end
+
+  -- Deal order: player1, dealer1 (face-down), player2, dealer2 (face-up)
+  cardAnim.slideIn(cards.renderCard(p1), playerStartX, layout.playerY, bgRender)
+  table.insert(visiblePlayer, p1)
+
+  cardAnim.slideIn(cardBack, dealerStartX, layout.dealerY, bgRender)
+  table.insert(visibleDealer, d1)
+
+  cardAnim.slideIn(cards.renderCard(p2), playerStartX + deltaX, layout.playerY, bgRender)
+  table.insert(visiblePlayer, p2)
+
+  cardAnim.slideIn(cards.renderCard(d2), dealerStartX + deltaX, layout.dealerY, bgRender)
+  table.insert(visibleDealer, d2)
 
   -- Set final hand state
   ctx.hands[1].cards = { p1, p2 }
@@ -423,7 +392,7 @@ local function doDeal(ctx)
 
   -- Check dealer up-card for insurance
   local dealerUp = ctx.dealerHand[2]:sub(1, 1)
-  if dealerUp == "A" and cfg.ALLOW_INSURANCE and not AUTO_PLAY then
+  if dealerUp == "A" and cfg.ALLOW_INSURANCE then
     return "insurance"
   end
 
@@ -597,7 +566,7 @@ local function doCheckNaturals(ctx)
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
     ctx.summaryMessage = "Double Blackjack Push!"
-    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
+    ctx.postRoundChoice = waitForReplayChoice(ctx, ctx.summaryMessage)
     return nil  -- round over
   end
 
@@ -613,7 +582,7 @@ local function doCheckNaturals(ctx)
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
     ctx.summaryMessage = "Blackjack!"
-    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
+    ctx.postRoundChoice = waitForReplayChoice(ctx, ctx.summaryMessage)
     return nil
   end
 
@@ -630,7 +599,7 @@ local function doCheckNaturals(ctx)
     recovery.clearBet()
     buildAndRecordResult(ctx, dTotal, false)
     ctx.summaryMessage = "Dealer Blackjack!"
-    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
+    ctx.postRoundChoice = waitForReplayChoice(ctx, ctx.summaryMessage)
     return nil
   end
 
@@ -640,7 +609,7 @@ local function doCheckNaturals(ctx)
 end
 
 -----------------------------------------------------
--- Action executors (shared by auto-play and human)
+-- Action executors
 -----------------------------------------------------
 local function executeHit(hand, ctx, handIdx)
   table.insert(hand.cards, dealOne())
@@ -648,32 +617,28 @@ local function executeHit(hand, ctx, handIdx)
   hand.lastAction = ACT.HIT
   table.insert(ctx.actionLog, { action = ACT.HIT, handIdx = handIdx, time = epoch("local") })
 
-  if not AUTO_PLAY then
-    -- Animate the new card sliding in
-    local nCards = #hand.cards
-    local toX, toY
-    if #ctx.hands == 1 then
-      local startX = math.floor((width - (nCards * deltaX)) / 2)
-      toX = startX + (nCards - 1) * deltaX
-    else
-      local baseX
-      if handIdx == 1 then
-        baseX = math.floor(width / 4) - math.floor((nCards * deltaX) / 2)
-      else
-        baseX = math.floor(width * 3 / 4) - math.floor((nCards * deltaX) / 2)
-      end
-      toX = baseX + (nCards - 1) * deltaX
-    end
-    toY = layout.playerY
-    local newCard = hand.cards[nCards]
-    local savedCard = table.remove(hand.cards)
-    cardAnim.slideIn(cards.renderCard(newCard), toX, toY, function()
-      renderTableBase(ctx, true, nil)
-    end)
-    table.insert(hand.cards, savedCard)
+  -- Animate the new card sliding in
+  local nCards = #hand.cards
+  local toX, toY
+  if #ctx.hands == 1 then
+    local startX = math.floor((width - (nCards * deltaX)) / 2)
+    toX = startX + (nCards - 1) * deltaX
   else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+    local baseX
+    if handIdx == 1 then
+      baseX = math.floor(width / 4) - math.floor((nCards * deltaX) / 2)
+    else
+      baseX = math.floor(width * 3 / 4) - math.floor((nCards * deltaX) / 2)
+    end
+    toX = baseX + (nCards - 1) * deltaX
   end
+  toY = layout.playerY
+  local newCard = hand.cards[nCards]
+  local savedCard = table.remove(hand.cards)
+  cardAnim.slideIn(cards.renderCard(newCard), toX, toY, function()
+    renderTableBase(ctx, true, nil)
+  end)
+  table.insert(hand.cards, savedCard)
 
   local t = cards.blackjackValue(hand.cards)
   if t > 21 then hand.busted = true; return true end
@@ -689,10 +654,8 @@ end
 
 local function executeDouble(hand, ctx, handIdx)
   if not canDoubleHand(ctx, hand) then
-    if not AUTO_PLAY then
-      sound.play(sound.SOUNDS.ERROR)
-      ui.displayCenteredMessage(screen, "Double not allowed", colors.red, 0.8)
-    end
+    sound.play(sound.SOUNDS.ERROR)
+    ui.displayCenteredMessage(screen, "Double not allowed", colors.red, 0.8)
     return false
   end
 
@@ -702,19 +665,15 @@ local function executeDouble(hand, ctx, handIdx)
   table.insert(ctx.actionLog, { action = ACT.DOUBLE, handIdx = handIdx, time = epoch("local") })
   table.insert(hand.cards, dealOne())
 
-  if not AUTO_PLAY then
-    local nCards = #hand.cards
-    local startX = math.floor((width - (nCards * deltaX)) / 2)
-    local toX = startX + (nCards - 1) * deltaX
-    local newCard = hand.cards[nCards]
-    local savedCard = table.remove(hand.cards)
-    cardAnim.slideIn(cards.renderCard(newCard), toX, layout.playerY, function()
-      renderTableBase(ctx, true, nil)
-    end)
-    table.insert(hand.cards, savedCard)
-  else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-  end
+  local nCards = #hand.cards
+  local startX = math.floor((width - (nCards * deltaX)) / 2)
+  local toX = startX + (nCards - 1) * deltaX
+  local newCard = hand.cards[nCards]
+  local savedCard = table.remove(hand.cards)
+  cardAnim.slideIn(cards.renderCard(newCard), toX, layout.playerY, function()
+    renderTableBase(ctx, true, nil)
+  end)
+  table.insert(hand.cards, savedCard)
 
   local t = cards.blackjackValue(hand.cards)
   if t > 21 then hand.busted = true end
@@ -723,10 +682,8 @@ end
 
 local function executeSplit(hand, ctx, handIdx)
   if not canSplitHand(ctx, hand) then
-    if not AUTO_PLAY then
-      sound.play(sound.SOUNDS.ERROR)
-      ui.displayCenteredMessage(screen, "Split not allowed", colors.red, 0.8)
-    end
+    sound.play(sound.SOUNDS.ERROR)
+    ui.displayCenteredMessage(screen, "Split not allowed", colors.red, 0.8)
     return false
   end
 
@@ -746,28 +703,24 @@ local function executeSplit(hand, ctx, handIdx)
   table.insert(ctx.actionLog, { action = ACT.SPLIT, handIdx = handIdx, time = epoch("local") })
   table.insert(ctx.hands, handIdx + 1, newHand)
 
-  if not AUTO_PLAY then
-    -- Animate the two new cards dealt to each split hand
-    -- Hand 1 (left): second card slides in
-    local h1Cards = hand.cards
-    local base1 = math.floor(width / 4) - math.floor((#h1Cards * deltaX) / 2)
-    local saved1 = table.remove(hand.cards)
-    cardAnim.slideIn(cards.renderCard(saved1), base1 + (#hand.cards) * deltaX, layout.playerY, function()
-      renderTableBase(ctx, true, nil)
-    end)
-    table.insert(hand.cards, saved1)
+  -- Animate the two new cards dealt to each split hand
+  -- Hand 1 (left): second card slides in
+  local h1Cards = hand.cards
+  local base1 = math.floor(width / 4) - math.floor((#h1Cards * deltaX) / 2)
+  local saved1 = table.remove(hand.cards)
+  cardAnim.slideIn(cards.renderCard(saved1), base1 + (#hand.cards) * deltaX, layout.playerY, function()
+    renderTableBase(ctx, true, nil)
+  end)
+  table.insert(hand.cards, saved1)
 
-    -- Hand 2 (right): second card slides in
-    local h2Cards = newHand.cards
-    local base2 = math.floor(width * 3 / 4) - math.floor((#h2Cards * deltaX) / 2)
-    local saved2 = table.remove(newHand.cards)
-    cardAnim.slideIn(cards.renderCard(saved2), base2 + (#newHand.cards) * deltaX, layout.playerY, function()
-      renderTableBase(ctx, true, nil)
-    end)
-    table.insert(newHand.cards, saved2)
-  else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-  end
+  -- Hand 2 (right): second card slides in
+  local h2Cards = newHand.cards
+  local base2 = math.floor(width * 3 / 4) - math.floor((#h2Cards * deltaX) / 2)
+  local saved2 = table.remove(newHand.cards)
+  cardAnim.slideIn(cards.renderCard(saved2), base2 + (#newHand.cards) * deltaX, layout.playerY, function()
+    renderTableBase(ctx, true, nil)
+  end)
+  table.insert(newHand.cards, saved2)
 
   if cfg.RESTRICT_SPLIT_ACES and isSplitAces then
     hand.lastAction = ACT.STAND
@@ -817,87 +770,72 @@ local function doPlayerTurn(ctx)
     while not handDone do
       renderTable(ctx, true, nil)
 
-      if AUTO_PLAY then
-        os.sleep(cfg.AUTO_PLAY_DELAY)
-        local canDbl = canDoubleHand(ctx, hand)
-        local canSpl = canSplitHand(ctx, hand)
-        local action = autoPlayer.decide(hand.cards, ctx.dealerHand[2], canDbl, canSpl, AUTO_PLAY_STRATEGY)
+      local actionStart = epoch("local")
+      ui.clearButtons()
+      local rows = {}
+      local row1 = {}
+      local row2 = {}
 
-        if action == ACT.HIT then       handDone = executeHit(hand, ctx, handIdx)
-        elseif action == ACT.DOUBLE then handDone = executeDouble(hand, ctx, handIdx)
-        elseif action == ACT.SPLIT then  handDone = executeSplit(hand, ctx, handIdx)
-        else                             handDone = executeStand(hand, ctx, handIdx)
-        end
+      table.insert(row1, {
+        text = "HIT", color = colors.lightBlue,
+        func = function()
+          table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
+          handDone = executeHit(hand, ctx, handIdx)
+        end,
+      })
 
-      else
-        -- Human player
-        local actionStart = epoch("local")
-        ui.clearButtons()
-        local rows = {}
-        local row1 = {}
-        local row2 = {}
+      table.insert(row1, {
+        text = "STAND", color = colors.yellow,
+        func = function()
+          table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
+          handDone = executeStand(hand, ctx, handIdx)
+        end,
+      })
 
-        table.insert(row1, {
-          text = "HIT", color = colors.lightBlue,
+      if canDoubleHand(ctx, hand) then
+        table.insert(row2, {
+          text = "DOUBLE", color = colors.orange,
           func = function()
             table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
-            handDone = executeHit(hand, ctx, handIdx)
+            handDone = executeDouble(hand, ctx, handIdx)
           end,
         })
+      end
 
-        table.insert(row1, {
-          text = "STAND", color = colors.yellow,
+      if canSplitHand(ctx, hand) then
+        table.insert(row2, {
+          text = "SPLIT", color = colors.purple,
           func = function()
             table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
-            handDone = executeStand(hand, ctx, handIdx)
+            handDone = executeSplit(hand, ctx, handIdx)
           end,
         })
+      end
 
-        if canDoubleHand(ctx, hand) then
-          table.insert(row2, {
-            text = "DOUBLE", color = colors.orange,
-            func = function()
-              table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
-              handDone = executeDouble(hand, ctx, handIdx)
-            end,
-          })
-        end
-
-        if canSplitHand(ctx, hand) then
-          table.insert(row2, {
-            text = "SPLIT", color = colors.purple,
-            func = function()
-              table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
-              handDone = executeSplit(hand, ctx, handIdx)
-            end,
-          })
-        end
-
-        if cfg.ALLOW_SURRENDER and hand.hitCount == 0 and not hand.fromSplit and #ctx.actionLog == 0 then
-          table.insert(row2, {
-            text = "SURRENDER", color = colors.gray,
-            func = function()
-              table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
-              handDone = executeSurrender(ctx, handIdx)
-            end,
-          })
-        end
-
-        table.insert(rows, row1)
-        if #row2 > 0 then table.insert(rows, row2) end
-        local startY = scale:buttonBlockTop(layout.buttonY, #rows, scale.buttonRowSpacing)
-        ui.layoutButtonGrid(screen, rows, layout.centerX, startY, scale.buttonRowSpacing, scale.buttonColGap)
-        screen:output()
-        local handDoneRef = { value = handDone }
-        ui.waitForButton(0, 0, {
-          inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-          onTimeout = function()
-            resolvePlayerTurnTimeout(ctx, hand, handIdx, actionStart, handDoneRef)
+      if cfg.ALLOW_SURRENDER and hand.hitCount == 0 and not hand.fromSplit and #ctx.actionLog == 0 then
+        table.insert(row2, {
+          text = "SURRENDER", color = colors.gray,
+          func = function()
+            table.insert(ctx.decisionTimes, (epoch("local") - actionStart) / 1000)
+            handDone = executeSurrender(ctx, handIdx)
           end,
         })
-        if not handDone then
-          handDone = handDoneRef.value
-        end
+      end
+
+      table.insert(rows, row1)
+      if #row2 > 0 then table.insert(rows, row2) end
+      local startY = scale:buttonBlockTop(layout.buttonY, #rows, scale.buttonRowSpacing)
+      ui.layoutButtonGrid(screen, rows, layout.centerX, startY, scale.buttonRowSpacing, scale.buttonColGap)
+      screen:output()
+      local handDoneRef = { value = handDone }
+      ui.waitForButton(0, 0, {
+        inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+        onTimeout = function()
+          resolvePlayerTurnTimeout(ctx, hand, handIdx, actionStart, handDoneRef)
+        end,
+      })
+      if not handDone then
+        handDone = handDoneRef.value
       end
     end
 
@@ -930,23 +868,17 @@ local function doDealerTurn(ctx)
   while dealerMustHit(ctx) do
     table.insert(ctx.dealerHand, dealOne())
 
-    if not AUTO_PLAY then
-      local nCards = #ctx.dealerHand
-      local dealerStartX = math.floor((width - (nCards * deltaX)) / 2)
-      local toX = dealerStartX + (nCards - 1) * deltaX
-      local newCard = ctx.dealerHand[nCards]
-      local savedCard = table.remove(ctx.dealerHand)
-      cardAnim.slideIn(cards.renderCard(newCard), toX, layout.dealerY, function()
-        renderTableBase(ctx, false, nil)
-      end)
-      table.insert(ctx.dealerHand, savedCard)
-      renderTable(ctx, false, nil)
-      os.sleep(0.3)
-    else
-      sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-      renderTable(ctx, false, nil)
-      os.sleep(0.5)
-    end
+    local nCards = #ctx.dealerHand
+    local dealerStartX = math.floor((width - (nCards * deltaX)) / 2)
+    local toX = dealerStartX + (nCards - 1) * deltaX
+    local newCard = ctx.dealerHand[nCards]
+    local savedCard = table.remove(ctx.dealerHand)
+    cardAnim.slideIn(cards.renderCard(newCard), toX, layout.dealerY, function()
+      renderTableBase(ctx, false, nil)
+    end)
+    table.insert(ctx.dealerHand, savedCard)
+    renderTable(ctx, false, nil)
+    os.sleep(0.3)
   end
 
   return "resolve"
@@ -1045,7 +977,7 @@ local function doResolve(ctx)
     recovery.clearBet()
     buildAndRecordResult(ctx, dealerTotal, dealerBusted)
     ctx.summaryMessage = "Surrendered"
-    ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage)
+    ctx.postRoundChoice = waitForReplayChoice(ctx, ctx.summaryMessage)
     return
   end
 
@@ -1080,7 +1012,7 @@ local function doResolve(ctx)
   recovery.clearBet()
 
   buildAndRecordResult(ctx, dealerTotal, dealerBusted)
-  ctx.postRoundChoice = AUTO_PLAY and "play_again" or waitForReplayChoice(ctx, ctx.summaryMessage or "Round complete")
+  ctx.postRoundChoice = waitForReplayChoice(ctx, ctx.summaryMessage or "Round complete")
 end
 
 -- Legacy statistics hook
@@ -1249,8 +1181,6 @@ waitForReplayChoice = function(ctx, statusText)
       os.sleep(0.5)
       error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
     end,
-    auto_choice = AUTO_PLAY and "play_again" or nil,
-    auto_delay = cfg.AUTO_PLAY_DELAY,
   })
 end
 
@@ -1265,38 +1195,17 @@ local function main()
   local replayBetAmount = nil
 
   while true do
-    updateAutoPlayFromRedstone()
     refreshPlayer()
     drawPlayerOverlay()
 
     local bet = nil
-    if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if autoBet > 0 then
-        if playerBalance >= autoBet then
-          bet = autoBet
-          os.sleep(cfg.AUTO_PLAY_DELAY)
-        else
-          os.sleep(1)
-        end
-      else
-        os.sleep(1)
-      end
-      AUTO_PLAY_COUNTER = AUTO_PLAY_COUNTER + 1
-      if AUTO_PLAY_COUNTER % cfg.STRATEGY_CHANGE_FREQ == 0 then
-        AUTO_PLAY_STRATEGY = autoPlayer.randomStrategy()
-        dbg("Strategy changed to " .. AUTO_PLAY_STRATEGY)
-      end
+    if replayBetAmount and canReplayBet(replayBetAmount) then
+      bet = getReplayBetAmount(replayBetAmount)
+      replayBetAmount = nil
     else
-      if replayBetAmount and canReplayBet(replayBetAmount) then
-        bet = getReplayBetAmount(replayBetAmount)
-        replayBetAmount = nil
-      else
-        replayBetAmount = nil
-        preRoundMenu()
-        bet = betSelection()
-      end
+      replayBetAmount = nil
+      preRoundMenu()
+      bet = betSelection()
     end
 
     if bet and bet > 0 then

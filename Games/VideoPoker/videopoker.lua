@@ -3,9 +3,6 @@
 -- Deal 5 cards, hold/discard, draw replacements, evaluate poker hand.
 -- Uses shared libraries from Shared/lib/.
 
------------------------------------------------------
--- Configuration & Caching
------------------------------------------------------
 local cfg = require("videopoker_config")
 
 local LO = cfg.LAYOUT
@@ -13,7 +10,6 @@ local PAYOUTS = cfg.PAYOUTS
 
 local ostime       = os.time
 local settings_get = settings.get
-local r_getInput   = redstone.getInput
 local epoch        = os.epoch
 
 settings.define("videopoker.debug", {
@@ -44,23 +40,6 @@ local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
 
------------------------------------------------------
--- Auto-play state
------------------------------------------------------
-local AUTO_PLAY = false
-
-local function updateAutoPlayFromRedstone()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg(AUTO_PLAY and "Auto-play ON" or "Auto-play OFF")
-  end
-  return AUTO_PLAY
-end
-
------------------------------------------------------
--- Initialize game environment
------------------------------------------------------
 recovery.configure(cfg.RECOVERY_FILE)
 
 local env = gameSetup.init({
@@ -368,8 +347,6 @@ local function preRoundMenu()
 
     screen:output()
 
-    if AUTO_PLAY then return end
-
     ui.waitForButton(0, 0, {
       inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
       onTimeout = triggerInactivityTimeout,
@@ -460,37 +437,9 @@ local function waitForReplayChoice(hand, discardSelected, betAmount, statusText)
     col_spacing = scale.buttonColGap,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
-    auto_choice = AUTO_PLAY and "play_again" or nil,
-    auto_delay = cfg.AUTO_PLAY_DELAY,
   })
 end
 
------------------------------------------------------
--- Auto-play discard strategy (simple: keep pairs and high cards)
------------------------------------------------------
-local function autoSelectDiscards(hand)
-  local discardSelected = { true, true, true, true, true }
-  local rankCounts = {}
-
-  for i, cardID in ipairs(hand) do
-    local r = getRank(cardID)
-    rankCounts[r] = (rankCounts[r] or 0) + 1
-  end
-
-  for i, cardID in ipairs(hand) do
-    local r = getRank(cardID)
-    -- Keep any pair or better, or high cards (J+); everything else is discarded.
-    if rankCounts[r] >= 2 or r >= 11 then
-      discardSelected[i] = false
-    end
-  end
-
-  return discardSelected
-end
-
------------------------------------------------------
--- Video Poker round
------------------------------------------------------
 local function pokerRound(betAmount)
   recovery.saveBet(betAmount)
 
@@ -506,89 +455,80 @@ local function pokerRound(betAmount)
   local discardSelected = { false, false, false, false, false }
 
   -- Animate initial deal
-  if not AUTO_PLAY then
-    local visCards = {}
-    for i, cardID in ipairs(hand) do
-      local x = getCardX(i)
-      local img = cards.renderCard(cardID)
-      cardAnim.slideIn(img, x, cardY, function()
-        screen:clear(LO.TABLE_COLOR)
-        ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
-        for j, cid in ipairs(visCards) do
-          screen:drawSurface(cards.renderCard(cid), getCardX(j), cardY)
-        end
-      end)
-      table.insert(visCards, cardID)
-    end
-  else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+  local visCards = {}
+  for i, cardID in ipairs(hand) do
+    local x = getCardX(i)
+    local img = cards.renderCard(cardID)
+    cardAnim.slideIn(img, x, cardY, function()
+      screen:clear(LO.TABLE_COLOR)
+      ui.safeDrawText(screen, "Bet: " .. currency.formatTokens(betAmount), font, 1, 0, colors.white)
+      for j, cid in ipairs(visCards) do
+        screen:drawSurface(cards.renderCard(cid), getCardX(j), cardY)
+      end
+    end)
+    table.insert(visCards, cardID)
   end
 
   -- Hold/discard phase
-  if AUTO_PLAY then
-    discardSelected = autoSelectDiscards(hand)
-    os.sleep(cfg.AUTO_PLAY_DELAY)
-  else
-    local confirmed = false
-    local lastActivityTime = epoch("local")
+  local confirmed = false
+  local lastActivityTime = epoch("local")
 
-    while not confirmed do
-      renderHand(hand, discardSelected, betAmount, nil, true)
+  while not confirmed do
+    renderHand(hand, discardSelected, betAmount, nil, true)
 
-      local promptText = "Tap cards you want to replace, then tap DRAW."
-      local promptLines = wrapStatusText(promptText)
-      local promptHeight = #promptLines * LINE_H
-      local maxDrawBtnY = selectionLabelY - scale.sectionGap - scale.buttonHeight
-      local promptY = math.max(
-        scale.subtitleY,
-        maxDrawBtnY - scale.sectionGap - promptHeight
-      )
+    local promptText = "Tap cards you want to replace, then tap DRAW."
+    local promptLines = wrapStatusText(promptText)
+    local promptHeight = #promptLines * LINE_H
+    local maxDrawBtnY = selectionLabelY - scale.sectionGap - scale.buttonHeight
+    local promptY = math.max(
+      scale.subtitleY,
+      maxDrawBtnY - scale.sectionGap - promptHeight
+    )
 
-      for i, line in ipairs(promptLines) do
-        drawCenteredLine(line, promptY + ((i - 1) * LINE_H), colors.yellow)
-      end
+    for i, line in ipairs(promptLines) do
+      drawCenteredLine(line, promptY + ((i - 1) * LINE_H), colors.yellow)
+    end
 
-      ui.clearButtons()
-      -- Draw button
-      local drawBtnY = math.min(
-        maxDrawBtnY,
-        promptY + promptHeight + scale.smallGap
-      )
-      ui.fixedWidthButton(screen, "DRAW", colors.lime,
-        centerX, drawBtnY, function()
-          confirmed = true
-        end, true, nil)
+    ui.clearButtons()
+    -- Draw button
+    local drawBtnY = math.min(
+      maxDrawBtnY,
+      promptY + promptHeight + scale.smallGap
+    )
+    ui.fixedWidthButton(screen, "DRAW", colors.lime,
+      centerX, drawBtnY, function()
+        confirmed = true
+      end, true, nil)
 
-      screen:output()
+    screen:output()
 
-      local _, px, py, activityTime = ui.waitForMonitorTouch({
-        inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-        onTimeout = function()
-          alert.log("Video Poker timeout: auto-draw with current holds")
-          confirmed = true
-        end,
-        lastActivityTime = lastActivityTime,
-      })
-      if confirmed then
-        break
-      end
-      lastActivityTime = activityTime
-      local buttonCb = ui.checkButtonHit(px, py)
-      if buttonCb then
-        buttonCb()
-      else
-        for i = 1, cfg.HAND_SIZE do
-          local x = getCardX(i)
-          local cardTop = cardY
-          if discardSelected[i] then
-            cardTop = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
-          end
-          if px >= x and px <= x + cardBack.width - 1
-             and py >= cardTop and py <= cardTop + cardBack.height - 1 then
-            discardSelected[i] = not discardSelected[i]
-            sound.play(sound.SOUNDS.CARD_PLACE, 0.5)
-            break
-          end
+    local _, px, py, activityTime = ui.waitForMonitorTouch({
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = function()
+        alert.log("Video Poker timeout: auto-draw with current holds")
+        confirmed = true
+      end,
+      lastActivityTime = lastActivityTime,
+    })
+    if confirmed then
+      break
+    end
+    lastActivityTime = activityTime
+    local buttonCb = ui.checkButtonHit(px, py)
+    if buttonCb then
+      buttonCb()
+    else
+      for i = 1, cfg.HAND_SIZE do
+        local x = getCardX(i)
+        local cardTop = cardY
+        if discardSelected[i] then
+          cardTop = cardY + scale:scaledY(LO.DISCARD_CARD_DROP or 0, 0, 3)
+        end
+        if px >= x and px <= x + cardBack.width - 1
+           and py >= cardTop and py <= cardTop + cardBack.height - 1 then
+          discardSelected[i] = not discardSelected[i]
+          sound.play(sound.SOUNDS.CARD_PLACE, 0.5)
+          break
         end
       end
     end
@@ -604,7 +544,7 @@ local function pokerRound(betAmount)
   end
 
   -- Animate replacement cards
-  if replaced and not AUTO_PLAY then
+  if replaced then
     for i = 1, cfg.HAND_SIZE do
       if discardSelected[i] then
         local x = getCardX(i)
@@ -621,8 +561,6 @@ local function pokerRound(betAmount)
         end)
       end
     end
-  elseif replaced then
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
   end
 
   -- Evaluate final hand
@@ -681,9 +619,6 @@ local function pokerRound(betAmount)
 
   recovery.clearBet()
   dbg("Hand: " .. handName .. " mult=" .. multiplier .. " net=" .. netChange)
-  if AUTO_PLAY then
-    return "play_again"
-  end
   return waitForReplayChoice(hand, discardSelected, betAmount, resultPromptText)
 end
 
@@ -698,33 +633,21 @@ local function main()
   local replayBetAmount = nil
 
   while true do
-    updateAutoPlayFromRedstone()
     refreshPlayer()
     drawPlayerOverlay()
 
     local betAmount = nil
 
-    if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if autoBet > 0 then
-        betAmount = autoBet
-        os.sleep(cfg.AUTO_PLAY_DELAY)
-      else
-        os.sleep(1)
-      end
+    if replayBetAmount and canReplayBet(replayBetAmount) then
+      betAmount = replayBetAmount
+      replayBetAmount = nil
     else
-      if replayBetAmount and canReplayBet(replayBetAmount) then
-        betAmount = replayBetAmount
-        replayBetAmount = nil
-      else
-        replayBetAmount = nil
-        preRoundMenu()
+      replayBetAmount = nil
+      preRoundMenu()
 
-        local selectedBet = betSelection()
-        if selectedBet and selectedBet > 0 then
-          betAmount = selectedBet
-        end
+      local selectedBet = betSelection()
+      if selectedBet and selectedBet > 0 then
+        betAmount = selectedBet
       end
     end
 

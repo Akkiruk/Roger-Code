@@ -11,7 +11,6 @@ local cfg = require("slots_config")
 local LO = cfg.LAYOUT
 
 local epoch        = os.epoch
-local r_getInput   = redstone.getInput
 local settings_get = settings.get
 local floor        = math.floor
 local max          = math.max
@@ -43,23 +42,6 @@ local pages      = require("lib.casino_pages")
 local replayPrompt = require("lib.replay_prompt")
 local settlement = require("lib.round_settlement")
 
------------------------------------------------------
--- Auto-play state
------------------------------------------------------
-local AUTO_PLAY = false
-
-local function updateAutoPlay()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg("Auto-play " .. (AUTO_PLAY and "ON" or "OFF"))
-  end
-  return AUTO_PLAY
-end
-
------------------------------------------------------
--- Initialize game environment
------------------------------------------------------
 recovery.configure(cfg.RECOVERY_FILE)
 
 -- Merge custom palette with defaults
@@ -462,8 +444,8 @@ local TUTORIAL_PAGES = {
       { text = "Winning spins can offer", color = colors.white },
       { text = "a gamble round if enabled.", color = colors.white },
       { text = (GAMBLE_CFG.ENABLED and "Gamble is currently ON." or "Gamble is currently OFF."), color = colors.yellow },
-      { text = "Auto-play follows the", color = colors.lightGray },
-      { text = "redstone trigger side.", color = colors.lightGray },
+      { text = "Winning spins can be", color = colors.lightGray },
+      { text = "replayed from results.", color = colors.lightGray },
       { text = "Two-of-a-kind wins are", color = colors.cyan },
       { text = "highlighted after the spin.", color = colors.cyan },
     },
@@ -1008,7 +990,7 @@ local function slotsRound(currentBet, immediateSpin)
   -- Show idle machine then spin
   local idleResult = { SYMBOLS[random(1, #SYMBOLS)], SYMBOLS[random(1, #SYMBOLS)], SYMBOLS[random(1, #SYMBOLS)] }
 
-  if not AUTO_PLAY and not immediateSpin then
+  if not immediateSpin then
     drawMachine(idleResult, nil, {
       text = ">>> Touch to SPIN! <<<",
       color = colors.lime,
@@ -1016,8 +998,6 @@ local function slotsRound(currentBet, immediateSpin)
 
     -- Wait for any touch on the monitor
     ui.waitForMonitorTouch()
-  else
-    os.sleep(cfg.AUTO_PLAY_DELAY)
   end
 
   -- Determine result
@@ -1053,9 +1033,7 @@ local function slotsRound(currentBet, immediateSpin)
     end
     resultHighlights, resultStatus = displayWin(result, winAmount, label, isJackpot, currentBet)
 
-    if not AUTO_PLAY then
-      runGamble(result, resultHighlights, currentBet, winAmount)
-    end
+    runGamble(result, resultHighlights, currentBet, winAmount)
 
     dbg("WIN: " .. label .. " net=" .. winAmount)
   else
@@ -1075,11 +1053,7 @@ local function slotsRound(currentBet, immediateSpin)
 
   recovery.clearBet()
 
-  if not AUTO_PLAY then
-    return waitForReplayChoice(result, resultHighlights, resultStatus, currentBet)
-  end
-
-  return false
+  return waitForReplayChoice(result, resultHighlights, resultStatus, currentBet)
 end
 
 -----------------------------------------------------
@@ -1109,34 +1083,17 @@ local function main()
   recovery.recoverBet(true)
 
   while true do
-    updateAutoPlay()
     refreshPlayer()
 
-    local currentBet = nil
-    if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      currentBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if currentBet <= 0 then
-        dbg("Auto-play: insufficient funds, pausing")
-        os.sleep(2)
-      else
-        slotsRound(currentBet)
-      end
-    else
-      drawPlayerOverlay()
-      preRoundMenu()
-      local selectedBet = betSelection()
-      if selectedBet and selectedBet > 0 then
-        local currentBet = selectedBet
-        local immediateSpin = false
-        repeat
-          updateAutoPlay()
-          if AUTO_PLAY then
-            break
-          end
-          immediateSpin = slotsRound(currentBet, immediateSpin)
-        until not immediateSpin
-      end
+    drawPlayerOverlay()
+    preRoundMenu()
+    local selectedBet = betSelection()
+    if selectedBet and selectedBet > 0 then
+      local currentBet = selectedBet
+      local immediateSpin = false
+      repeat
+        immediateSpin = slotsRound(currentBet, immediateSpin)
+      until not immediateSpin
     end
 
     os.sleep(0)

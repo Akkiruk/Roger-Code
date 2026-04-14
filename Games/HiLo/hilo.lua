@@ -14,7 +14,6 @@ local MULTIPLIERS = cfg.MULTIPLIERS
 
 local ostime       = os.time
 local settings_get = settings.get
-local r_getInput   = redstone.getInput
 local epoch        = os.epoch
 local max          = math.max
 local min          = math.min
@@ -50,23 +49,6 @@ local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
 
------------------------------------------------------
--- Auto-play state
------------------------------------------------------
-local AUTO_PLAY = false
-
-local function updateAutoPlayFromRedstone()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg(AUTO_PLAY and "Auto-play ON" or "Auto-play OFF")
-  end
-  return AUTO_PLAY
-end
-
------------------------------------------------------
--- Initialize game environment
------------------------------------------------------
 recovery.configure(cfg.RECOVERY_FILE)
 
 local env = gameSetup.init({
@@ -287,8 +269,6 @@ local function waitForPostRoundChoice(currentCard, revealedCards, betAmount, rou
       os.sleep(0.5)
       error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
     end,
-    auto_choice = AUTO_PLAY and "play_again" or nil,
-    auto_delay = cfg.AUTO_PLAY_DELAY,
   })
 end
 
@@ -388,8 +368,6 @@ local function preRoundMenu()
 
     screen:output()
 
-    if AUTO_PLAY then return end
-
     local timerID = os.startTimer(0.25)
     while true do
       local event, side, px, py = os.pullEvent()
@@ -464,14 +442,10 @@ local function hiloRound(betAmount)
   local multiplier = 1
 
   -- Show initial card with animation
-  if not AUTO_PLAY then
-    local img = cards.renderCard(currentCard)
-    cardAnim.slideIn(img, leftCardX, cardY, function()
-      renderBase(nil, revealedCards, betAmount, round, multiplier, nil)
-    end)
-  else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-  end
+  local img = cards.renderCard(currentCard)
+  cardAnim.slideIn(img, leftCardX, cardY, function()
+    renderBase(nil, revealedCards, betAmount, round, multiplier, nil)
+  end)
 
   renderScreen(currentCard, revealedCards, betAmount, round, multiplier, "Higher or Lower?")
 
@@ -503,23 +477,13 @@ local function hiloRound(betAmount)
     ui.layoutButtonGrid(screen, btnRows, centerX, btnY, scale.buttonRowSpacing, scale.buttonColGap)
     screen:output()
 
-    if AUTO_PLAY then
-      -- Bot: random choice, cash out after 3 correct guesses 50% of the time
-      if round >= 3 and math.random(100) <= 50 then
-        choice = "cashout"
-      else
-        choice = math.random(2) == 1 and "higher" or "lower"
-      end
-      os.sleep(cfg.AUTO_PLAY_DELAY)
-    else
-      ui.waitForButton(0, 0, {
-        inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
-        onTimeout = function()
-          choice = timeoutChoiceForCard(currentCard)
-          alert.log("HiLo timeout: auto-select " .. tostring(choice) .. " on " .. tostring(cards.displayValue(currentCard)))
-        end,
-      })
-    end
+    ui.waitForButton(0, 0, {
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = function()
+        choice = timeoutChoiceForCard(currentCard)
+        alert.log("HiLo timeout: auto-select " .. tostring(choice) .. " on " .. tostring(cards.displayValue(currentCard)))
+      end,
+    })
 
     if choice == "cashout" then
       -- Cash out: player wins current multiplier
@@ -564,14 +528,10 @@ local function hiloRound(betAmount)
     round = round + 1
 
     -- Animate next card
-    if not AUTO_PLAY then
-      local img = cards.renderCard(nextCard)
-      cardAnim.slideIn(img, rightCardX, cardY, function()
-        renderBase(currentCard, revealedCards, betAmount, round, multiplier, nil)
-      end)
-    else
-      sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-    end
+    local img = cards.renderCard(nextCard)
+    cardAnim.slideIn(img, rightCardX, cardY, function()
+      renderBase(currentCard, revealedCards, betAmount, round, multiplier, nil)
+    end)
 
     local currentVal = cardValue(currentCard)
     local nextVal = cardValue(nextCard)
@@ -700,38 +660,26 @@ local function main()
   local replayBetAmount = nil
 
   while true do
-    updateAutoPlayFromRedstone()
     refreshPlayer()
     drawPlayerOverlay()
 
     local betAmount = nil
 
-    if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if autoBet > 0 then
-        betAmount = autoBet
-        os.sleep(cfg.AUTO_PLAY_DELAY)
-      else
-        os.sleep(1)
-      end
-    else
-      if not skipPreRoundMenu then
-        -- Show the pre-round menu before opening the bet screen.
-        preRoundMenu()
-      end
-
-      if skipPreRoundMenu and canReplayBet(replayBetAmount) then
-        betAmount = replayBetAmount
-      else
-        -- Run bet screen
-        local selectedBet = betSelection()
-        if selectedBet and selectedBet > 0 then
-          betAmount = selectedBet
-        end
-      end
-      skipPreRoundMenu = false
+    if not skipPreRoundMenu then
+      -- Show the pre-round menu before opening the bet screen.
+      preRoundMenu()
     end
+
+    if skipPreRoundMenu and canReplayBet(replayBetAmount) then
+      betAmount = replayBetAmount
+    else
+      -- Run bet screen
+      local selectedBet = betSelection()
+      if selectedBet and selectedBet > 0 then
+        betAmount = selectedBet
+      end
+    end
+    skipPreRoundMenu = false
 
     if betAmount and betAmount > 0 then
       local roundChoice = hiloRound(betAmount)

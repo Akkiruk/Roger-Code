@@ -405,9 +405,7 @@ local function drawSummaryBox(screen, font, layout, state)
   drawFrame(screen, box, colors.gray, colors.yellow)
 
   local headline = "BUILD YOUR BET"
-  if state.autoPlay then
-    headline = "AUTO PLAY"
-  elseif (state.totalStake or 0) > 0 then
+  if (state.totalStake or 0) > 0 then
     headline = "READY TO SPIN"
   end
 

@@ -22,11 +22,6 @@ return {
   INACTIVITY_TIMEOUT = 90000,
 
   MONITOR = "right",
-  REDSTONE = "left",
-
-  AUTO_PLAY_DELAY = 0.05,
-  AUTO_PLAY_BET = 9,
-  STRATEGY_CHANGE_FREQ = 10,
 
   GAME_NAME = "Blackjack",
   LOG_FILE = "blackjack_error.log",

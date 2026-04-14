@@ -23,10 +23,6 @@ return {
   PRE_ROUND_MENU_TIMEOUT = 90000,
 
   MONITOR = "right",
-  REDSTONE = "left",
-
-  AUTO_PLAY_DELAY = 0.05,
-  AUTO_PLAY_BET = 5,
 
   GAME_NAME = "CrazyEights",
   LOG_FILE = "crazyeights_error.log",

@@ -156,7 +156,6 @@ Every event includes:
   "gross_payout": 0,
   "result": "loss",
   "duration_ms": 18342,
-  "auto_play": false,
   "details": {
     "hand_name": "No Win",
     "cards_drawn": 5

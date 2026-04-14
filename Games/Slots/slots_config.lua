@@ -4,16 +4,11 @@
 return {
   -- Peripheral sides
   MONITOR  = "right",
-  REDSTONE = "left",    -- auto-play trigger
 
   -- Economy
   MAX_BET_PERCENT     = 0.005,  -- max bet = 0.5% of host balance (jackpot-safe: worst case takes ~50%)
   HOST_COVERAGE_MULT  = 101,    -- conservative coverage buffer for the 100x top line
   INACTIVITY_TIMEOUT  = 90000,  -- ms before auto-exit
-
-  -- Auto-play
-  AUTO_PLAY_DELAY = 0.3,
-  AUTO_PLAY_BET   = 9,
 
   -- Admin & logging
   GAME_NAME     = "Slots",

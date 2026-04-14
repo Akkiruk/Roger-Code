@@ -14,7 +14,6 @@ local LO   = cfg.LAYOUT
 
 local ostime       = os.time
 local settings_get = settings.get
-local r_getInput   = redstone.getInput
 local epoch        = os.epoch
 
 settings.define("baccarat.debug", {
@@ -47,23 +46,6 @@ local pages      = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
 local replayPrompt = require("lib.replay_prompt")
 
------------------------------------------------------
--- Auto-play state
------------------------------------------------------
-local AUTO_PLAY = false
-
-local function updateAutoPlayFromRedstone()
-  local powered = r_getInput(cfg.REDSTONE)
-  if powered ~= AUTO_PLAY then
-    AUTO_PLAY = powered
-    dbg(AUTO_PLAY and "Auto-play ON" or "Auto-play OFF")
-  end
-  return AUTO_PLAY
-end
-
------------------------------------------------------
--- Initialize game environment
------------------------------------------------------
 recovery.configure(cfg.RECOVERY_FILE)
 
 local env = gameSetup.init({
@@ -354,20 +336,6 @@ local function selectBetType()
 
     screen:output()
 
-    if AUTO_PLAY then
-      -- Bot: random bet type weighted toward banker (best odds)
-      local r = math.random(100)
-      if r <= 50 then
-        chosen = BET.BANKER
-      elseif r <= 90 then
-        chosen = BET.PLAYER
-      else
-        chosen = BET.TIE
-      end
-      os.sleep(cfg.AUTO_PLAY_DELAY)
-      return chosen
-    end
-
     ui.waitForButton(0, 0, {
       inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
       onTimeout = triggerInactivityTimeout,
@@ -395,48 +363,44 @@ local function baccaratRound(betAmount, betType)
   local p2 = dealOne()
   local b2 = dealOne()
 
-  if not AUTO_PLAY then
-    -- Animated deal: slide each card in one at a time
-    -- Precompute final card positions (2 cards each, centered on their area)
-    local pTotalW = 2 * deltaX - cardSpacing
-    local pStartX = playerAreaX - math.floor(pTotalW / 2)
-    local bStartX = bankerAreaX - math.floor(pTotalW / 2)
+  -- Animated deal: slide each card in one at a time
+  -- Precompute final card positions (2 cards each, centered on their area)
+  local pTotalW = 2 * deltaX - cardSpacing
+  local pStartX = playerAreaX - math.floor(pTotalW / 2)
+  local bStartX = bankerAreaX - math.floor(pTotalW / 2)
 
-    -- Track visible cards for the background
-    local visPlayer = {}
-    local visBanker = {}
+  -- Track visible cards for the background
+  local visPlayer = {}
+  local visBanker = {}
 
-    local plW = ui.getTextSize("PLAYER")
-    local blW = ui.getTextSize("BANKER")
+  local plW = ui.getTextSize("PLAYER")
+  local blW = ui.getTextSize("BANKER")
 
-    local function bgRender()
-      screen:clear(LO.TABLE_COLOR)
-      drawBetLabel(betType, betAmount)
-      ui.safeDrawText(screen, "PLAYER", font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
-      ui.safeDrawText(screen, "BANKER", font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
-      for i, cid in ipairs(visPlayer) do
-        screen:drawSurface(cards.renderCard(cid), pStartX + (i - 1) * deltaX, cardsY)
-      end
-      for i, cid in ipairs(visBanker) do
-        screen:drawSurface(cards.renderCard(cid), bStartX + (i - 1) * deltaX, cardsY)
-      end
+  local function bgRender()
+    screen:clear(LO.TABLE_COLOR)
+    drawBetLabel(betType, betAmount)
+    ui.safeDrawText(screen, "PLAYER", font, playerAreaX - math.floor(plW / 2), labelY, colors.cyan)
+    ui.safeDrawText(screen, "BANKER", font, bankerAreaX - math.floor(blW / 2), labelY, colors.red)
+    for i, cid in ipairs(visPlayer) do
+      screen:drawSurface(cards.renderCard(cid), pStartX + (i - 1) * deltaX, cardsY)
     end
-
-    -- Deal order: player1, banker1, player2, banker2
-    cardAnim.slideIn(cards.renderCard(p1), pStartX, cardsY, bgRender)
-    table.insert(visPlayer, p1)
-
-    cardAnim.slideIn(cards.renderCard(b1), bStartX, cardsY, bgRender)
-    table.insert(visBanker, b1)
-
-    cardAnim.slideIn(cards.renderCard(p2), pStartX + deltaX, cardsY, bgRender)
-    table.insert(visPlayer, p2)
-
-    cardAnim.slideIn(cards.renderCard(b2), bStartX + deltaX, cardsY, bgRender)
-    table.insert(visBanker, b2)
-  else
-    sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
+    for i, cid in ipairs(visBanker) do
+      screen:drawSurface(cards.renderCard(cid), bStartX + (i - 1) * deltaX, cardsY)
+    end
   end
+
+  -- Deal order: player1, banker1, player2, banker2
+  cardAnim.slideIn(cards.renderCard(p1), pStartX, cardsY, bgRender)
+  table.insert(visPlayer, p1)
+
+  cardAnim.slideIn(cards.renderCard(b1), bStartX, cardsY, bgRender)
+  table.insert(visBanker, b1)
+
+  cardAnim.slideIn(cards.renderCard(p2), pStartX + deltaX, cardsY, bgRender)
+  table.insert(visPlayer, p2)
+
+  cardAnim.slideIn(cards.renderCard(b2), bStartX + deltaX, cardsY, bgRender)
+  table.insert(visBanker, b2)
 
   -- Set final hands
   playerHand = { p1, p2 }
@@ -460,20 +424,16 @@ local function baccaratRound(betAmount, betType)
       table.insert(playerHand, third)
       playerThirdValue = cardRules.baccaratCardValue(third)
 
-      if not AUTO_PLAY then
-        -- Animate the third card
-        local nCards = #playerHand
-        local totalW = nCards * deltaX - cardSpacing
-        local startX = playerAreaX - math.floor(totalW / 2)
-        local toX = startX + (nCards - 1) * deltaX
-        local savedCard = table.remove(playerHand)
-        cardAnim.slideIn(cards.renderCard(savedCard), toX, cardsY, function()
-          renderTableBase(playerHand, bankerHand, betType, betAmount, nil)
-        end)
-        table.insert(playerHand, savedCard)
-      else
-        sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-      end
+      -- Animate the third card
+      local nCards = #playerHand
+      local totalW = nCards * deltaX - cardSpacing
+      local startX = playerAreaX - math.floor(totalW / 2)
+      local toX = startX + (nCards - 1) * deltaX
+      local savedCard = table.remove(playerHand)
+      cardAnim.slideIn(cards.renderCard(savedCard), toX, cardsY, function()
+        renderTableBase(playerHand, bankerHand, betType, betAmount, nil)
+      end)
+      table.insert(playerHand, savedCard)
 
       renderTable(playerHand, bankerHand, betType, betAmount, nil)
       os.sleep(0.4)
@@ -484,19 +444,15 @@ local function baccaratRound(betAmount, betType)
     if bankerDrawsThird(bankerTotal, playerThirdValue) then
       table.insert(bankerHand, dealOne())
 
-      if not AUTO_PLAY then
-        local nCards = #bankerHand
-        local totalW = nCards * deltaX - cardSpacing
-        local startX = bankerAreaX - math.floor(totalW / 2)
-        local toX = startX + (nCards - 1) * deltaX
-        local savedCard = table.remove(bankerHand)
-        cardAnim.slideIn(cards.renderCard(savedCard), toX, cardsY, function()
-          renderTableBase(playerHand, bankerHand, betType, betAmount, nil)
-        end)
-        table.insert(bankerHand, savedCard)
-      else
-        sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-      end
+      local nCards = #bankerHand
+      local totalW = nCards * deltaX - cardSpacing
+      local startX = bankerAreaX - math.floor(totalW / 2)
+      local toX = startX + (nCards - 1) * deltaX
+      local savedCard = table.remove(bankerHand)
+      cardAnim.slideIn(cards.renderCard(savedCard), toX, cardsY, function()
+        renderTableBase(playerHand, bankerHand, betType, betAmount, nil)
+      end)
+      table.insert(bankerHand, savedCard)
 
       renderTable(playerHand, bankerHand, betType, betAmount, nil)
       os.sleep(0.4)
@@ -608,9 +564,6 @@ local function baccaratRound(betAmount, betType)
   recovery.clearBet()
   dbg("Round: " .. outcome .. " P:" .. playerTotal .. " B:" .. bankerTotal
       .. " bet=" .. betType .. " net=" .. netChange)
-  if AUTO_PLAY then
-    return "play_again"
-  end
   return waitForReplayChoice(playerHand, bankerHand, betType, betAmount, resultMessage)
 end
 
@@ -716,8 +669,6 @@ waitForReplayChoice = function(playerHand, bankerHand, betType, betAmount, statu
       os.sleep(0.5)
       error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
     end,
-    auto_choice = AUTO_PLAY and "play_again" or nil,
-    auto_delay = cfg.AUTO_PLAY_DELAY,
   })
 end
 
@@ -733,43 +684,30 @@ local function main()
   local replayBetType = nil
 
   while true do
-    updateAutoPlayFromRedstone()
     refreshPlayer()
     drawPlayerOverlay()
 
     local betAmount = nil
     local betType = nil
 
-    if AUTO_PLAY then
-      local playerBalance = currency.getPlayerBalance()
-      local autoBet = math.min(cfg.AUTO_PLAY_BET, playerBalance, getMaxBet())
-      if autoBet > 0 then
-        betAmount = autoBet
-        betType = selectBetType()
-        os.sleep(cfg.AUTO_PLAY_DELAY)
-      else
-        os.sleep(1)
-      end
+    if replayBetAmount and replayBetType and canReplayBet(replayBetAmount) then
+      betAmount = getReplayBetAmount(replayBetAmount)
+      betType = replayBetType
+      replayBetAmount = nil
+      replayBetType = nil
     else
-      if replayBetAmount and replayBetType and canReplayBet(replayBetAmount) then
-        betAmount = getReplayBetAmount(replayBetAmount)
-        betType = replayBetType
-        replayBetAmount = nil
-        replayBetType = nil
-      else
-        replayBetAmount = nil
-        replayBetType = nil
+      replayBetAmount = nil
+      replayBetType = nil
 
-        -- Step 1: Choose bet type (Player / Banker / Tie)
-        betType = selectBetType()
-        if not betType then
-          os.sleep(0.1)
-        else
-          -- Step 2: Choose bet amount
-          local selectedBet = betSelection()
-          if selectedBet and selectedBet > 0 then
-            betAmount = selectedBet
-          end
+      -- Step 1: Choose bet type (Player / Banker / Tie)
+      betType = selectBetType()
+      if not betType then
+        os.sleep(0.1)
+      else
+        -- Step 2: Choose bet amount
+        local selectedBet = betSelection()
+        if selectedBet and selectedBet > 0 then
+          betAmount = selectedBet
         end
       end
     end

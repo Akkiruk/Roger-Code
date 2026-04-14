@@ -1,13 +1,9 @@
 return {
   MONITOR = "right",
-  REDSTONE = "left",
 
   MAX_BET_PERCENT = 0.005,
   HOST_COVERAGE_MULT = 101,
   INACTIVITY_TIMEOUT = 90000,
-
-  AUTO_PLAY_DELAY = 0.3,
-  AUTO_PLAY_BET = 9,
 
   GAME_NAME = "Slots",
   LOG_FILE = "slots_error.log",

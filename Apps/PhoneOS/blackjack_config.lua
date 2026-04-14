@@ -29,12 +29,6 @@ return {
 
   -- Peripheral sides
   MONITOR             = "right",
-  REDSTONE            = "left",
-
-  -- Auto-play (redstone-driven bot testing)
-  AUTO_PLAY_DELAY          = 0.05,
-  AUTO_PLAY_BET            = 9,
-  STRATEGY_CHANGE_FREQ     = 10,
 
   -- Admin & logging
   GAME_NAME           = "Blackjack",

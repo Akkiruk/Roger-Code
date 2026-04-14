@@ -63,7 +63,7 @@ Use this for live cabinet verification in CraftOS-PC or on real computers.
 - Confirm the rules and payout pages match the live config.
 - Confirm best-of-three match payout labels match the actual settlement math.
 - Confirm draw-chain cap behavior stops at the configured value.
-- Confirm timeout auto-play picks legal actions and does not deadlock the round.
+- Confirm timeout fallback picks legal actions and does not deadlock the round.
 
 ## Baccarat
 
