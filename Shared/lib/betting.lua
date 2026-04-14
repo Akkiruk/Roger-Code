@@ -149,6 +149,7 @@ local function runBetScreen(screen, opts)
     local titleY = metrics.titleY
     local warnY = titleY + metrics.messageLineHeight
     local betY = warnY + metrics.lineHeight
+    local limitY = betY + metrics.lineHeight
 
     -- Check inactivity when no bet placed
     local idleMs = 0
@@ -176,6 +177,11 @@ local function runBetScreen(screen, opts)
     local betStr = "Bet: " .. currency.formatTokens(bet)
     local betStrSize = ui.getTextSize(betStr)
     ui.safeDrawText(screen, betStr, ui.getFont(), ui.round((screen.width - betStrSize) / 2), betY, colors.yellow)
+
+    local limitStr = "Table max: " .. currency.formatTokens(maxBetValue)
+    local limitColor = maxBetValue > 0 and colors.lightGray or colors.orange
+    local limitStrSize = ui.getTextSize(limitStr)
+    ui.safeDrawText(screen, limitStr, ui.getFont(), ui.round((screen.width - limitStrSize) / 2), limitY, limitColor)
 
     -- Buttons
     ui.clearButtons()
@@ -217,7 +223,7 @@ local function runBetScreen(screen, opts)
       widestButton = max(widestButton, buttonWidthForText(txt))
     end
 
-    local infoY = betY + metrics.messageLineHeight + metrics.smallGap
+    local infoY = limitY + metrics.messageLineHeight + metrics.smallGap
     local infoMaxWidth = max(1, screen.width - (metrics.edgePad * 2))
 
     if noAvailableBets then
@@ -379,7 +385,7 @@ local function runBetScreen(screen, opts)
     local totalRows = #rows
     local blockHeight = metrics.buttonHeight + ((totalRows - 1) * metrics.buttonRowSpacing)
     local infoHeight = noAvailableBets and (metrics.lineHeight * 5) or 0
-    local minStartY = betY + metrics.messageLineHeight + metrics.sectionGap + infoHeight
+    local minStartY = limitY + metrics.messageLineHeight + metrics.sectionGap + infoHeight
     local latestStartY = max(metrics.edgePad, screen.height - blockHeight - metrics.edgePad)
     local btnStartY = max(minStartY, floor((screen.height - blockHeight) / 2))
     if btnStartY > latestStartY then
