@@ -332,6 +332,7 @@ function M.run(...)
       .. " | commit=" .. tostring(installed.source_commit or ""):sub(1, 8)
       .. " | pkg=" .. tostring(installed.package_hash or installed.content_hash or ""):sub(1, 8)
   )
+  logMessage("Time Since Last Update: " .. updater.formatElapsedSince(updater.getLastPackageUpdateAt(installed)))
   if runtime.monitorIdleTimeout then
     logMessage("Monitor idle watchdog enabled for " .. tostring(runtime.monitorIdleTimeout) .. "s")
   end

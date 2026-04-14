@@ -1,6 +1,7 @@
 local alertLib = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
 local ui = require("lib.ui")
+local updater = require("lib.updater")
 
 local M = {}
 
@@ -104,10 +105,12 @@ function M.run(opts)
 
   local installInfo = loadInstallInfo()
   if installInfo then
+    local lastPackageUpdateAt = updater.getLastPackageUpdateAt(installInfo)
     debugLog("Installed: " .. tostring(installInfo.program)
       .. " v" .. tostring(installInfo.version)
       .. " | commit=" .. tostring(installInfo.source_commit):sub(1, 8)
       .. " | pkg=" .. tostring(installInfo.package_hash or installInfo.content_hash):sub(1, 8))
+    debugLog("Time Since Last Update: " .. updater.formatElapsedSince(lastPackageUpdateAt))
   else
     debugLog("WARNING: No .installed_program record found!")
   end
