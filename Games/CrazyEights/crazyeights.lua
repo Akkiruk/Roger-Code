@@ -337,10 +337,18 @@ local function getTurnPrompt(roundState)
   end
 
   if roundState.currentSide == "player" then
-    return "YOUR TURN"
+    return nil
   end
 
   return roundState.statusText or "DEALER TURN"
+end
+
+local function shouldShowSuitBadge(topCard, opts)
+  local options = opts or {}
+  if options.showSuitBadge ~= nil then
+    return options.showSuitBadge == true
+  end
+  return topCard ~= nil and cardRank(topCard) == "8"
 end
 
 local function getHandSpread(count)
@@ -391,15 +399,9 @@ local function renderRound(roundState, opts)
   local options = opts or {}
   local selectedIndex = options.selectedIndex
   local revealDealer = options.revealDealer == true
+  local showPlayable = options.showPlayable == true
 
   screen:clear(LO.TABLE_COLOR)
-
-  local scoreLabel = "Score " .. roundState.playerRounds .. "-" .. roundState.dealerRounds
-  ui.safeDrawText(screen, scoreLabel, font, 1, 0, colors.white)
-
-  local betLabel = "Ante " .. currency.formatTokens(roundState.betAmount)
-  local betWidth = ui.getTextSize(betLabel)
-  ui.safeDrawText(screen, betLabel, font, width - betWidth - 1, 0, colors.yellow)
 
   local topCard = roundState.discardPile[#roundState.discardPile]
   local discardX, drawX = getCenterPileXOffsets()
@@ -414,25 +416,21 @@ local function renderRound(roundState, opts)
   screen:drawSurface(cardBack, drawX, pileY)
 
   local pileCaptionY = pileY + cardBack.height + scale.smallGap
-  local discardLabel = "TOP"
-  local discardWidth = ui.getTextSize(discardLabel)
-  ui.safeDrawText(screen, discardLabel, font, discardX + floor((cardBack.width - discardWidth) / 2), pileCaptionY, colors.white)
-
-  local drawLabel = "DRAW " .. tostring(#roundState.deck)
-  local drawWidth = ui.getTextSize(drawLabel)
-  ui.safeDrawText(screen, drawLabel, font, drawX + floor((cardBack.width - drawWidth) / 2), pileCaptionY, colors.white)
-
-  local activeLabel = "LIVE " .. string.upper(suitName(roundState.activeSuit))
-  drawCenteredBadge(activeLabel, max(scale.edgePad + 1, pileY - scale.lineHeight - scale.sectionGap), suitColor(roundState.activeSuit), colors.black)
+  if shouldShowSuitBadge(topCard, options) then
+    local activeLabel = string.upper(suitName(roundState.activeSuit))
+    drawCenteredBadge(activeLabel, max(scale.edgePad + 1, pileY - scale.lineHeight - scale.sectionGap), suitColor(roundState.activeSuit), colors.black)
+  end
 
   local prompt = options.statusText or getTurnPrompt(roundState)
-  local promptColor = colors.cyan
-  if roundState.pendingDraw and roundState.pendingDraw > 0 then
-    promptColor = colors.orange
-  elseif roundState.currentSide ~= "player" and not options.statusText then
-    promptColor = colors.lightGray
+  if prompt and prompt ~= "" then
+    local promptColor = colors.cyan
+    if roundState.pendingDraw and roundState.pendingDraw > 0 then
+      promptColor = colors.orange
+    elseif roundState.currentSide ~= "player" and not options.statusText then
+      promptColor = colors.lightGray
+    end
+    drawCenteredBadge(prompt, pileCaptionY + scale.lineHeight + scale.smallGap, promptColor, colors.black)
   end
-  drawCenteredBadge(prompt, pileCaptionY + scale.lineHeight + scale.smallGap, promptColor, colors.black)
 
   local dealerY = getDealerHandY()
   local dealerPositions = getHandPositions(#roundState.dealerHand, dealerY)
@@ -445,18 +443,19 @@ local function renderRound(roundState, opts)
     end
   end
 
-  local dealerInfo = "DEALER " .. tostring(#roundState.dealerHand)
-  if #roundState.dealerHand == 1 then
-    dealerInfo = dealerInfo .. " !"
+  if revealDealer or #roundState.dealerHand <= 1 then
+    local dealerInfo = revealDealer and ("DEALER " .. tostring(#roundState.dealerHand)) or "DEALER 1"
+    local dealerColor = #roundState.dealerHand <= 1 and colors.orange or colors.white
+    drawCenteredBadge(dealerInfo, max(scale.edgePad, dealerY - scale.lineHeight - scale.smallGap), dealerColor, colors.black)
   end
-  local dealerInfoWidth = ui.getTextSize(dealerInfo)
-  ui.safeDrawText(screen, dealerInfo, font, floor((width - dealerInfoWidth) / 2), max(scale.edgePad, dealerY - scale.lineHeight - scale.smallGap), #roundState.dealerHand == 1 and colors.orange or colors.white)
 
   local playerY = getPlayerHandY()
   local playerPositions = getHandPositions(#roundState.playerHand, playerY)
   local playable = {}
-  for _, index in ipairs(getPlayableIndexes(roundState.playerHand, roundState)) do
-    playable[index] = true
+  if showPlayable then
+    for _, index in ipairs(getPlayableIndexes(roundState.playerHand, roundState)) do
+      playable[index] = true
+    end
   end
 
   for index, cardID in ipairs(roundState.playerHand) do
@@ -472,11 +471,11 @@ local function renderRound(roundState, opts)
     screen:drawSurface(cards.renderCard(cardID), pos.x, drawY)
   end
 
-  local playerInfo = "YOU " .. tostring(#roundState.playerHand)
-  if #roundState.playerHand == 1 then
-    playerInfo = playerInfo .. " !"
+  if revealDealer or #roundState.playerHand <= 1 then
+    local playerInfo = revealDealer and ("YOU " .. tostring(#roundState.playerHand)) or "LAST CARD"
+    local playerColor = #roundState.playerHand <= 1 and colors.orange or colors.white
+    drawCenteredBadge(playerInfo, max(scale.edgePad, playerY - scale.lineHeight - scale.smallGap), playerColor, colors.black)
   end
-  drawCenteredLine(playerInfo, max(scale.edgePad, playerY - scale.lineHeight - scale.smallGap), #roundState.playerHand == 1 and colors.orange or colors.white)
 
   drawPlayerOverlay()
 end
@@ -496,10 +495,12 @@ local function chooseSuitPrompt(roundState, side)
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
+        mode = "choose_suit",
         statusText = "CHOOSE SUIT",
+        showSuitBadge = false,
       })
     end,
-    hint = "Pick the live suit.",
+    hint = "",
     hint_y = scale.footerButtonY - scale.lineHeight - scale.sectionGap,
     center_x = centerX,
     button_y = scale.footerButtonY - scale.buttonRowSpacing,
@@ -796,7 +797,7 @@ local function buildRoundState(matchState)
   roundState.discardPile = { discard }
   roundState.activeRank = cardRank(discard)
   roundState.activeSuit = cardSuit(discard)
-  roundState.statusText = (matchState.startingSide == "player" and "You start this round" or "Dealer starts this round")
+  roundState.statusText = (matchState.startingSide == "player" and "YOU START" or "DEALER STARTS")
 
   return roundState
 end
@@ -839,8 +840,10 @@ local function choosePlayableCard(roundState)
 
   while not choice do
     renderRound(roundState, {
+      mode = roundState.pendingDraw > 0 and "stack_choice" or "play_choice",
       selectedIndex = selectedIndex,
-      statusText = roundState.pendingDraw > 0 and ("STACK +2 OR TAKE " .. tostring(roundState.pendingDraw)) or "PICK A GREEN CARD",
+      showPlayable = true,
+      statusText = roundState.pendingDraw > 0 and ("PLAY A 2 OR TAKE " .. tostring(roundState.pendingDraw)) or nil,
     })
 
     ui.clearButtons()
@@ -934,11 +937,13 @@ local function choosePostDrawAction(roundState, drawnIndex)
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
+        mode = "post_draw",
         selectedIndex = drawnIndex,
         statusText = "PLAY DRAWN CARD?",
+        showPlayable = false,
       })
     end,
-    hint = "Play now or keep it.",
+    hint = "",
     hint_y = scale.footerButtonY - scale.lineHeight - scale.sectionGap,
     center_x = centerX,
     button_y = scale.footerButtonY - scale.buttonRowSpacing,
@@ -1027,6 +1032,7 @@ end
 local function executeDealerTurn(roundState)
   roundState.statusText = "DEALER TURN"
   renderRound(roundState, {
+    mode = "dealer_turn",
     statusText = roundState.statusText,
   })
   screen:output()
@@ -1106,6 +1112,7 @@ local function playRound(matchState)
 
   cardAnim.slideIn(cards.renderCard(roundState.discardPile[1]), discardX, centerY, function()
     renderRound(roundState, {
+      mode = "round_start",
       statusText = roundState.statusText,
     })
   end)
