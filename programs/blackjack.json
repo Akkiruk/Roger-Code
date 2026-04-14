@@ -7,12 +7,12 @@
     "description": "Single-seat blackjack with split, double, and configurable house rules.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.72"
+    "version": "1.2.73"
   },
   "build": {
-    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-    "generated_at": "2026-04-14T03:28:46Z",
-    "package_hash": "8d8005fb9ea60432e3b2de447d4ee924f35cbd0925840ec9d762b7ffdca00c53"
+    "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+    "generated_at": "2026-04-14T03:32:30Z",
+    "package_hash": "3e9f20a1630a969f70333832618095e59d2771f6f23e105c03cb971b141a7a76"
   },
   "install": {
     "preserve": [
@@ -67,7 +67,7 @@
       {
         "repo_path": "Shared/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "16646047b1f998af70aad0e6d6fdd12ef5c25f1ec8606dd068f4d437fa0ee65b"
+        "sha256": "c48bf7987e6bbe53f66dfe743c1ee90f4e30e8c7f55e516f778025bf2cbdc492"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
@@ -192,7 +192,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
         "install_path": "blackjack.lua",
-        "sha256": "c7762b9da1402d70ab71e84ca439be02ce3e1ab6aceacab9d26a13f1c58fb0a9"
+        "sha256": "746a8b6d790234a19ba856f7977aaad6ba8a7c7118dcf90b21c091b8df1972b3"
       },
       {
         "repo_path": "Games/Blackjack/startup.lua",

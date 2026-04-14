@@ -7,12 +7,12 @@
     "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.14"
+    "version": "1.0.15"
   },
   "build": {
-    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-    "generated_at": "2026-04-14T03:28:46Z",
-    "package_hash": "f818a0f183ad211938d4ffe4e5e59cc7df130fec091345a12d8bb61e08af3005"
+    "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+    "generated_at": "2026-04-14T03:32:30Z",
+    "package_hash": "6b861a84cf911739eea0b5806257a5422dbaa72b22a36319e7d3da697b64ac64"
   },
   "install": {
     "preserve": [
@@ -62,7 +62,7 @@
       {
         "repo_path": "Shared/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "16646047b1f998af70aad0e6d6fdd12ef5c25f1ec8606dd068f4d437fa0ee65b"
+        "sha256": "c48bf7987e6bbe53f66dfe743c1ee90f4e30e8c7f55e516f778025bf2cbdc492"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
@@ -182,7 +182,7 @@
       {
         "repo_path": "Games/CrazyEights/crazyeights.lua",
         "install_path": "crazyeights.lua",
-        "sha256": "262a6026a8a5f6d659d5e55211608d1bd237f66474890c69862da885aecff9fe"
+        "sha256": "59848692b81536874309954e674e590ab978bee94bf0d7a09b35cd0c1cbb86e4"
       },
       {
         "repo_path": "Games/CrazyEights/startup.lua",

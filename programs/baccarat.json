@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.64"
+    "version": "1.2.65"
   },
   "build": {
-    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-    "generated_at": "2026-04-14T03:28:46Z",
-    "package_hash": "53bb9dca303701db8d4fb25ef50fb07c61af756409c68bd4172589fc7440e088"
+    "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+    "generated_at": "2026-04-14T03:32:30Z",
+    "package_hash": "bba2ab9c10114b94d85433d1e06d23bf6d2d76dd1a87461208e46776a1f10e0f"
   },
   "install": {
     "preserve": [
@@ -62,7 +62,7 @@
       {
         "repo_path": "Shared/lib/casino_pages.lua",
         "install_path": "lib/casino_pages.lua",
-        "sha256": "16646047b1f998af70aad0e6d6fdd12ef5c25f1ec8606dd068f4d437fa0ee65b"
+        "sha256": "c48bf7987e6bbe53f66dfe743c1ee90f4e30e8c7f55e516f778025bf2cbdc492"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
@@ -187,7 +187,7 @@
       {
         "repo_path": "Games/Baccarat/baccarat.lua",
         "install_path": "baccarat.lua",
-        "sha256": "7067626d15615bcfa135c78e9e4cd6ba57f342022f31a8ed52cdd7cd1f050a70"
+        "sha256": "34a8ffb852fa6cf6a4ed92260dcb745e505dd9684c657c2671e0fa9230323a01"
       },
       {
         "repo_path": "Games/Baccarat/startup.lua",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-14T03:28:46Z",
+  "generated_at": "2026-04-14T03:32:30Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+    "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
     "path": "System/installer.lua",
     "sha256": "1a6ffbee25d8cd89a7e59a80a92222ff251eb94a91ce4b1361a64ef9bdb28911"
   },
@@ -17,18 +17,18 @@
       "name": "Baccarat",
       "category": "Games",
       "description": "Single-seat baccarat with player, banker, and tie bets.",
-      "version": "1.2.64",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "53bb9dca303701db8d4fb25ef50fb07c61af756409c68bd4172589fc7440e088",
+      "version": "1.2.65",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "bba2ab9c10114b94d85433d1e06d23bf6d2d76dd1a87461208e46776a1f10e0f",
       "spec_path": "programs/baccarat.json"
     },
     "blackjack": {
       "name": "Blackjack",
       "category": "Games",
       "description": "Single-seat blackjack with split, double, and configurable house rules.",
-      "version": "1.2.72",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "8d8005fb9ea60432e3b2de447d4ee924f35cbd0925840ec9d762b7ffdca00c53",
+      "version": "1.2.73",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "3e9f20a1630a969f70333832618095e59d2771f6f23e105c03cb971b141a7a76",
       "spec_path": "programs/blackjack.json"
     },
     "block_reader_vhcctweaks_probe": {
@@ -36,7 +36,7 @@
       "category": "Utilities",
       "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
       "version": "1.0.4",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "40f3f3bebb42dc64cbe711821af7da0b05c6a75c89219978f41cc2129f790afe",
       "spec_path": "programs/block_reader_vhcctweaks_probe.json"
     },
@@ -44,18 +44,18 @@
       "name": "CrazyEights",
       "category": "Games",
       "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
-      "version": "1.0.14",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "f818a0f183ad211938d4ffe4e5e59cc7df130fec091345a12d8bb61e08af3005",
+      "version": "1.0.15",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "6b861a84cf911739eea0b5806257a5422dbaa72b22a36319e7d3da697b64ac64",
       "spec_path": "programs/crazyeights.json"
     },
     "hilo": {
       "name": "HiLo",
       "category": "Games",
       "description": "Guess higher or lower across a streak-based payout ladder.",
-      "version": "1.0.73",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "616f28d400332226df619dc429f71c2adc0339d5984746744591289445de9a49",
+      "version": "1.0.74",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "e06f5abfe4b9efc768ac3f7d6949d220bd2eff904aa30970fef087935c0759e0",
       "spec_path": "programs/hilo.json"
     },
     "phone_os": {
@@ -63,7 +63,7 @@
       "category": "Apps",
       "description": "Pocket casino shell for ComputerCraft pocket computers.",
       "version": "1.0.7",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "933279a9cdb64c4d027e126cd415abb6fb984563047778d7a7f622bed323db77",
       "spec_path": "programs/phone_os.json"
     },
@@ -72,7 +72,7 @@
       "category": "Games",
       "description": "Multiplayer poker table foundation with dealer and seat modes.",
       "version": "1.0.18",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "ab0a865e2bd73a59bbb1d02b6bb4905ce938cc10ddd51938bd8e3a4a02dca88e",
       "spec_path": "programs/pokertable.json"
     },
@@ -80,18 +80,18 @@
       "name": "Roulette",
       "category": "Games",
       "description": "Single-zero European roulette with inside and outside bets.",
-      "version": "1.0.85",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "ce29b7890cd34003426e39d59cb6f426a9145b3c172c510ab81f18d04f31a552",
+      "version": "1.0.86",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "142648dcb64477ca44f43c6c0a9b2b594602088a2db934637ee96879810a826f",
       "spec_path": "programs/roulette.json"
     },
     "slots": {
       "name": "Slots",
       "category": "Games",
       "description": "Three-reel slot machine with weighted symbols and pair payouts.",
-      "version": "1.0.71",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "d7f24a1b5e2cc03c44489eb178ee659d0a1f9b664aa10b25b5904ca8395f029b",
+      "version": "1.0.72",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "0ee6ce83352c076f6be008dc8bf844068e98c9931d743e058adb404403ec8884",
       "spec_path": "programs/slots.json"
     },
     "sound_browser": {
@@ -99,7 +99,7 @@
       "category": "Apps",
       "description": "Browse the pack's generated sound catalog and save favorites.",
       "version": "1.0.2",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "674a9f58ee00af92ae731b77e9d672b31270f9da37f170aa0dc5c2fb0715766b",
       "spec_path": "programs/sound_browser.json"
     },
@@ -108,7 +108,7 @@
       "category": "Apps",
       "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
       "version": "1.0.16",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "fd3dd9f7e825a64a480374efb8451a727578dad6a165cd5cda57836d465c5028",
       "spec_path": "programs/taskmaster.json"
     },
@@ -117,7 +117,7 @@
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
       "version": "1.0.18",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "7f47a3c8773a0146cb0507243f9fb3192dae49790405da5015d95e8e8ab3fc5c",
       "spec_path": "programs/vault_item_analyzer.json"
     },
@@ -126,7 +126,7 @@
       "category": "Apps",
       "description": "Vault Storage Manager startup entry point.",
       "version": "1.0.48",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "1a94782ac0a47b3dfe6f3665b656b037fc001634e906dbd1eaefa0f2bb9d2b6c",
       "spec_path": "programs/vaultgear.json"
     },
@@ -135,7 +135,7 @@
       "category": "Utilities",
       "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
       "version": "1.0.2",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
       "package_hash": "056e5e65b19f7af3436e2e8575e2193b6a008145d9db5a0c66184fa6bb71d951",
       "spec_path": "programs/vhcctweaks_smoke_test.json"
     },
@@ -143,9 +143,9 @@
       "name": "VideoPoker",
       "category": "Games",
       "description": "Jacks or Better draw poker with payout and tutorial screens.",
-      "version": "1.0.69",
-      "commit": "9b531826e7606c3ad5bb75746b74d805827406ae",
-      "package_hash": "0d9ab9f0871463cd45969972271e8aa1acd4a109cd414bf65dd6879b428be882",
+      "version": "1.0.70",
+      "commit": "8f35923926eac26630b01912ba9ef8212beb16a5",
+      "package_hash": "09b21353e9994c0d43370ec031c4a46cab618101dbbcaeea6cf7e4196fa88758",
       "spec_path": "programs/videopoker.json"
     }
   }
