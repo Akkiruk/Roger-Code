@@ -374,21 +374,45 @@ local function getPlayerHandY()
   return scale:bottom(cardBack.height + 2, gap)
 end
 
+local function getPlayerCardTopY()
+  return getPlayerHandY() - 2
+end
+
+local function getBadgeHeight()
+  return scale.lineHeight + 1
+end
+
+local function clampOverlayAboveCards(preferredY, contentHeight, topBoundY, minY)
+  local maxY = topBoundY - contentHeight - scale.smallGap
+  if maxY < (minY or 0) then
+    return maxY
+  end
+  return min(max(preferredY, minY or 0), maxY)
+end
+
 local function getActionButtonY(rowCount)
   local rows = max(1, tonumber(rowCount) or 1)
   local blockHeight = scale.buttonHeight + ((rows - 1) * scale.buttonRowSpacing)
-  local playerTopY = getPlayerHandY() - 2
-  local preferredY = playerTopY - blockHeight - scale.lineHeight - scale.sectionGap - scale.smallGap
+  local preferredY = getPlayerCardTopY() - blockHeight - scale.lineHeight - scale.sectionGap - scale.smallGap
   local minimumY = centerY + cardBack.height + scale.lineHeight + (scale.smallGap * 2)
-  return max(minimumY, preferredY)
+  return clampOverlayAboveCards(preferredY, blockHeight, getPlayerCardTopY(), minimumY)
 end
 
 local function getActionHintY(rowCount)
-  return max(scale.edgePad, getActionButtonY(rowCount) - scale.lineHeight - scale.smallGap)
+  return clampOverlayAboveCards(
+    getActionButtonY(rowCount) - scale.lineHeight - scale.smallGap,
+    scale.lineHeight,
+    getActionButtonY(rowCount),
+    scale.edgePad
+  )
 end
 
 local function getDealerHandY()
   return scale:scaledY(LO.DEALER_Y or 10, scale.subtitleY + scale.smallGap, centerY - cardBack.height - scale.sectionGap)
+end
+
+local function getDealerCardTopY()
+  return getDealerHandY()
 end
 
 local function getCenterPileXOffsets()
@@ -423,7 +447,13 @@ local function renderRound(roundState, opts)
   local pileCaptionY = pileY + cardBack.height + scale.smallGap
   if shouldShowSuitBadge(topCard, options) then
     local activeLabel = string.upper(suitName(roundState.activeSuit))
-    drawCenteredBadge(activeLabel, max(scale.edgePad + 1, pileY - scale.lineHeight - scale.sectionGap), suitColor(roundState.activeSuit), colors.black)
+    local suitBadgeY = clampOverlayAboveCards(
+      max(scale.edgePad + 1, pileY - scale.lineHeight - scale.sectionGap),
+      getBadgeHeight(),
+      getDealerCardTopY(),
+      scale.edgePad
+    )
+    drawCenteredBadge(activeLabel, suitBadgeY, suitColor(roundState.activeSuit), colors.black)
   end
 
   local prompt = options.statusText or getTurnPrompt(roundState)
@@ -434,7 +464,17 @@ local function renderRound(roundState, opts)
     elseif roundState.currentSide ~= "player" and not options.statusText then
       promptColor = colors.lightGray
     end
-    drawCenteredBadge(prompt, pileCaptionY + scale.lineHeight + scale.smallGap, promptColor, colors.black)
+    local promptTopBound = getPlayerCardTopY()
+    if (options.actionRows or 0) > 0 then
+      promptTopBound = min(promptTopBound, getActionHintY(options.actionRows))
+    end
+    local promptY = clampOverlayAboveCards(
+      pileCaptionY + scale.lineHeight + scale.smallGap,
+      getBadgeHeight(),
+      promptTopBound,
+      pileCaptionY + scale.smallGap
+    )
+    drawCenteredBadge(prompt, promptY, promptColor, colors.black)
   end
 
   local dealerY = getDealerHandY()
@@ -451,7 +491,13 @@ local function renderRound(roundState, opts)
   if revealDealer or #roundState.dealerHand <= 1 then
     local dealerInfo = revealDealer and ("DEALER " .. tostring(#roundState.dealerHand)) or "DEALER 1"
     local dealerColor = #roundState.dealerHand <= 1 and colors.orange or colors.white
-    drawCenteredBadge(dealerInfo, max(scale.edgePad, dealerY - scale.lineHeight - scale.smallGap), dealerColor, colors.black)
+    local dealerInfoY = clampOverlayAboveCards(
+      max(scale.edgePad, dealerY - scale.lineHeight - scale.smallGap),
+      getBadgeHeight(),
+      getDealerCardTopY(),
+      scale.edgePad
+    )
+    drawCenteredBadge(dealerInfo, dealerInfoY, dealerColor, colors.black)
   end
 
   local playerY = getPlayerHandY()
@@ -479,7 +525,13 @@ local function renderRound(roundState, opts)
   if revealDealer or #roundState.playerHand <= 1 then
     local playerInfo = revealDealer and ("YOU " .. tostring(#roundState.playerHand)) or "LAST CARD"
     local playerColor = #roundState.playerHand <= 1 and colors.orange or colors.white
-    drawCenteredBadge(playerInfo, max(scale.edgePad, playerY - scale.lineHeight - scale.smallGap), playerColor, colors.black)
+    local playerInfoY = clampOverlayAboveCards(
+      max(scale.edgePad, playerY - scale.lineHeight - scale.smallGap),
+      getBadgeHeight(),
+      getPlayerCardTopY(),
+      scale.edgePad
+    )
+    drawCenteredBadge(playerInfo, playerInfoY, playerColor, colors.black)
   end
 
   drawPlayerOverlay()
@@ -503,6 +555,7 @@ local function chooseSuitPrompt(roundState, side)
       renderRound(roundState, {
         mode = "choose_suit",
         statusText = "CHOOSE SUIT",
+        actionRows = 2,
         showSuitBadge = false,
       })
     end,
@@ -780,6 +833,7 @@ local function choosePlayableCard(roundState)
   while not choice do
     renderRound(roundState, {
       mode = roundState.pendingDraw > 0 and "stack_choice" or "play_choice",
+        actionRows = 1,
       selectedIndex = selectedIndex,
       showPlayable = true,
       statusText = roundState.pendingDraw > 0 and ("PLAY A 2 OR TAKE " .. tostring(roundState.pendingDraw)) or nil,
@@ -855,6 +909,7 @@ local function choosePostDrawAction(roundState, drawnIndex)
     render = function()
       renderRound(roundState, {
         mode = "post_draw",
+        actionRows = 1,
         selectedIndex = drawnIndex,
         statusText = "PLAY DRAWN CARD?",
         showPlayable = false,
