@@ -91,6 +91,68 @@ local function logMsg(msg)
   logger.info(msg)
 end
 
+local function isTerminateError(err)
+  return tostring(err or "") == "Terminated"
+end
+
+local function hasValue(value)
+  return type(value) == "string" and value ~= ""
+end
+
+local function packageNeedsUpdate(localHash, remoteHash, localCommit, remoteCommit, forceMode)
+  if forceMode then
+    return true
+  end
+
+  if hasValue(remoteHash) then
+    return tostring(localHash or "") ~= remoteHash
+  end
+
+  return tostring(localCommit or "") ~= tostring(remoteCommit or "")
+end
+
+local function buildUpdateReason(forceMode, localHash, remoteHash, localCommit, remoteCommit)
+  if forceMode then
+    return "forced reinstall"
+  end
+
+  local reasons = {}
+  if hasValue(remoteHash) then
+    if tostring(localHash or "") ~= remoteHash then
+      reasons[#reasons + 1] = "package changed"
+    end
+    if hasValue(remoteCommit) and tostring(localCommit or "") ~= remoteCommit then
+      reasons[#reasons + 1] = "content commit changed"
+    end
+  elseif tostring(localCommit or "") ~= tostring(remoteCommit or "") then
+    reasons[#reasons + 1] = "commit changed"
+  end
+
+  if #reasons == 0 then
+    return "metadata changed"
+  end
+
+  return table.concat(reasons, ", ")
+end
+
+local function validateFetchedSpec(programEntry, spec)
+  local specBuild = type(spec) == "table" and spec.build or nil
+  local entryCommit = tostring(programEntry and programEntry.commit or "")
+  local entryHash = tostring(programEntry and programEntry.package_hash or "")
+  local specCommit = tostring(specBuild and specBuild.commit or "")
+  local specHash = tostring(specBuild and specBuild.package_hash or "")
+
+  if hasValue(entryHash) and hasValue(specHash) and entryHash ~= specHash then
+    return false, "Spec package hash mismatch: latest=" .. entryHash:sub(1, 8) .. " spec=" .. specHash:sub(1, 8)
+  end
+
+  if hasValue(entryCommit) and hasValue(specCommit) and entryCommit ~= specCommit then
+    return false, "Spec commit mismatch: latest=" .. entryCommit:sub(1, 8) .. " spec=" .. specCommit:sub(1, 8)
+  end
+
+  return true
+end
+
 local function download(url, headers)
   local ok, response = pcall(function()
     return http.get(url, headers, true)
@@ -791,7 +853,7 @@ local function checkForUpdates(opts)
 
     local forceMode = opts.force == true
 
-    if localCommit == remoteCommit and localHash == remoteHash and not forceMode then
+    if not packageNeedsUpdate(localHash, remoteHash, localCommit, remoteCommit, forceMode) then
       logMsg("Up to date: " .. progKey .. " v" .. tostring(installed.version or "?"))
       releaseLock()
       status = "up-to-date"
@@ -800,16 +862,7 @@ local function checkForUpdates(opts)
       return
     end
 
-    local reason = ""
-    if forceMode then
-      reason = "forced reinstall"
-    end
-    if localCommit ~= remoteCommit then
-      reason = "commit changed"
-    end
-    if localHash ~= remoteHash then
-      reason = reason ~= "" and (reason .. ", package changed") or "package changed"
-    end
+    local reason = buildUpdateReason(forceMode, localHash, remoteHash, localCommit, remoteCommit)
 
     callback("updating", "Fetching package spec...")
     local spec, specErr = fetchProgramSpec(programEntry.spec_path)
@@ -821,6 +874,15 @@ local function checkForUpdates(opts)
       return
     end
     spec._spec_path = programEntry.spec_path
+
+    local specValid, specValidationErr = validateFetchedSpec(programEntry, spec)
+    if not specValid then
+      logMsg("Spec validation failed for " .. progKey .. ": " .. tostring(specValidationErr))
+      releaseLock()
+      status = "error"
+      callback("error", tostring(specValidationErr))
+      return
+    end
 
     logMsg("Updating " .. progKey .. ": " .. reason)
     callback("updating", "Updating " .. progKey .. ": " .. reason)
@@ -851,6 +913,13 @@ local function checkForUpdates(opts)
   end)
 
   if not ok then
+    if isTerminateError(err) then
+      pcall(releaseLock)
+      status = "terminated"
+      callback("terminated", "Terminated")
+      return status
+    end
+
     logMsg("Update check crashed: " .. tostring(err))
     pcall(releaseLock)
     status = "error"
@@ -896,22 +965,32 @@ local function watchForUpdates(opts)
 
   local function runOneCheck()
     local status = checkForUpdates({ callback = notify })
+    if status == "terminated" then
+      return false
+    end
+
     if status == "updated" then
       notify("rebooting", "Update applied, rebooting...")
       os.sleep(1)
       os.reboot()
     end
+
+    return true
   end
 
   if immediate then
-    runOneCheck()
+    if not runOneCheck() then
+      return
+    end
   end
 
   while true do
     local interval = startupSchedule[startupIndex] or steadyInterval
     os.sleep(interval)
 
-    runOneCheck()
+    if not runOneCheck() then
+      return
+    end
 
     if startupSchedule[startupIndex] then
       startupIndex = startupIndex + 1

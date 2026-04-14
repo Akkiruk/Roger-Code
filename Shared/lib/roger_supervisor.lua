@@ -80,6 +80,10 @@ local function logMessage(message)
   logger.info(message)
 end
 
+local function isTerminateError(err)
+  return tostring(err or "") == "Terminated"
+end
+
 local function readInstalledState()
   if not fs.exists(STATE_FILE) then
     return nil
@@ -298,7 +302,7 @@ local function checkForUpdatesAfterCrash(runErr)
     end,
   })
 
-  if status == "updated" then
+  if status == "updated" or status == "terminated" then
     return
   end
 
@@ -346,6 +350,11 @@ function M.run(...)
           end
         end
       else
+        if isTerminateError(runErr) then
+          logMessage("Program terminated: " .. tostring(runtime.appEntrypoint))
+          return
+        end
+
         local now = os.epoch("local")
         local shouldCheckForUpdates = (not lastCrashUpdateCheckAt)
           or ((now - lastCrashUpdateCheckAt) >= (CRASH_UPDATE_CHECK_COOLDOWN * 1000))

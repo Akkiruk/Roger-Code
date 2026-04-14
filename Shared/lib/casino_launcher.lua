@@ -56,6 +56,10 @@ local function showCrashScreen(delaySeconds, errorMessage)
   os.sleep(delaySeconds)
 end
 
+local function isTerminateError(err)
+  return tostring(err or "") == "Terminated"
+end
+
 function M.run(opts)
   local options = opts or {}
   local monitorName = options.monitorName or error("monitorName is required")
@@ -116,15 +120,37 @@ function M.run(opts)
 
     debugLog("startup.lua: Starting " .. tostring(program) .. "...")
     local previous = term.current()
-    local runOk, runErr = pcall(shell.run, program)
-    if not runOk then
-      debugLog("startup.lua: Error in " .. tostring(program) .. ": " .. tostring(runErr))
-      alertLib.send(tostring(program) .. " error: " .. tostring(runErr))
-      if idleEnv and idleEnv.monitor then
-        showCrashScreen(crashDelay, runErr)
-      end
-    end
+    local callOk, shellOk, shellErr = pcall(shell.run, program)
     term.redirect(previous)
+
+    if not callOk then
+      if isTerminateError(shellOk) then
+        debugLog("startup.lua: " .. tostring(program) .. " terminated.")
+        error("Terminated", 0)
+      end
+
+      debugLog("startup.lua: Error in " .. tostring(program) .. ": " .. tostring(shellOk))
+      alertLib.send(tostring(program) .. " error: " .. tostring(shellOk))
+      if idleEnv and idleEnv.monitor then
+        showCrashScreen(crashDelay, shellOk)
+      end
+      return
+    end
+
+    if shellOk == false then
+      if isTerminateError(shellErr) then
+        debugLog("startup.lua: " .. tostring(program) .. " terminated.")
+        error("Terminated", 0)
+      end
+
+      debugLog("startup.lua: Error in " .. tostring(program) .. ": " .. tostring(shellErr))
+      alertLib.send(tostring(program) .. " error: " .. tostring(shellErr))
+      if idleEnv and idleEnv.monitor then
+        showCrashScreen(crashDelay, shellErr)
+      end
+      return
+    end
+
     debugLog("startup.lua: " .. tostring(program) .. " finished, returning to idle.")
   end
 
@@ -135,6 +161,11 @@ function M.run(opts)
         checkHit = options.checkHit,
       })
       if not idleOk then
+        if isTerminateError(actionOrError) then
+          debugLog("Idle loop terminated.")
+          error("Terminated", 0)
+        end
+
         debugLog("Error in idle loop: " .. tostring(actionOrError))
         alertLib.send("Idle loop error: " .. tostring(actionOrError))
         os.sleep(5)

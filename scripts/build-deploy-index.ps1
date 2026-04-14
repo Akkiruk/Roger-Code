@@ -462,6 +462,33 @@ function Resolve-DisplayVersion {
     return (Bump-PatchVersion -Version $seed.version)
 }
 
+function Get-PackageContentCommit {
+    param(
+        [string]$RepoRoot,
+        [string[]]$RepoPaths,
+        [string]$FallbackCommit
+    )
+
+    $paths = @(
+        $RepoPaths |
+            Where-Object { $_ } |
+            ForEach-Object { [string]$_ } |
+            Sort-Object -Unique
+    )
+
+    if ($paths.Count -eq 0) {
+        return $FallbackCommit
+    }
+
+    $gitArgs = @('-C', $RepoRoot, 'log', '-1', '--format=%H', '--') + $paths
+    $commit = (& git @gitArgs 2>$null).Trim()
+    if (-not $commit) {
+        return $FallbackCommit
+    }
+
+    return $commit
+}
+
 $previousPrograms = @{}
 if ($PreviousIndexDir) {
     $previousLatestPath = Join-Path $PreviousIndexDir "latest.json"
@@ -588,6 +615,7 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
             "$($_.install_path)|$($_.repo_path)|$([bool]$_.preserve_existing)|$($_.sha256)"
         }) -join "`n"
         $packageHash = Get-StringSha256 -Value $packageHashInput
+        $packageCommit = Get-PackageContentCommit -RepoRoot $RepoRoot -RepoPaths @($installFileList | ForEach-Object { $_.repo_path }) -FallbackCommit $gitCommit
         $version = Resolve-DisplayVersion -Key $meta.key -PackageHash $packageHash -PreviousPrograms $previousPrograms
 
         $spec = [ordered]@{
@@ -602,7 +630,7 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
                 version = $version
             }
             build = [ordered]@{
-                commit = $gitCommit
+                commit = $packageCommit
                 generated_at = $generatedAt
                 package_hash = $packageHash
             }
@@ -712,6 +740,7 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
         "$($_.install_path)|$($_.repo_path)|$([bool]$_.preserve_existing)|$($_.sha256)"
     }) -join "`n"
     $packageHash = Get-StringSha256 -Value $packageHashInput
+    $packageCommit = Get-PackageContentCommit -RepoRoot $RepoRoot -RepoPaths @($orderedInstallFiles | ForEach-Object { $_.repo_path }) -FallbackCommit $gitCommit
     $version = Resolve-DisplayVersion -Key $key -PackageHash $packageHash -PreviousPrograms $previousPrograms
 
     $programSpecs.Add([ordered]@{
@@ -726,7 +755,7 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
             version = $version
         }
         build = [ordered]@{
-            commit = $gitCommit
+            commit = $packageCommit
             generated_at = $generatedAt
             package_hash = $packageHash
         }
