@@ -580,17 +580,17 @@ local function getPocketAngle(index, rotationAngle)
   return TOP_ANGLE + ((index - 1) * POCKET_ANGLE) + rotationAngle
 end
 
-local function drawNormalizedArc(screen, x, y, diameter, startAngle, endAngle, color)
+local function drawNormalizedArc(screen, x, y, width, height, startAngle, endAngle, color)
   local fromAngle = normalizeAngle(startAngle)
   local toAngle = normalizeAngle(endAngle)
 
   if fromAngle <= toAngle then
-    screen:fillArc(x, y, diameter, diameter, fromAngle, toAngle, color)
+    screen:fillArc(x, y, width, height, fromAngle, toAngle, color)
     return
   end
 
-  screen:fillArc(x, y, diameter, diameter, fromAngle, TAU, color)
-  screen:fillArc(x, y, diameter, diameter, 0, toAngle, color)
+  screen:fillArc(x, y, width, height, fromAngle, TAU, color)
+  screen:fillArc(x, y, width, height, 0, toAngle, color)
 end
 
 local function drawWheelPointer(screen, centerX, topY)
