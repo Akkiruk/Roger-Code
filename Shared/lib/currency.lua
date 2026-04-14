@@ -50,12 +50,20 @@ end
 
 --- Check that ccvault is available and authenticated.
 -- @return boolean, string|nil  true if ready, false + error message if not
-local function isReady()
+local function hasAuthenticatedSession()
   if not ccvault or not ccvault.isAvailable() then
     return false, "economy system not available"
   end
   if not ccvault.isAuthenticated() then
     return false, "not authenticated"
+  end
+  return true, nil
+end
+
+local function isReady()
+  local ready, err = hasAuthenticatedSession()
+  if not ready then
+    return false, err
   end
   if AUTH_PLAYER and AUTH_PLAYER ~= "" then
     local info = nil
@@ -289,7 +297,7 @@ end
 --- Get the player's token balance.
 -- @return number  Token count (0 if unavailable)
 local function getPlayerBalance()
-  local ready, err = isReady()
+  local ready, err = hasAuthenticatedSession()
   if not ready then
     dbg("getPlayerBalance failed: " .. (err or "unknown"))
     return 0
@@ -303,7 +311,7 @@ end
 --- Get the host's token balance.
 -- @return number  Token count (0 if unavailable)
 local function getHostBalance()
-  local ready, err = isReady()
+  local ready, err = hasAuthenticatedSession()
   if not ready then
     dbg("getHostBalance failed: " .. (err or "unknown"))
     return 0
