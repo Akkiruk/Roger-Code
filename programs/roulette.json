@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.76"
+    "version": "1.0.77"
   },
   "build": {
-    "commit": "551208b097d4affeb127fad99ba2d307c43dc1df",
-    "generated_at": "2026-04-14T02:52:50Z",
-    "package_hash": "fd89ab907c717b93dc0b28bae45a0cfc46f224623342cfd8701bd044ad01c6e9"
+    "commit": "988f5e743cb03cb9133c9efa3e2151e41d651522",
+    "generated_at": "2026-04-14T02:53:08Z",
+    "package_hash": "0127b727c9f1b8eebf1c7894e90aab443de2ff5ac5331b07b7b0d61607632196"
   },
   "install": {
     "preserve": [
@@ -157,12 +157,12 @@
       {
         "repo_path": "Games/Roulette/roulette_render.lua",
         "install_path": "roulette_render.lua",
-        "sha256": "dff8c59a564b3b7f5b73d50bbb976610c11b8b482a27fc1062a5f1d7939529d3"
+        "sha256": "5629e1b03894870c9d8c22c03d550b9a832d21b5bb4d7602cd8469ca54a32f7d"
       },
       {
         "repo_path": "Games/Roulette/Roulette.lua",
         "install_path": "Roulette.lua",
-        "sha256": "460b1ee28e7e049af848a367cd781f5f4a0da7d0827535359daf1e8b7ce828f7"
+        "sha256": "dfb028c8b31deec8198669ecea7a3d0f8efd7fcac031138b7940de2a709e081f"
       },
       {
         "repo_path": "Games/Roulette/startup.lua",
@@ -172,7 +172,7 @@
       {
         "repo_path": "Games/Roulette/roulette_config.lua",
         "install_path": "roulette_config.lua",
-        "sha256": "85b1cb79cb8982a5f828bd9152a44ee3181b69d51ee3e3062cc779c181eae220",
+        "sha256": "de134c461f56a6124f992b81d3be0b527f46e20161fdc5901154997f2ee4c969",
         "preserve_existing": true
       },
       {
