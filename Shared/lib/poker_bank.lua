@@ -43,8 +43,8 @@ local function trimReason(reason)
   return text
 end
 
-function M.authenticate(timeout)
-  local authOk = currency.authenticate(timeout or 60)
+function M.authenticate(timeout, authOptions)
+  local authOk = currency.authenticate(timeout or 60, authOptions)
   if not authOk then
     return nil, "authentication_failed"
   end

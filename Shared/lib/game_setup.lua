@@ -58,7 +58,14 @@ local function init(cfg)
 
   -- CCVault authentication
   if not cfg.skipAuth then
-    local authOk = currency.authenticate(cfg.authTimeout or 60)
+    local authOk = currency.authenticate(cfg.authTimeout or 60, {
+      monitorName = cfg.monitorName,
+      monitorTextScale = cfg.monitorTextScale,
+      surfacePath = cfg.surfacePath or "surface",
+      fontPath = cfg.fontPath or "font",
+      palette = cfg.palette or DEFAULT_PALETTE,
+      title = cfg.gameName or "Casino",
+    })
     if not authOk then
       error("CCVault authentication failed — cannot run game")
     end

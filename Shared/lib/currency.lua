@@ -10,6 +10,7 @@
 
 local DEBUG = settings.get("casino.debug") or false
 local AUTH_POLL_INTERVAL = 0.2
+local authWaitScreen = require("lib.auth_wait_screen")
 local function dbg(msg)
   if DEBUG then print(os.epoch("local"), "[currency] " .. msg) end
 end
@@ -74,9 +75,59 @@ end
 
 --- Run the authentication flow. Blocks until authenticated or timeout.
 -- @param timeout number?  Seconds to wait (default 60)
+-- @param opts table?  Optional keys: monitorName, monitorTextScale, surfacePath,
+--                     fontPath, palette, title
 -- @return boolean  true if authenticated
-local function authenticate(timeout)
+local function authenticate(timeout, opts)
   timeout = timeout or 60
+  opts = opts or {}
+
+  local waitScreen = nil
+  local function closeWaitScreen()
+    if waitScreen then
+      local ok, err = pcall(function()
+        authWaitScreen.close(waitScreen)
+      end)
+      if not ok then
+        dbg("Auth wait screen close failed: " .. tostring(err))
+      end
+      waitScreen = nil
+    end
+  end
+
+  local function renderWaitScreen(state)
+    if not opts.monitorName then
+      return
+    end
+    if not waitScreen then
+      local created, result = pcall(function()
+        return authWaitScreen.create({
+          monitorName = opts.monitorName,
+          monitorTextScale = opts.monitorTextScale,
+          surfacePath = opts.surfacePath,
+          fontPath = opts.fontPath,
+          palette = opts.palette,
+          title = opts.title,
+          computerId = (ccvault and ccvault.getComputerId and ccvault.getComputerId()) or os.getComputerID(),
+        })
+      end)
+      if not created then
+        dbg("Auth wait screen unavailable: " .. tostring(result))
+        opts.monitorName = nil
+        return
+      end
+      waitScreen = result
+    end
+
+    local ok, err = pcall(function()
+      authWaitScreen.render(waitScreen, state)
+    end)
+    if not ok then
+      dbg("Auth wait screen render failed: " .. tostring(err))
+      closeWaitScreen()
+      opts.monitorName = nil
+    end
+  end
 
   if not ccvault or not ccvault.isAvailable() then
     print("Economy system is not available on this server.")
@@ -85,7 +136,17 @@ local function authenticate(timeout)
 
   -- Wait for a player to interact
   print("Waiting for player...")
+  renderWaitScreen({
+    stage = "waiting_player",
+    playerName = nil,
+    secondsRemaining = timeout,
+  })
   while not ccvault.getPlayerName() do
+    renderWaitScreen({
+      stage = "waiting_player",
+      playerName = nil,
+      secondsRemaining = timeout,
+    })
     os.sleep(1)
   end
 
@@ -96,7 +157,9 @@ local function authenticate(timeout)
 
   -- Always request a fresh approval so this terminal binds to the active tester/player.
   -- If the session is already valid for the same player, we allow that fast path below.
-  local pcallOk, ok, err = pcall(ccvault.requestAuth)
+  local pcallOk, ok, err = pcall(function()
+    return ccvault.requestAuth()
+  end)
   if not pcallOk or not ok then
     local alreadyAuthed = ccvault.isAuthenticated()
     local currentPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
@@ -106,6 +169,7 @@ local function authenticate(timeout)
       else
         print("Auth request failed: " .. (err or "unknown"))
       end
+      closeWaitScreen()
       return false
     end
   end
@@ -113,18 +177,39 @@ local function authenticate(timeout)
   local compId = ccvault.getComputerId and ccvault.getComputerId() or os.getComputerID()
   print("Approve Computer #" .. tostring(compId) .. " in chat.")
 
+  local authStartedAt = os.epoch("local")
   local timer = os.startTimer(timeout)
   local pollTimer = os.startTimer(AUTH_POLL_INTERVAL)
+  renderWaitScreen({
+    stage = "awaiting_approval",
+    playerName = targetPlayer,
+    computerId = compId,
+    secondsRemaining = timeout,
+  })
   while not ccvault.isAuthenticated() do
     local event, id = os.pullEvent()
     if event == "timer" and id == timer then
       if pollTimer then
         os.cancelTimer(pollTimer)
       end
+      renderWaitScreen({
+        stage = "timed_out",
+        playerName = targetPlayer,
+        computerId = compId,
+        secondsRemaining = 0,
+      })
       print("Auth timed out.")
       return false
     end
     if event == "timer" and id == pollTimer then
+      local elapsedSeconds = (os.epoch("local") - authStartedAt) / 1000
+      local secondsRemaining = math.ceil(timeout - elapsedSeconds)
+      renderWaitScreen({
+        stage = "awaiting_approval",
+        playerName = targetPlayer,
+        computerId = compId,
+        secondsRemaining = secondsRemaining,
+      })
       pollTimer = os.startTimer(AUTH_POLL_INTERVAL)
     end
   end
@@ -135,10 +220,20 @@ local function authenticate(timeout)
 
   local authedPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
   if targetPlayer and authedPlayer and targetPlayer ~= authedPlayer then
+    closeWaitScreen()
     print("Authentication player changed from " .. targetPlayer .. " to " .. authedPlayer .. ".")
     print("Please interact again and retry.")
     return false
   end
+
+  renderWaitScreen({
+    stage = "approved",
+    playerName = authedPlayer or targetPlayer,
+    computerId = compId,
+    secondsRemaining = 0,
+  })
+  os.sleep(0.5)
+  closeWaitScreen()
 
   AUTH_PLAYER = authedPlayer or targetPlayer
   dbg("Authenticated as " .. tostring(AUTH_PLAYER or "?"))
