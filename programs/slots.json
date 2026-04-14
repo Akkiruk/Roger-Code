@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.67"
+    "version": "1.0.68"
   },
   "build": {
-    "commit": "0384c9521364a89d831d1c1c4217c77620e2046e",
-    "generated_at": "2026-04-14T03:18:34Z",
-    "package_hash": "7500a625c6bc0e2445518bcd0951cf714e9cd9bbe6bd804d227fe85b34ebe76f"
+    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
+    "generated_at": "2026-04-14T03:19:20Z",
+    "package_hash": "c27514e6a76163ade2451b3e3d8934bc4510ac08ab047eb74661408e6a45ca93"
   },
   "install": {
     "preserve": [
@@ -228,7 +228,7 @@
       {
         "repo_path": "Shared/lib/activity_timeout.lua",
         "install_path": "lib/activity_timeout.lua",
-        "sha256": "3b29709e18511b4e4548244fc2d3eabae52db163a2e460c7c74a97da171504ab"
+        "sha256": "d46af23d468407b04765b1ab91ab7c6140c1c5f2321f76e838d8d9f095bfd36d"
       },
       {
         "repo_path": "Shared/lib/alert.lua",

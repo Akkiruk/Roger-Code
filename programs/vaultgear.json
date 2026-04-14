@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager startup entry point.",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.45"
+    "version": "1.0.46"
   },
   "build": {
-    "commit": "0384c9521364a89d831d1c1c4217c77620e2046e",
-    "generated_at": "2026-04-14T03:18:34Z",
-    "package_hash": "5e73ae24bd99f5d446400ab2007373124d29f9e5c74f19f2d7345c82af7337f4"
+    "commit": "066b2b33b3706f3fc3fae265dbf7eeb1712ef891",
+    "generated_at": "2026-04-14T03:19:20Z",
+    "package_hash": "15c4fc3e16c0158b87229d17b02874b31e0a93980ee3e9999cadb1a532b132ce"
   },
   "install": {
     "preserve": [
@@ -155,7 +155,7 @@
       {
         "repo_path": "Shared/lib/activity_timeout.lua",
         "install_path": "lib/activity_timeout.lua",
-        "sha256": "3b29709e18511b4e4548244fc2d3eabae52db163a2e460c7c74a97da171504ab"
+        "sha256": "d46af23d468407b04765b1ab91ab7c6140c1c5f2321f76e838d8d9f095bfd36d"
       },
       {
         "repo_path": "Shared/lib/auth_wait_screen.lua",
