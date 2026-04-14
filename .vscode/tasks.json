@@ -1,88 +1,60 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Deploy Blackjack to Emulator",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/deploy-to-emulator.ps1", "-Game", "Blackjack"],
-      "group": "build",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy Slots to Emulator",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/deploy-to-emulator.ps1", "-Game", "Slots", "-ComputerId", "1"],
-      "group": "build",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy Roulette to Emulator",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/deploy-to-emulator.ps1", "-Game", "Roulette", "-ComputerId", "2"],
-      "group": "build",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy (No Mocks)",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/deploy-to-emulator.ps1", "-NoMocks"],
-      "group": "build",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Clean Emulator Files",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/deploy-to-emulator.ps1", "-Clean"],
-      "group": "build",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Deploy + Start CraftOS-PC",
-      "dependsOn": ["Deploy Blackjack to Emulator"],
-      "dependsOrder": "sequence",
-      "type": "shell",
-      "command": "code",
-      "args": ["--command", "craftos-pc.open"],
-      "group": { "kind": "build", "isDefault": true },
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared" },
-      "problemMatcher": []
-    },
-    {
-      "label": "View Emulator Files",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-Command", "Get-ChildItem \"$env:APPDATA\\CraftOS-PC\\computer\\0\" -Recurse | Select-Object @{N='Path';E={$_.FullName.Replace(\"$env:APPDATA\\CraftOS-PC\\computer\\0\\\", '')}} | Format-Table -AutoSize"],
-      "group": "none",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Read Emulator Logs",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-Command", "$logs = @('emulator/mock_log.txt','blackjack_error.log','casino_error.log','slots_error.log','roulette_error.log'); foreach($l in $logs) { $p = \"$env:APPDATA\\CraftOS-PC\\computer\\0\\$l\"; if(Test-Path $p) { Write-Host \"=== $l ===\" -ForegroundColor Cyan; Get-Content $p -Tail 30 } }"],
-      "group": "none",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    },
-    {
-      "label": "Build Deploy Index",
-      "type": "shell",
-      "command": "powershell",
-      "args": ["-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/build-deploy-index.ps1"],
-      "group": "none",
-      "presentation": { "echo": true, "reveal": "always", "focus": false, "panel": "shared", "clear": true },
-      "problemMatcher": []
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Dedicated Server Workflow Notice",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"Write-Host 'Local emulator/world deployment is retired. Push to GitHub and use the dedicated-server installer/update flow.' -ForegroundColor Yellow; exit 1"
+			],
+			"group": "none",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Deploy Index",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}/scripts/build-deploy-index.ps1"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Deploy Index",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"scripts/build-deploy-index.ps1"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
 }

@@ -4,12 +4,12 @@
 
 - This repo is the source of truth for the user's ComputerCraft and Lua programs.
 - Primary branch: `main`
-- Runtime target: `%APPDATA%\PrismLauncher\instances\mcparadisepack\minecraft\`
+- Deployment target: dedicated-server ComputerCraft computers via the GitHub installer/update flow.
 
 ## Source Of Truth
 
 - Keep canonical ComputerCraft source, configs, tests, and shared libraries here.
-- Do not treat the PrismLauncher runtime instance as canonical source unless the user explicitly asks for an instance-local hotfix.
+- Never rely on local singleplayer saves, PrismLauncher world files, or direct runtime log inspection for this repo.
 - Main layout:
   - `Games/<Name>/` for actual game packages
   - `Apps/<Name>/` for non-game multi-file installable programs
@@ -25,17 +25,14 @@
 - `Games/manifest.json` and the old manifest generator have been retired from the deployment flow.
 - Folder-based installable packages must mark their entrypoint file with `-- manifest-entrypoint: true`; the deploy-index builder no longer guesses a main file.
 - Top-level standalone `Utilities/*.lua` files remain auto-discovered as single-file install targets without needing the marker.
-- Use `scripts/sync-roger-code.ps1 -Game <Name>` only when the user explicitly asks for a local PrismLauncher deployment.
-- `scripts/deploy-to-world.ps1` is the manual deploy entry point for live ComputerCraft saves; do not run it by default.
-- The legacy `.vscode/deploy-to-emulator.ps1` path now forwards into the live PrismLauncher deploy flow for compatibility.
+- Local world deployment scripts are deprecated stubs and must not be used.
 - Generated package versions are auto-bumped by the deploy-index builder when package hashes change.
 - Installer and updater metadata come from `https://raw.githubusercontent.com/Akkiruk/Roger-Code/deploy-index/...`, while payload files are downloaded from commit-pinned raw URLs under `main`.
 
 ## Runtime
 
-- Prefer the real PrismLauncher world runtime under `saves/*/computercraft/computer/`.
-- Use `scripts/deploy-to-world.ps1 -ListTargets` to see which computers currently have installed programs.
-- Pass `-ComputerId` when you want to force deployment to a specific computer folder.
+- Assume runtime computers live on the dedicated server and are not directly accessible from this workspace.
+- Validate changes through source inspection, package metadata, and the published installer/update flow unless the user explicitly supplies external runtime evidence.
 
 ## Lua And ComputerCraft Rules
 
@@ -53,7 +50,7 @@
 - Never create a feature branch or PR-only flow for routine repo changes unless the user explicitly asks for one.
 - After any completed repo change, finish the loop in the same turn by pushing the full change set unless the user explicitly says not to push yet.
 - Do not stop to ask for verification or review before pushing to `main` unless a failed git operation forces recovery work.
-- Do not auto-deploy changes into the local PrismLauncher save. Push to GitHub and let the user's installer/update flow pull the new version unless the user explicitly asks for a local deploy.
+- Do not attempt direct local deployment or runtime log inspection. Push to GitHub and let the server-side installer/update flow pull the new version.
 - Skip tests, linting, emulator runs, and other verification by default. Only run verification when the user explicitly asks for it or when it is required to recover from a failed git operation.
 - Use `scripts/push-all.ps1` for the default fast path unless the task needs a custom flow.
 - Do not fake success or use destructive history rewrites. If a push fails, report it plainly.

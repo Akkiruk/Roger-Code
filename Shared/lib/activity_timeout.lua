@@ -9,9 +9,9 @@ local function nowMs()
 end
 
 function M.resolveDuration(...)
-  local count = select("#", ...)
-  for index = 1, count do
-    local value = tonumber((select(index, ...)))
+  local values = { ... }
+  for index = 1, #values do
+    local value = tonumber(values[index])
     if value and value > 0 then
       return math.floor(value)
     end
