@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.79"
+    "version": "1.0.80"
   },
   "build": {
-    "commit": "2cce996d7adc2558a49f9230710ff6ba1ff622da",
-    "generated_at": "2026-04-14T03:02:01Z",
-    "package_hash": "1f151a0e2f3c2855cda0fbb34fb8f786287b24cd2e035ec442cbcd36ed60060b"
+    "commit": "57f7b947f4ea4f3a34aad12e2cc909ebcfce3b8e",
+    "generated_at": "2026-04-14T03:04:46Z",
+    "package_hash": "7e075675d21e1878fc3aa8f7a217c2dddf25b4422a11b326cfd3932ab3146130"
   },
   "install": {
     "preserve": [
@@ -42,7 +42,7 @@
       {
         "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "751b5603df224116c9234b82d193043a2b31e0c29d326492f95e50ddb34b638f"
+        "sha256": "3eb3e317787ff3ad17e889014172140f8c10052fed8e2b839ee88726172e6bdb"
       },
       {
         "repo_path": "Shared/lib/game_setup.lua",
@@ -203,7 +203,7 @@
       {
         "repo_path": "Shared/lib/activity_timeout.lua",
         "install_path": "lib/activity_timeout.lua",
-        "sha256": "8f8c921067d26a4ca0a45af684cc4e11ece1c8008b0f3e0e6ff70f1728a3e4a0"
+        "sha256": "3b29709e18511b4e4548244fc2d3eabae52db163a2e460c7c74a97da171504ab"
       },
       {
         "repo_path": "Shared/lib/alert.lua",
