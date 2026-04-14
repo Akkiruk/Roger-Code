@@ -12,6 +12,19 @@ local function drawCenteredLine(screen, text, y, color)
   ui.safeDrawText(screen, message, font, x, y, color or colors.lightGray)
 end
 
+local function drawCenteredWrappedText(screen, text, y, color, maxLines)
+  local font = ui.getFont()
+  local metrics = ui.getMetrics()
+  local maxWidth = math.max(1, screen.width - ((metrics.edgePad or 0) * 2))
+  local lineSpacing = metrics.lineHeight or 1
+  local lines = ui.wrapSurfaceText(text, font, maxWidth, maxLines)
+  local startY = y - ((#lines - 1) * lineSpacing)
+
+  for index, line in ipairs(lines) do
+    drawCenteredLine(screen, line, startY + ((index - 1) * lineSpacing), color)
+  end
+end
+
 local function resolveHint(options)
   if type(options.hint) == "function" then
     return options.hint()
@@ -94,7 +107,7 @@ function M.waitForChoice(screen, opts)
 
     local hintText, hintColor = resolveHint(options)
     if hintText and options.hint_y then
-      drawCenteredLine(screen, hintText, options.hint_y, hintColor or colors.lightGray)
+      drawCenteredWrappedText(screen, hintText, options.hint_y, hintColor or colors.lightGray, options.hint_max_lines or 3)
     end
 
     ui.clearButtons()

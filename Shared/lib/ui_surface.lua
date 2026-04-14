@@ -19,6 +19,30 @@ local function round(x)
   return x + 0.5 - (x + 0.5) % 1
 end
 
+local function fitSurfaceText(textValue, font, maxWidth)
+  local value = tostring(textValue or "")
+  if value == "" or maxWidth < 1 then
+    return ""
+  end
+
+  if _surface.getTextSize(value, font) <= maxWidth then
+    return value
+  end
+
+  local lo = 1
+  local hi = #value
+  while lo < hi do
+    local mid = math.ceil((lo + hi) / 2)
+    if _surface.getTextSize(value:sub(1, mid), font) <= maxWidth then
+      lo = mid
+    else
+      hi = mid - 1
+    end
+  end
+
+  return value:sub(1, lo)
+end
+
 local function clampButtonPlacement(surfaceObj, btnSurf, x, y)
   local surfaceWidth = surfaceObj and surfaceObj.width or nil
   local surfaceHeight = surfaceObj and surfaceObj.height or nil
@@ -360,11 +384,9 @@ end
 function M.displayCenteredMessage(screen, msg, msgColor, pause)
   assert(_surface, "Call ui.init() first")
   pause = pause or 1
-  local words = {}
   local upper = tostring(msg or ""):upper()
-  for word in upper:gmatch("%S+") do
-    words[#words + 1] = word
-  end
+  local maxWidth = max(1, screen.width - ((_metrics.edgePad or 0) * 2))
+  local words = M.wrapSurfaceText(upper, _font, maxWidth)
   local lineHeight = _metrics.messageLineHeight
   local blockHeight = #words * lineHeight
   local startY = math.floor((screen.height - blockHeight) / 2)
@@ -480,6 +502,109 @@ function M.drawWrappedText(x, y, textValue, maxWidth, maxLines, textColor, bgCol
   return drawn
 end
 
+function M.wrapSurfaceText(textValue, font, maxWidth, maxLines)
+  assert(_surface, "Call ui.init() first")
+
+  local useFont = font or _font
+  local width = max(1, maxWidth or 1)
+  local source = tostring(textValue or "")
+  local lines = {}
+  local truncated = false
+
+  local function pushLine(line)
+    if maxLines and #lines >= maxLines then
+      truncated = true
+      return false
+    end
+    lines[#lines + 1] = line
+    return true
+  end
+
+  local function splitWord(word)
+    local remaining = word
+    while remaining ~= "" do
+      local chunk = fitSurfaceText(remaining, useFont, width)
+      if chunk == "" then
+        break
+      end
+      if not pushLine(chunk) then
+        return false
+      end
+      remaining = remaining:sub(#chunk + 1)
+    end
+    return true
+  end
+
+  for paragraph in (source .. "\n"):gmatch("(.-)\n") do
+    if paragraph == "" then
+      if #lines > 0 then
+        if not pushLine("") then
+          break
+        end
+      end
+    else
+      local current = ""
+      for word in paragraph:gmatch("%S+") do
+        local candidate = current == "" and word or (current .. " " .. word)
+        if _surface.getTextSize(candidate, useFont) <= width then
+          current = candidate
+        else
+          if current ~= "" and not pushLine(current) then
+            current = nil
+            break
+          end
+
+          if _surface.getTextSize(word, useFont) <= width then
+            current = word
+          else
+            if not splitWord(word) then
+              current = nil
+              break
+            end
+            current = ""
+          end
+        end
+      end
+
+      if current and current ~= "" then
+        if not pushLine(current) then
+          break
+        end
+      end
+    end
+  end
+
+  if truncated and #lines > 0 and lines[#lines] ~= "" then
+    local ellipsis = ".."
+    local ellipsisWidth = _surface.getTextSize(ellipsis, useFont)
+    local fitted = fitSurfaceText(lines[#lines], useFont, max(1, width - ellipsisWidth))
+    lines[#lines] = (fitted == "" and ellipsis) or (fitted .. ellipsis)
+  end
+
+  if #lines == 0 then
+    lines[1] = ""
+  end
+
+  return lines
+end
+
+function M.drawWrappedCenteredText(screen, textValue, font, centerX, startY, maxWidth, maxLines, lineSpacing, color)
+  assert(_surface, "Call ui.init() first")
+
+  local useFont = font or _font
+  local spacing = lineSpacing or ((_metrics and _metrics.lineHeight) or 1)
+  local lines = M.wrapSurfaceText(textValue, useFont, maxWidth or screen.width, maxLines)
+  local drawCenterX = centerX or math.floor(screen.width / 2)
+
+  for index, line in ipairs(lines) do
+    local lineWidth = _surface.getTextSize(line, useFont)
+    local drawX = math.floor(drawCenterX - (lineWidth / 2))
+    M.safeDrawText(screen, line, useFont, drawX, startY + ((index - 1) * spacing), color)
+  end
+
+  return #lines, lines
+end
+
 function M.safeDrawText(screen, textValue, font, x, y, color)
   assert(_surface, "Call ui.init() first")
   if not textValue or not screen then
@@ -498,22 +623,12 @@ function M.safeDrawText(screen, textValue, font, x, y, color)
   local textWidth = _surface.getTextSize(renderText, font)
   local available = screen.width - drawX
   if textWidth > available and available > 0 then
-    local lo = 1
-    local hi = #renderText
-    while lo < hi do
-      local mid = math.ceil((lo + hi) / 2)
-      if _surface.getTextSize(renderText:sub(1, mid), font) <= available then
-        lo = mid
-      else
-        hi = mid - 1
-      end
-    end
-
-    local dotted = lo > 2 and (renderText:sub(1, lo - 2) .. "..") or renderText:sub(1, lo)
+    local fitted = fitSurfaceText(renderText, font, available)
+    local dotted = #fitted > 2 and (fitted:sub(1, #fitted - 2) .. "..") or fitted
     if _surface.getTextSize(dotted, font) <= available then
       renderText = dotted
     else
-      renderText = renderText:sub(1, lo)
+      renderText = fitted
     end
   end
 

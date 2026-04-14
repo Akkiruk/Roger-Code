@@ -13,29 +13,97 @@ function M.drawCenteredLine(screen, font, text, y, color)
   ui.safeDrawText(screen, message, font, x, y, color or colors.white)
 end
 
+local function buildPagedLineScreens(screen, font, scale, pages, buttonY)
+  local contentY = 1 + (scale.lineHeight * 2) + 2
+  local availableHeight = max(1, buttonY - contentY - 2)
+  local lineSpacing = max(1, scale.lineHeight)
+  local maxLinesPerPage = max(1, floor(availableHeight / lineSpacing))
+  local maxWidth = max(1, screen.width - ((scale.edgePad or 0) * 2))
+  local displayPages = {}
+
+  for _, sourcePage in ipairs(pages or {}) do
+    local currentLines = {}
+    local usedLines = 0
+    local emitted = false
+
+    local function flushPage()
+      local lines = currentLines
+      if #lines == 0 then
+        lines = { { spacer = 1 } }
+      end
+
+      displayPages[#displayPages + 1] = {
+        title = sourcePage.title,
+        lines = lines,
+      }
+
+      currentLines = {}
+      usedLines = 0
+      emitted = true
+    end
+
+    local function pushEntry(entry)
+      local needed = entry.spacer or 1
+      if usedLines > 0 and (usedLines + needed) > maxLinesPerPage then
+        flushPage()
+      end
+
+      if entry.spacer then
+        if usedLines > 0 then
+          currentLines[#currentLines + 1] = entry
+          usedLines = usedLines + needed
+        end
+        return
+      end
+
+      currentLines[#currentLines + 1] = entry
+      usedLines = usedLines + 1
+    end
+
+    for _, line in ipairs(sourcePage.lines or {}) do
+      if line.spacer or line.text == "" then
+        pushEntry({ spacer = line.height or 1 })
+      else
+        local wrapped = ui.wrapSurfaceText(line.text, font, maxWidth)
+        for _, wrappedLine in ipairs(wrapped) do
+          pushEntry({
+            text = wrappedLine,
+            color = line.color,
+          })
+        end
+      end
+    end
+
+    if usedLines > 0 or not emitted then
+      flushPage()
+    end
+  end
+
+  return displayPages, contentY, lineSpacing
+end
+
 function M.showPagedLines(screen, font, scale, backgroundColor, pages, opts)
   local options = opts or {}
+  local buttonY = options.buttonY or scale.footerButtonY
+  local displayPages, contentY, lineSpacing = buildPagedLineScreens(screen, font, scale, pages, buttonY)
   local page = 1
 
   while true do
-    local current = pages[page]
+    local current = displayPages[page]
     screen:clear(backgroundColor)
 
     M.drawCenteredLine(screen, font, current.title, 1, options.titleColor or colors.yellow)
-    M.drawCenteredLine(screen, font, "Page " .. page .. "/" .. #pages, 1 + scale.lineHeight, colors.lightGray)
+    M.drawCenteredLine(screen, font, "Page " .. page .. "/" .. #displayPages, 1 + scale.lineHeight, colors.lightGray)
 
-    local contentY = 1 + (scale.lineHeight * 2) + 2
-    local buttonY = options.buttonY or scale.footerButtonY
-    local contentLines = #current.lines
-    local availableHeight = buttonY - contentY - 2
-    local lineSpacing = min(scale.lineHeight, floor(availableHeight / max(contentLines, 1)))
-    local lineIndex = 0
+    local y = contentY
 
     for _, line in ipairs(current.lines) do
-      if line.text ~= "" then
-        M.drawCenteredLine(screen, font, line.text, contentY + (lineIndex * lineSpacing), line.color)
+      if line.spacer then
+        y = y + (lineSpacing * line.spacer)
+      elseif line.text ~= "" then
+        M.drawCenteredLine(screen, font, line.text, y, line.color)
+        y = y + lineSpacing
       end
-      lineIndex = lineIndex + 1
     end
 
     ui.clearButtons()
@@ -56,7 +124,7 @@ function M.showPagedLines(screen, font, scale, backgroundColor, pages, opts)
         page = nil
       end,
     }
-    if page < #pages then
+    if page < #displayPages then
       row[#row + 1] = {
         text = "NEXT",
         color = colors.lime,
@@ -86,6 +154,7 @@ function M.showStatsScreen(screen, font, scale, backgroundColor, title, lines, o
 
   local y = 1 + scale.lineHeight + 2
   local spacing = min(scale.lineHeight, floor((screen.height - y - 10) / max(#lines, 1)))
+  local maxWidth = max(1, screen.width - ((scale.edgePad or 0) * 2))
 
   for _, line in ipairs(lines) do
     if line.spacer then
@@ -95,8 +164,11 @@ function M.showStatsScreen(screen, font, scale, backgroundColor, title, lines, o
       if not text then
         text = tostring(line.label or "") .. ": " .. tostring(line.value or "")
       end
-      M.drawCenteredLine(screen, font, text, y, line.color or colors.white)
-      y = y + spacing
+      local wrapped = ui.wrapSurfaceText(text, font, maxWidth)
+      for _, wrappedLine in ipairs(wrapped) do
+        M.drawCenteredLine(screen, font, wrappedLine, y, line.color or colors.white)
+        y = y + spacing
+      end
     end
   end
 
