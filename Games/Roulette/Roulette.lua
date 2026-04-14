@@ -9,6 +9,7 @@ local ui = require("lib.ui")
 local alert = require("lib.alert")
 local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
+local pages = require("lib.casino_pages")
 local replayPrompt = require("lib.replay_prompt")
 local safeRunner = require("lib.safe_runner")
 local settlement = require("lib.round_settlement")
@@ -168,6 +169,12 @@ local function setStatus(text, tone, stickyMs)
   state.statusText = text
   state.statusTone = tone or "neutral"
   state.statusUntil = epoch("local") + (stickyMs or 1600)
+end
+
+local function triggerInactivityTimeout()
+  sound.play(sound.SOUNDS.TIMEOUT, 0.45)
+  os.sleep(0.5)
+  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
 local function refreshDerivedState()
@@ -461,6 +468,116 @@ renderCurrent = function(idleMs)
   refreshDerivedState()
   updatePassiveStatus(idleMs)
   rouletteRender.draw(screen, font, layout, state)
+end
+
+local function showPayoutTable()
+  local lines = {
+    { text = "European single-zero payouts", color = colors.yellow },
+    { spacer = true },
+  }
+
+  for _, betType in ipairs(cfg.BET_TYPES or {}) do
+    lines[#lines + 1] = {
+      text = betType.label .. " - " .. tostring(betType.payout) .. "x net",
+      color = betType.payout >= 35 and colors.yellow or (betType.payout >= 2 and colors.cyan or colors.white),
+    }
+  end
+
+  lines[#lines + 1] = { spacer = true }
+  lines[#lines + 1] = { text = "Per-spot limits scale with", color = colors.lightGray }
+  lines[#lines + 1] = { text = "house coverage and payout odds.", color = colors.lightGray }
+
+  pages.showStatsScreen(screen, font, scale, cfg.LAYOUT.TABLE_COLOR, "PAYOUTS", lines, {
+    centerX = floor(width / 2),
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
+local TUTORIAL_PAGES = {
+  {
+    title = "HOW TO PLAY",
+    lines = {
+      { text = "Pick a chip on the left,", color = colors.white },
+      { text = "then tap the felt.", color = colors.white },
+      { text = "Inside bets target exact", color = colors.cyan },
+      { text = "numbers for bigger payouts.", color = colors.cyan },
+      { text = "Outside bets cover colors,", color = colors.lightGray },
+      { text = "ranges, and columns.", color = colors.lightGray },
+    },
+  },
+  {
+    title = "TABLE CONTROLS",
+    lines = {
+      { text = "SPIN locks the table.", color = colors.lime },
+      { text = "UNDO removes the last", color = colors.white },
+      { text = "placement action.", color = colors.white },
+      { text = "CLEAR wipes the felt.", color = colors.orange },
+      { text = "DOUBLE repeats every", color = colors.magenta },
+      { text = "current placement once.", color = colors.magenta },
+    },
+  },
+  {
+    title = "LIMITS",
+    lines = {
+      { text = "Straight-up bets pay 35x", color = colors.yellow },
+      { text = "but cap lower per spot.", color = colors.yellow },
+      { text = "Even-money bets pay 1x", color = colors.white },
+      { text = "and allow bigger stakes.", color = colors.white },
+      { text = "Replay rechecks limits", color = colors.lightBlue },
+      { text = "before restoring bets.", color = colors.lightBlue },
+    },
+  },
+}
+
+local function showTutorial()
+  pages.showPagedLines(screen, font, scale, cfg.LAYOUT.TABLE_COLOR, TUTORIAL_PAGES, {
+    centerX = floor(width / 2),
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
+local function preRoundMenu()
+  while true do
+    screen:clear(cfg.LAYOUT.TABLE_COLOR)
+
+    local title = "ROULETTE"
+    local tw = ui.getTextSize(title)
+    ui.safeDrawText(screen, title, font, floor((width - tw) / 2), scale.titleY, colors.yellow)
+
+    local subtitle = "Single-zero European table"
+    local sw = ui.getTextSize(subtitle)
+    ui.safeDrawText(screen, subtitle, font, floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
+
+    ui.clearButtons()
+    local chosen = nil
+
+    ui.layoutButtonGrid(screen, {
+      {
+        { text = "PLAY", color = colors.lime, func = function() chosen = "play" end },
+      },
+      {
+        { text = "PAYOUTS", color = colors.yellow, func = function() chosen = "payouts" end },
+        { text = "HOW TO PLAY", color = colors.lightBlue, func = function() chosen = "tutorial" end },
+      },
+    }, floor(width / 2), scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
+
+    screen:output()
+
+    ui.waitForButton(0, 0, {
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = triggerInactivityTimeout,
+    })
+
+    if chosen == "play" then
+      return
+    elseif chosen == "payouts" then
+      showPayoutTable()
+    elseif chosen == "tutorial" then
+      showTutorial()
+    end
+  end
 end
 
 local function hitRect(px, py, rect)
@@ -893,6 +1010,9 @@ local function main()
     if AUTO_PLAY then
       runAutoRound()
     else
+      if #state.bets == 0 then
+        preRoundMenu()
+      end
       local action = runBettingLoop()
       if action == "spin" then
         settleRound()
