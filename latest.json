@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-14T04:34:41Z",
+  "generated_at": "2026-04-14T04:37:31Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
+    "commit": "f5454a6b87fb9f72e39859fcd4de477a832e77d9",
     "path": "System/installer.lua",
     "sha256": "8ca7f69efc66493473eaf18e0693cdaf22d1590d4432221c1b7c13985fcc2a2e"
   },
@@ -44,9 +44,9 @@
       "name": "CrazyEights",
       "category": "Games",
       "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
-      "version": "1.0.29",
-      "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "ee024e6ec407b94e0c4a1608f056c8d7e9361f0dfd509d42c91095dd7e43a18d",
+      "version": "1.0.30",
+      "commit": "f5454a6b87fb9f72e39859fcd4de477a832e77d9",
+      "package_hash": "35b298d8e10f7f2a29443bc96535e277e63eea238d3bd9d07ba9e449b18eca88",
       "spec_path": "programs/crazyeights.json"
     },
     "hilo": {
