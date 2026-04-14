@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-14T04:37:31Z",
+  "generated_at": "2026-04-14T04:38:11Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "f5454a6b87fb9f72e39859fcd4de477a832e77d9",
+    "commit": "8e8b9d74fedd133dbb5f297c59d8964890397b1f",
     "path": "System/installer.lua",
     "sha256": "8ca7f69efc66493473eaf18e0693cdaf22d1590d4432221c1b7c13985fcc2a2e"
   },
@@ -80,9 +80,9 @@
       "name": "Roulette",
       "category": "Games",
       "description": "Single-zero European roulette with inside and outside bets.",
-      "version": "1.0.97",
-      "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "34ad45c3c864a73f25a722eec4b7fc79ecba945cb0a8193c0f1c1374cfdd452d",
+      "version": "1.0.98",
+      "commit": "8e8b9d74fedd133dbb5f297c59d8964890397b1f",
+      "package_hash": "d3072dffe100a5b7c2a7fb0fe921c20d8a2d9d3a906f38e36c6a719438ee7531",
       "spec_path": "programs/roulette.json"
     },
     "slots": {
