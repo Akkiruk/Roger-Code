@@ -146,6 +146,25 @@ local function playSpinPointerClick(progress)
   playRouletteSound("SPIN_POINTER", fallback, volume)
 end
 
+local function paceSpinFrame(targetSeconds, frameCounter, frameStartedAt)
+  local targetMs = floor((max(0, targetSeconds or 0) * 1000) + 0.5)
+  if targetMs <= 0 then
+    if frameCounter % 6 == 0 then
+      os.sleep(0)
+    end
+    return
+  end
+
+  local elapsedMs = epoch("local") - frameStartedAt
+  local remainingMs = targetMs - elapsedMs
+
+  if remainingMs >= 45 then
+    os.sleep(remainingMs / 1000)
+  elseif frameCounter % 6 == 0 then
+    os.sleep(0)
+  end
+end
+
 local function getBetPlacementSound(region)
   if not region or not region.kind then
     return getRouletteSound("BET_OUTSIDE", sound.SOUNDS.CARD_PLACE)
@@ -623,11 +642,14 @@ local function animateSpin(finalNumber)
   local step = 1
   local finalBounce = { 0.32, -0.14, 0.08, 0 }
   local lastPointedNumber = rouletteRender.getTrackPointedNumber(startOffset)
+  local averageDelay = (spinMinDelay + spinMaxDelay) / 2
+  local estimatedSpinMs = floor((((averageDelay * totalSteps) + (#finalBounce * spinSettleDelay)) * 1000) + 1000)
+  local frameCounter = 0
 
   state.phase = "spinning"
   state.highlightKeys = nil
   state.resultNumber = nil
-  setStatus("Wheel spinning. Bets locked.", "warning", 900)
+  setStatus("Wheel spinning. Bets locked.", "warning", max(2000, estimatedSpinMs))
 
   while step <= totalSteps do
     local progress = step / totalSteps
@@ -637,6 +659,7 @@ local function animateSpin(finalNumber)
     local subframe = 1
 
     while subframe <= subframes do
+      local frameStartedAt = epoch("local")
       local overallProgress = ((step - 1) + (subframe / subframes)) / totalSteps
       local remainingBallTravel = (1 - overallProgress) ^ 1.35
       local blended = currentOffset + (subframe / subframes)
@@ -648,7 +671,8 @@ local function animateSpin(finalNumber)
       state.wheelOffset = blended
       state.ballAngle = topAngle + (remainingBallTravel * totalBallArc)
       renderCurrent(nil)
-      os.sleep(delay / subframes)
+      frameCounter = frameCounter + 1
+      paceSpinFrame(delay / subframes, frameCounter, frameStartedAt)
       subframe = subframe + 1
     end
 
@@ -662,6 +686,7 @@ local function animateSpin(finalNumber)
   end
 
   for _, bounceOffset in ipairs(finalBounce) do
+    local frameStartedAt = epoch("local")
     local bouncedOffset = targetIndex + bounceOffset
     local pointedNumber = rouletteRender.getTrackPointedNumber(bouncedOffset)
     if pointedNumber ~= nil and pointedNumber ~= lastPointedNumber then
@@ -671,7 +696,8 @@ local function animateSpin(finalNumber)
     state.wheelOffset = bouncedOffset
     state.ballAngle = topAngle + (bounceOffset * 0.20)
     renderCurrent(nil)
-    os.sleep(spinSettleDelay)
+    frameCounter = frameCounter + 1
+    paceSpinFrame(spinSettleDelay, frameCounter, frameStartedAt)
   end
 
   state.wheelOffset = targetIndex

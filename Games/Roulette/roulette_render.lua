@@ -11,6 +11,11 @@ local pi = math.pi
 local TAU = pi * 2
 local TOP_ANGLE = -pi / 2
 local POCKET_ANGLE = TAU / #model.WHEEL_ORDER
+local spinFrameCache = nil
+
+local function invalidateSpinFrameCache()
+  spinFrameCache = nil
+end
 
 local function normalizeAngle(angle)
   while angle < 0 do
@@ -625,7 +630,7 @@ local function drawShowcaseBackdrop(screen, layout)
   screen:fillRect(0, layout.height - 10, layout.width, 10, colors.black)
 end
 
-local function drawShowcaseWheel(screen, font, layout, state)
+local function getShowcaseWheelMetrics(layout)
   local diameter = floor(min(layout.width - 14, layout.height - 28))
   diameter = max(45, diameter)
   if diameter % 2 == 0 then
@@ -650,6 +655,54 @@ local function drawShowcaseWheel(screen, font, layout, state)
   local pocketOuterY = centerY - pocketOuter
   local pocketInnerX = centerX - pocketInner
   local pocketInnerY = centerY - pocketInner
+
+  local ballRadius = max(2, floor(radius * 0.07))
+  local ballTrackRadius = min(radius - 2, pocketOuter + max(4, floor(radius * 0.08)))
+  local maxDynamicRadius = max(radius, ballTrackRadius + ballRadius)
+  local dynamicRectX = max(0, centerX - maxDynamicRadius - 4)
+  local dynamicRectY = max(0, centerY - maxDynamicRadius - 10)
+  local dynamicRectRight = min(layout.width - 1, centerX + maxDynamicRadius + 4)
+  local dynamicRectBottom = min(layout.height - 1, centerY + maxDynamicRadius + 4)
+
+  return {
+    diameter = diameter,
+    radius = radius,
+    centerX = centerX,
+    centerY = centerY,
+    outerX = outerX,
+    outerY = outerY,
+    pocketOuter = pocketOuter,
+    pocketInner = pocketInner,
+    pocketOuterX = pocketOuterX,
+    pocketOuterY = pocketOuterY,
+    pocketInnerX = pocketInnerX,
+    pocketInnerY = pocketInnerY,
+    ballRadius = ballRadius,
+    ballTrackRadius = ballTrackRadius,
+    dynamicRect = {
+      x = dynamicRectX,
+      y = dynamicRectY,
+      w = max(1, dynamicRectRight - dynamicRectX + 1),
+      h = max(1, dynamicRectBottom - dynamicRectY + 1),
+    },
+  }
+end
+
+local function drawShowcaseWheel(screen, font, layout, state, metrics)
+  metrics = metrics or getShowcaseWheelMetrics(layout)
+
+  local diameter = metrics.diameter
+  local radius = metrics.radius
+  local centerX = metrics.centerX
+  local centerY = metrics.centerY
+  local outerX = metrics.outerX
+  local outerY = metrics.outerY
+  local pocketOuter = metrics.pocketOuter
+  local pocketInner = metrics.pocketInner
+  local pocketOuterX = metrics.pocketOuterX
+  local pocketOuterY = metrics.pocketOuterY
+  local pocketInnerX = metrics.pocketInnerX
+  local pocketInnerY = metrics.pocketInnerY
   local rotationAngle = getWheelRotationAngle(state.wheelOffset)
   local winningIndex = state.resultNumber and model.getWheelIndex(state.resultNumber) or nil
 
@@ -682,8 +735,8 @@ local function drawShowcaseWheel(screen, font, layout, state)
   screen:fillEllipse(centerX - hubRadius, centerY - hubRadius, (hubRadius * 2) + 1, (hubRadius * 2) + 1, colors.yellow)
   screen:fillEllipse(centerX - hubRadius + 1, centerY - hubRadius + 1, max(1, (hubRadius * 2) - 1), max(1, (hubRadius * 2) - 1), colors.gray)
 
-  local ballRadius = max(2, floor(radius * 0.07))
-  local ballTrackRadius = min(radius - 2, pocketOuter + max(4, floor(radius * 0.08)))
+  local ballRadius = metrics.ballRadius
+  local ballTrackRadius = metrics.ballTrackRadius
   local ballAngle = state.ballAngle or TOP_ANGLE
   local ballX = floor(centerX + (cos(ballAngle) * ballTrackRadius))
   local ballY = floor(centerY + (sin(ballAngle) * ballTrackRadius))
@@ -727,7 +780,48 @@ local function drawShowcaseFooter(screen, font, layout, state)
   drawRightText(screen, font, "Session " .. (state.sessionProfitText or "0"), layout.width - 2, footerY, getToneColor(state.sessionProfitTone), floor(layout.width * 0.68))
 end
 
+local function buildSpinFrameCache(screen, font, layout, state)
+  local metrics = getShowcaseWheelMetrics(layout)
+
+  screen:clear(colors.black)
+  drawShowcaseBackdrop(screen, layout)
+  drawShowcaseHeader(screen, font, layout, state)
+  drawShowcaseHistory(screen, font, layout, state)
+  drawShowcaseFooter(screen, font, layout, state)
+
+  spinFrameCache = {
+    width = layout.width,
+    height = layout.height,
+    base = screen:copy(),
+    wheelRect = metrics.dynamicRect,
+    metrics = metrics,
+  }
+
+  return spinFrameCache
+end
+
+local function drawSpinningShowcasePage(screen, font, layout, state)
+  local cache = spinFrameCache
+  if not cache or cache.width ~= layout.width or cache.height ~= layout.height then
+    cache = buildSpinFrameCache(screen, font, layout, state)
+    drawShowcaseWheel(screen, font, layout, state, cache.metrics)
+    screen:output()
+    return
+  end
+
+  local wheelRect = cache.wheelRect
+  screen:drawSurface(cache.base, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
+  drawShowcaseWheel(screen, font, layout, state, cache.metrics)
+  screen:output(nil, wheelRect.x, wheelRect.y, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
+end
+
 local function drawShowcasePage(screen, font, layout, state)
+  if state.phase == "spinning" then
+    drawSpinningShowcasePage(screen, font, layout, state)
+    return
+  end
+
+  invalidateSpinFrameCache()
   screen:clear(colors.black)
   drawShowcaseBackdrop(screen, layout)
   drawShowcaseHeader(screen, font, layout, state)
@@ -739,6 +833,7 @@ end
 
 local function draw(screen, font, layout, state)
   if state.phase == "betting" then
+    invalidateSpinFrameCache()
     drawBettingPage(screen, font, layout, state)
     return
   end
