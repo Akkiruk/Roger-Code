@@ -386,42 +386,6 @@ local function drawHistoryPill(screen, font, x, y, width, height, number)
   drawCenteredText(screen, font, { x = x, y = y, w = width, h = height }, tostring(number), textColor, 0)
 end
 
-local function drawBettingHeader(screen, font, layout, state)
-  local header = layout.header
-  drawBackgroundBands(screen, layout.width, header.h, {
-    colors.black,
-    colors.gray,
-    colors.black,
-  })
-  screen:fillRect(0, header.h - 1, layout.width, 1, colors.yellow)
-
-  drawCenteredText(screen, font, { x = 0, y = 1, w = layout.width, h = 7 }, "ROULETTE TABLE", colors.yellow, 0)
-  drawCenteredText(screen, font, { x = 0, y = 8, w = layout.width, h = 7 }, "Build the layout here. The wheel gets its own page.", colors.lightGray, 0)
-
-  local infoY = header.h - 8
-  ui.safeDrawText(screen, fitTextToWidth("Balance " .. formatUiTokens(state.playerBalance or 0), max(12, floor(layout.width * 0.38))), font, 2, infoY, colors.white)
-  drawRightText(screen, font, "You " .. (state.currentPlayer or "Unknown"), layout.width - 2, infoY, colors.lightGray, floor(layout.width * 0.48))
-end
-
-local function drawBettingHistoryStrip(screen, font, layout, state)
-  local track = layout.track
-  drawFrame(screen, track, colors.gray, colors.yellow)
-
-  ui.safeDrawText(screen, "RECENT", font, track.x + 3, track.y + 2, colors.white)
-  drawRightText(screen, font, state.statusText or "Pick a chip, then tap the table.", track.x + track.w - 3, track.y + 2, getToneColor(state.statusTone), track.x + 30)
-
-  local count = min(layout.compact and 5 or 8, #(state.history or {}))
-  local pillW = layout.compact and 7 or 8
-  local pillGap = 2
-  local totalW = (count * pillW) + max(0, count - 1) * pillGap
-  local startX = track.x + floor((track.w - totalW) / 2)
-  local y = track.y + track.h - 9
-
-  for index = 1, count do
-    drawHistoryPill(screen, font, startX + ((index - 1) * (pillW + pillGap)), y, pillW, 7, state.history[index])
-  end
-end
-
 local function drawSummaryBox(screen, font, layout, state)
   local box = layout.summaryBox
   drawFrame(screen, box, colors.gray, colors.yellow)

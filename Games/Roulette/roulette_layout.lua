@@ -105,7 +105,6 @@ local function build(width, height, chipCount, scale)
     width = width,
     height = height,
     margin = scale.edgePad,
-    header = { x = 0, y = 0, w = width, h = 0 },
     regions = {},
     hitRegions = {},
     scale = scale,
@@ -113,8 +112,6 @@ local function build(width, height, chipCount, scale)
 
   layout.compact = scale.compact or width < 200 or height < 120
 
-  local trackY = layout.margin
-  local trackH = 0
   local feltX = layout.margin
   local feltW = width - (layout.margin * 2)
   local feltY = layout.margin
@@ -130,13 +127,6 @@ local function build(width, height, chipCount, scale)
   local contentAreaX = feltX + scale.sectionGap
   local contentAreaW = feltW - (scale.sectionGap * 2)
 
-  layout.track = {
-    x = feltX,
-    y = trackY,
-    w = feltW,
-    h = trackH,
-    cellW = max(5, min(11, floor(feltW / 12))),
-  }
   layout.felt = { x = feltX, y = feltY, w = feltW, h = feltH }
   layout.panelLabelH = layout.compact and 0 or 7
   layout.rightRail = nil
