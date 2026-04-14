@@ -163,23 +163,26 @@ local function authenticate(timeout, opts)
     print("Player detected: " .. targetPlayer)
   end
 
-  -- Always request a fresh approval so this terminal binds to the active tester/player.
-  -- If the session is already valid for the same player, we allow that fast path below.
+  local alreadyAuthed = ccvault.isAuthenticated()
+  local currentPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
+  if alreadyAuthed and currentPlayer and currentPlayer == targetPlayer then
+    closeWaitScreen()
+    AUTH_PLAYER = currentPlayer
+    dbg("Reused existing wallet approval for " .. tostring(AUTH_PLAYER or "?"))
+    return true
+  end
+
   local pcallOk, ok, err = pcall(function()
     return ccvault.requestAuth()
   end)
   if not pcallOk or not ok then
-    local alreadyAuthed = ccvault.isAuthenticated()
-    local currentPlayer = ccvault.getPlayerName and ccvault.getPlayerName() or nil
-    if not (alreadyAuthed and currentPlayer and currentPlayer == targetPlayer) then
-      if not pcallOk then
-        print("Auth request error: " .. tostring(ok))
-      else
-        print("Auth request failed: " .. (err or "unknown"))
-      end
-      closeWaitScreen()
-      return false
+    if not pcallOk then
+      print("Auth request error: " .. tostring(ok))
+    else
+      print("Auth request failed: " .. (err or "unknown"))
     end
+    closeWaitScreen()
+    return false
   end
 
   local compId = ccvault.getComputerId and ccvault.getComputerId() or os.getComputerID()
