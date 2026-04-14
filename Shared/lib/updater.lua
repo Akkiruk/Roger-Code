@@ -68,6 +68,7 @@ local CONTENTS_API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Updater",
   ["Accept"] = "application/vnd.github.raw+json",
 }
+local runtimeExit = require("lib.runtime_exit")
 local INSTALLER_PATH = "installer.lua"
 local INSTALL_STATE_SCHEMA = 2
 local RESERVED_LOCAL_PATHS = {
@@ -92,7 +93,7 @@ local function logMsg(msg)
 end
 
 local function isTerminateError(err)
-  return tostring(err or "") == "Terminated"
+  return runtimeExit.isTerminateError(err)
 end
 
 local function hasValue(value)

@@ -1,3 +1,4 @@
+local runtimeExit = require("lib.runtime_exit")
 local updater = require("lib.updater")
 
 local function openLogger(path, namespace)
@@ -81,7 +82,7 @@ local function logMessage(message)
 end
 
 local function isTerminateError(err)
-  return tostring(err or "") == "Terminated"
+  return runtimeExit.isTerminateError(err)
 end
 
 local function readInstalledState()
@@ -271,13 +272,15 @@ end
 
 local function runProgram(entrypoint, args)
   local ok, shellOk, shellErr = pcall(shell.run, entrypoint, unpack(args or {}))
-  if not ok then
-    return false, shellOk
+  local runOk, runErr, runState = runtimeExit.classifyShellRun(ok, shellOk, shellErr, {
+    emptyErrorMeansTerminate = true,
+  })
+
+  if not runOk and runState == "empty_error_treated_as_terminate" then
+    logMessage("shell.run returned false without an error message for " .. tostring(entrypoint) .. "; treating as terminate")
   end
-  if shellOk == false then
-    return false, shellErr or "Program failed"
-  end
-  return true, nil
+
+  return runOk, runErr
 end
 
 local function updateWatcher(updateInterval)

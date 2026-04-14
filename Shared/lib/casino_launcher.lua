@@ -1,5 +1,6 @@
 local alertLib = require("lib.alert")
 local idleScreen = require("lib.idle_screen")
+local runtimeExit = require("lib.runtime_exit")
 local ui = require("lib.ui")
 local updater = require("lib.updater")
 
@@ -58,7 +59,7 @@ local function showCrashScreen(delaySeconds, errorMessage)
 end
 
 local function isTerminateError(err)
-  return tostring(err or "") == "Terminated"
+  return runtimeExit.isTerminateError(err)
 end
 
 function M.run(opts)
@@ -126,30 +127,24 @@ function M.run(opts)
     local callOk, shellOk, shellErr = pcall(shell.run, program)
     term.redirect(previous)
 
-    if not callOk then
-      if isTerminateError(shellOk) then
-        debugLog("startup.lua: " .. tostring(program) .. " terminated.")
+    local runOk, runErr, runState = runtimeExit.classifyShellRun(callOk, shellOk, shellErr, {
+      emptyErrorMeansTerminate = true,
+    })
+
+    if not runOk then
+      if isTerminateError(runErr) then
+        if runState == "empty_error_treated_as_terminate" then
+          debugLog("startup.lua: " .. tostring(program) .. " returned false without an error message; treating as terminate.")
+        else
+          debugLog("startup.lua: " .. tostring(program) .. " terminated.")
+        end
         error("Terminated", 0)
       end
 
-      debugLog("startup.lua: Error in " .. tostring(program) .. ": " .. tostring(shellOk))
-      alertLib.send(tostring(program) .. " error: " .. tostring(shellOk))
+      debugLog("startup.lua: Error in " .. tostring(program) .. ": " .. tostring(runErr))
+      alertLib.send(tostring(program) .. " error: " .. tostring(runErr))
       if idleEnv and idleEnv.monitor then
-        showCrashScreen(crashDelay, shellOk)
-      end
-      return
-    end
-
-    if shellOk == false then
-      if isTerminateError(shellErr) then
-        debugLog("startup.lua: " .. tostring(program) .. " terminated.")
-        error("Terminated", 0)
-      end
-
-      debugLog("startup.lua: Error in " .. tostring(program) .. ": " .. tostring(shellErr))
-      alertLib.send(tostring(program) .. " error: " .. tostring(shellErr))
-      if idleEnv and idleEnv.monitor then
-        showCrashScreen(crashDelay, shellErr)
+        showCrashScreen(crashDelay, runErr)
       end
       return
     end

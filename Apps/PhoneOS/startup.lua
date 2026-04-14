@@ -5,6 +5,7 @@
 -- Pocket casino shell for ComputerCraft pocket computers.
 
 local alert = require("lib.alert")
+local runtimeExit = require("lib.runtime_exit")
 
 local ROOT = fs.getDir(shell.getRunningProgram())
 if ROOT == "" and shell.dir then
@@ -30,13 +31,9 @@ end
 
 local function runProgram()
   local ok, shellOk, shellErr = pcall(shell.run, PROGRAM)
-  if not ok then
-    return false, shellOk
-  end
-  if shellOk == false then
-    return false, shellErr or "Program failed"
-  end
-  return true, nil
+  return runtimeExit.classifyShellRun(ok, shellOk, shellErr, {
+    emptyErrorMeansTerminate = true,
+  })
 end
 
 local function showCrash(err)
@@ -53,11 +50,15 @@ local function showCrash(err)
 end
 
 while true do
-  local ok, err = runProgram()
+  local ok, err, runState = runProgram()
   if ok then
     sleepRaw(0.25)
-  elseif tostring(err) == "Terminated" then
-    alert.log("Pocket OS terminated; relaunching")
+  elseif runtimeExit.isTerminateError(err) then
+    if runState == "empty_error_treated_as_terminate" then
+      alert.log("Pocket OS returned false without an error message; treating as terminate")
+    else
+      alert.log("Pocket OS terminated; relaunching")
+    end
     sleepRaw(0.25)
   else
     alert.log("Pocket OS crash: " .. tostring(err))
