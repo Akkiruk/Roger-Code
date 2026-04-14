@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.64"
+    "version": "1.0.65"
   },
   "build": {
-    "commit": "988f5e743cb03cb9133c9efa3e2151e41d651522",
-    "generated_at": "2026-04-14T02:53:08Z",
-    "package_hash": "a37eb7c34d2288e4d54231d3fdc0e0441c0a152d9eb5e13347eed886b5de61f1"
+    "commit": "bb6a864d5734b23e8bfc36610f5fd4c4bbc51ff1",
+    "generated_at": "2026-04-14T02:56:19Z",
+    "package_hash": "83e3a411402e357625f7c1919201e1c514d13a0bba29dc1ec87d96adb94c5c7b"
   },
   "install": {
     "preserve": [
@@ -32,7 +32,7 @@
       {
         "repo_path": "Shared/lib/betting.lua",
         "install_path": "lib/betting.lua",
-        "sha256": "51e99b45fc0bf748bf4977ce60c7a343f3779516096c3c7c43cf46c2eebe3a63"
+        "sha256": "d456142ac1f392ae52a5a93a5e5440f0267c0601e5ea3e046adc45320a34b105"
       },
       {
         "repo_path": "Shared/lib/cards.lua",
@@ -57,7 +57,7 @@
       {
         "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "4413f0b65726da7b6fb26d08ff8b48e586ef5fae03c715abe85090d4a6d8a4c3"
+        "sha256": "751b5603df224116c9234b82d193043a2b31e0c29d326492f95e50ddb34b638f"
       },
       {
         "repo_path": "Shared/lib/game_setup.lua",

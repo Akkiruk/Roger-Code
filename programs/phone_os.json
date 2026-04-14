@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "988f5e743cb03cb9133c9efa3e2151e41d651522",
-    "generated_at": "2026-04-14T02:53:08Z",
-    "package_hash": "1258398eeb7ff8d63a2beee897546b983e91a843e6f80b03c77a9ae651912f0a"
+    "commit": "bb6a864d5734b23e8bfc36610f5fd4c4bbc51ff1",
+    "generated_at": "2026-04-14T02:56:19Z",
+    "package_hash": "16802cd049ebbc5303cdbd60ad7224d1bd7059c09a830b127c4f4ba46817d8e4"
   },
   "install": {
     "preserve": [
@@ -33,7 +33,7 @@
       {
         "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "4413f0b65726da7b6fb26d08ff8b48e586ef5fae03c715abe85090d4a6d8a4c3"
+        "sha256": "751b5603df224116c9234b82d193043a2b31e0c29d326492f95e50ddb34b638f"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
