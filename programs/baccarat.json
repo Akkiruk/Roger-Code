@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.62"
+    "version": "1.2.63"
   },
   "build": {
-    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
-    "generated_at": "2026-04-14T03:21:28Z",
-    "package_hash": "493f7f5e5b0c1e5ecc9bcbe2d240b0c396881d453f2d5c9ae94ae1d56f6f7988"
+    "commit": "c56154c65ac94e918bcbed8b71a8f45421a7b484",
+    "generated_at": "2026-04-14T03:25:42Z",
+    "package_hash": "f6086bd09a1d29d7a1ab41c08e0a0a46e3ba8514c896043381b8a48e788a4565"
   },
   "install": {
     "preserve": [
@@ -182,7 +182,7 @@
       {
         "repo_path": "Games/Baccarat/baccarat.lua",
         "install_path": "baccarat.lua",
-        "sha256": "44a7bdb47673c71aeca39577cf8817d04ab29330616c064029bf92fcb50574ae"
+        "sha256": "7067626d15615bcfa135c78e9e4cd6ba57f342022f31a8ed52cdd7cd1f050a70"
       },
       {
         "repo_path": "Games/Baccarat/startup.lua",

@@ -7,12 +7,12 @@
     "description": "Single-seat blackjack with split, double, and configurable house rules.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.70"
+    "version": "1.2.71"
   },
   "build": {
-    "commit": "a92934f3d67cde489f4568661b6472069b04f983",
-    "generated_at": "2026-04-14T03:21:28Z",
-    "package_hash": "57a659f80a1fb30a59c4dccbda810b7c1642ed64d8b190c6ac35b7c66dd051d6"
+    "commit": "c56154c65ac94e918bcbed8b71a8f45421a7b484",
+    "generated_at": "2026-04-14T03:25:42Z",
+    "package_hash": "f83c7f6bfc2f1679640dcea24bf016960c58db5a5af9b465aa4cde209e758a80"
   },
   "install": {
     "preserve": [
@@ -182,7 +182,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
         "install_path": "blackjack.lua",
-        "sha256": "2233f98a217b11dc8e0e863485ed43bd9ce6e0e7c095a4849661ad5408409e7c"
+        "sha256": "c7762b9da1402d70ab71e84ca439be02ce3e1ab6aceacab9d26a13f1c58fb0a9"
       },
       {
         "repo_path": "Games/Blackjack/startup.lua",
