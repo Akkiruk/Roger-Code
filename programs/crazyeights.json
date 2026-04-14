@@ -7,12 +7,12 @@
     "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "3d75f9b4cfdb74be8b76e55b57fef72e5b23c576",
-    "generated_at": "2026-04-14T02:43:31Z",
-    "package_hash": "0d536d2634277f4534dd48669ab40ca40848cccc52751408995b84bd39c59b7c"
+    "commit": "b3447c30672fbc412cb9a12593e2e88d8711d0fd",
+    "generated_at": "2026-04-14T02:47:01Z",
+    "package_hash": "30d785b1608659305bc633211ef11d361dbe731b46fc770007d96130ca04677e"
   },
   "install": {
     "preserve": [
@@ -23,6 +23,26 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+      },
+      {
+        "repo_path": "Shared/lib/betting.lua",
+        "install_path": "lib/betting.lua",
+        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
+      },
+      {
+        "repo_path": "Shared/lib/card_anim.lua",
+        "install_path": "lib/card_anim.lua",
+        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+      },
+      {
+        "repo_path": "Shared/lib/cards.lua",
+        "install_path": "lib/cards.lua",
+        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
       },
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
@@ -50,24 +70,24 @@
         "sha256": "0759c4f50ece5f4ccaeda2e3b40cc45e76beec1614fdfd7dbb812167571d205a"
       },
       {
+        "repo_path": "Shared/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+      },
+      {
         "repo_path": "Shared/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
         "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
       },
       {
-        "repo_path": "Shared/lib/idle_card_animation.lua",
-        "install_path": "lib/idle_card_animation.lua",
-        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
-      },
-      {
-        "repo_path": "Shared/lib/cards.lua",
-        "install_path": "lib/cards.lua",
-        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
-      },
-      {
         "repo_path": "Shared/lib/idle_screen.lua",
         "install_path": "lib/idle_screen.lua",
         "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
+      },
+      {
+        "repo_path": "Shared/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -105,9 +125,9 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+        "repo_path": "Shared/lib/idle_card_animation.lua",
+        "install_path": "lib/idle_card_animation.lua",
+        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
         "repo_path": "Shared/lib/ui_touch.lua",
@@ -115,14 +135,14 @@
         "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
-        "repo_path": "Shared/lib/card_anim.lua",
-        "install_path": "lib/card_anim.lua",
-        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+        "repo_path": "Shared/lib/bedrock/runtime.lua",
+        "install_path": "lib/bedrock/runtime.lua",
+        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Shared/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
@@ -161,14 +181,54 @@
         "sha256": "ef13a24f19de225a057ee57d09439a57bfa852cc3715788a201881c6d8511164"
       },
       {
-        "repo_path": "Shared/lib/betting.lua",
-        "install_path": "lib/betting.lua",
-        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
+        "repo_path": "Games/CrazyEights/club.nfp",
+        "install_path": "club.nfp",
+        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/CrazyEights/clubs.nfp",
+        "install_path": "clubs.nfp",
+        "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Shared/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Games/CrazyEights/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Games/CrazyEights/font",
         "install_path": "font",
         "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+      },
+      {
+        "repo_path": "Games/CrazyEights/heart.nfp",
+        "install_path": "heart.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+      },
+      {
+        "repo_path": "Games/CrazyEights/hearts.nfp",
+        "install_path": "hearts.nfp",
+        "sha256": "c8ff9f272e1a02da3636e1d74f9d506c0097202dbcc8961125d1205818466a00"
+      },
+      {
+        "repo_path": "Games/CrazyEights/spade.nfp",
+        "install_path": "spade.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+      },
+      {
+        "repo_path": "Games/CrazyEights/spades.nfp",
+        "install_path": "spades.nfp",
+        "sha256": "3f8a595e51809ff5470ec241d4a9f7075657879c546841fde81639ffb6db1c22"
+      },
+      {
+        "repo_path": "Games/CrazyEights/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
       },
       {
         "repo_path": "Shared/lib/alert.lua",
@@ -186,29 +246,9 @@
         "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
       },
       {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/runtime.lua",
-        "install_path": "lib/bedrock/runtime.lua",
-        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
-      },
-      {
-        "repo_path": "Games/CrazyEights/surface",
-        "install_path": "surface",
-        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+        "repo_path": "Games/CrazyEights/diamonds.nfp",
+        "install_path": "diamonds.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
