@@ -63,6 +63,7 @@ alert.addPlannedExits({
 })
 
 local screen = env.screen
+local surfaceApi = env.surface
 local width = env.width
 local height = env.height
 local cardBack = env.cardBack
@@ -70,6 +71,8 @@ local font = env.font
 local scale = env.scale
 local centerX = floor(width / 2)
 local centerY = scale:ratioY(0.38, 0, scale.subtitleY + scale.sectionGap, height - cardBack.height)
+local suitButtonSurfaceCache = {}
+local suitIconCache = {}
 
 cardAnim.init(screen, cardBack)
 sound.addSounds(cfg.SOUND_IDS or {})
@@ -605,34 +608,129 @@ local function getTouchedPlayerCard(roundState, px, py)
   return nil
 end
 
+local function getSuitIcon(suit)
+  local cached = suitIconCache[suit]
+  if cached ~= nil then
+    return cached or nil
+  end
+
+  local loaded = surfaceApi.load(suit .. ".nfp")
+  suitIconCache[suit] = loaded or false
+  return loaded
+end
+
+local function getSuitButtonSurface(choice)
+  local cacheKey = tostring(choice.id) .. "|" .. tostring(choice.label) .. "|" .. tostring(choice.color)
+  local cached = suitButtonSurfaceCache[cacheKey]
+  if cached then
+    return cached
+  end
+
+  local metrics = ui.getMetrics()
+  local icon = getSuitIcon(choice.id)
+  local iconWidth = icon and icon.width or 0
+  local iconHeight = icon and icon.height or 0
+  local iconGap = icon and 2 or 0
+  local textWidth = ui.getTextSize(choice.label)
+  local buttonWidth = textWidth + iconWidth + iconGap + (metrics.buttonPadX * 2)
+  local buttonHeight = metrics.buttonHeight
+  local fg = colors.black
+  if choice.color == colors.black or choice.color == colors.gray then
+    fg = colors.white
+  end
+
+  local buttonSurface = surfaceApi.create(buttonWidth, buttonHeight)
+  buttonSurface:fillRect(0, 0, buttonWidth, buttonHeight, choice.color)
+
+  local contentWidth = iconWidth + iconGap + textWidth
+  local iconX = floor((buttonWidth - contentWidth) / 2)
+  local iconY = max(0, floor((buttonHeight - iconHeight) / 2) - 1)
+  local textX = iconX + iconWidth + iconGap
+
+  if icon then
+    buttonSurface:drawSurface(icon, iconX, iconY)
+  end
+
+  buttonSurface:drawText(choice.label, font, textX, metrics.buttonTextY, fg)
+  suitButtonSurfaceCache[cacheKey] = buttonSurface
+  return buttonSurface
+end
+
+local function buildSuitChoiceButtons(startY)
+  local choices = {
+    { id = "heart", label = "HEARTS", color = colors.red },
+    { id = "diamond", label = "DIAMONDS", color = colors.orange },
+    { id = "club", label = "CLUBS", color = colors.lightGray },
+    { id = "spade", label = "SPADES", color = colors.gray },
+  }
+  local colSpacing = scale.buttonColGap
+  local rowSpacing = scale.buttonRowSpacing
+  local buttonSurfaces = {}
+  local fixedWidth = 0
+
+  for index, choice in ipairs(choices) do
+    local surfaceValue = getSuitButtonSurface(choice)
+    buttonSurfaces[index] = {
+      choice = choice,
+      surface = surfaceValue,
+    }
+    fixedWidth = max(fixedWidth, surfaceValue.width)
+  end
+
+  local totalWidth = (fixedWidth * 2) + colSpacing
+  local startX = max(scale.edgePad, floor((width - totalWidth) / 2))
+  local buttons = {}
+
+  for index, entry in ipairs(buttonSurfaces) do
+    local row = floor((index - 1) / 2)
+    local col = (index - 1) % 2
+    local x = startX + (col * (fixedWidth + colSpacing))
+    local y = startY + (row * rowSpacing)
+    buttons[#buttons + 1] = {
+      id = entry.choice.id,
+      x = x,
+      y = y,
+      width = fixedWidth,
+      height = entry.surface.height,
+      surface = entry.surface,
+    }
+  end
+
+  return buttons
+end
+
+local function drawSuitChoiceButtons(startY)
+  local buttons = buildSuitChoiceButtons(startY)
+  for _, button in ipairs(buttons) do
+    local drawX = button.x + floor((button.width - button.surface.width) / 2)
+    screen:drawSurface(button.surface, drawX, button.y)
+  end
+  return buttons
+end
+
 local function chooseSuitPrompt(roundState, side)
   local buttonY = getActionButtonY(2)
-  return replayPrompt.waitForChoice(screen, {
-    render = function()
-      renderRound(roundState, {
-        mode = "choose_suit",
-        statusText = "CHOOSE SUIT",
-        actionRows = 2,
-        showSuitBadge = false,
-      })
-    end,
-    hint = "",
-    hint_y = getActionHintY(2),
-    center_x = centerX,
-    button_y = buttonY,
-    row_spacing = scale.buttonRowSpacing,
-    col_spacing = scale.buttonColGap,
-    buttons = {
-      {
-        { id = "heart", text = "HEARTS", color = colors.red },
-        { id = "diamond", text = "DIAMONDS", color = colors.orange },
-      },
-      {
-        { id = "club", text = "CLUBS", color = colors.lightGray },
-        { id = "spade", text = "SPADES", color = colors.gray },
-      },
-    },
-  })
+
+  while true do
+    renderRound(roundState, {
+      mode = "choose_suit",
+      statusText = "CHOOSE SUIT",
+      actionRows = 2,
+      showSuitBadge = false,
+    })
+    local buttons = drawSuitChoiceButtons(buttonY)
+    screen:output()
+
+    local event, _, touchX, touchY = os.pullEvent()
+    if event == "monitor_touch" and ui.isAuthorizedMonitorTouch() then
+      for _, button in ipairs(buttons) do
+        if touchX >= button.x and touchX <= button.x + button.width - 1
+          and touchY >= button.y and touchY <= button.y + button.height - 1 then
+          return button.id
+        end
+      end
+    end
+  end
 end
 
 local function applyPlayedCard(roundState, side, cardID, chosenSuit, incomingDraw)
