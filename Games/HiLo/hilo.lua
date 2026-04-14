@@ -175,6 +175,10 @@ local function getChoiceButtonY(rowCount)
   return min(preferredY, footerTop)
 end
 
+local function getPostRoundHintY()
+  return max(scale.subtitleY, scale.footerButtonY - LINE_H - scale.sectionGap)
+end
+
 local function renderBase(currentCard, revealedCards, betAmount, round, multiplier, statusText)
   screen:clear(LO.TABLE_COLOR)
 
@@ -240,7 +244,7 @@ local function waitForPostRoundChoice(currentCard, revealedCards, betAmount, rou
       end
       return replayHint or "Pick a new bet from the menu.", colors.orange
     end,
-    hint_y = getChoiceStatusY(),
+    hint_y = getPostRoundHintY(),
     buttons = {
       {
         {
