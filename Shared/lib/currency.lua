@@ -327,9 +327,15 @@ local function getMaxBetLimit(balance, maxBetPercent, hostCoverageMultiplier)
   local protectedBalance = getProtectedHostBalance(balance)
   local percent = tonumber(maxBetPercent) or 0
   local maxBet = math.floor(protectedBalance * percent)
+  local minCoveredBet = 1
 
   if hostCoverageMultiplier and hostCoverageMultiplier > 1 then
     maxBet = math.min(maxBet, math.floor(protectedBalance / (hostCoverageMultiplier - 1)))
+    minCoveredBet = hostCoverageMultiplier - 1
+  end
+
+  if maxBet < 1 and protectedBalance > 0 and protectedBalance >= minCoveredBet then
+    maxBet = 1
   end
 
   return math.max(0, maxBet)

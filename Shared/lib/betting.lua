@@ -140,6 +140,7 @@ local function runBetScreen(screen, opts)
   local selecting = true
   local timeoutState = activityTimeout.create(inactivityTimeout)
   local timerID = nil
+  local maxBetValue = max(0, floor(tonumber(maxBet) or 0))
 
   while selecting do
     screen:clear(colors.green)
@@ -182,7 +183,8 @@ local function runBetScreen(screen, opts)
     local availableWidth = screen.width - (metrics.edgePad * 2)
     local compactLabels = metrics.compact and availableWidth < 120
 
-    local presetSpecs = buildPresetBetSpecs(maxBet, compactLabels)
+    local presetSpecs = buildPresetBetSpecs(maxBetValue, compactLabels)
+    local noAvailableBets = #presetSpecs == 0
 
     local clearLabel = compactLabels and "CLR" or "CLEAR"
     local quitLabel = "QUIT"
@@ -213,6 +215,40 @@ local function runBetScreen(screen, opts)
     local widestButton = 0
     for _, txt in ipairs(buttonTexts) do
       widestButton = max(widestButton, buttonWidthForText(txt))
+    end
+
+    local infoY = betY + metrics.messageLineHeight + metrics.smallGap
+    local infoMaxWidth = max(1, screen.width - (metrics.edgePad * 2))
+
+    if noAvailableBets then
+      ui.drawWrappedCenteredText(
+        screen,
+        "No wagers are available right now.",
+        ui.getFont(),
+        btnX,
+        infoY,
+        infoMaxWidth,
+        2,
+        metrics.lineHeight,
+        colors.orange
+      )
+
+      local detail = "Current table max: " .. currency.formatTokens(maxBetValue)
+      if hostBalance ~= nil and (tonumber(hostBalance) or 0) <= 0 then
+        detail = "House reserve is too low to cover a bet right now."
+      end
+
+      ui.drawWrappedCenteredText(
+        screen,
+        detail,
+        ui.getFont(),
+        btnX,
+        infoY + (metrics.lineHeight * 2),
+        infoMaxWidth,
+        3,
+        metrics.lineHeight,
+        colors.lightGray
+      )
     end
 
     -- Preset bet callbacks: set the wager directly with no transfers until confirm.
@@ -268,9 +304,13 @@ local function runBetScreen(screen, opts)
 
     local confirmButton = {
       text = confirmText,
-      color = colors.magenta,
+      color = noAvailableBets and colors.gray or colors.magenta,
       width = maxWidth,
       func = function()
+        if noAvailableBets then
+          ui.displayCenteredMessage(screen, "No wagers available right now!", colors.orange)
+          return
+        end
         if bet > 0 then
           -- Final balance check before starting
           local playerBal = currency.getPlayerBalance()
@@ -338,7 +378,8 @@ local function runBetScreen(screen, opts)
 
     local totalRows = #rows
     local blockHeight = metrics.buttonHeight + ((totalRows - 1) * metrics.buttonRowSpacing)
-    local minStartY = betY + metrics.messageLineHeight + metrics.sectionGap
+    local infoHeight = noAvailableBets and (metrics.lineHeight * 5) or 0
+    local minStartY = betY + metrics.messageLineHeight + metrics.sectionGap + infoHeight
     local latestStartY = max(metrics.edgePad, screen.height - blockHeight - metrics.edgePad)
     local btnStartY = max(minStartY, floor((screen.height - blockHeight) / 2))
     if btnStartY > latestStartY then
