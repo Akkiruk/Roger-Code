@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.55"
+    "version": "1.2.56"
   },
   "build": {
-    "commit": "b3447c30672fbc412cb9a12593e2e88d8711d0fd",
-    "generated_at": "2026-04-14T02:47:01Z",
-    "package_hash": "987ea07d484d53e4c08c16557c8bc430906d69c537e3d9af9bd06af0d8999707"
+    "commit": "18fb1f9e2ac0f353375b8a0f5b7ab6dc6cdaf2d0",
+    "generated_at": "2026-04-14T02:50:24Z",
+    "package_hash": "d60ab700ba662af92bf295c3586edd0195dd8f2efd6b187f1964e6b4c33b6a8c"
   },
   "install": {
     "preserve": [
@@ -25,9 +25,14 @@
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
+        "repo_path": "Shared/lib/bedrock/widgets.lua",
+        "install_path": "lib/bedrock/widgets.lua",
+        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+      },
+      {
         "repo_path": "Shared/lib/betting.lua",
         "install_path": "lib/betting.lua",
-        "sha256": "50b81e1db65c2359e27bbf8b0fdbc831f5bf20d2329c276895a21e6c79da7d6a"
+        "sha256": "51e99b45fc0bf748bf4977ce60c7a343f3779516096c3c7c43cf46c2eebe3a63"
       },
       {
         "repo_path": "Shared/lib/card_anim.lua",
@@ -70,14 +75,14 @@
         "sha256": "0759c4f50ece5f4ccaeda2e3b40cc45e76beec1614fdfd7dbb812167571d205a"
       },
       {
+        "repo_path": "Shared/lib/bedrock/theme.lua",
+        "install_path": "lib/bedrock/theme.lua",
+        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+      },
+      {
         "repo_path": "Shared/lib/idle_card_animation_presets.lua",
         "install_path": "lib/idle_card_animation_presets.lua",
         "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
-      },
-      {
-        "repo_path": "Shared/lib/idle_card_animation.lua",
-        "install_path": "lib/idle_card_animation.lua",
-        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
         "repo_path": "Shared/lib/idle_screen.lua",
@@ -102,7 +107,7 @@
       {
         "repo_path": "Shared/lib/replay_prompt.lua",
         "install_path": "lib/replay_prompt.lua",
-        "sha256": "4e258dca3f1008a58d9e2a03cf1d63ca29da13805986c5d03549539464e70b82"
+        "sha256": "988fddbc2b6d4f7412ae89bf17302aff52e705a667720fcbac030349907080f2"
       },
       {
         "repo_path": "Shared/lib/round_settlement.lua",
@@ -122,7 +127,7 @@
       {
         "repo_path": "Shared/lib/ui_surface.lua",
         "install_path": "lib/ui_surface.lua",
-        "sha256": "2f4fc13a2291a56ed038d8fac83667ef82082dbc18d2336d231d33368158cf1a"
+        "sha256": "444539f690ad04277f5620cfe6cd0b90dfe420266bea5be910058ded9da68260"
       },
       {
         "repo_path": "Shared/lib/ui_text.lua",
@@ -130,14 +135,14 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+        "repo_path": "Shared/lib/idle_card_animation.lua",
+        "install_path": "lib/idle_card_animation.lua",
+        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
-        "repo_path": "Shared/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Shared/lib/bedrock/runtime.lua",
@@ -145,9 +150,9 @@
         "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
       },
       {
-        "repo_path": "Shared/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
@@ -201,9 +206,9 @@
         "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+        "repo_path": "Shared/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
       },
       {
         "repo_path": "Games/Baccarat/diamonds.nfp",
@@ -241,6 +246,11 @@
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
+        "repo_path": "Shared/lib/activity_timeout.lua",
+        "install_path": "lib/activity_timeout.lua",
+        "sha256": "8f8c921067d26a4ca0a45af684cc4e11ece1c8008b0f3e0e6ff70f1728a3e4a0"
+      },
+      {
         "repo_path": "Shared/lib/alert.lua",
         "install_path": "lib/alert.lua",
         "sha256": "0f661cc6748a7451e2ec5ac8a1051a06df381708c90072b8f15b43a04390727e"
@@ -254,11 +264,6 @@
         "repo_path": "Shared/lib/bedrock.lua",
         "install_path": "lib/bedrock.lua",
         "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Games/Baccarat/font",
@@ -280,6 +285,7 @@
     "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
+      "lib.activity_timeout",
       "lib.alert",
       "lib.auth_wait_screen",
       "lib.bedrock",

@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager startup entry point.",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.41"
+    "version": "1.0.42"
   },
   "build": {
-    "commit": "b3447c30672fbc412cb9a12593e2e88d8711d0fd",
-    "generated_at": "2026-04-14T02:47:01Z",
-    "package_hash": "22054379bc2c26f7575b70def489ac1ed0ff1df4f157b3283c0ba2b89bcb19a3"
+    "commit": "18fb1f9e2ac0f353375b8a0f5b7ab6dc6cdaf2d0",
+    "generated_at": "2026-04-14T02:50:24Z",
+    "package_hash": "bae59460e5932184ff9deb934c78ff74548cf525019e5834387b0897ba404a01"
   },
   "install": {
     "preserve": [
@@ -24,6 +24,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -56,14 +61,14 @@
         "sha256": "b6801f089146d46117e8346cbc963822a4bdf0259d9d1689a382c892416022c6"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
-      },
-      {
         "repo_path": "Shared/lib/vaultgear/peripherals.lua",
         "install_path": "lib/vaultgear/peripherals.lua",
         "sha256": "29b33307c9b4232627874ef538f734362010ab7d5d074c74f516b94ec82930a1"
+      },
+      {
+        "repo_path": "Shared/lib/vaultgear/planner.lua",
+        "install_path": "lib/vaultgear/planner.lua",
+        "sha256": "3fb34165975ef1f86bd00484e3d7ef66732b696aff903159049015d35e55ad30"
       },
       {
         "repo_path": "Shared/lib/vaultgear/presets.lua",
@@ -96,24 +101,24 @@
         "sha256": "d0bb3e4f5540fbc4d54bce38caaf97b4cbb0137521a7939254b15e4b55f63afd"
       },
       {
-        "repo_path": "Shared/lib/vaultgear/planner.lua",
-        "install_path": "lib/vaultgear/planner.lua",
-        "sha256": "3fb34165975ef1f86bd00484e3d7ef66732b696aff903159049015d35e55ad30"
-      },
-      {
         "repo_path": "Shared/lib/ui_text.lua",
         "install_path": "lib/ui_text.lua",
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/ui_surface.lua",
-        "install_path": "lib/ui_surface.lua",
-        "sha256": "2f4fc13a2291a56ed038d8fac83667ef82082dbc18d2336d231d33368158cf1a"
+        "repo_path": "Shared/lib/vaultgear/ui.lua",
+        "install_path": "lib/vaultgear/ui.lua",
+        "sha256": "f9e44ff5fd0942dae7d363a087a918d7c9190944de121e935ca5a882e53daac4"
       },
       {
-        "repo_path": "Shared/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "repo_path": "Shared/lib/ui_surface.lua",
+        "install_path": "lib/ui_surface.lua",
+        "sha256": "444539f690ad04277f5620cfe6cd0b90dfe420266bea5be910058ded9da68260"
+      },
+      {
+        "repo_path": "Shared/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
@@ -146,6 +151,11 @@
         "install_path": "vaultgear_state_settings.lua",
         "sha256": "bda7b3c6f0963d3fdb58755d79a1c28d92db4cfdfc467fbae606b5e169e6ba48",
         "preserve_existing": true
+      },
+      {
+        "repo_path": "Shared/lib/activity_timeout.lua",
+        "install_path": "lib/activity_timeout.lua",
+        "sha256": "8f8c921067d26a4ca0a45af684cc4e11ece1c8008b0f3e0e6ff70f1728a3e4a0"
       },
       {
         "repo_path": "Shared/lib/auth_wait_screen.lua",
@@ -188,14 +198,9 @@
         "sha256": "4413f0b65726da7b6fb26d08ff8b48e586ef5fae03c715abe85090d4a6d8a4c3"
       },
       {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
-      },
-      {
-        "repo_path": "Shared/lib/vaultgear/ui.lua",
-        "install_path": "lib/vaultgear/ui.lua",
-        "sha256": "f9e44ff5fd0942dae7d363a087a918d7c9190944de121e935ca5a882e53daac4"
+        "repo_path": "Shared/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
         "repo_path": "Shared/lib/vaultgear/util.lua",
@@ -212,6 +217,7 @@
     "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
+      "lib.activity_timeout",
       "lib.auth_wait_screen",
       "lib.bedrock",
       "lib.bedrock.layout",
