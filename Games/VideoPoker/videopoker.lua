@@ -409,7 +409,7 @@ local function waitForReplayChoice(hand, discardSelected, betAmount, statusText)
     hint = function()
       local replayAvailable, replayHint = canReplayBet(betAmount)
       if replayAvailable then
-        return "Touch PLAY AGAIN to deal the same bet.", colors.lightGray
+        return nil
       end
       return replayHint, colors.orange
     end,

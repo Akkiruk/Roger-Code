@@ -1150,7 +1150,7 @@ local function waitForPostMatchChoice(betAmount, resultLabel, totalReturn, netCh
     hint = function()
       local replayAvailable = canReplayBet(betAmount)
       if replayAvailable then
-        return "Touch PLAY AGAIN to keep the same ante.", colors.lightGray
+        return nil
       end
       return "Pick a new ante from the main menu.", colors.orange
     end,

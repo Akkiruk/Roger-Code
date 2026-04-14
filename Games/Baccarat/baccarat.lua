@@ -636,7 +636,7 @@ waitForReplayChoice = function(playerHand, bankerHand, betType, betAmount, statu
     hint = function()
       local replayAvailable, replayHint = canReplayBet(betAmount)
       if replayAvailable then
-        return "Touch PLAY AGAIN to repeat the same wager.", colors.lightGray
+        return nil
       end
       return replayHint, colors.orange
     end,

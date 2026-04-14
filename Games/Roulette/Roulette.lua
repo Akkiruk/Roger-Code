@@ -332,7 +332,7 @@ local function waitForReplayChoice(replayChanges)
     hint = function()
       local replayAvailable, replayHint = canReplayChanges(replayChanges)
       if replayAvailable then
-        return "Touch PLAY AGAIN to restore the last layout.", colors.lightGray
+        return nil
       end
       return replayHint, colors.orange
     end,

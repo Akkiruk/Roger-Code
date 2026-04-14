@@ -1148,7 +1148,7 @@ waitForReplayChoice = function(ctx, statusText)
     hint = function()
       local replayAvailable, replayHint = canReplayBet(ctx.hands[1].bet)
       if replayAvailable then
-        return "Touch PLAY AGAIN to run the same bet.", colors.lightGray
+        return nil
       end
       return replayHint, colors.orange
     end,

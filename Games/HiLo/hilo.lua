@@ -241,7 +241,7 @@ local function waitForPostRoundChoice(currentCard, revealedCards, betAmount, rou
     hint = function()
       local replayAvailable, replayHint = canReplayBet(betAmount)
       if replayAvailable then
-        return "Touch PLAY AGAIN to keep the same bet.", colors.lightGray
+        return nil
       end
       return replayHint or "Pick a new bet from the menu.", colors.orange
     end,

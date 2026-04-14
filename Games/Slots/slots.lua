@@ -736,9 +736,9 @@ local function waitForReplayChoice(result, highlights, statusText, currentBet)
     end,
     hint = function()
       local replayAvailable, replayHint = canReplayCurrentBet(currentBet)
-      if replayAvailable then
-        return "Touch ROLL AGAIN to spin the same bet.", colors.lightGray
-      end
+        if replayAvailable then
+          return nil
+        end
       return replayHint, colors.orange
     end,
     hint_y = machineLayout.hintY,

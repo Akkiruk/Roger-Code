@@ -191,20 +191,6 @@ local function waitForReplay(env, result, summary, bet, outcomeState)
       color = theme.subtitle or colors.lightGray,
     },
   }, bet, {
-    centerBanners = {
-      {
-        y = 15,
-        text = "PRESS R TO",
-        color = colors.white,
-        bg = theme.rule or colors.lightBlue,
-      },
-      {
-        y = 16,
-        text = "ROLL AGAIN",
-        color = colors.white,
-        bg = theme.accent or colors.magenta,
-      },
-    },
     primaryAction = "R replay",
     primaryColor = theme.accent or colors.magenta,
     secondaryAction = "Back exit",
