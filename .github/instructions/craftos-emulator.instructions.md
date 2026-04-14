@@ -103,7 +103,6 @@ After boot.lua runs, `_G.MOCK` is available:
 - `MOCK.setSilver(barrelAmt, bankAmt)` — Set silver amounts
 - `MOCK.setPlayer("name")` — Change detected player
 - `MOCK.noPlayer()` — Simulate player leaving
-- `MOCK.autoPlay(true/false)` — Toggle auto-play bot
 - `MOCK.status()` — Print barrel/bank/sound/chat overview
 
 Access mock objects directly:
