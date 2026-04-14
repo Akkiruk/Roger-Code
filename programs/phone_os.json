@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "0ccdd5902816c788ed4a15494cfce65ea9b407ab",
-    "generated_at": "2026-04-14T02:25:40Z",
-    "package_hash": "95a892a141df5c9021cd23ffe570bc12b063a6907a4a311b951b7d88cd09bd6a"
+    "commit": "f38d95cf5852c83b3e7718d80fc77b1be4734e65",
+    "generated_at": "2026-04-14T02:36:40Z",
+    "package_hash": "1258398eeb7ff8d63a2beee897546b983e91a843e6f80b03c77a9ae651912f0a"
   },
   "install": {
     "preserve": [
@@ -26,9 +26,14 @@
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
+        "repo_path": "Shared/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+      },
+      {
         "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "20952eaf676254fed1a26eae5acb69d7814a5fdb461a4d4ff064602c2c025cd4"
+        "sha256": "4413f0b65726da7b6fb26d08ff8b48e586ef5fae03c715abe85090d4a6d8a4c3"
       },
       {
         "repo_path": "Shared/lib/crash_recovery.lua",
@@ -39,6 +44,11 @@
         "repo_path": "Shared/lib/cards.lua",
         "install_path": "lib/cards.lua",
         "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
+      },
+      {
+        "repo_path": "Shared/lib/auth_wait_screen.lua",
+        "install_path": "lib/auth_wait_screen.lua",
+        "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
       },
       {
         "repo_path": "Shared/lib/alert.lua",
@@ -133,9 +143,11 @@
     "requires_updater": true,
     "lib_modules": [
       "lib.alert",
+      "lib.auth_wait_screen",
       "lib.cards",
       "lib.crash_recovery",
       "lib.currency",
+      "lib.monitor_scale",
       "lib.peripherals",
       "lib.sound",
       "lib.updater"
