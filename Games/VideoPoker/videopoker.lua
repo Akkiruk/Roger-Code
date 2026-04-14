@@ -38,6 +38,7 @@ local cardAnim   = require("lib.card_anim")
 local replayPrompt = require("lib.replay_prompt")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
+local activityTimeout = require("lib.activity_timeout")
 local settlement = require("lib.round_settlement")
 
 recovery.configure(cfg.RECOVERY_FILE)
@@ -471,7 +472,7 @@ local function pokerRound(betAmount)
 
   -- Hold/discard phase
   local confirmed = false
-  local lastActivityTime = epoch("local")
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
 
   while not confirmed do
     renderHand(hand, discardSelected, betAmount, nil, true)
@@ -502,18 +503,16 @@ local function pokerRound(betAmount)
 
     screen:output()
 
-    local _, px, py, activityTime = ui.waitForMonitorTouch({
-      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+    local _, px, py = ui.waitForMonitorTouch({
+      timeoutState = timeoutState,
       onTimeout = function()
         alert.log("Video Poker timeout: auto-draw with current holds")
         confirmed = true
       end,
-      lastActivityTime = lastActivityTime,
     })
     if confirmed then
       break
     end
-    lastActivityTime = activityTime
     local buttonCb = ui.checkButtonHit(px, py)
     if buttonCb then
       buttonCb()

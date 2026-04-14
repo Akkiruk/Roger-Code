@@ -38,6 +38,7 @@ local alert = require("lib.alert")
 local recovery = require("lib.crash_recovery")
 local gameSetup = require("lib.game_setup")
 local betting = require("lib.betting")
+local activityTimeout = require("lib.activity_timeout")
 local replayPrompt = require("lib.replay_prompt")
 local cardAnim = require("lib.card_anim")
 local pages = require("lib.casino_pages")
@@ -638,9 +639,9 @@ local function showTutorial()
 end
 
 local function preRoundMenu()
-  local menuTimeout = cfg.PRE_ROUND_MENU_TIMEOUT or cfg.INACTIVITY_TIMEOUT
-  local warningThreshold = max(0, menuTimeout - 10000)
-  local lastActivityTime = epoch("local")
+  local timeoutState = activityTimeout.create(
+    activityTimeout.resolveDuration(cfg.PRE_ROUND_MENU_TIMEOUT, cfg.INACTIVITY_TIMEOUT, 90000)
+  )
 
   while true do
     screen:clear(LO.TABLE_COLOR)
@@ -648,13 +649,12 @@ local function preRoundMenu()
     drawCenteredLine("Fun-first card duel", scale.subtitleY, colors.lightGray)
     drawCenteredLine("Wild 8s, Draw 2s, Ace skips", scale.subtitleY + scale.lineHeight + scale.smallGap, colors.cyan)
 
-    local idleMs = epoch("local") - lastActivityTime
-    if idleMs > menuTimeout then
+    if timeoutState and timeoutState:isExpired() then
       triggerInactivityTimeout()
     end
 
-    if idleMs >= warningThreshold then
-      local secondsLeft = max(1, floor((menuTimeout - idleMs) / 1000))
+    if timeoutState and timeoutState:isWarning() then
+      local secondsLeft = timeoutState:secondsLeft()
       drawCenteredLine("Auto-exit in " .. tostring(secondsLeft) .. "s", height - scale.lineHeight - scale.edgePad, colors.orange)
     end
 
@@ -674,7 +674,9 @@ local function preRoundMenu()
     while true do
       local event, param1, param2, param3 = os.pullEvent()
       if event == "monitor_touch" and ui.isAuthorizedMonitorTouch() then
-        lastActivityTime = epoch("local")
+        if timeoutState then
+          timeoutState:touch()
+        end
         local cb = ui.checkButtonHit(param2, param3)
         if cb then
           cb()
@@ -808,7 +810,7 @@ local function choosePlayableCard(roundState)
   end
 
   local choice = nil
-  local lastActivityTime = epoch("local")
+  local timeoutState = activityTimeout.create(cfg.INACTIVITY_TIMEOUT)
 
   while not choice do
     renderRound(roundState, {
@@ -862,7 +864,9 @@ local function choosePlayableCard(roundState)
     while not choice do
       local event, param1, param2, param3 = os.pullEvent()
       if event == "monitor_touch" and ui.isAuthorizedMonitorTouch() then
-        lastActivityTime = epoch("local")
+        if timeoutState then
+          timeoutState:touch()
+        end
         local cb = ui.checkButtonHit(param2, param3)
         if cb then
           cb()
@@ -876,7 +880,7 @@ local function choosePlayableCard(roundState)
           break
         end
       elseif event == "timer" and param1 == timerID then
-        if (epoch("local") - lastActivityTime) > cfg.INACTIVITY_TIMEOUT then
+        if timeoutState and timeoutState:isExpired() then
           local timeoutIndex = choosePreferredPlayerCardIndex(roundState)
           if roundState.pendingDraw > 0 and timeoutIndex and cardRank(roundState.playerHand[timeoutIndex]) == "2" then
             alert.log("CrazyEights timeout: auto-stacked a 2")

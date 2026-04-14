@@ -48,6 +48,7 @@ local cardAnim   = require("lib.card_anim")
 local cardRules  = require("lib.card_rules")
 local pages      = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
+local activityTimeout = require("lib.activity_timeout")
 
 recovery.configure(cfg.RECOVERY_FILE)
 
@@ -363,9 +364,9 @@ end
 -- Pre-round menu: PLAY, HOW TO PLAY
 -----------------------------------------------------
 local function preRoundMenu()
-  local menuTimeout = cfg.PRE_ROUND_MENU_TIMEOUT or 10000
-  local warningThreshold = max(0, menuTimeout - 10000)
-  local lastActivityTime = epoch("local")
+  local timeoutState = activityTimeout.create(
+    activityTimeout.resolveDuration(cfg.PRE_ROUND_MENU_TIMEOUT, cfg.INACTIVITY_TIMEOUT, 90000)
+  )
 
   while true do
     screen:clear(LO.TABLE_COLOR)
@@ -378,13 +379,12 @@ local function preRoundMenu()
     local sw = ui.getTextSize(subtitle)
     ui.safeDrawText(screen, subtitle, font, math.floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
 
-    local idleMs = epoch("local") - lastActivityTime
-    if idleMs > menuTimeout then
+    if timeoutState and timeoutState:isExpired() then
       triggerInactivityTimeout()
     end
 
-    if idleMs >= warningThreshold then
-      local secondsLeft = max(1, ceil((menuTimeout - idleMs) / 1000))
+    if timeoutState and timeoutState:isWarning() then
+      local secondsLeft = timeoutState:secondsLeft()
       local timeoutLabel = "Auto-exit in " .. secondsLeft .. "s"
       local timeoutWidth = ui.getTextSize(timeoutLabel)
       ui.safeDrawText(screen, timeoutLabel, font, math.floor((width - timeoutWidth) / 2), height - LINE_H - scale.edgePad, colors.orange)
@@ -412,7 +412,9 @@ local function preRoundMenu()
     while true do
       local event, side, px, py = os.pullEvent()
       if event == "monitor_touch" then
-        lastActivityTime = epoch("local")
+        if timeoutState then
+          timeoutState:touch()
+        end
         local cb = ui.checkButtonHit(px, py)
         if cb then
           cb()

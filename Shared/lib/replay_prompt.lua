@@ -1,4 +1,5 @@
 local ui = require("lib.ui")
+local activityTimeout = require("lib.activity_timeout")
 
 local M = {}
 local chooseValue = nil
@@ -74,8 +75,13 @@ end
 function M.waitForChoice(screen, opts)
   local options = opts or {}
   local choice = nil
-  local lastActivityTime = os.epoch("local")
-  local pollSeconds = options.poll_seconds or 0.25
+  local timeoutState = options.timeout_state
+  if (not timeoutState) and options.inactivity_timeout then
+    timeoutState = activityTimeout.create(options.inactivity_timeout, {
+      pollSeconds = options.poll_seconds,
+    })
+  end
+  local pollSeconds = options.poll_seconds or (timeoutState and timeoutState.pollSeconds) or 0.25
 
   chooseValue = function(value)
     choice = value
@@ -114,7 +120,9 @@ function M.waitForChoice(screen, opts)
 
       if event == "monitor_touch" then
         if ui.isAuthorizedMonitorTouch() then
-          lastActivityTime = os.epoch("local")
+          if timeoutState then
+            timeoutState:touch()
+          end
           local callback = ui.checkButtonHit(param2, param3)
           if callback then
             callback()
@@ -124,7 +132,7 @@ function M.waitForChoice(screen, opts)
           os.sleep(0)
         end
       elseif event == "timer" and param1 == timerID then
-        if options.inactivity_timeout and (os.epoch("local") - lastActivityTime) > options.inactivity_timeout then
+        if timeoutState and timeoutState:isExpired() then
           ui.clearButtons()
           if type(options.onTimeout) == "function" then
             return options.onTimeout()

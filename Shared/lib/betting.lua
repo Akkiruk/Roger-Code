@@ -15,6 +15,7 @@
 local currency = require("lib.currency")
 local sound    = require("lib.sound")
 local ui       = require("lib.ui")
+local activityTimeout = require("lib.activity_timeout")
 
 local ceil  = math.ceil
 local floor = math.floor
@@ -137,7 +138,7 @@ local function runBetScreen(screen, opts)
 
   local bet = 0
   local selecting = true
-  local lastActivityTime = os.epoch("local")
+  local timeoutState = activityTimeout.create(inactivityTimeout)
   local timerID = nil
 
   while selecting do
@@ -151,9 +152,8 @@ local function runBetScreen(screen, opts)
     -- Check inactivity when no bet placed
     local idleMs = 0
     if bet == 0 then
-      local now = os.epoch("local")
-      idleMs = now - lastActivityTime
-      if idleMs > inactivityTimeout then
+      idleMs = timeoutState and timeoutState:elapsed() or 0
+      if timeoutState and timeoutState:isExpired() then
         onTimeout()
         return 0
       end
@@ -164,14 +164,11 @@ local function runBetScreen(screen, opts)
     ui.safeDrawText(screen, title, ui.getFont(), ui.round((screen.width - titleSize) / 2), titleY, colors.white)
 
     -- Inactivity countdown warning (last 10 seconds)
-    if bet == 0 then
-      local warnThreshold = inactivityTimeout - 10000
-      if idleMs >= warnThreshold then
-        local secsLeft = ceil((inactivityTimeout - idleMs) / 1000)
-        local warnMsg = "Auto-exit in " .. secsLeft .. "s..."
-        local warnSize = ui.getTextSize(warnMsg)
-        ui.safeDrawText(screen, warnMsg, ui.getFont(), ui.round((screen.width - warnSize) / 2), warnY, colors.orange)
-      end
+    if bet == 0 and timeoutState and timeoutState:isWarning() then
+      local secsLeft = timeoutState:secondsLeft()
+      local warnMsg = "Auto-exit in " .. secsLeft .. "s..."
+      local warnSize = ui.getTextSize(warnMsg)
+      ui.safeDrawText(screen, warnMsg, ui.getFont(), ui.round((screen.width - warnSize) / 2), warnY, colors.orange)
     end
 
     -- Current bet display
@@ -368,7 +365,9 @@ local function runBetScreen(screen, opts)
             break
           end
         end
-        lastActivityTime = os.epoch("local")
+        if timeoutState then
+          timeoutState:touch()
+        end
         if px and py then
           local cb = ui.checkButtonHit(px, py)
           if cb then
@@ -378,7 +377,7 @@ local function runBetScreen(screen, opts)
         end
       elseif event == "timer" and side == timerID then
         -- Check timeout
-        if bet == 0 and (os.epoch("local") - lastActivityTime) > inactivityTimeout then
+        if bet == 0 and timeoutState and timeoutState:isExpired() then
           onTimeout()
           return 0
         end

@@ -1,4 +1,5 @@
 local monitorScale = require("lib.monitor_scale")
+local activityTimeout = require("lib.activity_timeout")
 local text = require("lib.ui_text")
 local touch = require("lib.ui_touch")
 
@@ -238,11 +239,17 @@ end
 function M.waitForButton(ox, oy, opts)
   local options = opts or {}
   local inactivityTimeout = options.inactivityTimeout
-  local pollSeconds = options.pollSeconds or 0.25
-  local lastActivityTime = options.lastActivityTime or os.epoch("local")
+  local timeoutState = options.timeoutState
+  if (not timeoutState) and inactivityTimeout then
+    timeoutState = activityTimeout.create(inactivityTimeout, {
+      lastActivityTime = options.lastActivityTime,
+      pollSeconds = options.pollSeconds,
+    })
+  end
+  local pollSeconds = options.pollSeconds or (timeoutState and timeoutState.pollSeconds) or 0.25
 
   while true do
-    if not inactivityTimeout then
+    if not timeoutState then
       local _, _, px, py = os.pullEvent("monitor_touch")
       if not touch.isAuthorizedMonitorTouch() then
         os.sleep(0)
@@ -271,18 +278,18 @@ function M.waitForButton(ox, oy, opts)
         else
           local px = param2 - (ox or 0)
           local py = param3 - (oy or 0)
-          lastActivityTime = os.epoch("local")
+          local activityTime = timeoutState and timeoutState:touch() or os.epoch("local")
           for _, button in pairs(buttons) do
             if px >= button.x and px <= button.x + button.width - 1
               and py >= button.y and py <= button.y + button.height - 1 then
               buttons = {}
               button.cb()
-              return px, py, lastActivityTime
+              return px, py, activityTime
             end
           end
         end
       elseif event == "timer" and param1 == timerID then
-        if (os.epoch("local") - lastActivityTime) > inactivityTimeout then
+        if timeoutState and timeoutState:isExpired() then
           buttons = {}
           if type(options.onTimeout) == "function" then
             return options.onTimeout()
@@ -297,11 +304,17 @@ end
 function M.waitForMonitorTouch(opts)
   local options = opts or {}
   local inactivityTimeout = options.inactivityTimeout
-  local pollSeconds = options.pollSeconds or 0.25
-  local lastActivityTime = options.lastActivityTime or os.epoch("local")
+  local timeoutState = options.timeoutState
+  if (not timeoutState) and inactivityTimeout then
+    timeoutState = activityTimeout.create(inactivityTimeout, {
+      lastActivityTime = options.lastActivityTime,
+      pollSeconds = options.pollSeconds,
+    })
+  end
+  local pollSeconds = options.pollSeconds or (timeoutState and timeoutState.pollSeconds) or 0.25
 
   while true do
-    if not inactivityTimeout then
+    if not timeoutState then
       local _, side, px, py = os.pullEvent("monitor_touch")
       if touch.isAuthorizedMonitorTouch() then
         return side, px, py
@@ -316,12 +329,12 @@ function M.waitForMonitorTouch(opts)
 
       if event == "monitor_touch" then
         if touch.isAuthorizedMonitorTouch() then
-          lastActivityTime = os.epoch("local")
-          return param1, param2, param3, lastActivityTime
+          local activityTime = timeoutState and timeoutState:touch() or os.epoch("local")
+          return param1, param2, param3, activityTime
         end
         os.sleep(0)
       elseif event == "timer" and param1 == timerID then
-        if (os.epoch("local") - lastActivityTime) > inactivityTimeout then
+        if timeoutState and timeoutState:isExpired() then
           if type(options.onTimeout) == "function" then
             return options.onTimeout()
           end
