@@ -7,12 +7,12 @@
     "description": "Guess higher or lower across a streak-based payout ladder.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.77"
+    "version": "1.0.78"
   },
   "build": {
-    "commit": "8839e3c7321306e557a0c4ebd79b50cbd2f8a563",
-    "generated_at": "2026-04-14T03:52:28Z",
-    "package_hash": "590ed515e001e4ec4f637a0e4ca34e455e1eefed8232b0a56a808f28599ad6fb"
+    "commit": "d0ba3f2be577a1661362cf69cae8fb38e0cd1ea7",
+    "generated_at": "2026-04-14T03:55:43Z",
+    "package_hash": "9d728dde3757b216a987d1d53597932f619626dda017b5314bb373b0cf65e8f2"
   },
   "install": {
     "preserve": [
@@ -172,7 +172,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "7ee70982101770d54b193e52da999ed168e75cda8942cbc5229c8ab90cbd69dc"
+        "sha256": "2a58c8c1e755bdcfb9e3bfab3209b951f1f569814da54ae7a43dc4f23a1e5100"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -182,12 +182,12 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "b306d624f74c28117f2a93dfb456486ff1b6c8b8438d9c38e6a796220e74cec2"
+        "sha256": "ba472b6d95037eb225ab9031da841b0cb42206451c8b3d7af32720801eb15cec"
       },
       {
         "repo_path": "Games/HiLo/hilo.lua",
         "install_path": "hilo.lua",
-        "sha256": "8dff1cc4281a2b7b445c894d3a089cde9bab3cca2bb208224940a4b654e0730e"
+        "sha256": "3b36b87afa1d467fc19331479e4528116ea1784ea054ba5a33ddd80420455818"
       },
       {
         "repo_path": "Games/HiLo/startup.lua",
@@ -197,7 +197,7 @@
       {
         "repo_path": "Games/HiLo/hilo_config.lua",
         "install_path": "hilo_config.lua",
-        "sha256": "e1bb8e07044bea34482bc4eba42fc2cf0d016a00b975716f458d4fabb7662622",
+        "sha256": "4b23d9d61131b6435ec8cdcd84cf24d4861c3cafac2ffc65d7cbf0faf67d2782",
         "preserve_existing": true
       },
       {

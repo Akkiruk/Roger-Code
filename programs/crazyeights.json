@@ -7,12 +7,12 @@
     "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.20"
+    "version": "1.0.21"
   },
   "build": {
-    "commit": "8839e3c7321306e557a0c4ebd79b50cbd2f8a563",
-    "generated_at": "2026-04-14T03:52:28Z",
-    "package_hash": "7bd8a4cd8d380030c12f054cc7aa7637b0dba3a9540ec50d06fc0ed572126419"
+    "commit": "d0ba3f2be577a1661362cf69cae8fb38e0cd1ea7",
+    "generated_at": "2026-04-14T03:55:43Z",
+    "package_hash": "0774cfd2b8c8aa18efc759efae50a37ebee44d87cb99b2ee5892b34ccab67e12"
   },
   "install": {
     "preserve": [
@@ -167,7 +167,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "7ee70982101770d54b193e52da999ed168e75cda8942cbc5229c8ab90cbd69dc"
+        "sha256": "2a58c8c1e755bdcfb9e3bfab3209b951f1f569814da54ae7a43dc4f23a1e5100"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -177,12 +177,12 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "b306d624f74c28117f2a93dfb456486ff1b6c8b8438d9c38e6a796220e74cec2"
+        "sha256": "ba472b6d95037eb225ab9031da841b0cb42206451c8b3d7af32720801eb15cec"
       },
       {
         "repo_path": "Games/CrazyEights/crazyeights.lua",
         "install_path": "crazyeights.lua",
-        "sha256": "9fd36b4a448dd8989ac58c8738e3e1b7a3d495403b28bde47ae2ce41ec31937a"
+        "sha256": "1f162df358da16d849aebb3e70bdaee9b26d6304a253f47970376f9ea7623207"
       },
       {
         "repo_path": "Games/CrazyEights/startup.lua",
@@ -192,7 +192,7 @@
       {
         "repo_path": "Games/CrazyEights/crazyeights_config.lua",
         "install_path": "crazyeights_config.lua",
-        "sha256": "8182db4d6dfc035215cde7d769d4cd9e32969c37f058ce79245f796656aef5c1",
+        "sha256": "9c03971738e514008c5b757a5bb5218ba406552ef4c4e50101581b5d38a81b17",
         "preserve_existing": true
       },
       {

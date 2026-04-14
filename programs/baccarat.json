@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.68"
+    "version": "1.2.69"
   },
   "build": {
-    "commit": "8839e3c7321306e557a0c4ebd79b50cbd2f8a563",
-    "generated_at": "2026-04-14T03:52:28Z",
-    "package_hash": "8daad28cbf54ea73df439de65e9deeac8ce63ba4f9bab222706947a68f898dd1"
+    "commit": "d0ba3f2be577a1661362cf69cae8fb38e0cd1ea7",
+    "generated_at": "2026-04-14T03:55:43Z",
+    "package_hash": "d84f47036c419aefd94b3d568b0af541a4bf8018654d351158b57933d6ff9d43"
   },
   "install": {
     "preserve": [
@@ -172,7 +172,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "7ee70982101770d54b193e52da999ed168e75cda8942cbc5229c8ab90cbd69dc"
+        "sha256": "2a58c8c1e755bdcfb9e3bfab3209b951f1f569814da54ae7a43dc4f23a1e5100"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -182,12 +182,12 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "b306d624f74c28117f2a93dfb456486ff1b6c8b8438d9c38e6a796220e74cec2"
+        "sha256": "ba472b6d95037eb225ab9031da841b0cb42206451c8b3d7af32720801eb15cec"
       },
       {
         "repo_path": "Games/Baccarat/baccarat.lua",
         "install_path": "baccarat.lua",
-        "sha256": "34a8ffb852fa6cf6a4ed92260dcb745e505dd9684c657c2671e0fa9230323a01"
+        "sha256": "ebcc72e13fbcd722b5bc3e13af5aff2b67718d50c1345a1897be6be0fd215af7"
       },
       {
         "repo_path": "Games/Baccarat/startup.lua",
@@ -197,7 +197,7 @@
       {
         "repo_path": "Games/Baccarat/baccarat_config.lua",
         "install_path": "baccarat_config.lua",
-        "sha256": "21a0d70ae505f655cfe584794ad27c374f616772504075a76d984f505ad52aaa",
+        "sha256": "5719123d35a3f5103f0803bf5f51f8582676643240682cebaf997ca43d78e089",
         "preserve_existing": true
       },
       {

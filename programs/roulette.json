@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.91"
+    "version": "1.0.92"
   },
   "build": {
-    "commit": "8839e3c7321306e557a0c4ebd79b50cbd2f8a563",
-    "generated_at": "2026-04-14T03:52:28Z",
-    "package_hash": "9b9d95d7c59fc0a98c43df82f9457398b65275a251b18ae1c543975dbcd9f7a2"
+    "commit": "d0ba3f2be577a1661362cf69cae8fb38e0cd1ea7",
+    "generated_at": "2026-04-14T03:55:43Z",
+    "package_hash": "c20103dc85382b4962eaf268f06b07e8f70432fa48969bb0f63324fbc9fb3f9a"
   },
   "install": {
     "preserve": [
@@ -157,7 +157,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "7ee70982101770d54b193e52da999ed168e75cda8942cbc5229c8ab90cbd69dc"
+        "sha256": "2a58c8c1e755bdcfb9e3bfab3209b951f1f569814da54ae7a43dc4f23a1e5100"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -167,7 +167,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "b306d624f74c28117f2a93dfb456486ff1b6c8b8438d9c38e6a796220e74cec2"
+        "sha256": "ba472b6d95037eb225ab9031da841b0cb42206451c8b3d7af32720801eb15cec"
       },
       {
         "repo_path": "Games/Roulette/roulette_layout.lua",
@@ -187,7 +187,7 @@
       {
         "repo_path": "Games/Roulette/Roulette.lua",
         "install_path": "Roulette.lua",
-        "sha256": "98b744d726aac84d622d8337c42d4d13a33af53a9b3cb6d6e4d2a395b784d4c5"
+        "sha256": "690bbe4e53964a1481e985780ea4f486664f0786f627a38a4c6ce6c36e788671"
       },
       {
         "repo_path": "Shared/lib/bedrock/renderer.lua",
