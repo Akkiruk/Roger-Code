@@ -4,15 +4,15 @@
     "key": "crazyeights",
     "name": "CrazyEights",
     "category": "Games",
-    "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
+    "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.24"
+    "version": "1.0.25"
   },
   "build": {
-    "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-    "generated_at": "2026-04-14T04:13:51Z",
-    "package_hash": "9a5a6c616ec5f5fa3d8e227f960b9ae44ee7f2cf6187e9c0814cb3a50d39fad3"
+    "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+    "generated_at": "2026-04-14T04:16:10Z",
+    "package_hash": "3d355c614c36a98782791fb7042a551c1176f9a034522f4773b416801104cf53"
   },
   "install": {
     "preserve": [
@@ -47,7 +47,7 @@
       {
         "repo_path": "Shared/lib/card_anim.lua",
         "install_path": "lib/card_anim.lua",
-        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+        "sha256": "d8e9b4bd2be412c65d14f447eddb1ab54743a82c0d510532c8c6ec5265d2d99f"
       },
       {
         "repo_path": "Shared/lib/cards.lua",
@@ -182,17 +182,17 @@
       {
         "repo_path": "Games/CrazyEights/crazyeights.lua",
         "install_path": "crazyeights.lua",
-        "sha256": "45f4843e8f6ea90a5327a997f2cb2e24a5f6628f251717371769032c0c724b8a"
+        "sha256": "f576d8176a0322972a4a7d1402b44de58baa2a50a5d2ce9021e18a3e5320185d"
       },
       {
         "repo_path": "Games/CrazyEights/startup.lua",
         "install_path": "crazyeights_startup.lua",
-        "sha256": "a127e2873e7ae7b0903f35d49855c748d57f26197973423a4d55fb1656f299c7"
+        "sha256": "4bd45852f0845aefc982c881dddb721f5d07b4eb335a9d490ab4dee3521ffece"
       },
       {
         "repo_path": "Games/CrazyEights/crazyeights_config.lua",
         "install_path": "crazyeights_config.lua",
-        "sha256": "9c03971738e514008c5b757a5bb5218ba406552ef4c4e50101581b5d38a81b17",
+        "sha256": "cb22367a6496a1d05a2bd4eb0eda9f75d34d4abeaf68fed9cdaf4abc06355949",
         "preserve_existing": true
       },
       {

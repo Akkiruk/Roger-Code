@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-14T04:13:51Z",
+  "generated_at": "2026-04-14T04:16:10Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
+    "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
     "path": "System/installer.lua",
     "sha256": "8ca7f69efc66493473eaf18e0693cdaf22d1590d4432221c1b7c13985fcc2a2e"
   },
@@ -17,18 +17,18 @@
       "name": "Baccarat",
       "category": "Games",
       "description": "Single-seat baccarat with player, banker, and tie bets.",
-      "version": "1.2.70",
-      "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-      "package_hash": "a3c82c969d3597a4260196b04b2b4ce289265cf9bc15b07d9f9bc2ad37019c66",
+      "version": "1.2.71",
+      "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+      "package_hash": "aa04e9248377cf6872e0704c1788e86bee3bb0bb7fa31380465859db0c0a17c7",
       "spec_path": "programs/baccarat.json"
     },
     "blackjack": {
       "name": "Blackjack",
       "category": "Games",
       "description": "Single-seat blackjack with split, double, and configurable house rules.",
-      "version": "1.2.78",
-      "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-      "package_hash": "c75df17b5ebe83088e3cc6ead10e38ac6f324532bbfca82a247d173d68ebd694",
+      "version": "1.2.79",
+      "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+      "package_hash": "9b5a4c09d8e0f38ad7dbe51408d6a3d35f5ac8fcd5b087f9dcf98da8cb6d711f",
       "spec_path": "programs/blackjack.json"
     },
     "block_reader_vhcctweaks_probe": {
@@ -43,19 +43,19 @@
     "crazyeights": {
       "name": "CrazyEights",
       "category": "Games",
-      "description": "Fun-first Crazy Eights duel with best-of-three match payouts.",
-      "version": "1.0.24",
-      "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-      "package_hash": "9a5a6c616ec5f5fa3d8e227f960b9ae44ee7f2cf6187e9c0814cb3a50d39fad3",
+      "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
+      "version": "1.0.25",
+      "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+      "package_hash": "3d355c614c36a98782791fb7042a551c1176f9a034522f4773b416801104cf53",
       "spec_path": "programs/crazyeights.json"
     },
     "hilo": {
       "name": "HiLo",
       "category": "Games",
       "description": "Guess higher or lower across a streak-based payout ladder.",
-      "version": "1.0.79",
-      "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-      "package_hash": "0f504be6d9765970fd80bf3ee9c30a91ebf4fcdd14b6c4fc4deddd686f547380",
+      "version": "1.0.80",
+      "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+      "package_hash": "bd28cf55156e2ed312b7e631dcf70260fe30fd8c4c559d87a156d9eebdaeefc8",
       "spec_path": "programs/hilo.json"
     },
     "phone_os": {
@@ -143,9 +143,9 @@
       "name": "VideoPoker",
       "category": "Games",
       "description": "Jacks or Better draw poker with payout and tutorial screens.",
-      "version": "1.0.75",
-      "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-      "package_hash": "36dfef0c08f9ee2db5b9b19a61d47e0c1ba9c69e007aa8b6ef7d3f52cbbed3dd",
+      "version": "1.0.76",
+      "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+      "package_hash": "e523dd75323c821805be0339c3a589e95a28bfc6e138f29f44dc95d7e58280f6",
       "spec_path": "programs/videopoker.json"
     }
   }

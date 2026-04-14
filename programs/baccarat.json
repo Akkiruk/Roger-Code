@@ -7,12 +7,12 @@
     "description": "Single-seat baccarat with player, banker, and tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.70"
+    "version": "1.2.71"
   },
   "build": {
-    "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
-    "generated_at": "2026-04-14T04:13:51Z",
-    "package_hash": "a3c82c969d3597a4260196b04b2b4ce289265cf9bc15b07d9f9bc2ad37019c66"
+    "commit": "e6f8e1f7ad92952b80a79caffca7f996fe79bf16",
+    "generated_at": "2026-04-14T04:16:10Z",
+    "package_hash": "aa04e9248377cf6872e0704c1788e86bee3bb0bb7fa31380465859db0c0a17c7"
   },
   "install": {
     "preserve": [
@@ -42,7 +42,7 @@
       {
         "repo_path": "Shared/lib/card_anim.lua",
         "install_path": "lib/card_anim.lua",
-        "sha256": "88e058fc3008f515216f35969c68566c5fc67dfe4c6aace137b4a43459e0cb76"
+        "sha256": "d8e9b4bd2be412c65d14f447eddb1ab54743a82c0d510532c8c6ec5265d2d99f"
       },
       {
         "repo_path": "Shared/lib/card_rules.lua",
