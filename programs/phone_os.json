@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "fa494c66562c0a4606fabbe6cb5da78ad91bbe9c",
-    "generated_at": "2026-04-14T00:32:42Z",
-    "package_hash": "6e8c580c4c03e3f5e654ca87a7b28aa7e9a22cbdce193e5fa35ec16b10c24e0e"
+    "commit": "70c39b0e241cda6e4b46b47f343f37e33bd0e568",
+    "generated_at": "2026-04-14T00:59:28Z",
+    "package_hash": "95a892a141df5c9021cd23ffe570bc12b063a6907a4a311b951b7d88cd09bd6a"
   },
   "install": {
     "preserve": [
@@ -53,13 +53,13 @@
       {
         "repo_path": "Apps/PhoneOS/slots_config.lua",
         "install_path": "slots_config.lua",
-        "sha256": "b2a0179078f77dae306709be65bea487130646f258be4974e7c31ed5d705df4e",
+        "sha256": "a6d4c3ce7874a4f578c052be0d10a415e75d53bc6c24b91bd4101c7147ab7bf1",
         "preserve_existing": true
       },
       {
         "repo_path": "Apps/PhoneOS/blackjack_config.lua",
         "install_path": "blackjack_config.lua",
-        "sha256": "2834de08afd32dca309e84219130664e387c58419b6238c8e0b080bd40dd9086",
+        "sha256": "0d88cb2101720fb50c7bcc48c0bb263910b1769a75f3b427963b692a87a0d366",
         "preserve_existing": true
       },
       {
@@ -85,7 +85,7 @@
       {
         "repo_path": "Apps/PhoneOS/phoneos/slots_defaults.lua",
         "install_path": "phoneos/slots_defaults.lua",
-        "sha256": "bea29bc65850e50a1b504cd728d3b7d24fef446483434aa8073ea2037c76a2c9"
+        "sha256": "128ecb7479425d427388a9dac074ff6951c84931a691d86bc9dc8fc291606d22"
       },
       {
         "repo_path": "Apps/PhoneOS/phoneos/blackjack.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Apps/PhoneOS/phoneos/blackjack_defaults.lua",
         "install_path": "phoneos/blackjack_defaults.lua",
-        "sha256": "6d14b9e7558c5146cf830b031318dc1928a0329200ecb6d11f9b26378f22d92e"
+        "sha256": "578da90200ca603d4b73a20db1a372e73d85aa592ae8fee5a7d61c68c7e94531"
       },
       {
         "repo_path": "Apps/PhoneOS/phone_os.lua",
