@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with dealer and seat modes.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.20"
+    "version": "1.0.21"
   },
   "build": {
-    "commit": "6d1725d1759d03e6c8b5c401cbfd20fc63085193",
-    "generated_at": "2026-04-14T03:47:19Z",
-    "package_hash": "3770a228a022b50fa22fbcba4053b818e979f6306d9f225b95cfeb34020d10ab"
+    "commit": "39498c6960d9988ec4173e4e788af8315006adce",
+    "generated_at": "2026-04-14T03:51:32Z",
+    "package_hash": "1cffc8bc4e3e11e54c93c5a7b38eaccb1c1fd73c8901ead3c40096d274935d18"
   },
   "install": {
     "preserve": [
@@ -93,7 +93,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "e727f437a9d0885a25258f7bbf38fdf8e480c92fbb6e5aa2f212ad1bea781bbc"
+        "sha256": "b306d624f74c28117f2a93dfb456486ff1b6c8b8438d9c38e6a796220e74cec2"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -108,7 +108,7 @@
       {
         "repo_path": "System/roger_update.lua",
         "install_path": "rogerupdate.lua",
-        "sha256": "f731779c0ffa13d827ec325d32124d2cf0149f8b37a3b4bbd75432a3f97790d7"
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
       },
       {
         "repo_path": "System/roger_logs.lua",

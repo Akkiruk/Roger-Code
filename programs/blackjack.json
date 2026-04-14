@@ -7,12 +7,12 @@
     "description": "Single-seat blackjack with split, double, and configurable house rules.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.75"
+    "version": "1.2.76"
   },
   "build": {
-    "commit": "6d1725d1759d03e6c8b5c401cbfd20fc63085193",
-    "generated_at": "2026-04-14T03:47:19Z",
-    "package_hash": "b2da4a2d3c16418e8eb43f46f1f920dc3ceaa232f06b999a0d1f7fc9e52862fd"
+    "commit": "39498c6960d9988ec4173e4e788af8315006adce",
+    "generated_at": "2026-04-14T03:51:32Z",
+    "package_hash": "2fa4158b8a7bcdd0326b72fd9720c86b4795f704cb4badef6f8fe65a5b70c71c"
   },
   "install": {
     "preserve": [
@@ -172,7 +172,7 @@
       {
         "repo_path": "System/roger_update.lua",
         "install_path": "rogerupdate.lua",
-        "sha256": "f731779c0ffa13d827ec325d32124d2cf0149f8b37a3b4bbd75432a3f97790d7"
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
       },
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
@@ -187,7 +187,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "e727f437a9d0885a25258f7bbf38fdf8e480c92fbb6e5aa2f212ad1bea781bbc"
+        "sha256": "b306d624f74c28117f2a93dfb456486ff1b6c8b8438d9c38e6a796220e74cec2"
       },
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
