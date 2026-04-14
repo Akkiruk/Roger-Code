@@ -105,7 +105,7 @@ local function build(width, height, chipCount, scale)
     width = width,
     height = height,
     margin = scale.edgePad,
-    header = { x = 0, y = 0, w = width, h = scale:scaledY(24, 18, 28) },
+    header = { x = 0, y = 0, w = width, h = 0 },
     regions = {},
     hitRegions = {},
     scale = scale,
@@ -113,15 +113,11 @@ local function build(width, height, chipCount, scale)
 
   layout.compact = scale.compact or width < 200 or height < 120
 
-  if layout.compact then
-    layout.header.h = max(scale:scaledY(16, 13, 19), scale.lineHeight + scale.smallGap + 4)
-  end
-
-  local trackY = layout.header.h + scale.sectionGap
-  local trackH = layout.compact and scale:scaledY(18, 17, 20) or scale:scaledY(22, 19, 26)
+  local trackY = layout.margin
+  local trackH = 0
   local feltX = layout.margin
   local feltW = width - (layout.margin * 2)
-  local feltY = trackY + trackH + scale.sectionGap
+  local feltY = layout.margin
   local feltH = height - feltY - layout.margin
 
   local colGap = layout.compact and 1 or scale.smallGap

@@ -562,8 +562,6 @@ end
 
 local function drawBettingPage(screen, font, layout, state)
   screen:clear(colors.black)
-  drawBettingHeader(screen, font, layout, state)
-  drawBettingHistoryStrip(screen, font, layout, state)
   drawTable(screen, font, layout, state)
   drawSummaryBox(screen, font, layout, state)
   drawButtons(screen, font, layout, state)
