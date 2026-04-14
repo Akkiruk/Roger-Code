@@ -7,7 +7,46 @@
 --   local updater = require("lib.updater")
 --   updater.checkForUpdates()  -- silent, non-blocking on failure
 
-local logging = require("lib.roger_logging")
+local function openLogger(path, namespace)
+  local ok, logging = pcall(function()
+    return require("lib.roger_logging")
+  end)
+
+  if ok and type(logging) == "table" and type(logging.open) == "function" then
+    return logging.open(path, { namespace = namespace })
+  end
+
+  local function write(level, message)
+    local handle = fs.open(path, "a")
+    if not handle then
+      return false
+    end
+
+    handle.writeLine(
+      "[" .. os.epoch("local") .. "]"
+        .. " [" .. tostring(level or "INFO") .. "]"
+        .. " [" .. tostring(namespace or "Updater") .. "] "
+        .. tostring(message)
+    )
+    handle.close()
+    return true
+  end
+
+  return {
+    info = function(message)
+      return write("INFO", message)
+    end,
+    warn = function(message)
+      return write("WARN", message)
+    end,
+    error = function(message)
+      return write("ERROR", message)
+    end,
+    write = function(message, level)
+      return write(level, message)
+    end,
+  }
+end
 
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
@@ -43,7 +82,7 @@ local RESERVED_LOCAL_PATHS = {
   ["installer.lua"] = true,
   [UNLOCK_FILE] = true,
 }
-local logger = logging.open(LOG_FILE, { namespace = "Updater" })
+local logger = openLogger(LOG_FILE, "Updater")
 -----------------------------------------------------
 -- Helpers
 -----------------------------------------------------

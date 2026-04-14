@@ -1,7 +1,15 @@
 -- Universal Roger-Code log bundle command.
 -- Collects local logs into one or more text bundles and uploads them with pastebin.
 
-local logging = require("lib.roger_logging")
+local ok, logging = pcall(function()
+  return require("lib.roger_logging")
+end)
+
+if not ok or type(logging) ~= "table" then
+  printError("rogerlogs requires the newer shared logging library.")
+  print("Run 'installer update' or 'rogerupdate force' first, then try again.")
+  return
+end
 
 local function printUsage()
   print("Usage:")

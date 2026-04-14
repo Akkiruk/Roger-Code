@@ -2,10 +2,44 @@
 -- Forces immediate update checks, optional forced reinstalls, and local poll tuning.
 
 local updater = require("lib.updater")
-local logging = require("lib.roger_logging")
 
 local LOG_FILE = "roger_update.log"
-local logger = logging.open(LOG_FILE, { namespace = "RogerUpdate" })
+local function openLogger(path, namespace)
+  local ok, logging = pcall(function()
+    return require("lib.roger_logging")
+  end)
+
+  if ok and type(logging) == "table" and type(logging.open) == "function" then
+    return logging.open(path, { namespace = namespace })
+  end
+
+  local function write(level, message)
+    local handle = fs.open(path, "a")
+    if not handle then
+      return false
+    end
+
+    handle.writeLine(
+      "[" .. os.epoch("local") .. "]"
+        .. " [" .. tostring(level or "INFO") .. "]"
+        .. " [" .. tostring(namespace or "RogerUpdate") .. "] "
+        .. tostring(message)
+    )
+    handle.close()
+    return true
+  end
+
+  return {
+    info = function(message)
+      return write("INFO", message)
+    end,
+    error = function(message)
+      return write("ERROR", message)
+    end,
+  }
+end
+
+local logger = openLogger(LOG_FILE, "RogerUpdate")
 
 local function printUsage()
   print("Usage:")
