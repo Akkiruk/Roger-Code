@@ -7,12 +7,12 @@
     "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
     "source_root": "Utilities",
     "entrypoint": "block_reader_vhcctweaks_probe.lua",
-    "version": "1.0.9"
+    "version": "1.0.10"
   },
   "build": {
-    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
-    "generated_at": "2026-04-14T04:34:12Z",
-    "package_hash": "e25e0c880439e177db42861d8ddaeb3318733ab3a15b8894b9765166620dcfb1"
+    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
+    "generated_at": "2026-04-14T04:34:41Z",
+    "package_hash": "c6d83a842221a1ed13315ca6318c65f664a4b8b6b681c8b69ae612f5db52bec3"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
+        "sha256": "c71a0e77c99ab45fa69333e9d2d48a5b846b3b5d224c7712decfce38bdc6ac08"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "a960f29ff3fc89d6368f780117b2a8149cc3f9157d3bb648f7f20c510a9b6196"
+        "sha256": "8f18b8bd0cdb492f3d2a8d4c6c75a69db5227bcbb72197fc604771d7dd7df46f"
       },
       {
         "repo_path": "Utilities/block_reader_vhcctweaks_probe.lua",

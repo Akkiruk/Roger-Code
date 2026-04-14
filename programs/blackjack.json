@@ -7,12 +7,12 @@
     "description": "Single-seat blackjack with split, double, and configurable house rules.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.80"
+    "version": "1.2.81"
   },
   "build": {
-    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
-    "generated_at": "2026-04-14T04:34:12Z",
-    "package_hash": "15e03a65bd6af82d19b36b5089e4810d2c8f29aef6da75fb06563c25b8193dac"
+    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
+    "generated_at": "2026-04-14T04:34:41Z",
+    "package_hash": "93797e6354b5b3454288307270c3294758e5993f2f32207bc03771c3a667dcca"
   },
   "install": {
     "preserve": [
@@ -23,11 +23,6 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
       },
       {
         "repo_path": "Shared/lib/bedrock/runtime.lua",
@@ -62,7 +57,7 @@
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "0e32304c849449585bf6ad0c108b63ce0fa45da32663c98e12fd6833c7120540"
+        "sha256": "58c18279584e53ff747e3178cc8928b47bed0dacd20121aab8d30242a4c48dfb"
       },
       {
         "repo_path": "Shared/lib/casino_pages.lua",
@@ -80,19 +75,19 @@
         "sha256": "a90fd5b7433bba030e578eba885238b71b8140dd908aece1830e0468ea436225"
       },
       {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
-      },
-      {
         "repo_path": "Shared/lib/game_setup.lua",
         "install_path": "lib/game_setup.lua",
         "sha256": "0759c4f50ece5f4ccaeda2e3b40cc45e76beec1614fdfd7dbb812167571d205a"
       },
       {
-        "repo_path": "Shared/lib/idle_card_animation.lua",
-        "install_path": "lib/idle_card_animation.lua",
-        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
+        "repo_path": "Shared/lib/bedrock/renderer.lua",
+        "install_path": "lib/bedrock/renderer.lua",
+        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
+      },
+      {
+        "repo_path": "Shared/lib/idle_card_animation_presets.lua",
+        "install_path": "lib/idle_card_animation_presets.lua",
+        "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
       },
       {
         "repo_path": "Shared/lib/idle_screen.lua",
@@ -125,6 +120,11 @@
         "sha256": "f2286102f91ed771c442bb8a4719808ced0431ba23fe967d35243acd8a2561a1"
       },
       {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
         "repo_path": "Shared/lib/safe_runner.lua",
         "install_path": "lib/safe_runner.lua",
         "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
@@ -145,14 +145,14 @@
         "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
       },
       {
-        "repo_path": "Shared/lib/idle_card_animation_presets.lua",
-        "install_path": "lib/idle_card_animation_presets.lua",
-        "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
+        "repo_path": "Shared/lib/idle_card_animation.lua",
+        "install_path": "lib/idle_card_animation.lua",
+        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
       },
       {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
+        "repo_path": "Shared/lib/bedrock/layout.lua",
+        "install_path": "lib/bedrock/layout.lua",
+        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
       },
       {
         "repo_path": "Shared/lib/bedrock.lua",
@@ -160,9 +160,9 @@
         "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
       },
       {
-        "repo_path": "Shared/lib/alert.lua",
-        "install_path": "lib/alert.lua",
-        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
+        "repo_path": "Shared/lib/auth_wait_screen.lua",
+        "install_path": "lib/auth_wait_screen.lua",
+        "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -177,7 +177,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
+        "sha256": "c71a0e77c99ab45fa69333e9d2d48a5b846b3b5d224c7712decfce38bdc6ac08"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -187,7 +187,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "a960f29ff3fc89d6368f780117b2a8149cc3f9157d3bb648f7f20c510a9b6196"
+        "sha256": "8f18b8bd0cdb492f3d2a8d4c6c75a69db5227bcbb72197fc604771d7dd7df46f"
       },
       {
         "repo_path": "Games/Blackjack/blackjack.lua",
@@ -221,14 +221,14 @@
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
       },
       {
-        "repo_path": "Shared/lib/auth_wait_screen.lua",
-        "install_path": "lib/auth_wait_screen.lua",
-        "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
-      },
-      {
         "repo_path": "Games/Blackjack/clubs.nfp",
         "install_path": "clubs.nfp",
         "sha256": "ef99f3254d5c6b6fbf02d693b54c045f75ea8d140b85565d4983051408d3224d"
+      },
+      {
+        "repo_path": "Games/Blackjack/diamond.nfp",
+        "install_path": "diamond.nfp",
+        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
       },
       {
         "repo_path": "Games/Blackjack/diamonds.nfp",
@@ -286,9 +286,14 @@
         "sha256": "d46af23d468407b04765b1ab91ab7c6140c1c5f2321f76e838d8d9f095bfd36d"
       },
       {
-        "repo_path": "Games/Blackjack/diamond.nfp",
-        "install_path": "diamond.nfp",
-        "sha256": "cfca5a9ea7ad09accdf0113d19e0f748ed11182d214365fa0217fa521421c080"
+        "repo_path": "Shared/lib/alert.lua",
+        "install_path": "lib/alert.lua",
+        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
+      },
+      {
+        "repo_path": "Shared/lib/ui_touch.lua",
+        "install_path": "lib/ui_touch.lua",
+        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
       },
       {
         "repo_path": "Shared/lib/ui.lua",
@@ -331,6 +336,7 @@
       "lib.replay_prompt",
       "lib.roger_logging",
       "lib.round_settlement",
+      "lib.runtime_exit",
       "lib.safe_runner",
       "lib.sound",
       "lib.ui",

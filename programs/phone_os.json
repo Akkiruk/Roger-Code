@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.13"
+    "version": "1.0.14"
   },
   "build": {
-    "commit": "5c287cf4c4dc9be7ab55c42dbc8eb9279978d5ad",
-    "generated_at": "2026-04-14T04:34:12Z",
-    "package_hash": "fca9d374afa8b0bb3841fbdd0787d5b505403f0b8b4d603387b99bfce68a52ee"
+    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
+    "generated_at": "2026-04-14T04:34:41Z",
+    "package_hash": "fe495341108c1e726dbd61264b8635df1edbab2da48d16458033f4d1d2f27b94"
   },
   "install": {
     "preserve": [
@@ -24,6 +24,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
         "repo_path": "Shared/lib/monitor_scale.lua",
@@ -75,17 +80,17 @@
       {
         "repo_path": "Apps/PhoneOS/startup.lua",
         "install_path": "phone_os_startup.lua",
-        "sha256": "9599c94cb67b9f294d603e125f0b53306aa54b933b66c0fbd3aea5f6c54b0ae8"
-      },
-      {
-        "repo_path": "Shared/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "sha256": "b534086dd9e1f23d1cb0a88fc29ca01ad546a14f5b99ef2218ba0f43555ee48d"
       },
       {
         "repo_path": "Apps/PhoneOS/phoneos/ui.lua",
         "install_path": "phoneos/ui.lua",
         "sha256": "8dfed28ea10f6a7c20f9f7a15a6955e7edd739a261b975838ce7bb2d1a0dcb67"
+      },
+      {
+        "repo_path": "Apps/PhoneOS/phoneos/storage.lua",
+        "install_path": "phoneos/storage.lua",
+        "sha256": "7e1754145f56435707c47c604810421bb372b8d399c57d4ef470dec4b0c646ef"
       },
       {
         "repo_path": "Apps/PhoneOS/phoneos/slots.lua",
@@ -115,7 +120,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "a960f29ff3fc89d6368f780117b2a8149cc3f9157d3bb648f7f20c510a9b6196"
+        "sha256": "8f18b8bd0cdb492f3d2a8d4c6c75a69db5227bcbb72197fc604771d7dd7df46f"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -125,7 +130,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "82a718c570d79d46a905f5f09b734621d44f0f30afe38e52c284a0306bc5c363"
+        "sha256": "c71a0e77c99ab45fa69333e9d2d48a5b846b3b5d224c7712decfce38bdc6ac08"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -138,9 +143,9 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Apps/PhoneOS/phoneos/storage.lua",
-        "install_path": "phoneos/storage.lua",
-        "sha256": "7e1754145f56435707c47c604810421bb372b8d399c57d4ef470dec4b0c646ef"
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/sound.lua",
@@ -165,6 +170,7 @@
       "lib.monitor_scale",
       "lib.peripherals",
       "lib.roger_logging",
+      "lib.runtime_exit",
       "lib.sound",
       "lib.updater"
     ]
