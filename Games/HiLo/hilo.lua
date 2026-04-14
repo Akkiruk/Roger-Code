@@ -275,6 +275,40 @@ end
 -----------------------------------------------------
 -- Tutorial / How to play screens
 -----------------------------------------------------
+local function showPayoutTable()
+  local payoutPages = {}
+  local roundsPerPage = 5
+
+  for startIndex = 1, #MULTIPLIERS, roundsPerPage do
+    local endIndex = math.min(startIndex + roundsPerPage - 1, #MULTIPLIERS)
+    local lines = {
+      { text = "Cash out after any hit.",  color = colors.lightBlue },
+      { text = "Return includes your bet.", color = colors.lightGray },
+      { text = "", color = colors.white },
+    }
+
+    for roundIndex = startIndex, endIndex do
+      local multiplier = MULTIPLIERS[roundIndex]
+      local color = (roundIndex == #MULTIPLIERS) and colors.lime or colors.yellow
+      lines[#lines + 1] = {
+        text = roundIndex .. " CORRECT = x" .. tostring(multiplier),
+        color = color,
+      }
+    end
+
+    payoutPages[#payoutPages + 1] = {
+      title = "PAYOUTS",
+      lines = lines,
+    }
+  end
+
+  pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, payoutPages, {
+    centerX = centerX,
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
 local TUTORIAL_PAGES = {
   {
     title = "HOW TO PLAY",
@@ -361,6 +395,8 @@ local function preRoundMenu()
           func = function() chosen = "play" end },
       },
       {
+        { text = "PAYOUTS", color = colors.yellow,
+          func = function() chosen = "payouts" end },
         { text = "HOW TO PLAY", color = colors.lightBlue,
           func = function() chosen = "tutorial" end },
       },
@@ -384,6 +420,7 @@ local function preRoundMenu()
     end
 
     if chosen == "play" then return end
+    if chosen == "payouts" then showPayoutTable() end
     if chosen == "tutorial" then showTutorial() end
   end
 end
