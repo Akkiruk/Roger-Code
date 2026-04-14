@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.88"
+    "version": "1.0.89"
   },
   "build": {
-    "commit": "541f5b053ca419841c73d5343397b80a9ea659c4",
-    "generated_at": "2026-04-14T03:44:14Z",
-    "package_hash": "d69447e62446903007fefefc96be992a5bfd6db74892265d9a786c50bc582140"
+    "commit": "c2709b7b510cea2c66ac47926aac12b2c7bfea45",
+    "generated_at": "2026-04-14T03:46:46Z",
+    "package_hash": "3199a9cc67aba5d6c700f4f0e432428032051ca7ecb5a7d41caaabd0c0709977"
   },
   "install": {
     "preserve": [
@@ -52,7 +52,7 @@
       {
         "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "3eb3e317787ff3ad17e889014172140f8c10052fed8e2b839ee88726172e6bdb"
+        "sha256": "a90fd5b7433bba030e578eba885238b71b8140dd908aece1830e0468ea436225"
       },
       {
         "repo_path": "Shared/lib/game_setup.lua",

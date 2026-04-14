@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager startup entry point.",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.49"
+    "version": "1.0.50"
   },
   "build": {
-    "commit": "541f5b053ca419841c73d5343397b80a9ea659c4",
-    "generated_at": "2026-04-14T03:44:14Z",
-    "package_hash": "fcca29975b2dd7fbce9feeb20e8476bd08f441f2e795d64b4e36070fbc3e5abe"
+    "commit": "c2709b7b510cea2c66ac47926aac12b2c7bfea45",
+    "generated_at": "2026-04-14T03:46:46Z",
+    "package_hash": "534143cb73bfd7376965b11c27ae96b49457ec3b97f02738f4f9360a372c4e8e"
   },
   "install": {
     "preserve": [
@@ -123,7 +123,7 @@
       {
         "repo_path": "Shared/lib/currency.lua",
         "install_path": "lib/currency.lua",
-        "sha256": "3eb3e317787ff3ad17e889014172140f8c10052fed8e2b839ee88726172e6bdb"
+        "sha256": "a90fd5b7433bba030e578eba885238b71b8140dd908aece1830e0468ea436225"
       },
       {
         "repo_path": "System/roger_logs.lua",
