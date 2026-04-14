@@ -112,6 +112,21 @@ local function drawCenteredLine(text, y, color)
   ui.safeDrawText(screen, value, font, floor((width - textWidth) / 2), y, color or colors.white)
 end
 
+local function drawCenteredBadge(text, y, textColor, bgColor)
+  local value = tostring(text or "")
+  if value == "" then
+    return
+  end
+
+  local padX = scale:scaledX(4, 2, 6)
+  local badgeWidth = min(width, ui.getTextSize(value) + (padX * 2))
+  local badgeX = max(0, floor((width - badgeWidth) / 2))
+  local badgeY = max(0, y - 1)
+
+  screen:fillRect(badgeX, badgeY, badgeWidth, scale.lineHeight + 1, bgColor or colors.black)
+  ui.safeDrawText(screen, value, font, badgeX + padX, y, textColor or colors.white)
+end
+
 local function cardRank(cardID)
   return tostring(cardID or ""):sub(1, 1)
 end
@@ -139,11 +154,17 @@ local function suitShort(suit)
 end
 
 local function suitColor(suit)
-  if suit == "heart" or suit == "diamond" then
+  if suit == "heart" then
     return colors.red
   end
-  if suit == "club" or suit == "spade" then
+  if suit == "diamond" then
+    return colors.orange
+  end
+  if suit == "club" then
     return colors.lightGray
+  end
+  if suit == "spade" then
+    return colors.gray
   end
   return colors.white
 end
@@ -308,18 +329,18 @@ end
 
 local function getTurnPrompt(roundState)
   if roundState.skipSide == roundState.currentSide then
-    return "Skipped by an Ace!"
+    return "ACE SKIP"
   end
 
   if roundState.pendingDraw and roundState.pendingDraw > 0 then
-    return "Stack a 2 or take " .. tostring(roundState.pendingDraw) .. " cards"
+    return "STACK +2 OR TAKE " .. tostring(roundState.pendingDraw)
   end
 
   if roundState.currentSide == "player" then
-    return "Match suit, match rank, or play an 8"
+    return "YOUR TURN"
   end
 
-  return roundState.statusText or "Dealer thinking..."
+  return roundState.statusText or "DEALER TURN"
 end
 
 local function getHandSpread(count)
@@ -373,21 +394,18 @@ local function renderRound(roundState, opts)
 
   screen:clear(LO.TABLE_COLOR)
 
-  local scoreLabel = "Match " .. roundState.matchIndex .. "  P " .. roundState.playerRounds .. " - " .. roundState.dealerRounds .. " D"
+  local scoreLabel = "Score " .. roundState.playerRounds .. "-" .. roundState.dealerRounds
   ui.safeDrawText(screen, scoreLabel, font, 1, 0, colors.white)
 
-  local betLabel = "Ante: " .. currency.formatTokens(roundState.betAmount)
+  local betLabel = "Ante " .. currency.formatTokens(roundState.betAmount)
   local betWidth = ui.getTextSize(betLabel)
   ui.safeDrawText(screen, betLabel, font, width - betWidth - 1, 0, colors.yellow)
-
-  drawCenteredLine("CRAZY EIGHTS", scale.titleY, colors.yellow)
-  drawCenteredLine("Round " .. roundState.roundNumber .. " of 3", scale.subtitleY, colors.lightGray)
 
   local topCard = roundState.discardPile[#roundState.discardPile]
   local discardX, drawX = getCenterPileXOffsets()
   local pileY = centerY
 
-  renderPileBackdrop(discardX, pileY, colors.lightGray)
+  renderPileBackdrop(discardX, pileY, suitColor(roundState.activeSuit))
   if topCard then
     screen:drawSurface(cards.renderCard(topCard), discardX, pileY)
   end
@@ -396,19 +414,25 @@ local function renderRound(roundState, opts)
   screen:drawSurface(cardBack, drawX, pileY)
 
   local pileCaptionY = pileY + cardBack.height + scale.smallGap
-  local discardLabel = "Discard"
+  local discardLabel = "TOP"
   local discardWidth = ui.getTextSize(discardLabel)
   ui.safeDrawText(screen, discardLabel, font, discardX + floor((cardBack.width - discardWidth) / 2), pileCaptionY, colors.white)
 
-  local drawLabel = "Draw " .. tostring(#roundState.deck)
+  local drawLabel = "DRAW " .. tostring(#roundState.deck)
   local drawWidth = ui.getTextSize(drawLabel)
   ui.safeDrawText(screen, drawLabel, font, drawX + floor((cardBack.width - drawWidth) / 2), pileCaptionY, colors.white)
 
-  local activeLabel = "Suit: " .. suitName(roundState.activeSuit) .. "   Top: " .. displayCardLabel(topCard)
-  drawCenteredLine(activeLabel, pileY - scale.lineHeight - scale.smallGap, suitColor(roundState.activeSuit))
+  local activeLabel = "LIVE " .. string.upper(suitName(roundState.activeSuit))
+  drawCenteredBadge(activeLabel, max(scale.edgePad + 1, pileY - scale.lineHeight - scale.sectionGap), suitColor(roundState.activeSuit), colors.black)
 
   local prompt = options.statusText or getTurnPrompt(roundState)
-  drawCenteredLine(prompt, pileCaptionY + scale.lineHeight + scale.smallGap, colors.cyan)
+  local promptColor = colors.cyan
+  if roundState.pendingDraw and roundState.pendingDraw > 0 then
+    promptColor = colors.orange
+  elseif roundState.currentSide ~= "player" and not options.statusText then
+    promptColor = colors.lightGray
+  end
+  drawCenteredBadge(prompt, pileCaptionY + scale.lineHeight + scale.smallGap, promptColor, colors.black)
 
   local dealerY = getDealerHandY()
   local dealerPositions = getHandPositions(#roundState.dealerHand, dealerY)
@@ -421,9 +445,12 @@ local function renderRound(roundState, opts)
     end
   end
 
-  local dealerInfo = "Dealer: " .. tostring(#roundState.dealerHand) .. " cards"
+  local dealerInfo = "DEALER " .. tostring(#roundState.dealerHand)
+  if #roundState.dealerHand == 1 then
+    dealerInfo = dealerInfo .. " !"
+  end
   local dealerInfoWidth = ui.getTextSize(dealerInfo)
-  ui.safeDrawText(screen, dealerInfo, font, floor((width - dealerInfoWidth) / 2), max(scale.edgePad, dealerY - scale.lineHeight - scale.smallGap), colors.white)
+  ui.safeDrawText(screen, dealerInfo, font, floor((width - dealerInfoWidth) / 2), max(scale.edgePad, dealerY - scale.lineHeight - scale.smallGap), #roundState.dealerHand == 1 and colors.orange or colors.white)
 
   local playerY = getPlayerHandY()
   local playerPositions = getHandPositions(#roundState.playerHand, playerY)
@@ -445,14 +472,11 @@ local function renderRound(roundState, opts)
     screen:drawSurface(cards.renderCard(cardID), pos.x, drawY)
   end
 
-  local playerInfo = "You: " .. tostring(#roundState.playerHand) .. " cards  |  Hand value: " .. tostring(handScore(roundState.playerHand))
-  drawCenteredLine(playerInfo, max(scale.subtitleY, playerY - scale.lineHeight - scale.smallGap), colors.white)
-
+  local playerInfo = "YOU " .. tostring(#roundState.playerHand)
   if #roundState.playerHand == 1 then
-    drawCenteredLine("ONE CARD LEFT!", playerY - (scale.lineHeight * 2), colors.orange)
-  elseif #roundState.dealerHand == 1 then
-    drawCenteredLine("Dealer is down to one card!", playerY - (scale.lineHeight * 2), colors.orange)
+    playerInfo = playerInfo .. " !"
   end
+  drawCenteredLine(playerInfo, max(scale.edgePad, playerY - scale.lineHeight - scale.smallGap), #roundState.playerHand == 1 and colors.orange or colors.white)
 
   drawPlayerOverlay()
 end
@@ -472,10 +496,10 @@ local function chooseSuitPrompt(roundState, side)
   return replayPrompt.waitForChoice(screen, {
     render = function()
       renderRound(roundState, {
-        statusText = "Choose the new suit for your 8",
+        statusText = "CHOOSE SUIT",
       })
     end,
-    hint = "Pick the suit you want to control",
+    hint = "Pick the live suit.",
     hint_y = scale.footerButtonY - scale.lineHeight - scale.sectionGap,
     center_x = centerX,
     button_y = scale.footerButtonY - scale.buttonRowSpacing,
@@ -512,16 +536,16 @@ local function applyPlayedCard(roundState, side, cardID, chosenSuit, incomingDra
   if rank == "8" then
     roundState.activeSuit = chosenSuit or roundState.activeSuit
     sound.play(sound.SOUNDS.CRAZY_WILD or sound.SOUNDS.SUCCESS, 0.7)
-    roundState.statusText = (side == "player" and "You" or "Dealer") .. " changed the suit to " .. suitName(roundState.activeSuit)
+    roundState.statusText = "SUIT " .. string.upper(suitName(roundState.activeSuit))
   elseif rank == "2" then
     local pending = max(2, (incomingDraw or 0) + 2)
     roundState.pendingDraw = min(cfg.DRAW_CHAIN_CAP, pending)
     sound.play(sound.SOUNDS.CRAZY_DRAW or sound.SOUNDS.CARD_PLACE, 0.7)
-    roundState.statusText = (side == "player" and "Dealer" or "You") .. " must draw " .. tostring(roundState.pendingDraw)
+    roundState.statusText = (side == "player" and "DEALER" or "YOU") .. " MUST DRAW " .. tostring(roundState.pendingDraw)
   elseif rank == "A" then
     roundState.skipSide = otherSide(side)
     sound.play(sound.SOUNDS.CRAZY_SKIP or sound.SOUNDS.CARD_PLACE, 0.7)
-    roundState.statusText = (side == "player" and "Dealer" or "You") .. " gets skipped"
+    roundState.statusText = (side == "player" and "DEALER" or "YOU") .. " SKIPPED"
   else
     sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
   end
@@ -600,7 +624,7 @@ local function chooseDealerCardIndex(roundState)
   return bestIndex, bestSuitChoice
 end
 
-local function showTutorial(timeoutState)
+local function showTutorial()
   local tutorialPages = {
     {
       title = "Crazy Eights",
@@ -633,7 +657,6 @@ local function showTutorial(timeoutState)
 
   pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, tutorialPages, {
     centerX = centerX,
-    timeout_state = timeoutState,
     inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
     onTimeout = triggerInactivityTimeout,
   })
@@ -692,7 +715,7 @@ local function preRoundMenu()
       return
     end
     if chosen == "tutorial" then
-      showTutorial(timeoutState)
+      showTutorial()
     end
   end
 end
@@ -817,7 +840,7 @@ local function choosePlayableCard(roundState)
   while not choice do
     renderRound(roundState, {
       selectedIndex = selectedIndex,
-      statusText = roundState.pendingDraw > 0 and ("Stack a 2 or take " .. tostring(roundState.pendingDraw)) or "Select a highlighted card to play",
+      statusText = roundState.pendingDraw > 0 and ("STACK +2 OR TAKE " .. tostring(roundState.pendingDraw)) or "PICK A GREEN CARD",
     })
 
     ui.clearButtons()
@@ -829,7 +852,7 @@ local function choosePlayableCard(roundState)
               if selectedIndex and cardRank(roundState.playerHand[selectedIndex]) == "2" then
                 choice = { type = "play", index = selectedIndex }
               else
-                ui.displayCenteredMessage(screen, "Select a 2 to stack", colors.orange, 0.8)
+                ui.displayCenteredMessage(screen, "Pick a 2", colors.orange, 0.8)
               end
             end },
           { text = "TAKE " .. tostring(roundState.pendingDraw), color = colors.red, func = function()
@@ -840,11 +863,11 @@ local function choosePlayableCard(roundState)
     elseif #playable > 0 then
       buttonRows = {
         {
-          { text = "PLAY CARD", color = colors.lime, func = function()
+          { text = "PLAY", color = colors.lime, func = function()
               if selectedIndex and canPlayCard(roundState.playerHand[selectedIndex], roundState) then
                 choice = { type = "play", index = selectedIndex }
               else
-                ui.displayCenteredMessage(screen, "Pick a legal card", colors.orange, 0.8)
+                ui.displayCenteredMessage(screen, "Pick a green card", colors.orange, 0.8)
               end
             end },
         },
@@ -852,7 +875,7 @@ local function choosePlayableCard(roundState)
     else
       buttonRows = {
         {
-          { text = "DRAW 1", color = colors.cyan, func = function()
+          { text = "DRAW", color = colors.cyan, func = function()
               choice = { type = "draw" }
             end },
         },
@@ -912,10 +935,10 @@ local function choosePostDrawAction(roundState, drawnIndex)
     render = function()
       renderRound(roundState, {
         selectedIndex = drawnIndex,
-        statusText = "Your draw is playable. Play it or keep it?",
+        statusText = "PLAY DRAWN CARD?",
       })
     end,
-    hint = "Playing keeps the pressure on. Passing saves the card.",
+    hint = "Play now or keep it.",
     hint_y = scale.footerButtonY - scale.lineHeight - scale.sectionGap,
     center_x = centerX,
     button_y = scale.footerButtonY - scale.buttonRowSpacing,
@@ -928,8 +951,8 @@ local function choosePostDrawAction(roundState, drawnIndex)
     end,
     buttons = {
       {
-        { id = "play", text = "PLAY DRAWN", color = colors.lime },
-        { id = "keep", text = "PASS", color = colors.gray },
+        { id = "play", text = "PLAY IT", color = colors.lime },
+        { id = "keep", text = "KEEP", color = colors.gray },
       },
     },
   }) == "play"
@@ -938,7 +961,7 @@ end
 local function executePlayerTurn(roundState)
   if roundState.skipSide == "player" then
     roundState.skipSide = nil
-    roundState.statusText = "Your turn was skipped"
+    roundState.statusText = "YOU SKIPPED"
     return "skipped"
   end
 
@@ -951,7 +974,7 @@ local function executePlayerTurn(roundState)
       end
       sortHand(roundState.playerHand)
       roundState.pendingDraw = 0
-      roundState.statusText = "You took " .. tostring(cardsToDraw) .. " cards"
+      roundState.statusText = "YOU TOOK " .. tostring(cardsToDraw)
       sound.play(sound.SOUNDS.CRAZY_DRAW or sound.SOUNDS.FAIL, 0.7)
       return "drew_penalty"
     end
@@ -980,7 +1003,7 @@ local function executePlayerTurn(roundState)
 
   local drawnCard = dealCard(roundState, roundState.playerHand)
   local drawnIndex = #roundState.playerHand
-  roundState.statusText = "No play. You drew 1 card"
+  roundState.statusText = "YOU DREW 1"
   sound.play(sound.SOUNDS.CARD_PLACE, 0.6)
 
   if canPlayCard(drawnCard, roundState) then
@@ -1002,7 +1025,7 @@ local function executePlayerTurn(roundState)
 end
 
 local function executeDealerTurn(roundState)
-  roundState.statusText = "Dealer thinking..."
+  roundState.statusText = "DEALER TURN"
   renderRound(roundState, {
     statusText = roundState.statusText,
   })
@@ -1011,7 +1034,7 @@ local function executeDealerTurn(roundState)
 
   if roundState.skipSide == "dealer" then
     roundState.skipSide = nil
-    roundState.statusText = "Dealer turn skipped"
+    roundState.statusText = "DEALER SKIPPED"
     return "skipped"
   end
 
@@ -1030,7 +1053,7 @@ local function executeDealerTurn(roundState)
     end
     sortHand(roundState.dealerHand)
     roundState.pendingDraw = 0
-    roundState.statusText = "Dealer took " .. tostring(cardsToDraw) .. " cards"
+    roundState.statusText = "DEALER TOOK " .. tostring(cardsToDraw)
     sound.play(sound.SOUNDS.CRAZY_DRAW or sound.SOUNDS.FAIL, 0.7)
     return "drew_penalty"
   end
@@ -1045,7 +1068,7 @@ local function executeDealerTurn(roundState)
 
   dealCard(roundState, roundState.dealerHand)
   sortHand(roundState.dealerHand)
-  roundState.statusText = "Dealer drew 1 card"
+  roundState.statusText = "DEALER DREW 1"
   sound.play(sound.SOUNDS.CARD_PLACE, 0.6)
 
   local playAfterDrawIndex, playAfterDrawSuit = chooseDealerCardIndex(roundState)
