@@ -94,23 +94,8 @@ return {
     NUMBER_SIZE     = 5,
   },
 
-  -- Palette overrides
-  PALETTE = {
-    [colors.black]     = 0x101618,
-    [colors.gray]      = 0x2a363d,
-    [colors.lightGray] = 0xd6d0c2,
-    [colors.white]     = 0xf6f1e6,
-    [colors.green]     = 0x174a2d,
-    [colors.lime]      = 0x3d8f56,
-    [colors.yellow]    = 0xd5b46a,
-    [colors.orange]    = 0xb87a32,
-    [colors.red]       = 0x9b3d34,
-    [colors.brown]     = 0x6a4a2c,
-    [colors.cyan]      = 0x6ba8b0,
-    [colors.lightBlue] = 0x92aebe,
-    [colors.magenta]   = 0x9a6c7f,
-    [colors.purple]    = 0x735b7d,
-  },
+  -- Keep the default ComputerCraft palette for readability and reliable color contrast.
+  PALETTE = {},
 
   -- Exit codes (intentional, non-error shutdowns)
   EXIT_CODES = {

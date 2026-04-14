@@ -605,18 +605,6 @@ local function drawWheelShadow(screen, metrics)
   screen:fillEllipse(metrics.outerX + 2, metrics.outerY + 3, metrics.diameter, metrics.diameterY, colors.black)
 end
 
-local function drawWheelNumbers(screen, font, centerX, centerY, labelRadiusX, labelRadiusY, rotationAngle)
-  for index, number in ipairs(model.WHEEL_ORDER) do
-    local angle = getPocketAngle(index, rotationAngle)
-    local text = tostring(number)
-    local textWidth = ui.getTextSize(text)
-    local x, y = pointOnEllipse(centerX, centerY, labelRadiusX, labelRadiusY, angle)
-    x = floor(x - (textWidth / 2))
-    y = y - 3
-    ui.safeDrawText(screen, text, font, x, y, model.getNumberTextColor(number))
-  end
-end
-
 local function drawWheelSeparators(screen, centerX, centerY, innerRadiusX, innerRadiusY, outerRadiusX, outerRadiusY, rotationAngle)
   for index = 1, #model.WHEEL_ORDER do
     local angle = getPocketAngle(index, rotationAngle) + (POCKET_ANGLE / 2)
@@ -627,22 +615,11 @@ local function drawWheelSeparators(screen, centerX, centerY, innerRadiusX, inner
 end
 
 local function drawShowcaseBackdrop(screen, layout)
-  drawBackgroundBands(screen, layout.width, layout.height, {
-    colors.black,
-    colors.gray,
-    colors.gray,
-    colors.black,
-  })
-
-  local stripeGap = max(3, floor(layout.height / 10))
-  local y = 10
-  while y < layout.height - 10 do
-    screen:fillRect(0, y, layout.width, 1, colors.green)
-    y = y + stripeGap
-  end
-
-  screen:fillRect(0, 0, layout.width, 12, colors.black)
-  screen:fillRect(0, layout.height - 10, layout.width, 10, colors.black)
+  screen:fillRect(0, 0, layout.width, layout.height, colors.black)
+  screen:fillRect(0, 0, layout.width, 12, colors.gray)
+  screen:fillRect(0, layout.height - 10, layout.width, 10, colors.gray)
+  screen:fillRect(0, 12, layout.width, 1, colors.lightGray)
+  screen:fillRect(0, layout.height - 11, layout.width, 1, colors.lightGray)
 end
 
 local function getShowcaseWheelMetrics(layout)
@@ -717,7 +694,6 @@ end
 
 local function drawWheelBody(screen, font, centerX, centerY, metrics, rotationAngle, winningIndex)
   local diameter = metrics.diameter
-  local radius = metrics.radius
   local outerX = metrics.outerX
   local outerY = metrics.outerY
   local pocketOuter = metrics.pocketOuter
@@ -727,9 +703,9 @@ local function drawWheelBody(screen, font, centerX, centerY, metrics, rotationAn
   local pocketInnerX = metrics.pocketInnerX
   local pocketInnerOriginY = metrics.pocketInnerOriginY
 
-  screen:fillEllipse(outerX, outerY, diameter, metrics.diameterY, colors.brown)
-  screen:fillEllipse(outerX + 2, outerY + 2, max(1, diameter - 4), max(1, metrics.diameterY - 4), colors.yellow)
-  screen:fillEllipse(pocketOuterX, pocketOuterOriginY, (pocketOuter * 2) + 1, (metrics.pocketOuterY * 2) + 1, colors.gray)
+  screen:fillEllipse(outerX, outerY, diameter, metrics.diameterY, colors.gray)
+  screen:fillEllipse(outerX + 2, outerY + 2, max(1, diameter - 4), max(1, metrics.diameterY - 4), colors.lightGray)
+  screen:fillEllipse(pocketOuterX, pocketOuterOriginY, (pocketOuter * 2) + 1, (metrics.pocketOuterY * 2) + 1, colors.black)
 
   for index, number in ipairs(model.WHEEL_ORDER) do
     local segmentColor = number == 0 and colors.lime or (model.isRed(number) and colors.red or colors.black)
@@ -744,17 +720,16 @@ local function drawWheelBody(screen, font, centerX, centerY, metrics, rotationAn
     drawNormalizedArc(screen, pocketOuterX, pocketOuterOriginY, (pocketOuter * 2) + 1, (metrics.pocketOuterY * 2) + 1, startAngle, endAngle, colors.yellow)
   end
 
-  screen:fillEllipse(pocketInnerX, pocketInnerOriginY, (pocketInner * 2) + 1, (metrics.pocketInnerY * 2) + 1, colors.brown)
-  screen:fillEllipse(pocketInnerX + 3, pocketInnerOriginY + 3, max(1, (pocketInner * 2) - 5), max(1, (metrics.pocketInnerY * 2) - 5), colors.orange)
+  screen:fillEllipse(pocketInnerX, pocketInnerOriginY, (pocketInner * 2) + 1, (metrics.pocketInnerY * 2) + 1, colors.gray)
+  screen:fillEllipse(pocketInnerX + 3, pocketInnerOriginY + 3, max(1, (pocketInner * 2) - 5), max(1, (metrics.pocketInnerY * 2) - 5), colors.black)
   screen:fillEllipse(pocketInnerX + 8, pocketInnerOriginY + 8, max(1, (pocketInner * 2) - 15), max(1, (metrics.pocketInnerY * 2) - 15), colors.gray)
 
   drawWheelSeparators(screen, centerX, centerY, pocketInner + 1, metrics.pocketInnerY + 1, pocketOuter - 1, metrics.pocketOuterY - 1, rotationAngle)
-  drawWheelNumbers(screen, font, centerX, centerY, floor((pocketOuter + pocketInner) / 2), floor((metrics.pocketOuterY + metrics.pocketInnerY) / 2), rotationAngle)
 
-  local hubRadius = max(4, floor(radius * 0.12))
+  local hubRadius = max(5, floor(metrics.radius * 0.15))
   local hubRadiusY = scaleVisualY(hubRadius)
-  screen:fillEllipse(centerX - hubRadius, centerY - hubRadiusY, (hubRadius * 2) + 1, (hubRadiusY * 2) + 1, colors.yellow)
-  screen:fillEllipse(centerX - hubRadius + 1, centerY - hubRadiusY + 1, max(1, (hubRadius * 2) - 1), max(1, (hubRadiusY * 2) - 1), colors.gray)
+  screen:fillEllipse(centerX - hubRadius, centerY - hubRadiusY, (hubRadius * 2) + 1, (hubRadiusY * 2) + 1, colors.lightGray)
+  screen:fillEllipse(centerX - hubRadius + 1, centerY - hubRadiusY + 1, max(1, (hubRadius * 2) - 1), max(1, (hubRadiusY * 2) - 1), colors.black)
 end
 
 local function drawWheelBall(screen, centerX, centerY, metrics, ballAngle)
@@ -767,6 +742,34 @@ local function drawWheelBall(screen, centerX, centerY, metrics, ballAngle)
   screen:fillEllipse(ballX - ballRadius, ballY - ballRadiusY, (ballRadius * 2) + 1, (ballRadiusY * 2) + 1, colors.white)
 
   return ballTrackRadiusY, ballRadiusY
+end
+
+local function drawWheelReadout(screen, font, metrics, state)
+  local displayNumber = state.resultNumber or getTrackPointedNumber(state.wheelOffset)
+  if displayNumber == nil then
+    return
+  end
+
+  local badgeW = max(13, min(19, floor(metrics.radius * 0.9)))
+  local badgeH = 9
+  local badgeX = metrics.centerX - floor(badgeW / 2)
+  local badgeY = metrics.centerY - 4
+  local badgeFill = model.getNumberColor(displayNumber)
+  local badgeText = model.getNumberTextColor(displayNumber)
+  local labelColor = state.phase == "spinning" and colors.white or badgeFill
+
+  screen:fillRect(badgeX - 1, badgeY - 1, badgeW + 2, badgeH + 2, colors.lightGray)
+  screen:fillRect(badgeX, badgeY, badgeW, badgeH, badgeFill)
+  drawCenteredText(screen, font, { x = badgeX, y = badgeY, w = badgeW, h = badgeH }, tostring(displayNumber), badgeText, 0)
+
+  drawCenteredText(
+    screen,
+    font,
+    { x = metrics.centerX - 20, y = badgeY + badgeH + 1, w = 40, h = 7 },
+    state.phase == "spinning" and "POINTER" or model.getColorName(displayNumber),
+    labelColor,
+    0
+  )
 end
 
 local function buildWheelSpriteMetrics(metrics, spriteSize, center)
@@ -836,6 +839,7 @@ local function drawShowcaseWheel(screen, font, layout, state, metrics)
 
   drawWheelShadow(screen, metrics)
   drawWheelBody(screen, font, centerX, centerY, metrics, rotationAngle, winningIndex)
+  drawWheelReadout(screen, font, metrics, state)
   local ballTrackRadiusY, ballRadiusY = drawWheelBall(screen, centerX, centerY, metrics, state.ballAngle or TOP_ANGLE)
 
   drawWheelPointer(screen, centerX, centerY - ballTrackRadiusY - ballRadiusY - 2)
@@ -918,6 +922,7 @@ local function drawSpinningShowcasePage(surfaceApi, screen, font, layout, state)
       cache.wheelSprite.center,
       getWheelRotationAngle(state.wheelOffset)
     )
+    drawWheelReadout(screen, font, cache.metrics, state)
     drawWheelBall(screen, cache.metrics.centerX, cache.metrics.centerY, cache.metrics, state.ballAngle or TOP_ANGLE)
     if cache.needsFullOutput then
       screen:output()

@@ -49,15 +49,7 @@ local renderCurrent = nil
 recovery.configure(cfg.RECOVERY_FILE)
 recovery.setGame(cfg.GAME_NAME)
 
-local roulettePalette = {}
-for colorID, hex in pairs(gameSetup.DEFAULT_PALETTE) do
-  roulettePalette[colorID] = hex
-end
-if cfg.PALETTE then
-  for colorID, hex in pairs(cfg.PALETTE) do
-    roulettePalette[colorID] = hex
-  end
-end
+local roulettePalette = cfg.PALETTE or {}
 
 local env = gameSetup.init({
   monitorName = cfg.MONITOR,
