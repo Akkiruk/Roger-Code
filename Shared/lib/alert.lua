@@ -12,6 +12,7 @@
 -- if you need a specific recipient.
 
 local peripherals = require("lib.peripherals")
+local logging = require("lib.roger_logging")
 
 local DEBUG = settings.get("casino.debug") or false
 
@@ -19,6 +20,7 @@ local adminName  = nil  -- resolved lazily from ccvault host
 local gameName   = "Casino"
 local logFile    = "casino_error.log"
 local chatbox    = nil
+local logger     = logging.open(logFile, { namespace = gameName })
 
 -- Planned exit codes that should NOT trigger admin alerts
 local PLANNED_EXITS = {
@@ -35,6 +37,7 @@ local function configure(cfg)
   if cfg.adminName    then adminName = cfg.adminName    end
   if cfg.gameName     then gameName  = cfg.gameName     end
   if cfg.logFile      then logFile   = cfg.logFile      end
+  logger = logging.open(logFile, { namespace = gameName })
   if cfg.plannedExits then
     for _, code in ipairs(cfg.plannedExits) do
       PLANNED_EXITS[code] = true
@@ -52,11 +55,7 @@ end
 --- Write a line to the log file with a timestamp.
 -- @param msg string
 local function log(msg)
-  local f = fs.open(logFile, "a")
-  if f then
-    f.writeLine("[" .. os.epoch("local") .. "] " .. tostring(msg))
-    f.close()
-  end
+  logger.info(msg)
   if DEBUG then
     print(os.epoch("local"), "[alert] " .. tostring(msg))
   end
@@ -66,7 +65,9 @@ end
 local function resolveAdmin()
   if adminName then return adminName end
   if ccvault and type(ccvault.getHostName) == "function" then
-    local ok, name = pcall(ccvault.getHostName)
+    local ok, name = pcall(function()
+      return ccvault.getHostName()
+    end)
     if ok and name and type(name) == "string" and name ~= "" then
       adminName = name
     end
@@ -84,7 +85,7 @@ local function send(errorMsg)
     return
   end
 
-  log("ALERT: " .. tostring(errorMsg))
+  logger.error("ALERT: " .. tostring(errorMsg))
 
   local recipient = resolveAdmin()
   if not recipient then return end

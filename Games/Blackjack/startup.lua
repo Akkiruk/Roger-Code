@@ -18,8 +18,8 @@ local function drawOverlay(env, screen)
 end
 
 launcher.run({
-  startupName = "Casino Startup",
-  logFile = "debug.txt",
+  startupName = "Blackjack Startup",
+  logFile = "blackjack_error.log",
   monitorName = "right",
   cardAnimation = "random",
   program = "blackjack.lua",

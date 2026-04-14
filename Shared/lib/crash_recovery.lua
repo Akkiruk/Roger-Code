@@ -22,9 +22,12 @@ local RECOVERY_FILE = "game_recovery.dat"
 local LOG_FILE = "crash_recovery.log"
 local ERROR_LOG = "crash_recovery_error.log"
 local MAX_LOG_ENTRIES = 200
+local logging = require("lib.roger_logging")
 
 local gameName = nil    -- set by setGame()
 local playerName = nil  -- set by setPlayer()
+local auditLogger = logging.open(LOG_FILE, { namespace = "CrashRecovery" })
+local errorLogger = logging.open(ERROR_LOG, { namespace = "CrashRecovery" })
 
 local DEBUG = settings.get("casino.debug") or false
 
@@ -43,12 +46,13 @@ end
 -- @param path string  Log file path
 -- @param msg  string  Message to log
 local function logToFile(path, msg)
+  local targetLogger = auditLogger
+  if path == ERROR_LOG then
+    targetLogger = errorLogger
+  end
+
   local ok, err = pcall(function()
-    local f = fs.open(path, "a")
-    if f then
-      f.writeLine("[" .. os.epoch("local") .. "] " .. tostring(msg))
-      f.close()
-    end
+    targetLogger.info(msg)
   end)
   if not ok and DEBUG then
     print("[recovery] log write failed: " .. tostring(err))
@@ -57,7 +61,7 @@ end
 
 --- Log an error to the error log file.
 local function logError(msg)
-  logToFile(ERROR_LOG, msg)
+  errorLogger.error(msg)
   dbg("ERROR: " .. msg)
 end
 

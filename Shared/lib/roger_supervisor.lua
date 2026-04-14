@@ -1,3 +1,4 @@
+local logging = require("lib.roger_logging")
 local updater = require("lib.updater")
 
 local STATE_FILE = ".installed_program"
@@ -22,13 +23,10 @@ local LEGACY_MAIN_FILES = {
 }
 
 local M = {}
+local logger = logging.open(LOG_FILE, { namespace = "Supervisor" })
 
 local function logMessage(message)
-  local handle = fs.open(LOG_FILE, "a")
-  if handle then
-    handle.writeLine("[" .. os.epoch("local") .. "] " .. tostring(message))
-    handle.close()
-  end
+  logger.info(message)
 end
 
 local function readInstalledState()

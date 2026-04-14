@@ -1,24 +1,20 @@
 local constants = require("lib.vaultgear.constants")
+local logging = require("lib.roger_logging")
 
 local M = {}
 
 local logPath = constants.LOG_FILE
+local logger = logging.open(logPath, { namespace = "VaultGear" })
 
 function M.configure(path)
   if type(path) == "string" and path ~= "" then
     logPath = path
+    logger = logging.open(logPath, { namespace = "VaultGear" })
   end
 end
 
 function M.write(level, message)
-  local handle = fs.open(logPath, "a")
-  if not handle then
-    return false
-  end
-
-  handle.writeLine("[" .. os.epoch("local") .. "] [" .. tostring(level or "INFO") .. "] " .. tostring(message))
-  handle.close()
-  return true
+  return logger.write(message, level or "INFO")
 end
 
 function M.info(message)

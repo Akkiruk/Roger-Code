@@ -32,7 +32,9 @@ $PrimaryBranch = "main"
 $SchemaVersion = 1
 $InstallerPath = "System/installer.lua"
 $RuntimeStartupPath = "System/runtime_startup.lua"
+$RuntimeLogsCommandPath = "System/roger_logs.lua"
 $RuntimeSupervisorPath = "Shared/lib/roger_supervisor.lua"
+$RuntimeLoggingPath = "Shared/lib/roger_logging.lua"
 $RuntimeUpdaterPath = "Shared/lib/updater.lua"
 $DefaultUpdateInterval = 300
 
@@ -546,8 +548,11 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
         $autoRestart = Get-AutoRestartFlag -Category $category -Entrypoint $runtimeSourceEntrypoint -SourceRoot $sourceRoot
 
         Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeStartupPath -InstallPath "startup.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeStartupPath))
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeLogsCommandPath -InstallPath "rogerlogs.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeLogsCommandPath))
         Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeSupervisorPath -InstallPath "lib/roger_supervisor.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeSupervisorPath))
+        Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeLoggingPath -InstallPath "lib/roger_logging.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeLoggingPath))
         Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeUpdaterPath -InstallPath "lib/updater.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeUpdaterPath))
+        $libModules.Add("lib.roger_logging")
 
         foreach ($file in @($discovered.files)) {
             $repoPath = "$sourceRoot/$file"
@@ -684,9 +689,12 @@ foreach ($file in $standaloneUtilities | Sort-Object Name) {
     $installPathMap = @{}
 
     Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeStartupPath -InstallPath "startup.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeStartupPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeLogsCommandPath -InstallPath "rogerlogs.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeLogsCommandPath))
     Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeSupervisorPath -InstallPath "lib/roger_supervisor.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeSupervisorPath))
+    Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeLoggingPath -InstallPath "lib/roger_logging.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeLoggingPath))
     Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $RuntimeUpdaterPath -InstallPath "lib/updater.lua" -Sha256 (Get-FileSha256 -Path (Join-Path $RepoRoot $RuntimeUpdaterPath))
     Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $installFile.repo_path -InstallPath $installFile.install_path -Sha256 $installFile.sha256
+    $libModules.Add("lib.roger_logging")
 
     foreach ($libFile in $libClosure) {
         $libFullPath = Join-Path $SharedLibDir ($libFile.Replace('/', '\'))

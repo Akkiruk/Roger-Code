@@ -7,6 +7,8 @@
 --   local updater = require("lib.updater")
 --   updater.checkForUpdates()  -- silent, non-blocking on failure
 
+local logging = require("lib.roger_logging")
+
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
 local DEPLOY_BRANCH = "deploy-index"
@@ -41,16 +43,13 @@ local RESERVED_LOCAL_PATHS = {
   ["installer.lua"] = true,
   [UNLOCK_FILE] = true,
 }
+local logger = logging.open(LOG_FILE, { namespace = "Updater" })
 -----------------------------------------------------
 -- Helpers
 -----------------------------------------------------
 
 local function logMsg(msg)
-  local f = fs.open(LOG_FILE, "a")
-  if f then
-    f.writeLine("[" .. os.epoch("local") .. "] " .. tostring(msg))
-    f.close()
-  end
+  logger.info(msg)
 end
 
 local function download(url, headers)

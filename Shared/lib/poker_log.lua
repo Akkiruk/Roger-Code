@@ -1,4 +1,5 @@
 local M = {}
+local logging = require("lib.roger_logging")
 
 local function appendLine(path, message)
   assert(type(path) == "string", "path must be a string")
@@ -14,21 +15,33 @@ local function appendLine(path, message)
 end
 
 function M.write(path, message)
-  return appendLine(path, message)
+  return logging.write(path, message, {
+    level = "INFO",
+    namespace = path,
+  })
 end
 
 function M.new(path, echoToTerminal)
   assert(type(path) == "string", "path must be a string")
 
+  local baseLogger = logging.open(path, {
+    namespace = path,
+    echoToTerminal = echoToTerminal == true,
+  })
   local logger = {}
 
   logger.file = path
 
   logger.write = function(message)
-    appendLine(path, message)
-    if echoToTerminal then
-      print(tostring(message))
-    end
+    return baseLogger.info(message)
+  end
+
+   logger.info = function(message)
+    return baseLogger.info(message)
+  end
+
+  logger.error = function(message)
+    return baseLogger.error(message)
   end
 
   return logger
