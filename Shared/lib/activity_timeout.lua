@@ -11,7 +11,7 @@ end
 function M.resolveDuration(...)
   local count = select("#", ...)
   for index = 1, count do
-    local value = tonumber(select(index, ...))
+    local value = tonumber((select(index, ...)))
     if value and value > 0 then
       return math.floor(value)
     end
