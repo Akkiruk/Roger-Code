@@ -1,14 +1,10 @@
 return {
   DECK_COUNT = 1,
   HAND_SIZE = 7,
-  WIN_ROUNDS = 2,
   DRAW_CHAIN_CAP = 6,
 
   PAYOUTS = {
-    WIN_SWEEP = 1.52,
-    WIN_CLOSE = 1.42,
-    LOSS_CLOSE = 0.50,
-    LOSS_SWEEP = 0.38,
+    WIN = 1.90,
   },
 
   SCORE_VALUES = {

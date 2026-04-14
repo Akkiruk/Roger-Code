@@ -1,6 +1,6 @@
 -- crazyeights.lua
 -- Fun-first Crazy Eights duel for ComputerCraft casino monitors.
--- Best-of-three match with mild consolation on losses and player-friendly AI.
+-- Single-hand Crazy Eights with wild 8s, draw 2s, and a flat win payout.
 
 local cfg = require("crazyeights_config")
 
@@ -44,6 +44,7 @@ local pages = require("lib.casino_pages")
 local settlement = require("lib.round_settlement")
 
 local canReplayBet = nil
+local renderRound = nil
 
 recovery.configure(cfg.RECOVERY_FILE)
 recovery.setGame(cfg.GAME_NAME)
@@ -279,13 +280,6 @@ local function removeCardAt(hand, index)
   return removed
 end
 
-local function otherSide(side)
-  if side == "player" then
-    return "dealer"
-  end
-  return "player"
-end
-
 local function canPlayCard(cardID, roundState)
   if not cardID then
     return false
@@ -320,10 +314,6 @@ local function hasPlayableCard(hand, roundState)
 end
 
 local function getTurnPrompt(roundState)
-  if roundState.skipSide == roundState.currentSide then
-    return "ACE SKIP"
-  end
-
   if roundState.pendingDraw and roundState.pendingDraw > 0 then
     return "STACK +2 OR TAKE " .. tostring(roundState.pendingDraw)
   end
@@ -420,11 +410,78 @@ local function getCenterPileXOffsets()
   return centerX - cardBack.width - gap, centerX + gap
 end
 
+local function getDiscardPilePosition()
+  local discardX = getCenterPileXOffsets()
+  return discardX, centerY
+end
+
+local function getDrawPilePosition()
+  local _, drawX = getCenterPileXOffsets()
+  return drawX, centerY
+end
+
+local function getHandCardPosition(side, handCount, index)
+  local handY = side == "dealer" and getDealerHandY() or getPlayerHandY()
+  local positions = getHandPositions(handCount, handY)
+  return positions[index]
+end
+
+local function renderRoundAnimationFrame(roundState, opts)
+  return function()
+    renderRound(roundState, opts)
+  end
+end
+
+local function animatePlayToDiscard(roundState, side, cardID, fromIndex, opts)
+  if not cardID then
+    return
+  end
+  local fromPos = getHandCardPosition(side, (side == "dealer" and #roundState.dealerHand or #roundState.playerHand) + 1, fromIndex)
+  local discardX, discardY = getDiscardPilePosition()
+  cardAnim.slide(
+    cards.renderCard(cardID),
+    fromPos.x,
+    fromPos.y,
+    discardX,
+    discardY,
+    renderRoundAnimationFrame(roundState, opts),
+    {
+      playSound = false,
+      pauseAfter = 0.12,
+    }
+  )
+end
+
+local function animateDrawToHand(roundState, side, hand, cardID, opts)
+  if not cardID then
+    return
+  end
+  local countAfter = #hand + 1
+  local toPos = getHandCardPosition(side, countAfter, countAfter)
+  local drawX, drawY = getDrawPilePosition()
+  local cardSurface = side == "dealer" and cardBack or cards.renderCard(cardID)
+
+  cardAnim.slide(
+    cardSurface,
+    drawX,
+    drawY,
+    toPos.x,
+    toPos.y,
+    renderRoundAnimationFrame(roundState, opts),
+    {
+      playSound = false,
+      pauseAfter = 0.08,
+    }
+  )
+
+  hand[#hand + 1] = cardID
+end
+
 local function renderPileBackdrop(x, y, color)
   screen:fillRect(x - 1, y - 1, cardBack.width + 2, cardBack.height + 2, color)
 end
 
-local function renderRound(roundState, opts)
+renderRound = function(roundState, opts)
   local options = opts or {}
   local selectedIndex = options.selectedIndex
   local revealDealer = options.revealDealer == true
@@ -584,7 +641,6 @@ local function applyPlayedCard(roundState, side, cardID, chosenSuit, incomingDra
   roundState.activeSuit = chosenSuit or cardSuit(cardID)
   roundState.lastPlayedBy = side
   roundState.pendingDraw = 0
-  roundState.skipSide = nil
   roundState.statusText = nil
 
   local rank = cardRank(cardID)
@@ -597,10 +653,6 @@ local function applyPlayedCard(roundState, side, cardID, chosenSuit, incomingDra
     roundState.pendingDraw = min(cfg.DRAW_CHAIN_CAP, pending)
     sound.play(sound.SOUNDS.CRAZY_DRAW or sound.SOUNDS.CARD_PLACE, 0.7)
     roundState.statusText = (side == "player" and "DEALER" or "YOU") .. " MUST DRAW " .. tostring(roundState.pendingDraw)
-  elseif rank == "A" then
-    roundState.skipSide = otherSide(side)
-    sound.play(sound.SOUNDS.CRAZY_SKIP or sound.SOUNDS.CARD_PLACE, 0.7)
-    roundState.statusText = (side == "player" and "DEALER" or "YOU") .. " SKIPPED"
   else
     sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
   end
@@ -657,10 +709,6 @@ local function chooseDealerCardIndex(roundState)
       score = score + 18 + ((3 - min(opponentCount, 3)) * 8)
     end
 
-    if rank == "A" then
-      score = score + 10 + ((2 - min(opponentCount, 2)) * 6)
-    end
-
     if roundState.activeSuit == cardSuit(cardID) then
       score = score + 5
     end
@@ -684,10 +732,10 @@ local function showTutorial()
     {
       title = "Crazy Eights",
       lines = {
-        { text = "Best of 3 rounds.", color = colors.white },
+        { text = "One hand decides the game.", color = colors.white },
         { text = "Match suit, match rank, or play any 8.", color = colors.white },
-        { text = "First to empty their hand wins the round.", color = colors.white },
-        { text = "One ante covers the whole match.", color = colors.cyan },
+        { text = "First to empty their hand wins.", color = colors.white },
+        { text = "One ante covers the whole hand.", color = colors.cyan },
       },
     },
     {
@@ -695,17 +743,8 @@ local function showTutorial()
       lines = {
         { text = "8 = wild. Choose the next suit.", color = colors.yellow },
         { text = "2 = draw 2. Twos can stack.", color = colors.orange },
-        { text = "A = skip the next turn.", color = colors.lightBlue },
-        { text = "Draw chains cap at 6 cards.", color = colors.lightGray },
-      },
-    },
-    {
-      title = "Payouts",
-      lines = {
-        { text = "Win 2-0: 1.52x return", color = colors.lime },
-        { text = "Win 2-1: 1.42x return", color = colors.lime },
-        { text = "Lose 1-2: 0.50x back", color = colors.cyan },
-        { text = "Lose 0-2: 0.38x back", color = colors.cyan },
+        { text = "If you cannot play, draw 1.", color = colors.lightBlue },
+        { text = "Win the hand: 1.9x return.", color = colors.lime },
       },
     },
   }
@@ -719,8 +758,8 @@ local function preRoundMenu()
   while true do
     screen:clear(LO.TABLE_COLOR)
     drawCenteredLine("CRAZY EIGHTS", scale.titleY, colors.yellow)
-    drawCenteredLine("Fun-first card duel", scale.subtitleY, colors.lightGray)
-    drawCenteredLine("Wild 8s, Draw 2s, Ace skips", scale.subtitleY + scale.lineHeight + scale.smallGap, colors.cyan)
+    drawCenteredLine("Fast single-hand duel", scale.subtitleY, colors.lightGray)
+    drawCenteredLine("Wild 8s, Draw 2s, flat payout", scale.subtitleY + scale.lineHeight + scale.smallGap, colors.cyan)
 
     ui.clearButtons()
     local chosen = nil
@@ -750,8 +789,8 @@ local function betSelection()
   return betting.runBetScreen(screen, {
     maxBet = getMaxBet(),
     gameName = cfg.GAME_NAME,
-    confirmLabel = "MATCH",
-    title = "ANTE FOR MATCH",
+    confirmLabel = "HAND",
+    title = "ANTE FOR HAND",
     hostBalance = currency.getProtectedHostBalance(hostBankBalance),
     hostCoverageMultiplier = cfg.HOST_COVERAGE_MULT,
   })
@@ -773,20 +812,15 @@ canReplayBet = function(betAmount)
   return true
 end
 
-local function buildRoundState(matchState)
+local function buildHandState(betAmount)
   local roundState = {
-    betAmount = matchState.betAmount,
-    matchIndex = matchState.roundNumber,
-    roundNumber = matchState.roundNumber,
-    playerRounds = matchState.playerRounds,
-    dealerRounds = matchState.dealerRounds,
+    betAmount = betAmount,
     deck = buildFreshDeck(),
     discardPile = {},
     playerHand = {},
     dealerHand = {},
-    currentSide = matchState.startingSide,
+    currentSide = "player",
     pendingDraw = 0,
-    skipSide = nil,
     activeSuit = nil,
     activeRank = nil,
     statusText = nil,
@@ -815,7 +849,7 @@ local function buildRoundState(matchState)
   roundState.discardPile = { discard }
   roundState.activeRank = cardRank(discard)
   roundState.activeSuit = cardSuit(discard)
-  roundState.statusText = (matchState.startingSide == "player" and "YOU START" or "DEALER STARTS")
+  roundState.statusText = "YOU START"
 
   return roundState
 end
@@ -833,7 +867,7 @@ local function choosePlayableCard(roundState)
   while not choice do
     renderRound(roundState, {
       mode = roundState.pendingDraw > 0 and "stack_choice" or "play_choice",
-        actionRows = 1,
+      actionRows = 1,
       selectedIndex = selectedIndex,
       showPlayable = true,
       statusText = roundState.pendingDraw > 0 and ("PLAY A 2 OR TAKE " .. tostring(roundState.pendingDraw)) or nil,
@@ -931,18 +965,20 @@ local function choosePostDrawAction(roundState, drawnIndex)
 end
 
 local function executePlayerTurn(roundState)
-  if roundState.skipSide == "player" then
-    roundState.skipSide = nil
-    roundState.statusText = "YOU SKIPPED"
-    return "skipped"
-  end
-
   if roundState.pendingDraw > 0 then
     local choice = choosePlayableCard(roundState)
     if choice.type == "take_penalty" then
       local cardsToDraw = roundState.pendingDraw
       for _ = 1, cardsToDraw do
-        dealCard(roundState, roundState.playerHand)
+        ensureDeck(roundState)
+        local drawnCard = cards.deal(roundState.deck)
+        if drawnCard then
+          animateDrawToHand(roundState, "player", roundState.playerHand, drawnCard, {
+            mode = "stack_choice",
+            actionRows = 1,
+            statusText = "TAKE " .. tostring(cardsToDraw),
+          })
+        end
       end
       sortHand(roundState.playerHand)
       roundState.pendingDraw = 0
@@ -952,6 +988,11 @@ local function executePlayerTurn(roundState)
     end
 
     local cardID = removeCardAt(roundState.playerHand, choice.index)
+    animatePlayToDiscard(roundState, "player", cardID, choice.index, {
+      mode = "stack_choice",
+      actionRows = 1,
+      statusText = "PLAY A 2",
+    })
     local chosenSuit = nil
     if cardRank(cardID) == "8" then
       chosenSuit = chooseSuitPrompt(roundState, "player")
@@ -964,6 +1005,10 @@ local function executePlayerTurn(roundState)
   if hasPlayableCard(roundState.playerHand, roundState) then
     local choice = choosePlayableCard(roundState)
     local cardID = removeCardAt(roundState.playerHand, choice.index)
+    animatePlayToDiscard(roundState, "player", cardID, choice.index, {
+      mode = "play_choice",
+      actionRows = 1,
+    })
     local chosenSuit = nil
     if cardRank(cardID) == "8" then
       chosenSuit = chooseSuitPrompt(roundState, "player")
@@ -973,7 +1018,13 @@ local function executePlayerTurn(roundState)
     return "played"
   end
 
-  local drawnCard = dealCard(roundState, roundState.playerHand)
+  ensureDeck(roundState)
+  local drawnCard = cards.deal(roundState.deck)
+  animateDrawToHand(roundState, "player", roundState.playerHand, drawnCard, {
+    mode = "play_choice",
+    actionRows = 1,
+    statusText = "DRAW",
+  })
   local drawnIndex = #roundState.playerHand
   roundState.statusText = "YOU DREW 1"
   sound.play(sound.SOUNDS.CARD_PLACE, 0.6)
@@ -981,6 +1032,11 @@ local function executePlayerTurn(roundState)
   if canPlayCard(drawnCard, roundState) then
     if choosePostDrawAction(roundState, drawnIndex) then
       local cardID = removeCardAt(roundState.playerHand, drawnIndex)
+      animatePlayToDiscard(roundState, "player", cardID, drawnIndex, {
+        mode = "post_draw",
+        actionRows = 1,
+        statusText = "PLAY DRAWN CARD?",
+      })
       local chosenSuit = nil
       if cardRank(cardID) == "8" then
         chosenSuit = chooseSuitPrompt(roundState, "player")
@@ -1005,16 +1061,14 @@ local function executeDealerTurn(roundState)
   screen:output()
   os.sleep(0.8)
 
-  if roundState.skipSide == "dealer" then
-    roundState.skipSide = nil
-    roundState.statusText = "DEALER SKIPPED"
-    return "skipped"
-  end
-
   if roundState.pendingDraw > 0 then
     local chainIndex, chainSuit = chooseDealerCardIndex(roundState)
     if chainIndex and cardRank(roundState.dealerHand[chainIndex]) == "2" then
       local cardID = removeCardAt(roundState.dealerHand, chainIndex)
+      animatePlayToDiscard(roundState, "dealer", cardID, chainIndex, {
+        mode = "dealer_turn",
+        statusText = roundState.statusText,
+      })
       applyPlayedCard(roundState, "dealer", cardID, chainSuit, roundState.pendingDraw)
       sortHand(roundState.dealerHand)
       return "played"
@@ -1022,7 +1076,14 @@ local function executeDealerTurn(roundState)
 
     local cardsToDraw = roundState.pendingDraw
     for _ = 1, cardsToDraw do
-      dealCard(roundState, roundState.dealerHand)
+      ensureDeck(roundState)
+      local drawnCard = cards.deal(roundState.deck)
+      if drawnCard then
+        animateDrawToHand(roundState, "dealer", roundState.dealerHand, drawnCard, {
+          mode = "dealer_turn",
+          statusText = roundState.statusText,
+        })
+      end
     end
     sortHand(roundState.dealerHand)
     roundState.pendingDraw = 0
@@ -1034,21 +1095,34 @@ local function executeDealerTurn(roundState)
   local playIndex, chosenSuit = chooseDealerCardIndex(roundState)
   if playIndex then
     local cardID = removeCardAt(roundState.dealerHand, playIndex)
+    animatePlayToDiscard(roundState, "dealer", cardID, playIndex, {
+      mode = "dealer_turn",
+      statusText = roundState.statusText,
+    })
     applyPlayedCard(roundState, "dealer", cardID, chosenSuit, 0)
     sortHand(roundState.dealerHand)
     return "played"
   end
 
-  dealCard(roundState, roundState.dealerHand)
+  ensureDeck(roundState)
+  local drawnCard = cards.deal(roundState.deck)
+  animateDrawToHand(roundState, "dealer", roundState.dealerHand, drawnCard, {
+    mode = "dealer_turn",
+    statusText = roundState.statusText,
+  })
   sortHand(roundState.dealerHand)
   roundState.statusText = "DEALER DREW 1"
   sound.play(sound.SOUNDS.CARD_PLACE, 0.6)
 
   local playAfterDrawIndex, playAfterDrawSuit = chooseDealerCardIndex(roundState)
   if playAfterDrawIndex then
-    local drawnCard = roundState.dealerHand[playAfterDrawIndex]
-    if canPlayCard(drawnCard, roundState) then
+    local playedCard = roundState.dealerHand[playAfterDrawIndex]
+    if canPlayCard(playedCard, roundState) then
       local cardID = removeCardAt(roundState.dealerHand, playAfterDrawIndex)
+      animatePlayToDiscard(roundState, "dealer", cardID, playAfterDrawIndex, {
+        mode = "dealer_turn",
+        statusText = roundState.statusText,
+      })
       applyPlayedCard(roundState, "dealer", cardID, playAfterDrawSuit, 0)
       sortHand(roundState.dealerHand)
       return "played_after_draw"
@@ -1061,8 +1135,10 @@ end
 local function revealRoundResult(roundState, winner)
   local loser = winner == "player" and "dealer" or "player"
   local loserHand = loser == "player" and roundState.playerHand or roundState.dealerHand
-  local deadwood = handScore(loserHand)
-  local message = winner == "player" and ("Round win! Dealer left " .. tostring(deadwood) .. " points") or ("Dealer wins the round. You kept " .. tostring(deadwood) .. " points")
+  local cardsLeft = #loserHand
+  local message = winner == "player"
+    and ("Hand win! Dealer had " .. tostring(cardsLeft) .. " left")
+    or ("Dealer wins. You had " .. tostring(cardsLeft) .. " left")
   local color = winner == "player" and colors.lime or colors.orange
 
   renderRound(roundState, {
@@ -1074,7 +1150,7 @@ local function revealRoundResult(roundState, winner)
 end
 
 local function playRound(matchState)
-  local roundState = buildRoundState(matchState)
+  local roundState = buildHandState(matchState.betAmount)
   local discardX = getCenterPileXOffsets()
 
   cardAnim.slideIn(cards.renderCard(roundState.discardPile[1]), discardX, centerY, function()
@@ -1105,35 +1181,16 @@ local function playRound(matchState)
   end
 end
 
-local function resolveMatchPayout(betAmount, playerRounds, dealerRounds)
-  local returnMultiple = PAYOUTS.LOSS_SWEEP
-  local resultLabel = "Lost 0-2"
-  local color = colors.orange
-
-  if playerRounds > dealerRounds then
-    color = colors.lime
-    if dealerRounds == 0 then
-      returnMultiple = PAYOUTS.WIN_SWEEP
-      resultLabel = "Won 2-0"
-    else
-      returnMultiple = PAYOUTS.WIN_CLOSE
-      resultLabel = "Won 2-1"
-    end
-  else
-    if playerRounds == 1 then
-      returnMultiple = PAYOUTS.LOSS_CLOSE
-      resultLabel = "Lost 1-2"
-      color = colors.cyan
-    end
+local function resolveHandPayout(betAmount, winner)
+  if winner == "player" then
+    local totalReturn = roundedAmount(betAmount * PAYOUTS.WIN)
+    return totalReturn, totalReturn - betAmount, "You Win", colors.lime
   end
 
-  local totalReturn = roundedAmount(betAmount * returnMultiple)
-  local netChange = totalReturn - betAmount
-
-  return totalReturn, netChange, resultLabel, color
+  return 0, -betAmount, "Dealer Wins", colors.orange
 end
 
-local function waitForPostMatchChoice(betAmount, resultLabel, totalReturn, netChange)
+local function waitForPostHandChoice(betAmount, resultLabel, totalReturn, netChange)
   local signed = netChange > 0 and ("+" .. currency.formatTokens(netChange)) or (netChange < 0 and ("-" .. currency.formatTokens(abs(netChange))) or "even")
 
   return replayPrompt.waitForChoice(screen, {
@@ -1178,35 +1235,11 @@ local function waitForPostMatchChoice(betAmount, resultLabel, totalReturn, netCh
   })
 end
 
-local function playMatch(betAmount)
-  local matchState = {
-    betAmount = betAmount,
-    playerRounds = 0,
-    dealerRounds = 0,
-    roundNumber = 1,
-    startingSide = "player",
-  }
+local function playHand(betAmount)
+  recovery.saveBet(betAmount, "hand_start")
 
-  recovery.saveBet(betAmount, "match_start")
-
-  while matchState.playerRounds < cfg.WIN_ROUNDS and matchState.dealerRounds < cfg.WIN_ROUNDS and matchState.roundNumber <= 3 do
-    if matchState.roundNumber == 2 then
-      matchState.startingSide = "dealer"
-    else
-      matchState.startingSide = "player"
-    end
-
-    local winner = playRound(matchState)
-    if winner == "player" then
-      matchState.playerRounds = matchState.playerRounds + 1
-    else
-      matchState.dealerRounds = matchState.dealerRounds + 1
-    end
-
-    matchState.roundNumber = matchState.roundNumber + 1
-  end
-
-  local totalReturn, netChange, resultLabel, color = resolveMatchPayout(betAmount, matchState.playerRounds, matchState.dealerRounds)
+  local winner = playRound({ betAmount = betAmount })
+  local totalReturn, netChange, resultLabel, color = resolveHandPayout(betAmount, winner)
   local settlementOk = settlement.applyNetChange(netChange, {
     reason = "CrazyEights: " .. resultLabel,
     winReason = "CrazyEights: " .. resultLabel,
@@ -1215,7 +1248,7 @@ local function playMatch(betAmount)
   })
 
   if not settlementOk then
-    alert.send("CRITICAL: Failed to settle Crazy Eights match")
+    alert.send("CRITICAL: Failed to settle Crazy Eights hand")
   end
 
   recovery.clearBet()
@@ -1224,11 +1257,15 @@ local function playMatch(betAmount)
   screen:clear(LO.TABLE_COLOR)
   drawCenteredLine(resultLabel, scale.titleY, color)
   drawCenteredLine("Return: " .. currency.formatTokens(totalReturn), scale.subtitleY, colors.white)
-  drawCenteredLine("Rounds " .. tostring(matchState.playerRounds) .. " - " .. tostring(matchState.dealerRounds), scale.subtitleY + scale.lineHeight + scale.smallGap, colors.lightGray)
+  if winner == "player" then
+    drawCenteredLine("Flat win return: 1.9x", scale.subtitleY + scale.lineHeight + scale.smallGap, colors.lightGray)
+  else
+    drawCenteredLine("One hand. One result.", scale.subtitleY + scale.lineHeight + scale.smallGap, colors.lightGray)
+  end
   screen:output()
   os.sleep(LO.RESULT_PAUSE)
 
-  return waitForPostMatchChoice(betAmount, resultLabel, totalReturn, netChange)
+  return waitForPostHandChoice(betAmount, resultLabel, totalReturn, netChange)
 end
 
 sound.play(sound.SOUNDS.BOOT)
@@ -1260,7 +1297,7 @@ local function main()
     skipPreRoundMenu = false
 
     if betAmount and betAmount > 0 then
-      local roundChoice = playMatch(betAmount)
+      local roundChoice = playHand(betAmount)
       hostBankBalance = currency.getHostBalance()
       dbg("Host balance updated: " .. tostring(hostBankBalance) .. ", max bet " .. tostring(getMaxBet()))
       skipPreRoundMenu = (roundChoice == "play_again")

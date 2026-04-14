@@ -1,7 +1,7 @@
 -- manifest-entrypoint: true
 -- manifest-key: crazyeights
 -- manifest-name: CrazyEights
--- manifest-description: Fun-first Crazy Eights duel with best-of-three match payouts.
+-- manifest-description: Fast single-hand Crazy Eights duel with wild 8s and draw 2s.
 -- manifest-category: Games
 
 local launcher = require("lib.casino_launcher")
@@ -17,7 +17,7 @@ local function drawOverlay(env, screen)
   local sw = env.surface.getTextSize(subtitle, env.font)
   ui.safeDrawText(screen, subtitle, env.font, math.floor((env.width - sw) / 2), scale.idleSubtitleY, colors.white)
 
-  local accent = "Wild 8s. Draw 2s. Best of 3."
+  local accent = "Wild 8s. Draw 2s. One hand."
   local aw = env.surface.getTextSize(accent, env.font)
   ui.safeDrawText(screen, accent, env.font, math.floor((env.width - aw) / 2), scale.idleAccentY, colors.cyan)
 end

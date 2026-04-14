@@ -35,6 +35,38 @@ local function configure(opts)
   if opts.cardPause  then CARD_PAUSE  = opts.cardPause end
 end
 
+local function slide(cardImg, fromX, fromY, toX, toY, renderBgFn, opts)
+  assert(_screen, "Call card_anim.init() first")
+  local options = opts or {}
+  local steps = options.slideSteps or SLIDE_STEPS
+  local frameDelay = options.frameDelay or FRAME_DELAY
+  local pauseAfter = options.pauseAfter
+  if pauseAfter == nil then
+    pauseAfter = CARD_PAUSE
+  end
+
+  for i = 1, steps do
+    local t = i / steps
+    local eased = 1 - (1 - t) * (1 - t)
+    local cx = math.floor(fromX + (toX - fromX) * eased + 0.5)
+    local cy = math.floor(fromY + (toY - fromY) * eased + 0.5)
+    renderBgFn()
+    _screen:drawSurface(cardImg, cx, cy)
+    _screen:output()
+    if i < steps then
+      os.sleep(frameDelay)
+    end
+  end
+
+  if options.playSound ~= false then
+    sound.play(options.soundId or sound.SOUNDS.CARD_PLACE, options.soundVolume or 0.7)
+  end
+
+  if pauseAfter and pauseAfter > 0 then
+    os.sleep(pauseAfter)
+  end
+end
+
 --- Slide a card from off-screen (top-center) to (toX, toY) with ease-out.
 -- renderBgFn is called before every frame to redraw the static background
 -- to the screen buffer — it must NOT call screen:output().
@@ -46,27 +78,12 @@ local function slideIn(cardImg, toX, toY, renderBgFn)
   assert(_screen, "Call card_anim.init() first")
   local fromX = math.floor(_screen.width / 2) - 6
   local fromY = -_cardBack.height
-  local steps = SLIDE_STEPS
-
-  for i = 1, steps do
-    local t = i / steps
-    local eased = 1 - (1 - t) * (1 - t)
-    local cx = math.floor(fromX + (toX - fromX) * eased + 0.5)
-    local cy = math.floor(fromY + (toY - fromY) * eased + 0.5)
-    renderBgFn()
-    _screen:drawSurface(cardImg, cx, cy)
-    _screen:output()
-    if i < steps then
-      os.sleep(FRAME_DELAY)
-    end
-  end
-
-  sound.play(sound.SOUNDS.CARD_PLACE, 0.7)
-  os.sleep(CARD_PAUSE)
+  slide(cardImg, fromX, fromY, toX, toY, renderBgFn)
 end
 
 return {
   init      = init,
   configure = configure,
+  slide     = slide,
   slideIn   = slideIn,
 }
