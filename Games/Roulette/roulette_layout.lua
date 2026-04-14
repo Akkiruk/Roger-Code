@@ -97,6 +97,14 @@ local function getTableContentHeight(cellHeight, rowGap, outsideHeight)
     + outsideHeight
 end
 
+local function getSummaryHeight(scale, compact)
+  local lineGap = max(8, scale.lineHeight)
+  local detailLines = compact and 3 or 4
+  local headerHeight = 9
+  local bottomPadding = compact and 3 or 4
+  return headerHeight + (detailLines * lineGap) + bottomPadding
+end
+
 local function build(width, height, chipCount, scale)
   chipCount = chipCount or 4
   scale = scale or monitorScale.forSurface(width, height)
@@ -123,7 +131,10 @@ local function build(width, height, chipCount, scale)
   local maxCellW = max(10, scale:scaledX(layout.compact and 12 or 28, 10, layout.compact and 18 or 32))
   local buttonGap = scale.buttonRowGap
   local buttonH = scale.buttonHeight
-  local summaryH = layout.compact and scale:scaledY(18, 15, 20) or scale:scaledY(24, 22, 28)
+  local summaryH = max(
+    getSummaryHeight(scale, layout.compact),
+    layout.compact and scale:scaledY(18, 15, 20) or scale:scaledY(24, 22, 28)
+  )
   local contentAreaX = feltX + scale.sectionGap
   local contentAreaW = feltW - (scale.sectionGap * 2)
 

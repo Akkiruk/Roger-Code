@@ -395,13 +395,13 @@ local function drawSummaryBox(screen, font, layout, state)
     headline = "READY TO SPIN"
   end
 
-  drawCenteredText(screen, font, { x = box.x, y = box.y + 1, w = box.w, h = 7 }, headline, colors.white, 0)
+  drawCenteredText(screen, font, { x = box.x, y = box.y + 1, w = box.w, h = 8 }, headline, colors.white, 0)
 
   local selectedChip = (state.denominations or {})[state.selectedChipIndex or 1]
   local selectedChipValue = selectedChip and selectedChip.value or 0
   local contentX = box.x + 2
-  local rowY = box.y + 8
-  local lineGap = max(7, layout.scale.lineHeight - 1)
+  local rowY = box.y + 10
+  local lineGap = max(8, layout.scale.lineHeight)
   local lineW = max(1, box.w - 4)
 
   ui.safeDrawText(screen, fitTextToWidth("Chip " .. formatUiTokens(selectedChipValue), lineW), font, contentX, rowY, colors.lightGray)
