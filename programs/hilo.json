@@ -7,12 +7,12 @@
     "description": "Guess higher or lower across a streak-based payout ladder.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.78"
+    "version": "1.0.79"
   },
   "build": {
-    "commit": "7c4cfdc71067db95cb6cdb91ef898c2d6735604b",
-    "generated_at": "2026-04-14T04:07:07Z",
-    "package_hash": "9d728dde3757b216a987d1d53597932f619626dda017b5314bb373b0cf65e8f2"
+    "commit": "ff3b1cf7c5c60945129f4a4b29432cf3942d7174",
+    "generated_at": "2026-04-14T04:13:51Z",
+    "package_hash": "0f504be6d9765970fd80bf3ee9c30a91ebf4fcdd14b6c4fc4deddd686f547380"
   },
   "install": {
     "preserve": [
@@ -57,7 +57,7 @@
       {
         "repo_path": "Shared/lib/casino_launcher.lua",
         "install_path": "lib/casino_launcher.lua",
-        "sha256": "f4b4d87085ace92b8aeb6885d6d28201d721f76bc5afc2d73fb95f9363e0c6c6"
+        "sha256": "2af406eab177ed589c962ee5815c94d0089475f1f8d3b073ffdf3f58e710b006"
       },
       {
         "repo_path": "Shared/lib/casino_pages.lua",
@@ -172,7 +172,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "2a58c8c1e755bdcfb9e3bfab3209b951f1f569814da54ae7a43dc4f23a1e5100"
+        "sha256": "c596da80b4506aa9992c1fa5aaf231f9af7621c4533f3c8dafeab17d9506df5e"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -182,7 +182,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "ba472b6d95037eb225ab9031da841b0cb42206451c8b3d7af32720801eb15cec"
+        "sha256": "a960f29ff3fc89d6368f780117b2a8149cc3f9157d3bb648f7f20c510a9b6196"
       },
       {
         "repo_path": "Games/HiLo/hilo.lua",
