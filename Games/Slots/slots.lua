@@ -39,6 +39,7 @@ local alert      = require("lib.alert")
 local recovery   = require("lib.crash_recovery")
 local gameSetup  = require("lib.game_setup")
 local betting    = require("lib.betting")
+local pages      = require("lib.casino_pages")
 local replayPrompt = require("lib.replay_prompt")
 local settlement = require("lib.round_settlement")
 
@@ -105,6 +106,12 @@ local NEAR_MISS_CFG = cfg.NEAR_MISS or {}
 
 local function getMaxBet()
   return currency.getMaxBetLimit(hostBankBalance, cfg.MAX_BET_PERCENT, cfg.HOST_COVERAGE_MULT)
+end
+
+local function triggerInactivityTimeout()
+  sound.play(sound.SOUNDS.TIMEOUT)
+  os.sleep(0.5)
+  error(cfg.EXIT_CODES.INACTIVITY_TIMEOUT)
 end
 
 -----------------------------------------------------
@@ -374,6 +381,143 @@ local function drawMachine(result, highlights, statusText, currentBet, animation
   end
 
   screen:output()
+end
+
+-----------------------------------------------------
+-- Pre-round help screens
+-----------------------------------------------------
+local function showPayoutTable()
+  local lines = {
+    { text = "3 of a kind payouts", color = colors.yellow },
+    { spacer = true },
+  }
+
+  for _, sym in ipairs(SYMBOLS) do
+    local mult = PAYOUTS[sym.id]
+    if mult then
+      lines[#lines + 1] = {
+        text = sym.label .. sym.label .. sym.label .. " - " .. tostring(mult - 1) .. "x net",
+        color = sym.color or colors.white,
+      }
+    end
+  end
+
+  lines[#lines + 1] = { spacer = true }
+  lines[#lines + 1] = { text = "Paying pairs", color = colors.cyan }
+
+  for _, sym in ipairs(SYMBOLS) do
+    local mult = TWO_OF_A_KIND_PAYOUTS[sym.id]
+    if mult and mult > 0 then
+      local suffix = mult == 1 and "push" or tostring(mult - 1) .. "x net"
+      lines[#lines + 1] = {
+        text = sym.label .. sym.label .. " - " .. suffix,
+        color = sym.color or colors.white,
+      }
+    end
+  end
+
+  if cfg.ANY_TWO_CHERRY_MULT and cfg.ANY_TWO_CHERRY_MULT > 0 then
+    local cherrySuffix = cfg.ANY_TWO_CHERRY_MULT == 1 and "push" or tostring(cfg.ANY_TWO_CHERRY_MULT - 1) .. "x net"
+    lines[#lines + 1] = { spacer = true }
+    lines[#lines + 1] = { text = "Any 2 cherries - " .. cherrySuffix, color = colors.red }
+  end
+
+  lines[#lines + 1] = { spacer = true }
+  lines[#lines + 1] = { text = "Current max bet: " .. currency.formatTokens(getMaxBet()), color = colors.lightBlue }
+
+  pages.showStatsScreen(screen, font, scale, LO.TABLE_COLOR, "PAYOUTS", lines, {
+    centerX = floor(width / 2),
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
+local TUTORIAL_PAGES = {
+  {
+    title = "HOW TO PLAY",
+    lines = {
+      { text = "Pick a bet, then spin", color = colors.white },
+      { text = "the three reels.", color = colors.white },
+      { text = "Three matching symbols", color = colors.yellow },
+      { text = "pay the most.", color = colors.yellow },
+      { text = "Some pairs also pay", color = colors.cyan },
+      { text = "or push your spin.", color = colors.cyan },
+    },
+  },
+  {
+    title = "WHAT TO WATCH",
+    lines = {
+      { text = "777 is the jackpot.", color = colors.red },
+      { text = "Diamonds and bells", color = colors.white },
+      { text = "are the next best hits.", color = colors.white },
+      { text = "Fruit symbols land more", color = colors.lightGray },
+      { text = "often but pay less.", color = colors.lightGray },
+      { text = "House limits change with", color = colors.lightBlue },
+      { text = "the bankroll.", color = colors.lightBlue },
+    },
+  },
+  {
+    title = "EXTRA FEATURES",
+    lines = {
+      { text = "Winning spins can offer", color = colors.white },
+      { text = "a gamble round if enabled.", color = colors.white },
+      { text = (GAMBLE_CFG.ENABLED and "Gamble is currently ON." or "Gamble is currently OFF."), color = colors.yellow },
+      { text = "Auto-play follows the", color = colors.lightGray },
+      { text = "redstone trigger side.", color = colors.lightGray },
+      { text = "Two-of-a-kind wins are", color = colors.cyan },
+      { text = "highlighted after the spin.", color = colors.cyan },
+    },
+  },
+}
+
+local function showTutorial()
+  pages.showPagedLines(screen, font, scale, LO.TABLE_COLOR, TUTORIAL_PAGES, {
+    centerX = floor(width / 2),
+    inactivity_timeout = cfg.INACTIVITY_TIMEOUT,
+    onTimeout = triggerInactivityTimeout,
+  })
+end
+
+local function preRoundMenu()
+  while true do
+    screen:clear(LO.TABLE_COLOR)
+
+    local title = "SLOT MACHINE"
+    local tw = ui.getTextSize(title)
+    ui.safeDrawText(screen, title, font, floor((width - tw) / 2), scale.titleY, colors.yellow)
+
+    local subtitle = "Weighted reels and pair payouts"
+    local sw = ui.getTextSize(subtitle)
+    ui.safeDrawText(screen, subtitle, font, floor((width - sw) / 2), scale.subtitleY, colors.lightGray)
+
+    ui.clearButtons()
+    local chosen = nil
+
+    ui.layoutButtonGrid(screen, {
+      {
+        { text = "PLAY", color = colors.lime, func = function() chosen = "play" end },
+      },
+      {
+        { text = "PAYOUTS", color = colors.yellow, func = function() chosen = "payouts" end },
+        { text = "HOW TO PLAY", color = colors.lightBlue, func = function() chosen = "tutorial" end },
+      },
+    }, floor(width / 2), scale.menuY, scale.buttonRowSpacing, scale.buttonColGap)
+
+    screen:output()
+
+    ui.waitForButton(0, 0, {
+      inactivityTimeout = cfg.INACTIVITY_TIMEOUT,
+      onTimeout = triggerInactivityTimeout,
+    })
+
+    if chosen == "play" then
+      return
+    elseif chosen == "payouts" then
+      showPayoutTable()
+    elseif chosen == "tutorial" then
+      showTutorial()
+    end
+  end
 end
 
 -----------------------------------------------------
@@ -980,6 +1124,7 @@ local function main()
       end
     else
       drawPlayerOverlay()
+      preRoundMenu()
       local selectedBet = betSelection()
       if selectedBet and selectedBet > 0 then
         local currentBet = selectedBet
