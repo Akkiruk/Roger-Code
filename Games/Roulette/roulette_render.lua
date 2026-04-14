@@ -12,9 +12,11 @@ local TAU = pi * 2
 local TOP_ANGLE = -pi / 2
 local POCKET_ANGLE = TAU / #model.WHEEL_ORDER
 local spinFrameCache = nil
+local wheelSpriteCache = nil
 
 local function invalidateSpinFrameCache()
   spinFrameCache = nil
+  wheelSpriteCache = nil
 end
 
 local function normalizeAngle(angle)
@@ -589,6 +591,10 @@ local function drawWheelPointer(screen, centerX, topY)
   screen:fillRect(centerX - 1, topY - 1, 3, 1, colors.red)
 end
 
+local function drawWheelShadow(screen, outerX, outerY, diameter)
+  screen:fillEllipse(outerX + 2, outerY + 3, diameter, diameter, colors.black)
+end
+
 local function drawWheelNumbers(screen, font, centerX, centerY, labelRadius, rotationAngle)
   for index, number in ipairs(model.WHEEL_ORDER) do
     local angle = getPocketAngle(index, rotationAngle)
@@ -688,13 +694,9 @@ local function getShowcaseWheelMetrics(layout)
   }
 end
 
-local function drawShowcaseWheel(screen, font, layout, state, metrics)
-  metrics = metrics or getShowcaseWheelMetrics(layout)
-
+local function drawWheelBody(screen, font, centerX, centerY, metrics, rotationAngle, winningIndex)
   local diameter = metrics.diameter
   local radius = metrics.radius
-  local centerX = metrics.centerX
-  local centerY = metrics.centerY
   local outerX = metrics.outerX
   local outerY = metrics.outerY
   local pocketOuter = metrics.pocketOuter
@@ -703,10 +705,7 @@ local function drawShowcaseWheel(screen, font, layout, state, metrics)
   local pocketOuterY = metrics.pocketOuterY
   local pocketInnerX = metrics.pocketInnerX
   local pocketInnerY = metrics.pocketInnerY
-  local rotationAngle = getWheelRotationAngle(state.wheelOffset)
-  local winningIndex = state.resultNumber and model.getWheelIndex(state.resultNumber) or nil
 
-  screen:fillEllipse(outerX + 2, outerY + 3, diameter, diameter, colors.black)
   screen:fillEllipse(outerX, outerY, diameter, diameter, colors.brown)
   screen:fillEllipse(outerX + 2, outerY + 2, max(1, diameter - 4), max(1, diameter - 4), colors.yellow)
   screen:fillEllipse(pocketOuterX, pocketOuterY, (pocketOuter * 2) + 1, (pocketOuter * 2) + 1, colors.gray)
@@ -734,14 +733,81 @@ local function drawShowcaseWheel(screen, font, layout, state, metrics)
   local hubRadius = max(4, floor(radius * 0.12))
   screen:fillEllipse(centerX - hubRadius, centerY - hubRadius, (hubRadius * 2) + 1, (hubRadius * 2) + 1, colors.yellow)
   screen:fillEllipse(centerX - hubRadius + 1, centerY - hubRadius + 1, max(1, (hubRadius * 2) - 1), max(1, (hubRadius * 2) - 1), colors.gray)
+end
 
+local function drawWheelBall(screen, centerX, centerY, metrics, ballAngle)
   local ballRadius = metrics.ballRadius
   local ballTrackRadius = metrics.ballTrackRadius
-  local ballAngle = state.ballAngle or TOP_ANGLE
   local ballX = floor(centerX + (cos(ballAngle) * ballTrackRadius))
   local ballY = floor(centerY + (sin(ballAngle) * ballTrackRadius))
   screen:fillEllipse(ballX - ballRadius + 1, ballY - ballRadius + 1, (ballRadius * 2) + 1, (ballRadius * 2) + 1, colors.black)
   screen:fillEllipse(ballX - ballRadius, ballY - ballRadius, (ballRadius * 2) + 1, (ballRadius * 2) + 1, colors.white)
+
+  return ballTrackRadius, ballRadius
+end
+
+local function buildWheelSpriteMetrics(metrics, spriteSize, center)
+  return {
+    diameter = metrics.diameter,
+    radius = metrics.radius,
+    centerX = center,
+    centerY = center,
+    outerX = center - metrics.radius,
+    outerY = center - metrics.radius,
+    pocketOuter = metrics.pocketOuter,
+    pocketInner = metrics.pocketInner,
+    pocketOuterX = center - metrics.pocketOuter,
+    pocketOuterY = center - metrics.pocketOuter,
+    pocketInnerX = center - metrics.pocketInner,
+    pocketInnerY = center - metrics.pocketInner,
+    ballRadius = metrics.ballRadius,
+    ballTrackRadius = metrics.ballTrackRadius,
+    spriteSize = spriteSize,
+  }
+end
+
+local function getWheelSprite(surfaceApi, font, metrics)
+  if not surfaceApi then
+    return nil
+  end
+
+  local spriteSize = metrics.diameter + 6
+  local center = floor(spriteSize / 2)
+
+  if wheelSpriteCache
+    and wheelSpriteCache.size == spriteSize
+    and wheelSpriteCache.diameter == metrics.diameter then
+    return wheelSpriteCache
+  end
+
+  local spriteMetrics = buildWheelSpriteMetrics(metrics, spriteSize, center)
+  local sprite = surfaceApi.create(spriteSize, spriteSize)
+  drawWheelBody(sprite, font, center, center, spriteMetrics, 0, nil)
+
+  wheelSpriteCache = {
+    size = spriteSize,
+    diameter = metrics.diameter,
+    center = center,
+    surface = sprite,
+  }
+
+  return wheelSpriteCache
+end
+
+local function drawShowcaseWheel(screen, font, layout, state, metrics)
+  metrics = metrics or getShowcaseWheelMetrics(layout)
+
+  local centerX = metrics.centerX
+  local centerY = metrics.centerY
+  local outerX = metrics.outerX
+  local outerY = metrics.outerY
+  local diameter = metrics.diameter
+  local rotationAngle = getWheelRotationAngle(state.wheelOffset)
+  local winningIndex = state.resultNumber and model.getWheelIndex(state.resultNumber) or nil
+
+  drawWheelShadow(screen, outerX, outerY, diameter)
+  drawWheelBody(screen, font, centerX, centerY, metrics, rotationAngle, winningIndex)
+  local ballTrackRadius, ballRadius = drawWheelBall(screen, centerX, centerY, metrics, state.ballAngle or TOP_ANGLE)
 
   drawWheelPointer(screen, centerX, centerY - ballTrackRadius - ballRadius - 2)
 end
@@ -780,14 +846,17 @@ local function drawShowcaseFooter(screen, font, layout, state)
   drawRightText(screen, font, "Session " .. (state.sessionProfitText or "0"), layout.width - 2, footerY, getToneColor(state.sessionProfitTone), floor(layout.width * 0.68))
 end
 
-local function buildSpinFrameCache(screen, font, layout, state)
+local function buildSpinFrameCache(surfaceApi, screen, font, layout, state)
   local metrics = getShowcaseWheelMetrics(layout)
+  local wheelSprite = getWheelSprite(surfaceApi, font, metrics)
 
   screen:clear(colors.black)
   drawShowcaseBackdrop(screen, layout)
   drawShowcaseHeader(screen, font, layout, state)
   drawShowcaseHistory(screen, font, layout, state)
   drawShowcaseFooter(screen, font, layout, state)
+  drawWheelShadow(screen, metrics.outerX, metrics.outerY, metrics.diameter)
+  drawWheelPointer(screen, metrics.centerX, metrics.centerY - metrics.ballTrackRadius - metrics.ballRadius - 2)
 
   spinFrameCache = {
     width = layout.width,
@@ -795,29 +864,53 @@ local function buildSpinFrameCache(screen, font, layout, state)
     base = screen:copy(),
     wheelRect = metrics.dynamicRect,
     metrics = metrics,
+    wheelSprite = wheelSprite,
+    needsFullOutput = true,
   }
 
   return spinFrameCache
 end
 
-local function drawSpinningShowcasePage(screen, font, layout, state)
+local function drawSpinningShowcasePage(surfaceApi, screen, font, layout, state)
   local cache = spinFrameCache
   if not cache or cache.width ~= layout.width or cache.height ~= layout.height then
-    cache = buildSpinFrameCache(screen, font, layout, state)
-    drawShowcaseWheel(screen, font, layout, state, cache.metrics)
-    screen:output()
-    return
+    cache = buildSpinFrameCache(surfaceApi, screen, font, layout, state)
   end
 
   local wheelRect = cache.wheelRect
   screen:drawSurface(cache.base, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
+
+  if cache.wheelSprite then
+    screen:drawSurfaceRotated(
+      cache.wheelSprite.surface,
+      cache.metrics.centerX,
+      cache.metrics.centerY,
+      cache.wheelSprite.center,
+      cache.wheelSprite.center,
+      getWheelRotationAngle(state.wheelOffset)
+    )
+    drawWheelBall(screen, cache.metrics.centerX, cache.metrics.centerY, cache.metrics, state.ballAngle or TOP_ANGLE)
+    if cache.needsFullOutput then
+      screen:output()
+      cache.needsFullOutput = false
+    else
+      screen:output(nil, wheelRect.x, wheelRect.y, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
+    end
+    return
+  end
+
   drawShowcaseWheel(screen, font, layout, state, cache.metrics)
-  screen:output(nil, wheelRect.x, wheelRect.y, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
+  if cache.needsFullOutput then
+    screen:output()
+    cache.needsFullOutput = false
+  else
+    screen:output(nil, wheelRect.x, wheelRect.y, wheelRect.x, wheelRect.y, wheelRect.w, wheelRect.h)
+  end
 end
 
-local function drawShowcasePage(screen, font, layout, state)
+local function drawShowcasePage(surfaceApi, screen, font, layout, state)
   if state.phase == "spinning" then
-    drawSpinningShowcasePage(screen, font, layout, state)
+    drawSpinningShowcasePage(surfaceApi, screen, font, layout, state)
     return
   end
 
@@ -838,7 +931,12 @@ local function draw(screen, font, layout, state)
     return
   end
 
-  drawShowcasePage(screen, font, layout, state)
+  local surfaceApi = nil
+  if type(state) == "table" then
+    surfaceApi = state.surfaceApi
+  end
+
+  drawShowcasePage(surfaceApi, screen, font, layout, state)
 end
 
 return {

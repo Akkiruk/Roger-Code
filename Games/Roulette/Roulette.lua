@@ -75,6 +75,7 @@ alert.addPlannedExits({
 })
 
 local screen = env.screen
+local surfaceApi = env.surface
 local width = env.width
 local height = env.height
 local font = env.font
@@ -94,6 +95,7 @@ sessionPlayer = currency.getAuthenticatedPlayerName() or currency.getPlayerName(
 recovery.setPlayer(sessionPlayer or "Unknown")
 
 local state = {
+  surfaceApi = surfaceApi,
   phase = "betting",
   currentPlayer = sessionPlayer or env.currentPlayer or "Unknown",
   statusText = "Pick a chip, then tap the table.",

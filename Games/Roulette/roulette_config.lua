@@ -23,8 +23,8 @@ return {
   SPIN_MIN_DELAY      = 0.010,  -- fastest per-number delay during the early spin
   SPIN_MAX_DELAY      = 0.055,  -- slowest per-number delay right before the final stop
   SPIN_SETTLE_DELAY   = 0.030,  -- bounce delay for the final lock-in
-  SPIN_FAST_SUBFRAMES = 1,      -- early spin interpolation steps per number
-  SPIN_SLOW_SUBFRAMES = 2,      -- late spin interpolation steps per number
+  SPIN_FAST_SUBFRAMES = 2,      -- early spin interpolation steps per number
+  SPIN_SLOW_SUBFRAMES = 4,      -- late spin interpolation steps per number
   SPIN_SLOWDOWN_AT    = 0.78,   -- progress point where the wheel starts using extra interpolation
   RESULT_PAUSE        = 2.4,    -- seconds to display result
   HISTORY_LENGTH      = 10,
