@@ -48,7 +48,9 @@ function M.init(cfg)
       local m = peripheral.wrap(name)
       local w, h = 0, 0
       if m and m.getSize then w, h = m.getSize() end
-      monitors[#monitors + 1] = { name = name, obj = m, area = w * h }
+      -- rank by physical size: a real monitor remembers the text scale of earlier programs, so characters alone mislead
+      local scale = (m and m.getTextScale and m.getTextScale()) or 1
+      monitors[#monitors + 1] = { name = name, obj = m, area = w * h * scale * scale }
     elseif t == "speaker" and not state.speakerName then
       state.speakerName = name
     elseif t == "playerDetector" and not state.detector then
@@ -154,11 +156,6 @@ local function enqueue(item)
   if #outbox >= OUTBOX_LIMIT then table.remove(outbox, 1) end
   outbox[#outbox + 1] = item
   return true
-end
-
---- Say something in public chat (queued).
-function M.say(message)
-  return enqueue({ message = message })
 end
 
 --- Whisper to one player (queued).

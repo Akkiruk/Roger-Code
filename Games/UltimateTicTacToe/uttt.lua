@@ -19,6 +19,7 @@ local TICK = 0.1
 local AI_THINK_MS = 700       -- minimum "thinking" time so a computer move does not feel instant
 local FLASH_MS = 350
 local TOAST_MS = 4000
+local FINAL_HOLD_MS = 3500    -- how long the finished board stays up before the results page
 
 -- ------------------------------------------------------------------ logging
 
@@ -84,6 +85,17 @@ local function slotLabel(slot)
 end
 
 local function isHuman(slot) return slot and not slot.cpu and not slot.guest end
+
+--- Whisper a message to each human in the list, once per name. Nothing is ever sent to public chat.
+local function tellPlayers(slots, text)
+  local seen = {}
+  for _, slot in ipairs(slots) do
+    if isHuman(slot) and not seen[slot.name] then
+      seen[slot.name] = true
+      hw.tell(slot.name, text)
+    end
+  end
+end
 
 local function setupDisplay()
   local mon, monName = hw.monitor()
@@ -191,7 +203,7 @@ startGame = function(red, blue, opts)
     tostring(blue.cpu), first, S.game.timer, tostring(S.game.state.tiebreak)))
   saveGame()
   if store:setting("announce") and (isHuman(red) or isHuman(blue)) then
-    hw.say(string.format("%s (Red) vs %s (Blue) - Ultimate Tic-Tac-Toe is on!", red.name, blue.name))
+    tellPlayers({ red, blue }, string.format("%s (Red) vs %s (Blue) - Ultimate Tic-Tac-Toe is on!", red.name, blue.name))
   end
   S.dirty = true
 end
@@ -233,7 +245,10 @@ finishGame = function(reason)
     forfeit = s.forfeit, summary = summary, rankBefore = before, rankAfter = after, reason = reason, state = s,
     ranked = summary.ranked, guest = anyGuest, at = utcMs(),
   }
-  S.view = "result"
+  -- show the finished board and the winning line first, then the results page
+  S.finalGame = g
+  S.finalUntil = nowMs() + FINAL_HOLD_MS
+  S.view = "final"
   S.toast = nil
   S.lastTouch = nowMs()
   clearSavedGame()
@@ -270,9 +285,9 @@ finishGame = function(reason)
       local sw = summary[winner == 1 and "red" or "blue"]
       if summary.ranked and sw and sw.elo then text = text .. string.format(" [%d %s]", sw.elo, signed(sw.delta or 0)) end
     end
-    hw.say(text)
+    tellPlayers({ g.red, g.blue }, text)
     for _, a in ipairs(summary.achievements or {}) do
-      hw.say(a.player .. " unlocked '" .. a.name .. "'!")
+      hw.tell(a.player, "You unlocked '" .. a.name .. "'!")
     end
   end
   log(string.format("game end: winner=%d moves=%d boards=%d-%d forfeit=%s ranked=%s", winner, s.moves, s.boards[1], s.boards[2], tostring(s.forfeit), tostring(summary.ranked)))
@@ -762,8 +777,23 @@ local function drawPause(g)
   ui.button("abandon", x + 3, y + 23, w - 6, 8, "ABANDON (NO RATING CHANGE)", C.warn, { small = true })
 end
 
-local function drawGame()
-  local g = S.game
+--- The headline under the final board: who won and exactly why (which boards formed the line).
+local function finalLine(g)
+  local s = g.state
+  local r = S.result
+  if s.winner == 3 then return "DRAW - no boards left to play", C.hi end
+  local w = s.winner == 1 and g.red or g.blue
+  local color = s.winner == 1 and C.red or C.blue
+  if s.forfeit then return w.name .. " WINS by forfeit", color end
+  if s.metaLine then
+    local l = rules.LINES[s.metaLine]
+    return string.format("%s WINS - boards %d, %d, %d in a line", w.name, l[1], l[2], l[3]), color
+  end
+  return string.format("%s WINS - most boards (%d-%d)", w.name, s.boards[s.winner], s.boards[3 - s.winner]), color
+end
+
+local function drawGame(gameArg, final)
+  local g = gameArg or S.game
   local s = g.state
   local L = env.L
   paintBackground()
@@ -791,8 +821,13 @@ local function drawGame()
   local hint = (g.hint and nowMs() < g.hintUntil) and g.hint or nil
   ui.board(L, { state = s, last = g.last, hint = hint, flash = flash })
 
-  local text, color = statusLine(g)
-  if S.toast and nowMs() <= S.toast.untilAt then text, color = S.toast.text, S.toast.color end
+  local text, color
+  if final then
+    text, color = finalLine(g)
+  else
+    text, color = statusLine(g)
+    if S.toast and nowMs() <= S.toast.untilAt then text, color = S.toast.text, S.toast.color end
+  end
   ui.fill(0, L.statusY, env.W, L.statusH, C.bg)
   if ui.textWidth(text) <= env.W - 2 then
     ui.text(text, floor(env.W / 2), L.statusY, color, "center")
@@ -800,6 +835,11 @@ local function drawGame()
     ui.small(text, floor(env.W / 2), L.statusY + 3, color, C.bg, "center", env.W - 2)
   end
 
+  if final then
+    ui.small("TOUCH FOR RESULTS", floor(env.W / 2), L.statusY + L.statusH, C.line, C.bg, "center")
+    ui.region("skipFinal", 0, 0, env.W, env.H)
+    return
+  end
   drawSideButtons(g, L)
   if g.paused then drawPause(g) end
 end
@@ -1194,6 +1234,7 @@ local function writeDebug()
   d.history = #store.data.history
   d.settings = store.data.settings
   d.toast = S.toast and S.toast.text or nil
+  d.ticks, d.tickAt, d.now = S.ticks, S.tickAt, nowMs()
   d.awaySince = g and g.awaySince or nil
   d.sound = audio.isAvailable()
   local h = fs.open("uttt_ui.tmp", "w")
@@ -1213,6 +1254,7 @@ local function render()
     drawIdle()
   elseif S.view == "lobby" then drawLobby()
   elseif S.view == "game" then drawGame()
+  elseif S.view == "final" then drawGame(S.finalGame, true)
   elseif S.view == "result" then drawResult()
   elseif S.view == "stats" then drawStats()
   elseif S.view == "settings" then drawSettings()
@@ -1280,6 +1322,13 @@ end
 local handlers = {}
 
 handlers.play = function() openLobby() end
+
+handlers.skipFinal = function()
+  S.view = "result"
+  S.lastTouch = nowMs()
+  audio.play("tap")
+  S.dirty = true
+end
 
 handlers.redSlot = function()
   S.lobby.picking = "red"; S.lobby.red = nil; audio.play("tap"); S.dirty = true
@@ -1492,12 +1541,12 @@ local function checkPresence(g)
     if not g.awaySince then g.awaySince = nowMs() end
     local away = (nowMs() - g.awaySince) / 1000
     if away > config.PRESENCE_ABANDON then
-      hw.say(mover.name .. " left the game, so it was called off.")
+      tellPlayers({ g.red, g.blue }, mover.name .. " left the game, so it was called off.")
       abandon(g, "player left")
     elseif away > config.PRESENCE_WARN and not g.warnedAway then
       g.warnedAway = true
       audio.play("presence")
-      hw.say(mover.name .. ", your Ultimate Tic-Tac-Toe game is waiting!")
+      hw.tell(mover.name, "Your Ultimate Tic-Tac-Toe game is waiting!")
     end
   end
   if here then g.warnedAway = false end
@@ -1513,7 +1562,13 @@ local function onTick()
     hw.celebrate(false)
   end
 
-  if S.view == "idle" then
+  if S.view == "final" then
+    if t > (S.finalUntil or 0) then
+      S.view = "result"
+      S.lastTouch = t
+      S.dirty = true
+    end
+  elseif S.view == "idle" then
     demoStep()
     if floor(t / 700) ~= S.blinkPhase then S.blinkPhase = floor(t / 700); S.dirty = true end
   elseif S.view == "lobby" then
@@ -1653,7 +1708,29 @@ local function main()
     S.view = "idle"
   end
 
-  local tick = os.startTimer(TICK)
+  -- The game clock is a timer. A real server computer has been seen to stop ticking (the computer opponent never
+  -- moved), so there are two timers (the spare keeps the loop alive if one is lost), any other event also runs an
+  -- overdue tick, and a gap of more than 1.5 s is logged.
+  local tickA, tickB
+  local lastTickAt = nowMs()
+  local function armTicks()
+    if tickA then os.cancelTimer(tickA) end
+    if tickB then os.cancelTimer(tickB) end
+    tickA = os.startTimer(TICK)
+    tickB = os.startTimer(TICK * 4)
+  end
+  local function runTick(why)
+    local now = nowMs()
+    local gap = now - lastTickAt
+    if gap > 1500 then log(string.format("tick gap %d ms (resumed by %s)", gap, why)) end
+    lastTickAt = now
+    S.ticks = (S.ticks or 0) + 1
+    S.tickAt = now
+    armTicks()
+    local okTick, errTick = pcall(onTick)
+    if not okTick then log("tick error: " .. tostring(errTick)); error(errTick, 0) end
+  end
+  armTicks()
   render()
   while true do
     local ev, a, b, c = os.pullEventRaw()
@@ -1661,11 +1738,7 @@ local function main()
       shutdown()
       error("Terminated", 0)
     elseif ev == "timer" then
-      if a == tick then
-        tick = os.startTimer(TICK)
-        local okTick, errTick = pcall(onTick)
-        if not okTick then log("tick error: " .. tostring(errTick)); error(errTick, 0) end
-      end
+      if a == tickA or a == tickB then runTick(a == tickA and "timer" or "spare timer") end
     elseif ev == "monitor_touch" then
       onTouch(a, b, c)
     elseif ev == "monitor_resize" then
@@ -1682,6 +1755,7 @@ local function main()
       end
       S.dirty = true
     end
+    if nowMs() - lastTickAt > 400 then runTick("event " .. tostring(ev)) end
     if S.dirty then render() end
   end
 end
