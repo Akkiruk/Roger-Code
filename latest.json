@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-14T04:38:11Z",
+  "generated_at": "2026-10-30T23:23:18Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "8e8b9d74fedd133dbb5f297c59d8964890397b1f",
+    "commit": "9686211f6e184390584532f910e2dd949f1eebda",
     "path": "System/installer.lua",
     "sha256": "8ca7f69efc66493473eaf18e0693cdaf22d1590d4432221c1b7c13985fcc2a2e"
   },
@@ -39,6 +39,15 @@
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
       "package_hash": "c6d83a842221a1ed13315ca6318c65f664a4b8b6b681c8b69ae612f5db52bec3",
       "spec_path": "programs/block_reader_vhcctweaks_probe.json"
+    },
+    "conformance_probe": {
+      "name": "Conformance Probe",
+      "category": "Utilities",
+      "description": "Conformance probe: run it on a real computer, then give conformance_results.json to the emulator project",
+      "version": "1.0.0",
+      "commit": "9686211f6e184390584532f910e2dd949f1eebda",
+      "package_hash": "b53a6f5630367bde69c44257c17e440c3b3a4ce8c716d4c2cb4d5515b2f8fadc",
+      "spec_path": "programs/conformance_probe.json"
     },
     "crazyeights": {
       "name": "CrazyEights",
@@ -71,9 +80,9 @@
       "name": "PokerTable",
       "category": "Games",
       "description": "Multiplayer poker table foundation with dealer and seat modes.",
-      "version": "1.0.25",
-      "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "46c8140dcf639c3eb99d6a1c3299f7ef4f46990691bdfa03a3d6be04f22a8012",
+      "version": "1.0.26",
+      "commit": "9686211f6e184390584532f910e2dd949f1eebda",
+      "package_hash": "772f8afe39252d79f61e20a9eb688df3aefe8e438edaa0e0b210314be9732d82",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
@@ -111,6 +120,15 @@
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
       "package_hash": "4ada4dc1f63b70b067e97cebc3b93baf79db7a55c7ab0543877dcce6c13184d9",
       "spec_path": "programs/taskmaster.json"
+    },
+    "ultimate-tic-tac-toe": {
+      "name": "Ultimate Tic-Tac-Toe",
+      "category": "Games",
+      "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+      "version": "1.0.0",
+      "commit": "9686211f6e184390584532f910e2dd949f1eebda",
+      "package_hash": "ae53e224af604b3dd23294a425045ab016b5a3802f9c82daf512f4ae3c47639e",
+      "spec_path": "programs/ultimate-tic-tac-toe.json"
     },
     "vault_item_analyzer": {
       "name": "vault_item_analyzer",

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "conformance_probe",
+    "name": "Conformance Probe",
+    "category": "Utilities",
+    "description": "Conformance probe: run it on a real computer, then give conformance_results.json to the emulator project",
+    "source_root": "Utilities",
+    "entrypoint": "conformance_probe.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "9686211f6e184390584532f910e2dd949f1eebda",
+    "generated_at": "2026-10-30T23:23:18Z",
+    "package_hash": "b53a6f5630367bde69c44257c17e440c3b3a4ce8c716d4c2cb4d5515b2f8fadc"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "System/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "c71a0e77c99ab45fa69333e9d2d48a5b846b3b5d224c7712decfce38bdc6ac08"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "8f18b8bd0cdb492f3d2a8d4c6c75a69db5227bcbb72197fc604771d7dd7df46f"
+      },
+      {
+        "repo_path": "Utilities/conformance_probe.lua",
+        "install_path": "conformance_probe.lua",
+        "sha256": "2f6c8d7b7defa38cb61d021f30ee5a259a281bd42241ae4b94b1c88803ff23db"
+      }
+    ]
+  },
+  "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "conformance_probe.lua",
+    "auto_restart": false,
+    "update_interval": 60,
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.roger_logging"
+    ]
+  }
+}

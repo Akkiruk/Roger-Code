@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with dealer and seat modes.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.25"
+    "version": "1.0.26"
   },
   "build": {
-    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-04-14T04:38:11Z",
-    "package_hash": "46c8140dcf639c3eb99d6a1c3299f7ef4f46990691bdfa03a3d6be04f22a8012"
+    "commit": "9686211f6e184390584532f910e2dd949f1eebda",
+    "generated_at": "2026-10-30T23:23:18Z",
+    "package_hash": "772f8afe39252d79f61e20a9eb688df3aefe8e438edaa0e0b210314be9732d82"
   },
   "install": {
     "preserve": [
@@ -83,7 +83,7 @@
       {
         "repo_path": "Games/PokerTable/pokertable.lua",
         "install_path": "pokertable.lua",
-        "sha256": "58fe87d4e35d9a26f8f49c0986f1c88b18a890959cb2d4ecf5aedc162b3a44bd"
+        "sha256": "87693f7e327d9d87dc82953c8a6615ea0a4409625fb691242f0cbc22e2567a8c"
       },
       {
         "repo_path": "Games/PokerTable/dealer.lua",
