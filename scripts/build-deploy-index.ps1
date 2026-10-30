@@ -26,6 +26,12 @@ if (-not $?) {
     throw "Lua forward-declaration check failed"
 }
 
+# CC:Tweaked is Lua 5.1: goto and ::labels:: are syntax errors on the server.
+& (Join-Path $PSScriptRoot "check-lua-no-goto.ps1") -RepoRoot $RepoRoot
+if (-not $?) {
+    throw "Lua goto check failed"
+}
+
 $RepoName = Split-Path $RepoRoot -Leaf
 $RepoOwner = "Akkiruk"
 $PrimaryBranch = "main"

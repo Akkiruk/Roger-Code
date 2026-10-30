@@ -1,7 +1,6 @@
 -- Gathers detailed information about all attached peripherals, including methods and documentation,
 -- logs it to a file, and uploads the log.
 
-local fs = require("fs")
 local uploader -- Will be loaded later if System.uploadlogs is available
 
 -- Configuration
@@ -64,7 +63,7 @@ local function collectPeripheralInfo()
 
     script_print("Found peripherals: " .. table.concat(peripheralNames, ", "))
 
-    for i, name in ipairs(peripheralNames) do
+    local function scanPeripheral(name)
         log_message("\n--- Peripheral: " .. name .. " ---")
         script_print("Scanning peripheral: " .. name)
 
@@ -75,7 +74,7 @@ local function collectPeripheralInfo()
         if not p then
             log_message("Could not wrap peripheral: " .. name)
             script_print("Error wrapping peripheral: " .. name)
-            goto continue_peripheral -- Skips to the next iteration
+            return -- Skips to the next peripheral
         end
 
         -- Get general documentation for the peripheral
@@ -128,8 +127,10 @@ local function collectPeripheralInfo()
         else
             log_message("  No methods listed for this peripheral.")
         end
-        
-        ::continue_peripheral::
+    end
+
+    for _, name in ipairs(peripheralNames) do
+        scanPeripheral(name)
     end
 
     logFileHandle.close()

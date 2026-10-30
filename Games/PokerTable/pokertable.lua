@@ -70,8 +70,9 @@ local function main(args)
   seat.run()
 end
 
+local programArgs = { ... }
 local ok, err = pcall(function()
-  main({ ... })
+  main(programArgs)
 end)
 
 if not ok then
