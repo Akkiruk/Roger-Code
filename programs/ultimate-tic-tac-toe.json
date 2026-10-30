@@ -7,12 +7,12 @@
     "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "9686211f6e184390584532f910e2dd949f1eebda",
-    "generated_at": "2026-10-30T23:23:18Z",
-    "package_hash": "ae53e224af604b3dd23294a425045ab016b5a3802f9c82daf512f4ae3c47639e"
+    "commit": "5ee7959a7db75d04dfd10ece5acee880c224f9d6",
+    "generated_at": "2026-10-30T23:36:49Z",
+    "package_hash": "bfa83ba2a2ed2e6ae89d755660220c90bdbcaf959875b21ebab11792c34f2716"
   },
   "install": {
     "preserve": [
@@ -48,7 +48,7 @@
       {
         "repo_path": "Games/UltimateTicTacToe/uttt.lua",
         "install_path": "uttt.lua",
-        "sha256": "2c0969dbc9abffb6e7afe628bdadd93b4d59b6d293b1b11c3fe7097d72f25a2d"
+        "sha256": "55f9fad00f23f2914d095a616d1fcf203b862dd86106e45371c69600fe4836cc"
       },
       {
         "repo_path": "Games/UltimateTicTacToe/uttt_ui.lua",
@@ -68,7 +68,7 @@
       {
         "repo_path": "Games/UltimateTicTacToe/uttt_hw.lua",
         "install_path": "uttt_hw.lua",
-        "sha256": "7127cc1a5371a87a5c5c38344b1c6dbd463329b0609a8a1b59b03baa508c25bf"
+        "sha256": "2cc968388b98f631a89781469376de5069df7835caa2843f138556e6a2f8098e"
       },
       {
         "repo_path": "Games/UltimateTicTacToe/uttt_audio.lua",
