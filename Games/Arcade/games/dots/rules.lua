@@ -70,11 +70,12 @@ function M.step(s, a)
   lineTable(s, a.dir)[a.y][a.x] = p
   s.moves = s.moves + 1
   s.last = { dir = a.dir, x = a.x, y = a.y }
-  local scored = 0
+  local scored, closed = 0, {}
   for _, box in ipairs(neighbours(a)) do
     if sides(s, box[1], box[2]) == 4 then
       s.boxes[box[2]][box[1]] = p
       scored = scored + 1
+      closed[#closed + 1] = box
     end
   end
   s.score[p] = s.score[p] + scored
@@ -82,7 +83,7 @@ function M.step(s, a)
     s.winner = s.score[1] > s.score[2] and 1 or (s.score[2] > s.score[1] and 2 or 3)
   end
   if scored == 0 then s.turn = 3 - p end
-  return s, { { type = "line", seat = p, scored = scored } }
+  return s, { { type = "line", seat = p, scored = scored, closed = closed } }
 end
 
 function M.legalActions(s)

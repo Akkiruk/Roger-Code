@@ -1,0 +1,31 @@
+-- arcade_net.lua
+-- Tells the floor how matches end, over rednet, for a hub wall to show. Optional: with no modem nothing happens.
+-- It only ever sends, and it carries no tokens and no secrets. Nothing the Arcade does depends on an answer.
+
+local M = {}
+
+M.PROTOCOL = "arcade.v1"
+
+local opened = false
+
+--- Open every modem attached. Safe to call again when peripherals change.
+function M.open()
+  opened = false
+  for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.hasType(name, "modem") then
+      pcall(rednet.open, name)
+      opened = true
+    end
+  end
+  return opened
+end
+
+--- A finished match, for leaderboards on another screen.
+function M.result(game, title, red, blue, winner, moves, ranked)
+  if not opened then return end
+  pcall(rednet.broadcast, {
+    kind = "result", game = game, title = title, red = red, blue = blue, winner = winner, moves = moves, ranked = ranked,
+  }, M.PROTOCOL)
+end
+
+return M

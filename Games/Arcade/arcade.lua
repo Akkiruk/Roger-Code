@@ -12,8 +12,11 @@ local config = require("arcade_config")
 local hw = require("arcade_hw")
 local matches = require("arcade_match")
 local play = require("arcade_play")
+local replay = require("arcade_replay")
+local net = require("arcade_net")
 local screens = require("arcade_screens")
 local seats = require("arcade_seats")
+local tournament = require("arcade_tournament")
 local ui = require("arcade_ui")
 local registry = require("games.registry")
 
@@ -118,6 +121,23 @@ local function storeFor(plugin)
   return store
 end
 
+--- Everything one player has done across every game here, for their player card.
+function app.profile(name)
+  local all = { wins = 0, games = 0, badges = 0, hard = 0, total = #registry }
+  local most = 0
+  for _, plugin in ipairs(registry) do
+    local store = storeFor(plugin)
+    local p = store:get(name)
+    if p then
+      all.wins, all.games = all.wins + p.wins, all.games + p.games
+      all.badges = all.badges + #store:achievements(name)
+      if p.vsCpu.hard and p.vsCpu.hard.w > 0 then all.hard = all.hard + 1 end
+      if p.games > most then all.best, most = plugin.title, p.games end
+    end
+  end
+  return all
+end
+
 --- Make a game the current one: its records, sounds, accent and board layout.
 function app.selectGame(plugin)
   app.plugin = plugin
@@ -203,7 +223,7 @@ local function setupDisplay()
       if colors[name] then sb.setPaletteColor(colors[name], hex) end
     end
     local w, h = sb.getSize()
-    env.board2 = { mon = sb, name = sbName, W = w, H = h, surf = surfaceApi.create(w, h) }
+    env.board2 = { mon = sb, out = ui.changedRows(sb), name = sbName, W = w, H = h, surf = surfaceApi.create(w, h) }
   end
   return true
 end
@@ -291,6 +311,16 @@ local function startFromLobby()
     setToast(l.blue.name .. ": go to the other wall and tap your name there", C.warn)
     return
   end
+  -- anyone new to this game sees how it works first
+  if not l.sawRules and #app.plugin.help > 0 then
+    for _, slot in ipairs({ l.red, l.blue }) do
+      if seats.isHuman(slot) and not app.store:get(slot.name) then
+        l.sawRules, S.rulesThen, S.view = true, true, "rules"
+        S.dirty = true
+        return
+      end
+    end
+  end
   local first
   if l.first == "random" then first = math.random(2) elseif l.first == "blue" then first = 2 else first = 1 end
   local red, blue = l.red, l.blue
@@ -377,6 +407,11 @@ local function writeDebug()
   end
   if S.result then d.result = { winner = S.result.winner, moves = S.result.moves, ranked = S.result.ranked } end
   if S.lobby then d.lobby = { red = S.lobby.red and S.lobby.red.name, blue = S.lobby.blue and S.lobby.blue.name } end
+  if S.tour then
+    d.tour = { rounds = #S.tour.rounds, champion = S.tourChampion, next = tournament.next(S.tour) }
+  end
+  d.entry = S.entry
+  d.replayStep = S.replay and S.replay.step or nil
   d.players = {}
   for _, p in pairs(app.store.data.players) do
     d.players[#d.players + 1] = {
@@ -425,6 +460,10 @@ local function drawWalls()
   elseif S.view == "result" then screens.drawResult()
   elseif S.view == "stats" then screens.drawStats()
   elseif S.view == "settings" then screens.drawSettings()
+  elseif S.view == "rules" then screens.drawRules()
+  elseif S.view == "entry" then screens.drawEntry()
+  elseif S.view == "bracket" then screens.drawBracket()
+  elseif S.view == "replay" then play.draw(S.replay)
   end
   for _, wall in ipairs(env.walls) do
     wall.buttons = ui.buttons()
@@ -437,7 +476,7 @@ local function render()
   drawWalls()
   writeDebug()
   if nowMs() >= nextScoreboardAt then
-    nextScoreboardAt = nowMs() + 2000
+    nextScoreboardAt = nowMs() + (S.match and 1000 or 2000)
     screens.drawScoreboard()
   end
 end
@@ -588,6 +627,74 @@ handlers.page = function()
   S.dirty = true
 end
 handlers.start = function() startFromLobby() end
+-- knockouts: one game, played as ordinary matches
+local function shuffled(list)
+  for i = #list, 2, -1 do
+    local j = math.random(i)
+    list[i], list[j] = list[j], list[i]
+  end
+end
+handlers.tourney = function()
+  audio.play("select")
+  S.entry, S.lobby, S.view = {}, nil, "entry"
+end
+handlers.join = function(b, who)
+  local allowed, msg = seats.maySit(b.data, who)
+  if not allowed then
+    refuse(msg)
+    return
+  end
+  for i, name in ipairs(S.entry) do
+    if name == b.data then
+      table.remove(S.entry, i)
+      audio.play("back")
+      return
+    end
+  end
+  if #S.entry >= tournament.MAX then
+    refuse("A knockout takes " .. tournament.MAX .. " players")
+    return
+  end
+  S.entry[#S.entry + 1] = b.data
+  audio.play("select")
+end
+handlers.tourStart = function()
+  S.tour = tournament.new(app.plugin.id, S.entry, shuffled)
+  S.entry, S.tourChampion, S.view = nil, nil, "bracket"
+  tournament.save(S.tour)
+  audio.play("start")
+end
+handlers.tourPlay = function()
+  local p = tournament.next(S.tour)
+  if not p then return end
+  audio.play("select")
+  -- a guest-free pairing of named players: the shell's usual seat rules carry on from here
+  S.lobby = { red = { name = p.a }, blue = { name = p.b }, first = "random", sawRules = true }
+  S.view = "lobby"
+  startFromLobby()
+end
+handlers.bracket = function()
+  audio.play("select")
+  S.result, S.lobby = nil, nil
+  hw.allOff()
+  S.view = "bracket"
+end
+handlers.tourEnd = function()
+  audio.play("back")
+  S.tour, S.tourChampion, S.view = nil, nil, "idle"
+  tournament.save(nil)
+end
+
+handlers.rules = function()
+  audio.play("page")
+  S.rulesThen, S.view = false, "rules"
+end
+handlers.rulesDone = function()
+  audio.play("select")
+  local start = S.rulesThen
+  S.rulesThen, S.view = false, "lobby"
+  if start and S.lobby then startFromLobby() end
+end
 handlers.options = function()
   -- cycle who moves first; everything else lives in settings
   local l = S.lobby
@@ -768,6 +875,17 @@ handlers.newgame = function(_, who, wall)
   hw.allOff()
   openFront(who, wall)
 end
+handlers.replay = function()
+  local entry = S.result and replay.list(app.plugin.id)
+  entry = entry and entry[#entry]
+  if not entry then return end
+  audio.play("select")
+  S.replay, S.replayAt, S.view = matches.newReplay(entry), nowMs() + 800, "replay"
+end
+handlers.stopReplay = function()
+  audio.play("back")
+  S.replay, S.view = nil, S.result and "result" or "idle"
+end
 handlers.done = function()
   S.result = nil
   S.lobby = nil
@@ -826,7 +944,7 @@ local function attractStep(t)
       if app.fits(registry[attractIndex]) then break end
     end
     app.selectGame(registry[attractIndex])
-    S.demo = {}
+    S.demo = { script = replay.best(app.plugin.id) }
     S.dirty = true
   end
   if app.plugin.view.demoStep(S.demo, t, demoChoose) then S.dirty = true end
@@ -837,6 +955,12 @@ local function onTick()
   local t = nowMs()
   audio.pump()
   if S.toast and t > S.toast.untilAt then S.toast = nil; S.dirty = true end
+  -- an animation redraws itself until it ends
+  local showing = S.replay or S.match or (S.view == "final" and S.finalMatch)
+  if showing and showing.anim then
+    if t >= showing.anim.at + showing.anim.ms then showing.anim = nil end
+    S.dirty = true
+  end
   if S.celebrateUntil and t > S.celebrateUntil then
     S.celebrateUntil = nil
     hw.celebrate(false)
@@ -863,7 +987,16 @@ local function onTick()
     if t - S.lastTouch > config.RESULT_IDLE * 1000 then
       S.result = nil; hw.allOff(); S.view = "idle"; S.dirty = true
     end
-  elseif S.view == "stats" or S.view == "settings" then
+  elseif S.view == "replay" then
+    S.lastTouch = t
+    if S.replay and t >= S.replayAt then
+      S.replayAt = t + 700
+      if not matches.replayStep(S.replay) then
+        S.replay, S.view = nil, S.result and "result" or "idle"
+      end
+      S.dirty = true
+    end
+  elseif S.view == "stats" or S.view == "settings" or S.view == "rules" or S.view == "entry" then
     if t - S.lastTouch > config.LOBBY_IDLE * 1000 then
       S.view = "idle"; S.lobby = nil; S.dirty = true
     end
@@ -908,9 +1041,15 @@ local function main()
   hw.setRedstone(app.prefs.redstone)
   audio.play("boot")
   hw.allOff()
+  net.open()
   S.debug = fs.exists(config.DEBUG_FLAG)
+  S.tour = tournament.load()
+  if S.tour then
+    local plugin = app.pluginById(S.tour.game)
+    if plugin and app.fits(plugin) then app.selectGame(plugin) else S.tour = nil end
+  end
   if not matches.recover() then
-    S.view = "idle"
+    S.view = S.tour and "bracket" or "idle"
   end
 
   -- The clock is a timer, and a lost timer stops it for good (the computer opponent then never moves). Timers are lost
@@ -968,6 +1107,7 @@ local function main()
       local wallsChanged = (ev == "peripheral_detach" and wallIndex(a)) or (secondName and not wallIndex(secondName))
         or boardNow ~= (env.board2 ~= nil)
       if wallsChanged then setupDisplay() end
+      net.open()
       if S.recoverLater and not S.match then
         S.recoverLater = false
         if not matches.recover() then S.view = "idle" end

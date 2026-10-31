@@ -4,6 +4,7 @@
 
 local hw = require("arcade_hw")
 local Records = require("arcade_records")
+local tournament = require("arcade_tournament")
 local ui = require("arcade_ui")
 
 local M = {}
@@ -80,6 +81,9 @@ local function drawLobby()
   slotPanel(1, 4)
   slotPanel(2, 4 + sw)
   ui.button("back", 2, compact and 0 or 1, 16, compact and 6 or 7, "BACK", C.panel, { small = true })
+  if #app.plugin.help > 0 then
+    ui.button("rules", W - 18, compact and 0 or 1, 16, compact and 6 or 7, "HOW TO PLAY", C.panel, { small = true })
+  end
 
   -- nearby players
   local near, ok = hw.nearby()
@@ -126,7 +130,9 @@ local function drawLobby()
   local utilY = cpuY + utilGap
   ui.button("guest", 4, utilY, bw, rowH, "GUEST", C.panel, { small = true })
   ui.button("swap", 4 + (bw + 2), utilY, bw, rowH, "SWAP COLORS", C.panel, { small = true })
-  ui.button("stats", 4 + 2 * (bw + 2), utilY, bw, rowH, "STATS", C.panel, { small = true })
+  local half2 = floor((bw - 1) / 2)
+  ui.button("stats", 4 + 2 * (bw + 2), utilY, half2, rowH, "STATS", C.panel, { small = true })
+  ui.button("tourney", 4 + 2 * (bw + 2) + half2 + 1, utilY, bw - half2 - 1, rowH, "KNOCKOUT", C.panel, { small = true })
 
   -- options line and start
   local startY = utilY + utilGap + (compact and 0 or 1)
@@ -191,7 +197,10 @@ local function drawResult()
       end
     else
       ui.small(slot.cpu and "COMPUTER" or (slot.guest and "GUEST" or "UNRANKED GAME"), x + 6, 29, C.line, C.panel, "left")
-      if not r.ranked and not r.guest then ui.small("vs computer: no rating change", x + 6, 31, C.line, C.panel, "left", pw - 8) end
+      if sum and sum.solo then
+        local d = sum.soloDelta or 0
+        ui.small(string.format("SOLO RATING %d  (%s)", sum.solo, signed(d)), x + 6, 31, d > 0 and C.ok or (d < 0 and C.warn or C.line), C.panel, "left", pw - 8)
+      end
     end
   end
   panel(1, 3)
@@ -206,7 +215,10 @@ local function drawResult()
       y = y + 2
     end
   end
-  if #ach == 0 and r.ranked then
+  if r.rivalry then
+    ui.small(r.rivalry, floor(W / 2), y, C.hi, C.bg, "center", W - 2)
+    y = y + 2
+  elseif #ach == 0 and r.ranked then
     local h2h = app.store:headToHead(r.red.name, r.blue.name)
     ui.small(string.format("%s vs %s: %d - %d - %d", r.red.name, r.blue.name, h2h.w, h2h.l, h2h.d), floor(W / 2), y, C.line, C.bg, "center", W - 2)
     y = y + 2
@@ -228,24 +240,110 @@ local function drawResult()
   local by = y + 2
   local bh = compact and 5 or 7
   local step = bh + 1
-  ui.button("rematch", bx, by, bw, bh, r.rematchBy and (r.rematchBy .. " ASKS - TAP TO AGREE") or "REMATCH (SWAP COLORS)", C.ok, { small = true })
-  ui.button("newgame", bx, by + step, bw, bh, "NEW GAME", C.panel, { small = true })
-  ui.button("stats", bx, by + 2 * step, bw, bh, "STATS", C.panel, { small = true })
+  if S.tour then
+    ui.button("bracket", bx, by, bw, bh, "BACK TO THE BRACKET", C.ok, { small = true })
+  else
+    ui.button("rematch", bx, by, bw, bh, r.rematchBy and (r.rematchBy .. " ASKS - TAP TO AGREE") or "REMATCH (SWAP COLORS)", C.ok, { small = true })
+    ui.button("newgame", bx, by + step, bw, bh, "NEW GAME", C.panel, { small = true })
+  end
+  local half = floor((bw - 1) / 2)
+  ui.button("stats", bx, by + 2 * step, half, bh, "STATS", C.panel, { small = true })
+  ui.button("replay", bx + half + 1, by + 2 * step, bw - half - 1, bh, "REPLAY", C.panel, { small = true, enabled = r.moves ~= nil and r.moves >= 1 and not r.forfeit })
   ui.button("done", bx, by + 3 * step, bw, bh, "DONE", C.panel, { small = true })
   app.drawToast()
 end
 
+-- ------------------------------------------------------------------ knockouts
+
+--- Sign-up: tap your name to join, and START once there are enough.
+local function drawEntry()
+  background()
+  ui.clearButtons()
+  local W, H = env.W, env.H
+  local entry = S.entry
+  ui.text("KNOCKOUT", floor(W / 2), 1, C.hi, "center")
+  ui.small(app.plugin.title .. " - tap your name to join", floor(W / 2), 10, C.line, C.bg, "center", W - 2)
+  ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
+  local near = hw.nearby()
+  local bw = floor((W - 12) / 3)
+  for i = 1, math.min(#near, 9) do
+    local name = near[i]
+    local joined = false
+    for _, n in ipairs(entry) do joined = joined or n == name end
+    local col, row = (i - 1) % 3, floor((i - 1) / 3)
+    ui.button("join", 4 + col * (bw + 2), 13 + row * 10, bw, 8, name, joined and C.ok or C.panel, { small = true, data = name })
+  end
+  ui.small(#entry .. " in so far: " .. table.concat(entry, ", "), floor(W / 2), 45, C.text, C.bg, "center", W - 4)
+  local ready = #entry >= tournament.MIN
+  ui.button("tourStart", floor(W / 2) - 25, H - 12, 50, 9, ready and "START THE KNOCKOUT" or ("NEEDS " .. tournament.MIN .. " PLAYERS"), ready and C.ok or C.panel, { small = true, enabled = ready })
+  app.drawToast()
+end
+
+local function drawBracketLines(t, x, y, w)
+  for n, round in ipairs(t.rounds) do
+    ui.small(n == #t.rounds and #round == 1 and "FINAL" or ("ROUND " .. n), x, y, C.hi, C.bg, "left")
+    y = y + 1
+    for _, p in ipairs(round) do
+      local line = p.b and (p.a .. " v " .. p.b) or (p.a .. " (bye)")
+      ui.small(line, x + 2, y, p.winner and C.line or C.text, C.bg, "left", w - 16)
+      if p.winner and p.b then ui.small(p.winner .. " won", x + w, y, C.ok, C.bg, "right", 14) end
+      y = y + 1
+    end
+    y = y + 1
+  end
+  return y
+end
+
+local function drawBracket()
+  background()
+  ui.clearButtons()
+  local W, H = env.W, env.H
+  local t = S.tour
+  ui.text(S.tourChampion and "CHAMPION" or "KNOCKOUT", floor(W / 2), 1, C.hi, "center")
+  drawBracketLines(t, 6, 11, W - 12)
+  if S.tourChampion then
+    ui.text(S.tourChampion, floor(W / 2), H - 22, C.ok, "center", W - 4)
+    ui.button("tourEnd", floor(W / 2) - 20, H - 12, 40, 9, "FINISH", C.ok, { small = true })
+  else
+    local p = tournament.next(t)
+    if p then ui.button("tourPlay", floor(W / 2) - 25, H - 12, 50, 9, "PLAY: " .. p.a .. " v " .. p.b, C.ok, { small = true }) end
+    ui.button("tourEnd", 2, H - 12, 18, 9, "END IT", C.panel, { small = true })
+  end
+  app.drawToast()
+end
+
+-- ------------------------------------------------------------------ rules
+
+local function drawRules()
+  background()
+  ui.clearButtons()
+  local W, H = env.W, env.H
+  ui.text(app.plugin.title, floor(W / 2), 1, C[app.plugin.color] or C.hi, "center", W - 4)
+  local y = 11
+  for _, line in ipairs(app.plugin.help) do
+    if line == "" then
+      y = y + 1
+    else
+      for _, part in ipairs(ui.wrap(line, W - 8)) do
+        ui.small(part, 4, y, C.text, C.bg, "left")
+        y = y + 1
+      end
+    end
+  end
+  ui.button("rulesDone", floor(W / 2) - 20, H - 10, 40, 8, S.rulesThen and "GOT IT - START" or "GOT IT", C.ok, { small = true })
+end
+
 -- ------------------------------------------------------------------ stats
 
-local METRIC_LABEL = { elo = "RATING", wins = "WINS", rate = "WIN %", streak = "STREAK" }
+local METRIC_LABEL = { elo = "RATING", wins = "WINS", rate = "WIN %", streak = "STREAK", solo = "SOLO", season = "MONTH" }
 
 local function drawLeaders()
   local W = env.W
   ui.text("LEADERBOARD", floor(W / 2), 1, C.hi, "center")
-  local tabW = floor((W - 8 - 4 * 2) / 5)
+  local tabW = floor((W - 8 - (#Records.BOARD_ORDER - 1)) / #Records.BOARD_ORDER)
   for i, key in ipairs(Records.BOARD_ORDER) do
     local active = S.stats.metric == key
-    ui.button("metric", 4 + (i - 1) * (tabW + 2), 10, tabW, 7, METRIC_LABEL[key] or app.plugin.view.scoreName, active and C.hi or C.panel, { small = true, data = key })
+    ui.button("metric", 4 + (i - 1) * (tabW + 1), 10, tabW, 7, METRIC_LABEL[key] or app.plugin.view.scoreName, active and C.hi or C.panel, { small = true, data = key })
   end
   local rows, total = app.store:leaderboard(S.stats.metric)
   local perPage = max(3, floor((env.H - 38) / 6))
@@ -274,6 +372,8 @@ local function drawLeaders()
     ui.button("nextPage", W - 22, env.H - 18, 20, 7, "NEXT >", C.panel, { small = true })
   end
   ui.small(total .. " ranked players", 4, env.H - 16, C.line, C.bg, "left")
+  local champ = app.store.data.champions[1]
+  if champ then ui.small(string.format("Last month: %s, %d wins", champ.name, champ.wins), 4, env.H - 13, C.hi, C.bg, "left", W - 8) end
 end
 
 local function drawHistory()
@@ -342,6 +442,9 @@ local function drawPlayerCard()
   stat(col2, 27, "AVG MOVES", avg)
   stat(col2, 29, "GAMES", p.games)
 
+  stat(col1, 31, "SOLO", p.solo and (p.solo .. " in " .. p.soloGames .. " games") or "-")
+  stat(col2, 31, "THIS MONTH", (p.seasonWins or 0) .. " wins   TITLES " .. (p.titles or 0))
+
   -- versus the computer
   local y = 33
   ui.small("VS COMPUTER", col1, y, C.hi, C.bg, "left")
@@ -390,6 +493,13 @@ local function drawPlayerCard()
     end
   end
   if shown == 0 then ui.small("no recent games", col1 + 8, 51, C.line, C.bg, "left") end
+
+  -- across every game on this computer
+  local all = app.profile(p.name)
+  ui.small("ALL GAMES", col1, 55, C.hi, C.bg, "left")
+  ui.small(string.format("%d wins in %d games   %d badges   beat hard at %d of %d", all.wins, all.games, all.badges, all.hard, all.total), col1 + 11, 55, C.text, C.bg, "left", W - col1 - 13)
+  if all.best then ui.small("Favourite: " .. all.best, col1 + 11, 57, C.line, C.bg, "left", W - col1 - 13) end
+  if all.hard == all.total then ui.small("ARCADE CHAMPION", col2 + 8, 57, C.hi, C.bg, "left") end
 end
 
 local function drawStats()
@@ -460,6 +570,29 @@ local function drawScoreboard()
   ui.setScreen(sc)
   sc:clear(C.bg, nil, " ")
   local W, H = board2.W, board2.H
+  -- with a match on, this is a spectator's screen. It draws with no viewer, so nothing secret can reach it
+  if S.tour and not S.match then
+    ui.text("KNOCKOUT", floor(W / 2), 1, C.hi, "center")
+    drawBracketLines(S.tour, 2, 9, W - 4)
+    sc:output(board2.out, 0, 0)
+    ui.setScreen(prev)
+    return
+  end
+  local live = S.match
+  local L = live and app.plugin.view.layout(W, H)
+  if live and L.x0 >= 0 and L.y0 + L.bh + 2 <= H then
+    ui.small(live.red.name, 1, 1, C.red, C.bg, "left", floor(W / 2) - 2)
+    ui.small(live.blue.name, W - 2, 1, C.blue, C.bg, "right", floor(W / 2) - 2)
+    local h2h = app.store:headToHead(live.red.name, live.blue.name)
+    if h2h.w + h2h.l + h2h.d > 0 then
+      ui.small(string.format("met %d times: %d-%d-%d", h2h.w + h2h.l + h2h.d, h2h.w, h2h.l, h2h.d), floor(W / 2), 3, C.line, C.bg, "center", W - 2)
+    end
+    app.plugin.view.drawBoard(L, live, nil)
+    ui.small(app.plugin.view.scoreLine(live), floor(W / 2), L.y0 + L.bh + 1, C.text, C.bg, "center", W - 2)
+    sc:output(board2.out, 0, 0)
+    ui.setScreen(prev)
+    return
+  end
   ui.text("LEADERBOARD", floor(W / 2), 1, C.hi, "center")
   local rows = app.store:leaderboard("elo", 8)
   if #rows == 0 then ui.small("Play a game to get on the board", floor(W / 2), 14, C.line, C.bg, "center") end
@@ -490,10 +623,11 @@ local function drawScoreboard()
       end
     end
   end
-  sc:output(board2.mon, 0, 0)
+  sc:output(board2.out, 0, 0)
   ui.setScreen(prev)
 end
 
 M.drawLobby, M.drawResult, M.drawStats, M.drawSettings, M.drawScoreboard = drawLobby, drawResult, drawStats, drawSettings, drawScoreboard
+M.drawRules, M.drawEntry, M.drawBracket = drawRules, drawEntry, drawBracket
 
 return M

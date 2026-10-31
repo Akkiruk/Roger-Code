@@ -64,17 +64,25 @@ function view.drawBoard(L, match)
   local onLine = {}
   for _, cell in ipairs(s.line or {}) do onLine[cell[1] * 10 + cell[2]] = true end
   local hint = match.hint and os.epoch("local") < match.hintUntil and match.hint.col
+  local falling = match.anim
   for c = 1, COLS do
     if hint == c then ui.frame(L.colX[c], L.y0, L.cw, L.bh, C.ok, 1) end
     for r = 1, ROWS do
       local x, y = L.colX[c] + 1, L.rowY[ROWS - r + 1] + 1
       local v = s.cells[c][r]
       if onLine[c * 10 + r] then ui.fill(x - 1, y - 1, L.cw, L.ch, C.hi) end
+      if falling and falling.col == c and falling.row == r then v = nil end
       base.disc(x, y, L.cw - 2, L.ch - 2, v and seatColor(v) or C.bg)
       if s.last and s.last[1] == c and s.last[2] == r and not s.line then
         ui.fill(x + floor((L.cw - 2) / 2) - 1, y + floor((L.ch - 2) / 2), 2, 1, C.text)
       end
     end
+  end
+  if falling then
+    -- it speeds up as it falls, then sits in its slot
+    local t = base.animT(match) or 1
+    local land = L.rowY[ROWS - falling.row + 1] + 1
+    base.disc(L.colX[falling.col] + 1, floor(L.y0 + (land - L.y0) * t * t), L.cw - 2, L.ch - 2, seatColor(falling.seat))
   end
 end
 
@@ -101,9 +109,12 @@ end
 
 function view.scoreLine(match) return "move " .. match.state.moves end
 
-function view.onEvents(app, _, events)
+function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
-    if ev.type == "drop" then app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed") end
+    if ev.type == "drop" then
+      app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
+      base.animate(match, 90 * (ROWS - ev.row + 2), { col = ev.col, row = ev.row, seat = ev.seat })
+    end
   end
 end
 
@@ -112,6 +123,13 @@ local M = {
   color = "info", accent = 0x3CD3E6, minSize = { w = 60, h = 40 },
   cpuLevels = { "easy", "medium", "hard" },
   rules = rules, view = view, sounds = base.SOUNDS,
+  help = {
+    "Take turns dropping a piece into a column. It falls to the lowest free slot.",
+    "",
+    "Line up four of your pieces, across, up or on a diagonal, to win. If the board fills first, the game is a draw.",
+    "",
+    "Tap a column to drop your piece.",
+  },
   badges = {
     quick = { name = "Speed Four", text = "Win in 11 moves or fewer", test = function(m, _, _, won)
       return won and not m.forfeit and m.moves <= 11

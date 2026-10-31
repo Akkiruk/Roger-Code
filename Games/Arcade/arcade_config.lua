@@ -18,6 +18,7 @@ M.DETECT_RANGE = 12        -- blocks around the detector that count as "nearby"
 M.TOUCH_NEARBY = 30        -- seconds a touch counts as being nearby, for rigs with no detector
 M.PRESENCE_WARN = 20       -- seconds a mover may be away before the board says so
 M.PRESENCE_LIMIT = 90      -- seconds away before the match ends: a forfeit if the opponent is here, otherwise called off
+M.REPLAYS_KEPT = 5         -- finished matches kept for each game, to watch again
 M.PAUSE_LIMIT = 60         -- seconds a pause may last before play carries on, so nobody can stall out a loss
 M.MAX_PAUSES = 3           -- pauses in one match that stop the clock, for the same reason
 M.WALL_GONE = 60           -- seconds a two-wall match waits for a lost wall before it is called off, with no result

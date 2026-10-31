@@ -61,6 +61,12 @@ In a private game:
 
 Setting `noHints = true` removes the hint button.
 
+## Help and animation
+
+`help` is a list of lines for the HOW TO PLAY page, which a first-time player sees before their first match. Leave a line `""` for a gap.
+
+For animation, call `base.animate(match, ms, fields)` from `view.onEvents`, and in `drawBoard` read `match.anim` and `base.animT(match)`, which runs from 0 to 1. The shell redraws until it ends. The rules have already moved on by then, so an animation only changes what is drawn, and the next touch simply replaces it. Replays use the same events.
+
 ## Proving a game
 
 `tools/arcadetest` in craftos-agent has what a new game needs: an oracle written from the published rules without reading the Lua (`oracles/`), with `rules.snapshot` and `rules.key` for `games.mjs` to compare every position, and `mutants.mjs` to show that comparison can fail.

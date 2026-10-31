@@ -2,6 +2,7 @@
 -- Sensible defaults, so a small game only writes what makes it different. See games/README.md.
 
 local config = require("arcade_config")
+local journal = require("arcade_journal")
 local Records = require("arcade_records")
 local ui = require("arcade_ui")
 
@@ -130,16 +131,44 @@ local function demoRng(n)
   return math.random()
 end
 
+--- How far an animation has got, 0 to 1, or nil with none playing. match.anim is { at, ms, ... }; the shell ends it.
+local function animT(match)
+  local a = match.anim
+  if not a then return nil end
+  return math.min(1, (os.epoch("local") - a.at) / a.ms)
+end
+
+--- Start an animation on a match. Touches stay live: the next move simply replaces it.
+local function animate(match, ms, fields)
+  fields.at, fields.ms = os.epoch("local"), ms
+  match.anim = fields
+end
+
 --- One move of the demo game. Returns true when it changed.
 local function demoStep(plugin, demo, t, choose)
   if not demo.state or (demo.finishedAt and t - demo.finishedAt > 5000) then
-    demo.state, demo.nextAt, demo.finishedAt = plugin.rules.new({ first = math.random(2) }), t + 1200, nil
+    local script = demo.script
+    local options = {}
+    for k, v in pairs(script and script.options or {}) do options[k] = v end
+    options.first = script and script.first or math.random(2)
+    demo.state, demo.nextAt, demo.finishedAt = plugin.rules.new(options), t + 1200, nil
+    demo.step, demo.rng = 0, script and journal.rng(script.seed) or demoRng
     demo.match = { state = demo.state, extras = plugin.newExtras(), hintUntil = 0, actions = {} }
     return true
   end
   if demo.finishedAt or t < demo.nextAt then return false end
-  local action = choose(demo.state, "easy", { maxNodes = 200 })
-  local _, events = plugin.rules.step(demo.state, action, demoRng)
+  local action
+  if demo.script then
+    demo.step = demo.step + 1
+    action = demo.script.actions[demo.step]
+    if not action then
+      demo.finishedAt = t
+      return false
+    end
+  else
+    action = choose(demo.state, "easy", { maxNodes = 200 })
+  end
+  local _, events = plugin.rules.step(demo.state, action, demo.rng)
   if plugin.view.onDemoEvents then plugin.view.onDemoEvents(demo.match, events or {}) end
   demo.nextAt = t + 900
   if demo.state.winner ~= 0 then demo.finishedAt = t end
@@ -151,7 +180,8 @@ local function drawAttract(plugin, W, H, demo)
   local L = plugin.view.layout(W, H)
   ui.text(plugin.title, floor(W / 2), 1, ui.C[plugin.color] or ui.C.hi, "center", W - 2)
   if demo.match then plugin.view.drawBoard(L, demo.match, nil) end
-  if L.side and plugin.blurb then ui.small(plugin.blurb, floor(W / 2), L.y0 - 1, ui.C.line, ui.C.bg, "center", W - 2) end
+  local caption = demo.script and (demo.script.red .. " vs " .. demo.script.blue .. " - a recent game") or plugin.blurb
+  if caption then ui.small(caption, floor(W / 2), L.y0 - 1, ui.C.line, ui.C.bg, "center", W - 2) end
   return L.statusY
 end
 
@@ -195,6 +225,7 @@ local function fill(plugin)
   end
 
   plugin.cpuLevels = plugin.cpuLevels or {}
+  plugin.help = plugin.help or {}
   plugin.color = plugin.color or "hi"
   plugin.accent = plugin.accent or config.PALETTE.yellow
   plugin.chatTag = plugin.chatTag or plugin.id:upper()
@@ -229,4 +260,5 @@ end
 
 return {
   fill = fill, layout = layout, grid = grid, cellAt = cellAt, disc = disc, boardGrid = boardGrid, SOUNDS = SOUNDS,
+  animT = animT, animate = animate,
 }

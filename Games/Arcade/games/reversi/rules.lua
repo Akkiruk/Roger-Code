@@ -71,18 +71,21 @@ function M.step(s, a)
     return s, {}
   end
   local p, other, board = s.turn, 3 - s.turn, s.board
-  local flipped = 0
+  local flipped, cells = 0, {}
   board[a.y][a.x] = p
   for _, d in ipairs(DIRECTIONS) do
     local n = lineFlips(board, a.x, a.y, d[1], d[2], p)
-    for i = 1, n do board[a.y + d[2] * i][a.x + d[1] * i] = p end
+    for i = 1, n do
+      board[a.y + d[2] * i][a.x + d[1] * i] = p
+      cells[#cells + 1] = { a.x + d[1] * i, a.y + d[2] * i }
+    end
     flipped = flipped + n
   end
   s.score[p] = s.score[p] + flipped + 1
   s.score[other] = s.score[other] - flipped
   s.moves = s.moves + 1
   s.last = { a.x, a.y }
-  local events = { { type = "place", seat = p, x = a.x, y = a.y, flipped = flipped } }
+  local events = { { type = "place", seat = p, x = a.x, y = a.y, flipped = flipped, cells = cells } }
   if hasMove(board, other) then
     s.turn = other
   elseif hasMove(board, p) then

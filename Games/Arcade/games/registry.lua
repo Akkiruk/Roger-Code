@@ -8,5 +8,7 @@ return {
   require("games.reversi.plugin"),
   require("games.checkers.plugin"),
   require("games.dots.plugin"),
+  require("games.mancala.plugin"),
   require("games.battleship.plugin"),
+  require("games.mastermind.plugin"),
 }

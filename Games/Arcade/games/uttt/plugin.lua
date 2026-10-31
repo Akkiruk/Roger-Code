@@ -21,6 +21,15 @@ local M = {
   sounds = config.SOUNDS,
   rules = rules,
   view = view,
+  help = {
+    "Nine small tic-tac-toe boards make one big board. Win three small boards in a line to win the game.",
+    "",
+    "Where you play decides where your opponent plays next: the square you pick inside a small board sends them to the matching board on the big one. The board they must use is lit.",
+    "",
+    "If that board is already won or full, they can play anywhere. That is a FREE MOVE.",
+    "",
+    "Win a small board with three in a line, the normal way.",
+  },
 }
 
 --- The rules' options for a new match, from this game's settings.

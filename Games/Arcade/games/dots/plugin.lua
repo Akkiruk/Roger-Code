@@ -41,6 +41,13 @@ function view.drawBoard(L, match)
       end
     end
   end
+  -- a box just closed flashes in its owner's colour
+  local t = base.animT(match)
+  if t and match.anim.closed and floor(t * 4) % 2 == 0 then
+    for _, box in ipairs(match.anim.closed) do
+      ui.fill(dotX(box[1]) + 2, dotY(box[2]) + 1, sx - 1, sy - 1, seatColor(match.anim.seat))
+    end
+  end
   for y = 1, SIZE + 1 do
     for x = 1, SIZE do
       local who = s.h[y][x]
@@ -110,6 +117,7 @@ function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
     if ev.type == "line" then
       if ev.scored > 0 then
+        base.animate(match, 500, { closed = ev.closed, seat = ev.seat })
         app.audio.play(ev.seat == 2 and "captureBlue" or "captureRed")
         if match.state.winner == 0 then
           app.setToast((ev.seat == 1 and match.red or match.blue).name .. " scores and goes again", seatColor(ev.seat), 1500)
@@ -125,6 +133,15 @@ local M = {
   id = "dots", title = "Dots and Boxes", short = "Dots+Boxes", chatTag = "DOTS", blurb = "Close the box, go again", color = "accent", accent = 0x9B7BFF,
   minSize = { w = 60, h = 40 }, cpuLevels = { "easy", "medium", "hard" },
   rules = rules, view = view, sounds = base.SOUNDS,
+  help = {
+    "Take turns drawing one line between two dots. Tap near the line you want.",
+    "",
+    "Draw the fourth side of a box and it is yours, and you go again. One line can close two boxes.",
+    "",
+    "When every line is drawn, the most boxes wins.",
+    "",
+    "Avoid drawing a box's third side, because that hands it to your opponent. Late in the game the boxes join into long chains: leaving your opponent the last two of a chain can win you the next one.",
+  },
   badges = {
     shutout = { name = "Shutout", text = "Win with 20 boxes or more", test = function(m, sd, _, won)
       return won and not m.forfeit and sd.boards >= 20

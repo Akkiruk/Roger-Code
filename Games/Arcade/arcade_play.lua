@@ -131,7 +131,9 @@ function M.draw(g, final, viewer)
   view.drawBoard(L, g, viewer)
 
   local text, color
-  if final then
+  if g.replay then
+    text, color = "REPLAY - TAP TO STOP", C.hi
+  elseif final then
     text, color = view.finalLine(g)
   elseif covered then
     text, color = "Hidden: your opponent is at this wall", C.warn
@@ -146,6 +148,10 @@ function M.draw(g, final, viewer)
     ui.small(text, floor(env.W / 2), L.statusY + 3, color, C.bg, "center", env.W - 2)
   end
 
+  if g.replay then
+    ui.region("stopReplay", 0, 0, env.W, env.H)
+    return
+  end
   if final then
     ui.small("TOUCH FOR RESULTS", floor(env.W / 2), L.statusY + L.statusH, C.line, C.bg, "center")
     ui.region("skipFinal", 0, 0, env.W, env.H)

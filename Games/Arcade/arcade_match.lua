@@ -6,7 +6,10 @@ local audio = require("arcade_audio")
 local config = require("arcade_config")
 local hw = require("arcade_hw")
 local journal = require("arcade_journal")
+local net = require("arcade_net")
+local replay = require("arcade_replay")
 local seats = require("arcade_seats")
+local tournament = require("arcade_tournament")
 local ui = require("arcade_ui")
 
 local M = {}
@@ -188,7 +191,29 @@ local function settle(g, reason)
     blue = seats.isHuman(g.blue) and not anyGuest and rankOf(g.blue.name) or nil,
   }
   journal.clear()
+  if #g.actions >= 4 and not s.forfeit then
+    replay.add(app.plugin.id, {
+      red = g.red.name, blue = g.blue.name, first = g.first, seed = g.seed, options = g.options, actions = g.actions, winner = winner,
+    })
+  end
+  net.result(app.plugin.id, app.plugin.title, g.red.name, g.blue.name, winner, #g.actions, summary.ranked)
+  -- in a knockout a result moves the bracket. A draw moves nothing, so the same pair play again
+  if S.tour and tournament.next(S.tour) and winner ~= 3 then
+    local name = (winner == 1 and g.red or g.blue).name
+    S.tourChampion = tournament.report(S.tour, name)
+    tournament.save(S.tour)
+    if S.tourChampion then
+      local p = app.store:ensure(S.tourChampion)
+      p.titles = (p.titles or 0) + 1
+      app.store:save()
+    end
+  end
+  local rivalry
+  if summary.ranked and winner ~= 3 then
+    rivalry = app.store:rivalry((winner == 1 and g.red or g.blue).name, (winner == 1 and g.blue or g.red).name)
+  end
   S.result = {
+    rivalry = rivalry, id = g.id,
     red = g.red, blue = g.blue, winner = winner, moves = app.plugin.summarize(g).moves, seconds = seconds,
     forfeit = s.forfeit, summary = summary, rankBefore = before, rankAfter = after, reason = reason, state = s,
     ranked = summary.ranked, guest = anyGuest, at = utcMs(),
@@ -310,7 +335,7 @@ function M.abandon(g, why)
   hw.watch({})
   S.match = nil
   journal.clear()
-  S.view = "idle"
+  S.view = S.tour and "bracket" or "idle" -- a knockout match that stops can simply be played again
   S.lobby = nil
   app.setToast("Game abandoned - no rating change", ui.C.warn)
   S.dirty = true
@@ -457,6 +482,26 @@ function M.tick(g, t)
     checkPresence(g)
     S.dirty = true
   end
+end
+
+--- A finished match set up to play back. It looks like a match to the views, with replay set.
+function M.newReplay(entry)
+  local g = newRecord({ name = entry.red }, { name = entry.blue }, { first = entry.first, seed = entry.seed, options = entry.options })
+  g.script, g.replay, g.step = entry.actions, true, 0
+  g.rng = journal.rng(g.seed)
+  g.state = app.plugin.rules.new(rulesOptions(g))
+  return g
+end
+
+--- One action of a replay. Returns false once there are no more.
+function M.replayStep(g)
+  g.step = g.step + 1
+  local action = g.script[g.step]
+  if not action then return false end
+  local stepped, events = app.plugin.rules.step(g.state, action, g.rng)
+  if not stepped then return false end
+  app.plugin.view.onEvents(app, g, events)
+  return true
 end
 
 --- Rebuild a match from its journal: the seed and the actions give back the exact state.

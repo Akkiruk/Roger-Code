@@ -25,7 +25,7 @@ function M.new(opts)
   local first = opts.first or 1
   return {
     turn = first, first = first, winner = 0, moves = 0, phase = "setup",
-    placed = { 0, 0 }, fleets = { {}, {} }, grids = { grid(0), grid(0) },
+    placed = { 0, 0 }, salts = {}, fleets = { {}, {} }, grids = { grid(0), grid(0) },
     shots = { grid(0), grid(0) }, sunk = { 0, 0 }, lastShot = {},
   }
 end
@@ -116,6 +116,7 @@ function M.step(s, a, rng)
   local p = s.turn
   if a.kind == "place" then
     placeShip(s, a.x, a.y, a.dir)
+    if s.placed[p] == #M.SHIPS then s.salts[p] = rng and rng(2147483646) or 0 end
     return s, { { type = "placed", seat = p } }
   end
   -- auto: the rest of this seat's fleet, wherever the dice say
@@ -124,6 +125,7 @@ function M.step(s, a, rng)
     local x, y, dir = rng(SIZE), rng(SIZE), rng(2) == 1 and "h" or "v"
     if fits(s.grids[p], ship.len, x, y, dir) then placeShip(s, x, y, dir) end
   end
+  s.salts[p] = rng(2147483646)
   return s, { { type = "placed", seat = p } }
 end
 
@@ -166,6 +168,13 @@ local function copy(v)
   local out = {}
   for k, x in pairs(v) do out[k] = copy(x) end
   return out
+end
+
+--- A fleet as text, with a random salt so a seal can't be guessed by trying fleets. Seat's secret until the game ends.
+function M.fleetText(s, seat)
+  local parts = {}
+  for n, ship in ipairs(s.fleets[seat]) do parts[n] = ship.x .. "," .. ship.y .. ship.dir end
+  return table.concat(parts, ";") .. "|" .. tostring(s.salts[seat])
 end
 
 --- What seat may know: their own fleet, every shot, and which enemy ships are still afloat, which sinking announces.

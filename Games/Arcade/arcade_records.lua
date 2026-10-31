@@ -11,6 +11,8 @@ M.VERSION = 2
 M.START_ELO = 1000
 M.HISTORY_LIMIT = 60
 M.RECORDED_LIMIT = 40     -- match ids remembered, so a result can never count twice
+M.CHAMPIONS_KEPT = 12     -- past season winners on the wall
+M.CPU_RATING = { easy = 800, medium = 1100, hard = 1400 } -- what each computer counts as on the solo ladder
 
 local function defaultIO()
   return {
@@ -77,7 +79,7 @@ function M:blank()
   local settings = {}
   for k, v in pairs(self.defaults) do settings[k] = v end
   return {
-    version = M.VERSION, players = {}, history = {}, settings = settings, recorded = {},
+    version = M.VERSION, players = {}, history = {}, settings = settings, recorded = {}, champions = {},
     totals = { games = 0, moves = 0, draws = 0 },
   }
 end
@@ -194,6 +196,25 @@ local function bumpRecord(t, k, result)
   if result == "w" then r.w = r.w + 1 elseif result == "l" then r.l = r.l + 1 else r.d = r.d + 1 end
 end
 
+--- A season is a calendar month. When a new one starts, its leader goes on the wall and every season count starts again.
+function M:rollSeason(now)
+  local month = os.date("%Y-%m", math.floor(now / 1000))
+  local data = self.data
+  if data.season == month then return end
+  if data.season then
+    local best
+    for _, p in pairs(data.players) do
+      if (p.seasonWins or 0) > 0 and (not best or p.seasonWins > best.seasonWins) then best = p end
+    end
+    if best then
+      table.insert(data.champions, 1, { season = data.season, name = best.name, wins = best.seasonWins })
+      while #data.champions > M.CHAMPIONS_KEPT do table.remove(data.champions) end
+    end
+    for _, p in pairs(data.players) do p.seasonWins = 0 end
+  end
+  data.season = month
+end
+
 --- Record a finished game.
 -- m = { red, blue, redCpu, blueCpu (level strings or nil), winner (1|2|3), moves, seconds, boardsRed,
 --       boardsBlue, trailed (max small-board deficit of the winner), forfeit (1|2|nil), tiebreak }
@@ -208,6 +229,7 @@ function M:record(m)
     end
   end
   local now = self.clock()
+  self:rollSeason(now)
   local summary = { ranked = false, achievements = {}, red = {}, blue = {} }
   local redCpu, blueCpu = m.redCpu, m.blueCpu
   summary.red.name, summary.blue.name = m.red, m.blue
@@ -263,6 +285,7 @@ function M:record(m)
       sideRec.games = sideRec.games + 1
       if result == "w" then
         p.wins = p.wins + 1
+        p.seasonWins = (p.seasonWins or 0) + 1
         sideRec.wins = sideRec.wins + 1
         p.streak = p.streak > 0 and p.streak + 1 or 1
         if not m.forfeit and (not p.fastestWin or m.moves < p.fastestWin) then p.fastestWin = m.moves end
@@ -276,6 +299,12 @@ function M:record(m)
       if p.streak > p.bestStreak then p.bestStreak = p.streak end
       if sd.oppCpu then
         bumpRecord(p.vsCpu, sd.oppCpu, result)
+        -- the computer's rating never moves, so a player alone can climb and two-player ratings are left alone
+        local solo = p.solo or M.START_ELO
+        local score = result == "w" and 1 or (result == "l" and 0 or 0.5)
+        local change = M.eloDelta(solo, M.CPU_RATING[sd.oppCpu] or M.START_ELO, score, p.soloGames or 0)
+        p.solo, p.soloGames = solo + change, (p.soloGames or 0) + 1
+        res.solo, res.soloDelta = p.solo, change
       else
         bumpRecord(p.h2h, key(sd.oppName), result)
       end
@@ -333,8 +362,11 @@ M.BOARDS = {
   rate = { title = "WIN %", value = function(p) return math.floor(winRate(p) * 100 + 0.5) end, min = 5, suffix = "%" },
   streak = { title = "BEST STREAK", value = function(p) return p.bestStreak end, min = 1, minValue = 1 },
   boards = { title = "BOARDS", value = function(p) return p.boardsWon end, min = 1, minValue = 1 },
+  titles = { title = "TITLES", value = function(p) return p.titles or 0 end, min = 1, minValue = 1 },
+  solo = { title = "SOLO", value = function(p) return p.solo or 0 end, min = 1, minValue = 1 },
+  season = { title = "MONTH", value = function(p) return p.seasonWins or 0 end, min = 1, minValue = 1 },
 }
-M.BOARD_ORDER = { "elo", "wins", "rate", "streak", "boards" }
+M.BOARD_ORDER = { "elo", "solo", "season", "wins", "rate", "streak", "boards" }
 
 --- Leaderboard: list of { rank, name, value, player }. Ties share a rank.
 function M:leaderboard(kind, limit)
@@ -371,6 +403,29 @@ function M:recent(limit)
   local out, h = {}, self.data.history
   for i = #h, math.max(1, #h - (limit or 10) + 1), -1 do out[#out + 1] = h[i] end
   return out
+end
+
+--- Something worth saying about a winner and the opponent they just beat, or nil.
+function M:rivalry(winner, loser)
+  local a, b = key(winner), key(loser)
+  local won = {} -- this pair's games, newest first: did the winner win it?
+  local h = self.data.history
+  for i = #h, 1, -1 do
+    local g = h[i]
+    local red, blue = key(g.red), key(g.blue)
+    if not g.redCpu and not g.blueCpu and ((red == a and blue == b) or (red == b and blue == a)) then
+      won[#won + 1] = (g.winner == 1 and red == a) or (g.winner == 2 and blue == a)
+    end
+  end
+  local run = 0
+  while won[run + 1] do run = run + 1 end
+  if run >= 3 then return string.format("%s has beaten %s %d times in a row", winner, loser, run) end
+  if run == 1 then
+    local without = 0
+    while without + 2 <= #won and not won[without + 2] do without = without + 1 end
+    if without >= 3 then return string.format("%s's first win over %s in %d games", winner, loser, without + 1) end
+  end
+  return nil
 end
 
 --- Head-to-head of a against b: w, l, d from a's side.

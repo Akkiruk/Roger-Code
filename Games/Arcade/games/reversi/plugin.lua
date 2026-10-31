@@ -63,10 +63,14 @@ function view.drawBoard(L, match)
     for _, a in ipairs(rules.legalActions(s)) do legal[a.y * 10 + a.x] = true end
   end
   local hint = match.hint and os.epoch("local") < match.hintUntil and match.hint
+  local flips, t = match.anim and match.anim.flips, base.animT(match) or 1
   for y = 1, SIZE do
     for x = 1, SIZE do
       local cx, cy = L.colX[x], L.rowY[y]
       local v = s.board[y][x]
+      -- flipped discs turn over one after another
+      local turning = flips and flips[y * 10 + x]
+      if turning and t < turning then v = 3 - v end
       if v ~= 0 then
         base.disc(cx + 1, cy, L.cw - 2, L.ch - 1, seatColor(v))
         if s.last and s.last[1] == x and s.last[2] == y then
@@ -115,6 +119,9 @@ function view.onEvents(app, match, events)
     if ev.type == "place" then
       app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
       if ev.flipped >= 6 then app.audio.later("capture", 110, 0.6, ev.seat == 2 and 0.8 or 1.2) end
+      local flips = {}
+      for i, cell in ipairs(ev.cells) do flips[cell[2] * 10 + cell[1]] = i / (#ev.cells + 1) end
+      base.animate(match, 120 * (#ev.cells + 1), { flips = flips })
     elseif ev.type == "pass" then
       app.setToast((ev.seat == 1 and match.red or match.blue).name .. " has no move and passes", C.warn, 2500)
     end
@@ -125,6 +132,15 @@ local M = {
   id = "reversi", title = "Reversi", blurb = "Flip them all", color = "ok", accent = 0x35D07F,
   minSize = { w = 60, h = 40 }, cpuLevels = { "easy", "medium", "hard" },
   rules = rules, view = view, sounds = base.SOUNDS,
+  help = {
+    "Place a disc so that a straight line of your opponent's discs sits between it and another of yours. Those discs flip to your colour.",
+    "",
+    "Every move must flip at least one disc. Lines work across, down and on diagonals, and one move can flip several lines. Small marks show where you can play.",
+    "",
+    "If you have no move, your turn passes. When neither player can move, the most discs wins.",
+    "",
+    "Corners can never be flipped, so they are worth having.",
+  },
   badges = {
     wipeout = { name = "Wipeout", text = "Win with nothing left for your opponent", test = function(m, sd, _, won)
       return won and not m.forfeit and sd.other == 0

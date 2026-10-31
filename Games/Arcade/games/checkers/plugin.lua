@@ -60,9 +60,15 @@ local function legalFrom(s, x, y)
   return out
 end
 
+local function drawPiece(L, x, y, v)
+  base.disc(x + 1, y + 1, L.cw - 2, L.ch - 2, seatColor(v % KING))
+  if v > KING then ui.fill(x + floor(L.cw / 2) - 1, y + floor(L.ch / 2) - 1, 3, 2, C.hi) end
+end
+
 function view.drawBoard(L, match)
   local s = match.state
   local sel = match.extras.sel
+  local slide = match.anim
   base.boardGrid(L, function(c, r) return (c + r) % 2 == 1 and C.panel or C.bg end)
   local legal = {}
   local hint = match.hint and os.epoch("local") < match.hintUntil and match.hint
@@ -83,12 +89,18 @@ function view.drawBoard(L, match)
   for y = 1, SIZE do
     for x = 1, SIZE do
       local v = s.board[y][x]
-      if v ~= 0 then
-        local cx, cy = L.colX[x], L.rowY[y]
-        base.disc(cx + 1, cy + 1, L.cw - 2, L.ch - 2, seatColor(v % KING))
-        if v > KING then ui.fill(cx + floor(L.cw / 2) - 1, cy + floor(L.ch / 2) - 1, 3, 2, C.hi) end
+      if v ~= 0 and not (slide and slide.tx == x and slide.ty == y) then
+        drawPiece(L, L.colX[x], L.rowY[y], v)
       end
     end
+  end
+  if slide then
+    local t = base.animT(match) or 1
+    local fromX, fromY = L.colX[slide.fx], L.rowY[slide.fy]
+    if slide.taken and floor(t * 6) % 2 == 0 then
+      drawPiece(L, L.colX[(slide.fx + slide.tx) / 2], L.rowY[(slide.fy + slide.ty) / 2], slide.taken)
+    end
+    drawPiece(L, floor(fromX + (L.colX[slide.tx] - fromX) * t), floor(fromY + (L.rowY[slide.ty] - fromY) * t), s.board[slide.ty][slide.tx])
   end
   for _, a in ipairs(legal) do
     if sel and a.fx == sel[1] and a.fy == sel[2] then
@@ -155,6 +167,11 @@ function view.historyLine(h) return string.format("%dmv %d-%d", h.moves or 0, h.
 function view.onEvents(app, match, events)
   match.extras.sel = match.state.chain and { match.state.chain[1], match.state.chain[2] } or nil
   for _, ev in ipairs(events) do
+    if ev.fx then
+      base.animate(match, ev.type == "jump" and 420 or 260, {
+        fx = ev.fx, fy = ev.fy, tx = ev.tx, ty = ev.ty, taken = ev.type == "jump" and (3 - ev.seat) or nil,
+      })
+    end
     if ev.type == "jump" then
       app.audio.play(ev.seat == 2 and "captureBlue" or "captureRed")
     elseif ev.type == "step" then
@@ -176,6 +193,15 @@ local M = {
   id = "checkers", title = "Checkers", blurb = "Jump, crown, clear the board", color = "warn", accent = 0xFF9F43,
   minSize = { w = 60, h = 40 }, cpuLevels = { "easy", "medium", "hard" },
   rules = rules, view = view, sounds = base.SOUNDS,
+  help = {
+    "Pieces move one square diagonally forward. Tap a piece, then tap where it goes.",
+    "",
+    "Jump over an enemy piece to an empty square behind it to capture it. If you can jump, you must, and a jump that can carry on must carry on with the same piece.",
+    "",
+    "A piece that reaches the far row becomes a king, marked in yellow, and its turn ends there. Kings move and jump both forwards and backwards.",
+    "",
+    "Take every enemy piece, or leave your opponent with no move, to win. " .. (rules.DRAW_AFTER / 2) .. " moves each with no capture and no ordinary piece moved is a draw.",
+  },
   badges = {
     perfect = { name = "Untouched", text = "Win without losing a piece", test = function(m, sd, _, won)
       return won and not m.forfeit and sd.other == 0

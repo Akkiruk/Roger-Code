@@ -5,6 +5,7 @@
 
 local ai = require("games.battleship.ai")
 local base = require("games.base")
+local hash = require("lib.casino.rng")
 local rules = require("games.battleship.rules")
 local ui = require("arcade_ui")
 
@@ -35,11 +36,12 @@ function view.score(state) return state.sunk[1], state.sunk[2] end
 function view.moveNumber(state) return state.moves + 1 end
 
 --- One seat's water: shots is who has fired at it, fleet is drawn only when given.
-local function drawWater(x0, y0, cw, ch, shots, grid, last)
+local function drawWater(x0, y0, cw, ch, shots, grid, last, landing)
   for y = 1, SIZE do
     for x = 1, SIZE do
       local cx, cy = x0 + (x - 1) * cw, y0 + (y - 1) * ch
       local shot = shots and shots[y][x] or 0
+      if landing and landing.x == x and landing.y == y then shot = 0 end -- the result stays hidden until it lands
       local ship = grid and grid[y][x] ~= 0
       local color = (x + y) % 2 == 0 and C.panel or C.blueTint
       if ship then color = C.line end
@@ -66,6 +68,11 @@ local function drawWaiting(L, match)
   ui.small((name and name.name or "A captain") .. " is placing their ships", L.x0 + floor(L.bw / 2), L.y0 + floor(L.bh / 2), C.line, C.panel, "center", L.bw - 2)
 end
 
+--- A short seal over a fleet: shown from the first shot, and checked against the fleet at the end.
+local function sealOf(s, seat)
+  return hash.sha256(rules.fleetText(s, seat)):sub(1, 10)
+end
+
 --- The game over: both fleets, with the shots that found them.
 local function drawReveal(L, match)
   local s = match.state
@@ -77,11 +84,19 @@ local function drawReveal(L, match)
   ui.small(match.blue.name .. "'s fleet", rx, L.y0, C.blue, C.bg, "left", cw * SIZE)
   drawWater(2, y, cw, ch, s.shots[2], s.grids[1])
   drawWater(rx, y, cw, ch, s.shots[1], s.grids[2])
+  local seals = match.extras.seals or {}
+  for seat = 1, 2 do
+    local seal = seals[seat]
+    if seal and s.fleets[seat][5] then
+      local good = seal == sealOf(s, seat)
+      ui.small("seal " .. seal .. (good and " matches" or " DOES NOT MATCH"), seat == 1 and 2 or rx, y + ch * SIZE + 1, good and C.ok or C.warn, C.bg, "left", cw * SIZE)
+    end
+  end
 end
 
 function view.drawBoard(L, match, viewer)
   local s = match.state
-  if s.winner ~= 0 then
+  if s.winner ~= 0 or match.replay then
     if match.red then return drawReveal(L, match) end
     return drawWater(L.x0, L.y0, L.cw, L.ch, s.shots[s.winner], nil) -- the idle demo has no players to name
   end
@@ -90,7 +105,17 @@ function view.drawBoard(L, match, viewer)
     return drawWaiting(L, match)
   end
   local seat = viewer or s.turn
-  drawWater(L.x0, L.y0, L.cw, L.ch, s.shots[seat], nil, s.lastShot[seat])
+  local shot = match.anim
+  local t = base.animT(match)
+  local landing = shot and t and t < 0.7 and shot.seat == seat
+  drawWater(L.x0, L.y0, L.cw, L.ch, s.shots[seat], nil, not landing and s.lastShot[seat] or nil, landing and shot or nil)
+  if landing then
+    -- the sights close in on the square
+    local close = 1 - t / 0.7
+    local cx, cy = L.colX[shot.x], L.rowY[shot.y]
+    local dx, dy = floor(close * L.cw * 2), floor(close * L.ch * 2)
+    ui.frame(cx - dx, cy - dy, L.cw + 2 * dx, L.ch + 2 * dy, C.hi, 1)
+  end
 end
 
 --- ROTATE and RANDOM while placing, then the fleet list and your own water in the corner.
@@ -111,6 +136,10 @@ function view.drawSides(L, match, leftX, rightX, w, viewer)
     local down = s.fleets[enemy][n].hits == ship.len
     ui.small(ship.name, leftX, y + n * 2, down and C.line or C.text, C.bg, "left", w)
   end
+  local seals = match.extras.seals or {}
+  ui.small("SEALS", leftX, y + 14, C.hi, C.bg, "left", w)
+  ui.small(seals[1] or "-", leftX, y + 15, C.red, C.bg, "left", w)
+  ui.small(seals[2] or "-", leftX, y + 16, C.blue, C.bg, "left", w)
   ui.small("YOURS", rightX, y, C.hi, C.bg, "left", w)
   local cw = math.max(1, math.min(2, floor(w / SIZE)))
   drawWater(rightX, y + 2, cw, 1, s.shots[enemy], s.grids[viewer], s.lastShot[enemy])
@@ -173,6 +202,7 @@ function view.historyLine(h) return string.format("%d shots", h.moves or 0) end
 function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
     if ev.type == "shot" then
+      base.animate(match, 600, { x = ev.x, y = ev.y, seat = ev.seat })
       local name = (ev.seat == 1 and match.red or match.blue).name
       if ev.sunk then
         app.audio.play(ev.seat == 2 and "captureBlue" or "captureRed")
@@ -185,6 +215,12 @@ function view.onEvents(app, match, events)
       end
     elseif ev.type == "placed" then
       app.audio.play("select")
+      -- seal each fleet as it is finished, so neither side can say the other moved a ship
+      if match.state.placed[ev.seat] == #SHIPS then
+        local seals = match.extras.seals or {}
+        seals[ev.seat] = sealOf(match.state, ev.seat)
+        match.extras.seals = seals
+      end
     end
   end
 end
@@ -200,6 +236,15 @@ local M = {
   minSize = { w = 98, h = 64 }, walls = 2, private = true, noHints = true,
   cpuLevels = { "easy", "medium", "hard" },
   rules = rules, view = view, sounds = base.SOUNDS,
+  help = {
+    "Each player hides five ships on their own wall: Carrier 5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2. Keep to your side of the divider.",
+    "",
+    "Place ships one at a time: tap the square a ship starts on, use ACROSS or DOWN to turn it, or tap RANDOM to place the rest for you. Ships can touch but not overlap.",
+    "",
+    "Then take turns firing at the enemy's water on your wall. A hit does not earn another shot. When every square of a ship is hit it sinks, and both players are told.",
+    "",
+    "Sink all five to win. If your opponent walks round to your wall, it hides your fleet until they leave.",
+  },
   badges = {
     unscathed = { name = "Unsinkable", text = "Win without losing a ship", test = function(m, sd, _, won)
       return won and not m.forfeit and sd.other == 0

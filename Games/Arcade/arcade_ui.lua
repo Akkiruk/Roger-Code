@@ -60,6 +60,21 @@ function M.small(str, x, y, fg, bg, align, maxWidth)
   return #str
 end
 
+--- Split text into lines of at most width characters, at spaces.
+function M.wrap(text, width)
+  local lines, line = {}, ""
+  for word in tostring(text):gmatch("%S+") do
+    if line ~= "" and #line + 1 + #word > width then
+      lines[#lines + 1] = line
+      line = word
+    else
+      line = line == "" and word or (line .. " " .. word)
+    end
+  end
+  lines[#lines + 1] = line
+  return lines
+end
+
 --- A name with the pixel font if it fits, otherwise native text.
 function M.name(name, x, y, maxW, color, align, bg)
   align = align or "left"

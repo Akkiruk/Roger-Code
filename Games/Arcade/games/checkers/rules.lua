@@ -114,7 +114,7 @@ function M.step(s, a)
   s.moves = s.moves + 1
   s.last = { a.fx, a.fy, a.tx, a.ty }
   s.chain = nil
-  local events = { { type = jumped and "jump" or "step", seat = p, crowned = crowned } }
+  local events = { { type = jumped and "jump" or "step", seat = p, crowned = crowned, fx = a.fx, fy = a.fy, tx = a.tx, ty = a.ty } }
   if jumped and not crowned then
     local more = {}
     addJumps(s, a.tx, a.ty, more)
