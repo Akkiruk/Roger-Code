@@ -1,4 +1,5 @@
 local runtimeExit = require("lib.runtime_exit")
+local updateScreen = require("lib.update_screen")
 local updater = require("lib.updater")
 
 local function openLogger(path, namespace)
@@ -334,10 +335,14 @@ local function gameIsBusy()
   return busyAt ~= nil and os.epoch("utc") - busyAt < BUSY_REPORT_SECONDS * 1000
 end
 
-local function updateWatcher(updateInterval)
-  updater.watchForUpdates({
+--- Watch until an update is ready to apply. Returns "ready" then, which ends the game so the update can have the screens.
+local function updateWatcher(updateInterval, immediate, failures)
+  return updater.watchForUpdates({
     interval = updateInterval,
     isBusy = gameIsBusy,
+    stopWhenReady = true,
+    immediate = immediate,
+    failures = failures,
     callback = function(status, message)
       logMessage("Updater [" .. tostring(status) .. "] " .. tostring(message or ""))
     end,
@@ -347,8 +352,7 @@ end
 local function checkForUpdatesAfterCrash(runErr, repair)
   local status = updater.checkForUpdates({
     repair = repair,
-    rebootOnUpdate = true,
-    rebootDelay = 1,
+    stopWhenReady = true,
     callback = function(updateStatus, message)
       logMessage(
         "Crash updater [" .. tostring(updateStatus) .. "] "
@@ -358,11 +362,25 @@ local function checkForUpdatesAfterCrash(runErr, repair)
     end,
   })
 
-  if status == "updated" or status == "terminated" then
-    return
+  if status == "ready" or status == "terminated" then
+    return status
   end
 
   logMessage("Crash updater result: " .. tostring(status or "unknown"))
+  return status
+end
+
+--- The update itself, on every screen. A failure leaves the old version whole, so the game can simply carry on.
+local function applyOnScreen(installed, repair)
+  return updateScreen.run(installed.name or installed.program, function(progress)
+    return updater.checkForUpdates({
+      repair = repair,
+      progress = progress,
+      callback = function(status, message)
+        logMessage("Updater [" .. tostring(status) .. "] " .. tostring(message or ""))
+      end,
+    })
+  end)
 end
 
 function M.run(...)
@@ -396,6 +414,7 @@ function M.run(...)
     logMessage("Monitor idle watchdog enabled for " .. tostring(runtime.monitorIdleTimeout) .. "s")
   end
 
+  local updateRepair = nil -- set when an update is ready: false, or true to replace damaged files
   local function appLoop()
     local lastCrashUpdateCheckAt = nil
     local crashes = 0
@@ -430,7 +449,11 @@ function M.run(...)
           term.setCursorPos(1, 8)
           term.setTextColor(colors.lightGray)
           print("Checking for updates before restart...")
-          checkForUpdatesAfterCrash(runErr, crashes >= CRASHES_BEFORE_REPAIR)
+          local repair = crashes >= CRASHES_BEFORE_REPAIR
+          if checkForUpdatesAfterCrash(runErr, repair) == "ready" then
+            updateRepair = repair
+            return
+          end
         else
           local secondsUntilRetry = math.ceil(((CRASH_UPDATE_CHECK_COOLDOWN * 1000) - (now - lastCrashUpdateCheckAt)) / 1000)
           logMessage("Skipping crash update check for " .. tostring(secondsUntilRetry) .. "s cooldown")
@@ -441,10 +464,13 @@ function M.run(...)
     end
   end
 
+  local immediate, failures = true, 0
   local runners = {
     appLoop,
     function()
-      updateWatcher(runtime.updateInterval)
+      if updateWatcher(runtime.updateInterval, immediate, failures) == "ready" then
+        updateRepair = false
+      end
     end,
     busyListener,
   }
@@ -467,8 +493,23 @@ function M.run(...)
     print("Press I here to open the installer.")
   end
 
-  parallel.waitForAny(unpack(runners))
-  term.redirect(homeTerm)
+  while true do
+    updateRepair = nil
+    parallel.waitForAny(unpack(runners))
+    term.redirect(homeTerm)
+    if updateRepair == nil then
+      break
+    end
+    if applyOnScreen(installed, updateRepair) == "updated" then
+      os.reboot()
+    end
+    -- nothing changed, so the game comes back and the watcher tries again later
+    immediate, failures = false, failures + 1
+    logMessage("Update did not finish; back to the game")
+    term.setBackgroundColor(colors.black)
+    term.clear()
+    term.setCursorPos(1, 1)
+  end
 
   if installerRequested and fs.exists(INSTALLER_PATH) then
     logMessage("Installer opened from the running game")

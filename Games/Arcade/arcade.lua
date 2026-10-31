@@ -64,7 +64,9 @@ local env = { W = 0, H = 0 }
 local surfaceApi, font, screen
 local stores = {}
 local nextScoreboardAt = 0
-local attractAt, attractIndex = nil, 0 -- the first games get their full turn too
+local attractIndex = 0
+local IDLE_END_HOLD_MS = 4000 -- how long the last move of an idle game stays up before the next game
+local IDLE_LONGEST_MS = 360000 -- a game that drags on this long gives way in the end
 
 local app = { S = S, env = env, log = log, audio = audio, signed = screens.signed }
 
@@ -353,7 +355,18 @@ local function nextIdleGame()
 end
 
 local function idleSlot(plugin)
-  return { plugin = plugin, demo = { script = replay.best(plugin.id) }, choose = demoChooser(plugin) }
+  return { plugin = plugin, demo = { script = replay.best(plugin.id) }, choose = demoChooser(plugin), since = nowMs() }
+end
+
+--- The next game that isn't already showing on a wall, or nil if every game that fits is.
+local function nextUnshownGame()
+  for _ = 1, #registry do
+    local plugin = nextIdleGame()
+    local shown = false
+    for _, slot in ipairs(S.idle) do shown = shown or slot.plugin == plugin end
+    if not shown then return plugin end
+  end
+  return nil
 end
 
 --- Each wall wears the accent of the game it is showing.
@@ -452,7 +465,13 @@ local function writeDebug()
   d.entry = S.entry
   if S.view == "idle" and S.idle then
     d.idleGames = {}
-    for i, slot in ipairs(S.idle) do d.idleGames[i] = slot.plugin.id end
+    d.idleMoves, d.idleWon = {}, {}
+    for i, slot in ipairs(S.idle) do
+      d.idleGames[i] = slot.plugin.id
+      local state = slot.demo.state
+      d.idleMoves[i] = state and state.moves or 0
+      d.idleWon[i] = state ~= nil and state.winner ~= 0
+    end
   end
   d.replayStep = S.replay and S.replay.step or nil
   d.players = {}
@@ -986,18 +1005,26 @@ end
 
 -- ------------------------------------------------------------------ periodic work
 
+--- Each wall plays its game right through, then moves on to the next by itself.
 local function attractStep(t)
-  attractAt = attractAt or t + config.ATTRACT_SWAP * 1000
-  if not S.idle or (#registry > 1 and t >= attractAt) then
-    attractAt = t + config.ATTRACT_SWAP * 1000
+  if not S.idle then
     pickIdleGames()
     S.dirty = true
   elseif not S.idleDressed then
     dressIdleWalls() -- back from a match or the menu, the walls go back to their own games
   end
   S.idleDressed = true
-  for _, slot in ipairs(S.idle) do
+  for i, slot in ipairs(S.idle) do
     if slot.plugin.view.demoStep(slot.demo, t, slot.choose) then S.dirty = true end
+    local ended = slot.demo.finishedAt and t - slot.demo.finishedAt > IDLE_END_HOLD_MS
+    if ended or t - slot.since > IDLE_LONGEST_MS then
+      local plugin = nextUnshownGame()
+      if plugin then
+        S.idle[i] = idleSlot(plugin)
+        dressIdleWalls()
+        S.dirty = true
+      end
+    end
   end
   if floor(t / 700) ~= S.blinkPhase then S.blinkPhase = floor(t / 700); S.dirty = true end
 end

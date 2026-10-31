@@ -782,7 +782,7 @@ end
 -- Update logic
 -----------------------------------------------------
 
-local function performUpdate(spec, installed, repairOf)
+local function performUpdate(spec, installed, repairOf, progress)
   local unlockOk, unlockResult = beginWriteWindow("auto-update")
   if not unlockOk then
     logMsg("Update unlock failed: " .. tostring(unlockResult))
@@ -804,7 +804,9 @@ local function performUpdate(spec, installed, repairOf)
 
   -- Everything is fetched before anything is touched, so a failed download leaves the old version whole.
   local fetched = {}
-  for _, entry in ipairs(spec.install.files or {}) do
+  local total = #(spec.install.files or {})
+  for index, entry in ipairs(spec.install.files or {}) do
+    if progress then progress(index - 1, total) end
     if entry.preserve_existing and fs.exists(entry.install_path) then
       success = success + 1
     else
@@ -814,11 +816,13 @@ local function performUpdate(spec, installed, repairOf)
       else
         failed = failed + 1
         logMsg("Download failed: " .. tostring(entry.install_path) .. " - " .. tostring(err or "hash mismatch"))
+        break -- one missing file sinks the whole update, so there's no use fetching the rest
       end
     end
     os.sleep(0)
   end
 
+  if progress then progress(total, total) end
   if failed > 0 then
     logMsg("Update abandoned, nothing changed: " .. tostring(failed) .. " files could not be fetched")
     endWriteWindow(createdUnlock)
@@ -957,6 +961,15 @@ local function checkForUpdates(opts)
       return
     end
 
+    if opts.stopWhenReady then
+      -- whoever asked will stop the game and put an update on screen first
+      logMsg("Update ready: " .. reason)
+      releaseLock()
+      status = "ready"
+      callback("ready", reason)
+      return
+    end
+
     callback("updating", "Fetching package spec...")
     local spec, specErr = fetchProgramSpec(programEntry.spec_path)
     if not spec then
@@ -980,7 +993,7 @@ local function checkForUpdates(opts)
     logMsg("Updating " .. progKey .. ": " .. reason)
     callback("updating", "Updating " .. progKey .. ": " .. reason)
 
-    local updated, filesOk, filesFailed = performUpdate(spec, installed, repairOf)
+    local updated, filesOk, filesFailed = performUpdate(spec, installed, repairOf, opts.progress)
     if updated and filesFailed == 0 then
       logMsg("Update complete: " .. filesOk .. " files updated")
       status = "updated"
@@ -1068,10 +1081,10 @@ local function watchForUpdates(opts)
     return os.epoch("utc") - waitingSince < MAX_UPDATE_WAIT_SECONDS * 1000
   end
 
-  local failures = 0
+  local failures = tonumber(opts.failures) or 0
 
   local function runOneCheck()
-    local status = checkForUpdates({ callback = notify, holdUntilQuiet = holdUntilQuiet })
+    local status = checkForUpdates({ callback = notify, holdUntilQuiet = holdUntilQuiet, stopWhenReady = opts.stopWhenReady })
     if status == "terminated" then
       return false
     end
@@ -1089,8 +1102,12 @@ local function watchForUpdates(opts)
 
   if immediate then
     os.sleep(spread(BOOT_SPREAD_SECONDS))
-    if not runOneCheck() then
+    local running, status = runOneCheck()
+    if not running then
       return
+    end
+    if status == "ready" then
+      return "ready"
     end
   end
 
@@ -1114,6 +1131,9 @@ local function watchForUpdates(opts)
       end
     end
     waitingSince = nil
+    if status == "ready" then
+      return "ready"
+    end
 
     if startupSchedule[startupIndex] then
       startupIndex = startupIndex + 1
