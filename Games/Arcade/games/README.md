@@ -67,6 +67,25 @@ Setting `noHints = true` removes the hint button.
 
 For animation, call `base.animate(match, ms, fields)` from `view.onEvents`, and in `drawBoard` read `match.anim` and `base.animT(match)`, which runs from 0 to 1. The shell redraws until it ends. The rules have already moved on by then, so an animation only changes what is drawn, and the next touch simply replaces it. Replays use the same events.
 
+## Classics
+
+A classic is one player, in real time, playing for a high score. Set `action = true` and it goes on the CLASSICS tab of the menu, with its own START screen, high score table and final screen. The shell owns all of that. See `games/snake` for a complete one.
+
+The screen is a monitor, and a monitor only ever gets separate taps: there's no held button and no joystick. A touch takes a moment to arrive too. So pick games that work in taps, and keep the speed fair: `tickMs` is how often the game steps, and 100 is as fast as it goes. A tap should set something that stays set, such as a direction, or aim at a spot on the board.
+
+Rules are pure and take chance only from `rng`:
+
+| Function | Contract |
+|---|---|
+| `new(opts)` | A fresh state. `opts.rng` is the only source of chance |
+| `input(state, action)` | A player's action. Takes effect on the next step |
+| `tick(state, rng)` | One step of the clock. Returns a list of events |
+| `bot(state, rng)` | An action for the idle screen and tests, or nil |
+
+The state must have `score`, `level`, `over`, and `lives` if the game has them. Setting `over` to true ends the run.
+
+The view has `layout(W, H)` (`base.actionLayout` makes one), `draw(L, state)`, `controls(L, state)` for buttons as `{ label, x, y, w, h, action }` (`base.dpad` makes four arrows), `actionAt(L, state, px, py)` for taps on the board, and `onEvents(app, state, events)` for sound. `help` and `blurb` work as for any game.
+
 ## Proving a game
 
 `tools/arcadetest` in craftos-agent has what a new game needs: an oracle written from the published rules without reading the Lua (`oracles/`), with `rules.snapshot` and `rules.key` for `games.mjs` to compare every position, and `mutants.mjs` to show that comparison can fail.

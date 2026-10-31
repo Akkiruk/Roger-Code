@@ -11,4 +11,5 @@ return {
   require("games.mancala.plugin"),
   require("games.battleship.plugin"),
   require("games.mastermind.plugin"),
+  require("games.snake.plugin"),
 }

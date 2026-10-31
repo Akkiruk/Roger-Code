@@ -7,6 +7,7 @@
 -- A second monitor of the same size is a second wall, back to back with the first: every screen shows on both, except
 -- in a game with hidden pieces, where each player's wall draws their own view.
 
+local actions = require("arcade_action")
 local audio = require("arcade_audio")
 local config = require("arcade_constants")
 local hw = require("arcade_hw")
@@ -408,10 +409,21 @@ local function drawMenu()
   ui.text(config.NAME, floor(W / 2), 2, C.hi, "center")
   ui.small("Free to play - pick a game", floor(W / 2), 10, C.line, C.bg, "center", W - 2)
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
-  local rows = math.ceil(#registry / 2)
-  local rowH = max(7, min(18, floor((H - 15) / rows) - 2))
+  -- the games on this tab
+  local tab = S.menuTab or "board"
+  local list, hasClassics = {}, false
+  for _, plugin in ipairs(registry) do
+    hasClassics = hasClassics or plugin.action == true
+    if (plugin.action == true) == (tab == "classic") then list[#list + 1] = plugin end
+  end
+  if hasClassics then
+    ui.button("menuTab", W - 44, 1, 20, 7, "BOARD GAMES", tab == "board" and C.hi or C.panel, { small = true, data = "board" })
+    ui.button("menuTab", W - 22, 1, 20, 7, "CLASSICS", tab == "classic" and C.hi or C.panel, { small = true, data = "classic" })
+  end
+  local rows = math.ceil(#list / 2)
+  local rowH = max(7, min(18, floor((H - 15) / max(rows, 4)) - 2))
   local tileW = floor((W - 10) / 2)
-  for i, plugin in ipairs(registry) do
+  for i, plugin in ipairs(list) do
     local x = 4 + ((i - 1) % 2) * (tileW + 2)
     local y = 13 + floor((i - 1) / 2) * (rowH + 2)
     local fits, why = app.fits(plugin)
@@ -463,6 +475,10 @@ local function writeDebug()
     d.tour = { rounds = #S.tour.rounds, champion = S.tourChampion, next = tournament.next(S.tour) }
   end
   d.entry = S.entry
+  if S.action then
+    d.action = actions.debug()
+    d.board = env.L and { x0 = env.L.x0, y0 = env.L.y0, bw = env.L.bw, bh = env.L.bh } or nil
+  end
   if S.view == "idle" and S.idle then
     d.idleGames = {}
     d.idleMoves, d.idleWon = {}, {}
@@ -531,6 +547,7 @@ local function drawWalls()
   elseif S.view == "stats" then screens.drawStats()
   elseif S.view == "settings" then screens.drawSettings()
   elseif S.view == "rules" then screens.drawRules()
+  elseif S.view == "action" then actions.draw()
   elseif S.view == "entry" then screens.drawEntry()
   elseif S.view == "bracket" then screens.drawBracket()
   elseif S.view == "replay" then play.draw(S.replay)
@@ -641,7 +658,30 @@ handlers.game = function(b, who, wall)
   app.selectGame(plugin)
   S.demo = {}
   S.lobby = nil
-  openLobby(who, wall)
+  if plugin.action then
+    actions.open(who)
+  else
+    openLobby(who, wall)
+  end
+end
+
+-- classics: one player, on the clock
+handlers.actStart = function(_, who)
+  actions.start(who)
+end
+handlers.act = function(b, who) actions.press(b.data, who) end
+handlers.actQuit = function(_, who)
+  if actions.mayPlay(who) then actions.quit() end
+end
+handlers.actDone = function() actions.leave() end
+handlers.actBoards = function(_, who, wall)
+  actions.leave()
+  openFront(who, wall)
+end
+handlers.menuTab = function(b)
+  S.menuTab = b.data
+  audio.play("page")
+  S.dirty = true
 end
 
 handlers.skipFinal = function()
@@ -762,7 +802,7 @@ end
 handlers.rulesDone = function()
   audio.play("select")
   local start = S.rulesThen
-  S.rulesThen, S.view = false, "lobby"
+  S.rulesThen, S.view = false, S.action and "action" or "lobby"
   if start and S.lobby then startFromLobby() end
 end
 handlers.options = function()
@@ -1001,6 +1041,7 @@ local function onTouch(side, x, y, who)
     return
   end
   if S.view == "game" then handleBoardTouch(px, py, who, wall) end
+  if S.view == "action" then actions.touch(px, py, who) end
 end
 
 -- ------------------------------------------------------------------ periodic work
@@ -1036,7 +1077,8 @@ local function onTick()
   -- an update waits for a quiet moment: nobody mid-match, and nobody who has touched the wall in the last while
   if t - (S.busyAt or 0) > BUSY_REPORT_MS then
     S.busyAt = t
-    os.queueEvent("roger_busy", S.match ~= nil or (S.view ~= "idle" and t - S.lastTouch < config.LOBBY_IDLE * 1000))
+    os.queueEvent("roger_busy", S.match ~= nil or (S.action ~= nil and S.action.phase == "play")
+      or (S.view ~= "idle" and t - S.lastTouch < config.LOBBY_IDLE * 1000))
   end
   if S.toast and t > S.toast.untilAt then S.toast = nil; S.dirty = true end
   -- an animation redraws itself until it ends
@@ -1076,6 +1118,8 @@ local function onTick()
     end
   elseif S.view == "game" and S.match then
     matches.tick(S.match, t)
+  elseif S.view == "action" then
+    actions.tick(t)
   end
 end
 
@@ -1095,6 +1139,7 @@ end
 local function main()
   screens.bind(app)
   matches.bind(app)
+  actions.bind(app)
   play.bind(app)
   local rep = hw.init()
   -- peripherals can attach a moment after the computer boots; give the optional ones a short window

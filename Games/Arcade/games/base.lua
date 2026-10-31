@@ -58,6 +58,31 @@ local function grid(W, H, cols, rows)
   return L
 end
 
+--- A classic's layout: the board centred under a thin header, with its controls in the space beneath.
+local function actionLayout(W, H, bw, bh)
+  local L = { W = W, H = H, bw = bw, bh = bh, hdr = 7 }
+  L.x0 = math.floor((W - bw) / 2)
+  L.y0 = L.hdr
+  L.controlY = L.y0 + bh + 1
+  L.statusY = L.controlY
+  L.controlH = H - L.controlY - 1
+  return L
+end
+
+--- Four arrow buttons, centred under the board, for a game steered by direction.
+local function dpad(L)
+  local bw = 22
+  local bh = math.floor((L.controlH - 1) / 2)
+  local cx = math.floor(L.W / 2)
+  local y1, y2 = L.controlY, L.controlY + bh + 1
+  return {
+    { label = "UP", x = cx - math.floor(bw / 2), y = y1, w = bw, h = bh, action = { kind = "turn", dir = "up" } },
+    { label = "LEFT", x = cx - math.floor(bw * 1.5) - 1, y = y2, w = bw, h = bh, action = { kind = "turn", dir = "left" } },
+    { label = "DOWN", x = cx - math.floor(bw / 2), y = y2, w = bw, h = bh, action = { kind = "turn", dir = "down" } },
+    { label = "RIGHT", x = cx + math.ceil(bw / 2) + 1, y = y2, w = bw, h = bh, action = { kind = "turn", dir = "right" } },
+  }
+end
+
 --- The grid cell under a touch, or nil.
 local function cellAt(L, px, py)
   if px < L.x0 or px >= L.x0 + L.bw or py < L.y0 or py >= L.y0 + L.bh then return nil end
@@ -175,6 +200,22 @@ local function demoStep(plugin, demo, t, choose)
   return true
 end
 
+--- One step of a classic's demo: its own bot plays. Returns true when it changed.
+local function actionDemoStep(plugin, demo, t)
+  if not demo.state or (demo.finishedAt and t - demo.finishedAt > 5000) then
+    demo.state, demo.nextAt, demo.finishedAt = plugin.rules.new({ rng = demoRng }), t + 800, nil
+    demo.match = { state = demo.state }
+    return true
+  end
+  if demo.finishedAt or t < demo.nextAt then return false end
+  demo.nextAt = t + (plugin.tickMs or 150)
+  local action = plugin.rules.bot and plugin.rules.bot(demo.state, demoRng)
+  if action then plugin.rules.input(demo.state, action) end
+  plugin.rules.tick(demo.state, demoRng)
+  if demo.state.over then demo.finishedAt = t end
+  return true
+end
+
 --- The title over a live demo of the board. Returns the y for the prompt.
 local function drawAttract(plugin, W, H, demo)
   local L = plugin.view.layout(W, H)
@@ -214,6 +255,12 @@ local function fill(plugin)
     return string.format("%s beat %s at %s%s", w.name, l.name, plugin.title, s.forfeit and " by forfeit" or "")
   end
   view.drawAttract = view.drawAttract or function(W, H, demo) return drawAttract(plugin, W, H, demo) end
+  if plugin.action then
+    view.drawBoard = view.drawBoard or function(L, match) view.draw(L, match.state) end
+    view.demoStep = view.demoStep or function(demo, t) return actionDemoStep(plugin, demo, t) end
+    view.controls = view.controls or function() return {} end
+    view.actionAt = view.actionAt or function() return nil end
+  end
   view.demoStep = view.demoStep or function(demo, t, choose) return demoStep(plugin, demo, t, choose) end
   view.debug = view.debug or function(match)
     local s = match.state
@@ -262,5 +309,5 @@ end
 
 return {
   fill = fill, layout = layout, grid = grid, cellAt = cellAt, disc = disc, boardGrid = boardGrid, SOUNDS = SOUNDS,
-  animT = animT, animate = animate,
+  animT = animT, animate = animate, actionLayout = actionLayout, dpad = dpad,
 }
