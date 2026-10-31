@@ -22,6 +22,21 @@ function M.new(target, w, h)
   return self
 end
 
+--- Point this canvas at a monitor again, after a resize. A scene keeps the canvas it started with, and a real monitor says it has
+-- resized a tick after setTextScale, so by then one is up: this has to stay the same object, or the scene draws where nothing looks.
+function Canvas:attach(target)
+  self.target = target
+  local w, h = target.getSize()
+  if w ~= self.w or h ~= self.h then
+    self.w, self.h = w, h
+    for y = 1, h do
+      self.ch[y], self.fg[y], self.bg[y] = {}, {}, {}
+    end
+    self:clear("f")
+  end
+  self:invalidate()
+end
+
 function Canvas:clear(bg)
   for y = 1, self.h do
     local c, f, b = self.ch[y], self.fg[y], self.bg[y]

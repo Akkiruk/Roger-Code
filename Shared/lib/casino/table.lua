@@ -262,7 +262,7 @@ function Table:attachCanvas()
   self.monitor = peripheral.wrap(self.monitorName)
   self.monitor.setTextScale(0.5)
   theme.apply(self.monitor, self.game.felt)
-  self.c = canvas.new(self.monitor)
+  if self.c then self.c:attach(self.monitor) else self.c = canvas.new(self.monitor) end
   self.ctx.c = self.c
 end
 

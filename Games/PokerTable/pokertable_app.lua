@@ -192,7 +192,7 @@ function App:attachCanvas()
   self.monitor = peripheral.wrap(self.monitorName)
   self.monitor.setTextScale(0.5)
   theme.apply(self.monitor, FELT)
-  self.c = canvas.new(self.monitor)
+  if self.c then self.c:attach(self.monitor) else self.c = canvas.new(self.monitor) end
 end
 
 --- Find the scoreboard, if there is one now. board.find measures every monitor, so this only runs when something changes.
