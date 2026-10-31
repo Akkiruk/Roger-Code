@@ -213,6 +213,22 @@ local function installerKeyWatcher()
   end
 end
 
+-- Runs code an admin sent with /vhcc pc exec. The server only accepts the answer to a request it made.
+local function remoteAgent()
+  while true do
+    local event, request, code = os.pullEventRaw("vhcc_rc_exec")
+    if event == "vhcc_rc_exec" then
+      local chunk, loadErr = load(code, "=remote", "t", _G)
+      local results = chunk and { pcall(chunk) } or { false, loadErr }
+      local ok, json = pcall(textutils.serialiseJSON, results)
+      if not ok then
+        json = textutils.serialiseJSON({ false, "result cannot be serialised" })
+      end
+      pcall(vhcc.rcReply, request, json)
+    end
+  end
+end
+
 local function loadRuntimeState()
   local installed = updater.getInstallInfo() or readInstalledState()
   if type(installed) ~= "table" then
@@ -409,6 +425,10 @@ function M.run(...)
       updateWatcher(runtime.updateInterval)
     end,
   }
+
+  if vhcc and vhcc.rcReply then
+    runners[#runners + 1] = remoteAgent
+  end
 
   local installerRequested = false
   if runtime.monitorIdleTimeout then
