@@ -7,12 +7,12 @@
     "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
-    "generated_at": "2026-10-31T18:14:14Z",
-    "package_hash": "dcb167aff7dcc28198bbdcf5237e4d416318d05fd26cdf37b6619921c23aa675"
+    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
+    "generated_at": "2026-10-31T19:16:02Z",
+    "package_hash": "6ff04170a6330a2351c07b450edb94680229304c396f1690212fc6d799406c04"
   },
   "install": {
     "preserve": [
@@ -23,6 +23,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -66,14 +71,14 @@
         "sha256": "62020e735df5da46840283d8ccd96849e530607d09a281a9d2720ba135bb4403"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
-      },
-      {
         "repo_path": "Games/UltimateTicTacToe/uttt_rules.lua",
         "install_path": "uttt_rules.lua",
         "sha256": "bbceb0fd584058cfc70ee0c8d588fe34d920e3c446cc9fb719f71f862c557d97"
+      },
+      {
+        "repo_path": "Games/UltimateTicTacToe/uttt_hw.lua",
+        "install_path": "uttt_hw.lua",
+        "sha256": "27074a4b13649fa2752fecec62e9641ba2148d1d3bb37e88fabea98d6e58013f"
       },
       {
         "repo_path": "Games/UltimateTicTacToe/uttt_audio.lua",
@@ -93,7 +98,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -103,7 +108,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -116,14 +121,14 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Games/UltimateTicTacToe/uttt_hw.lua",
-        "install_path": "uttt_hw.lua",
-        "sha256": "27074a4b13649fa2752fecec62e9641ba2148d1d3bb37e88fabea98d6e58013f"
-      },
-      {
         "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
         "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
       }
     ]
   },
@@ -140,6 +145,7 @@
       "lib.roger_supervisor",
       "lib.runtime_exit",
       "lib.sound",
+      "lib.update_screen",
       "lib.updater"
     ]
   }

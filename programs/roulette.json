@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.105"
+    "version": "1.0.106"
   },
   "build": {
-    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
-    "generated_at": "2026-10-31T18:14:14Z",
-    "package_hash": "55bb2ee522dd333c9fd8a89e2f3d90e2dcbce7def347dc6db0f96856a22f2154"
+    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
+    "generated_at": "2026-10-31T19:16:02Z",
+    "package_hash": "df3c7be04d5464b36a5ea9d16afc5c1cfd45b638718a005615f70fb0a7c446be"
   },
   "install": {
     "preserve": [],
@@ -21,6 +21,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
       },
       {
         "repo_path": "Shared/lib/casino/ui.lua",
@@ -93,84 +98,9 @@
         "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
       },
       {
-        "repo_path": "Shared/lib/casino/wallet.lua",
-        "install_path": "lib/casino/wallet.lua",
-        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
-      },
-      {
         "repo_path": "Shared/lib/casino/chat.lua",
         "install_path": "lib/casino/chat.lua",
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
-      },
-      {
-        "repo_path": "Shared/lib/casino/books.lua",
-        "install_path": "lib/casino/books.lua",
-        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
-      },
-      {
-        "repo_path": "Shared/lib/casino/board.lua",
-        "install_path": "lib/casino/board.lua",
-        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
-      },
-      {
-        "repo_path": "Shared/lib/casino/bit32_shim.lua",
-        "install_path": "lib/casino/bit32_shim.lua",
-        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
-      },
-      {
-        "repo_path": "Shared/lib/casino/audio.lua",
-        "install_path": "lib/casino/audio.lua",
-        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
-      },
-      {
-        "repo_path": "Games/Roulette/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
-      },
-      {
-        "repo_path": "Games/Roulette/startup.lua",
-        "install_path": "roulette_startup.lua",
-        "sha256": "90cda96b3cd41cf853a16f80add1d148ef37780ad70349f73ab72796637583ac"
-      },
-      {
-        "repo_path": "Games/Roulette/roulette_view.lua",
-        "install_path": "roulette_view.lua",
-        "sha256": "e94d5a35fb9d0dcd5da4b902b231c02a36e596b10832714d3d2d9ff6ea1196d0"
-      },
-      {
-        "repo_path": "Games/Roulette/roulette_rules.lua",
-        "install_path": "roulette_rules.lua",
-        "sha256": "c85c2b57389dd5564726a9195ebeae1229fad69745cb25fbecf820bbb6f104eb"
-      },
-      {
-        "repo_path": "Games/Roulette/roulette_game.lua",
-        "install_path": "roulette_game.lua",
-        "sha256": "ba62a4a2a03e0973a555b9c3b36bd7cb75866310097090104acfe22fcc7124a8"
-      },
-      {
-        "repo_path": "Shared/lib/updater.lua",
-        "install_path": "lib/updater.lua",
-        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
-      },
-      {
-        "repo_path": "Shared/lib/roger_logging.lua",
-        "install_path": "lib/roger_logging.lua",
-        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
-      },
-      {
-        "repo_path": "Shared/lib/roger_supervisor.lua",
-        "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
-      },
-      {
-        "repo_path": "System/roger_update.lua",
-        "install_path": "rogerupdate.lua",
-        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
-      },
-      {
-        "repo_path": "System/roger_logs.lua",
-        "install_path": "rogerlogs.lua",
-        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
         "repo_path": "Shared/lib/casino/canvas.lua",
@@ -178,9 +108,84 @@
         "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
       },
       {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Games/Roulette/roulette_game.lua",
+        "install_path": "roulette_game.lua",
+        "sha256": "ba62a4a2a03e0973a555b9c3b36bd7cb75866310097090104acfe22fcc7124a8"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Games/Roulette/roulette_rules.lua",
+        "install_path": "roulette_rules.lua",
+        "sha256": "c85c2b57389dd5564726a9195ebeae1229fad69745cb25fbecf820bbb6f104eb"
+      },
+      {
+        "repo_path": "Games/Roulette/startup.lua",
+        "install_path": "roulette_startup.lua",
+        "sha256": "90cda96b3cd41cf853a16f80add1d148ef37780ad70349f73ab72796637583ac"
+      },
+      {
+        "repo_path": "Games/Roulette/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "Shared/lib/casino/audio.lua",
+        "install_path": "lib/casino/audio.lua",
+        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/bit32_shim.lua",
+        "install_path": "lib/casino/bit32_shim.lua",
+        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
+      },
+      {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
+      },
+      {
+        "repo_path": "Shared/lib/casino/books.lua",
+        "install_path": "lib/casino/books.lua",
+        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+      },
+      {
+        "repo_path": "Games/Roulette/roulette_view.lua",
+        "install_path": "roulette_view.lua",
+        "sha256": "e94d5a35fb9d0dcd5da4b902b231c02a36e596b10832714d3d2d9ff6ea1196d0"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
       }
     ]
   },
@@ -216,6 +221,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.update_screen",
       "lib.updater"
     ]
   }

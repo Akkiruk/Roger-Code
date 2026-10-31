@@ -7,12 +7,12 @@
     "description": "Vault Storage Manager startup entry point.",
     "source_root": "Apps/VaultGear",
     "entrypoint": "startup.lua",
-    "version": "1.0.63"
+    "version": "1.0.64"
   },
   "build": {
-    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
-    "generated_at": "2026-10-31T18:14:14Z",
-    "package_hash": "4a18647f3785b1c8ee9fd1cca9c02ae07b279be6cbb29cb45ae58f8e75e492a1"
+    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
+    "generated_at": "2026-10-31T19:16:02Z",
+    "package_hash": "1732f92575570e24be2bd9d57b59f3b33dd0cdaa381c7ae4146760278672f210"
   },
   "install": {
     "preserve": [
@@ -24,11 +24,6 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
-      },
-      {
-        "repo_path": "Shared/lib/ui_surface.lua",
-        "install_path": "lib/ui_surface.lua",
-        "sha256": "2d9633af5a2c3527f797517a96ac83894d922bee43d0d6469669ee6ad01ae9d6"
       },
       {
         "repo_path": "Shared/lib/ui_text.lua",
@@ -44,6 +39,11 @@
         "repo_path": "Shared/lib/ui.lua",
         "install_path": "lib/ui.lua",
         "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
       },
       {
         "repo_path": "Shared/lib/vaultgear/app.lua",
@@ -111,14 +111,14 @@
         "sha256": "d0bb3e4f5540fbc4d54bce38caaf97b4cbb0137521a7939254b15e4b55f63afd"
       },
       {
+        "repo_path": "Shared/lib/ui_surface.lua",
+        "install_path": "lib/ui_surface.lua",
+        "sha256": "2d9633af5a2c3527f797517a96ac83894d922bee43d0d6469669ee6ad01ae9d6"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
-      },
-      {
-        "repo_path": "Shared/lib/vaultgear/ui.lua",
-        "install_path": "lib/vaultgear/ui.lua",
-        "sha256": "f9e44ff5fd0942dae7d363a087a918d7c9190944de121e935ca5a882e53daac4"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -126,9 +126,9 @@
         "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
       },
       {
-        "repo_path": "Shared/lib/currency.lua",
-        "install_path": "lib/currency.lua",
-        "sha256": "a90fd5b7433bba030e578eba885238b71b8140dd908aece1830e0468ea436225"
+        "repo_path": "Shared/lib/monitor_scale.lua",
+        "install_path": "lib/monitor_scale.lua",
+        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -143,7 +143,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -153,7 +153,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
       },
       {
         "repo_path": "Apps/VaultGear/startup.lua",
@@ -172,15 +172,15 @@
         "preserve_existing": true
       },
       {
+        "repo_path": "Shared/lib/vaultgear/ui.lua",
+        "install_path": "lib/vaultgear/ui.lua",
+        "sha256": "f9e44ff5fd0942dae7d363a087a918d7c9190944de121e935ca5a882e53daac4"
+      },
+      {
         "repo_path": "Apps/VaultGear/vaultgear_state_settings.lua",
         "install_path": "vaultgear_state_settings.lua",
         "sha256": "bda7b3c6f0963d3fdb58755d79a1c28d92db4cfdfc467fbae606b5e169e6ba48",
         "preserve_existing": true
-      },
-      {
-        "repo_path": "Shared/lib/activity_timeout.lua",
-        "install_path": "lib/activity_timeout.lua",
-        "sha256": "d46af23d468407b04765b1ab91ab7c6140c1c5f2321f76e838d8d9f095bfd36d"
       },
       {
         "repo_path": "Shared/lib/auth_wait_screen.lua",
@@ -218,9 +218,14 @@
         "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
       },
       {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+        "repo_path": "Shared/lib/currency.lua",
+        "install_path": "lib/currency.lua",
+        "sha256": "a90fd5b7433bba030e578eba885238b71b8140dd908aece1830e0468ea436225"
+      },
+      {
+        "repo_path": "Shared/lib/activity_timeout.lua",
+        "install_path": "lib/activity_timeout.lua",
+        "sha256": "d46af23d468407b04765b1ab91ab7c6140c1c5f2321f76e838d8d9f095bfd36d"
       },
       {
         "repo_path": "Shared/lib/vaultgear/util.lua",
@@ -255,6 +260,7 @@
       "lib.ui_surface",
       "lib.ui_text",
       "lib.ui_touch",
+      "lib.update_screen",
       "lib.updater",
       "lib.vaultgear.app",
       "lib.vaultgear.catalog",

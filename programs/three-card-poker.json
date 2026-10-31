@@ -7,12 +7,12 @@
     "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
     "source_root": "Games/ThreeCardPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
-    "generated_at": "2026-10-31T18:14:14Z",
-    "package_hash": "985cc03e51881e9330e06be48bf85ebb1098f4394167cc413bdc5772a96dd95f"
+    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
+    "generated_at": "2026-10-31T19:16:02Z",
+    "package_hash": "4d0965eb9718e03c718464d448302448efee4eb95d89cd95f10588daf6640737"
   },
   "install": {
     "preserve": [],
@@ -23,59 +23,9 @@
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
       },
       {
-        "repo_path": "Shared/lib/casino/ui.lua",
-        "install_path": "lib/casino/ui.lua",
-        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
-      },
-      {
-        "repo_path": "Shared/lib/casino/theme.lua",
-        "install_path": "lib/casino/theme.lua",
-        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
-      },
-      {
-        "repo_path": "Shared/lib/casino/table.lua",
-        "install_path": "lib/casino/table.lua",
-        "sha256": "d8425697f1c32e69d8b08684317d1903e6cd6fcca6455e4a7b030ef2cbc8b562"
-      },
-      {
-        "repo_path": "Shared/lib/casino/stats.lua",
-        "install_path": "lib/casino/stats.lua",
-        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
-      },
-      {
-        "repo_path": "Shared/lib/casino/session.lua",
-        "install_path": "lib/casino/session.lua",
-        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
-      },
-      {
-        "repo_path": "Shared/lib/casino/rng.lua",
-        "install_path": "lib/casino/rng.lua",
-        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
-      },
-      {
-        "repo_path": "Shared/lib/casino/presence.lua",
-        "install_path": "lib/casino/presence.lua",
-        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
-      },
-      {
-        "repo_path": "Shared/lib/casino/poker.lua",
-        "install_path": "lib/casino/poker.lua",
-        "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
-      },
-      {
-        "repo_path": "Shared/lib/casino/net.lua",
-        "install_path": "lib/casino/net.lua",
-        "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
-      },
-      {
-        "repo_path": "Shared/lib/casino/limits.lua",
-        "install_path": "lib/casino/limits.lua",
-        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
-      },
-      {
-        "repo_path": "Shared/lib/casino/lamps.lua",
-        "install_path": "lib/casino/lamps.lua",
-        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
         "repo_path": "Shared/lib/casino/journal.lua",
@@ -83,9 +33,24 @@
         "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
       },
       {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+        "repo_path": "Shared/lib/casino/lamps.lua",
+        "install_path": "lib/casino/lamps.lua",
+        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
+        "repo_path": "Shared/lib/casino/limits.lua",
+        "install_path": "lib/casino/limits.lua",
+        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+      },
+      {
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
+      },
+      {
+        "repo_path": "Shared/lib/casino/poker.lua",
+        "install_path": "lib/casino/poker.lua",
+        "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
       },
       {
         "repo_path": "Shared/lib/casino/demo.lua",
@@ -93,14 +58,54 @@
         "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
       },
       {
+        "repo_path": "Shared/lib/casino/presence.lua",
+        "install_path": "lib/casino/presence.lua",
+        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
+      },
+      {
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/casino/stats.lua",
+        "install_path": "lib/casino/stats.lua",
+        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/table.lua",
+        "install_path": "lib/casino/table.lua",
+        "sha256": "d8425697f1c32e69d8b08684317d1903e6cd6fcca6455e4a7b030ef2cbc8b562"
+      },
+      {
+        "repo_path": "Shared/lib/casino/theme.lua",
+        "install_path": "lib/casino/theme.lua",
+        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/ui.lua",
+        "install_path": "lib/casino/ui.lua",
+        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
+      },
+      {
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
         "repo_path": "Shared/lib/casino/deck.lua",
         "install_path": "lib/casino/deck.lua",
         "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
-      },
-      {
-        "repo_path": "Shared/lib/casino/chat.lua",
-        "install_path": "lib/casino/chat.lua",
-        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
         "repo_path": "Shared/lib/casino/canvas.lua",
@@ -120,7 +125,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -130,7 +135,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
       },
       {
         "repo_path": "Games/ThreeCardPoker/startup.lua",
@@ -138,9 +143,9 @@
         "sha256": "883239b1f958c65d832ce46b838854e7918976635284a37bb4083005a4a8a718"
       },
       {
-        "repo_path": "Shared/lib/casino/wallet.lua",
-        "install_path": "lib/casino/wallet.lua",
-        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+        "repo_path": "Shared/lib/casino/chat.lua",
+        "install_path": "lib/casino/chat.lua",
+        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
         "repo_path": "Games/ThreeCardPoker/threecard_game.lua",
@@ -183,9 +188,9 @@
         "sha256": "5272f89551c5325279067c3d2722015fdac4efc61b57866b43cd9a0ae694bf35"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
       }
     ]
   },
@@ -222,6 +227,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.update_screen",
       "lib.updater"
     ]
   }

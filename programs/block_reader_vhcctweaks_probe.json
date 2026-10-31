@@ -7,12 +7,12 @@
     "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
     "source_root": "Utilities",
     "entrypoint": "block_reader_vhcctweaks_probe.lua",
-    "version": "1.0.17"
+    "version": "1.0.18"
   },
   "build": {
-    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
-    "generated_at": "2026-10-31T18:14:14Z",
-    "package_hash": "177bc810156c9227dc9f7fe2bdf01b817f2b1a462a4aa15dfb7d2f8b5937b485"
+    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
+    "generated_at": "2026-10-31T19:16:02Z",
+    "package_hash": "0c7097da8771a60e5c15bc78d5046570f24ddb01f6790e2123b3ed72b16d19aa"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
       },
       {
         "repo_path": "Utilities/block_reader_vhcctweaks_probe.lua",
@@ -56,6 +56,11 @@
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
       }
     ]
   },
@@ -70,6 +75,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.update_screen",
       "lib.updater"
     ]
   }
