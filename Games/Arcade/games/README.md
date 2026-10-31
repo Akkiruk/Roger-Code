@@ -1,6 +1,6 @@
 # Writing an Arcade game
 
-A game is a folder under `games/`, plus one line in `registry.lua`. The shell owns the wall: menu, lobby, seats, match flow, journal, timers, walking away, results, stats, settings and the scoreboard. A game brings its rules, its board and, if it wants, a computer player. It never calls `ccvault`: the Arcade is free to play and moves no tokens.
+A game is a folder under `games/`, plus one line in `registry.lua`. The shell owns the wall: menu, lobby, seats, match flow, journal, timers, walking away, results, stats, settings and the scoreboard. A game brings its rules, its board and, if it wants, a computer player. It never calls `ccvault`: the Arcade is free to play and moves no tokens. The only `ccvault` calls anywhere are in `arcade_hw.lua`, which reads who owns the computer and locks its terminal.
 
 Matches have two seats, red (1) and blue (2).
 

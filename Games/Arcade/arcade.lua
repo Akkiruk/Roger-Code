@@ -137,12 +137,13 @@ local function loadPrefs()
   local prefs = {}
   for k, v in pairs(PREF_DEFAULTS) do prefs[k] = v end
   local saved
-  if fs.exists(config.PREFS_FILE) then
-    local h = fs.open(config.PREFS_FILE, "r")
+  for _, suffix in ipairs({ "", ".tmp", ".bak" }) do
+    local path = config.PREFS_FILE .. suffix
+    local h = not saved and fs.exists(path) and fs.open(path, "r")
     if h then
       local ok, value = pcall(textutils.unserialise, h.readAll() or "")
       h.close()
-      if ok then saved = value end
+      if ok and type(value) == "table" then saved = value end
     end
   end
   saved = saved or (app.store and app.store.data.settings) or {}
@@ -158,7 +159,9 @@ local function savePrefs()
   if not h then return end
   h.write(textutils.serialise(app.prefs))
   h.close()
-  if fs.exists(config.PREFS_FILE) then fs.delete(config.PREFS_FILE) end
+  local bak = config.PREFS_FILE .. ".bak"
+  if fs.exists(bak) then fs.delete(bak) end
+  if fs.exists(config.PREFS_FILE) then fs.move(config.PREFS_FILE, bak) end
   fs.move(tmp, config.PREFS_FILE)
 end
 
@@ -183,11 +186,11 @@ local function setupDisplay()
   font = font or surfaceApi.loadFont(surfaceApi.load("font"))
   screen = surfaceApi.create(env.W, env.H)
   ui.init(surfaceApi, font, screen)
-  env.walls = { { mon = mon, name = monName, surf = screen, buttons = {} } }
+  env.walls = { { mon = mon, out = ui.changedRows(mon), name = monName, surf = screen, buttons = {} } }
   local second, secondName = hw.wall2()
   if second then
     prepareMonitor(second)
-    env.walls[2] = { mon = second, name = secondName, surf = surfaceApi.create(env.W, env.H), buttons = {} }
+    env.walls[2] = { mon = second, out = ui.changedRows(second), name = secondName, surf = surfaceApi.create(env.W, env.H), buttons = {} }
   end
   if app.plugin then app.selectGame(app.plugin) end
 
@@ -407,7 +410,7 @@ local function drawWalls()
       ui.setScreen(wall.surf)
       play.draw(g, false, seats.wallSeat(g, wall.name))
       wall.buttons = ui.buttons()
-      wall.surf:output(wall.mon, 0, 0)
+      wall.surf:output(wall.out, 0, 0)
     end
     return
   end
@@ -425,7 +428,7 @@ local function drawWalls()
   end
   for _, wall in ipairs(env.walls) do
     wall.buttons = ui.buttons()
-    screen:output(wall.mon, 0, 0)
+    screen:output(wall.out, 0, 0)
   end
 end
 
@@ -590,6 +593,7 @@ handlers.options = function()
   local l = S.lobby
   l.first = cycle({ "red", "blue", "random" }, l.first)
   app.store:setting("first", l.first)
+  app.store:save()
   audio.play("tap")
   S.dirty = true
 end
@@ -687,13 +691,20 @@ handlers.vol = function()
   local v = app.prefs.volume
   v = (v >= 2 and 0.25) or (v + 0.25)
   app.prefs.volume = v
+  savePrefs()
   audio.setVolume(v)
   audio.play("tap")
   S.dirty = true
 end
-handlers.announce = function() app.prefs.announce = not app.prefs.announce; audio.play("tap"); S.dirty = true end
+handlers.announce = function()
+  app.prefs.announce = not app.prefs.announce
+  savePrefs()
+  audio.play("tap")
+  S.dirty = true
+end
 handlers.redstone = function()
   app.prefs.redstone = not app.prefs.redstone
+  savePrefs()
   hw.setRedstone(app.prefs.redstone)
   hw.allOff()
   audio.play("tap"); S.dirty = true
@@ -703,8 +714,13 @@ handlers.testsound = function()
   audio.later("tap", 300); audio.later("select", 520); audio.later("win", 1100); audio.later("lose", 2400)
   setToast("Playing sound test", C.info, 2000)
 end
-handlers.wipe = function()
+handlers.wipe = function(_, who)
+  if not seats.mayWipe(who, hw.hostName()) then
+    refuse("Only this computer's owner can reset stats")
+    return
+  end
   if S.confirm and S.confirm.id == "wipe" and nowMs() < S.confirm.untilAt then
+    log("records for " .. app.plugin.id .. " reset by " .. tostring(who) .. ", kept in " .. app.store:backup())
     app.store:reset()
     app.store:save()
     S.confirm = nil
@@ -718,9 +734,29 @@ handlers.wipe = function()
 end
 
 -- result screen
-handlers.rematch = function()
+--- A rematch between two named players needs both, because it puts them both back in a rated game.
+local function rematchAgreed(r, who, wall)
+  if who == nil or not seats.isRated(r) then return true end
+  local other = (who == r.red.name and r.blue) or (who == r.blue.name and r.red) or nil
+  if not other then
+    refuse(who .. " is not in this game")
+    return false
+  end
+  if r.rematchBy == other.name then return true end
+  if not hw.isNear(other.name) then
+    setToast(other.name .. " has gone - pick a new game", C.warn)
+    handlers.newgame(nil, who, wall)
+    return false
+  end
+  r.rematchBy = who
+  audio.play("tap")
+  setToast(other.name .. ": tap REMATCH to agree", C.info, 3000)
+  return false
+end
+
+handlers.rematch = function(_, who, wall)
   local r = S.result
-  if not r then return end
+  if not r or not rematchAgreed(r, who, wall) then return end
   -- colours swap, and whoever lost moves first (the old Red losing means they are now Blue)
   local first = (r.winner == 2) and 2 or 1
   S.result = nil
@@ -751,6 +787,7 @@ local function onTouch(side, x, y, who)
   S.lastTouch = nowMs()
   local index = wallIndex(side)
   if not index then return end
+  hw.lockFor(who)
   local wall = side
   local px, py = x - 1, y - 1
   if S.view == "idle" then
@@ -770,6 +807,7 @@ local function onTouch(side, x, y, who)
   end
   if b and S.view == "settings" then
     app.plugin.changeSetting(app.store, b.id, cycle)
+    app.store:save()
     audio.play("tap")
     S.dirty = true
     return
@@ -926,7 +964,9 @@ local function main()
       local sp = hw.speakerName()
       if sp then audio.init(sp) end
       local _, secondName = hw.wall2()
+      local boardNow = hw.scoreboard() ~= nil
       local wallsChanged = (ev == "peripheral_detach" and wallIndex(a)) or (secondName and not wallIndex(secondName))
+        or boardNow ~= (env.board2 ~= nil)
       if wallsChanged then setupDisplay() end
       if S.recoverLater and not S.match then
         S.recoverLater = false

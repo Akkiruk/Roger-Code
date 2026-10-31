@@ -54,7 +54,7 @@ local function entryOf(g, stage)
   return {
     id = g.id, game = app.plugin.id, stage = stage, red = g.red, blue = g.blue, first = g.first, seed = g.seed,
     options = g.options, actions = g.actions, elapsed = elapsed(g), timer = g.timer, timeouts = g.timeouts,
-    hints = g.hints, extras = g.extras, reason = g.reason, spots = g.spots,
+    hints = g.hints, extras = g.extras, reason = g.reason, spots = g.spots, pauses = g.pauses,
   }
 end
 
@@ -65,7 +65,7 @@ local function newRecord(red, blue, opts)
     options = opts.options, actions = opts.actions or {}, timer = opts.timer or 0,
     state = nil, extras = opts.extras or app.plugin.newExtras(),
     startedAt = now, resumedAt = now, elapsed = opts.elapsed or 0, moveStart = now, deadline = nil,
-    timeouts = opts.timeouts or { 0, 0 }, hints = opts.hints or { 0, 0 }, spots = opts.spots or {}, covered = { false, false },
+    timeouts = opts.timeouts or { 0, 0 }, hints = opts.hints or { 0, 0 }, spots = opts.spots or {}, covered = { false, false }, pauses = opts.pauses or 0,
     hint = nil, hintUntil = 0, paused = false, nudged = false, awaySince = nil, aiAt = nil, thinking = false,
     confirmResign = false, abandonBy = nil,
   }
@@ -366,7 +366,7 @@ end
 --- Carry on from a pause with the clocks where they stopped, so a pause never buys time. Past the limit they never stopped.
 function M.resume(g)
   local stopped = nowMs() - (g.pausedAt or nowMs())
-  if (g.pauses or 0) > config.MAX_PAUSES then stopped = 0 end
+  if g.pauses > config.MAX_PAUSES then stopped = 0 end
   g.paused = false
   g.pausedAt = nil
   g.moveStart = g.moveStart + stopped
@@ -378,8 +378,13 @@ end
 local function waitForWall(g, t)
   if #app.env.walls >= 2 then
     if g.wallGone then
-      g.pausedAt, g.wallGone = g.wallGone, nil
-      M.resume(g)
+      if g.paused then
+        g.pausedAt = g.pausedAt + (t - g.wallGone) -- the players' own pause carries on
+        g.wallGone = nil
+      else
+        g.pausedAt, g.wallGone = g.wallGone, nil
+        M.resume(g)
+      end
       app.setToast("Both walls are back", ui.C.info, 2000)
     end
     return false

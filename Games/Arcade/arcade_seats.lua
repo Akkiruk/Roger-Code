@@ -40,6 +40,11 @@ function M.maySit(name, who)
   return false, name .. " has to tap their own name"
 end
 
+--- May this touch erase a game's records? Only the computer's owner, because nothing can bring them back for the players.
+function M.mayWipe(who, host)
+  return who ~= nil and who == host
+end
+
 --- The seat number a resignation counts against: the toucher's own seat, otherwise the side to move. A computer never
 -- resigns, so with one to move it counts against the other side.
 function M.resigner(match, who, turn)

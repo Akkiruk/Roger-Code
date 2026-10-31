@@ -239,6 +239,29 @@ function M.worker()
   end
 end
 
+-- The Arcade is free to play and moves no tokens. These read who owns the computer and lock its terminal, and they are
+-- the only ccvault calls it makes.
+local terminalLocked = false
+
+--- Who owns this computer, or nil.
+function M.hostName()
+  if not ccvault then return nil end
+  local ok, name = pcall(ccvault.getHostName)
+  return ok and name or nil
+end
+
+--- Only the owner can lock a computer, and only while using it, so this tries on each of their touches until it holds.
+function M.lockFor(who)
+  if terminalLocked or not who or not ccvault or not ccvault.setTerminalLock then return end
+  local known, locked = pcall(ccvault.isTerminalLocked)
+  if known and locked then
+    terminalLocked = true
+  elseif who == M.hostName() then
+    local ok, done = pcall(ccvault.setTerminalLock, true)
+    terminalLocked = ok and done == true
+  end
+end
+
 local rsEnabled = true
 
 --- Turn the lamp and celebration outputs on or off as a feature (they are forced off when disabled).

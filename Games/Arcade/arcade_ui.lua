@@ -92,6 +92,24 @@ function M.ellipse(x, y, w, h, color)
   screen:fillEllipse(x, y, w, h, color, nil, " ")
 end
 
+--- A monitor that ignores rows already showing, so a wall that stays still sends nothing. Draw through it with
+-- surface:output. Make a new one whenever the monitor is cleared.
+function M.changedRows(monitor)
+  local shown, cx, cy = {}, 1, 1
+  return {
+    getSize = monitor.getSize,
+    setCursorPos = function(x, y) cx, cy = x, y end,
+    blit = function(text, fg, bg)
+      local row = cx .. text .. fg .. bg
+      if shown[cy] ~= row then
+        shown[cy] = row
+        monitor.setCursorPos(cx, cy)
+        monitor.blit(text, fg, bg)
+      end
+    end,
+  }
+end
+
 -- ---------------------------------------------------------------- buttons
 
 local buttons = {}

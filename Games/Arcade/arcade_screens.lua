@@ -228,7 +228,7 @@ local function drawResult()
   local by = y + 2
   local bh = compact and 5 or 7
   local step = bh + 1
-  ui.button("rematch", bx, by, bw, bh, "REMATCH (SWAP COLORS)", C.ok, { small = true })
+  ui.button("rematch", bx, by, bw, bh, r.rematchBy and (r.rematchBy .. " ASKS - TAP TO AGREE") or "REMATCH (SWAP COLORS)", C.ok, { small = true })
   ui.button("newgame", bx, by + step, bw, bh, "NEW GAME", C.panel, { small = true })
   ui.button("stats", bx, by + 2 * step, bw, bh, "STATS", C.panel, { small = true })
   ui.button("done", bx, by + 3 * step, bw, bh, "DONE", C.panel, { small = true })

@@ -86,15 +86,35 @@ function M:_log(msg)
   if self.log then self.log(msg) end
 end
 
---- Load from disk; a missing file starts fresh, a damaged file is kept as .bak and replaced.
-function M:load()
-  local text = self.io.exists(self.path) and self.io.read(self.path) or nil
-  if not text or text == "" then
-    self.data = self:blank()
-    return true, "fresh"
-  end
+--- One copy of the records: a table, false if it is there but damaged, or nil if there is none.
+local function readCopy(io, path)
+  if not io.exists(path) then return nil end
+  local text = io.read(path)
+  if not text or text == "" then return nil end
   local ok, parsed = pcall(textutils.unserialise, text)
-  if ok and type(parsed) == "table" and type(parsed.players) == "table" then
+  if ok and type(parsed) == "table" and type(parsed.players) == "table" then return parsed end
+  return false, text
+end
+
+--- Load the newest good copy. A save moves the file to .bak and then .tmp into its place, so with the file missing or
+-- damaged, .tmp is newer than .bak. A damaged file is kept beside them, and only nothing at all starts fresh.
+function M:load()
+  local parsed, damaged = readCopy(self.io, self.path)
+  local how = "loaded"
+  if not parsed then
+    for _, suffix in ipairs({ ".tmp", ".bak" }) do
+      parsed = parsed or readCopy(self.io, self.path .. suffix) or nil
+    end
+    if damaged then
+      pcall(self.io.write, self.path .. ".bad.bak", damaged)
+      self:_log("data file unreadable, kept as .bad.bak")
+    end
+    if parsed then
+      self:_log("records recovered from a copy")
+      how = "recovered"
+    end
+  end
+  if parsed then
     local blank = self:blank()
     for k, v in pairs(blank) do
       if parsed[k] == nil then parsed[k] = v end
@@ -108,15 +128,14 @@ function M:load()
       parsed.version = M.VERSION
     end
     self.data = parsed
-    return true, "loaded"
+    return true, how
   end
-  pcall(self.io.write, self.path .. ".bak", text)
-  self:_log("data file unreadable, kept a .bak and started fresh")
   self.data = self:blank()
-  return false, "corrupt"
+  if damaged then return false, "corrupt" end
+  return true, "fresh"
 end
 
---- Save atomically: write a temp file, then replace the real one.
+--- Save with a good copy on disk at every moment: write a temp file, keep the last save as .bak, then swap.
 function M:save()
   local tmp = self.path .. ".tmp"
   local ok = self.io.write(tmp, textutils.serialise(self.data))
@@ -124,9 +143,17 @@ function M:save()
     self:_log("could not write " .. tmp)
     return false
   end
+  if self.io.exists(self.path) then self.io.move(self.path, self.path .. ".bak") end
   self.io.move(tmp, self.path)
   self.dirty = false
   return true
+end
+
+--- A dated copy that nothing ever overwrites, taken before a reset.
+function M:backup()
+  local path = self.path .. "." .. os.date("%Y%m%d-%H%M%S") .. ".bak"
+  self.io.write(path, textutils.serialise(self.data))
+  return path
 end
 
 function M:get(name)
@@ -213,8 +240,10 @@ function M:record(m)
   if ranked then
     local a, b = players[1], players[2]
     local scoreA = m.winner == 1 and 1 or (m.winner == 2 and 0 or 0.5)
-    deltas[1] = M.eloDelta(a.elo, b.elo, scoreA, a.games)
-    deltas[2] = M.eloDelta(b.elo, a.elo, 1 - scoreA, b.games)
+    -- one K for the match, the newer player's, so what one side gains is what the other drops
+    local games = math.min(a.games, b.games)
+    deltas[1] = M.eloDelta(a.elo, b.elo, scoreA, games)
+    deltas[2] = M.eloDelta(b.elo, a.elo, 1 - scoreA, games)
   end
 
   for i, sd in ipairs(sides) do
