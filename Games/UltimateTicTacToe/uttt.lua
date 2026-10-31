@@ -570,7 +570,7 @@ local function drawIdle()
   -- demo board
   local cw = max(3, floor((W - 44) / 9 / 1.0))
   cw = min(cw, 7)
-  local ch = max(2, floor(cw * 2 / 3 + 0.5))
+  local ch = max(2, min(floor(cw * 2 / 3 + 0.5), floor((H - 21 - 17) / 9)))
   local bw, bh = 9 * cw + 4, 9 * ch + 2
   local bx = floor((W - bw) / 2)
   local by = 21
@@ -621,7 +621,15 @@ local function drawLobby()
   ui.clearButtons()
   local W, H = env.W, env.H
   local l = S.lobby
-  ui.text("WHO IS PLAYING?", floor(W / 2), 1, C.text, "center")
+  -- a short wall (5 blocks high) gets the same screen with tighter rows
+  local compact = H < 78
+  local titleY, slotY, slotH, nameDy, subDy = 1, 10, 15, 5, 13
+  local listY, rowH, rowGap, utilGap = 27, 9, 10, 10
+  if compact then
+    titleY, slotY, slotH, nameDy, subDy = 0, 8, 12, 3, 10
+    listY, rowH, rowGap, utilGap = 21, 7, 8, 8
+  end
+  ui.text("WHO IS PLAYING?", floor(W / 2), titleY, C.text, "center")
 
   -- the two colour slots
   local sw = floor((W - 8) / 2)
@@ -629,32 +637,31 @@ local function drawLobby()
     local slot = num == 1 and l.red or l.blue
     local color = num == 1 and C.red or C.blue
     local key = num == 1 and "red" or "blue"
-    local y = 10
-    ui.fill(x, y, sw, 15, C.panel)
-    ui.fill(x, y, 3, 15, color)
-    if l.picking == key then ui.frame(x, y, sw, 15, C.hi, 1) end
+    local y = slotY
+    ui.fill(x, y, sw, slotH, C.panel)
+    ui.fill(x, y, 3, slotH, color)
+    if l.picking == key then ui.frame(x, y, sw, slotH, C.hi, 1) end
     ui.small(num == 1 and "RED  (X)" or "BLUE  (O)", x + 5, y + 1, color, C.panel, "left")
     if slot then
-      nameText(slot.name, x + 5, y + 5, sw - 8, C.text, "left", C.panel)
+      nameText(slot.name, x + 5, y + nameDy, sw - 8, C.text, "left", C.panel)
       local sub = slot.cpu and "COMPUTER" or (slot.guest and "GUEST - UNRANKED" or nil)
       if not sub then
         local p = store:get(slot.name)
         sub = p and string.format("%d ELO  W%d L%d D%d", p.elo, p.wins, p.losses, p.draws) or "NEW PLAYER"
       end
-      ui.small(sub, x + 5, y + 13, C.line, C.panel, "left", sw - 7)
+      ui.small(sub, x + 5, y + subDy, C.line, C.panel, "left", sw - 7)
     else
-      ui.small(l.picking == key and "Tap your name below" or "Waiting...", x + 5, y + 7, l.picking == key and C.hi or C.line, C.panel, "left", sw - 7)
+      ui.small(l.picking == key and "Tap your name below" or "Waiting...", x + 5, y + nameDy + 2, l.picking == key and C.hi or C.line, C.panel, "left", sw - 7)
     end
   end
-  ui.region("redSlot", 4, 10, sw, 15)
-  ui.region("blueSlot", 4 + sw, 10, sw, 15)
+  ui.region("redSlot", 4, slotY, sw, slotH)
+  ui.region("blueSlot", 4 + sw, slotY, sw, slotH)
   slotPanel(1, 4)
   slotPanel(2, 4 + sw)
-  ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
+  ui.button("back", 2, compact and 0 or 1, 16, compact and 6 or 7, "BACK", C.panel, { small = true })
 
   -- nearby players
   local near, ok = hw.nearby()
-  local listY = 27
   local label
   if ok or #near > 0 then label = "NEARBY PLAYERS (" .. #near .. ")" else label = "NO PLAYER DETECTED - USE GUEST OR COMPUTER" end
   ui.small(label, 4, listY, C.hi, C.bg, "left")
@@ -669,17 +676,17 @@ local function drawLobby()
     local col = (i - 1) % cols
     local row = floor((i - 1) / cols)
     local x = 4 + col * (bw + 2)
-    local y = listY + 2 + row * 10
+    local y = listY + 2 + row * rowGap
     if name then
       local taken = (l.red and l.red.name == name and not l.red.cpu) or (l.blue and l.blue.name == name and not l.blue.cpu)
       local p = store:get(name)
       local label2 = name .. (p and (" " .. p.elo) or "")
       local color = C.panel
       if l.red and l.red.name == name then color = C.redTint elseif l.blue and l.blue.name == name then color = C.blueTint end
-      ui.button("player", x, y, bw, 9, label2, color, { small = true, data = name, fg = taken and C.text or C.text })
+      ui.button("player", x, y, bw, rowH, label2, color, { small = true, data = name, fg = taken and C.text or C.text })
     else
-      ui.fill(x, y, bw, 9, C.bg)
-      ui.frame(x, y, bw, 9, C.panel, 1)
+      ui.fill(x, y, bw, rowH, C.bg)
+      ui.frame(x, y, bw, rowH, C.panel, 1)
     end
   end
   if pages > 1 then
@@ -687,27 +694,27 @@ local function drawLobby()
   end
 
   -- computer opponents
-  local cpuY = listY + 2 + 2 * 10 + 1
-  ui.button("cpu", 4, cpuY, bw, 9, "CPU EASY", C.panel, { small = true, data = "easy" })
-  ui.button("cpu", 4 + (bw + 2), cpuY, bw, 9, "CPU MEDIUM", C.panel, { small = true, data = "medium" })
-  ui.button("cpu", 4 + 2 * (bw + 2), cpuY, bw, 9, "CPU HARD", C.panel, { small = true, data = "hard" })
+  local cpuY = listY + 2 + 2 * rowGap + 1
+  ui.button("cpu", 4, cpuY, bw, rowH, "CPU EASY", C.panel, { small = true, data = "easy" })
+  ui.button("cpu", 4 + (bw + 2), cpuY, bw, rowH, "CPU MEDIUM", C.panel, { small = true, data = "medium" })
+  ui.button("cpu", 4 + 2 * (bw + 2), cpuY, bw, rowH, "CPU HARD", C.panel, { small = true, data = "hard" })
 
   -- utilities
-  local utilY = cpuY + 10
-  ui.button("guest", 4, utilY, bw, 9, "GUEST", C.panel, { small = true })
-  ui.button("swap", 4 + (bw + 2), utilY, bw, 9, "SWAP COLORS", C.panel, { small = true })
-  ui.button("stats", 4 + 2 * (bw + 2), utilY, bw, 9, "STATS", C.panel, { small = true })
+  local utilY = cpuY + utilGap
+  ui.button("guest", 4, utilY, bw, rowH, "GUEST", C.panel, { small = true })
+  ui.button("swap", 4 + (bw + 2), utilY, bw, rowH, "SWAP COLORS", C.panel, { small = true })
+  ui.button("stats", 4 + 2 * (bw + 2), utilY, bw, rowH, "STATS", C.panel, { small = true })
 
   -- options line and start
-  local startY = utilY + 11
+  local startY = utilY + utilGap + (compact and 0 or 1)
   local firstText = l.first == "random" and "RANDOM" or (l.first == "blue" and "BLUE" or "RED")
   local timer = store:setting("timer")
   local info = string.format("%s FIRST  /  TIMER %s  /  %s", firstText, timer > 0 and (timer .. "s") or "OFF",
     store:setting("tiebreak") and "MOST-BOARDS RULE" or "STANDARD DRAW")
   local half = floor((W - 8) * 0.55)
-  ui.button("options", 4, startY, half, 9, info, C.panel, { small = true })
+  ui.button("options", 4, startY, half, rowH, info, C.panel, { small = true })
   local ready = l.red ~= nil and l.blue ~= nil
-  ui.button("start", 4 + half + 2, startY, W - 8 - half - 2, 9, ready and "START" or "PICK 2", ready and C.ok or C.panel, { small = true, enabled = ready })
+  ui.button("start", 4 + half + 2, startY, W - 8 - half - 2, rowH, ready and "START" or "PICK 2", ready and C.ok or C.panel, { small = true, enabled = ready })
   drawToast()
 end
 
@@ -874,16 +881,18 @@ local function drawResult()
   ui.small(string.format("%s  -  %d moves  -  %s  -  boards %d-%d", how, r.moves, fmtDuration(r.seconds), r.boards[1], r.boards[2]),
     floor(W / 2), howY, C.line, C.bg, "center", W - 2)
 
-  -- two player panels
+  -- two player panels (a short wall keeps the facts and drops the streak line)
+  local compact = H < 78
+  local panelH = compact and 20 or 24
   local pw = floor((W - 10) / 2)
   local function panel(num, x)
     local slot = num == 1 and r.red or r.blue
     local sum = r.summary[num == 1 and "red" or "blue"]
     local color = num == 1 and C.red or C.blue
     local won = r.winner == num
-    ui.fill(x, 15, pw, 24, C.panel)
-    ui.fill(x, 15, 3, 24, color)
-    if won then ui.frame(x, 15, pw, 24, C.hi, 1) end
+    ui.fill(x, 15, pw, panelH, C.panel)
+    ui.fill(x, 15, 3, panelH, color)
+    if won then ui.frame(x, 15, pw, panelH, C.hi, 1) end
     nameText(slot.name, x + 6, 17, pw - 10, C.text, "left", C.panel)
     ui.small(num == 1 and "RED  X" or "BLUE  O", x + 6, 26, color, C.panel, "left")
     if r.ranked and sum and sum.elo then
@@ -894,7 +903,9 @@ local function drawResult()
       if rb and ra and ra < rb then rk = rk .. "  UP" elseif rb and ra and ra > rb then rk = rk .. "  DOWN" end
       ui.small(rk, x + 6, 31, C.text, C.panel, "left", pw - 8)
       local st = sum.streak or 0
-      ui.small(string.format("STREAK %s   GAMES %d", st > 0 and ("W" .. st) or (st < 0 and ("L" .. -st) or "-"), sum.games or 0), x + 6, 33, C.line, C.panel, "left", pw - 8)
+      if not compact then
+        ui.small(string.format("STREAK %s   GAMES %d", st > 0 and ("W" .. st) or (st < 0 and ("L" .. -st) or "-"), sum.games or 0), x + 6, 33, C.line, C.panel, "left", pw - 8)
+      end
     else
       ui.small(slot.cpu and "COMPUTER" or (slot.guest and "GUEST" or "UNRANKED GAME"), x + 6, 29, C.line, C.panel, "left")
       if not r.ranked and not r.guest then ui.small("vs computer: no rating change", x + 6, 31, C.line, C.panel, "left", pw - 8) end
@@ -904,10 +915,10 @@ local function drawResult()
   panel(2, 3 + pw + 4)
 
   -- achievements
-  local y = 41
+  local y = 15 + panelH + 2
   local ach = r.summary.achievements or {}
   for i, a in ipairs(ach) do
-    if i <= 3 then
+    if i <= (compact and 1 or 3) then
       ui.small("* " .. a.player .. " unlocked " .. a.name, floor(W / 2), y, C.accent, C.bg, "center", W - 2)
       y = y + 2
     end
@@ -932,10 +943,12 @@ local function drawResult()
   local bx = 52
   local bw = W - bx - 4
   local by = y + 2
-  ui.button("rematch", bx, by, bw, 7, "REMATCH (SWAP COLORS)", C.ok, { small = true })
-  ui.button("newgame", bx, by + 8, bw, 7, "NEW GAME", C.panel, { small = true })
-  ui.button("stats", bx, by + 16, bw, 7, "STATS", C.panel, { small = true })
-  ui.button("done", bx, by + 24, bw, 7, "DONE", C.panel, { small = true })
+  local bh = compact and 5 or 7
+  local step = bh + 1
+  ui.button("rematch", bx, by, bw, bh, "REMATCH (SWAP COLORS)", C.ok, { small = true })
+  ui.button("newgame", bx, by + step, bw, bh, "NEW GAME", C.panel, { small = true })
+  ui.button("stats", bx, by + 2 * step, bw, bh, "STATS", C.panel, { small = true })
+  ui.button("done", bx, by + 3 * step, bw, bh, "DONE", C.panel, { small = true })
   drawToast()
 end
 
@@ -952,7 +965,7 @@ local function drawLeaders()
     ui.button("metric", 4 + (i - 1) * (tabW + 2), 10, tabW, 7, METRIC_LABEL[key], active and C.hi or C.panel, { small = true, data = key })
   end
   local rows, total = store:leaderboard(S.stats.metric)
-  local perPage = 7
+  local perPage = max(3, floor((env.H - 38) / 6))
   local pages = max(1, math.ceil(#rows / perPage))
   if S.stats.page > pages then S.stats.page = pages end
   local first = (S.stats.page - 1) * perPage
@@ -974,16 +987,16 @@ local function drawLeaders()
     end
   end
   if pages > 1 then
-    ui.button("prevPage", W - 44, 63, 20, 7, "< PREV", C.panel, { small = true })
-    ui.button("nextPage", W - 22, 63, 20, 7, "NEXT >", C.panel, { small = true })
+    ui.button("prevPage", W - 44, env.H - 18, 20, 7, "< PREV", C.panel, { small = true })
+    ui.button("nextPage", W - 22, env.H - 18, 20, 7, "NEXT >", C.panel, { small = true })
   end
-  ui.small(total .. " ranked players", 4, 65, C.line, C.bg, "left")
+  ui.small(total .. " ranked players", 4, env.H - 16, C.line, C.bg, "left")
 end
 
 local function drawHistory()
   local W = env.W
   ui.text("RECENT GAMES", floor(W / 2), 1, C.hi, "center")
-  local rows = store:recent(9)
+  local rows = store:recent(floor((env.H - 26) / 6))
   if #rows == 0 then ui.small("No games recorded yet", floor(W / 2), 30, C.line, C.bg, "center") end
   for i, h in ipairs(rows) do
     local y = 11 + (i - 1) * 6
@@ -1003,7 +1016,7 @@ local function drawHistory()
     ui.small(string.format("%dmv %d-%d", h.moves or 0, h.boardsRed or 0, h.boardsBlue or 0), W - 6, y + 2, C.line, bg, "right")
   end
   local t = store.data.totals
-  ui.small(string.format("%d games, %d moves, %d draws", t.games, t.moves, t.draws), 4, 67, C.line, C.bg, "left")
+  ui.small(string.format("%d games, %d moves, %d draws", t.games, t.moves, t.draws), 4, env.H - 14, C.line, C.bg, "left")
 end
 
 local function drawPlayerCard()
@@ -1130,6 +1143,8 @@ local function drawSettings()
   local W, H = env.W, env.H
   ui.text("SETTINGS", floor(W / 2), 1, C.hi, "center")
   local bw = floor((W - 10) / 2)
+  local rowStep = H < 78 and 8 or 10
+  local hwY = 10 + 4 * rowStep + 2
   local function onoff(v) return v and "ON" or "OFF" end
   local rows = {
     { "sound", "SOUND: " .. onoff(store:setting("sound")) },
@@ -1144,11 +1159,11 @@ local function drawSettings()
   for i, row in ipairs(rows) do
     local col = (i - 1) % 2
     local r = floor((i - 1) / 2)
-    ui.button(row[1], 4 + col * (bw + 2), 10 + r * 10, bw, 8, row[2], C.panel, { small = true })
+    ui.button(row[1], 4 + col * (bw + 2), 10 + r * rowStep, bw, rowStep - 2, row[2], C.panel, { small = true })
   end
   -- attached hardware
   local rep = hw.report()
-  ui.small("HARDWARE", 4, 52, C.hi, C.bg, "left")
+  ui.small("HARDWARE", 4, hwY, C.hi, C.bg, "left")
   local lines = {
     "monitor: " .. tostring(rep.monitor) .. " (" .. env.W .. "x" .. env.H .. ")",
     "scoreboard: " .. tostring(rep.scoreboard or "none"),
@@ -1156,7 +1171,7 @@ local function drawSettings()
     "player detector: " .. tostring(rep.detector or "none"),
     "chat box: " .. tostring(rep.chat or "none") .. "   redstone: " .. tostring(rep.redstone),
   }
-  for i, l in ipairs(lines) do ui.small(l, 4, 52 + i * 2, C.text, C.bg, "left", W - 6) end
+  for i, l in ipairs(lines) do ui.small(l, 4, hwY + i * 2, C.text, C.bg, "left", W - 6) end
   local wipe = S.confirm and S.confirm.id == "wipe" and nowMs() < S.confirm.untilAt
   ui.button("wipe", 4, H - 9, 50, 7, wipe and "TAP AGAIN TO WIPE" or "RESET ALL STATS", wipe and C.warn or C.panel, { small = true })
   ui.button("back", W - 24, H - 9, 20, 7, "BACK", C.panel, { small = true })
