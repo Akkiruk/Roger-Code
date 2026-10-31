@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-31T16:42:58Z",
+  "generated_at": "2026-10-31T17:52:01Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
     "branch": "main"
   },
   "installer": {
-    "version": "1.1.9",
-    "commit": "3e7160cf2a6bf91889981daf8d2fafefce488edd",
+    "version": "2.0.0",
+    "commit": "fbfad098718718d916a7cf09177682d76bdb474d",
     "path": "System/installer.lua",
-    "sha256": "df42de051ebf64972936b3ae2f20454b3331f8a17e501982e7bad556a3506bb0"
+    "sha256": "750360c73b90710b9b22ebfd073c1e5b2a0dc7017cadc51cb4d6474bc9b6331f"
   },
   "programs": {
     "arcade": {
       "name": "Arcade",
       "category": "Arcade",
       "description": "Restarts the Arcade after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
-      "version": "1.0.0",
-      "commit": "3e7160cf2a6bf91889981daf8d2fafefce488edd",
-      "package_hash": "7a9853f1fc902f6ac670eee7bb0c1ed5b3597cfb790953b3ecdf138f34f86799",
+      "version": "1.0.1",
+      "commit": "fbfad098718718d916a7cf09177682d76bdb474d",
+      "package_hash": "cc1535e5339562d52e68aa114d8724c7b48d2bd6ceacca252f0cbc70184bfcd8",
       "spec_path": "programs/arcade.json"
     },
     "baccarat": {

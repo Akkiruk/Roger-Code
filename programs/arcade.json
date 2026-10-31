@@ -7,12 +7,12 @@
     "description": "Restarts the Arcade after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/Arcade",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "3e7160cf2a6bf91889981daf8d2fafefce488edd",
-    "generated_at": "2026-10-31T16:42:58Z",
-    "package_hash": "7a9853f1fc902f6ac670eee7bb0c1ed5b3597cfb790953b3ecdf138f34f86799"
+    "commit": "fbfad098718718d916a7cf09177682d76bdb474d",
+    "generated_at": "2026-10-31T17:52:01Z",
+    "package_hash": "cc1535e5339562d52e68aa114d8724c7b48d2bd6ceacca252f0cbc70184bfcd8"
   },
   "install": {
     "preserve": [
@@ -33,7 +33,7 @@
       {
         "repo_path": "Games/Arcade/games/mancala/plugin.lua",
         "install_path": "games/mancala/plugin.lua",
-        "sha256": "c1d62c0cf28f8efdd8685ea748f0ac59a03fd501d00fd0680f4cb99f8668441f"
+        "sha256": "e98c584a69cd6524ee0dd141197f8b82553c3b6b98ec3a29c5f2463f02ce40d7"
       },
       {
         "repo_path": "Games/Arcade/games/mancala/rules.lua",
@@ -43,7 +43,7 @@
       {
         "repo_path": "Games/Arcade/games/mastermind/plugin.lua",
         "install_path": "games/mastermind/plugin.lua",
-        "sha256": "2fee7f205b1bc7bffa6b7ce49a83971d24f8972dc05abaeb02a893ec9569e76d"
+        "sha256": "297e95446573e5b1336510fb3d2997fbd4e1100ff68c9a00d5e8a999ba95b905"
       },
       {
         "repo_path": "Games/Arcade/games/mastermind/rules.lua",
@@ -108,7 +108,7 @@
       {
         "repo_path": "Games/Arcade/arcade_config.lua",
         "install_path": "arcade_config.lua",
-        "sha256": "d540661daa69d56605314c06d8ddafa7f556d332fe0d050205c92ca03392ba42",
+        "sha256": "79b5e3b8852290b68e11b8ed80b1284e768d8b66d501c6bb5034b60af3b86c0f",
         "preserve_existing": true
       },
       {
@@ -210,7 +210,7 @@
       {
         "repo_path": "Games/Arcade/arcade_match.lua",
         "install_path": "arcade_match.lua",
-        "sha256": "5feb06ce4315c60a6fd70e3f501717cdc5504453871d0a3051506f9e6a55c134"
+        "sha256": "9b655d3021a0ad607799c5708e1ffda03f428b4cb123027c45021b9728f66712"
       },
       {
         "repo_path": "Games/Arcade/arcade_net.lua",
@@ -255,12 +255,12 @@
       {
         "repo_path": "Games/Arcade/arcade.lua",
         "install_path": "arcade.lua",
-        "sha256": "fe741d4ab330d472ba7436e66a3478b451af0a2a7af90f98a7a049a3173446e3"
+        "sha256": "3249f2c3bbcadb4fcd218900eaba38333acc11d6b87ce901e4815f171fb859a9"
       },
       {
         "repo_path": "Games/Arcade/games/base.lua",
         "install_path": "games/base.lua",
-        "sha256": "047d90c601f1119e940886c30be027d8bd83a7f98182ed4c35bbeb24e1631044"
+        "sha256": "6c2ab09e6e193ef0e4dfaf201ce90440eb445d1a62bde75d8350c22fca3edfaa"
       },
       {
         "repo_path": "Games/Arcade/games/battleship/ai.lua",
