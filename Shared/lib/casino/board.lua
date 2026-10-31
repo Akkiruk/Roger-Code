@@ -13,6 +13,7 @@ local M = {}
 
 M.ROWS = 8            -- leaders worth keeping for a board
 M.REFRESH_MS = 5000   -- how often a table redraws its board at the most
+M.STREAK_SHOWN = 2    -- wins running before the board mentions them. A run of losses is nobody else's business
 
 local SCALE = 0.5
 local NAME_ROOM = 8   -- the least a leader's name gets
@@ -97,7 +98,7 @@ local function footer(c, info)
 end
 
 --- Draw into a canvas. info: title, leaders { {name, net} }, jackpot or nil, playing (a list of names, or nil to leave it off),
--- note or nil. Nothing here is hidden from anyone at the table.
+-- note or nil, streak (a line for the top) or nil. Nothing here is hidden from anyone at the table.
 function M.draw(c, info)
   c:clear(C.felt)
   local cx = math.floor(c.w / 2)
@@ -109,6 +110,7 @@ function M.draw(c, info)
     c:textCenter(cx, 1, short(info.title, c.w), C.gold)
   end
   c:rect(1, top, c.w, 1, C.feltDark)
+  if info.streak then c:text(2, top, short(info.streak, c.w - 2), C.gold) end
 
   local bottom = footer(c, info)
   local rows = bottom - top - 1

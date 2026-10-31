@@ -168,6 +168,7 @@ local function bet(ctx, table_, lastWager)
       { id = "leave", label = "LEAVE", color = C.red },
       { id = "rules", label = "RULES", color = C.blue },
       { id = "stats", label = "STATS", color = C.blue },
+      { id = "card", label = "CARD", color = C.blue },
       { id = "spin", label = "SPIN", color = C.win, textColor = C.ink, disabled = total < 1 },
     })
     s.buttons = buttons
@@ -210,6 +211,10 @@ local function bet(ctx, table_, lastWager)
       audio.play("tap")
       table_:statsPage()
       s.deadline = now() + IDLE_MS
+    elseif hit.id == "card" then
+      audio.play("tap")
+      table_:playerCard()
+      s.deadline = now() + IDLE_MS
     elseif hit.id == "leave" then
       audio.play("tap")
       s.finished = true
@@ -227,6 +232,11 @@ local function bet(ctx, table_, lastWager)
   table_:refreshBalance()
   if scene.chosen then return scene.spots end
   return nil
+end
+
+--- A straight bet on the number that landed: the 35 to 1 the wheel is known for.
+local function hitStraight(round)
+  return round.state.spots["straight:" .. round.state.number] ~= nil
 end
 
 local function help()
@@ -264,6 +274,14 @@ return {
       local even = ({ "red", "black", "odd", "even", "low", "high" })[stream:below(6) + 1]
       return { [even] = 50, ["dozen:" .. (stream:below(3) + 1)] = 25, ["straight:" .. stream:below(rules.POCKETS)] = 10 }
     end,
+  },
+  badges = {
+    straight_up = { name = "Straight Up", text = "Hit a number straight up",
+      test = function(_, _, round) return hitStraight(round) end },
+    zero = { name = "Zero Hero", text = "Hit the zero straight up",
+      test = function(_, _, round) return round.state.number == 0 and hitStraight(round) end },
+    struck_twice = { name = "Struck Twice", text = "Hit the number that just landed",
+      test = function(_, _, round) return round.state.recent[1] == round.state.number and hitStraight(round) end },
   },
   rules = rules,
   view = view,

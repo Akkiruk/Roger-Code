@@ -10,6 +10,12 @@ return {
   tagline = "Higher or lower? Every guess is priced from the cards left.",
   felt = "teal",
   dealLabel = "DEAL",
+  badges = {
+    long_run = { name = "Long Run", text = "Cash out after 5 right guesses",
+      test = function(_, _, round) return round.state.guesses >= 5 and round.net > 0 end },
+    ceiling = { name = "The Ceiling", text = ("Take a streak to x%d"):format(rules.MAX_MULTIPLE),
+      test = function(_, _, round) return round.state.multiple >= rules.MAX_MULTIPLE and not round.state.lost end },
+  },
   rules = rules,
   view = view,
   help = function()

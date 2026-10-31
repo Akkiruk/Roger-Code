@@ -3,7 +3,7 @@
 --   exposure  each table says what its open round could still cost its host, so tables owned by one host
 --             do not promise the same tokens twice
 --   round     each finished round goes to the hub for leaderboards and history
---   state     the hub answers with the shared jackpot and leaderboard
+--   state     the hub answers with the shared jackpot and leaderboard, and who has beaten every game (badges.lua)
 --   claim     a table about to pay the shared pot asks the hub what it may pay, and grant is the answer, so
 --             two tables working from the same broadcast figure cannot both pay the same pot
 --   contest   the hub says what tournament is on, for how long, and who has which chips. No tokens are ever in play, so a
@@ -72,14 +72,29 @@ function M.validExposure(message)
   return isAmount(message.amount, M.MAX_TOKENS) and type(message.host) == "string"
 end
 
---- A hub's state has both parts in good order, or none of it is believed.
+local function isChampion(entry)
+  return type(entry) == "table" and type(entry.name) == "string" and entry.name ~= "" and #entry.name <= MAX_NAME
+    and isFinite(entry.at) and isId(entry.by)
+end
+
+--- An older hub sends none of these, which is fine.
+local function validChampions(champions)
+  if champions == nil then return true end
+  if type(champions) ~= "table" or #champions > MAX_LEADERS then return false end
+  for key, entry in pairs(champions) do
+    if type(key) ~= "number" or not isChampion(entry) then return false end
+  end
+  return true
+end
+
+--- A hub's state has every part in good order, or none of it is believed.
 function M.validState(message)
   local leaders = message.leaders
   if not isAmount(message.jackpot, M.MAX_POT) or type(leaders) ~= "table" or #leaders > MAX_LEADERS then return false end
   for key, entry in pairs(leaders) do
     if type(key) ~= "number" or not isLeader(entry) then return false end
   end
-  return true
+  return validChampions(message.champions)
 end
 
 function M.validGrant(message)
@@ -172,7 +187,7 @@ function M.worker()
       if message.kind == "exposure" and M.validExposure(message) then
         others[sender] = { host = message.host, amount = message.amount, at = now() }
       elseif message.kind == "state" and M.validState(message) then
-        hub = { jackpot = message.jackpot, leaders = message.leaders, at = now() }
+        hub = { jackpot = message.jackpot, leaders = message.leaders, champions = message.champions, at = now() }
       elseif message.kind == "grant" and message.to == os.getComputerID() and M.validGrant(message) then
         grants[message.id] = message.amount
       elseif message.kind == "contest" and M.validContest(message) then

@@ -4,6 +4,7 @@
 
 local audio = require("lib.casino.audio")
 local limits = require("lib.casino.limits")
+local poker = require("lib.casino.poker")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
 local rules = require("threecard_rules")
@@ -82,6 +83,7 @@ local function chooseBet(ctx, tableObject, lastWager)
       { id = "leave", label = "LEAVE", color = C.red },
       { id = "rules", label = "RULES", color = C.blue },
       { id = "stats", label = "STATS", color = C.blue },
+      { id = "card", label = "CARD", color = C.blue },
       { id = "deal", label = "DEAL", color = C.win, textColor = C.ink, disabled = s.ante < 1 },
     })
   end
@@ -118,6 +120,10 @@ local function chooseBet(ctx, tableObject, lastWager)
     elseif hit.id == "stats" then
       audio.play("tap")
       tableObject:statsPage()
+    elseif hit.id == "card" then
+      audio.play("tap")
+      tableObject:playerCard()
+      s.deadline = now() + IDLE_BET_MS
     elseif hit.id == "deal" then
       audio.play("start")
       s.chosen, s.finished = true, true
@@ -140,12 +146,23 @@ local function pair(line)
   return ("%-18s %d to 1"):format(line.name, line.pays)
 end
 
+--- The hand they kept, whatever the dealer held. A folded hand is not a hand played.
+local function played(round, category)
+  return not round.state.folded and poker.threeCategory(round.state.playerScore) == category
+end
+
 return {
   id = "three-card-poker",
   title = "3 CARD POKER",
   tagline = "Three cards each. Beat the dealer's hand or fold.",
   felt = "burgundy",
   demo = { wager = function() return { ante = 100, side = 50 } end },
+  badges = {
+    straight_flush = { name = "Straight Flush", text = "Play a straight flush",
+      test = function(_, _, round) return played(round, poker.T_STRAIGHT_FLUSH) end },
+    trips = { name = "Three Alike", text = "Play three of a kind",
+      test = function(_, _, round) return played(round, poker.T_TRIPS) end },
+  },
   rules = rules,
   view = view,
   stakeOf = stakeOf,

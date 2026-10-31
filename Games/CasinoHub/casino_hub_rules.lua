@@ -8,6 +8,10 @@
 -- answer and resets nothing. That is also what makes a slow answer safe: a table that gave up waiting paid the seed, keeps
 -- asking, and pays the rest when this answers it.
 --
+-- Beating the house at every game takes more than one table knows, so the hub works it out from the rounds it already hears.
+-- A player has beaten a game once their running net there has been above zero. Poker Table has no house, so it does not count.
+-- The list goes out in the state. It is display only, and badges.lua is the table's end of it.
+--
 -- Anyone on the network can send anything. Messages are only checked for the right shape and a believable size.
 
 local contest = require("casino_hub_contest")
@@ -27,6 +31,7 @@ local M = {
   ARCADE_PROTOCOL = "arcade.v1",  -- the Arcade's own, from Games/Arcade/arcade_net.lua. It only ever sends
   ARCADE_KEPT = 8,        -- Arcade results kept, which is what its page has room for
   MAX_MOVES = 100000,     -- longer than any game the Arcade could finish
+  CHAMPIONS_KEPT = 32,    -- names in a state, newest first (net.lua has the same limit)
 }
 
 -- Targets come from each game's own rules, or a test that proves them. A game with no stated target has none here.
@@ -40,7 +45,7 @@ M.GAMES = {
   crazyeights = { name = "Crazy Eights" },
   hilo = { name = "Hi-Lo", target = 0.96 },
   ["horse-racing"] = { name = "Horse Racing", target = 0.96 },
-  pokertable = { name = "Poker Table", target = 1 },
+  pokertable = { name = "Poker Table", target = 1, noHouse = true },
   roulette = { name = "Roulette", target = 36 / 37 },
   slots = { name = "Slots", target = 133610 / 140608 },
   ["three-card-poker"] = { name = "Three Card Poker", target = 0.9799 },
@@ -77,6 +82,7 @@ function M.new()
     claimOrder = {},
     arcade = {},
     contest = contest.new(),
+    champions = {},
   }
 end
 
@@ -117,6 +123,39 @@ local function noteWin(data, win)
   while #data.biggest > M.KEPT_WINS do table.remove(data.biggest) end
 end
 
+--- Whether a player is ahead of the house, or has been, at every game that has one.
+local function beatEvery(player)
+  for id, known in pairs(M.GAMES) do
+    local played = player.games[id]
+    if not known.noHouse and not (played and played.beat) then return false end
+  end
+  return true
+end
+
+--- One more round on a player's record by game. Only the games above are kept, so a made-up name cannot grow the save.
+-- The table that played the round that does it is noted, because that table is the one to say so.
+local function noteGame(data, sender, name, player, game, result, at)
+  local known = M.GAMES[game]
+  if not known then return end
+  player.games = player.games or {}
+  local played = player.games[game] or { rounds = 0, net = 0 }
+  played.rounds = played.rounds + 1
+  played.net = played.net + result
+  if played.net > 0 and not known.noHouse then played.beat = true end
+  player.games[game] = played
+  if not data.champions[name] and beatEvery(player) then data.champions[name] = { at = at, by = sender } end
+end
+
+--- The game a player comes back to, when they have played more than one and a favourite means something.
+local function favourite(player)
+  local best, rounds, count = nil, 0, 0
+  for id, played in pairs(player.games or {}) do
+    count = count + 1
+    if played.rounds > rounds or (played.rounds == rounds and id < best) then best, rounds = id, played.rounds end
+  end
+  return count > 1 and M.gameName(best) or nil
+end
+
 local function onRound(data, sender, message, at)
   local game, name, wagered, result = message.game, message.player, message.wagered, message.net
   if not (isName(game) and isName(name) and isTokens(wagered) and isTokens(result)) or wagered < 0 then return false end
@@ -129,6 +168,7 @@ local function onRound(data, sender, message, at)
   player.net = player.net + result
   player.best = math.max(player.best, result)
   data.players[name] = player
+  noteGame(data, sender, name, player, game, result, at)
 
   local entry = data.games[game] or { rounds = 0, wagered = 0, net = 0 }
   entry.rounds = entry.rounds + 1
@@ -230,7 +270,8 @@ function M.leaders(data, limit, key)
   key = key or "net"
   local list = {}
   for name, player in pairs(data.players) do
-    list[#list + 1] = { name = name, net = player.net, best = player.best, rounds = player.rounds, wagered = player.wagered }
+    list[#list + 1] = { name = name, net = player.net, best = player.best, rounds = player.rounds, wagered = player.wagered,
+      fav = favourite(player) }
   end
   table.sort(list, function(a, b)
     if a[key] ~= b[key] then return a[key] > b[key] end
@@ -284,9 +325,21 @@ function M.totals(data)
   return { rounds = rounds, wagered = wagered, players = players }
 end
 
---- What every table hears: net.lua reads jackpot and leaders.
+--- Who has beaten every game, newest first.
+function M.champions(data)
+  local list = {}
+  for name, won in pairs(data.champions) do list[#list + 1] = { name = name, at = won.at, by = won.by } end
+  table.sort(list, function(a, b)
+    if a.at ~= b.at then return a.at > b.at end
+    return a.name < b.name
+  end)
+  while #list > M.CHAMPIONS_KEPT do table.remove(list) end
+  return list
+end
+
+--- What every table hears: net.lua reads jackpot, leaders and champions.
 function M.state(data)
-  return { jackpot = data.jackpot, leaders = M.leaders(data, M.TOP) }
+  return { jackpot = data.jackpot, leaders = M.leaders(data, M.TOP), champions = M.champions(data) }
 end
 
 return M

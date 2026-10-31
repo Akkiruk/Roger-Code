@@ -5,6 +5,7 @@
 local audio = require("lib.casino.audio")
 local demo = require("lib.casino.demo")
 local limits = require("lib.casino.limits")
+local poker = require("lib.casino.poker")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
 local rules = require("holdem_rules")
@@ -82,6 +83,7 @@ local function chooseBet(ctx, tableObject, lastWager)
       { id = "leave", label = "LEAVE", color = C.red },
       { id = "rules", label = "RULES", color = C.blue },
       { id = "stats", label = "STATS", color = C.blue },
+      { id = "card", label = "CARD", color = C.blue },
       { id = "deal", label = "DEAL", color = C.win, textColor = C.ink, disabled = s.ante < 1 },
     })
   end
@@ -118,6 +120,10 @@ local function chooseBet(ctx, tableObject, lastWager)
     elseif hit.id == "stats" then
       audio.play("tap")
       tableObject:statsPage()
+    elseif hit.id == "card" then
+      audio.play("tap")
+      tableObject:playerCard()
+      s.deadline = now() + IDLE_BET_MS
     elseif hit.id == "deal" then
       audio.play("start")
       s.chosen, s.finished = true, true
@@ -136,6 +142,11 @@ local function chooseBet(ctx, tableObject, lastWager)
   return chosen
 end
 
+--- The hand they kept, whatever the dealer held. A folded hand is not a hand played.
+local function played(round, category)
+  return not round.state.folded and poker.category(round.state.playerScore) == category
+end
+
 return {
   id = "ultimate-holdem",
   title = "HOLD'EM",
@@ -145,6 +156,14 @@ return {
   capTokens = rules.MAX_ANTE * 3,
   -- rules.auto checks to the river and folds, so the board would never be played
   demo = { wager = function() return { ante = 100, side = 50 } end, action = demo.anyAction(rules) },
+  badges = {
+    royal = { name = "Royal Flush", text = "Play a royal flush",
+      test = function(_, _, round) return played(round, poker.ROYAL) end },
+    straight_flush = { name = "Straight Flush", text = "Play a straight flush",
+      test = function(_, _, round) return played(round, poker.STRAIGHT_FLUSH) end },
+    quads = { name = "Four Of A Kind", text = "Play four of a kind",
+      test = function(_, _, round) return played(round, poker.QUADS) end },
+  },
   rules = rules,
   view = view,
   stakeOf = stakeOf,

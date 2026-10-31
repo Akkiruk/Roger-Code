@@ -15,6 +15,16 @@ return {
   capTokens = 100,
   shoe = true,
   demo = { action = demo.anyAction(rules) },   -- rules.auto cancels, which would deal nothing
+  badges = {
+    natural_nine = { name = "Natural Nine", text = "Win on a two-card nine",
+      test = function(_, _, round)
+        local state = round.state
+        local hand = state[state.side]
+        return state.side == state.winner and state.side ~= "tie" and #hand == 2 and rules.total(hand) == 9
+      end },
+    called_tie = { name = "Called The Tie", text = "Bet the tie and see it land",
+      test = function(_, _, round) return round.state.side == "tie" and round.state.winner == "tie" end },
+  },
   rules = rules,
   view = view,
   help = function()

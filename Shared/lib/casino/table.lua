@@ -23,8 +23,10 @@
 --   view.regions(model, state) (optional) -> { {id, x, y, w, h} }: parts of the table a touch can act on, passed to act().
 --   An action id of any kind goes to rules.act, so a game can use ids such as "hold3".
 -- game: { id, title, felt, tagline, rules, view, help(), capTokens, stakeOf(wager) (optional),
+--   badges (optional): the game's own, as badges.lua describes,
 --   bet(ctx, table, lastWager) (optional): its own bet scene for games with several bets. Run it with table:run(scene),
 --   check table:liabilityRoom() against rules.maxWin(wager), and return the wager, or nil when the player leaves.
+--   Its buttons include table:statsPage() and table:playerCard().
 --   shoe (optional): true when the cards last across rounds in keep.shoe. Shuffling from one seed, and carrying the rest
 --   over, means that seed gives away every card still to come. So rules.new sets keep.shuffled when it starts a new shoe,
 --   and the engine keeps that seed and its hash in keep, shows only the hash until the shoe is finished, and then shows
@@ -51,6 +53,7 @@ local chat = require("lib.casino.chat")
 local demo = require("lib.casino.demo")
 local door = require("lib.casino.door")
 local limits = require("lib.casino.limits")
+local playercard = require("lib.casino.playercard")
 local presence = require("lib.casino.presence")
 local pretend = require("lib.casino.pretend")
 local rng = require("lib.casino.rng")
@@ -59,6 +62,7 @@ local tournament = require("lib.casino.tournament")
 local ui = require("lib.casino.ui")
 
 -- The one seam: everything that can touch money, or anything a round leaves behind, comes through a door. See door.lua
+local badges = door.to("badges")
 local books = door.to("books")
 local journal = door.to("journal")
 local lamps = door.to("lamps")
@@ -81,7 +85,7 @@ local NUDGE_MS = 25000           -- a player the detector can see gets a word be
 local CLAIM_RETRY_MS = 15000     -- how often an unanswered jackpot claim is asked again
 local WARN_MS = 10000
 local HASH_SHOWN = 16            -- how much of a hash the table shows while it plays. FAIR has the whole of it
-local BIG_WIN_TIMES = 10
+local BIG_WIN_TIMES = badges.BIG_WIN_TIMES
 local MIN_W, MIN_H = 120, 80     -- a 6x6 wall at text scale 0.5 is 121x81
 local LOCK_NOTICE = "Owner: tap to lock this table"
 local FAREWELL_MS = 6000         -- how long the idle screen shows a session's summary
@@ -176,6 +180,7 @@ function Table:heartbeat(time)
     self:chaseClaims(time)
     self.wantsLock = wallet.wantsLock()
     if not self.ctx.seat then self:closeStale(time) end
+    self:badgeNews()
     self:drawBoard()
     tournament.tick(time)
     if self.pretend and self.scene then self.scene.dirty = true end -- the label counts down
@@ -273,12 +278,14 @@ function Table:drawBoard()
   if not self.board then return end
   self.leaders = self.leaders or stats.leaders(board.ROWS)
   local hub = net.hub()
+  local run = self.ctx.seat and self.seatRun or 0
   local shown = board.show(self.board, {
     title = self.game.title,
     leaders = self.leaders,
     jackpot = hub and hub.jackpot or nil,
     playing = { self.ctx.seat },
     note = self.pretend and self.pretend.title or nil,
+    streak = run >= board.STREAK_SHOWN and (self.ctx.seat .. " won " .. run .. " running") or nil,
   })
   if not shown then self.board, self.boardName = nil, nil end
 end
@@ -301,6 +308,43 @@ function Table:closeStale(time)
   for name, at in pairs(session.open()) do
     if time - at > SESSION_STALE_MS then self:leaving(name) end
   end
+end
+
+-- ------------------------------------------------------------------ badges
+
+--- A badge comes after the money and nothing in one may stop a round. See badges.lua. Names only: a round is saved to disk.
+function Table:awardBadges(round)
+  local ok, names = pcall(function()
+    return badges.award(self.game, round, self.game.rules.result(round.state))
+  end)
+  if ok then
+    round.badges = names
+  else
+    log("badges for round " .. round.id .. " failed: " .. tostring(names))
+  end
+end
+
+--- What the hub has said about the floor, and whatever nobody has been told. Never while a round plays: a badge is earned as
+-- the money moves, before the reveal, and a whisper then would give the result away.
+function Table:badgeNews()
+  local ok, err = pcall(function()
+    local hub = net.hub()
+    if hub then badges.hear(hub.champions) end
+    if not (self.scene and self.scene.name == "play") then badges.sayAll(self.game) end
+  end)
+  if not ok then log("badge news failed: " .. tostring(err)) end
+end
+
+--- The seated player's run of wins, for the scoreboard. Read when a result is on the wall, not when the money moves, for the
+-- same reason a lamp waits.
+function Table:noteRun()
+  local ok, run = pcall(badges.streak, self.ctx.seat)
+  self.seatRun = ok and run or 0
+  self:drawBoard()
+end
+
+function Table:playerCard()
+  playercard.open(self, IDLE_BET_MS)
 end
 
 -- ------------------------------------------------------------------ money
@@ -415,6 +459,7 @@ function Table:finishRound(round)
     stats.record(round.player, wagered, round.net, round.id)
     session.record(round.player, round.net, round.id)
     self.leaders = nil
+    self:awardBadges(round)
   end
 
   -- Noted before it is said. A crash in that gap loses one line on the hub, which is better than saying it twice
@@ -852,6 +897,7 @@ function Table:chooseBet(lastBet)
       { id = "leave", label = "LEAVE", color = C.red },
       { id = "rules", label = "RULES", color = C.blue },
       { id = "stats", label = "STATS", color = C.blue },
+      { id = "card", label = "CARD", color = C.blue },
       { id = "deal", label = self.game.dealLabel or "DEAL", color = C.win, textColor = C.ink, disabled = s.bet < 1 },
     })
   end
@@ -884,6 +930,10 @@ function Table:chooseBet(lastBet)
     elseif hit.id == "stats" then
       audio.play("tap")
       self:statsPage()
+    elseif hit.id == "card" then
+      audio.play("tap")
+      self:playerCard()
+      s.deadline = now() + IDLE_BET_MS
     elseif hit.id == "deal" then
       audio.play("start")
       s.chosen, s.finished = true, true
@@ -1148,9 +1198,12 @@ function Table:showResult(round, model)
   elseif bigWin then
     lamps.pulse("bigWin")
   end
+  self:noteRun()
+  local earned = table.concat(round.badges or {}, ", ")
 
   local scene = { name = "result", deadline = now() + IDLE_RESULT_MS, left = round.left or 0 }
-  scene.debugState = function() return { net = round.net, left = scene.left, title = result.title } end
+  scene.debugState = function() return { net = round.net, left = scene.left, title = result.title, badges = earned } end
+  self:badgeNews()
 
   function scene.tick(s)
     if now() > s.deadline then s.finished, s.choice = true, "leave" end
@@ -1162,6 +1215,7 @@ function Table:showResult(round, model)
     local detail = result.detail or ""
     if round.net ~= 0 then detail = detail .. "  (" .. ui.signed(round.net) .. ")" end
     ui.banner(c, bannerY, result.title, detail, color)
+    if earned ~= "" then c:textCenter(math.floor(c.w / 2), bannerY - 2, " BADGE: " .. earned .. " ", C.gold, C.ink) end
     s.buttons = ui.newButtons()
     if s.left ~= 0 then
       c:textCenter(math.floor(c.w / 2), bannerY - 1,
@@ -1285,6 +1339,7 @@ end
 function Table:session()
   local ctx, game = self.ctx, self.game
   self:refreshBalance()
+  self:noteRun()
 
   books.resolve(ctx.seat)
   local owed = journal.owedTo(ctx.seat)

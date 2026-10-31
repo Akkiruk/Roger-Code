@@ -41,6 +41,10 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 | Practice: PRACTICE on the idle screen, 1,000 pretend chips, the same rules and screens, marked on every frame. No approval. It is the choice on offer when the economy is offline. An idle seat gives way in 10 seconds once someone else has touched the table | `door.lua`, `pretend.lua`, `Table:pretendSeat` | Nothing |
 | Hub tournaments: the owner touches the hub wall, picks a game and 15, 30 or 60 minutes, and every table of that game offers TOURNAMENT. A live board, final standings, top three whispered, past winners kept | `tournament.lua`, `casino_hub_contest.lua`, `casino_hub_contest_view.lua` | A modem on the hub and tables. The whisper needs a chat box |
 | HINT button: Blackjack's basic strategy and Video Poker's best hold, lit for 6 seconds. `hint = false` on a game table turns it off | `table.lua`, `rules.hint`, `videopoker_hint.lua` | Nothing |
+| Badges: common ones plus `game.badges`, per table, with a line on the result and a whisper once the result is on the wall | `badges.lua` | Nothing. The whisper needs a chat box |
+| Floor badge, beat the house at every game: the hub works it out from the rounds it hears and names champions in its state. Poker Table has no house and does not count | `casino_hub_rules.lua`, `badges.lua` | A modem on the hub |
+| Player card, from the bet screen: record, win-loss bar, last 12 rounds, badges. The favourite game comes from the hub | `playercard.lua` | Nothing |
+| The seated player's run of wins at the top of the scoreboard, updated when a result is shown | `board.lua` | A monitor smaller than the wall |
 
 ## Rules That Must Hold
 
@@ -66,11 +70,12 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 - A lamp fires when the result is shown, not when the money moves: that is before the reveal, and a lamp would give the result away. The Baccarat road waits for the same reason, because `keep` has the result before the cards have played.
 - A pretend seat cannot reach tokens. `table.lua` has no direct `require` of the wallet, books, journal, stats, session, net or lamps: they sit behind `door.lua`, which sends every call to `pretend.lua` while a pretend seat sits, and refuses anything with no stand-in. The seat has its own keep and shoe and nothing on disk, so a reboot just ends practice and a live round is never touched.
 - A tournament moves no tokens, ever. One entry per player per contest: one stack at one table, played across as many visits as they like. `casino_tournament.dat` keeps each stack and what an open round has staked, so a reboot costs that stake and never gives a fresh stack. The hub takes a score from that table only, only if it is further on than the last, and never after a final one. A forged score can fake a leaderboard line, which is accepted. Nothing waits on the hub: if it goes, seats play on to the end they last heard and nobody new can enter.
+- A badge comes after the money and never touches it. An error in badges is caught and logged, and a round always finishes. A badge is granted once: the round's tag lands in the same write as the grant.
 
 ## Testing
 
 - `Tests/`: rules, payouts and returns, pure Lua.
-- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, `practice.mjs` and `tournament.mjs` cover pretend seats, `hint.mjs` the HINT button, `hint-oracle.mjs` its advice, and `mutants.mjs`, `pretend-mutants.mjs` and `hint-mutants.mjs` prove those tests can fail.
+- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, `badges.mjs` covers badges and the card, `practice.mjs` and `tournament.mjs` cover pretend seats, `hint.mjs` the HINT button, `hint-oracle.mjs` its advice, and `mutants.mjs`, `pretend-mutants.mjs` and `hint-mutants.mjs` prove those tests can fail.
 - `craftos-agent/tools/mcbridge/rc-casino.mjs`: every game with real tokens on a real server.
 
 ## Later

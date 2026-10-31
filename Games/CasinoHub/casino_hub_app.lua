@@ -102,6 +102,7 @@ local function writeDebug(c, data, page, at, menu)
       menu = menu and menu.step or false,
       contest = contest.broadcast(data.contest, at) or false,
       past = data.contest.past,
+      champions = rules.champions(data),
     },
   }))
   handle.close()

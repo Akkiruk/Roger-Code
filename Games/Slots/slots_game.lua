@@ -10,6 +10,14 @@ return {
   tagline = "Three reels, one shared jackpot.",
   felt = "purple",
   dealLabel = "SPIN",
+  badges = {
+    three_sevens = { name = "Three Sevens", text = "Hit the jackpot line",
+      test = function(_, _, round) return round.state.kind == "triple" and round.state.symbol == rules.SEVEN end },
+    triple = { name = "Three Alike", text = "Land three of a symbol",
+      test = function(_, _, round) return round.state.kind == "triple" end },
+    flip_master = { name = "Flip Master", text = "Win two gamble flips in a round",
+      test = function(_, _, round) return round.state.gambles >= 2 and not round.state.lost end },
+  },
   rules = rules,
   view = view,
   help = function()

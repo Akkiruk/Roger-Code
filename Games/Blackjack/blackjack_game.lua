@@ -21,6 +21,20 @@ return {
       return "stand"
     end,
   },
+  badges = {
+    natural = { name = "Natural", text = "Win with a blackjack",
+      test = function(_, _, round) return round.state.hands[1].result == "blackjack" end },
+    double_down = { name = "Double Down", text = "Win a doubled hand",
+      test = function(_, _, round)
+        local hand = round.state.hands[1]
+        return hand.doubled == true and hand.result == "win"
+      end },
+    split_sweep = { name = "Split Sweep", text = "Win both hands of a split",
+      test = function(_, _, round)
+        local hands = round.state.hands
+        return #hands == 2 and hands[1].result == "win" and hands[2].result == "win"
+      end },
+  },
   rules = rules,
   view = view,
   help = function()

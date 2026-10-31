@@ -4,6 +4,16 @@
 local rules = require("horseracing_rules")
 local view = require("horseracing_view")
 
+local LONG_SHOT = 6   -- what a winner paid back for each token: 5 to 1
+
+--- Whether any bet on the card that won is of this kind and paid at least this many times its amount.
+local function paidOn(state, kind, times)
+  for _, bet in ipairs(state.bets) do
+    if bet.kind == kind and bet.paid > 0 and bet.paid >= bet.amount * times then return true end
+  end
+  return false
+end
+
 return {
   id = "horse-racing",
   title = "HORSE RACING",
@@ -13,6 +23,14 @@ return {
     wager = function(stream)
       return { race = rules.newRace(stream), bets = { { kind = "win", a = stream:below(rules.HORSES) + 1, amount = 100 } } }
     end,
+  },
+  badges = {
+    long_shot = { name = "Long Shot", text = "Back a winner at 5 to 1 or longer",
+      test = function(_, _, round) return paidOn(round.state, "win", LONG_SHOT) end },
+    exacta = { name = "Exacta", text = "Call the first two home",
+      test = function(_, _, round) return paidOn(round.state, "exacta", 1) end },
+    photo = { name = "Photo Finish", text = "Win a race decided by a photo",
+      test = function(_, _, round) return round.state.photo == true and round.net > 0 end },
   },
   rules = rules,
   view = view,

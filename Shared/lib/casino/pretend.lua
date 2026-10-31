@@ -28,7 +28,7 @@ local function zero() return 0 end
 --- Everything a seat needs in place of the real thing. A door raises an error for anything missing from here.
 local function stands(seat)
   return {
-    badges = {                 -- door.lua's list needs badges.lua on it, once that is merged. See Tests/practice_test.lua
+    badges = {
       award = function() return {} end,
       hear = nothing,
       sayAll = nothing,

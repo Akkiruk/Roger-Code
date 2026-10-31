@@ -8,6 +8,7 @@
 -- self.keep for the seat's own, so a game's rules can only ever see a keep and a shoe made for that seat.
 -- Tests/practice_test.lua fails if table.lua requires one of these modules itself or calls something with no stand-in.
 
+local badges = require("lib.casino.badges")
 local books = require("lib.casino.books")
 local journal = require("lib.casino.journal")
 local lamps = require("lib.casino.lamps")
@@ -20,7 +21,7 @@ local M = {}
 
 M.UNWIND = "casino pretend seat over"   -- what Table:run throws to end a pretend seat from any scene
 
-local REAL = { books = books, journal = journal, lamps = lamps, net = net, session = session, stats = stats, wallet = wallet }
+local REAL = { badges = badges, books = books, journal = journal, lamps = lamps, net = net, session = session, stats = stats, wallet = wallet }
 
 -- The only real calls a pretend seat makes: they find peripherals, and neither can move, write or say anything
 local THROUGH = { lamps = { rescan = true }, net = { open = true } }

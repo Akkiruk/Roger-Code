@@ -11,6 +11,14 @@ return {
   tagline = "Jacks or Better. Hold what you like and draw once.",
   felt = "blue",
   dealLabel = "DEAL",
+  badges = {
+    royal = { name = "Royal Flush", text = "Finish on a royal flush",
+      test = function(_, _, round) return round.state.tier == "royal" end },
+    straight_flush = { name = "Straight Flush", text = "Finish on a straight flush",
+      test = function(_, _, round) return round.state.tier == "straightFlush" end },
+    quads = { name = "Four Of A Kind", text = "Finish on four of a kind",
+      test = function(_, _, round) return round.state.tier == "quads" end },
+  },
   rules = rules,
   view = view,
   help = function()

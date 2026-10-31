@@ -256,6 +256,7 @@ function M.bet(ctx, tbl, lastWager)
       { id = "leave", label = "LEAVE", color = C.red },
       { id = "rules", label = "RULES", color = C.blue },
       { id = "stats", label = "STATS", color = C.blue },
+      { id = "card", label = "CARD", color = C.blue },
       { id = "deal", label = "RACE", color = C.win, textColor = C.ink,
         disabled = stake < 1 or stake > (ctx.balance or 0) or maxWin > room },
     })
@@ -293,6 +294,10 @@ function M.bet(ctx, tbl, lastWager)
     elseif hit.id == "stats" then
       audio.play("tap")
       tbl:statsPage()
+    elseif hit.id == "card" then
+      audio.play("tap")
+      tbl:playerCard()
+      s.deadline = clock() + IDLE_BET_MS
     elseif hit.id == "deal" then
       audio.play("start")
       s.chosen, s.finished = true, true

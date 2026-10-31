@@ -11,6 +11,10 @@ return {
   felt = "purple",
   dealLabel = "DEAL",
   capTokens = 5000,
+  badges = {
+    clean_sweep = { name = "Clean Sweep", text = ("Win with the dealer on %d or more"):format(rules.HAND),
+      test = function(_, _, round) return round.state.winner == "player" and #round.state.dealer >= rules.HAND end },
+  },
   rules = rules,
   view = view,
   help = function()
