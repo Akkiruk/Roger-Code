@@ -3,11 +3,15 @@
 --
 -- A round's money moves once, when its result is known, and before the final reveal plays:
 --   open    the bet is chosen and nothing moves. The round is journaled at every decision, so a reboot resumes it.
---   settle  the net result moves to or from the seated player, named, so nobody else's touch matters.
---   owed    whatever could not move is written down and settled the next time that player sits here.
+--   settle  the net result goes in the owed book, then moves to or from the seated player, named, so nobody else's touch
+--           matters. books.lua holds the steps, and a crash between any two of them is answered on the next boot.
+--   owed    whatever could not move stays in the book and is settled the next time that player sits here.
+--   finish  rules.finish, the pot, the stats and what the hub hears, each once, however many reboots land among them.
 --
 -- Rules module: new(wager, rng, keep, env) -> state, events; actions(state) -> { {id, label, color, cost, sub} };
---   act(state, id, rng) -> events; auto(state) -> id; done(state); net(state); risk(state); result(state) -> {kind,title,detail};
+--   act(state, id, rng) -> events; auto(state) -> id; done(state); net(state); result(state) -> {kind,title,detail};
+--   risk(state) -> every token staked so far, doubles, splits and raises included. At the end of a round this is the amount
+--   really wagered, so stats and the hub's measured return use it: 0 means no bet stood;
 --   finish(state, keep); maxWin(wager) -> biggest net win, in tokens.
 -- View module: new(ctx) -> model; sync(model, state); event(model, ev) -> seconds, sound; commit(model, ev);
 --   draw(c, model, state, anim) where anim is { ev, t } while an event plays.
@@ -16,9 +20,14 @@
 --   An action id of any kind goes to rules.act, so a game can use ids such as "hold3".
 -- game: { id, title, felt, tagline, rules, view, help(), capTokens, stakeOf(wager) (optional),
 --   bet(ctx, table, lastWager) (optional): its own bet scene for games with several bets. Run it with table:run(scene),
---   check table:liabilityRoom() against rules.maxWin(wager), and return the wager, or nil when the player leaves. }
+--   check table:liabilityRoom() against rules.maxWin(wager), and return the wager, or nil when the player leaves.
+--   shoe (optional): true when the cards last across rounds in keep.shoe. Shuffling from one seed, and carrying the rest
+--   over, means that seed gives away every card still to come. So rules.new sets keep.shuffled when it starts a new shoe,
+--   and the engine keeps that seed and its hash in keep, shows only the hash until the shoe is finished, and then shows
+--   both on the FAIR page. A round's own seed drives no cards once a shoe is running, so it is never offered as proof. }
 
 local audio = require("lib.casino.audio")
+local books = require("lib.casino.books")
 local canvas = require("lib.casino.canvas")
 local journal = require("lib.casino.journal")
 local limits = require("lib.casino.limits")
@@ -40,27 +49,18 @@ local GONE_GRACE_MS = 5000       -- the detector has missed them this long: they
 local IDLE_BET_MS = 45000        -- no touch on the bet screen: the player has left
 local IDLE_RESULT_MS = 30000
 local RESUME_WAIT_MS = 90000     -- how long a resumed round waits for its player
-local COLLECT_WAIT_MS = 25000
+local NUDGE_MS = 25000           -- a player the detector can see gets a word before the bank's 30 second touch window closes
+local CLAIM_RETRY_MS = 15000     -- how often an unanswered jackpot claim is asked again
 local WARN_MS = 10000
-local LOG_FILE = "casino.log"
-local LOG_MAX_BYTES = 100000
+local HASH_SHOWN = 16            -- how much of a hash the table shows while it plays. FAIR has the whole of it
 local BIG_WIN_TIMES = 10
 local MIN_W, MIN_H = 120, 80     -- a 6x6 wall at text scale 0.5 is 121x81
+local LOCK_NOTICE = "Owner: tap to lock this table"
+
+local log = journal.log
 
 local function now()
   return os.epoch("utc")
-end
-
-local function log(message)
-  if fs.exists(LOG_FILE) and fs.getSize(LOG_FILE) > LOG_MAX_BYTES then
-    if fs.exists(LOG_FILE .. ".bak") then fs.delete(LOG_FILE .. ".bak") end
-    fs.move(LOG_FILE, LOG_FILE .. ".bak")
-  end
-  local handle = fs.open(LOG_FILE, "a")
-  if handle then
-    handle.writeLine(os.date("%Y-%m-%d %H:%M:%S") .. " " .. tostring(message))
-    handle.close()
-  end
 end
 
 local function largestMonitor()
@@ -97,6 +97,7 @@ function Table:run(scene)
     elseif event == "monitor_touch" and a == self.monitorName then
       local who = self.toucher or wallet.livePlayer()
       self.toucher = nil
+      if wallet.lockIfOwner(who) then self.wantsLock = false end
       if self.ctx.seat and who ~= self.ctx.seat and not scene.anyone then
         self:toast("Table in use by " .. self.ctx.seat)
       elseif scene.touch then
@@ -106,6 +107,10 @@ function Table:run(scene)
     elseif event == "monitor_resize" and a == self.monitorName then
       self:attachCanvas()
       scene.dirty = true
+    elseif event == "peripheral" or event == "peripheral_detach" then
+      -- A speaker or a modem added after boot is picked up here
+      audio.init()
+      net.open()
     elseif event == "timer" and a == self.timer then
       local time = now()
       local dt = (time - last) / 1000
@@ -137,6 +142,8 @@ function Table:heartbeat(time)
     os.queueEvent("roger_alive")
     net.tick()
     self:refreshBalance()
+    self:chaseClaims(time)
+    self.wantsLock = wallet.wantsLock()
   end
 end
 
@@ -159,6 +166,7 @@ function Table:writeDebug(scene)
       toast = self.toastText or false,
       host = wallet.hostName() or false,
       hostBalance = wallet.hostBalance() or false,
+      locked = wallet.terminalLocked() == true,
       state = scene.debugState and scene.debugState() or false,
     }))
     handle.close()
@@ -197,11 +205,17 @@ function Table:refreshBalance()
   ctx.jackpot = self:jackpotValue()
 end
 
+--- With a hub the pot is the hub's, and only the hub knows what other tables have paid from it. So a table that has heard one
+-- and now hears nothing promises only the seed, not its last figure. A table with no hub at all keeps a pot of its own.
 function Table:jackpotValue()
   local rules = self.game.rules
   if not rules.JACKPOT then return nil end
   local hub = net.hub()
-  if hub and hub.jackpot then return hub.jackpot end
+  if hub and hub.jackpot then
+    self.keep.pot, self.keep.hubbed = hub.jackpot, true
+    return hub.jackpot
+  end
+  if self.keep.hubbed then return rules.JACKPOT.seed end
   return self.keep.pot or rules.JACKPOT.seed
 end
 
@@ -221,13 +235,19 @@ function Table:setExposure(amount)
   net.setExposure(wallet.hostName(), amount)
 end
 
+--- A tag no transfer has used. The ledger finds a transfer by its reason, so each one needs its own.
+function Table:freshTag(what)
+  self.tags = (self.tags or 0) + 1
+  return ("%s %s %x.%d"):format(self.game.title, what, now() % 268435456, self.tags)
+end
+
 --- Try to move what a round left owed. Returns what is still left.
 function Table:settleOwed(name)
+  books.resolve(name)
   local owed = journal.owedTo(name)
   if owed == 0 then return 0 end
-  local moved, left, err = wallet.settle(name, owed, self.game.title .. " owed")
+  local moved, left, err = books.move(name, owed, self:freshTag("owed"))
   if moved ~= 0 then
-    journal.addOwed(name, -moved)
     log("owed " .. name .. " moved " .. moved .. " left " .. left)
   elseif err then
     log("owed " .. name .. " unmoved: " .. tostring(err))
@@ -236,63 +256,134 @@ function Table:settleOwed(name)
   return left
 end
 
---- Close a round's books: the only place a round moves money.
+--- Close a round's books: the only place a round moves money. The result goes in the book before the transfer tries, so
+-- from here on the tokens are owed whatever happens to this computer.
 function Table:settle(round)
-  local rules = self.game.rules
   self:claimJackpot(round)
-  local netResult = rules.net(round.state)
-  local reason = self.game.title .. " #" .. round.id
-  round.net = netResult
+  round.net = self.game.rules.net(round.state)
   round.phase = "settling"
   journal.saveRound(round)
 
-  local moved, left, err = 0, netResult, nil
-  if netResult ~= 0 then
-    moved, left, err = wallet.settle(round.player, netResult, reason)
+  local booked = self:bookRound(round)
+  local left, err = round.net, nil
+  if booked then
+    local _
+    _, left, err = books.move(round.player, round.net, self.game.title .. " #" .. round.id)
   end
-  if left ~= 0 then
-    journal.addOwed(round.player, left)
-    log("round " .. round.id .. " " .. round.player .. " left owed " .. left .. ": " .. tostring(err))
-  end
+  if left ~= 0 then log("round " .. round.id .. " " .. round.player .. " left owed " .. left .. ": " .. tostring(err)) end
   round.left = left
-  round.phase = "settled"
 
-  stats.record(round.player, round.stake, netResult)
-  net.send("round", { game = self.game.id, player = round.player, wagered = round.stake, net = netResult })
-  if rules.JACKPOT then self:jackpotRound(round) end
-  rules.finish(round.state, self.keep)
-  journal.saveKeep(self.keep)
-  journal.clearRound()
+  -- A book that cannot be written keeps the round on disk, and recover tries it again as soon as the session ends
+  if booked then
+    self:finishRound(round)
+  else
+    self.unfinished = true
+  end
   self:setExposure(0)
   self:refreshBalance()
-  log(("round %s %s %s stake=%d net=%d left=%d seed=%s"):format(round.id, self.game.id, round.player,
-    round.stake, netResult, left, round.seed))
+  log(("round %s %s %s stake=%d net=%d left=%d %s"):format(round.id, self.game.id, round.player, round.stake, round.net, left,
+    self.game.shoe and ("shoe=" .. round.commit:sub(1, HASH_SHOWN)) or ("seed=" .. round.seed)))
 end
 
---- With a hub alive the pot is the hub's, and the figure a round opened with can be stale. Ask it what may be paid
--- before any money moves, so two tables cannot pay the same pot. With no answer, pay only the seed, which is always there.
--- A rules module's net must read state.jackpotHit. The claim id repeats on a retry, so the hub answers it the same way.
+function Table:bookRound(round)
+  return journal.book(round.player, round.net, "round " .. round.id)
+end
+
+--- Everything after the money, for a live round or one a crash left behind. Each step can run again and do nothing.
+function Table:finishRound(round)
+  local rules = self.game.rules
+  local state = round.state
+  local wagered = rules.risk and rules.risk(state) or round.stake
+
+  -- All of this lands in one write of keep, and keep remembers the round, so it can never happen twice
+  if self.keep.closed ~= round.id then
+    if rules.JACKPOT then self:potBooks(round) end
+    rules.finish(state, self.keep)
+    self.keep.closed = round.id
+    journal.saveKeep(self.keep)
+  end
+
+  if wagered > 0 then stats.record(round.player, wagered, round.net, round.id) end
+
+  -- Noted before it is said. A crash in that gap loses one line on the hub, which is better than saying it twice
+  if not round.told then
+    round.told = true
+    journal.saveRound(round)
+    if wagered > 0 then
+      net.send("round", { game = self.game.id, player = round.player, wagered = wagered, net = round.net })
+    end
+    if rules.JACKPOT then self:potNews(round) end
+  end
+  journal.clearRound()
+end
+
+--- With a hub alive the pot is the hub's, and the figure a round opened with can be stale. Ask it what may be paid before
+-- any money moves, so two tables cannot pay the same pot. A hub that is slow to answer must not short the player or lose the
+-- pot, because it may well have reset the pool by now. So they get the seed at once, which is always there, and the claim is
+-- kept: chaseClaims asks again until it answers, and books the difference. Only a rules module that reads state.jackpotHit
+-- in its net can do this. The claim id repeats on a retry, so the hub answers it the same way.
 function Table:claimJackpot(round)
   local rules = self.game.rules
-  if not (rules.JACKPOT and round.state.jackpotHit) or round.claim or not net.hub() then return end
+  if not (rules.JACKPOT and round.state.jackpotHit) or round.claimAnswered then return end
+  if not (round.claim or net.hub()) then return end
   round.claim = round.id
-  local granted = net.claim({ id = round.id, game = self.game.id, player = round.player, amount = round.state.jackpotHit })
-  round.state.jackpotHit = math.min(round.state.jackpotHit, granted or rules.JACKPOT.seed)
+  round.asked = round.asked or round.state.jackpotHit
+  journal.saveRound(round)
+
+  local granted = net.claim({ id = round.claim, game = self.game.id, player = round.player, amount = round.asked })
   -- The wait above can swallow the frame timer
   self.timer = os.startTimer(FRAME)
+  round.claimAnswered = true
+  self.keep.claims = self.keep.claims or {}
+  if granted then
+    self.keep.claims[round.claim] = nil
+    round.state.jackpotHit = math.min(round.asked, granted)
+  else
+    round.state.jackpotHit = math.min(round.asked, rules.JACKPOT.seed)
+    self.keep.claims[round.claim] = { player = round.player, asked = round.asked, paid = round.state.jackpotHit, at = now() }
+  end
+  journal.saveKeep(self.keep)
 end
 
-function Table:jackpotRound(round)
+--- Ask again about any claim the hub has not answered, and when it does, put what the player is still due in the book.
+function Table:chaseClaims(time)
+  for id, held in pairs(self.keep.claims or {}) do
+    local granted = net.granted(id)
+    if granted then
+      local due = math.max(0, math.min(held.asked, granted) - held.paid)
+      if journal.book(held.player, due, "claim " .. id) then
+        self.keep.claims[id] = nil
+        journal.saveKeep(self.keep)
+        log("claim " .. id .. " answered late with " .. granted .. ": " .. held.player .. " is due " .. due)
+        if due > 0 then
+          net.send("jackpot", { game = self.game.id, player = held.player, amount = due, claim = id })
+          if self.ctx.seat == held.player then self:settleOwed(held.player) end
+        end
+      end
+    elseif time - held.at >= CLAIM_RETRY_MS then
+      held.at = time
+      net.send("claim", { id = id, game = self.game.id, player = held.player, amount = held.asked })
+    end
+  end
+end
+
+--- A capped win leaves the rest of the pot for the next one.
+function Table:potBooks(round)
   local rules = self.game.rules
-  local share = math.floor(round.stake * rules.JACKPOT.share)
+  local pot = self.keep.pot or rules.JACKPOT.seed
   if round.state.jackpotHit then
-    -- A capped win leaves the rest of the pot for the next one
-    local pot = self.keep.pot or rules.JACKPOT.seed
     self.keep.pot = math.max(rules.JACKPOT.seed, pot - round.state.jackpotHit)
+  else
+    self.keep.pot = pot + math.floor(round.stake * rules.JACKPOT.share)
+  end
+end
+
+function Table:potNews(round)
+  local rules = self.game.rules
+  if round.state.jackpotHit then
     net.send("jackpot", { game = self.game.id, player = round.player, amount = round.state.jackpotHit, claim = round.claim })
   else
-    self.keep.pot = (self.keep.pot or rules.JACKPOT.seed) + share
-    net.send("pot", { amount = share })
+    net.send("pot", { amount = math.floor(round.stake * rules.JACKPOT.share) })
   end
 end
 
@@ -335,6 +426,7 @@ function Table:attract(message)
       c:textCenter(cx, 49, "JACKPOT " .. ui.group(ctx.jackpot) .. " TOKENS", C.win)
     end
     if message then c:textCenter(cx, c.h - 3, message, C.orange) end
+    if self.wantsLock then c:textCenter(cx, c.h - 2, LOCK_NOTICE, C.mute) end
   end
 
   function scene.touch(s, _, _, who)
@@ -573,21 +665,37 @@ function Table:chooseBet(lastBet)
   return nil
 end
 
+--- A reshuffle: the shoe that was running is finished, so its seed can be shown, and this one takes its place.
+function Table:startShoe(seed, commit)
+  local keep = self.keep
+  if keep.shoeSeed then
+    keep.lastShoe = { seed = keep.shoeSeed, commit = keep.shoeCommit }
+    log("shoe finished hash=" .. keep.shoeCommit .. " seed=" .. keep.shoeSeed)
+  end
+  keep.shoeSeed, keep.shoeCommit, keep.shuffled = seed, commit, nil
+  journal.saveKeep(keep)
+end
+
 --- Start a round: pick the seed, show its hash, save it before the first card.
 function Table:openRound(wager)
-  local rules = self.game.rules
+  local game, keep = self.game, self.keep
+  local rules = game.rules
   local seed = rng.freshSeed(self.ctx.seat)
   local stream = rng.new(seed)
   local env = { pot = self:jackpotValue() }
-  local state, events = rules.new(wager, stream, self.keep, env)
+  -- A shoe from before shoes had a hash of their own may have had its seed shown: this starts a new one
+  if game.shoe and not keep.shoeCommit then keep.shoe = nil end
+  local state, events = rules.new(wager, stream, keep, env)
+  local commit = rng.sha256(seed)
+  if game.shoe and keep.shuffled then self:startShoe(seed, commit) end
   local round = {
     id = ("%x"):format(now() % 268435456),
-    game = self.game.id,
+    game = game.id,
     player = self.ctx.seat,
     wager = wager,
-    stake = self.game.stakeOf and self.game.stakeOf(wager) or wager,
+    stake = game.stakeOf and game.stakeOf(wager) or wager,
     seed = seed,
-    commit = rng.sha256(seed),
+    commit = game.shoe and keep.shoeCommit or commit,
     rng = stream:serial(),
     state = state,
     phase = "open",
@@ -663,6 +771,8 @@ function Table:playRound(round, stream, firstEvents)
     local away = presence.awayMs(ctx.seat)
     local left = s.touched + (away == 0 and IDLE_HERE_MS or IDLE_DECISION_MS) - time
     if away and away > 0 then left = math.min(left, GONE_GRACE_MS - away) end
+    -- The hold is theirs, but the bank only pays within 30 seconds of a touch, so a tap now keeps the money able to move
+    s.nudge = away == 0 and time - s.touched >= NUDGE_MS
     if left <= 0 then
       -- All the way to the end at once: nobody is here, so the table should not sit through more decisions or play them out
       repeat apply(s, rules.auto(round.state)) until rules.done(round.state)
@@ -677,6 +787,8 @@ function Table:playRound(round, stream, firstEvents)
   function scene.draw(s)
     view.draw(c, model, round.state, s.playing)
     ui.bar(c, ctx, ui.group(round.stake))
+    -- The promise the FAIR page makes: the hash is up before any card or result is
+    c:text(3, ui.BAR_H - 2, "Hash " .. round.commit:sub(1, HASH_SHOWN), C.mute)
     s.buttons = ui.newButtons()
     if not s.playing and #s.queue == 0 and not s.settled then
       local specs = {}
@@ -696,6 +808,8 @@ function Table:playRound(round, stream, firstEvents)
       end
       if s.warn then
         c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H - 1, "Auto-play in " .. s.warn .. "s, tap to wait", C.orange)
+      elseif s.nudge then
+        c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H - 1, "Still there? Tap the table", C.orange)
       end
     else
       c:rect(1, c.h - ui.ACTIONS_H + 1, c.w, ui.ACTIONS_H - 1, C.feltDark)
@@ -727,6 +841,35 @@ function Table:playRound(round, stream, firstEvents)
 
   self:run(scene)
   return self:showResult(round, model)
+end
+
+--- The proof, as much of it as can be shown now. In a shoe game only a finished shoe's seed ever appears.
+function Table:fairLines(round)
+  local check = "The SHA-256 of the seed must equal the hash. The seed drives ChaCha20, and that drives every shuffle."
+  if not self.game.shoe then
+    return {
+      "Before the deal this table fixed a secret seed, and showed the start of its hash at the top of the table.",
+      "", { "Hash", C.gold }, round.commit,
+      "", { "Seed, shown now the round is over", C.gold }, round.seed,
+      "", check,
+    }
+  end
+  local lines = {
+    "These cards come from one shoe, shuffled once from a secret seed. The start of its hash was at the top of the table before this round's first card.",
+    "", { "This shoe's hash", C.gold }, round.commit,
+    "Its seed comes when the shoe ends: shown sooner, it would give away every card still to come.",
+  }
+  local last = self.keep.lastShoe
+  if last then
+    for _, line in ipairs({
+      "", { "The last shoe's hash", C.gold }, last.commit,
+      "", { "The last shoe's seed, shown now it is finished", C.gold }, last.seed,
+      "", check,
+    }) do
+      lines[#lines + 1] = line
+    end
+  end
+  return lines
 end
 
 --- Show how the round ended, over the final table. Returns "again", "bet" or "leave".
@@ -784,12 +927,7 @@ function Table:showResult(round, model)
       s.left = self:settleOwed(round.player)
       if s.left == 0 then audio.play("win") end
     elseif hit.id == "fair" then
-      self:page("FAIR PLAY", {
-        { "Before the deal this table fixed a secret seed and showed its hash.", C.text },
-        "", { "Hash", C.gold }, round.commit,
-        "", { "Seed, shown now the round is over", C.gold }, round.seed,
-        "", "The SHA-256 of the seed must equal the hash. The seed drives ChaCha20, and that drives every shuffle.",
-      })
+      self:page("FAIR PLAY", self:fairLines(round))
     else
       s.choice, s.finished = hit.id, true
     end
@@ -852,6 +990,9 @@ end
 
 --- Settle anything from before a crash that stopped between journaling a result and clearing it.
 function Table:recover()
+  -- Whatever the book says is under way goes first, so nothing after this can act on a transfer in doubt
+  books.resolve()
+  self.unfinished = nil
   local round = journal.loadRound()
   if not round then return end
   log("resuming round " .. tostring(round.id) .. " phase " .. tostring(round.phase))
@@ -859,11 +1000,13 @@ function Table:recover()
     self.game.rules.resumed = true
     self:resumeRound(round)
   elseif round.phase == "settling" then
-    -- The reboot landed inside settle(). If the transfer left no trace the round is still owed
-    if not wallet.wasSettled("#" .. round.id) then
-      journal.addOwed(round.player, round.net or 0)
+    -- The reboot landed inside settle(). What moved has come off the book; what did not stays owed until they next sit here
+    if self:bookRound(round) then
+      self:finishRound(round)
+      self:setExposure(0)
+    else
+      self.unfinished = true
     end
-    journal.clearRound()
   else
     journal.clearRound()
   end
@@ -872,9 +1015,9 @@ end
 --- Play as the seated player until they leave.
 function Table:session()
   local ctx, game = self.ctx, self.game
-  if wallet.isSelfPlay(ctx.seat) then wallet.lockTerminal() end
   self:refreshBalance()
 
+  books.resolve(ctx.seat)
   local owed = journal.owedTo(ctx.seat)
   if owed ~= 0 then
     local left = self:settleOwed(ctx.seat)
@@ -898,10 +1041,16 @@ function Table:session()
     end
     if not wager then return end
     lastWager = wager
-    local round, stream, events = self:openRound(wager)
-    local choice = self:playRound(round, stream, events)
-    if choice == "leave" then return end
-    wager = choice == "again" and lastWager or nil
+    if game.rules.maxWin(wager) > self:liabilityRoom() then
+      -- Another of the host's tables, or the host's own balance, may have moved while they chose
+      self:notice("TABLE LIMIT CHANGED", "The house cannot cover that bet right now.")
+      wager = nil
+    else
+      local round, stream, events = self:openRound(wager)
+      local choice = self:playRound(round, stream, events)
+      if choice == "leave" or self.unfinished then return end
+      wager = choice == "again" and lastWager or nil
+    end
   end
 end
 
@@ -915,6 +1064,7 @@ function M.run(game)
   self:attachCanvas()
   self.ctx.table = self
   self.debug = fs.exists("casino_debug.flag")
+  self.wantsLock = wallet.wantsLock()
 
   -- Every screen is laid out for a 6x6 wall. On anything smaller, say so instead of drawing off the edge
   while self.c.w < MIN_W or self.c.h < MIN_H do
@@ -930,11 +1080,13 @@ function M.run(game)
 
   local function main()
     self:refreshBalance()
-    self:recover()
     while true do
+      self:recover()
       self.ctx.seat, self.ctx.balance, self.ctx.owedNotice = nil, nil, nil
-      local who = self:attract(not wallet.available() and "Economy offline" or nil)
-      if who and wallet.available() and self:seat(who) then
+      -- A round that could not be booked is the only copy of what it owes: no new round may overwrite it
+      local who = self:attract(self.unfinished and "This table's disk is full: tell its owner"
+        or not wallet.available() and "Economy offline" or nil)
+      if who and wallet.available() and not self.unfinished and self:seat(who) then
         self:session()
       end
     end

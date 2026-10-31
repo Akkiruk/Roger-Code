@@ -12,6 +12,7 @@ return {
   felt = "burgundy",
   dealLabel = "BET",
   capTokens = 100,
+  shoe = true,
   rules = rules,
   view = view,
   help = function()

@@ -12,7 +12,7 @@ package.path = table.concat({
 
 -- Each game's rules live in its own folder, the root of its computer once installed
 for _, game in ipairs({
-  "Baccarat", "Blackjack", "CasinoHub", "CrazyEights", "HiLo", "HorseRacing", "PokerTable",
+  "Arcade", "Baccarat", "Blackjack", "CasinoHub", "CrazyEights", "HiLo", "HorseRacing", "PokerTable",
   "Roulette", "Slots", "ThreeCardPoker", "UltimateHoldem", "VideoPoker",
 }) do
   package.path = root .. "/Games/" .. game .. "/?.lua;" .. package.path

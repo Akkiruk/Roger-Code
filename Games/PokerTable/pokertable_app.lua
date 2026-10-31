@@ -16,9 +16,10 @@
 -- the debt; someone who has left must clear it before they can sit again.
 -- rules.settle holds that order; Tests/pokertable_test.lua proves the host never goes below even, whatever fails.
 --
--- Every transfer is written down first with a unique tag, so a reboot can tell whether it happened (see move, recover).
+-- Every transfer is written down first with a unique tag, so a reboot can tell whether it happened (see lib/casino/books.lua).
 
 local audio = require("lib.casino.audio")
+local books = require("lib.casino.books")
 local canvas = require("lib.casino.canvas")
 local journal = require("lib.casino.journal")
 local net = require("lib.casino.net")
@@ -47,23 +48,13 @@ local APPROVE_MS = 60000
 local APPROVE_RETRY_MS = 20000
 local AWAY_LIMIT = 2             -- hands in a row a player can time out before losing their seat
 local CHIPS = { 100, 250, 500, 1000, 2500 }
-local LOG_FILE = "casino.log"
-local LOG_MAX_BYTES = 100000
+local HASH_SHOWN = 16            -- how much of a hash the table shows while it plays. FAIR has the whole of it
+local LOCK_NOTICE = "Owner: tap to lock this table"
+
+local log = journal.log
 
 local function now()
   return os.epoch("utc")
-end
-
-local function log(message)
-  if fs.exists(LOG_FILE) and fs.getSize(LOG_FILE) > LOG_MAX_BYTES then
-    if fs.exists(LOG_FILE .. ".bak") then fs.delete(LOG_FILE .. ".bak") end
-    fs.move(LOG_FILE, LOG_FILE .. ".bak")
-  end
-  local handle = fs.open(LOG_FILE, "a")
-  if handle then
-    handle.writeLine(os.date("%Y-%m-%d %H:%M:%S") .. " " .. tostring(message))
-    handle.close()
-  end
 end
 
 local function largestMonitor()
@@ -99,6 +90,7 @@ function App:run(scene)
     elseif event == "monitor_touch" and a == self.monitorName then
       local who = self.toucher or wallet.livePlayer()
       self.toucher = nil
+      if wallet.lockIfOwner(who) then self.wantsLock = false end
       if who then self:touched(who) end
       if scene.touch then
         scene:touch(b, c, who)
@@ -109,6 +101,10 @@ function App:run(scene)
     elseif event == "monitor_resize" and a == self.monitorName then
       self:attachCanvas()
       scene.dirty = true
+    elseif event == "peripheral" or event == "peripheral_detach" then
+      -- A speaker or a modem added after boot is picked up here
+      audio.init()
+      net.open()
     elseif event == "timer" and a == self.timer then
       local time = now()
       local dt = (time - last) / 1000
@@ -138,6 +134,7 @@ function App:heartbeat(time)
     self.lastBeat = time
     os.queueEvent("roger_alive")
     net.tick()
+    self.wantsLock = wallet.wantsLock()
   end
 end
 
@@ -158,6 +155,7 @@ function App:writeDebug(scene)
       w = self.c.w,
       h = self.c.h,
       toast = self.toastText or false,
+      locked = wallet.terminalLocked() == true,
       state = scene.debugState and scene.debugState() or false,
     }))
     handle.close()
@@ -243,23 +241,13 @@ end
 
 -- ------------------------------------------------------------------ money
 
---- One transfer. Written down with its tag first, so a reboot in the middle can tell whether it happened.
--- amount: tokens to the player when positive, from them when negative. Returns what moved.
+--- One transfer of what the book already says. books.move writes it down first, so a reboot in the middle can tell whether it
+-- happened, and takes what moved off the book. amount: tokens to the player when positive, from them when negative.
+-- Returns what moved.
 function App:move(name, amount)
-  if amount < 0 then
-    local take = math.min(-amount, wallet.balance(name) or 0)
-    if take <= 0 then return 0 end
-    amount = -take
-  end
-  local keep = self.keep
-  keep.seq = (keep.seq or 0) + 1
-  local tag = ("Poker #%x.%d."):format(now() % 268435456, keep.seq)
-  keep.moving = { name = name, amount = amount, tag = tag, owed = journal.owedTo(name) }
-  self:save()
-  local moved, _, err = wallet.settle(name, amount, tag)
-  if moved ~= 0 then journal.addOwed(name, -moved) end
-  keep.moving = nil
-  self:save()
+  self.seq = (self.seq or 0) + 1
+  local tag = ("Poker #%x.%d."):format(now() % 268435456, self.seq)
+  local moved, _, err = books.move(name, amount, tag)
   if moved ~= amount then log("move " .. tag .. " " .. name .. " wanted " .. amount .. " moved " .. moved .. ": " .. tostring(err)) end
   return moved
 end
@@ -279,6 +267,7 @@ function App:touched(who)
       wallet.requestApproval()
     end
   end
+  if wallet.isApproved() then books.resolve(who) end
   if journal.owedTo(who) ~= 0 and wallet.isApproved() then
     local names = self:seatedNames()
     if not self:seatOf(who) then names[#names + 1] = who end
@@ -290,31 +279,29 @@ end
 --- Close a hand's books: the only place a hand changes anyone's chips or tokens.
 function App:closeHand(round)
   round.nets = rules.nets(round.state)
-  round.before = {}
-  for name in pairs(round.nets) do
-    round.before[name] = journal.owedTo(name)
-  end
   round.phase = "settling"
   journal.saveRound(round)
   self:book(round)
   self:finishBooks(round)
 end
 
---- Write each net to the owed book. Each name is checked against its starting value, so a reboot cannot book it twice.
+--- Write each net to the owed book. The tag holds the hand and the name, so a reboot cannot book one twice.
 function App:book(round)
   for name, amount in pairs(round.nets) do
-    if amount ~= 0 and journal.owedTo(name) == round.before[name] then journal.addOwed(name, amount) end
+    journal.book(name, amount, "hand " .. round.id .. " " .. name)
   end
   round.phase = "booked"
   journal.saveRound(round)
 end
 
+--- Everything after the book. Each step can run again after a reboot and do nothing.
 function App:finishBooks(round)
   local names = {}
+  local closed = self.keep.closed == round.id
   for _, player in ipairs(round.state.players) do
     names[#names + 1] = player.name
     local index, seat = self:seatOf(player.name)
-    if seat then
+    if seat and not closed then
       seat.stack = player.start + player.net
       seat.away = round.timedOut[player.name] and (seat.away or 0) + 1 or 0
       if seat.away >= AWAY_LIMIT then
@@ -323,15 +310,24 @@ function App:finishBooks(round)
       end
     end
   end
+  -- The seats and the note that they are done land in one write of keep
+  self.keep.closed = round.id
   self:save()
 
   self:settleFor(names)
 
   for _, player in ipairs(round.state.players) do
-    stats.record(player.name, player.total, player.net)
-    net.send("round", { game = GAME_ID, player = player.name, wagered = player.total, net = player.net })
-    log(("hand %s %s in=%d net=%d owed=%d seed=%s"):format(round.id, player.name, player.total, player.net,
-      journal.owedTo(player.name), round.seed))
+    stats.record(player.name, player.total, player.net, round.id .. player.name)
+  end
+  -- Noted before it is said. A crash in that gap loses a line on the hub, which is better than saying it twice
+  if not round.told then
+    round.told = true
+    journal.saveRound(round)
+    for _, player in ipairs(round.state.players) do
+      net.send("round", { game = GAME_ID, player = player.name, wagered = player.total, net = player.net })
+      log(("hand %s %s in=%d net=%d owed=%d seed=%s"):format(round.id, player.name, player.total, player.net,
+        journal.owedTo(player.name), round.seed))
+    end
   end
   journal.clearRound()
 end
@@ -352,6 +348,7 @@ end
 --- Anything a reboot interrupted. Returns a hand to carry on with, if there is one.
 function App:recover()
   local keep = self.keep
+  -- From before the book held its own moves: a table updated while one was under way
   local moving = keep.moving
   if moving then
     if journal.owedTo(moving.name) == moving.owed and wallet.wasSettled(moving.tag) then
@@ -361,6 +358,7 @@ function App:recover()
     keep.moving = nil
     self:save()
   end
+  books.resolve()
   local round = journal.loadRound()
   if not round then return nil end
   log("resuming hand " .. tostring(round.id) .. " phase " .. tostring(round.phase))
@@ -536,7 +534,6 @@ function App:buyIn(who, seatIndex, topUp)
     seat.stack = seat.stack + scene.amount
   else
     self:seats()[seatIndex] = { name = who, stack = scene.amount, away = 0 }
-    if wallet.isSelfPlay(who) then wallet.lockTerminal() end
   end
   self:save()
   log((topUp and "top up " or "sit ") .. who .. " " .. scene.amount)
@@ -645,6 +642,7 @@ function App:lobby()
     else
       c:textCenter(cx, 45, ("%d to %d players. The house takes nothing."):format(rules.MIN_PLAYERS, rules.MAX_SEATS), C.text)
     end
+    if self.wantsLock then c:textCenter(cx, 47, LOCK_NOTICE, C.mute) end
 
     ui.actionBar(c, s.buttons, {
       { id = "leave", label = "LEAVE", color = C.red, disabled = #self:seatedNames() == 0 },
@@ -828,6 +826,8 @@ function App:playHand(round, firstEvents)
   function scene.draw(s)
     view.table(c, state, s.playing)
     self:topBar()
+    -- The promise the FAIR page makes: the hash is up before any card is
+    c:text(3, ui.BAR_H - 2, "Hash " .. round.commit:sub(1, HASH_SHOWN), C.mute)
     local left = s.deadline - now()
     if not s.settled then view.centre(c, state, s.playing, left < WARN_MS, math.max(0, left / TURN_MS)) end
     s.buttons = ui.newButtons()
@@ -958,7 +958,7 @@ function App:showResult(round)
       s.finished = true
     elseif hit.id == "fair" then
       self:page("FAIR PLAY", {
-        "Before the deal this table fixed a secret seed. Its SHA-256 is the hash below, and the seed drives every shuffle.",
+        "Before the deal this table fixed a secret seed, and showed the start of its hash at the top of the table. Its SHA-256 is the hash below, and the seed drives every shuffle.",
         "", { "Hash", C.gold }, round.commit,
         "", { "Seed, shown now the hand is over", C.gold }, round.seed,
       })
@@ -978,6 +978,7 @@ function M.run()
   assert(self.monitorName, "this table needs a monitor")
   self:attachCanvas()
   self.debug = fs.exists("casino_debug.flag")
+  self.wantsLock = wallet.wantsLock()
 
   local function main()
     local round = self:recover()

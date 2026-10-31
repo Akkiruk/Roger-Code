@@ -1,11 +1,13 @@
 -- casino_hub_app.lua
 -- The hub's computer: listens to the floor, keeps the books on disk, and tells every table where things stand.
--- It never touches a wallet. A monitor is optional, and with none it prints a short summary to its own screen.
+-- It moves no tokens. A monitor is optional, and with none it prints a short summary to its own screen.
+-- Its wall takes no input, but a hub is a computer with the host's name on it like any table: the owner's touch locks it.
 
 local canvas = require("lib.casino.canvas")
 local journal = require("lib.casino.journal")
 local net = require("lib.casino.net")
 local theme = require("lib.casino.theme")
+local wallet = require("lib.casino.wallet")
 local rules = require("casino_hub_rules")
 local view = require("casino_hub_view")
 
@@ -18,6 +20,7 @@ local SAVE_MS = 5000
 local BEAT_MS = 5000
 local PRINT_MS = 10000
 local TEXT_SCALE = 0.5
+local LOCK_NOTICE = "Owner: tap to lock this hub"
 
 local function now()
   return os.epoch("utc")
@@ -70,6 +73,7 @@ local function writeDebug(c, data, page, at)
     w = c and c.w or 0,
     h = c and c.h or 0,
     toast = false,
+    locked = wallet.terminalLocked() == true,
     state = {
       page = page,
       jackpot = data.jackpot,
@@ -94,6 +98,7 @@ function M.run()
   local page, started = 1, now()
   local nextPage, nextState, nextSave, nextBeat, nextPrint = 0, 0, 0, 0, 0
   local dirty = false
+  local toucher = nil
   local frame = os.startTimer(FRAME)
 
   local function announce()
@@ -114,8 +119,14 @@ function M.run()
         net.send("grant", grant)
         announce()
       end
+    elseif event == "vhcc_touch" then
+      toucher = a
+    elseif event == "monitor_touch" then
+      wallet.lockIfOwner(toucher or wallet.livePlayer())
+      toucher = nil
     elseif event == "monitor_resize" or event == "peripheral" or event == "peripheral_detach" then
       c = attach()
+      online = net.open()
     elseif event == "timer" and a == frame then
       local at = now()
       if at >= nextPage then
@@ -137,7 +148,8 @@ function M.run()
         os.queueEvent("roger_alive")
       end
       if c then
-        view.draw(c, data, page, (at - started) / 1000, at, not online and "No modem: no tables can be heard" or nil)
+        local note = not online and "No modem: no tables can be heard" or (wallet.wantsLock() and LOCK_NOTICE) or nil
+        view.draw(c, data, page, (at - started) / 1000, at, note)
         c:flush()
       elseif at >= nextPrint then
         nextPrint = at + PRINT_MS

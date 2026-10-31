@@ -11,6 +11,7 @@ return {
   felt = "green",
   dealLabel = "DEAL",
   capTokens = 100,
+  shoe = true,
   rules = rules,
   view = view,
   help = function()

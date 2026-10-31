@@ -972,6 +972,12 @@ local function claimPhoneHostIfNeeded(shouldClaim)
     return false, markerErr
   end
 
+  -- The claimer is here and is now the owner, the one moment this cannot be refused. Failing to lock must not fail the install
+  if type(ccvault.isTerminalLocked) == "function" and type(ccvault.setTerminalLock) == "function" then
+    local checked, locked = pcall(ccvault.isTerminalLocked)
+    if checked and locked == false then pcall(ccvault.setTerminalLock, true) end
+  end
+
   return true, result
 end
 

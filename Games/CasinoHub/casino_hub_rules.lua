@@ -5,10 +5,17 @@
 -- The pool has one owner, so one pot cannot be paid twice. A table about to pay sends a claim and pays what comes back:
 -- the smaller of what it asked and what the pool holds. The pool then resets, so a table with a stale figure gets the
 -- fresh pool and not the one just paid. Claims are remembered by table and id, so a retry after a reboot gets the same
--- answer and resets nothing.
+-- answer and resets nothing. That is also what makes a slow answer safe: a table that gave up waiting paid the seed, keeps
+-- asking, and pays the rest when this answers it.
+--
+-- Anyone on the network can send anything. Messages are only checked for the right shape and a believable size.
 
 local M = {
   SEED = 1000,            -- the pool starts here and returns here after every win
+  MAX_POT = 1e7,          -- the pool stops growing here (net.lua has the same figure)
+  MAX_POT_SHARE = 1e5,    -- 1% of a bet far beyond anything a table takes
+  MAX_TOKENS = 1e9,       -- no one amount can honestly be this big
+  MAX_NAME = 32,
   TOP = 8,                -- rows on a leaderboard
   KEPT_WINS = 8,          -- biggest and latest wins kept
   CLAIMS_KEPT = 40,
@@ -19,6 +26,9 @@ local M = {
 
 -- Targets come from each game's own rules, or a test that proves them. A game with no stated target has none here.
 -- Baccarat is the Banker bet, and Slots is its paytable before the jackpot.
+-- Measured returns divide by everything wagered, raises included, so the two poker games with raises state theirs that way:
+-- the loss per Ante is the same, over more tokens. Three Card: 3.37% of the Ante over 1 + 0.6742 Antes. Hold'em: 2.43% of the
+-- Ante over 2 + 2.1636 Antes. Both are worked from threecard-oracle.mjs and holdem-oracle.mjs in craftos-agent, without side bets.
 M.GAMES = {
   baccarat = { name = "Baccarat", target = 0.9894 },
   blackjack = { name = "Blackjack" },
@@ -28,8 +38,8 @@ M.GAMES = {
   pokertable = { name = "Poker Table", target = 1 },
   roulette = { name = "Roulette", target = 36 / 37 },
   slots = { name = "Slots", target = 133610 / 140608 },
-  ["three-card-poker"] = { name = "Three Card Poker", target = 0.9663 },
-  ["ultimate-holdem"] = { name = "Ultimate Holdem", target = 0.9755 },
+  ["three-card-poker"] = { name = "Three Card Poker", target = 0.9799 },
+  ["ultimate-holdem"] = { name = "Ultimate Holdem", target = 0.9942 },
   videopoker = { name = "Video Poker", target = 0.98373 },
 }
 
@@ -37,8 +47,16 @@ local function isNumber(value)
   return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
 end
 
+local function isTokens(value)
+  return isNumber(value) and math.abs(value) <= M.MAX_TOKENS
+end
+
 local function isName(value)
-  return type(value) == "string" and value ~= ""
+  return type(value) == "string" and value ~= "" and #value <= M.MAX_NAME
+end
+
+local function isId(value)
+  return isName(value) or isNumber(value)
 end
 
 function M.new()
@@ -94,7 +112,7 @@ end
 
 local function onRound(data, sender, message, at)
   local game, name, wagered, result = message.game, message.player, message.wagered, message.net
-  if not (isName(game) and isName(name) and isNumber(wagered) and isNumber(result)) or wagered < 0 then return false end
+  if not (isName(game) and isName(name) and isTokens(wagered) and isTokens(result)) or wagered < 0 then return false end
   local seen = hear(data, sender, game, at)
   seen.rounds = seen.rounds + 1
 
@@ -116,9 +134,9 @@ local function onRound(data, sender, message, at)
 end
 
 local function onPot(data, sender, message, at)
-  if not isNumber(message.amount) or message.amount <= 0 then return false end
+  if not isNumber(message.amount) or message.amount <= 0 or message.amount > M.MAX_POT_SHARE then return false end
   hear(data, sender, nil, at)
-  data.jackpot = data.jackpot + math.floor(message.amount)
+  data.jackpot = math.min(M.MAX_POT, data.jackpot + math.floor(message.amount))
   return true
 end
 
@@ -128,7 +146,8 @@ end
 
 --- A table asks to pay from the pool. Returns what it may pay.
 local function onClaim(data, sender, message, at)
-  if message.id == nil or not isNumber(message.amount) or message.amount <= 0 then return nil end
+  if not (isId(message.id) and isName(message.game) and isName(message.player) and isTokens(message.amount))
+    or message.amount <= 0 then return nil end
   hear(data, sender, message.game, at)
   local key = claimKey(sender, message.id)
   local known = data.claims[key]
@@ -144,18 +163,21 @@ local function onClaim(data, sender, message, at)
   return granted
 end
 
---- A jackpot was paid. A claimed one has already been taken from the pool; one that never asked resets it now.
+--- A jackpot was paid. A claimed one has already been taken from the pool; one that never asked resets it now. A claim this
+-- hub never heard is a table that paid the seed and is still asking, and the pool stays whole for that claim to find.
 local function onJackpot(data, sender, message, at)
-  if not (isName(message.player) and isNumber(message.amount)) then return false end
+  if not (isName(message.player) and isName(message.game) and isNumber(message.amount)) then return false end
+  if message.amount <= 0 or message.amount > M.MAX_POT then return false end
+  if message.claim ~= nil and not isId(message.claim) then return false end
   hear(data, sender, message.game, at)
-  if message.claim == nil or not data.claims[claimKey(sender, message.claim)] then data.jackpot = M.SEED end
+  if message.claim == nil then data.jackpot = M.SEED end
   data.jackpotsPaid = data.jackpotsPaid + message.amount
   noteWin(data, { player = message.player, game = message.game, amount = message.amount, at = at, jackpot = true })
   return true
 end
 
 local function onExposure(data, sender, message, at)
-  if not isNumber(message.amount) then return false end
+  if not isTokens(message.amount) or message.amount < 0 then return false end
   hear(data, sender, nil, at).exposure = message.amount
   return true
 end

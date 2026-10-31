@@ -3,6 +3,7 @@
 
 local deck = require("lib.casino.deck")
 local limits = require("lib.casino.limits")
+local net = require("lib.casino.net")
 local rng = require("lib.casino.rng")
 local t = require("testing")
 
@@ -70,6 +71,48 @@ t.test("cards name and parse", function()
   t.eq(deck.parse("10D"), deck.card(10, deck.DIAMONDS))
   t.eq(deck.rank(deck.parse("QH")), 12)
   t.truthy(deck.isRed(deck.parse("2H")))
+end)
+
+t.test("exposure must be a believable amount for a named host", function()
+  t.truthy(net.validExposure({ host = "Host", amount = 500 }))
+  t.truthy(net.validExposure({ host = "Host", amount = 0 }))
+  for _, amount in ipairs({ -1, -1e12, 1e12, 0 / 0, math.huge, -math.huge, "500" }) do
+    t.truthy(not net.validExposure({ host = "Host", amount = amount }), tostring(amount))
+  end
+  t.truthy(not net.validExposure({ amount = 500 }), "no host")
+end)
+
+t.test("a hub's state is believed whole or not at all", function()
+  local leader = { name = "Ann", net = -40 }
+  t.truthy(net.validState({ jackpot = 1000, leaders = {} }))
+  t.truthy(net.validState({ jackpot = 1000, leaders = { leader, { name = "Bob", net = 12, best = 5, rounds = 2 } } }))
+  for _, message in ipairs({
+    { leaders = {} },
+    { jackpot = 1000 },
+    { jackpot = 1000, leaders = 5 },
+    { jackpot = 1000, leaders = "Ann" },
+    { jackpot = 1e12, leaders = {} },
+    { jackpot = -1, leaders = {} },
+    { jackpot = 0 / 0, leaders = {} },
+    { jackpot = 1000, leaders = { leader, 5 } },
+    { jackpot = 1000, leaders = { { net = 1 } } },
+    { jackpot = 1000, leaders = { { name = 7, net = 1 } } },
+    { jackpot = 1000, leaders = { { name = "Ann" } } },
+    { jackpot = 1000, leaders = { { name = "Ann", net = 0 / 0 } } },
+    { jackpot = 1000, leaders = { one = leader } },
+    { jackpot = 1000, leaders = { { name = ("x"):rep(100), net = 1 } } },
+  }) do
+    t.truthy(not net.validState(message))
+  end
+end)
+
+t.test("a grant needs an id and a believable amount", function()
+  t.truthy(net.validGrant({ id = "a", amount = 1000 }))
+  t.truthy(net.validGrant({ id = 7, amount = 0 }))
+  t.truthy(not net.validGrant({ amount = 1000 }), "no id")
+  t.truthy(not net.validGrant({ id = {}, amount = 1000 }), "a table for an id")
+  t.truthy(not net.validGrant({ id = "a", amount = -1 }), "negative")
+  t.truthy(not net.validGrant({ id = "a", amount = 1e12 }), "absurd")
 end)
 
 t.test("limits keep the reserve and split the risk", function()

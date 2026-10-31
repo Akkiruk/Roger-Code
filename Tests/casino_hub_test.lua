@@ -215,6 +215,65 @@ t.test("the state tables read has the jackpot and leaders", function()
   t.eq(state.leaders[1].net, 40)
 end)
 
+t.test("amounts no table could send change nothing", function()
+  local data = rules.new()
+  local before = data.jackpot
+  for _, amount in ipairs({ -1, 0, 1e12, 0 / 0, math.huge, -math.huge, "5", false }) do
+    t.eq(rules.apply(data, 1, { kind = "pot", amount = amount }, 5), false, "pot " .. tostring(amount))
+  end
+  for _, amount in ipairs({ -1, 1e12, 0 / 0, math.huge, "5" }) do
+    t.eq(rules.apply(data, 1, { kind = "exposure", amount = amount }, 5), false, "exposure " .. tostring(amount))
+  end
+  t.eq(data.jackpot, before)
+end)
+
+t.test("the pool stops at its cap", function()
+  local data = rules.new()
+  data.jackpot = rules.MAX_POT - 5
+  t.truthy(rules.apply(data, 1, { kind = "pot", amount = 100 }, 5))
+  t.eq(data.jackpot, rules.MAX_POT)
+end)
+
+t.test("the hub and the tables agree on the biggest pool", function()
+  local net = require("lib.casino.net")
+  t.eq(net.MAX_POT, rules.MAX_POT)
+  t.eq(net.MAX_TOKENS, rules.MAX_TOKENS)
+end)
+
+t.test("a claim or a jackpot with bad fields is ignored", function()
+  local data = rules.new()
+  feed(data, { { kind = "pot", amount = 500 } })
+  local good = { kind = "claim", id = "a", game = "slots", player = "Ann", amount = 100 }
+  for field, bad in pairs({ id = {}, game = 5, player = false, amount = 0 / 0 }) do
+    local message = {}
+    for key, value in pairs(good) do message[key] = value end
+    message[field] = bad
+    local changed, grant = rules.apply(data, 1, message, 5)
+    t.eq(changed, false, "claim with bad " .. field)
+    t.eq(grant, nil, "no grant for bad " .. field)
+  end
+  t.eq(data.jackpot, 1500, "the claims took nothing")
+
+  for _, message in ipairs({
+    { kind = "jackpot", player = "Ann", amount = 100 },
+    { kind = "jackpot", game = "slots", player = "Ann", amount = -100 },
+    { kind = "jackpot", game = "slots", player = "Ann", amount = math.huge },
+    { kind = "jackpot", game = "slots", player = "Ann", amount = 100, claim = {} },
+    { kind = "jackpot", game = "slots", player = ("x"):rep(100), amount = 100 },
+  }) do
+    t.eq(rules.apply(data, 1, message, 5), false, "jackpot")
+  end
+  t.eq(data.jackpot, 1500, "the jackpots reset nothing")
+  t.eq(data.jackpotsPaid, 0)
+end)
+
+t.test("a jackpot naming a claim this hub never heard leaves the pool for it", function()
+  local data = rules.new()
+  feed(data, { { kind = "pot", amount = 500 }, { kind = "jackpot", game = "slots", player = "Ann", amount = 1000, claim = "b" } })
+  t.eq(data.jackpot, 1500, "the claim can still find it")
+  t.eq(claim(data, 1, "b", 1500), 1500, "and it does, when it arrives")
+end)
+
 t.test("every game in the casino that states a target has one here", function()
   for _, id in ipairs({ "baccarat", "hilo", "horse-racing", "pokertable", "roulette", "slots", "three-card-poker",
     "ultimate-holdem", "videopoker" }) do

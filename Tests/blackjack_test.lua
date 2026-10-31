@@ -380,6 +380,15 @@ t.test("basic strategy returns the modelled 98.5%, within 97.5 to 99.5", functio
   t.truthy(value >= 0.975 and value <= 0.995, "return " .. value)
 end)
 
+t.test("a reshuffle tells the engine, and the amount at risk ends as all that was wagered", function()
+  local keep = {}
+  local rng = t.fastRng(6)
+  local state = rules.new(100, rng, keep, {})
+  t.truthy(keep.shuffled, "a new shoe")
+  state.hands[2] = { cards = {}, bet = 100 }
+  t.eq(rules.risk(state), 200, "a split counts both bets")
+end)
+
 t.test("the help comes from the rules", function()
   local text = table.concat(game.help(), " ")
   t.truthy(text:find("3 to 2", 1, true), "the payout")

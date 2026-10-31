@@ -23,6 +23,7 @@ local SOUNDS = {
 
 local speaker = nil
 
+--- Find the speaker. Safe to call again whenever the peripherals change.
 function M.init()
   speaker = peripheral.find("speaker")
 end

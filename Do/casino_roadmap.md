@@ -28,8 +28,15 @@ The monitor is always a 6x6 wall at text scale 0.5.
 - Stakes are never taken up front. This is the owner's decision: nobody gives up tokens and then waits to get them back.
 - A round's net moves once, before the final reveal plays. What cannot move is kept as owed and settled when that player next sits down.
 - A reboot resumes the round. Nothing is voided.
+- Every transfer goes through `books.lua`: the result is booked, the transfer is written down, it happens, and it is crossed off in one write to the owed book. A crash at any step is answered from the audit log, then the server's ledger once the player has touched the table. If neither can ever tell, a payment counts as not made and a charge as taken, so the host carries the doubt and the player never does.
+- In a shoe game a live shoe's seed is never shown or logged. FAIR shows the shoe's hash, and its seed once the shoe is finished. A new shoe game sets `shoe = true` on its game table and `keep.shuffled` when it reshuffles.
+- The hash is on the table before any card, in the play scene and on PokerTable. FAIR must only promise what is true.
+- The owner's touch locks a table's terminal, on tables, PokerTable and the hub. A table stays playable, and asks on its idle screen until it is locked. `isTerminalLocked` only reads.
+- The network is not trusted and not signed. Anything a table or the hub hears is checked for shape and size, nothing more.
+- A jackpot claim the hub has not answered pays the seed at once and stays open until it answers, and then the player is booked the rest.
 - vhcctweaks stays on 2.2.35. Money only moves within 30 seconds of the player's last touch. Pressing a button is a touch, so a slow decision settles at once.
-- With a player detector (`presence.lua`, range 12) someone at the table gets 5 minutes, and someone gone for 5 seconds has the round finished and settled at once. With no detector the round finishes after 60 seconds. What could not move is owed until that player next touches the table.
+- With a player detector (`presence.lua`, range 12) someone at the table gets 5 minutes, and someone gone for 5 seconds has the round finished and settled at once. After 25 seconds with no touch they are asked to tap, which keeps the money able to move. With no detector the round finishes after 60 seconds. What could not move is owed until that player next touches the table.
+- Measured returns on the hub divide by everything wagered, raises, doubles and splits included. A game's `rules.risk` gives that at the end of a round. Three Card Poker and Hold'em state their hub targets on that basis, which is why they differ from the per-Ante figures above.
 - Paytables are total return on the bet, in every game.
 - `Tests/run.lua` runs in the publish workflow. A game outside its target return stops the deploy.
 - Anti-cheat stays light: make abuse awkward, don't build around it.
@@ -37,7 +44,7 @@ The monitor is always a 6x6 wall at text scale 0.5.
 ## Testing
 
 - `Tests/`: rules, payouts and returns, pure Lua.
-- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules.
+- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, and `mutants.mjs` proves those tests can fail.
 - `craftos-agent/tools/mcbridge/rc-casino.mjs`: every game with real tokens on a real server.
 
 ## Later

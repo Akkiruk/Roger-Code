@@ -3,7 +3,7 @@
 
 local M = {}
 
-M.RESERVE = 2000          -- the host's balance below this is never put at risk
+M.RESERVE = 2000          -- the host's balance below this is never put at risk. The only place this number lives
 M.LIABILITY_SHARE = 0.5   -- one round's biggest win may take this share of what is left
 
 --- What the host can put at risk after the reserve and what other tables have open.

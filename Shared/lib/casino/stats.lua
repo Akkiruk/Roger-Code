@@ -1,32 +1,43 @@
 -- stats.lua
 -- Each table's own record of its players, kept on disk. The hub keeps the casino-wide version.
+-- Written the way the journal writes, so a reboot mid-write cannot lose the record. A file that cannot be read at all is
+-- set aside before anything replaces it.
+
+local journal = require("lib.casino.journal")
 
 local M = {}
 
 local FILE = "casino_stats.dat"
+local DAMAGED_FILE = "casino_stats_damaged.dat"
+local SEEN_KEPT = 24   -- rounds remembered, so one replayed after a reboot is not counted twice
 
 local function load()
-  if fs.exists(FILE) then
-    local handle = fs.open(FILE, "r")
-    if handle then
-      local value = textutils.unserialize(handle.readAll() or "")
-      handle.close()
-      if type(value) == "table" then return value end
-    end
-  end
+  local value = journal.load(FILE)
+  if type(value) == "table" and type(value.players) == "table" and type(value.total) == "table" then return value end
+  if fs.exists(FILE) and not fs.exists(DAMAGED_FILE) then pcall(fs.copy, FILE, DAMAGED_FILE) end
   return { players = {}, total = { rounds = 0, wagered = 0, net = 0 } }
 end
 
 local function save(data)
-  local handle = fs.open(FILE, "w")
-  if handle then
-    handle.write(textutils.serialize(data, { compact = true }))
-    handle.close()
-  end
+  return journal.save(FILE, data)
 end
 
-function M.record(name, wagered, net)
+--- Whether this tag has been recorded, and if not, note it.
+local function firstTime(data, tag)
+  if not tag then return true end
+  data.seen = data.seen or {}
+  for _, seen in ipairs(data.seen) do
+    if seen == tag then return false end
+  end
+  table.insert(data.seen, tag)
+  while #data.seen > SEEN_KEPT do table.remove(data.seen, 1) end
+  return true
+end
+
+--- Add a round to a player's record. A tag makes this safe to repeat: the note and the record land in one write.
+function M.record(name, wagered, net, tag)
   local data = load()
+  if not firstTime(data, tag) then return nil end
   local player = data.players[name] or { rounds = 0, wagered = 0, net = 0, best = 0 }
   player.rounds = player.rounds + 1
   player.wagered = player.wagered + wagered

@@ -1,15 +1,17 @@
 -- wallet.lua
 -- Every ccvault call the casino makes. Nothing here can throw: ccvault errors come back as a reason.
--- Stakes are never taken up front. A round moves money once, when its result is known (see settle).
+-- Stakes are never taken up front. A round moves money once, when its result is known (see books.lua, the only caller of send).
 -- Transfers name the seated player, so someone else tapping the monitor cannot get in the way.
+
+local journal = require("lib.casino.journal")
 
 local M = {}
 
 local MAX_REASON = 64
 local AUDIT_FILE = "casino_transactions.log"
-local AUDIT_MAX_BYTES = 200000
-
-M.HOST_RESERVE = 2000
+local AUDIT_MAX_BYTES = 96000
+local HISTORY_LIMIT = 50        -- the most ccvault.getTransactionHistory gives by default
+local transferCap = 1000000     -- ccvault's limit on one transfer. lowerCap learns a smaller one from the server's answer
 
 local function vault()
   return ccvault
@@ -23,16 +25,8 @@ local function guarded(fn, ...)
 end
 
 local function audit(entry)
-  if fs.exists(AUDIT_FILE) and fs.getSize(AUDIT_FILE) > AUDIT_MAX_BYTES then
-    if fs.exists(AUDIT_FILE .. ".bak") then fs.delete(AUDIT_FILE .. ".bak") end
-    fs.move(AUDIT_FILE, AUDIT_FILE .. ".bak")
-  end
-  local handle = fs.open(AUDIT_FILE, "a")
-  if handle then
-    entry.at = os.epoch("utc")
-    handle.writeLine(textutils.serialize(entry, { compact = true }))
-    handle.close()
-  end
+  entry.at = os.epoch("utc")
+  journal.appendLine(AUDIT_FILE, AUDIT_MAX_BYTES, textutils.serialize(entry, { compact = true }))
 end
 
 function M.available()
@@ -87,30 +81,62 @@ function M.requestApproval()
   return guarded(api.requestAuth)
 end
 
-function M.isSelfPlay(name)
-  return name ~= nil and M.hostName() == name
-end
-
---- Owners keep other people out of a table's terminal. Called with the owner at the monitor.
-function M.lockTerminal()
+--- Whether this computer's terminal is locked: true, false, or nil when this server cannot say. Read-only.
+function M.terminalLocked()
   local api = vault()
-  if not api or not api.setTerminalLock then return end
-  if guarded(api.isTerminalLocked) ~= true then
-    guarded(api.setTerminalLock, true)
-  end
+  if not api then return nil end
+  local locked = guarded(api.isTerminalLocked)
+  if type(locked) == "boolean" then return locked end
+  return nil
 end
 
---- Whether a transfer with this tag already happened, for a reboot that landed in the middle of one.
+--- A locked terminal opens only for its owner, and only the owner's own touch can lock it, so every touch comes here.
+-- It does nothing for anyone else, or when there is nothing to do. Returns true when this touch locked the terminal.
+function M.lockIfOwner(who)
+  if not who or M.terminalLocked() ~= false or who ~= M.hostName() then return false end
+  return guarded(vault().setTerminalLock, true) == true
+end
+
+--- Whether the attract screen should ask the owner to lock this table.
+function M.wantsLock()
+  return M.terminalLocked() == false and M.hostName() ~= nil
+end
+
+--- What the audit log says about a tag: true it moved, false it was refused, nil if it has no line for it.
+-- The whole tag must match, so "#1a" can never be taken for "#1a2".
 function M.wasSettled(tag)
-  if not fs.exists(AUDIT_FILE) then return false end
-  local handle = fs.open(AUDIT_FILE, "r")
-  if not handle then return false end
-  local text = handle.readAll() or ""
-  handle.close()
-  for line in text:gmatch("[^\n]+") do
-    if line:find(tag, 1, true) and line:find("ok=true", 1, true) then return true end
+  local found = nil
+  for _, path in ipairs({ AUDIT_FILE .. ".bak", AUDIT_FILE }) do
+    local handle = fs.exists(path) and fs.open(path, "r")
+    local text = handle and handle.readAll() or ""
+    if handle then handle.close() end
+    for line in text:gmatch("[^\n]+") do
+      local entry = line:find(tag, 1, true) and textutils.unserialize(line)
+      if type(entry) == "table" and entry.reason == tag then found = entry.ok == true end
+    end
   end
-  return false
+  return found
+end
+
+--- What the server's own ledger says about a tag, for a crash that left no audit line. Only the player in it, or the
+-- host, can read it, and only with a fresh touch and an approved session.
+-- @return true it moved, false it did not, nil if it cannot be told now. The second result is true when asking again
+-- will not help: this server has no history call, or the transfer is older than everything the history reaches.
+function M.ledgerShows(name, tag, at)
+  local api = vault()
+  if not api or type(api.getTransactionHistory) ~= "function" then return nil, true end
+  local who = M.livePlayer()
+  if not who or (who ~= name and who ~= M.hostName()) then return nil end
+  local list = guarded(api.getTransactionHistory, HISTORY_LIMIT)
+  if type(list) ~= "table" then return nil end
+  for _, entry in ipairs(list) do
+    -- A refused transfer is in the history as well, with the same reason. Moving your own money adds a marker to it
+    if (entry.reason == tag or entry.reason == "[self-play] " .. tag) and not entry.rejectionReason then return true end
+  end
+  if #list < HISTORY_LIMIT then return false end
+  local oldest = list[1] and list[1].timestamp
+  if type(oldest) == "string" and oldest:sub(1, 19) < os.date("!%Y-%m-%dT%H:%M:%S", math.floor(at / 1000)) then return false end
+  return nil, who == name
 end
 
 --- Whether a failure may heal by itself: the player only has to come back and touch the table.
@@ -139,34 +165,37 @@ local function transfer(from, to, amount, reason, name)
   return nil, err
 end
 
---- Move one round's net result. Whatever cannot move now comes back as `left`, which the caller keeps as owed.
--- A player who wins is paid in full or not at all. A player who owes more than they hold pays what they have.
--- @param name string  the seated player
--- @param net number   tokens to the player when positive, from them when negative
--- @param reason string
--- @return moved number, left number, err string|nil
-function M.settle(name, net, reason)
-  net = math.floor(net + 0.5)
-  if net == 0 then return 0, 0, nil end
+--- The most one transfer can carry.
+function M.maxTransfer()
+  return transferCap
+end
+
+--- A server can set a smaller cap than the default. Returns true if this refusal taught us one, so the rest can go in parts.
+function M.lowerCap(reason)
+  local cap = tonumber(tostring(reason):match("exceeds maximum %((%d+)%)"))
+  if cap and cap > 0 and cap < transferCap then
+    transferCap = cap
+    return true
+  end
+  return false
+end
+
+--- One transfer, named so nobody else's touch matters. Call this through books.move, which writes it down first.
+-- @param name string   the player
+-- @param amount number tokens to the player when positive, from them when negative
+-- @param reason string a tag no other transfer has used
+-- @return true, or nil and the reason
+function M.send(name, amount, reason)
   reason = tostring(reason):sub(1, MAX_REASON)
   local target = "player:" .. name
-
-  if net > 0 then
-    local txId, err = transfer("host", target, net, reason, name)
-    if txId then return net, 0, nil end
-    return 0, net, err
+  local txId, err
+  if amount > 0 then
+    txId, err = transfer("host", target, amount, reason, name)
+  else
+    txId, err = transfer(target, "host", -amount, reason, name)
   end
-
-  local owes = -net
-  local have = balanceOf(name) or owes
-  local take = math.min(owes, have)
-  if take <= 0 then return 0, net, "insufficient balance" end
-  local txId, err = transfer(target, "host", take, reason, name)
-  if txId then
-    local left = owes - take
-    return -take, -left, left > 0 and "insufficient balance" or nil
-  end
-  return 0, net, err
+  if txId then return true end
+  return nil, err
 end
 
 return M

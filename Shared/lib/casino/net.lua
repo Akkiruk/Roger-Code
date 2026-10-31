@@ -6,15 +6,21 @@
 --   state     the hub answers with the shared jackpot and leaderboard
 --   claim     a table about to pay the shared pot asks the hub what it may pay, and grant is the answer, so
 --             two tables working from the same broadcast figure cannot both pay the same pot
+-- Anyone on the network can say anything, and anti-cheat stays light: there is no signing here. Every message is only
+-- checked for being the right shape and a believable size, so nonsense cannot stop a table or lift its limits.
 
 local M = {}
 
 M.PROTOCOL = "casino.v2"
 M.HUB_STALE_MS = 30000
 M.CLAIM_WAIT_MS = 1500
+M.MAX_TOKENS = 1e9         -- no one amount on the network can honestly be this big: a thousand of the biggest transfers
+M.MAX_POT = 1e7            -- the hub stops the pool here (casino_hub_rules.lua has the same figure)
 
 local EXPOSURE_STALE_MS = 30000
 local BEACON_MS = 10000
+local MAX_LEADERS = 32
+local MAX_NAME = 32
 
 local opened = false
 local others = {}          -- computer id -> { host, amount, at }
@@ -27,15 +33,52 @@ local function now()
   return os.epoch("utc")
 end
 
+--- Open every modem there is. Safe to call again whenever the peripherals change.
 function M.open()
-  if opened then return true end
+  opened = false
   for _, name in ipairs(peripheral.getNames()) do
     if peripheral.hasType(name, "modem") then
-      rednet.open(name)
+      if not rednet.isOpen(name) then rednet.open(name) end
       opened = true
     end
   end
   return opened
+end
+
+local function isFinite(value)
+  return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
+end
+
+--- A count of tokens that could be real.
+local function isAmount(value, limit)
+  return isFinite(value) and value >= 0 and value <= limit
+end
+
+local function isId(value)
+  return (type(value) == "string" and value ~= "" and #value <= MAX_NAME) or isFinite(value)
+end
+
+local function isLeader(entry)
+  return type(entry) == "table" and type(entry.name) == "string" and entry.name ~= "" and #entry.name <= MAX_NAME
+    and isFinite(entry.net) and math.abs(entry.net) <= M.MAX_TOKENS
+end
+
+function M.validExposure(message)
+  return isAmount(message.amount, M.MAX_TOKENS) and type(message.host) == "string"
+end
+
+--- A hub's state has both parts in good order, or none of it is believed.
+function M.validState(message)
+  local leaders = message.leaders
+  if not isAmount(message.jackpot, M.MAX_POT) or type(leaders) ~= "table" or #leaders > MAX_LEADERS then return false end
+  for key, entry in pairs(leaders) do
+    if type(key) ~= "number" or not isLeader(entry) then return false end
+  end
+  return true
+end
+
+function M.validGrant(message)
+  return isId(message.id) and isAmount(message.amount, M.MAX_POT)
 end
 
 function M.send(kind, payload)
@@ -72,8 +115,9 @@ function M.hub()
 end
 
 --- Ask the hub for part of the shared pot. Waits briefly, with worker running beside it, and swallows events meanwhile.
+-- The hub answers the same id the same way, so a claim can be asked again until it answers (see Table:chaseClaims).
 -- @param claim table  { id, game, player, amount }
--- @return number|nil  what may be paid, or nil if the hub did not answer
+-- @return number|nil  what may be paid, or nil if the hub did not answer in time
 function M.claim(claim)
   if not opened then return nil end
   M.send("claim", claim)
@@ -85,16 +129,21 @@ function M.claim(claim)
   return grants[claim.id]
 end
 
+--- What the hub has granted a claim so far, if it has answered.
+function M.granted(id)
+  return grants[id]
+end
+
 --- Rednet runs beside the game in its own coroutine.
 function M.worker()
   while true do
     local _, sender, message, protocol = os.pullEvent("rednet_message")
     if protocol == M.PROTOCOL and type(message) == "table" then
-      if message.kind == "exposure" and type(message.amount) == "number" then
+      if message.kind == "exposure" and M.validExposure(message) then
         others[sender] = { host = message.host, amount = message.amount, at = now() }
-      elseif message.kind == "state" then
+      elseif message.kind == "state" and M.validState(message) then
         hub = { jackpot = message.jackpot, leaders = message.leaders, at = now() }
-      elseif message.kind == "grant" and message.to == os.getComputerID() and type(message.amount) == "number" then
+      elseif message.kind == "grant" and message.to == os.getComputerID() and M.validGrant(message) then
         grants[message.id] = message.amount
       end
     end

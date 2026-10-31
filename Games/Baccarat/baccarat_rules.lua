@@ -66,6 +66,7 @@ local function takeShoe(keep, rng)
   local shoe = keep.shoe
   keep.shoe = nil
   if shoe and #shoe >= M.RESHUFFLE_BELOW then return shoe, false end
+  keep.shuffled = true -- the engine keeps this round's seed as the shoe's, secret until the shoe ends
   shoe = deck.shuffle(deck.fresh(M.DECKS), rng)
   for _ = 1, M.BURN do deck.draw(shoe) end
   return shoe, true
@@ -136,7 +137,9 @@ function M.done(state)
   return state.over == true
 end
 
+--- A cancelled round had no bet standing, so it counts as nothing wagered.
 function M.risk(state)
+  if state.cancelled then return 0 end
   return state.bet
 end
 

@@ -38,7 +38,7 @@
 
 - Every wagering game is a plugin on `Shared/lib/casino/table.lua`: pure rules, a view, a game table. Read that file's header first; `Games/HiLo` is the reference.
 - Rules never touch ccvault, the screen or sound, and hold plain numbers, so they test without a monitor and survive a reboot.
-- Stakes are deliberately not taken up front: nobody gives up tokens before a round ends. A round's net moves once, before the final reveal, and anything that cannot move is kept in `journal` as owed.
+- Stakes are deliberately not taken up front: nobody gives up tokens before a round ends. A round's net moves once, before the final reveal, and anything that cannot move is kept in `journal` as owed. Every transfer goes through `books.lua`, so a crash at any step can be answered. A live shoe's seed is never shown or logged (`shoe = true` on the game table), the hash is on the table before any card, and the owner's touch locks a table's terminal. Network messages are checked for shape and size only: no signing.
 - Paytables are total return on the bet. A new paytable needs a return check in `Tests/`.
 - Tables are built for one fixed 6x6 monitor wall at text scale 0.5, about 121x81 cells, each cell 2 wide by 3 tall.
 

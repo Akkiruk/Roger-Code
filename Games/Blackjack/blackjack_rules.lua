@@ -55,6 +55,7 @@ local function takeShoe(keep, rng)
   local shoe = keep.shoe
   keep.shoe = nil
   if shoe and #shoe >= M.RESHUFFLE_BELOW then return shoe, false end
+  keep.shuffled = true -- the engine keeps this round's seed as the shoe's, secret until the shoe ends
   return deck.shuffle(deck.fresh(M.DECKS), rng), true
 end
 
