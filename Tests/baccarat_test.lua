@@ -309,3 +309,24 @@ t.test("the help is built from the rules", function()
   t.truthy(text:find("wins " .. rules.winOn("banker", 100), 1, true), "worked example")
   t.truthy(text:find("smallest Banker bet is " .. rules.MIN_BANKER, 1, true), "minimum")
 end)
+
+t.test("the road keeps finished coups, newest first, and no more than fits", function()
+  local keep = {}
+  for _, winner in ipairs({ "player", "banker", "tie" }) do
+    rules.finish({ cards = {}, winner = winner }, keep)
+  end
+  t.eq(keep.road, "TBP", "newest first")
+  for _ = 1, rules.ROAD_KEPT do rules.finish({ cards = {}, winner = "banker" }, keep) end
+  t.eq(#keep.road, rules.ROAD_KEPT, "capped")
+end)
+
+t.test("a cancelled round is not on the road, and a round holds the road from before it", function()
+  local keep = { road = "PB" }
+  rules.finish({ cards = {}, cancelled = true }, keep)
+  t.eq(keep.road, "PB", "no coup was dealt")
+  local state = rules.new(100, { below = function() return 0 end }, keep)
+  rules.act(state, "player")
+  rules.finish(state, keep)
+  t.eq(state.road, "PB", "the round's own copy is unchanged, so its result cannot show early")
+  t.eq(#keep.road, 3, "keep has it")
+end)

@@ -281,3 +281,42 @@ t.test("every game in the casino that states a target has one here", function()
     t.truthy(rules.GAMES[id].target > 0.9 and rules.GAMES[id].target <= 1, id)
   end
 end)
+
+local function arcade(fields)
+  local message = { kind = "result", game = "connect4", title = "Connect Four", red = "Alice", blue = "Bob", winner = 1, moves = 24, ranked = true }
+  for key, value in pairs(fields or {}) do message[key] = value end
+  return message
+end
+
+t.test("Arcade results are kept newest first and capped, with only the fields shown", function()
+  local data = rules.new()
+  for i = 1, rules.ARCADE_KEPT + 3 do t.truthy(rules.arcadeResult(data, arcade({ moves = i, extra = "x" }), i)) end
+  t.eq(#data.arcade, rules.ARCADE_KEPT, "capped")
+  t.eq(data.arcade[1].moves, rules.ARCADE_KEPT + 3, "newest first")
+  t.eq(data.arcade[1].extra, nil, "nothing else is kept")
+  t.eq(data.jackpot, rules.SEED, "the pool is untouched")
+  t.eq(next(data.players), nil, "nor the leaderboards")
+end)
+
+t.test("an Arcade result of the wrong shape is ignored", function()
+  local data = rules.new()
+  local long = string.rep("x", rules.MAX_NAME + 1)
+  for _, bad in ipairs({
+    "hello", {}, arcade({ kind = "round" }), arcade({ game = 5 }), arcade({ title = long }), arcade({ red = {} }), arcade({ blue = "" }),
+    arcade({ winner = 0 }), arcade({ winner = "1" }), arcade({ moves = -1 }), arcade({ moves = 1e12 }), arcade({ moves = 0 / 0 }),
+    arcade({ ranked = "yes" }),
+  }) do
+    t.eq(rules.arcadeResult(data, bad, 1), false, "refused")
+  end
+  t.eq(#data.arcade, 0, "nothing kept")
+end)
+
+t.test("an Arcade match with no ranked field still shows, and survives a save", function()
+  local data = rules.new()
+  local message = arcade({ winner = 3 })
+  message.ranked = nil
+  t.truthy(rules.arcadeResult(data, message, 1))
+  local restored = rules.restore(data)
+  t.eq(restored.arcade[1].ranked, false, "unranked")
+  t.eq(#rules.restore({ jackpot = 5 }).arcade, 0, "an older save has none")
+end)

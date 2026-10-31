@@ -15,7 +15,7 @@
 --   finish(state, keep); maxWin(wager) -> biggest net win, in tokens.
 -- View module: new(ctx) -> model; sync(model, state); event(model, ev) -> seconds, sound; commit(model, ev);
 --   draw(c, model, state, anim) where anim is { ev, t } while an event plays.
---   view.attract(c, t) (optional): the idle screen's art, in place of the fanned cards. y from 52 is free.
+--   view.attract(c, t) (optional): the idle screen's art, used only if a game has no demo. y from 52 is free.
 --   view.regions(model, state) (optional) -> { {id, x, y, w, h} }: parts of the table a touch can act on, passed to act().
 --   An action id of any kind goes to rules.act, so a game can use ids such as "hold3".
 -- game: { id, title, felt, tagline, rules, view, help(), capTokens, stakeOf(wager) (optional),
@@ -24,16 +24,30 @@
 --   shoe (optional): true when the cards last across rounds in keep.shoe. Shuffling from one seed, and carrying the rest
 --   over, means that seed gives away every card still to come. So rules.new sets keep.shuffled when it starts a new shoe,
 --   and the engine keeps that seed and its hash in keep, shows only the hash until the shoe is finished, and then shows
---   both on the FAIR page. A round's own seed drives no cards once a shoe is running, so it is never offered as proof. }
+--   both on the FAIR page. A round's own seed drives no cards once a shoe is running, so it is never offered as proof.
+--   demo (optional): how the idle screen plays a round, or false for none. See demo.lua. }
+--
+-- A table is one monitor and nothing else. Everything below is optional, and with none of it a table plays the same:
+--   a smaller monitor   the scoreboard (board.lua). Touches on it are ignored
+--   a chat box          whispers to named players, never in public (chat.lua, session.lua)
+--   a player detector   who is still at the table (presence.lua)
+--   a speaker, a modem  sound (audio.lua), the hub (net.lua)
+--   redstone            a pulse on a big win (lamps.lua). A redstone integrator is used if there is one
+-- Detector, chat box and integrator calls wait a tick and swallow events, so they only happen in the workers in M.run.
 
 local audio = require("lib.casino.audio")
+local board = require("lib.casino.board")
 local books = require("lib.casino.books")
 local canvas = require("lib.casino.canvas")
+local chat = require("lib.casino.chat")
+local demo = require("lib.casino.demo")
 local journal = require("lib.casino.journal")
+local lamps = require("lib.casino.lamps")
 local limits = require("lib.casino.limits")
 local net = require("lib.casino.net")
 local presence = require("lib.casino.presence")
 local rng = require("lib.casino.rng")
+local session = require("lib.casino.session")
 local stats = require("lib.casino.stats")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
@@ -56,24 +70,13 @@ local HASH_SHOWN = 16            -- how much of a hash the table shows while it 
 local BIG_WIN_TIMES = 10
 local MIN_W, MIN_H = 120, 80     -- a 6x6 wall at text scale 0.5 is 121x81
 local LOCK_NOTICE = "Owner: tap to lock this table"
+local FAREWELL_MS = 6000         -- how long the idle screen shows a session's summary
+local SESSION_STALE_MS = 120000  -- a visit a reboot cut short, with nobody back to carry it on, ends here
 
 local log = journal.log
 
 local function now()
   return os.epoch("utc")
-end
-
-local function largestMonitor()
-  local best, bestArea = nil, 0
-  for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.hasType(name, "monitor") then
-      local monitor = peripheral.wrap(name)
-      monitor.setTextScale(0.5)
-      local w, h = monitor.getSize()
-      if w * h > bestArea then best, bestArea = name, w * h end
-    end
-  end
-  return best
 end
 
 -- ------------------------------------------------------------------ the event loop
@@ -107,10 +110,15 @@ function Table:run(scene)
     elseif event == "monitor_resize" and a == self.monitorName then
       self:attachCanvas()
       scene.dirty = true
+    elseif event == "monitor_resize" and a == self.boardName then
+      self:attachBoard()
     elseif event == "peripheral" or event == "peripheral_detach" then
-      -- A speaker or a modem added after boot is picked up here
+      -- A speaker, a modem, a chat box or a scoreboard added after boot is picked up here
       audio.init()
       net.open()
+      chat.scan()
+      lamps.rescan()
+      self:attachBoard()
     elseif event == "timer" and a == self.timer then
       local time = now()
       local dt = (time - last) / 1000
@@ -144,6 +152,8 @@ function Table:heartbeat(time)
     self:refreshBalance()
     self:chaseClaims(time)
     self.wantsLock = wallet.wantsLock()
+    if not self.ctx.seat then self:closeStale(time) end
+    self:drawBoard()
   end
 end
 
@@ -168,6 +178,7 @@ function Table:writeDebug(scene)
       hostBalance = wallet.hostBalance() or false,
       locked = wallet.terminalLocked() == true,
       state = scene.debugState and scene.debugState() or false,
+      board = self.boardName or false,
     }))
     handle.close()
   end
@@ -195,6 +206,47 @@ function Table:attachCanvas()
   theme.apply(self.monitor, self.game.felt)
   self.c = canvas.new(self.monitor)
   self.ctx.c = self.c
+end
+
+--- Find the scoreboard, if there is one now. board.find measures every monitor, so this only runs when something changes.
+function Table:attachBoard()
+  self.board = board.attach(self.monitorName, self.game.felt)
+  self.boardName = self.board and self.board.name or nil
+  self:drawBoard()
+end
+
+--- A heartbeat's work, so a scoreboard costs a table nothing it would notice. The leaders are read again only after a round.
+function Table:drawBoard()
+  if not self.board then return end
+  self.leaders = self.leaders or stats.leaders(board.ROWS)
+  local hub = net.hub()
+  local shown = board.show(self.board, {
+    title = self.game.title,
+    leaders = self.leaders,
+    jackpot = hub and hub.jackpot or nil,
+    playing = { self.ctx.seat },
+  })
+  if not shown then self.board, self.boardName = nil, nil end
+end
+
+-- ------------------------------------------------------------------ what a player hears as they go
+
+--- The end of a visit: what it came to on the wall and in a whisper, and anything still in the book.
+function Table:leaving(name)
+  local title = self.game.title
+  session.noteOwed(name, title)
+  local entry = session.close(name)
+  if not entry then return end
+  local text = session.text(entry)
+  self.farewell = { name = name, text = text, untilAt = now() + FAREWELL_MS }
+  chat.tell(name, "Your session at " .. title .. ": " .. text)
+end
+
+--- A reboot ends a visit without anyone leaving. If its player does not come back to carry it on, it is closed here.
+function Table:closeStale(time)
+  for name, at in pairs(session.open()) do
+    if time - at > SESSION_STALE_MS then self:leaving(name) end
+  end
 end
 
 -- ------------------------------------------------------------------ money
@@ -249,6 +301,7 @@ function Table:settleOwed(name)
   local moved, left, err = books.move(name, owed, self:freshTag("owed"))
   if moved ~= 0 then
     log("owed " .. name .. " moved " .. moved .. " left " .. left)
+    session.noteMoved(name, moved, left, self.game.title)
   elseif err then
     log("owed " .. name .. " unmoved: " .. tostring(err))
   end
@@ -303,7 +356,11 @@ function Table:finishRound(round)
     journal.saveKeep(self.keep)
   end
 
-  if wagered > 0 then stats.record(round.player, wagered, round.net, round.id) end
+  if wagered > 0 then
+    stats.record(round.player, wagered, round.net, round.id)
+    session.record(round.player, round.net, round.id)
+    self.leaders = nil
+  end
 
   -- Noted before it is said. A crash in that gap loses one line on the hub, which is better than saying it twice
   if not round.told then
@@ -314,6 +371,8 @@ function Table:finishRound(round)
     end
     if rules.JACKPOT then self:potNews(round) end
   end
+  -- Someone who has gone cannot see the wall, so the book is the only thing they would not know about
+  if round.gone then session.noteOwed(round.player, self.game.title) end
   journal.clearRound()
 end
 
@@ -357,7 +416,11 @@ function Table:chaseClaims(time)
         log("claim " .. id .. " answered late with " .. granted .. ": " .. held.player .. " is due " .. due)
         if due > 0 then
           net.send("jackpot", { game = self.game.id, player = held.player, amount = due, claim = id })
-          if self.ctx.seat == held.player then self:settleOwed(held.player) end
+          if self.ctx.seat == held.player then
+            self:settleOwed(held.player)
+          else
+            session.noteOwed(held.player, self.game.title)
+          end
         end
       end
     elseif time - held.at >= CLAIM_RETRY_MS then
@@ -394,39 +457,85 @@ local function feltBase(c)
   c:frame(1, 1, c.w, c.h, C.feltDark)
 end
 
---- The idle screen: the game's name and an invitation.
+--- The idle screen with a demo running: the whole table in play, with the invitation along the bottom where the buttons go.
+function Table:drawDemo(show, showCtx, t, message)
+  local c, ctx, game = self.c, self.ctx, self.game
+  local cx = math.floor(c.w / 2)
+  showCtx.c, showCtx.jackpot = c, ctx.jackpot
+  game.view.draw(c, show.model, show.state, show.playing)
+  ui.bar(c, showCtx, "DEMO")
+  if show:finished() then
+    local result = game.rules.result(show.state)
+    local color = result.kind == "win" and C.win or result.kind == "push" and C.gold or C.red
+    ui.banner(c, c.h - ui.ACTIONS_H - 14, result.title, result.detail or "", color)
+  end
+  c:rect(1, c.h - ui.ACTIONS_H + 1, c.w, ui.ACTIONS_H, C.feltDark)
+  if math.floor(t * 1.5) % 2 == 0 then c:bigCenter(cx, c.h - 10, "TOUCH TO PLAY", C.text, 1) end
+  c:textCenter(cx, c.h - 4, ctx.jackpot and ("JACKPOT " .. ui.group(ctx.jackpot) .. " TOKENS") or (game.tagline or ""),
+    ctx.jackpot and C.win or C.text)
+  if message then c:textCenter(cx, c.h - 3, message, C.orange) end
+  if self.wantsLock then c:textCenter(cx, c.h - 2, LOCK_NOTICE, C.mute) end
+end
+
+--- The idle screen: a demo of the game, or with no demo the game's name, its art and an invitation.
 function Table:attract(message)
   local c, ctx, game = self.c, self.ctx, self.game
   local scene = { name = "attract", anyone = true, animating = true, t = 0 }
+  local showCtx = { title = game.title, c = c, demo = true }
+  local show = game.demo ~= false and demo.new(demo.forGame(game, showCtx)) or nil
+  scene.debugState = function()
+    return { demoRounds = show and show.rounds or false, demoOver = show and show:finished() or false,
+      summary = self.farewell and self.farewell.text or false }
+  end
+
+  --- A demo is only a show, so one that fails turns into the art and never stops a table.
+  local function give(what, err)
+    log("demo " .. what .. " failed: " .. tostring(err))
+    show = nil
+  end
 
   function scene.tick(s, dt)
     s.t = s.t + dt
+    if self.farewell and now() > self.farewell.untilAt then self.farewell = nil end
+    if show then
+      local ok, err = pcall(show.tick, show, dt)
+      if not ok then give("step", err) end
+    end
   end
 
   function scene.draw(s)
-    feltBase(c)
-    local cx = math.floor(c.w / 2)
-    if game.view.attract then
-      game.view.attract(c, s.t)
-    else
-      for i = 1, 5 do
-        local phase = s.t * 0.7 + i * 1.3
-        local x = cx - 40 + (i - 1) * 18
-        local y = 52 + math.floor(math.sin(phase) * 2)
-        ui.card(c, x, y, (i * 11 + math.floor(s.t / 3)) % 52, false)
+    if show and show.state then
+      local ok, err = pcall(self.drawDemo, self, show, showCtx, s.t, message)
+      if not ok then give("draw", err) end
+    end
+    if not show then
+      feltBase(c)
+      local cx = math.floor(c.w / 2)
+      if game.view.attract then
+        game.view.attract(c, s.t)
+      else
+        for i = 1, 5 do
+          local phase = s.t * 0.7 + i * 1.3
+          local x = cx - 40 + (i - 1) * 18
+          local y = 52 + math.floor(math.sin(phase) * 2)
+          ui.card(c, x, y, (i * 11 + math.floor(s.t / 3)) % 52, false)
+        end
       end
+      local titleScale = c:bigWidth(game.title, 3) <= c.w - 6 and 3 or 2 -- a long name must still fit the wall
+      c:bigCenter(cx, titleScale == 3 and 14 or 18, game.title, C.gold, titleScale)
+      c:textCenter(cx, 36, game.tagline or "", C.text)
+      if math.floor(s.t * 1.5) % 2 == 0 then
+        c:bigCenter(cx, 42, "TOUCH TO PLAY", C.text, 1)
+      end
+      if ctx.jackpot then
+        c:textCenter(cx, 49, "JACKPOT " .. ui.group(ctx.jackpot) .. " TOKENS", C.win)
+      end
+      if message then c:textCenter(cx, c.h - 3, message, C.orange) end
+      if self.wantsLock then c:textCenter(cx, c.h - 2, LOCK_NOTICE, C.mute) end
     end
-    local titleScale = c:bigWidth(game.title, 3) <= c.w - 6 and 3 or 2 -- a long name must still fit the wall
-    c:bigCenter(cx, titleScale == 3 and 14 or 18, game.title, C.gold, titleScale)
-    c:textCenter(cx, 36, game.tagline or "", C.text)
-    if math.floor(s.t * 1.5) % 2 == 0 then
-      c:bigCenter(cx, 42, "TOUCH TO PLAY", C.text, 1)
+    if self.farewell then
+      ui.banner(c, 30, "THANKS " .. self.farewell.name, self.farewell.text, C.gold)
     end
-    if ctx.jackpot then
-      c:textCenter(cx, 49, "JACKPOT " .. ui.group(ctx.jackpot) .. " TOKENS", C.win)
-    end
-    if message then c:textCenter(cx, c.h - 3, message, C.orange) end
-    if self.wantsLock then c:textCenter(cx, c.h - 2, LOCK_NOTICE, C.mute) end
   end
 
   function scene.touch(s, _, _, who)
@@ -775,6 +884,7 @@ function Table:playRound(round, stream, firstEvents)
     s.nudge = away == 0 and time - s.touched >= NUDGE_MS
     if left <= 0 then
       -- All the way to the end at once: nobody is here, so the table should not sit through more decisions or play them out
+      round.gone = true
       repeat apply(s, rules.auto(round.state)) until rules.done(round.state)
       skipAll(s)
     elseif left < WARN_MS then
@@ -880,8 +990,15 @@ function Table:showResult(round, model)
   local color = result.kind == "win" and C.win or result.kind == "push" and C.gold or C.red
   local bannerY = c.h - ui.ACTIONS_H - 14
   local stake = round.stake
-  audio.play(result.kind == "win" and (round.net >= stake * BIG_WIN_TIMES and "bigWin" or "win")
+  local bigWin = result.kind == "win" and round.net >= stake * BIG_WIN_TIMES
+  audio.play(result.kind == "win" and (bigWin and "bigWin" or "win")
     or result.kind == "push" and "push" or "lose")
+  -- Here and not when the money moves: that is before the reveal, and a lamp would give the result away
+  if round.state.jackpotHit then
+    lamps.pulse("jackpot")
+  elseif bigWin then
+    lamps.pulse("bigWin")
+  end
 
   local scene = { name = "result", deadline = now() + IDLE_RESULT_MS, left = round.left or 0 }
   scene.debugState = function() return { net = round.net, left = scene.left, title = result.title } end
@@ -943,6 +1060,7 @@ function Table:resumeRound(round)
   local rules = game.rules
   local stream = rng.restore(round.rng)
   ctx.seat = nil
+  self:drawBoard()
 
   local scene = { name = "resume", anyone = true, deadline = now() + RESUME_WAIT_MS }
 
@@ -979,6 +1097,7 @@ function Table:resumeRound(round)
   end
 
   -- They did not come back: the safe default finishes the round and the books remember the result
+  round.gone = true
   while round.phase == "open" and not rules.done(round.state) do
     rules.act(round.state, rules.auto(round.state), stream)
     round.rng = stream:serial()
@@ -998,9 +1117,10 @@ function Table:recover()
   log("resuming round " .. tostring(round.id) .. " phase " .. tostring(round.phase))
   if round.phase == "open" then
     self.game.rules.resumed = true
-    self:resumeRound(round)
+    if self:resumeRound(round) == "leave" then self:leaving(round.player) end
   elseif round.phase == "settling" then
     -- The reboot landed inside settle(). What moved has come off the book; what did not stays owed until they next sit here
+    round.gone = true
     if self:bookRound(round) then
       self:finishRound(round)
       self:setExposure(0)
@@ -1058,10 +1178,12 @@ end
 function M.run(game)
   audio.init()
   net.open()
+  chat.scan()
   local self = setmetatable({ game = game, keep = journal.loadKeep(), ctx = { title = game.title } }, Table)
-  self.monitorName = largestMonitor()
+  self.monitorName = board.largest()
   assert(self.monitorName, "this table needs a monitor")
   self:attachCanvas()
+  self:attachBoard()
   self.ctx.table = self
   self.debug = fs.exists("casino_debug.flag")
   self.wantsLock = wallet.wantsLock()
@@ -1087,12 +1209,18 @@ function M.run(game)
       local who = self:attract(self.unfinished and "This table's disk is full: tell its owner"
         or not wallet.available() and "Economy offline" or nil)
       if who and wallet.available() and not self.unfinished and self:seat(who) then
+        self.farewell = nil
+        self:drawBoard()
         self:session()
+        self.ctx.seat = nil
+        self:drawBoard()
+        self:leaving(who)
       end
     end
   end
 
-  parallel.waitForAny(main, net.worker, function() presence.worker(function() return self.ctx.seat end) end)
+  parallel.waitForAny(main, net.worker, chat.worker, lamps.worker,
+    function() presence.worker(function() return self.ctx.seat end) end)
 end
 
 return M

@@ -17,13 +17,22 @@
 -- rules.settle holds that order; Tests/pokertable_test.lua proves the host never goes below even, whatever fails.
 --
 -- Every transfer is written down first with a unique tag, so a reboot can tell whether it happened (see lib/casino/books.lua).
+--
+-- With a chat box each player is whispered their own hand as it is dealt and after they draw, and never anyone else's.
+-- PEEK stays either way: a whisper can fail, a table may have no chat box, and tapping the peek is how cards are thrown.
+-- The other extras are table.lua's: a scoreboard on a smaller monitor, a session summary as a player goes, win lamps.
 
 local audio = require("lib.casino.audio")
+local board = require("lib.casino.board")
 local books = require("lib.casino.books")
 local canvas = require("lib.casino.canvas")
+local chat = require("lib.casino.chat")
+local demo = require("lib.casino.demo")
 local journal = require("lib.casino.journal")
+local lamps = require("lib.casino.lamps")
 local net = require("lib.casino.net")
 local rng = require("lib.casino.rng")
+local session = require("lib.casino.session")
 local stats = require("lib.casino.stats")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
@@ -49,25 +58,18 @@ local APPROVE_RETRY_MS = 20000
 local AWAY_LIMIT = 2             -- hands in a row a player can time out before losing their seat
 local CHIPS = { 100, 250, 500, 1000, 2500 }
 local HASH_SHOWN = 16            -- how much of a hash the table shows while it plays. FAIR has the whole of it
+local BIG_WIN_TIMES = 10         -- a win this many times what went in lights the lamps
 local LOCK_NOTICE = "Owner: tap to lock this table"
+local FAREWELL_MS = 6000         -- how long the lobby shows a session's summary
+local SESSION_STALE_MS = 120000  -- a visit with no seat, which only a reboot can leave behind, ends here
+local DEMO_SEATS = { 1, 3, 5 }
+local DEMO_NAMES = { "Demo Ann", "Demo Bea", "Demo Cy" }
+local DEMO_STACK = 200
 
 local log = journal.log
 
 local function now()
   return os.epoch("utc")
-end
-
-local function largestMonitor()
-  local best, bestArea = nil, 0
-  for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.hasType(name, "monitor") then
-      local monitor = peripheral.wrap(name)
-      monitor.setTextScale(0.5)
-      local w, h = monitor.getSize()
-      if w * h > bestArea then best, bestArea = name, w * h end
-    end
-  end
-  return best
 end
 
 local App = {}
@@ -101,10 +103,15 @@ function App:run(scene)
     elseif event == "monitor_resize" and a == self.monitorName then
       self:attachCanvas()
       scene.dirty = true
+    elseif event == "monitor_resize" and a == self.boardName then
+      self:attachBoard()
     elseif event == "peripheral" or event == "peripheral_detach" then
-      -- A speaker or a modem added after boot is picked up here
+      -- A speaker, a modem, a chat box or a scoreboard added after boot is picked up here
       audio.init()
       net.open()
+      chat.scan()
+      lamps.rescan()
+      self:attachBoard()
     elseif event == "timer" and a == self.timer then
       local time = now()
       local dt = (time - last) / 1000
@@ -135,6 +142,8 @@ function App:heartbeat(time)
     os.queueEvent("roger_alive")
     net.tick()
     self.wantsLock = wallet.wantsLock()
+    self:closeStale(time)
+    self:drawBoard()
   end
 end
 
@@ -157,6 +166,7 @@ function App:writeDebug(scene)
       toast = self.toastText or false,
       locked = wallet.terminalLocked() == true,
       state = scene.debugState and scene.debugState() or false,
+      board = self.boardName or false,
     }))
     handle.close()
   end
@@ -183,6 +193,45 @@ function App:attachCanvas()
   self.monitor.setTextScale(0.5)
   theme.apply(self.monitor, FELT)
   self.c = canvas.new(self.monitor)
+end
+
+--- Find the scoreboard, if there is one now. board.find measures every monitor, so this only runs when something changes.
+function App:attachBoard()
+  self.board = board.attach(self.monitorName, FELT)
+  self.boardName = self.board and self.board.name or nil
+  self:drawBoard()
+end
+
+--- A heartbeat's work, so a scoreboard costs the table nothing it would notice. The leaders are read again only after a hand.
+function App:drawBoard()
+  if not self.board then return end
+  self.leaders = self.leaders or stats.leaders(board.ROWS)
+  local hub = net.hub()
+  local shown = board.show(self.board, {
+    title = TITLE,
+    leaders = self.leaders,
+    jackpot = hub and hub.jackpot or nil,
+    playing = self:seatedNames(),
+  })
+  if not shown then self.board, self.boardName = nil, nil end
+end
+
+--- The end of a visit: what it came to on the wall and in a whisper, and anything still in the book.
+function App:leaving(name)
+  session.noteOwed(name, TITLE)
+  local entry = session.close(name)
+  self:drawBoard()
+  if not entry then return end
+  local text = session.text(entry)
+  self.farewell = { text = view.short(name) .. ": " .. text, untilAt = now() + FAREWELL_MS }
+  chat.tell(name, "Your session at " .. TITLE .. ": " .. text)
+end
+
+--- A reboot can lose a seat's visit its ending. If nobody is sitting in it, it is closed here.
+function App:closeStale(time)
+  for name, at in pairs(session.open()) do
+    if time - at > SESSION_STALE_MS and not self:seatOf(name) then self:leaving(name) end
+  end
 end
 
 function App:topBar()
@@ -271,7 +320,13 @@ function App:touched(who)
   if journal.owedTo(who) ~= 0 and wallet.isApproved() then
     local names = self:seatedNames()
     if not self:seatOf(who) then names[#names + 1] = who end
+    local before = {}
+    for _, name in ipairs(names) do before[name] = journal.owedTo(name) end
     self:settleFor(names)
+    for name, owed in pairs(before) do
+      local left = journal.owedTo(name)
+      if left ~= owed then session.noteMoved(name, owed - left, left, TITLE) end
+    end
     if self.scene then self.scene.dirty = true end
   end
 end
@@ -296,7 +351,7 @@ end
 
 --- Everything after the book. Each step can run again after a reboot and do nothing.
 function App:finishBooks(round)
-  local names = {}
+  local names, dropped = {}, {}
   local closed = self.keep.closed == round.id
   for _, player in ipairs(round.state.players) do
     names[#names + 1] = player.name
@@ -306,6 +361,7 @@ function App:finishBooks(round)
       seat.away = round.timedOut[player.name] and (seat.away or 0) + 1 or 0
       if seat.away >= AWAY_LIMIT then
         self:seats()[index] = nil
+        dropped[#dropped + 1] = player.name
         log("dropped " .. player.name .. " after " .. seat.away .. " hands away")
       end
     end
@@ -318,7 +374,9 @@ function App:finishBooks(round)
 
   for _, player in ipairs(round.state.players) do
     stats.record(player.name, player.total, player.net, round.id .. player.name)
+    session.record(player.name, player.net, round.id .. player.name)
   end
+  self.leaders = nil
   -- Noted before it is said. A crash in that gap loses a line on the hub, which is better than saying it twice
   if not round.told then
     round.told = true
@@ -329,6 +387,11 @@ function App:finishBooks(round)
         journal.owedTo(player.name), round.seed))
     end
   end
+  -- A timed-out turn means they are not at the table to read the wall, and neither is someone who has lost their seat
+  for _, player in ipairs(round.state.players) do
+    if round.timedOut[player.name] or not self:seatOf(player.name) then session.noteOwed(player.name, TITLE) end
+  end
+  for _, name in ipairs(dropped) do self:leaving(name) end
   journal.clearRound()
 end
 
@@ -366,6 +429,73 @@ function App:recover()
   if round.phase == "settling" then self:book(round) end
   self:finishBooks(round)
   return nil
+end
+
+-- ------------------------------------------------------------------ the show
+
+local function eventTiming(ev)
+  if ev.type == "deal" then return 1.4, "deal" end
+  if ev.type == "street" then return 0.6, "flip" end
+  if ev.type == "chips" then return 0.25, ev.amount >= 50 and "chipBig" or "chip" end
+  if ev.type == "draw" then return 0.45, "deal" end
+  if ev.type == "showdown" then return 0.5, "flip" end
+  return 0.1, nil
+end
+
+--- An empty table plays itself: three made-up players through the real rules and the real table, for nothing. None of this
+-- reaches keep, the journal, a seat or a wallet. The cards stay backs, as they do for anyone watching a real hand.
+local function demoScript()
+  local function pick(state, stream)
+    if state.phase == "draw" then
+      local digits = ""
+      for position = 1, rules.HAND_SIZE do
+        if #digits < rules.MAX_DISCARD and stream:below(3) == 0 then digits = digits .. position end
+      end
+      return "draw" .. digits
+    end
+    local list = rules.actions(state)
+    local choice = list[stream:below(#list) + 1].id
+    -- Folding what is free would end the show early
+    if choice == "fold" and rules.toCall(state) == 0 then return "check" end
+    return choice
+  end
+
+  return {
+    start = function(stream)
+      local entries = {}
+      for i, seat in ipairs(DEMO_SEATS) do entries[i] = { name = DEMO_NAMES[i], seat = seat, stack = DEMO_STACK } end
+      return rules.new(entries, stream:below(#entries) + 1, stream)
+    end,
+    act = function(state, stream) return rules.act(state, pick(state, stream)) end,
+    done = rules.done,
+    model = function() return {} end,
+    sync = function() end,
+    event = function(_, ev) return (eventTiming(ev)) end,
+    commit = function() end,
+  }
+end
+
+--- The demo in the lobby. A demo's player holds no seat: tapping one sits you there, on the same spot as the SIT it covers.
+-- Returns false if it failed, so the lobby can carry on without it.
+function App:drawDemo(buttons, show)
+  local c = self.c
+  local ok, err = pcall(function()
+    view.table(c, show.state, show.playing)
+    self:topBar()
+    view.centre(c, show.state, show.playing)
+    local taken = {}
+    for _, player in ipairs(show.state.players) do taken[player.seat] = true end
+    for seat = 1, rules.MAX_SEATS do
+      if taken[seat] then
+        local x, y, w = view.seatBox(c, seat)
+        buttons[#buttons + 1] = { id = "sit", value = seat, x = x + 8, y = y + 5, w = w - 16, h = 9 }
+      else
+        view.emptySeat(c, buttons, seat, true)
+      end
+    end
+  end)
+  if not ok then log("demo draw failed: " .. tostring(err)) end
+  return ok
 end
 
 -- ------------------------------------------------------------------ pages
@@ -422,6 +552,8 @@ local function helpLines()
       rules.MAX_BETS - 1),
     "",
     { "YOUR CARDS", C.gold },
+    chat.available() and "This table whispers you your hand in chat when it is dealt and after you draw. Only you can read it."
+      or "Keep your cards to yourself: nobody else's touch can show them.",
     "Tap PEEK to see your own hand for a few seconds. Only your touch shows it, and anyone else's touch flips it back.",
     ("In the draw, peek and tap the cards to throw: up to %d, or %d if the card you keep is an ace."):format(
       rules.MAX_DISCARD, rules.MAX_DISCARD_ACE),
@@ -547,6 +679,12 @@ function App:lobby()
   local scene = { name = "lobby", animating = true, t = 0 }
   local cx = math.floor(c.w / 2)
   local pending = nil
+  local show = demo.new(demoScript())
+
+  --- Only an empty table plays: nothing may draw over a real seat or a buy-in on its way.
+  local function showing()
+    return show and not pending and #self:seatedNames() == 0
+  end
 
   scene.debugState = function()
     local seats = {}
@@ -554,7 +692,8 @@ function App:lobby()
       local seat = self:seats()[index]
       if seat then seats[#seats + 1] = { seat = index, name = seat.name, stack = seat.stack, away = seat.away or 0 } end
     end
-    return { seats = seats, owed = journal.owed(), countdown = scene.dealAt and math.ceil((scene.dealAt - now()) / 1000) or false }
+    return { seats = seats, owed = journal.owed(), countdown = scene.dealAt and math.ceil((scene.dealAt - now()) / 1000) or false,
+      demoRounds = show and show.rounds or false, summary = self.farewell and self.farewell.text or false }
   end
 
   local function openBuyIn(who, seatIndex)
@@ -584,6 +723,14 @@ function App:lobby()
 
   function scene.tick(s, dt)
     s.t = s.t + dt
+    if self.farewell and now() > self.farewell.untilAt then self.farewell = nil end
+    if showing() then
+      local ok, err = pcall(show.tick, show, dt)
+      if not ok then
+        log("demo step failed: " .. tostring(err))
+        show = nil
+      end
+    end
     if pending then
       if now() > pending.deadline then
         pending = nil
@@ -600,31 +747,35 @@ function App:lobby()
   end
 
   function scene.draw(s)
-    view.felt(c)
-    self:topBar()
     s.buttons = ui.newButtons()
-    local seats = self:seats()
-    for index = 1, rules.MAX_SEATS do
-      local seat = seats[index]
-      if seat then
-        local owed = journal.owedTo(seat.name)
-        local info = { name = seat.name, stack = seat.stack, button = self.keep.button == index }
-        if owed < 0 then
-          info.status, info.statusColor = "owes " .. ui.group(-owed), C.red
-        elseif seat.stack < rules.ANTE then
-          info.status, info.statusColor = "needs chips", C.orange
-        elseif owed > 0 then
-          info.status, info.statusColor = "is owed " .. ui.group(owed), C.win
+    local playing = showing() and show.state and self:drawDemo(s.buttons, show)
+    if showing() and show.state and not playing then show = nil end
+    if not playing then
+      view.felt(c)
+      self:topBar()
+      local seats = self:seats()
+      for index = 1, rules.MAX_SEATS do
+        local seat = seats[index]
+        if seat then
+          local owed = journal.owedTo(seat.name)
+          local info = { name = seat.name, stack = seat.stack, button = self.keep.button == index }
+          if owed < 0 then
+            info.status, info.statusColor = "owes " .. ui.group(-owed), C.red
+          elseif seat.stack < rules.ANTE then
+            info.status, info.statusColor = "needs chips", C.orange
+          elseif owed > 0 then
+            info.status, info.statusColor = "is owed " .. ui.group(owed), C.win
+          else
+            info.status, info.statusColor = "ready", C.win
+          end
+          view.seat(c, index, info)
         else
-          info.status, info.statusColor = "ready", C.win
+          view.emptySeat(c, s.buttons, index, not pending or pending.seat ~= index)
         end
-        view.seat(c, index, info)
-      else
-        view.emptySeat(c, s.buttons, index, not pending or pending.seat ~= index)
       end
+      c:bigCenter(cx, 30, "DRAW POKER", C.gold, 2)
     end
 
-    c:bigCenter(cx, 30, "DRAW POKER", C.gold, 2)
     if pending then
       c:textCenter(cx, 43, view.short(pending.name) .. ": click [APPROVE] in chat to use your wallet here.", C.text)
     elseif s.dealAt then
@@ -643,6 +794,11 @@ function App:lobby()
       c:textCenter(cx, 45, ("%d to %d players. The house takes nothing."):format(rules.MIN_PLAYERS, rules.MAX_SEATS), C.text)
     end
     if self.wantsLock then c:textCenter(cx, 47, LOCK_NOTICE, C.mute) end
+    if playing and show:finished() then
+      local result = rules.result(show.state)
+      view.banner(c, 30, result.title, result.detail)
+    end
+    if self.farewell then c:textCenter(cx, 46, self.farewell.text, C.gold, C.ink) end
 
     ui.actionBar(c, s.buttons, {
       { id = "leave", label = "LEAVE", color = C.red, disabled = #self:seatedNames() == 0 },
@@ -675,6 +831,7 @@ function App:lobby()
       self:seats()[index] = nil
       self:save()
       log("left " .. who)
+      self:leaving(who)
     elseif hit.id == "topup" then
       self:buyIn(who, index, true)
       s.dealAt = nil
@@ -712,7 +869,10 @@ function App:openHand()
     local seat = seats[index]
     if seat and not self:canPlay(seat) then
       seat.away = (seat.away or 0) + 1
-      if seat.away >= AWAY_LIMIT then seats[index] = nil end
+      if seat.away >= AWAY_LIMIT then
+        seats[index] = nil
+        self:leaving(seat.name)
+      end
     end
   end
 
@@ -740,16 +900,9 @@ function App:openHand()
     timedOut = {},
   }
   journal.saveRound(round)
+  -- Each to their own: the name and the hand come from the same player, here and at the draw
+  for _, player in ipairs(state.players) do chat.tell(player.name, rules.whisper(player.hand)) end
   return round, events
-end
-
-local function eventTiming(ev)
-  if ev.type == "deal" then return 1.4, "deal" end
-  if ev.type == "street" then return 0.6, "flip" end
-  if ev.type == "chips" then return 0.25, ev.amount >= 50 and "chipBig" or "chip" end
-  if ev.type == "draw" then return 0.45, "deal" end
-  if ev.type == "showdown" then return 0.5, "flip" end
-  return 0.1, nil
 end
 
 --- Play a hand to its end, new or resumed, and show how it finished.
@@ -781,8 +934,10 @@ function App:playHand(round, firstEvents)
 
   local function apply(s, id, timedOut)
     local who = rules.actor(state)
+    local drawing = state.phase == "draw"
     local events = rules.act(state, id)
     if #events == 0 then return false end
+    if drawing then chat.tell(who, rules.whisper(rules.find(state, who).hand, true)) end
     if timedOut then
       round.timedOut[who] = true
       log("hand " .. round.id .. " " .. who .. " timed out: " .. id)
@@ -919,6 +1074,12 @@ function App:showResult(round)
   local result = rules.result(state)
   local scene = { name = "result", deadline = now() + RESULT_MS }
   audio.play("win")
+  for _, player in ipairs(state.players) do
+    if player.net > 0 and player.net >= player.total * BIG_WIN_TIMES then
+      lamps.pulse("bigWin")
+      break
+    end
+  end
 
   scene.debugState = function()
     return { nets = round.nets, owed = journal.owed(), title = result.title, pots = state.pots }
@@ -973,10 +1134,12 @@ end
 function M.run()
   audio.init()
   net.open()
+  chat.scan()
   local self = setmetatable({ keep = journal.loadKeep(), ctx = { title = TITLE } }, App)
-  self.monitorName = largestMonitor()
+  self.monitorName = board.largest()
   assert(self.monitorName, "this table needs a monitor")
   self:attachCanvas()
+  self:attachBoard()
   self.debug = fs.exists("casino_debug.flag")
   self.wantsLock = wallet.wantsLock()
 
@@ -990,7 +1153,7 @@ function M.run()
     end
   end
 
-  parallel.waitForAny(main, net.worker)
+  parallel.waitForAny(main, net.worker, chat.worker, lamps.worker)
 end
 
 return M

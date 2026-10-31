@@ -145,6 +145,7 @@ return {
   title = "3 CARD POKER",
   tagline = "Three cards each. Beat the dealer's hand or fold.",
   felt = "burgundy",
+  demo = { wager = function() return { ante = 100, side = 50 } end },
   rules = rules,
   view = view,
   stakeOf = stakeOf,

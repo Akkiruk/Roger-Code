@@ -12,6 +12,15 @@ return {
   dealLabel = "DEAL",
   capTokens = 100,
   shoe = true,
+  demo = {
+    -- rules.auto always stands, which would show one dealer's turn and nothing else
+    action = function(state, stream)
+      if state.hold then return "stand" end
+      local total = rules.total(state.hands[state.active].cards)
+      if total < 12 or (total < 17 and stream:below(2) == 0) then return "hit" end
+      return "stand"
+    end,
+  },
   rules = rules,
   view = view,
   help = function()

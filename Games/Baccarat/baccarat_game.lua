@@ -2,6 +2,7 @@
 -- Baccarat as the casino table sees it. The help is built from the rules, so the two cannot disagree.
 -- The standard bet screen sets the amount, and the round's first action picks the side, which is what deals.
 
+local demo = require("lib.casino.demo")
 local rules = require("baccarat_rules")
 local view = require("baccarat_view")
 
@@ -13,6 +14,7 @@ return {
   dealLabel = "BET",
   capTokens = 100,
   shoe = true,
+  demo = { action = demo.anyAction(rules) },   -- rules.auto cancels, which would deal nothing
   rules = rules,
   view = view,
   help = function()

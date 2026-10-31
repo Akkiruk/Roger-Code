@@ -41,6 +41,10 @@
 - Stakes are deliberately not taken up front: nobody gives up tokens before a round ends. A round's net moves once, before the final reveal, and anything that cannot move is kept in `journal` as owed. Every transfer goes through `books.lua`, so a crash at any step can be answered. A live shoe's seed is never shown or logged (`shoe = true` on the game table), the hash is on the table before any card, and the owner's touch locks a table's terminal. Network messages are checked for shape and size only: no signing.
 - Paytables are total return on the bet. A new paytable needs a return check in `Tests/`.
 - Tables are built for one fixed 6x6 monitor wall at text scale 0.5, about 121x81 cells, each cell 2 wide by 3 tall.
+- A table has at most 4 peripherals and 2 monitors, all optional: player detector, speaker, wireless modem, chat box, plus the wall and one smaller monitor, which is a display-only scoreboard (`board.lua`). A table with none of these must play exactly as it does with them.
+- Detector, chat box and integrator calls wait a tick and swallow events, so they only run in a worker coroutine (`presence.lua`, `chat.lua`, `lamps.lua`), never in the main loop.
+- Chat is only ever whispered to a named player, and nothing sent to chat may reveal another player's cards. `session.lua` holds what a player is told as they go, and reads the owed book without changing it.
+- Idle screens play a real round through `demo.lua`. A demo must never touch `keep`, the journal, the wallet, the stats or the hub. A game steers its demo with `game.demo`; `view.attract` is the fallback.
 
 ## Lua And ComputerCraft Rules
 

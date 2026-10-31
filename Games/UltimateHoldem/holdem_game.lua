@@ -3,6 +3,7 @@
 -- The help is built from the rules, so the two cannot disagree.
 
 local audio = require("lib.casino.audio")
+local demo = require("lib.casino.demo")
 local limits = require("lib.casino.limits")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
@@ -142,6 +143,8 @@ return {
   felt = "green",
   -- A round's whole stake at the most: Ante, Blind and Trips. rules.MAX_ANTE keeps each of them survivable.
   capTokens = rules.MAX_ANTE * 3,
+  -- rules.auto checks to the river and folds, so the board would never be played
+  demo = { wager = function() return { ante = 100, side = 50 } end, action = demo.anyAction(rules) },
   rules = rules,
   view = view,
   stakeOf = stakeOf,

@@ -23,6 +23,22 @@ Every wagering game was rebuilt on one engine, `Shared/lib/casino/`. Read the he
 
 The monitor is always a 6x6 wall at text scale 0.5.
 
+## Around The Table
+
+A table has at most 4 peripherals and 2 monitors: player detector, speaker, wireless modem, chat box, plus the 6x6 wall and one smaller monitor. All of it is optional, and a table with none of it plays the same.
+
+| Feature | Where | Needs |
+| --- | --- | --- |
+| Whispers: a queued outbox, spaced for the box's cooldown, retried, oldest dropped past a limit | `chat.lua` | Chat box |
+| Owed notes: a player who has left is told what the book holds, once per amount, and told when it moves | `session.lua` | Chat box |
+| Session summary: "12 rounds, +340, best win 900" on the wall and in a whisper. Survives a reboot | `session.lua` | Nothing. The whisper needs a chat box |
+| Poker hands whispered when dealt and after the draw. PEEK stays, because a whisper can fail and PEEK is how cards are thrown | `pokertable_app.lua` | Chat box |
+| Scoreboard: leaders, the jackpot if a hub is heard, NOW PLAYING. On the hub too | `board.lua` | A monitor smaller than the wall |
+| Live attract screens: a real round through the rules and view, on every table and PokerTable's empty lobby | `demo.lua`, `game.demo` | Nothing |
+| Win lamps on a big win or a jackpot, and the hub's own lamp on a jackpot. Sides are set in one place | `lamps.lua` | Nothing. A redstone integrator is used if present |
+| Baccarat road: finished coups in `keep.road` | `baccarat_rules.lua`, `baccarat_view.lua` | Nothing |
+| Hub page for Arcade results, heard on `arcade.v1`. Display only | `casino_hub_rules.lua`, `casino_hub_view.lua` | A modem on the hub |
+
 ## Rules That Must Hold
 
 - Stakes are never taken up front. This is the owner's decision: nobody gives up tokens and then waits to get them back.
@@ -40,11 +56,15 @@ The monitor is always a 6x6 wall at text scale 0.5.
 - Paytables are total return on the bet, in every game.
 - `Tests/run.lua` runs in the publish workflow. A game outside its target return stops the deploy.
 - Anti-cheat stays light: make abuse awkward, don't build around it.
+- Detector, chat box and integrator calls wait a tick and swallow events, so they only run in a worker coroutine, never in the main loop.
+- Chat is only ever whispered to a named player, never public, and nothing a table sends to chat may reveal another player's cards.
+- A demo never touches `keep`, the journal, the wallet, the stats or the hub. It gets its own random source and a keep of its own for each round, so a live shoe cannot notice it.
+- A lamp fires when the result is shown, not when the money moves: that is before the reveal, and a lamp would give the result away. The Baccarat road waits for the same reason, because `keep` has the result before the cards have played.
 
 ## Testing
 
 - `Tests/`: rules, payouts and returns, pure Lua.
-- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, and `mutants.mjs` proves those tests can fail.
+- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, and `mutants.mjs` proves those tests can fail.
 - `craftos-agent/tools/mcbridge/rc-casino.mjs`: every game with real tokens on a real server.
 
 ## Later

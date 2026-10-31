@@ -2,9 +2,12 @@
 -- The hub's computer: listens to the floor, keeps the books on disk, and tells every table where things stand.
 -- It moves no tokens. A monitor is optional, and with none it prints a short summary to its own screen.
 -- Its wall takes no input, but a hub is a computer with the host's name on it like any table: the owner's touch locks it.
+-- It also hears the Arcade's results, for one page of the wall, and a jackpot from any table lights its own lamp (lamps.lua).
 
+local board = require("lib.casino.board")
 local canvas = require("lib.casino.canvas")
 local journal = require("lib.casino.journal")
+local lamps = require("lib.casino.lamps")
 local net = require("lib.casino.net")
 local theme = require("lib.casino.theme")
 local wallet = require("lib.casino.wallet")
@@ -26,26 +29,28 @@ local function now()
   return os.epoch("utc")
 end
 
-local function largestMonitor()
-  local best, bestArea = nil, 0
-  for _, name in ipairs(peripheral.getNames()) do
-    if peripheral.hasType(name, "monitor") then
-      local monitor = peripheral.wrap(name)
-      monitor.setTextScale(TEXT_SCALE)
-      local w, h = monitor.getSize()
-      if w * h > bestArea then best, bestArea = name, w * h end
-    end
-  end
-  return best
-end
-
+--- The wall and its name, and the scoreboard if there is a smaller monitor.
 local function attach()
-  local name = largestMonitor()
+  local name = board.largest()
   if not name then return nil end
   local monitor = peripheral.wrap(name)
   monitor.setTextScale(TEXT_SCALE)
   theme.apply(monitor, FELT)
-  return canvas.new(monitor)
+  return canvas.new(monitor), name, board.attach(name, FELT)
+end
+
+--- The scoreboard's view of the floor. Returns false once its monitor has gone.
+local function showBoard(scoreboard, data, at)
+  local live = 0
+  for _, entry in ipairs(rules.tables(data, at)) do
+    if entry.live then live = live + 1 end
+  end
+  return board.show(scoreboard, {
+    title = "CASINO HUB",
+    leaders = rules.leaders(data, board.ROWS),
+    jackpot = data.jackpot,
+    note = live .. (live == 1 and " table live" or " tables live"),
+  })
 end
 
 local function printSummary(data, online)
@@ -81,6 +86,7 @@ local function writeDebug(c, data, page, at)
       leaders = rules.leaders(data, rules.TOP),
       biggest = data.biggest,
       latest = data.latest,
+      arcade = data.arcade,
       games = rules.games(data),
       tables = rules.tables(data, at),
       totals = rules.totals(data),
@@ -89,14 +95,14 @@ local function writeDebug(c, data, page, at)
   handle.close()
 end
 
---- Run the hub for ever.
-function M.run()
+--- The hub's own loop: everything but the lamp.
+local function floor()
   local online = net.open()
   local data = rules.restore(journal.loadKeep())
-  local c = attach()
+  local c, wall, scoreboard = attach()
   local debug = fs.exists("casino_debug.flag")
   local page, started = 1, now()
-  local nextPage, nextState, nextSave, nextBeat, nextPrint = 0, 0, 0, 0, 0
+  local nextPage, nextState, nextSave, nextBeat, nextPrint, nextBoard = 0, 0, 0, 0, 0, 0
   local dirty = false
   local toucher = nil
   local frame = os.startTimer(FRAME)
@@ -112,6 +118,7 @@ function M.run()
     if event == "rednet_message" and protocol == net.PROTOCOL then
       local changed, grant = rules.apply(data, a, b, now())
       dirty = dirty or changed
+      if changed and b.kind == "jackpot" then lamps.pulse("jackpot") end
       if grant then
         -- The pool has moved: nothing may answer another claim from an older copy, so this goes to disk first
         journal.saveKeep(data)
@@ -119,14 +126,19 @@ function M.run()
         net.send("grant", grant)
         announce()
       end
+    elseif event == "rednet_message" and protocol == rules.ARCADE_PROTOCOL then
+      dirty = rules.arcadeResult(data, b, now()) or dirty
     elseif event == "vhcc_touch" then
       toucher = a
     elseif event == "monitor_touch" then
-      wallet.lockIfOwner(toucher or wallet.livePlayer())
+      -- The scoreboard is display only, and its touch still has to clear who touched
+      if a == wall then wallet.lockIfOwner(toucher or wallet.livePlayer()) end
       toucher = nil
     elseif event == "monitor_resize" or event == "peripheral" or event == "peripheral_detach" then
-      c = attach()
+      c, wall, scoreboard = attach()
+      nextBoard = 0
       online = net.open()
+      lamps.rescan()
     elseif event == "timer" and a == frame then
       local at = now()
       if at >= nextPage then
@@ -155,10 +167,19 @@ function M.run()
         nextPrint = at + PRINT_MS
         printSummary(data, online)
       end
+      if scoreboard and at >= nextBoard then
+        nextBoard = at + board.REFRESH_MS
+        if not showBoard(scoreboard, data, at) then scoreboard = nil end
+      end
       if debug then writeDebug(c, data, page, at) end
       frame = os.startTimer(FRAME)
     end
   end
+end
+
+--- Run the hub for ever.
+function M.run()
+  parallel.waitForAny(floor, lamps.worker)
 end
 
 return M

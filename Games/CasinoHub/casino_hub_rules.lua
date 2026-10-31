@@ -22,6 +22,9 @@ local M = {
   STATE_MS = 10000,       -- how often the hub tells the floor where things stand
   QUIET_MS = 60000,       -- a table not heard from for this long is shown as quiet
   SMALL_SAMPLE = 100,     -- rounds below which a measured return means little
+  ARCADE_PROTOCOL = "arcade.v1",  -- the Arcade's own, from Games/Arcade/arcade_net.lua. It only ever sends
+  ARCADE_KEPT = 8,        -- Arcade results kept, which is what its page has room for
+  MAX_MOVES = 100000,     -- longer than any game the Arcade could finish
 }
 
 -- Targets come from each game's own rules, or a test that proves them. A game with no stated target has none here.
@@ -70,6 +73,7 @@ function M.new()
     latest = {},
     claims = {},
     claimOrder = {},
+    arcade = {},
   }
 end
 
@@ -196,6 +200,21 @@ function M.apply(data, sender, message, at)
     return true, { id = message.id, to = sender, amount = granted }
   end
   return false
+end
+
+--- A finished Arcade match, newest first. Display only: no tokens, and nothing here reaches the leaderboards or the pool.
+-- Only the fields the page shows are copied, so a message with more in it cannot grow the save. winner: 1 red, 2 blue, 3 a draw.
+function M.arcadeResult(data, message, at)
+  if type(message) ~= "table" or message.kind ~= "result" then return false end
+  local winner, moves = message.winner, message.moves
+  if not (isName(message.game) and isName(message.title) and isName(message.red) and isName(message.blue)) then return false end
+  if winner ~= 1 and winner ~= 2 and winner ~= 3 then return false end
+  if not isNumber(moves) or moves < 0 or moves > M.MAX_MOVES then return false end
+  if message.ranked ~= nil and type(message.ranked) ~= "boolean" then return false end
+  table.insert(data.arcade, 1, { game = message.game, title = message.title, red = message.red, blue = message.blue,
+    winner = winner, moves = math.floor(moves), ranked = message.ranked == true, at = at })
+  while #data.arcade > M.ARCADE_KEPT do table.remove(data.arcade) end
+  return true
 end
 
 --- Players, best first by net winnings, or by key if given.

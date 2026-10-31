@@ -14,6 +14,7 @@ local M = {
   COMMISSION = 5,        -- percent of a Banker win, rounded up to a whole token
   MIN_BANKER = 20,       -- below this the commission is more than 5% of the bet by a long way
   NATURAL = 8,           -- two cards on this or more end the coup
+  ROAD_KEPT = 26,        -- results on the road, which is all the strip on the table can hold
 }
 
 local NAMES = { player = "Player", banker = "Banker", tie = "Tie" }
@@ -72,9 +73,16 @@ local function takeShoe(keep, rng)
   return shoe, true
 end
 
+--- A round holds the road as it stood when it opened, because keep gets its result in the settle, before the cards have played.
+-- The road is a string, one letter a coup, newest first: "PBT" is Player last, Banker before that, a Tie before that.
 function M.new(bet, rng, keep, _)
   local shoe, fresh = takeShoe(keep or {}, rng)
-  return { bet = bet, cards = shoe, player = {}, banker = {} }, { { type = "start", fresh = fresh } }
+  return { bet = bet, cards = shoe, player = {}, banker = {}, road = keep and keep.road or "" }, { { type = "start", fresh = fresh } }
+end
+
+--- The road with one more coup on it.
+function M.addToRoad(road, winner)
+  return (winner:sub(1, 1):upper() .. (road or "")):sub(1, M.ROAD_KEPT)
 end
 
 function M.actions(state)
@@ -169,10 +177,11 @@ function M.result(state)
   return { kind = "lose", title = title, detail = score .. ". Your " .. NAMES[state.side] .. " bet loses" }
 end
 
---- Hand the shoe to the next round. It leaves the state, so the two never share a table.
+--- Hand the shoe to the next round. It leaves the state, so the two never share a table. A cancelled round dealt no coup.
 function M.finish(state, keep)
   keep.shoe = state.cards
   state.cards = {}
+  if state.winner then keep.road = M.addToRoad(keep.road, state.winner) end
 end
 
 return M

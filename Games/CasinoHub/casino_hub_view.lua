@@ -154,7 +154,28 @@ local function pageTables(c, data, _, at)
   end
 end
 
-M.PAGES = { pageJackpot, pagePlayers, pageWins, pageGames, pageTables }
+local function arcadeLine(game)
+  if game.winner == 3 then return short(game.red) .. " drew " .. short(game.blue) end
+  local winner, loser = game.red, game.blue
+  if game.winner == 2 then winner, loser = loser, winner end
+  return short(winner) .. " beat " .. short(loser)
+end
+
+local function pageArcade(c, data, _, at)
+  title(c, "ARCADE", "recent games, no tokens")
+  if #data.arcade == 0 then return empty(c, "No Arcade games heard yet") end
+  for i, game in ipairs(data.arcade) do
+    local y = TOP + (i - 1) * 7
+    if i % 2 == 1 then c:rect(3, y, c.w - 4, 7, C.feltDark) end
+    c:big(5, y + 1, short(game.title), C.text, 1)
+    c:text(78, y + 2, arcadeLine(game), game.winner == 3 and C.text or C.gold)
+    c:text(78, y + 4, game.moves .. " moves" .. (game.ranked and ", ranked" or ""), C.text)
+    local ago = M.ago(at - game.at)
+    c:text(c.w - 3 - #ago, y + 4, ago, C.text)
+  end
+end
+
+M.PAGES = { pageJackpot, pagePlayers, pageWins, pageGames, pageTables, pageArcade }
 
 --- Draw a page. t is seconds running, at is the time now, note is a warning for the bottom line.
 function M.draw(c, data, page, t, at, note)

@@ -259,6 +259,12 @@ return {
   title = "ROULETTE",
   tagline = "One zero, every bet on the layout, and the ball decides.",
   felt = "green",
+  demo = {
+    wager = function(stream)
+      local even = ({ "red", "black", "odd", "even", "low", "high" })[stream:below(6) + 1]
+      return { [even] = 50, ["dozen:" .. (stream:below(3) + 1)] = 25, ["straight:" .. stream:below(rules.POCKETS)] = 10 }
+    end,
+  },
   rules = rules,
   view = view,
   stakeOf = rules.stakeOf,

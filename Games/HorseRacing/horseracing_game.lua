@@ -9,6 +9,11 @@ return {
   title = "HORSE RACING",
   tagline = "Six horses, fresh odds every race. Back as many as you like.",
   felt = "ember",
+  demo = {
+    wager = function(stream)
+      return { race = rules.newRace(stream), bets = { { kind = "win", a = stream:below(rules.HORSES) + 1, amount = 100 } } }
+    end,
+  },
   rules = rules,
   view = view,
   stakeOf = rules.stake,

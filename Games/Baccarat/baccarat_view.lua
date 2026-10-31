@@ -20,6 +20,8 @@ local CARD_Y = 36
 local LEGEND_Y = 57
 local SHOE_X, SHOE_Y = 4, 55
 local CANCEL = { x = 103, y = 56, w = 15, h = 10 }
+local ROAD_X, ROAD_Y = 3, 54   -- the one row between the zones and the shoe, and above the result banner
+local ROAD_COLORS = { P = "blue", B = "red", T = "gold" }
 
 local function copy(list)
   local out = {}
@@ -117,12 +119,30 @@ local function drawLegend(c, model, state)
   end
 end
 
+--- Recent coups as a row of pills, newest first. Only what has played: the state holds the road from before this round, and
+-- this round joins it when its outcome has shown on the table, however early the books closed.
+local function drawRoad(c, model, state)
+  if model.ctx.demo then return end
+  local road = state.road or ""
+  if model.winner then road = rules.addToRoad(road, model.winner) end
+  if road == "" then return end
+  c:text(ROAD_X, ROAD_Y, "ROAD", C.text)
+  for i = 1, #road do
+    local letter = road:sub(i, i)
+    local x = ROAD_X + 5 + (i - 1) * 4
+    local bg = C[ROAD_COLORS[letter]]
+    c:rect(x, ROAD_Y, 3, 1, bg)
+    c:text(x + 1, ROAD_Y, letter, letter == "T" and C.ink or C.text, bg)
+  end
+end
+
 function M.draw(c, model, state, anim)
   c:clear(C.felt)
   for i = 2, 0, -1 do ui.card(c, SHOE_X + i, SHOE_Y, nil, true) end
   drawLegend(c, model, state)
   drawZone(c, model, state, "player", anim)
   drawZone(c, model, state, "banker", anim)
+  drawRoad(c, model, state)
   drawIncoming(c, anim)
   if not state.over then
     ui.button(c, ui.newButtons(), { x = CANCEL.x, y = CANCEL.y, w = CANCEL.w, h = CANCEL.h, label = "NO BET", color = C.panel2 })

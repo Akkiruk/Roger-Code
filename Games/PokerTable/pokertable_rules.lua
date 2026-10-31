@@ -396,6 +396,13 @@ function M.auto(state)
   return "fold"
 end
 
+--- A hand as one line of chat, for its own player alone. Five cards always fit: see Tests/pokertable_test.lua.
+function M.whisper(hand, drew)
+  local names = {}
+  for i, card in ipairs(hand) do names[i] = deck.name(card) end
+  return (drew and "After the draw: " or "Your hand: ") .. table.concat(names, " ")
+end
+
 --- Each player's result for the hand. Always adds up to zero.
 function M.nets(state)
   local nets = {}
