@@ -140,6 +140,7 @@ function App:heartbeat(time)
   if time - (self.lastBeat or 0) > 5000 then
     self.lastBeat = time
     os.queueEvent("roger_alive")
+    os.queueEvent("roger_busy", #self:seatedNames() > 0) -- an update waits until the table is empty
     net.tick()
     self.wantsLock = wallet.wantsLock()
     self:closeStale(time)
@@ -790,10 +791,11 @@ function App:lobby()
       c:textCenter(cx, 45, "Economy offline", C.orange)
     elseif line then
       c:textCenter(cx, 45, line, C.orange)
+    elseif self.wantsLock then
+      c:textCenter(cx, 45, LOCK_NOTICE, C.mute)
     else
       c:textCenter(cx, 45, ("%d to %d players. The house takes nothing."):format(rules.MIN_PLAYERS, rules.MAX_SEATS), C.text)
     end
-    if self.wantsLock then c:textCenter(cx, 47, LOCK_NOTICE, C.mute) end
     if playing and show:finished() then
       local result = rules.result(show.state)
       view.banner(c, 30, result.title, result.detail)

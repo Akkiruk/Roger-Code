@@ -175,6 +175,7 @@ function Table:heartbeat(time)
   if time - (self.lastBeat or 0) > 5000 then
     self.lastBeat = time
     os.queueEvent("roger_alive")
+    os.queueEvent("roger_busy", self.ctx.seat ~= nil) -- an update waits until nobody is sitting here
     net.tick()
     self:refreshBalance()
     self:chaseClaims(time)

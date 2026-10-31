@@ -168,7 +168,7 @@ local function pageArcade(c, data, _, at)
   for i, game in ipairs(data.arcade) do
     local y = TOP + (i - 1) * 7
     if i % 2 == 1 then c:rect(3, y, c.w - 4, 7, C.feltDark) end
-    c:big(5, y + 1, short(game.title), C.text, 1)
+    c:text(5, y + 2, game.title, C.text)
     c:text(78, y + 2, arcadeLine(game), game.winner == 3 and C.text or C.gold)
     c:text(78, y + 4, game.moves .. " moves" .. (game.ranked and ", ranked" or ""), C.text)
     local ago = M.ago(at - game.at)
