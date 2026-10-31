@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.20"
+    "version": "1.0.21"
   },
   "build": {
-    "commit": "08c18c30bd116a52e304ce84c2367a18c031b580",
-    "generated_at": "2026-10-31T17:52:01Z",
-    "package_hash": "ecb110b42df4d17af8a096cc5cdc558770c31443de3b6f79984c34a11f04472f"
+    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
+    "generated_at": "2026-10-31T18:14:14Z",
+    "package_hash": "1d5e3b16736f51d115761b511bbd3aba16e79c1100de6c7c989934855b75a4e9"
   },
   "install": {
     "preserve": [
@@ -120,7 +120,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
+        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -130,7 +130,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "5dbb0cce49524487c6376eda8008e2c5daeda24f41f3b1dd2eb2c5fedeea9112"
+        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -159,7 +159,7 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "phone_os_startup.lua",
     "auto_restart": true,
-    "update_interval": 60,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.alert",

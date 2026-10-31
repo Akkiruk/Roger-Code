@@ -7,12 +7,12 @@
     "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
-    "version": "1.0.10"
+    "version": "1.0.11"
   },
   "build": {
-    "commit": "08c18c30bd116a52e304ce84c2367a18c031b580",
-    "generated_at": "2026-10-31T17:52:01Z",
-    "package_hash": "11360a8e96eea91c4c35019eceba7e10ec5d3137427c321f98d8ece3cbc2c10e"
+    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
+    "generated_at": "2026-10-31T18:14:14Z",
+    "package_hash": "dcb167aff7dcc28198bbdcf5237e4d416318d05fd26cdf37b6619921c23aa675"
   },
   "install": {
     "preserve": [
@@ -93,7 +93,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
+        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -103,7 +103,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "5dbb0cce49524487c6376eda8008e2c5daeda24f41f3b1dd2eb2c5fedeea9112"
+        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -132,7 +132,7 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "ultimate-tic-tac-toe_startup.lua",
     "auto_restart": true,
-    "update_interval": 60,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.peripherals",

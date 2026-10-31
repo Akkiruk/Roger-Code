@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.15"
+    "version": "1.0.16"
   },
   "build": {
-    "commit": "08c18c30bd116a52e304ce84c2367a18c031b580",
-    "generated_at": "2026-10-31T17:52:01Z",
-    "package_hash": "b7c8d48a180c7050cdde0d26191e54bc5a934fc45d608c65c7cf328140abf779"
+    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
+    "generated_at": "2026-10-31T18:14:14Z",
+    "package_hash": "a0da5dde2413922b4c272004687d2429e1af1ec096c11eeadaf306f1f35afac2"
   },
   "install": {
     "preserve": [],
@@ -70,7 +70,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
+        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "5dbb0cce49524487c6376eda8008e2c5daeda24f41f3b1dd2eb2c5fedeea9112"
+        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -109,7 +109,7 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "sound_browser_startup.lua",
     "auto_restart": true,
-    "update_interval": 60,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.peripherals",

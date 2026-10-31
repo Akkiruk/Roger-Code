@@ -7,12 +7,12 @@
     "description": "The casino's central board: shared jackpot, leaderboards, each game's measured return, and the tables on the floor.",
     "source_root": "Games/CasinoHub",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "487896ccd68e5e927c4019a1699fb8087709b257",
-    "generated_at": "2026-10-31T17:52:01Z",
-    "package_hash": "452d82b41e9dc0feedb64d316d6af1c0f9d88195eb455f8cbb214b880aa21a7c"
+    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
+    "generated_at": "2026-10-31T18:14:14Z",
+    "package_hash": "76070b9e8267608df5e3fd41c4f0f374ea8d02905b6d1cf7a05d22edfca2fb02"
   },
   "install": {
     "preserve": [],
@@ -38,6 +38,11 @@
         "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
       },
       {
+        "repo_path": "Shared/lib/casino/lamps.lua",
+        "install_path": "lib/casino/lamps.lua",
+        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
         "repo_path": "Shared/lib/casino/journal.lua",
         "install_path": "lib/casino/journal.lua",
         "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
@@ -58,6 +63,11 @@
         "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
       },
       {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
+      },
+      {
         "repo_path": "Games/CasinoHub/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
@@ -70,22 +80,22 @@
       {
         "repo_path": "Games/CasinoHub/casino_hub_view.lua",
         "install_path": "casino_hub_view.lua",
-        "sha256": "1e948ac454464f2599e0db922a427dfbacc885c8714ae1872bd87bc3f5592cc9"
+        "sha256": "8bf0db23175763fe308478eb800ca80d6ab0ec3e86f0d6534f68d4fd4665cf1e"
       },
       {
         "repo_path": "Games/CasinoHub/casino_hub_rules.lua",
         "install_path": "casino_hub_rules.lua",
-        "sha256": "5e22dc274456bca022b7a413d161b6ae26b53e0a9cbc2ca907ffed9b9af61ee6"
+        "sha256": "587d5969ce8cc9f54bb3a9b2145b68f5e82344e848712bd6b5399ac729dc4bd4"
       },
       {
         "repo_path": "Games/CasinoHub/casino_hub_app.lua",
         "install_path": "casino_hub_app.lua",
-        "sha256": "e70681c0f978dbffa3d5ba5244b4b59ef691c0e3f5330c63acbabb475af58e6e"
+        "sha256": "439c93524fbb5f494d30ac4984aec7d6b47aff0d23b50efb1dc3ec4beea3a068"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
+        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -95,7 +105,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "5dbb0cce49524487c6376eda8008e2c5daeda24f41f3b1dd2eb2c5fedeea9112"
+        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -124,13 +134,15 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "casino-hub_startup.lua",
     "auto_restart": true,
-    "update_interval": 60,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
+      "lib.casino.board",
       "lib.casino.canvas",
       "lib.casino.deck",
       "lib.casino.font",
       "lib.casino.journal",
+      "lib.casino.lamps",
       "lib.casino.net",
       "lib.casino.theme",
       "lib.casino.ui",

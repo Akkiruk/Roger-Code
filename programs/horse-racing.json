@@ -7,12 +7,12 @@
     "description": "Six horses, fresh odds each race, with win, place, show and exacta bets.",
     "source_root": "Games/HorseRacing",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "487896ccd68e5e927c4019a1699fb8087709b257",
-    "generated_at": "2026-10-31T17:52:01Z",
-    "package_hash": "54fb8d0422da802ca181cdc63e53394391de8fa43cb067637e22e21f82973439"
+    "commit": "ffe5c07f0017b75c63d2aaaeb40d4be6ffd3cefd",
+    "generated_at": "2026-10-31T18:14:14Z",
+    "package_hash": "3ec577bdfc3104fc92d993d4e20bd5198cde524d6462d540b82af561d9d05b7d"
   },
   "install": {
     "preserve": [],
@@ -35,12 +35,17 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "4fe475c48815f87f2279ffbd65559ebfc7f8158274d331b5c1350a24daa36348"
+        "sha256": "d8425697f1c32e69d8b08684317d1903e6cd6fcca6455e4a7b030ef2cbc8b562"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
         "install_path": "lib/casino/stats.lua",
         "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
       },
       {
         "repo_path": "Shared/lib/casino/rng.lua",
@@ -63,6 +68,11 @@
         "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
       },
       {
+        "repo_path": "Shared/lib/casino/lamps.lua",
+        "install_path": "lib/casino/lamps.lua",
+        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
         "repo_path": "Shared/lib/casino/journal.lua",
         "install_path": "lib/casino/journal.lua",
         "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
@@ -73,19 +83,34 @@
         "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
+        "repo_path": "Shared/lib/casino/demo.lua",
+        "install_path": "lib/casino/demo.lua",
+        "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
+      },
+      {
         "repo_path": "Shared/lib/casino/deck.lua",
         "install_path": "lib/casino/deck.lua",
         "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
       },
       {
-        "repo_path": "Shared/lib/casino/canvas.lua",
-        "install_path": "lib/casino/canvas.lua",
-        "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/chat.lua",
+        "install_path": "lib/casino/chat.lua",
+        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
         "repo_path": "Shared/lib/casino/books.lua",
         "install_path": "lib/casino/books.lua",
         "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+      },
+      {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
       },
       {
         "repo_path": "Shared/lib/casino/bit32_shim.lua",
@@ -120,12 +145,12 @@
       {
         "repo_path": "Games/HorseRacing/horseracing_game.lua",
         "install_path": "horseracing_game.lua",
-        "sha256": "d8584e7c1e111b50a549daa6a442a37b4d1d5ee8a1f0ae89ebbea7fbad4753fd"
+        "sha256": "0ffebcd732023158f057e70a4afe878bbe49dca10964f9f9c1dd6558e43f8677"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
+        "sha256": "5e4e92613a0b8c292c40c1098e1700fee8abbf59493fad2e7512a53bf6d2152b"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -135,7 +160,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "5dbb0cce49524487c6376eda8008e2c5daeda24f41f3b1dd2eb2c5fedeea9112"
+        "sha256": "ab75bbe8cd9cf03115aeb086f607e3d1ce4a2d608e8442df30857d301418c46d"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -148,9 +173,9 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Shared/lib/casino/wallet.lua",
-        "install_path": "lib/casino/wallet.lua",
-        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
@@ -164,20 +189,25 @@
     "system_entrypoint": "startup.lua",
     "app_entrypoint": "horse-racing_startup.lua",
     "auto_restart": true,
-    "update_interval": 60,
+    "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
       "lib.casino.audio",
       "lib.casino.bit32_shim",
+      "lib.casino.board",
       "lib.casino.books",
       "lib.casino.canvas",
+      "lib.casino.chat",
       "lib.casino.deck",
+      "lib.casino.demo",
       "lib.casino.font",
       "lib.casino.journal",
+      "lib.casino.lamps",
       "lib.casino.limits",
       "lib.casino.net",
       "lib.casino.presence",
       "lib.casino.rng",
+      "lib.casino.session",
       "lib.casino.stats",
       "lib.casino.table",
       "lib.casino.theme",
