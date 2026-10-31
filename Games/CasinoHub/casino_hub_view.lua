@@ -4,6 +4,7 @@
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
 local rules = require("casino_hub_rules")
+local contestView = require("casino_hub_contest_view")
 
 local C = theme.C
 local M = {}
@@ -176,6 +177,7 @@ local function pageArcade(c, data, _, at)
 end
 
 M.PAGES = { pageJackpot, pagePlayers, pageWins, pageGames, pageTables, pageArcade }
+M.PAGES[#M.PAGES + 1] = contestView.page -- always last: casino_hub_contest_view.turn counts on it
 
 --- Draw a page. t is seconds running, at is the time now, note is a warning for the bottom line.
 function M.draw(c, data, page, t, at, note)

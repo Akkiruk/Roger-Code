@@ -45,6 +45,7 @@
 - Detector, chat box and integrator calls wait a tick and swallow events, so they only run in a worker coroutine (`presence.lua`, `chat.lua`, `lamps.lua`), never in the main loop.
 - Chat is only ever whispered to a named player, and nothing sent to chat may reveal another player's cards. `session.lua` holds what a player is told as they go, and reads the owed book without changing it.
 - Idle screens play a real round through `demo.lua`. A demo must never touch `keep`, the journal, the wallet, the stats or the hub. A game steers its demo with `game.demo`; `view.attract` is the fallback.
+- Practice and hub tournaments are one thing: a pretend seat, with chips and no tokens. `table.lua` reaches money only through `door.lua`, and with a pretend seat sitting every door leads to the stand-ins in `pretend.lua`. A new module that holds money or player records goes behind a door, never a direct `require` in `table.lua`; a new door call needs a stand-in, or `Tests/practice_test.lua` fails. Tournaments never move tokens, and `tournament.lua` is their only file on a table.
 
 ## Lua And ComputerCraft Rules
 

@@ -34,24 +34,33 @@
 --   a speaker, a modem  sound (audio.lua), the hub (net.lua)
 --   redstone            a pulse on a big win (lamps.lua). A redstone integrator is used if there is one
 -- Detector, chat box and integrator calls wait a tick and swallow events, so they only happen in the workers in M.run.
+--
+-- A pretend seat plays the same rules and screens with chips and no tokens: PRACTICE on the idle screen, the only choice when
+-- the economy is offline, and TOURNAMENT while the hub runs a contest on this game. door.lua is the seam, pretend.lua holds the
+-- seat and tournament.lua keeps a contest's entries. Table:pretendSeat is the only place one sits down.
 
 local audio = require("lib.casino.audio")
 local board = require("lib.casino.board")
-local books = require("lib.casino.books")
 local canvas = require("lib.casino.canvas")
 local chat = require("lib.casino.chat")
 local demo = require("lib.casino.demo")
-local journal = require("lib.casino.journal")
-local lamps = require("lib.casino.lamps")
+local door = require("lib.casino.door")
 local limits = require("lib.casino.limits")
-local net = require("lib.casino.net")
 local presence = require("lib.casino.presence")
+local pretend = require("lib.casino.pretend")
 local rng = require("lib.casino.rng")
-local session = require("lib.casino.session")
-local stats = require("lib.casino.stats")
 local theme = require("lib.casino.theme")
+local tournament = require("lib.casino.tournament")
 local ui = require("lib.casino.ui")
-local wallet = require("lib.casino.wallet")
+
+-- The one seam: everything that can touch money, or anything a round leaves behind, comes through a door. See door.lua
+local books = door.to("books")
+local journal = door.to("journal")
+local lamps = door.to("lamps")
+local net = door.to("net")
+local session = door.to("session")
+local stats = door.to("stats")
+local wallet = door.to("wallet")
 
 local C = theme.C
 local M = {}
@@ -73,7 +82,9 @@ local LOCK_NOTICE = "Owner: tap to lock this table"
 local FAREWELL_MS = 6000         -- how long the idle screen shows a session's summary
 local SESSION_STALE_MS = 120000  -- a visit a reboot cut short, with nobody back to carry it on, ends here
 
-local log = journal.log
+local function log(message)
+  journal.log(message)
+end
 
 local function now()
   return os.epoch("utc")
@@ -101,8 +112,11 @@ function Table:run(scene)
       local who = self.toucher or wallet.livePlayer()
       self.toucher = nil
       if wallet.lockIfOwner(who) then self.wantsLock = false end
-      if self.ctx.seat and who ~= self.ctx.seat and not scene.anyone then
-        self:toast("Table in use by " .. self.ctx.seat)
+      local sitter = self.pretend
+      if sitter and sitter:owns(who) then sitter:touch(now()) end
+      if self.ctx.seat and who ~= self.ctx.seat and not scene.anyone and not (sitter and sitter:owns(who)) then
+        if sitter then sitter:wanted() end
+        self:toast(sitter and sitter:busy() or ("Table in use by " .. self.ctx.seat))
       elseif scene.touch then
         scene:touch(b, c, who)
         scene.dirty = true
@@ -132,11 +146,13 @@ function Table:run(scene)
       if scene.dirty or scene.animating then
         scene.dirty = false
         scene:draw()
+        self:drawPretend(time)
         self:drawToast()
         self.c:flush()
         if self.debug then self:writeDebug(scene) end
       end
       self.timer = os.startTimer(FRAME)
+      if self.pretend then self:checkPretend(time, scene) end
     end
   end
   self.scene = previous
@@ -154,6 +170,8 @@ function Table:heartbeat(time)
     self.wantsLock = wallet.wantsLock()
     if not self.ctx.seat then self:closeStale(time) end
     self:drawBoard()
+    tournament.tick(time)
+    if self.pretend and self.scene then self.scene.dirty = true end -- the label counts down
   end
 end
 
@@ -179,12 +197,15 @@ function Table:writeDebug(scene)
       locked = wallet.terminalLocked() == true,
       state = scene.debugState and scene.debugState() or false,
       board = self.boardName or false,
+      pretend = self.pretend and self.pretend.kind or false,
+      label = self.pretend and self.pretend:label(now()) or false,
     }))
     handle.close()
   end
 end
 
 function Table:toast(text)
+  if self.pretend then text = text:gsub("tokens", "chips") end
   self.toastText = text
   self.toastUntil = now() + 2500
   audio.play("error")
@@ -198,6 +219,30 @@ function Table:drawToast()
   local x = math.floor((c.w - w) / 2)
   c:rect(x, 10, w, 3, C.orange)
   c:text(x + 2, 11, self.toastText, C.ink, C.orange)
+end
+
+--- A pretend seat is marked on every frame of every scene, drawn last, so no game's screen can leave it off: the top bar has
+-- its name where the game's title goes (Table:pretendSeat), and an orange edge and a band under the bar say what it means.
+function Table:drawPretend(time)
+  if not self.pretend then return end
+  local c = self.c
+  local text = self.pretend:label(time)
+  local band = text
+  while #band + 3 + #text <= c.w do band = band .. "   " .. text end
+  c:rect(1, 2, 1, c.h - 1, C.orange)
+  c:rect(c.w, 2, 1, c.h - 1, C.orange)
+  c:rect(1, c.h, c.w, 1, C.orange)
+  c:rect(1, ui.BAR_H - 1, c.w, 2, C.orange)
+  c:textCenter(math.floor(c.w / 2), ui.BAR_H, band, C.ink, C.orange)
+end
+
+--- Nothing is lost by ending a pretend seat, wherever it has got to, so this comes straight out of whatever scene is up.
+function Table:checkPretend(time, scene)
+  local why = self.pretend:over(time, scene, presence.awayMs(self.ctx.seat))
+  if why then
+    self.pretendOver = why
+    error(door.UNWIND, 0)
+  end
 end
 
 function Table:attachCanvas()
@@ -225,6 +270,7 @@ function Table:drawBoard()
     leaders = self.leaders,
     jackpot = hub and hub.jackpot or nil,
     playing = { self.ctx.seat },
+    note = self.pretend and self.pretend.title or nil,
   })
   if not shown then self.board, self.boardName = nil, nil end
 end
@@ -274,7 +320,8 @@ end
 function Table:maxBet()
   local host = wallet.hostName()
   local balance = wallet.hostBalance() or 0
-  return limits.maxBet(balance, net.otherExposure(host), self.game.rules.maxWin(1), self.game.capTokens)
+  local cap = self.pretend and math.min(self.game.capTokens or math.huge, self.pretend.chips) or self.game.capTokens
+  return limits.maxBet(balance, net.otherExposure(host), self.game.rules.maxWin(1), cap)
 end
 
 --- The biggest net win a single round may promise right now, for games with several bets at once.
@@ -477,7 +524,21 @@ function Table:drawDemo(show, showCtx, t, message)
   if self.wantsLock then c:textCenter(cx, c.h - 2, LOCK_NOTICE, C.mute) end
 end
 
+--- The idle screen's two corners, clear of everything along the bottom: practice always, and a contest while this game has one.
+function Table:drawChoices(s)
+  local c = self.c
+  local y = c.h - ui.ACTIONS_H + 2
+  s.buttons = ui.newButtons()
+  ui.button(c, s.buttons, { id = "practice", label = "PRACTICE", sub = "no tokens", x = c.w - 19, y = y, w = 18, h = 9,
+    color = C.orange, textColor = C.ink })
+  if tournament.offer(self.game.id, now()) then
+    ui.button(c, s.buttons, { id = "tournament", label = "TOURNAMENT", sub = "no tokens", x = 2, y = y, w = 18, h = 9,
+      color = C.gold, textColor = C.ink })
+  end
+end
+
 --- The idle screen: a demo of the game, or with no demo the game's name, its art and an invitation.
+-- Returns who touched it, and "practice" or "tournament" if that is what they chose.
 function Table:attract(message)
   local c, ctx, game = self.c, self.ctx, self.game
   local scene = { name = "attract", anyone = true, animating = true, t = 0 }
@@ -536,15 +597,55 @@ function Table:attract(message)
     if self.farewell then
       ui.banner(c, 30, "THANKS " .. self.farewell.name, self.farewell.text, C.gold)
     end
+    self:drawChoices(s)
   end
 
-  function scene.touch(s, _, _, who)
+  function scene.touch(s, x, y, who)
+    local hit = ui.hit(s.buttons or {}, x, y)
     s.who = who or wallet.livePlayer()
-    if s.who then s.finished = true end
+    s.choice = hit and hit.id or (not wallet.available() and "practice") or nil
+    if s.who or s.choice == "practice" then s.finished = true end
   end
 
   self:run(scene)
-  return scene.who
+  return scene.who, scene.choice
+end
+
+--- A pretend seat for what the idle screen was asked for, or nil.
+function Table:pretendFor(choice, who)
+  local rules = self.game.rules
+  if choice == "practice" then
+    return pretend.new({ kind = "practice", title = "PRACTICE", name = who, guest = who == nil, rules = rules, at = now() })
+  end
+  local contest = choice == "tournament" and who and tournament.offer(self.game.id, now())
+  if not contest then return nil end
+  local entry, title, detail = tournament.enter(contest, who)
+  if not entry then
+    self:notice(title, detail)
+    return nil
+  end
+  return pretend.new({ kind = "tournament", title = "TOURNAMENT", name = who, chips = entry.chips, rules = rules, at = now(),
+    hooks = tournament.hooks(who) })
+end
+
+--- Seat someone with pretend chips. From enter to leave every door leads to the seat's stand-ins and the keep is the seat's own,
+-- and the engine plays its usual session. An error other than the seat ending is a real one, and goes on to the supervisor.
+function Table:pretendSeat(sitter)
+  local ctx = self.ctx
+  local liveKeep = self.keep
+  self.pretend, self.keep, self.pretendOver = sitter, sitter.keep, nil
+  door.enter(sitter.stands)
+  ctx.seat, ctx.title = sitter.name, sitter.title
+  self.leaders = nil
+  self:drawBoard()
+  local ok, err = pcall(self.session, self)
+  sitter:ended()
+  door.leave()
+  self.pretend, self.keep, self.scene, self.leaders = nil, liveKeep, nil, nil
+  ctx.seat, ctx.title = nil, self.game.title
+  self:drawBoard()
+  if not ok and err ~= door.UNWIND then error(err, 0) end
+  self.farewell = { name = sitter.name, text = sitter:summary(self.pretendOver), untilAt = now() + FAREWELL_MS }
 end
 
 --- Seat a player: their approval in chat is what lets the table reach their wallet.
@@ -1187,6 +1288,7 @@ function M.run(game)
   self.ctx.table = self
   self.debug = fs.exists("casino_debug.flag")
   self.wantsLock = wallet.wantsLock()
+  tournament.boot()
 
   -- Every screen is laid out for a 6x6 wall. On anything smaller, say so instead of drawing off the edge
   while self.c.w < MIN_W or self.c.h < MIN_H do
@@ -1206,9 +1308,12 @@ function M.run(game)
       self:recover()
       self.ctx.seat, self.ctx.balance, self.ctx.owedNotice = nil, nil, nil
       -- A round that could not be booked is the only copy of what it owes: no new round may overwrite it
-      local who = self:attract(self.unfinished and "This table's disk is full: tell its owner"
-        or not wallet.available() and "Economy offline" or nil)
-      if who and wallet.available() and not self.unfinished and self:seat(who) then
+      local who, choice = self:attract(self.unfinished and "This table's disk is full: tell its owner"
+        or not wallet.available() and "Tokens are offline. Touch to practice with pretend chips" or nil)
+      local sitter = self:pretendFor(choice, who)
+      if sitter then
+        self:pretendSeat(sitter)
+      elseif not choice and who and wallet.available() and not self.unfinished and self:seat(who) then
         self.farewell = nil
         self:drawBoard()
         self:session()
@@ -1220,7 +1325,7 @@ function M.run(game)
   end
 
   parallel.waitForAny(main, net.worker, chat.worker, lamps.worker,
-    function() presence.worker(function() return self.ctx.seat end) end)
+    function() presence.worker(function() return not (self.pretend and self.pretend.guest) and self.ctx.seat end) end)
 end
 
 return M

@@ -10,6 +10,8 @@
 --
 -- Anyone on the network can send anything. Messages are only checked for the right shape and a believable size.
 
+local contest = require("casino_hub_contest")
+
 local M = {
   SEED = 1000,            -- the pool starts here and returns here after every win
   MAX_POT = 1e7,          -- the pool stops growing here (net.lua has the same figure)
@@ -74,6 +76,7 @@ function M.new()
     claims = {},
     claimOrder = {},
     arcade = {},
+    contest = contest.new(),
   }
 end
 
@@ -198,6 +201,11 @@ function M.apply(data, sender, message, at)
     local granted = onClaim(data, sender, message, at)
     if not granted then return false end
     return true, { id = message.id, to = sender, amount = granted }
+  end
+  if kind == "tscore" then
+    if not contest.score(data.contest, sender, message, at) then return false end
+    hear(data, sender, message.game, at)
+    return true
   end
   return false
 end

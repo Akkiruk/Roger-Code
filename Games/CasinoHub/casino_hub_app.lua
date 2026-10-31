@@ -1,16 +1,21 @@
 -- casino_hub_app.lua
 -- The hub's computer: listens to the floor, keeps the books on disk, and tells every table where things stand.
 -- It moves no tokens. A monitor is optional, and with none it prints a short summary to its own screen.
--- Its wall takes no input, but a hub is a computer with the host's name on it like any table: the owner's touch locks it.
+-- Its wall is a display for everyone but the owner, whose touch locks it like any table and opens the tournament menu.
 -- It also hears the Arcade's results, for one page of the wall, and a jackpot from any table lights its own lamp (lamps.lua).
+-- A contest moves no tokens. Its rules are casino_hub_contest.lua; a chat box, if there is one, whispers the top three.
 
 local board = require("lib.casino.board")
 local canvas = require("lib.casino.canvas")
+local chat = require("lib.casino.chat")
 local journal = require("lib.casino.journal")
 local lamps = require("lib.casino.lamps")
 local net = require("lib.casino.net")
 local theme = require("lib.casino.theme")
+local ui = require("lib.casino.ui")
 local wallet = require("lib.casino.wallet")
+local contest = require("casino_hub_contest")
+local contestView = require("casino_hub_contest_view")
 local rules = require("casino_hub_rules")
 local view = require("casino_hub_view")
 
@@ -66,12 +71,16 @@ local function printSummary(data, online)
   print("Players: " .. totals.players)
 end
 
-local function writeDebug(c, data, page, at)
+local function writeDebug(c, data, page, at, menu)
   local handle = fs.open("casino_ui.dat", "w")
   if not handle then return end
+  local buttons = {}
+  for _, b in ipairs(menu and menu.buttons or {}) do
+    buttons[#buttons + 1] = { id = b.id, value = b.value, x = b.x, y = b.y, w = b.w, h = b.h, label = b.label }
+  end
   handle.write(textutils.serializeJSON({
     scene = "hub",
-    buttons = {},
+    buttons = buttons,
     seat = false,
     balance = false,
     playing = false,
@@ -90,6 +99,9 @@ local function writeDebug(c, data, page, at)
       games = rules.games(data),
       tables = rules.tables(data, at),
       totals = rules.totals(data),
+      menu = menu and menu.step or false,
+      contest = contest.broadcast(data.contest, at) or false,
+      past = data.contest.past,
     },
   }))
   handle.close()
@@ -105,10 +117,40 @@ local function floor()
   local nextPage, nextState, nextSave, nextBeat, nextPrint, nextBoard = 0, 0, 0, 0, 0, 0
   local dirty = false
   local toucher = nil
+  local menu = nil        -- the owner's tournament menu, when it is open
+  local back = nil        -- the page to go on from once the tournament's has had its turn
   local frame = os.startTimer(FRAME)
 
   local function announce()
     net.send("state", rules.state(data))
+    local message = contest.broadcast(data.contest, now())
+    if message then net.send("contest", message) end
+  end
+
+  --- A touch on the wall. It only means something from the owner, by the name vhcc_touch gave.
+  local function touchWall(x, y, who, at)
+    if not who or who ~= wallet.hostName() then return end
+    if not menu then
+      menu = contestView.openMenu(data.contest, at)
+      return
+    end
+    local changed
+    menu, changed = contestView.touch(menu, ui.hit(menu.buttons or {}, x, y), data.contest, who, at)
+    if changed then
+      journal.saveKeep(data)
+      dirty = false
+      announce()
+    end
+  end
+
+  --- The contest's grace is over: on disk first, so a reboot cannot whisper the result twice.
+  local function closeContest(at)
+    local record = contest.tick(data.contest, at)
+    if not record then return end
+    journal.saveKeep(data)
+    dirty = false
+    announce()
+    for _, line in ipairs(contest.whispers(record, rules.gameName(record.game))) do chat.tell(line.player, line.text) end
   end
 
   if debug then writeDebug(c, data, page, now()) end
@@ -132,19 +174,25 @@ local function floor()
       toucher = a
     elseif event == "monitor_touch" then
       -- The scoreboard is display only, and its touch still has to clear who touched
-      if a == wall then wallet.lockIfOwner(toucher or wallet.livePlayer()) end
+      if a == wall then
+        wallet.lockIfOwner(toucher or wallet.livePlayer())
+        touchWall(b, protocol, toucher, now())
+      end
       toucher = nil
     elseif event == "monitor_resize" or event == "peripheral" or event == "peripheral_detach" then
       c, wall, scoreboard = attach()
       nextBoard = 0
       online = net.open()
       lamps.rescan()
+      chat.scan()
     elseif event == "timer" and a == frame then
       local at = now()
       if at >= nextPage then
-        if nextPage > 0 then page = page % #view.PAGES + 1 end
+        if nextPage > 0 then page, back = contestView.turn(page, back, #view.PAGES, contest.showing(data.contest, at)) end
         nextPage = at + PAGE_MS
       end
+      closeContest(at)
+      if menu and at >= menu.deadline then menu = nil end
       if at >= nextState then
         nextState = at + rules.STATE_MS
         announce()
@@ -159,7 +207,10 @@ local function floor()
         -- The supervisor reboots a game with a silent monitor. Nobody touches this one, so it says it is alive
         os.queueEvent("roger_alive")
       end
-      if c then
+      if c and menu then
+        contestView.drawMenu(c, menu, data.contest, at)
+        c:flush()
+      elseif c then
         local note = not online and "No modem: no tables can be heard" or (wallet.wantsLock() and LOCK_NOTICE) or nil
         view.draw(c, data, page, (at - started) / 1000, at, note)
         c:flush()
@@ -171,7 +222,7 @@ local function floor()
         nextBoard = at + board.REFRESH_MS
         if not showBoard(scoreboard, data, at) then scoreboard = nil end
       end
-      if debug then writeDebug(c, data, page, at) end
+      if debug then writeDebug(c, data, page, at, menu) end
       frame = os.startTimer(FRAME)
     end
   end
@@ -179,7 +230,8 @@ end
 
 --- Run the hub for ever.
 function M.run()
-  parallel.waitForAny(floor, lamps.worker)
+  chat.scan()
+  parallel.waitForAny(floor, lamps.worker, chat.worker)
 end
 
 return M

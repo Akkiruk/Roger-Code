@@ -6,6 +6,8 @@
 --   state     the hub answers with the shared jackpot and leaderboard
 --   claim     a table about to pay the shared pot asks the hub what it may pay, and grant is the answer, so
 --             two tables working from the same broadcast figure cannot both pay the same pot
+--   contest   the hub says what tournament is on, for how long, and who has which chips. No tokens are ever in play, so a
+--             forged one can only fake a leaderboard line. tscore is a table's answer, sent by tournament.lua
 -- Anyone on the network can say anything, and anti-cheat stays light: there is no signing here. Every message is only
 -- checked for being the right shape and a believable size, so nonsense cannot stop a table or lift its limits.
 
@@ -16,6 +18,8 @@ M.HUB_STALE_MS = 30000
 M.CLAIM_WAIT_MS = 1500
 M.MAX_TOKENS = 1e9         -- no one amount on the network can honestly be this big: a thousand of the biggest transfers
 M.MAX_POT = 1e7            -- the hub stops the pool here (casino_hub_rules.lua has the same figure)
+M.MAX_CHIPS = 1e9          -- no stack can honestly be this big (casino_hub_contest.lua has the same figure)
+M.MAX_CONTEST_MS = 86400000  -- far longer than any contest the hub offers
 
 local EXPOSURE_STALE_MS = 30000
 local BEACON_MS = 10000
@@ -28,6 +32,7 @@ local mine = { host = nil, amount = 0 }
 local lastBeacon = 0
 local hub = nil            -- { jackpot, leaders, at }
 local grants = {}          -- claim id -> tokens the hub granted
+local contest = nil        -- the hub's tournament: { id, game, chips, open, ends, board, at }
 
 local function now()
   return os.epoch("utc")
@@ -81,6 +86,25 @@ function M.validGrant(message)
   return isId(message.id) and isAmount(message.amount, M.MAX_POT)
 end
 
+local function isRow(row)
+  return type(row) == "table" and type(row.name) == "string" and row.name ~= "" and #row.name <= MAX_NAME
+    and isAmount(row.chips, M.MAX_CHIPS) and isAmount(row.rounds, M.MAX_CHIPS) and isFinite(row.table)
+    and (row.final == nil or type(row.final) == "boolean")
+end
+
+--- A contest has every part in good order, or none of it is believed.
+function M.validContest(message)
+  local board = message.board
+  if not isId(message.id) or type(message.game) ~= "string" or message.game == "" or #message.game > MAX_NAME then return false end
+  if not isAmount(message.chips, M.MAX_CHIPS) or message.chips < 1 then return false end
+  if not isAmount(message.remaining, M.MAX_CONTEST_MS) or type(message.open) ~= "boolean" then return false end
+  if type(board) ~= "table" or #board > MAX_LEADERS then return false end
+  for key, row in pairs(board) do
+    if type(key) ~= "number" or not isRow(row) then return false end
+  end
+  return true
+end
+
 function M.send(kind, payload)
   if not opened then return end
   payload = payload or {}
@@ -111,6 +135,12 @@ end
 --- The hub's latest state, when it is alive.
 function M.hub()
   if hub and now() - hub.at < M.HUB_STALE_MS then return hub end
+  return nil
+end
+
+--- The hub's tournament, while the hub is alive. Nothing waits on this: a hub that goes quiet only stops new entries.
+function M.contest()
+  if contest and now() - contest.at < M.HUB_STALE_MS then return contest end
   return nil
 end
 
@@ -145,6 +175,9 @@ function M.worker()
         hub = { jackpot = message.jackpot, leaders = message.leaders, at = now() }
       elseif message.kind == "grant" and message.to == os.getComputerID() and M.validGrant(message) then
         grants[message.id] = message.amount
+      elseif message.kind == "contest" and M.validContest(message) then
+        contest = { id = message.id, game = message.game, chips = message.chips, open = message.open,
+          ends = now() + message.remaining, board = message.board, at = now() }
       end
     end
   end
