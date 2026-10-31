@@ -23,6 +23,7 @@ local canvas = require("lib.casino.canvas")
 local journal = require("lib.casino.journal")
 local limits = require("lib.casino.limits")
 local net = require("lib.casino.net")
+local presence = require("lib.casino.presence")
 local rng = require("lib.casino.rng")
 local stats = require("lib.casino.stats")
 local theme = require("lib.casino.theme")
@@ -33,7 +34,9 @@ local C = theme.C
 local M = {}
 
 local FRAME = 0.1
-local IDLE_DECISION_MS = 40000   -- no touch for this long: the round plays its safe default
+local IDLE_DECISION_MS = 60000   -- no touch for this long: the round plays its safe default. Pressing a button is a touch, so a slow decision still pays at once
+local IDLE_HERE_MS = 300000      -- the same, for a player the detector can see at the table
+local GONE_GRACE_MS = 5000       -- the detector has missed them this long: they left, so finish while their touch still lets the money move
 local IDLE_BET_MS = 45000        -- no touch on the bet screen: the player has left
 local IDLE_RESULT_MS = 30000
 local RESUME_WAIT_MS = 90000     -- how long a resumed round waits for its player
@@ -601,7 +604,7 @@ function Table:playRound(round, stream, firstEvents)
   local model = view.new(ctx)
   view.sync(model, round.state)
 
-  local scene = { name = "play", animating = true, queue = firstEvents or {}, deadline = now() + IDLE_DECISION_MS }
+  local scene = { name = "play", animating = true, queue = firstEvents or {}, touched = now() }
   scene.debugState = function() return round.state end
 
   local function startNext(s)
@@ -635,7 +638,7 @@ function Table:playRound(round, stream, firstEvents)
     local events = rules.act(round.state, id, stream)
     round.rng = stream:serial()
     for _, ev in ipairs(events) do s.queue[#s.queue + 1] = ev end
-    s.deadline = now() + IDLE_DECISION_MS
+    s.touched = now()
     if rules.done(round.state) then
       -- The money moves now, before the reveal plays, so nothing that happens during it can change the result
       self:settle(round)
@@ -656,9 +659,14 @@ function Table:playRound(round, stream, firstEvents)
       s.finished = true
       return
     end
-    local left = s.deadline - now()
+    local time = now()
+    local away = presence.awayMs(ctx.seat)
+    local left = s.touched + (away == 0 and IDLE_HERE_MS or IDLE_DECISION_MS) - time
+    if away and away > 0 then left = math.min(left, GONE_GRACE_MS - away) end
     if left <= 0 then
-      apply(s, rules.auto(round.state))
+      -- All the way to the end at once: nobody is here, so the table should not sit through more decisions or play them out
+      repeat apply(s, rules.auto(round.state)) until rules.done(round.state)
+      skipAll(s)
     elseif left < WARN_MS then
       s.warn = math.ceil(left / 1000)
     else
@@ -687,7 +695,7 @@ function Table:playRound(round, stream, firstEvents)
         for _, region in ipairs(view.regions(model, round.state)) do s.buttons[#s.buttons + 1] = region end
       end
       if s.warn then
-        c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H - 1, "Auto-play in " .. s.warn .. "s", C.orange)
+        c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H - 1, "Auto-play in " .. s.warn .. "s, tap to wait", C.orange)
       end
     else
       c:rect(1, c.h - ui.ACTIONS_H + 1, c.w, ui.ACTIONS_H - 1, C.feltDark)
@@ -705,6 +713,9 @@ function Table:playRound(round, stream, firstEvents)
     if hit then
       audio.play("tap")
       apply(s, hit.id)
+    else
+      -- A tap anywhere means the player is still thinking
+      s.touched = now()
     end
   end
 
@@ -929,7 +940,7 @@ function M.run(game)
     end
   end
 
-  parallel.waitForAny(main, net.worker)
+  parallel.waitForAny(main, net.worker, function() presence.worker(function() return self.ctx.seat end) end)
 end
 
 return M
