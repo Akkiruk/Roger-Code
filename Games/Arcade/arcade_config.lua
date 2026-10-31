@@ -23,7 +23,6 @@ M.PAUSE_LIMIT = 60         -- seconds a pause may last before play carries on, s
 M.MAX_PAUSES = 3           -- pauses in one match that stop the clock, for the same reason
 M.WALL_GONE = 60           -- seconds a two-wall match waits for a lost wall before it is called off, with no result
 M.LOBBY_IDLE = 120         -- seconds of no touch in the lobby before returning to the idle screen
-M.RESULT_IDLE = 60
 M.GAME_IDLE = 600          -- no moves for this long ends the match the same way as walking away
 M.NUDGE_AFTER = 25         -- seconds before the chat box whispers a reminder to the mover
 M.MAX_TIMEOUTS = 3         -- missed move timers before a forfeit

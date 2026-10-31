@@ -35,7 +35,8 @@ local function drawCode(L, x, y, code, shown)
   end
 end
 
-local function drawLog(L, x, log)
+local function drawLog(L, x, log, title, color)
+  ui.small(title, x + 4, L.y0 - 1, color, C.bg, "left", L.panelW - 4)
   for n = 1, ROUNDS do
     local y = L.y0 + (n - 1) * L.rowH
     local g = log[n]
@@ -43,8 +44,8 @@ local function drawLog(L, x, log)
     drawCode(L, x + 4, y, g and g.code, true)
     if g then
       local px = x + 4 + PEGS * (L.pegW + 1) + 1
-      for i = 1, g.black do ui.fill(px + (i - 1) * 3, y + 1, 2, 1, C.text) end
-      for i = 1, g.white do ui.fill(px + (g.black + i - 1) * 3, y + 1, 2, 1, C.line) end
+      local cracked = g.black == PEGS
+      ui.small(cracked and "CRACKED!" or string.format("%d right %d close", g.black, g.white), px, y + 1, cracked and C.ok or C.text, C.bg, "left", L.panelW - (px - x))
     end
   end
 end
@@ -63,17 +64,24 @@ end
 
 function view.drawBoard(L, match, viewer)
   local s = match.state
-  local me = viewer or s.turn
+  local over = s.winner ~= 0 or match.replay
+  local me = viewer or (over and 1 or s.turn)
+  local function who(seat)
+    local slot = seat == 1 and match.red or match.blue
+    if seat == viewer then return "YOUR GUESSES" end
+    return ((slot and slot.name) or (seat == 1 and "Red" or "Blue")) .. "'s guesses"
+  end
   ui.fill(L.x0, L.y0, L.bw, L.bh, C.bg)
-  drawLog(L, L.leftX, s.log[me])
-  drawLog(L, L.rightX, s.log[3 - me])
-  if s.winner ~= 0 or match.replay then
+  drawLog(L, L.leftX, s.log[me], who(me), seatColor(me))
+  drawLog(L, L.rightX, s.log[3 - me], who(3 - me), seatColor(3 - me))
+  if over then
     if not match.red then return end
     for seat = 1, 2 do
-      local code = s.secrets[seat]
-      local slot = seat == 1 and match.red or match.blue
-      local x = L.x0 + (seat - 1) * (L.panelW + 2) + 4
-      ui.small(slot.name .. "'s code", x, L.pickY, seatColor(seat), C.bg, "left", L.panelW - 6)
+      -- each code sits under the guesses aimed at it, so the two can be checked against each other
+      local code = s.secrets[3 - seat]
+      local slot = seat == 1 and match.blue or match.red
+      local x = (seat == me and L.leftX or L.rightX) + 4
+      ui.small("Target: " .. slot.name .. "'s code", x, L.pickY, seatColor(3 - seat), C.bg, "left", L.panelW - 6)
       drawCode(L, x, L.pickY + 2, code, code ~= nil)
     end
     return
@@ -139,7 +147,8 @@ function view.finalLine(match)
   if s.winner == 3 then return "DRAW", C.hi end
   local w = s.winner == 1 and match.red or match.blue
   if s.forfeit then return w.name .. " WINS by forfeit", seatColor(s.winner) end
-  return string.format("%s cracked it in %d", w.name, #s.log[s.winner]), seatColor(s.winner)
+  local l = s.winner == 1 and match.blue or match.red
+  return string.format("%s cracked %s's code in %d", w.name, l.name, #s.log[s.winner]), seatColor(s.winner)
 end
 
 function view.howLine(r, duration)
@@ -190,7 +199,7 @@ local M = {
     "",
     "Tap colours to build a code, CLEAR to start again, and GO to play it. Then take turns guessing the other player's code, with up to ten guesses each.",
     "",
-    "After each guess, a white mark means a colour in the right place, and a grey mark means a right colour in the wrong place.",
+    "After each guess you are told how many are right, meaning the right colour in the right place, and how many are close, meaning a right colour in the wrong place.",
     "",
     "Crack the code to win. The second player always gets their guess, so a code cracked by both in the same round is a draw. So is ten rounds with no winner.",
   },

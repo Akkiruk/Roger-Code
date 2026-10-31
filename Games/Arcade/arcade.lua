@@ -966,13 +966,7 @@ local function onTick()
     hw.celebrate(false)
   end
 
-  if S.view == "final" then
-    if t > (S.finalUntil or 0) then
-      S.view = "result"
-      S.lastTouch = t
-      S.dirty = true
-    end
-  elseif S.view == "idle" then
+  if S.view == "idle" then
     attractStep(t)
   elseif S.view == "menu" then
     if t - S.lastTouch > config.LOBBY_IDLE * 1000 then
@@ -983,10 +977,6 @@ local function onTick()
       S.view = "idle"; S.lobby = nil; S.dirty = true
     end
     if floor(t / 2000) ~= S.nearPhase then S.nearPhase = floor(t / 2000); S.dirty = true end
-  elseif S.view == "result" then
-    if t - S.lastTouch > config.RESULT_IDLE * 1000 then
-      S.result = nil; hw.allOff(); S.view = "idle"; S.dirty = true
-    end
   elseif S.view == "replay" then
     S.lastTouch = t
     if S.replay and t >= S.replayAt then

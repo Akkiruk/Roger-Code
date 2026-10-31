@@ -5,13 +5,13 @@
 --   wget https://raw.githubusercontent.com/Akkiruk/Roger-Code/main/System/installer.lua
 --
 -- Usage:
---   installer              -- Interactive menu
+--   installer              -- The desktop: point, click, scroll
 --   installer <name>       -- Install/update a specific program
 --   installer update       -- Update currently installed program
 --   installer self-update  -- Update just the installer
 --   installer wipe         -- Delete everything except the installer script
 
-local INSTALLER_VERSION = "1.1.9"
+local INSTALLER_VERSION = "2.0.0"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
 local SOURCE_BRANCH = "main"
@@ -1178,7 +1178,9 @@ local function installFromSpec(spec, forceConfig, installedBefore)
     if entry.preserve_existing then
       label = label .. " (config)"
     end
-    cwrite(colors.white, "  " .. progressBar(index, total) .. "  " .. label .. " ")
+    local bar = "  " .. progressBar(index, total, 12) .. "  "
+    local room = math.max(1, W - #bar - 1)
+    cwrite(colors.white, bar .. label:sub(math.max(1, #label - room + 1)) .. " ")
 
     if entry.preserve_existing and not forceConfig and fs.exists(entry.install_path) then
       success = success + 1
@@ -1425,101 +1427,6 @@ local function buildProgramGroups(index)
   return folders
 end
 
-local function selectFromList(title, items, renderEntry)
-  local perPage = H - 7
-  if perPage < 3 then
-    perPage = 3
-  end
-
-  local totalPages = math.max(1, math.ceil(#items / perPage))
-  local page = 1
-
-  while true do
-    header(title)
-
-    local startIdx = (page - 1) * perPage + 1
-    local endIdx = math.min(page * perPage, #items)
-
-    for i = startIdx, endIdx do
-      renderEntry(i, items[i])
-    end
-
-    print("")
-
-    if totalPages > 1 then
-      local nav = "Page " .. page .. "/" .. totalPages
-      if page < totalPages then
-        nav = nav .. "  [n]ext"
-      end
-      if page > 1 then
-        nav = nav .. "  [p]rev"
-      end
-      cprint(colors.lightGray, "  " .. nav)
-    end
-    cprint(colors.gray, "  0. Back")
-    cwrite(colors.white, "Select: ")
-
-    local input = read()
-    if not input then
-      return nil
-    end
-    input = input:lower():gsub("^%s+", ""):gsub("%s+$", "")
-
-    if input == "n" and page < totalPages then
-      page = page + 1
-    elseif input == "p" and page > 1 then
-      page = page - 1
-    else
-      local choice = tonumber(input)
-      if not choice or choice == 0 then
-        return nil
-      end
-      if choice >= 1 and choice <= #items then
-        return items[choice]
-      end
-    end
-  end
-end
-
-local function selectProgramFromFolder(folder)
-  return selectFromList(folder.name, folder.entries, function(i, p)
-    local prefix = string.format("  %d. ", i)
-    local nameVer = p.name .. " v" .. tostring(p.ver or "?")
-    local remaining = W - #prefix - #nameVer - 2
-    local suffix = ""
-    if remaining > 5 and p.desc ~= "" then
-      if #p.desc > remaining then
-        suffix = " " .. p.desc:sub(1, remaining - 2) .. ".."
-      else
-        suffix = " " .. p.desc
-      end
-    end
-    cwrite(colors.yellow, prefix)
-    cwrite(colors.white, nameVer)
-    cprint(colors.gray, suffix)
-  end)
-end
-
-local function selectProgram(index)
-  while true do
-    local folders = buildProgramGroups(index)
-    local folder = selectFromList("Select Folder", folders, function(i, entry)
-      cwrite(colors.yellow, string.format("  %d. ", i))
-      cwrite(colors.white, entry.name)
-      cprint(colors.gray, " (" .. tostring(entry.count) .. ")")
-    end)
-
-    if not folder then
-      return nil
-    end
-
-    local program = selectProgramFromFolder(folder)
-    if program then
-      return program.key
-    end
-  end
-end
-
 local function installByKey(index, programKey, forceConfig)
   local programEntry = index.programs and index.programs[programKey] or nil
   if not programEntry then
@@ -1542,6 +1449,583 @@ local function installByKey(index, programKey, forceConfig)
   end
 
   return installFromSpec(spec, forceConfig, loadInstalled())
+end
+
+---------------------------------------------------------------------------
+-- The desktop: a windowed installer driven by the mouse, or by the keyboard on a computer that has none.
+-- Everything is drawn on the terminal. The install code itself still just prints: it runs inside a window.
+---------------------------------------------------------------------------
+local function isColour()
+  return term.isColour ~= nil and term.isColour()
+end
+
+--- A colour, or its stand-in on a computer with no colour screen.
+local function shade(colour, mono)
+  if isColour() then
+    return colour
+  end
+  return mono
+end
+
+local function theme()
+  return {
+    desk = shade(colors.cyan, colors.gray),
+    bar = shade(colors.blue, colors.black),
+    barText = colors.white,
+    pane = colors.white,
+    paneText = colors.black,
+    mute = colors.gray,
+    side = colors.lightGray,
+    picked = shade(colors.purple, colors.black),
+    pickedText = colors.white,
+    good = shade(colors.green, colors.gray),
+    warn = shade(colors.orange, colors.gray),
+    bad = shade(colors.red, colors.black),
+    task = colors.gray,
+  }
+end
+
+--- Text cut or padded to exactly width.
+local function fit(text, width)
+  text = tostring(text or "")
+  if width <= 0 then
+    return ""
+  end
+  if #text > width then
+    if width <= 2 then
+      return text:sub(1, width)
+    end
+    return text:sub(1, width - 2) .. ".."
+  end
+  return text .. string.rep(" ", width - #text)
+end
+
+local function put(x, y, text, fg, bg)
+  term.setCursorPos(x, y)
+  term.setTextColor(fg)
+  term.setBackgroundColor(bg)
+  term.write(text)
+end
+
+local function fillBox(x, y, w, h, bg)
+  local row = string.rep(" ", math.max(0, w))
+  term.setBackgroundColor(bg)
+  for j = y, y + h - 1 do
+    term.setCursorPos(x, j)
+    term.write(row)
+  end
+end
+
+--- Split text into lines of at most width, at spaces.
+local function wrapText(text, width)
+  local lines, line = {}, ""
+  for word in tostring(text or ""):gmatch("%S+") do
+    if line ~= "" and #line + 1 + #word > width then
+      lines[#lines + 1] = line
+      line = word
+    else
+      line = line == "" and word or (line .. " " .. word)
+    end
+  end
+  if line ~= "" then
+    lines[#lines + 1] = line
+  end
+  return lines
+end
+
+--- Is the installed copy of a program behind the catalog?
+local function hasUpdate(installed, prog)
+  return (installed.source_commit or "") ~= (prog.commit or "")
+    or (installed.package_hash or installed.content_hash or "") ~= (prog.package_hash or "")
+end
+
+--- A click only counts on what is on top: regions are hit newest first.
+local function regionAt(regions, x, y)
+  for i = #regions, 1, -1 do
+    local r = regions[i]
+    if x >= r.x and x < r.x + r.w and y >= r.y and y < r.y + r.h then
+      return r
+    end
+  end
+  return nil
+end
+
+--- A small window with buttons. buttons is a list of { id, label }; Enter picks the first, Esc the last.
+local function dialog(title, message, buttons, danger)
+  local T = theme()
+  local w = math.min(W - 2, 38)
+  local lines = wrapText(message, w - 4)
+  local h = math.min(H - 2, #lines + 5)
+  local x, y = math.floor((W - w) / 2) + 1, math.floor((H - h) / 2) + 1
+  local regions = {}
+
+  fillBox(x, y, w, h, T.pane)
+  put(x, y, fit(" " .. title, w), T.barText, danger and T.bad or T.bar)
+  for i = 1, h - 5 + #lines do
+    if lines[i] and y + 1 + i < y + h - 2 + 1 then
+      put(x + 2, y + 1 + i, fit(lines[i], w - 4), T.paneText, T.pane)
+    end
+  end
+
+  local bx = x + w - 2
+  for i = #buttons, 1, -1 do
+    local b = buttons[i]
+    local label = " " .. b.label .. " "
+    bx = bx - #label
+    local colour = i == 1 and (danger and T.bad or T.good) or T.side
+    put(bx, y + h - 2, label, i == 1 and colors.white or colors.black, colour)
+    regions[#regions + 1] = { x = bx, y = y + h - 2, w = #label, h = 1, id = b.id }
+    bx = bx - 1
+  end
+
+  while true do
+    local event, a, b, c = os.pullEvent()
+    if event == "mouse_click" then
+      local hit = regionAt(regions, b, c)
+      if hit then
+        return hit.id
+      end
+    elseif event == "key" and not b then
+      if a == keys.enter then
+        return buttons[1].id
+      elseif a == keys.backspace or a == keys.tab or a == keys.q then
+        return buttons[#buttons].id
+      end
+    end
+  end
+end
+
+--- Run something that prints, inside a window, and wait for the player to close it.
+-- fn gets to print and read as usual. Returns what it returned.
+local function inWindow(title, fn, buttons)
+  local T = theme()
+  local x, y, w, h = 2, 2, W - 2, H - 2
+  if W < 40 then
+    x, y, w, h = 1, 1, W, H
+  end
+  fillBox(x, y, w, h, T.pane)
+  put(x, y, fit(" " .. title, w), T.barText, T.bar)
+  local screen = window.create(term.current(), x, y + 1, w, h - 2, true)
+  screen.setBackgroundColor(colors.black)
+  screen.setTextColor(colors.white)
+  screen.clear()
+
+  local outerW, outerH = W, H
+  local previous = term.redirect(screen)
+  W, H = term.getSize()
+  term.setCursorPos(1, 1)
+  local ok, result = pcall(fn)
+  term.redirect(previous)
+  W, H = outerW, outerH
+  if not ok then
+    logError(tostring(result))
+    if tostring(result):find("Terminated", 1, true) then
+      error(result, 0)
+    end
+  end
+
+  fillBox(x, y + h - 1, w, 1, T.pane)
+  local regions = {}
+  local list = buttons(ok and result)
+  local bx = x + w - 1
+  for i = #list, 1, -1 do
+    local b = list[i]
+    local label = " " .. b.label .. " "
+    bx = bx - #label
+    put(bx, y + h - 1, label, i == 1 and colors.white or colors.black, i == 1 and T.good or T.side)
+    regions[#regions + 1] = { x = bx, y = y + h - 1, w = #label, h = 1, id = b.id }
+    bx = bx - 1
+  end
+  while true do
+    local event, a, b, c = os.pullEvent()
+    if event == "mouse_click" then
+      local hit = regionAt(regions, b, c)
+      if hit then
+        return ok and result, hit.id
+      end
+    elseif event == "key" and not b and (a == keys.enter or a == keys.q) then
+      return ok and result, list[1].id
+    end
+  end
+end
+
+--- The list of programs for a folder, with what each one is on this computer.
+local function folderEntries(folder, index, installed)
+  local key = installed and (installed.program or installed.game) or nil
+  local out = {}
+  for _, entry in ipairs(folder.entries) do
+    local prog = index.programs and index.programs[entry.key] or {}
+    local state = ""
+    if entry.key == key then
+      state = hasUpdate(installed, prog) and "update" or "installed"
+    end
+    out[#out + 1] = { key = entry.key, name = entry.name, ver = entry.ver, desc = entry.desc, state = state, category = prog.category }
+  end
+  return out
+end
+
+local function allFolder(index)
+  local entries = {}
+  for _, folder in ipairs(buildProgramGroups(index)) do
+    for _, entry in ipairs(folder.entries) do
+      entries[#entries + 1] = entry
+    end
+  end
+  table.sort(entries, function(a, b)
+    return a.name < b.name
+  end)
+  return { key = "all", name = "All", count = #entries, entries = entries }
+end
+
+local function loadInstalledRecord()
+  local installed = loadInstalled()
+  if not installed and fs.exists(".casino_installed") then
+    local raw = readFile(".casino_installed", false)
+    if raw then
+      local parseOk, info = pcall(function()
+        return textutils.unserialise(raw)
+      end)
+      if parseOk and type(info) == "table" then
+        installed = info
+      end
+    end
+  end
+  return installed
+end
+
+--- Throw away anything typed before the desktop was up: the Enter that started the installer must not press a button.
+local function dropWaitingInput()
+  os.queueEvent("installer_ready")
+  os.pullEvent("installer_ready")
+end
+
+local function runDesktop(index, notice)
+  dropWaitingInput()
+  local T = theme()
+  local s = { folder = 1, sel = 1, top = 1, menu = false, regions = {}, lastClick = 0, lastRow = nil, notice = notice }
+  local installed, folders, entries
+
+  local function reload()
+    installed = loadInstalledRecord()
+    folders = buildProgramGroups(index)
+    table.insert(folders, 1, allFolder(index))
+    s.folder = math.min(s.folder, #folders)
+    entries = folderEntries(folders[s.folder], index, installed)
+    s.sel = math.max(1, math.min(s.sel, #entries))
+  end
+
+  local function selected()
+    return entries[s.sel]
+  end
+
+  local function pickFolder(i)
+    s.folder, s.sel, s.top = i, 1, 1
+    entries = folderEntries(folders[i], index, installed)
+  end
+
+  --- Layout for this terminal. A narrow screen, such as a pocket computer, swaps the sidebar for a row of arrows.
+  local function geometry()
+    local narrow = W < 40
+    local sideW = narrow and 0 or 14
+    local detailH = H >= 16 and 6 or 4
+    local listY = narrow and 3 or 2
+    local listH = H - detailH - listY
+    return { narrow = narrow, sideW = sideW, detailH = detailH, listX = sideW + 1, listY = listY, listW = W - sideW - 1, listH = math.max(1, listH) }
+  end
+
+  local function keepInView(g)
+    if s.sel < s.top then
+      s.top = s.sel
+    elseif s.sel >= s.top + g.listH then
+      s.top = s.sel - g.listH + 1
+    end
+    s.top = math.max(1, math.min(s.top, math.max(1, #entries - g.listH + 1)))
+  end
+
+  local function button(x, y, label, bg, fg, id)
+    local text = " " .. label .. " "
+    put(x, y, text, fg, bg)
+    s.regions[#s.regions + 1] = { x = x, y = y, w = #text, h = 1, id = id }
+    return x + #text + 1
+  end
+
+  local function drawSidebar(g)
+    if g.narrow then
+      local folder = folders[s.folder]
+      put(1, 2, fit("", W), T.paneText, T.side)
+      button(1, 2, "<", T.side, T.paneText, "prevFolder")
+      button(W - 2, 2, ">", T.side, T.paneText, "nextFolder")
+      put(5, 2, fit(folder.name .. " (" .. folder.count .. ")", W - 8), T.paneText, T.side)
+      return
+    end
+    fillBox(1, 2, g.sideW, H - 2, T.side)
+    for i, folder in ipairs(folders) do
+      local y = 2 + i
+      if y >= H then
+        break
+      end
+      local active = i == s.folder
+      local text = fit(" " .. folder.name, g.sideW - 4) .. string.format("%3d ", folder.count)
+      put(1, y, text, active and T.pickedText or T.paneText, active and T.picked or T.side)
+      s.regions[#s.regions + 1] = { x = 1, y = y, w = g.sideW, h = 1, id = "folder", value = i }
+    end
+  end
+
+  local function drawList(g)
+    fillBox(g.listX, g.listY, g.listW + 1, g.listH, T.pane)
+    keepInView(g)
+    for row = 0, g.listH - 1 do
+      local i = s.top + row
+      local entry = entries[i]
+      local y = g.listY + row
+      if entry then
+        local picked = i == s.sel
+        local bg = picked and T.picked or T.pane
+        local mark = entry.state == "update" and "^" or (entry.state == "installed" and "*" or " ")
+        local ver = "v" .. tostring(entry.ver or "?")
+        local nameW = g.listW - #ver - 4
+        put(g.listX, y, " " .. mark .. " " .. fit(entry.name, nameW), picked and T.pickedText or T.paneText, bg)
+        put(g.listX + 3 + nameW, y, " " .. ver, picked and T.pickedText or T.mute, bg)
+        s.regions[#s.regions + 1] = { x = g.listX, y = y, w = g.listW, h = 1, id = "row", value = i }
+      end
+    end
+    -- scrollbar: the part of the list on show, and a click above or below it pages
+    local barX = W
+    local total = #entries
+    if total > g.listH then
+      fillBox(barX, g.listY, 1, g.listH, T.side)
+      local thumbH = math.max(1, math.floor(g.listH * g.listH / total))
+      local room = g.listH - thumbH
+      local thumbY = g.listY + math.floor(room * (s.top - 1) / math.max(1, total - g.listH) + 0.5)
+      fillBox(barX, thumbY, 1, thumbH, T.bar)
+      s.regions[#s.regions + 1] = { x = barX, y = g.listY, w = 1, h = thumbY - g.listY, id = "pageUp" }
+      s.regions[#s.regions + 1] = { x = barX, y = thumbY + thumbH, w = 1, h = g.listY + g.listH - thumbY - thumbH, id = "pageDown" }
+    end
+  end
+
+  local function drawDetails(g)
+    local y = H - g.detailH
+    local x = g.listX
+    local w = W - x + 1
+    fillBox(x, y, w, g.detailH, shade(colors.lightBlue, colors.lightGray))
+    local entry = selected()
+    local bg = shade(colors.lightBlue, colors.lightGray)
+    if not entry then
+      put(x + 1, y + 1, fit("Nothing here yet", w - 2), T.paneText, bg)
+      return
+    end
+    put(x + 1, y, fit(entry.name .. " v" .. tostring(entry.ver or "?"), w - 2), colors.black, bg)
+    local status = entry.state == "update" and "Update available" or (entry.state == "installed" and "Installed here" or "Not installed")
+    if g.detailH >= 6 then
+      put(x + 1, y + 1, fit(status, w - 2), T.mute, bg)
+      local lines = wrapText(entry.desc, w - 2)
+      if lines[1] then put(x + 1, y + 2, fit(lines[1], w - 2), colors.black, bg) end
+      if lines[2] then put(x + 1, y + 3, fit(lines[2], w - 2), colors.black, bg) end
+    end
+    local by = H - 2
+    local bx = x + 1
+    if entry.state == "update" then
+      bx = button(bx, by, "Update", T.good, colors.white, "update")
+      button(bx, by, "Reset", T.side, colors.black, "reset")
+    elseif entry.state == "installed" then
+      bx = button(bx, by, "Reinstall", T.good, colors.white, "update")
+      button(bx, by, "Reset", T.side, colors.black, "reset")
+    else
+      button(bx, by, "Install", T.good, colors.white, "install")
+    end
+  end
+
+  local function drawTaskbar()
+    put(1, H, fit("", W), colors.white, T.task)
+    button(1, H, "Menu", s.menu and T.picked or T.task, colors.white, "menu")
+    local text = s.notice
+    if not text then
+      if installed then
+        local key = installed.program or installed.game
+        local prog = index.programs and index.programs[key] or nil
+        text = tostring(prog and prog.name or installed.name or key) .. " on this computer"
+      else
+        text = "Nothing installed yet"
+      end
+    end
+    put(8, H, fit(text, W - 8), colors.lightGray, T.task)
+  end
+
+  local function drawMenu()
+    if not s.menu then
+      return
+    end
+    local items = { { "refresh", "Refresh list" }, { "wipe", "Wipe computer" }, { "exit", "Exit" } }
+    local w = 16
+    local y = H - #items - 1
+    fillBox(1, y - 1, w, #items + 2, T.task)
+    for i, item in ipairs(items) do
+      local row = y + i - 1
+      put(1, row, fit("  " .. item[2], w), colors.white, T.task)
+      s.regions[#s.regions + 1] = { x = 1, y = row, w = w, h = 1, id = item[1], inMenu = true }
+    end
+  end
+
+  local function draw()
+    W, H = term.getSize()
+    s.regions = {}
+    local g = geometry()
+    term.setBackgroundColor(T.desk)
+    term.clear()
+    put(1, 1, fit(" Roger Installer", W), T.barText, T.bar)
+    put(W - 12, 1, "v" .. INSTALLER_VERSION, colors.lightGray, T.bar)
+    put(W - 2, 1, " X ", colors.white, T.bad)
+    s.regions[#s.regions + 1] = { x = W - 2, y = 1, w = 3, h = 1, id = "exit" }
+    drawSidebar(g)
+    drawList(g)
+    drawDetails(g)
+    drawTaskbar()
+    drawMenu()
+  end
+
+  local function restartChoice(ok)
+    if ok then
+      return { { id = "restart", label = "Restart now" }, { id = "close", label = "Later" } }
+    end
+    return { { id = "close", label = "Close" } }
+  end
+
+  local function install(entry, forceConfig)
+    local _, choice = inWindow("Installing " .. entry.name, function()
+      return installByKey(index, entry.key, forceConfig)
+    end, restartChoice)
+    if choice == "restart" then
+      term.setBackgroundColor(colors.black)
+      term.clear()
+      os.reboot()
+    end
+    reload()
+  end
+
+  local function act(id, value)
+    local entry = selected()
+    if id == "folder" then
+      pickFolder(value)
+    elseif id == "prevFolder" then
+      pickFolder((s.folder - 2) % #folders + 1)
+    elseif id == "nextFolder" then
+      pickFolder(s.folder % #folders + 1)
+    elseif id == "pageUp" then
+      s.sel = math.max(1, s.sel - geometry().listH)
+    elseif id == "pageDown" then
+      s.sel = math.min(#entries, s.sel + geometry().listH)
+    elseif id == "update" and entry then
+      install(entry, false)
+    elseif id == "reset" and entry then
+      local yes = dialog("Reset " .. entry.name, "Reinstall and put its settings back to their defaults? Saved records are kept.", {
+        { id = "yes", label = "Reset" }, { id = "no", label = "Cancel" },
+      }, true)
+      if yes == "yes" then
+        install(entry, true)
+      end
+    elseif id == "install" and entry then
+      local question = "Install " .. entry.name .. " on this computer?"
+      if installed then
+        local name = installed.name or installed.program or installed.game
+        question = "Replace " .. tostring(name) .. " with " .. entry.name .. "? Saved records are kept."
+      end
+      if dialog("Install", question, { { id = "yes", label = "Install" }, { id = "no", label = "Cancel" } }) == "yes" then
+        install(entry, true)
+      end
+    elseif id == "menu" then
+      s.menu = not s.menu
+      return true
+    elseif id == "refresh" then
+      local fresh, err = fetchLatestIndex()
+      if fresh then
+        index = fresh
+        s.notice = "List refreshed"
+        reload()
+      else
+        s.notice = "Could not refresh"
+        logError("Refresh failed: " .. tostring(err))
+      end
+    elseif id == "wipe" then
+      inWindow("Wipe Computer", function()
+        return runFullWipe(true)
+      end, function()
+        return { { id = "close", label = "Close" } }
+      end)
+      reload()
+    elseif id == "exit" then
+      return "exit"
+    end
+    return nil
+  end
+
+  reload()
+  while true do
+    draw()
+    local event, a, b, c = os.pullEvent()
+    local result
+    if event == "mouse_click" then
+      local hit = regionAt(s.regions, b, c)
+      local wasOpen = s.menu
+      if wasOpen and not (hit and (hit.inMenu or hit.id == "menu")) then
+        s.menu = false -- a click outside an open menu closes it and does nothing else
+      elseif hit and hit.id == "row" then
+        s.menu = false
+        local now = os.epoch("utc")
+        local double = s.lastRow == hit.value and now - s.lastClick < 500
+        s.sel, s.lastRow, s.lastClick = hit.value, hit.value, now
+        if double then
+          -- a double click does what the main button does
+          local entry = selected()
+          result = act(entry.state == "" and "install" or "update")
+          s.lastRow = nil
+        end
+      elseif hit then
+        if hit.id ~= "menu" then s.menu = false end
+        result = act(hit.id, hit.value)
+      end
+      s.notice = (hit and (hit.id == "refresh")) and s.notice or nil
+    elseif event == "mouse_scroll" then
+      s.top = s.top + a
+      s.sel = math.max(1, math.min(#entries, s.sel + a))
+    elseif event == "key" and (not b or a == keys.up or a == keys.down) then -- holding a key only ever scrolls
+      if a == keys.up then
+        s.sel = math.max(1, s.sel - 1)
+      elseif a == keys.down then
+        s.sel = math.min(#entries, s.sel + 1)
+      elseif a == keys.left then
+        result = act("prevFolder")
+      elseif a == keys.right then
+        result = act("nextFolder")
+      elseif a == keys.pageUp then
+        result = act("pageUp")
+      elseif a == keys.pageDown then
+        result = act("pageDown")
+      elseif a == keys.enter then
+        local entry = selected()
+        if entry then
+          result = act(entry.state == "" and "install" or "update")
+        end
+      elseif a == keys.m then
+        s.menu = not s.menu
+      elseif a == keys.r then
+        result = act("reset")
+      elseif a == keys.w then
+        result = act("wipe")
+      elseif a == keys.q then
+        result = "exit"
+      end
+    end
+    if result == "exit" then
+      return
+    end
+  end
+end
+
+local function leaveDesktop()
+  term.setBackgroundColor(colors.black)
+  term.setTextColor(colors.white)
+  term.clear()
+  term.setCursorPos(1, 1)
 end
 
 ---------------------------------------------------------------------------
@@ -1603,92 +2087,17 @@ local function main()
     return
   end
 
-  header("Program Installer v" .. INSTALLER_VERSION)
-  cprint(colors.lime, "Catalog loaded from " .. tostring(index._catalog_source or "deploy index") .. ". " .. INSTALLER_VERSION)
-
-  local installed = loadInstalled()
-  if not installed and fs.exists(".casino_installed") then
-    local raw = readFile(".casino_installed", false)
-    if raw then
-      local parseOk, info = pcall(function()
-        return textutils.unserialise(raw)
-      end)
-      if parseOk and type(info) == "table" then
-        installed = info
-      end
-    end
-  end
-
-  if installed then
-    local key = installed.program or installed.game
-    local prog = index.programs and index.programs[key] or nil
-    local progName = prog and prog.name or key
-    local instVer = installed.version or "?"
-    print("")
-
-    if prog and ((installed.source_commit or "") ~= (prog.commit or "")
-        or (installed.package_hash or installed.content_hash or "") ~= (prog.package_hash or "")) then
-      cprint(colors.yellow, progName .. " v" .. instVer .. " installed")
-      cprint(colors.lime, "  Update available: v" .. tostring(prog.version or "?"))
-    elseif prog then
-      cprint(colors.lime, progName .. " v" .. instVer .. " - up to date")
-    else
-      cprint(colors.gray, "Installed: " .. tostring(key) .. " v" .. tostring(instVer))
-    end
-
-    print("")
-    print("  1. Update " .. progName)
-    print("  2. Reinstall " .. progName .. " (keep config)")
-    print("  3. Reinstall " .. progName .. " (reset config)")
-    print("  4. Install different program")
-    print("  5. Wipe computer (keep installer only)")
-    print("  6. Exit")
-    print("")
-    cwrite(colors.white, "Select: ")
-    local choice = tonumber(read())
-
-    if choice == 1 or choice == 2 then
-      installByKey(index, key, false)
-      return
-    elseif choice == 3 then
-      installByKey(index, key, true)
-      return
-    elseif choice == 4 then
-      -- fall through
-    elseif choice == 5 then
-      runFullWipe(true)
-      return
-    else
-      return
-    end
-  end
-
-  print("")
-  print("  1. Install a program")
-  print("  2. Wipe computer (keep installer only)")
-  print("  3. Exit")
-  print("")
-  cwrite(colors.white, "Select: ")
-  local choice = tonumber(read())
-
-  if choice == 2 then
-    runFullWipe(true)
-    return
-  end
-
-  if choice ~= 1 then
-    return
-  end
-
-  local programKey = selectProgram(index)
-  if programKey then
-    installByKey(index, programKey, true)
-  end
+  local notice = updatedTo and ("Installer updated to v" .. tostring(updatedTo)) or nil
+  runDesktop(index, notice)
+  leaveDesktop()
 end
 
 local ok, err = pcall(main)
 if not ok then
   logError("CRASH: " .. tostring(err))
+  term.setBackgroundColor(colors.black)
+  term.clear()
+  term.setCursorPos(1, 1)
   term.setTextColor(colors.red)
   print("\nInstaller crashed: " .. tostring(err))
   print("See " .. LOG_FILE)

@@ -15,7 +15,6 @@ local ui = require("arcade_ui")
 local M = {}
 
 local AI_THINK_MS = 700       -- minimum "thinking" time so a computer move does not feel instant
-local FINAL_HOLD_MS = 3500    -- how long the finished board stays up before the results page
 
 local app, S
 
@@ -262,8 +261,7 @@ local function finish(g, reason)
   g.reason = reason
   journal.save(entryOf(g, "finished"))
   local summary, before, after = settle(g, reason)
-  S.finalMatch = g
-  S.finalUntil = nowMs() + FINAL_HOLD_MS
+  S.finalMatch = g -- it stays up until someone taps, so the players can go over how it ended
   S.view = "final"
   S.toast = nil
   S.lastTouch = nowMs()
