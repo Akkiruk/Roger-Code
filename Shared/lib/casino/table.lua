@@ -13,6 +13,10 @@
 --   risk(state) -> every token staked so far, doubles, splits and raises included. At the end of a round this is the amount
 --   really wagered, so stats and the hub's measured return use it: 0 means no bet stood;
 --   finish(state, keep); maxWin(wager) -> biggest net win, in tokens.
+--   hint(state, offered) (optional) -> { ids, text }: the advice for this decision, which gives the play scene a HINT button.
+--   ids name the action buttons or view regions to light, offered is the set of actions the table has enabled right now.
+--   It must be quick, change nothing, and read only what the player can see: no hole card, no shoe. It is not an action, so it
+--   never reaches rules.act or the journal.
 -- View module: new(ctx) -> model; sync(model, state); event(model, ev) -> seconds, sound; commit(model, ev);
 --   draw(c, model, state, anim) where anim is { ev, t } while an event plays.
 --   view.attract(c, t) (optional): the idle screen's art, used only if a game has no demo. y from 52 is free.
@@ -25,7 +29,8 @@
 --   over, means that seed gives away every card still to come. So rules.new sets keep.shuffled when it starts a new shoe,
 --   and the engine keeps that seed and its hash in keep, shows only the hash until the shoe is finished, and then shows
 --   both on the FAIR page. A round's own seed drives no cards once a shoe is running, so it is never offered as proof.
---   demo (optional): how the idle screen plays a round, or false for none. See demo.lua. }
+--   demo (optional): how the idle screen plays a round, or false for none. See demo.lua.
+--   hint (optional): false takes the HINT button off this table. }
 --
 -- A table is one monitor and nothing else. Everything below is optional, and with none of it a table plays the same:
 --   a smaller monitor   the scoreboard (board.lua). Touches on it are ignored
@@ -81,6 +86,8 @@ local MIN_W, MIN_H = 120, 80     -- a 6x6 wall at text scale 0.5 is 121x81
 local LOCK_NOTICE = "Owner: tap to lock this table"
 local FAREWELL_MS = 6000         -- how long the idle screen shows a session's summary
 local SESSION_STALE_MS = 120000  -- a visit a reboot cut short, with nobody back to carry it on, ends here
+local HINT_MS = 6000             -- how long advice stays lit
+local HINT_MAX_ACTIONS = 4       -- the action bar holds five, so the HINT button never squeezes out a real action
 
 local function log(message)
   journal.log(message)
@@ -187,6 +194,7 @@ function Table:writeDebug(scene)
       scene = scene.name or "?",
       buttons = buttons,
       seat = self.ctx.seat or false,
+      hint = scene.hint and { ids = scene.hint.ids, text = scene.hint.text } or false,
       balance = self.ctx.balance or false,
       playing = scene.playing ~= nil or (scene.queue ~= nil and #scene.queue > 0),
       w = self.c.w,
@@ -502,6 +510,20 @@ end
 local function feltBase(c)
   c:clear(C.felt)
   c:frame(1, 1, c.w, c.h, C.feltDark)
+end
+
+--- Advice on the table: a blinking frame around what it names, and its words in the strip above the buttons, which no view draws on.
+local function drawHint(c, buttons, hint)
+  local lit = math.floor(now() / 400) % 2 == 0 and C.win or C.text
+  for _, button in ipairs(buttons) do
+    for _, id in ipairs(hint.ids) do
+      if button.id == id then
+        local out = button.label and 1 or 2 -- a card's own hold frame sits one cell out
+        c:frame(button.x - out, button.y - out, button.w + out * 2, button.h + out * 2, lit)
+      end
+    end
+  end
+  c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H, "HINT: " .. hint.text, C.gold, C.feltDark)
 end
 
 --- The idle screen with a demo running: the whole table in play, with the invitation along the bottom where the buttons go.
@@ -957,6 +979,7 @@ function Table:playRound(round, stream, firstEvents)
     round.rng = stream:serial()
     for _, ev in ipairs(events) do s.queue[#s.queue + 1] = ev end
     s.touched = now()
+    if #events > 0 then s.hint = nil end -- the table has moved on from what it advised
     if rules.done(round.state) then
       -- The money moves now, before the reveal plays, so nothing that happens during it can change the result
       self:settle(round)
@@ -966,7 +989,18 @@ function Table:playRound(round, stream, firstEvents)
     end
   end
 
+  --- Nothing here touches the round: the advice lives on the scene, so it cannot reach the rules or the journal.
+  local function showHint(s)
+    local ok, advice = pcall(rules.hint, round.state, s.offered)
+    if not ok then
+      log("hint failed: " .. tostring(advice))
+    elseif advice then
+      s.hint = { ids = advice.ids, text = advice.text, untilAt = now() + HINT_MS, offerKey = s.offerKey }
+    end
+  end
+
   function scene.tick(s, dt)
+    if s.hint and now() > s.hint.untilAt then s.hint = nil end
     if s.playing then
       s.playing.t = s.playing.t + dt / s.playing.duration
       if s.playing.t >= 1 then finishPlaying(s) end
@@ -1003,20 +1037,30 @@ function Table:playRound(round, stream, firstEvents)
     s.buttons = ui.newButtons()
     if not s.playing and #s.queue == 0 and not s.settled then
       local specs = {}
+      local offered, choices, offerKey = {}, 0, ""
       local room = (ctx.balance or 0) - (rules.risk and rules.risk(round.state) or 0)
       for _, action in ipairs(rules.actions(round.state)) do
         local spec = { id = action.id, label = action.label, color = C[action.color or "blue"],
           textColor = C[action.textColor or "text"], sub = action.sub }
         if action.cost and action.cost > room then
           spec.disabled, spec.sub = true, "need " .. ui.group(action.cost)
+        else
+          offered[action.id], choices, offerKey = true, choices + 1, offerKey .. action.id .. " "
         end
         specs[#specs + 1] = spec
       end
+      local regions = view.regions and view.regions(model, round.state) or {}
+      -- With one thing to press there is no decision to advise on, as at a blackjack reveal
+      if rules.hint and game.hint ~= false and choices + #regions > 1 and #specs <= HINT_MAX_ACTIONS then
+        specs[#specs + 1] = { id = "hint", label = "HINT", color = C.panel2 }
+      end
       ui.actionBar(c, s.buttons, specs)
       -- Tappable parts of the table itself, such as cards to hold
-      if view.regions then
-        for _, region in ipairs(view.regions(model, round.state)) do s.buttons[#s.buttons + 1] = region end
-      end
+      for _, region in ipairs(regions) do s.buttons[#s.buttons + 1] = region end
+      -- Money that arrives or leaves can change what is on offer, and advice given for the old buttons is then wrong
+      if s.hint and s.hint.offerKey ~= offerKey then s.hint = nil end
+      s.offered, s.offerKey = offered, offerKey
+      if s.hint then drawHint(c, s.buttons, s.hint) end
       if s.warn then
         c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H - 1, "Auto-play in " .. s.warn .. "s, tap to wait", C.orange)
       elseif s.nudge then
@@ -1035,7 +1079,11 @@ function Table:playRound(round, stream, firstEvents)
     end
     if s.settled then return end
     local hit = ui.hit(s.buttons or {}, x, y)
-    if hit then
+    if hit and hit.id == "hint" then
+      audio.play("tap")
+      s.touched = now()
+      showHint(s)
+    elseif hit then
       audio.play("tap")
       apply(s, hit.id)
     else

@@ -40,6 +40,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 | Hub page for Arcade results, heard on `arcade.v1`. Display only | `casino_hub_rules.lua`, `casino_hub_view.lua` | A modem on the hub |
 | Practice: PRACTICE on the idle screen, 1,000 pretend chips, the same rules and screens, marked on every frame. No approval. It is the choice on offer when the economy is offline. An idle seat gives way in 10 seconds once someone else has touched the table | `door.lua`, `pretend.lua`, `Table:pretendSeat` | Nothing |
 | Hub tournaments: the owner touches the hub wall, picks a game and 15, 30 or 60 minutes, and every table of that game offers TOURNAMENT. A live board, final standings, top three whispered, past winners kept | `tournament.lua`, `casino_hub_contest.lua`, `casino_hub_contest_view.lua` | A modem on the hub and tables. The whisper needs a chat box |
+| HINT button: Blackjack's basic strategy and Video Poker's best hold, lit for 6 seconds. `hint = false` on a game table turns it off | `table.lua`, `rules.hint`, `videopoker_hint.lua` | Nothing |
 
 ## Rules That Must Hold
 
@@ -61,6 +62,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 - Detector, chat box and integrator calls wait a tick and swallow events, so they only run in a worker coroutine, never in the main loop.
 - Chat is only ever whispered to a named player, never public, and nothing a table sends to chat may reveal another player's cards.
 - A demo never touches `keep`, the journal, the wallet, the stats or the hub. It gets its own random source and a keep of its own for each round, so a live shoe cannot notice it.
+- HINT is advice and nothing else: it is not an action in the rules, never reaches the journal, reads only what the player can see, and follows what the table is really offering, so a double the balance cannot cover is not advised. `rules.hint` is optional for any game. Blackjack shares `rules.basic` with its return test, and returns 98.55% of the opening bet, 98.64% of all wagered, over 200M rounds. Video Poker's table was fitted to this paytable and is on the best hold for 99.98% of all 2,598,960 deals, loses 0.00002 of a bet at worst, and returns 98.373%. `hint-oracle.mjs` proves both, and a changed paytable needs its `fit` run again.
 - A lamp fires when the result is shown, not when the money moves: that is before the reveal, and a lamp would give the result away. The Baccarat road waits for the same reason, because `keep` has the result before the cards have played.
 - A pretend seat cannot reach tokens. `table.lua` has no direct `require` of the wallet, books, journal, stats, session, net or lamps: they sit behind `door.lua`, which sends every call to `pretend.lua` while a pretend seat sits, and refuses anything with no stand-in. The seat has its own keep and shoe and nothing on disk, so a reboot just ends practice and a live round is never touched.
 - A tournament moves no tokens, ever. One entry per player per contest: one stack at one table, played across as many visits as they like. `casino_tournament.dat` keeps each stack and what an open round has staked, so a reboot costs that stake and never gives a fresh stack. The hub takes a score from that table only, only if it is further on than the last, and never after a final one. A forged score can fake a leaderboard line, which is accepted. Nothing waits on the hub: if it goes, seats play on to the end they last heard and nobody new can enter.
@@ -68,7 +70,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 ## Testing
 
 - `Tests/`: rules, payouts and returns, pure Lua.
-- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, `practice.mjs` and `tournament.mjs` cover pretend seats, and `mutants.mjs` proves those tests can fail.
+- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, `practice.mjs` and `tournament.mjs` cover pretend seats, `hint.mjs` the HINT button, `hint-oracle.mjs` its advice, and `mutants.mjs`, `pretend-mutants.mjs` and `hint-mutants.mjs` prove those tests can fail.
 - `craftos-agent/tools/mcbridge/rc-casino.mjs`: every game with real tokens on a real server.
 
 ## Later

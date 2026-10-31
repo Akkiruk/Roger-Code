@@ -36,6 +36,7 @@ return {
       "Any hand that reaches 21 stands by itself. There is no insurance or surrender.",
       "",
       "Doubling and splitting need the extra tokens in your balance. Nothing moves until the round ends.",
+      "HINT lights the basic strategy play for what the table is offering you. It costs nothing and plays nothing.",
       "Walk away and the table stands for you. Your result waits here until you touch it again.",
     }
   end,

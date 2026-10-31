@@ -28,6 +28,7 @@ return {
     lines[#lines + 1] = "Anything less than a pair of Jacks loses the bet."
     lines[#lines + 1] = ""
     lines[#lines + 1] = ("With perfect holds this table returns %.2f%% of what is bet."):format(rules.RETURN * 100)
+    lines[#lines + 1] = "HINT lights the best hold for the cards in front of you. It costs nothing and plays nothing."
     lines[#lines + 1] = ""
     lines[#lines + 1] = "Walk away and the table draws for you, keeping your holds and any hand that already pays."
     return lines

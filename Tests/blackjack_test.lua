@@ -346,36 +346,8 @@ t.test("the shoe lasts between rounds and reshuffles only below the cut", functi
   t.eq(#state.cards, 6 * 52 - 4)
 end)
 
---- Basic strategy for these rules: H17, double on 11 only, one split, no double after it.
-local function basic(state)
-  if state.hold then return "stand" end
-  local hand = state.hands[state.active]
-  local up = math.min(deck.rank(state.dealer[1]), 10)
-  if deck.rank(state.dealer[1]) == deck.ACE then up = 11 end
-  local total, soft = rules.total(hand.cards)
-
-  if has(state, "split") then
-    local rank = math.min(deck.rank(hand.cards[1]), 10)
-    if deck.rank(hand.cards[1]) == deck.ACE or rank == 8 then return "split" end
-    if rank == 9 and up ~= 7 and up < 10 then return "split" end
-    if rank == 7 and up <= 7 then return "split" end
-    if rank == 6 and up >= 3 and up <= 6 then return "split" end
-    if (rank == 2 or rank == 3) and up >= 4 and up <= 7 then return "split" end
-  end
-  if soft then
-    if total >= 19 then return "stand" end
-    if total == 18 and up <= 8 then return "stand" end
-    return "hit"
-  end
-  if has(state, "double") then return "double" end
-  if total >= 17 then return "stand" end
-  if total >= 13 and up <= 6 then return "stand" end
-  if total == 12 and up >= 4 and up <= 6 then return "stand" end
-  return "hit"
-end
-
 t.test("basic strategy returns the modelled 98.5%, within 97.5 to 99.5", function()
-  local value = t.simulate(rules, 150000, 100, basic, 11)
+  local value = t.simulate(rules, 150000, 100, rules.basic, 11) -- the same strategy the HINT button gives
   print(("     blackjack return %.4f"):format(value))
   t.truthy(value >= 0.975 and value <= 0.995, "return " .. value)
 end)

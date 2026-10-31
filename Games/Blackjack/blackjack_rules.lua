@@ -238,6 +238,55 @@ function M.auto()
   return "stand"
 end
 
+local function offeredBy(state)
+  local offered = {}
+  for _, action in ipairs(M.actions(state)) do offered[action.id] = true end
+  return offered
+end
+
+local function shouldSplit(rank, up)
+  if rank == deck.ACE or rank == 8 then return true end
+  if rank == 9 then return up ~= 7 and up < 10 end
+  if rank == 7 then return up <= 7 end
+  if rank == 6 then return up >= 3 and up <= 6 end
+  if rank == 2 or rank == 3 then return up >= 4 and up <= 7 end
+  return false
+end
+
+--- Basic strategy for these rules, from what the player can see: the hand and the up card, never the hole card or the shoe.
+-- offered is what the table really has on its buttons, so a double the balance cannot cover is played as the next best thing;
+-- left out, it is whatever the rules allow. Tests/blackjack_test.lua plays it for the return, and hint-oracle.mjs in
+-- craftos-agent's tools/casinotest checks every cell against the exact expected values.
+function M.basic(state, offered)
+  if state.hold then return "stand" end
+  offered = offered or offeredBy(state)
+  local hand = state.hands[state.active]
+  local up = deck.rank(state.dealer[1]) == deck.ACE and 11 or math.min(deck.rank(state.dealer[1]), 10)
+  local total, soft = M.total(hand.cards)
+
+  if offered.split and shouldSplit(deck.rank(hand.cards[1]), up) then return "split" end
+  if soft then
+    if total >= 19 or (total == 18 and up <= 8) then return "stand" end
+    return "hit"
+  end
+  if offered.double then return "double" end
+  if total >= 17 then return "stand" end
+  if total >= 13 and up <= 6 then return "stand" end
+  if total == 12 and up >= 4 and up <= 6 then return "stand" end
+  return "hit"
+end
+
+local HINT_WORDS = { hit = "Hit on", stand = "Stand on", double = "Double on" }
+
+--- The HINT button's advice for this decision.
+function M.hint(state, offered)
+  local id = M.basic(state, offered)
+  local total, soft = M.total(state.hands[state.active].cards)
+  local up = deck.rankName(state.dealer[1])
+  if id == "split" then return { ids = { id }, text = "Split the pair against a dealer " .. up } end
+  return { ids = { id }, text = ("%s %s %d against a dealer %s"):format(HINT_WORDS[id], soft and "soft" or "hard", total, up) }
+end
+
 function M.done(state)
   return state.over == true
 end

@@ -5,6 +5,7 @@
 
 local deck = require("lib.casino.deck")
 local poker = require("lib.casino.poker")
+local strategy = require("videopoker_hint")
 
 local M = {
   HAND_SIZE = 5,
@@ -101,6 +102,20 @@ end
 --- Nobody at the table: draw to the holds already made, keeping any hand that pays.
 function M.auto(_)
   return "auto"
+end
+
+--- The HINT button's advice: the best hold for the five cards, or the DRAW button when that is to hold nothing.
+function M.hint(state)
+  local pay = {}
+  for _, line in ipairs(M.PAYS) do pay[line.id] = line.multiple end
+  local keep = strategy.best(state.hand, pay)
+  local ids = {}
+  for i = 1, M.HAND_SIZE do
+    if keep[i] then ids[#ids + 1] = "hold" .. i end
+  end
+  if #ids == 0 then return { ids = { "draw" }, text = "Hold nothing and draw five new cards" } end
+  if #ids == M.HAND_SIZE then return { ids = ids, text = "Hold all five cards" } end
+  return { ids = ids, text = "Hold only the marked cards, then DRAW" }
 end
 
 function M.done(state)
