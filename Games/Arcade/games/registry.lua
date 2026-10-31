@@ -4,4 +4,9 @@
 
 return {
   require("games.uttt.plugin"),
+  require("games.connect4.plugin"),
+  require("games.reversi.plugin"),
+  require("games.checkers.plugin"),
+  require("games.dots.plugin"),
+  require("games.battleship.plugin"),
 }

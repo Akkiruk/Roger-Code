@@ -1,7 +1,8 @@
 -- arcade_hw.lua
 -- Peripheral layer for the Arcade. Everything except the main monitor is optional and the Arcade
 -- degrades quietly without it:
---   monitor         the board (largest monitor), a second monitor becomes a live scoreboard
+--   monitor         the board (largest monitor). A second monitor of the same size is a second wall, back to back with
+--                   the first, so two players can each keep something hidden. Any other monitor is a live scoreboard.
 --   speaker         sound (through arcade_audio / lib.sound)
 --   playerDetector  who is nearby, and whether a player walked away mid-match
 --   chatBox         results and turn reminders, whispered to the players in the match only
@@ -12,10 +13,10 @@ local config = require("arcade_config")
 local M = {}
 
 local state = {
-  monitor = nil, monitorName = nil, scoreboard = nil, scoreboardName = nil,
+  monitor = nil, monitorName = nil, wall2 = nil, wall2Name = nil, scoreboard = nil, scoreboardName = nil,
   detector = nil, detectorName = nil, chat = nil, chatName = nil,
   redstone = nil, redstoneName = nil, speakerName = nil,
-  nearbyAt = -1e9, nearbyDetected = {}, nearbyOk = false,
+  nearbyAt = -1e9, nearbyDetected = {}, nearbyOk = false, positions = {},
 }
 
 local function nowMs() return os.epoch("local") end
@@ -35,6 +36,7 @@ end
 function M.init(cfg)
   cfg = cfg or {}
   state.monitor, state.monitorName, state.scoreboard, state.scoreboardName = nil, nil, nil, nil
+  state.wall2, state.wall2Name = nil, nil
   state.detector, state.detectorName, state.chat, state.chatName = nil, nil, nil, nil
   state.redstone, state.redstoneName, state.speakerName = nil, nil, nil
   state.nearbyAt = -1e9
@@ -46,11 +48,11 @@ function M.init(cfg)
     local t = typeOf(name)
     if t == "monitor" then
       local m = peripheral.wrap(name)
+      -- measure at the scale we play at: a real monitor remembers the text scale of earlier programs
+      if m and m.setTextScale then m.setTextScale(config.TEXT_SCALE) end
       local w, h = 0, 0
       if m and m.getSize then w, h = m.getSize() end
-      -- rank by physical size: a real monitor remembers the text scale of earlier programs, so characters alone mislead
-      local scale = (m and m.getTextScale and m.getTextScale()) or 1
-      monitors[#monitors + 1] = { name = name, obj = m, area = w * h * scale * scale }
+      monitors[#monitors + 1] = { name = name, obj = m, w = w, h = h, area = w * h }
     elseif t == "speaker" and not state.speakerName then
       state.speakerName = name
     elseif t == "playerDetector" and not state.detector then
@@ -75,8 +77,15 @@ function M.init(cfg)
   if not state.monitor and monitors[1] then
     state.monitor, state.monitorName = monitors[1].obj, monitors[1].name
   end
+  local mainW, mainH = 0, 0
+  if state.monitor then mainW, mainH = state.monitor.getSize() end
   for _, m in ipairs(monitors) do
-    if m.name ~= state.monitorName then
+    if m.name ~= state.monitorName and m.name ~= boardName and not state.wall2 and m.w == mainW and m.h == mainH then
+      state.wall2, state.wall2Name = m.obj, m.name
+    end
+  end
+  for _, m in ipairs(monitors) do
+    if m.name ~= state.monitorName and m.name ~= state.wall2Name then
       if (boardName and m.name == boardName) or (not boardName and not state.scoreboard) then
         state.scoreboard, state.scoreboardName = m.obj, m.name
       end
@@ -86,6 +95,7 @@ function M.init(cfg)
 end
 
 function M.monitor() return state.monitor, state.monitorName end
+function M.wall2() return state.wall2, state.wall2Name end
 function M.scoreboard() return state.scoreboard, state.scoreboardName end
 function M.speakerName() return state.speakerName end
 function M.hasDetector() return state.detector ~= nil end
@@ -94,7 +104,7 @@ function M.hasChat() return state.chat ~= nil end
 --- A summary of what is attached, for logs and the settings screen.
 function M.report()
   return {
-    monitor = state.monitorName, scoreboard = state.scoreboardName, speaker = state.speakerName,
+    monitor = state.monitorName, wall2 = state.wall2Name, scoreboard = state.scoreboardName, speaker = state.speakerName,
     detector = state.detectorName, chat = state.chatName,
     redstone = state.redstoneName or "computer",
   }
@@ -123,7 +133,31 @@ function M.pollDetector()
   end
   table.sort(detected, byName)
   state.nearbyDetected, state.nearbyOk, state.nearbyAt = detected, ok, nowMs()
+  for name in pairs(state.watched or {}) do
+    local pos = state.detector and safe(state.detector.getPlayerPos, name)
+    state.positions[name] = (type(pos) == "table" and type(pos.x) == "number") and pos or nil
+  end
 end
+
+--- Follow where these players stand, for a game with hidden pieces. An empty list stops following.
+function M.watch(names)
+  local positions = {}
+  state.watched = {}
+  for _, name in ipairs(names or {}) do
+    state.watched[name] = true
+    positions[name] = state.positions[name]
+  end
+  state.positions = positions
+end
+
+--- Start following one more player: someone who has just tapped their name at a wall.
+function M.follow(name)
+  state.watched = state.watched or {}
+  state.watched[name] = true
+end
+
+--- Where a followed player stood at the last poll: { x, y, z }, or nil.
+function M.position(name) return state.positions[name] end
 
 -- Returns the list (detector plus whoever touched lately), ok (a real detector answered), and the detector-only list.
 -- Presence checks must use the detector-only list: a toucher stays listed for a while after walking away.
@@ -199,6 +233,7 @@ function M.pending() return #outbox end
 function M.worker()
   while true do
     if nowMs() - state.nearbyAt >= 1000 then M.pollDetector() end
+    M.flushOutputs()
     pumpChat()
     os.sleep(0.25)
   end
@@ -209,10 +244,22 @@ local rsEnabled = true
 --- Turn the lamp and celebration outputs on or off as a feature (they are forced off when disabled).
 function M.setRedstone(on) rsEnabled = on and true or false end
 
+-- The integrator runs on the server thread like the detector, so its outputs wait here for M.worker.
+local outputs = {}
+
+--- Send waiting integrator outputs. Only call this from M.worker, or once the game loop has ended.
+function M.flushOutputs()
+  if not (state.redstone and state.redstone.setOutput) then return end
+  for side, on in pairs(outputs) do
+    outputs[side] = nil
+    safe(state.redstone.setOutput, side, on)
+  end
+end
+
 local function setOut(side, on)
   if not rsEnabled then on = false end
   if state.redstone and state.redstone.setOutput then
-    safe(state.redstone.setOutput, side, on and true or false)
+    outputs[side] = on and true or false
   elseif redstone and redstone.setOutput then
     safe(redstone.setOutput, side, on and true or false)
   end

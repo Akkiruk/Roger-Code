@@ -155,7 +155,10 @@ end
 function M.eloDelta(ra, rb, score, games)
   local k = (games or 0) < 10 and 40 or 24
   local expected = 1 / (1 + 10 ^ ((rb - ra) / 400))
-  return math.floor(k * (score - expected) + (score >= expected and 0.5 or -0.5))
+  local change = k * (score - expected)
+  -- round the same way on both sides, so what the winner gains is what the loser drops
+  if change >= 0 then return math.floor(change + 0.5) end
+  return -math.floor(-change + 0.5)
 end
 
 local function bumpRecord(t, k, result)
@@ -233,7 +236,7 @@ function M:record(m)
         p.wins = p.wins + 1
         sideRec.wins = sideRec.wins + 1
         p.streak = p.streak > 0 and p.streak + 1 or 1
-        if not p.fastestWin or m.moves < p.fastestWin then p.fastestWin = m.moves end
+        if not m.forfeit and (not p.fastestWin or m.moves < p.fastestWin) then p.fastestWin = m.moves end
       elseif result == "l" then
         p.losses = p.losses + 1
         p.streak = p.streak < 0 and p.streak - 1 or -1

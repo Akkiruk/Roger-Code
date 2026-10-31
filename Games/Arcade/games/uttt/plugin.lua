@@ -11,8 +11,9 @@ local view = require("games.uttt.view")
 local M = {
   id = "uttt",
   title = "Ultimate Tic-Tac-Toe",
+  short = "Tic-Tac-Toe",
   chatTag = "UTTT",
-  blurb = "Nine boards in one",
+  blurb = "Ultimate: nine boards in one",
   color = "hi",
   minSize = { w = 80, h = 54 },
   accent = 0xFFD257,

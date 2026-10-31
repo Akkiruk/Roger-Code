@@ -98,6 +98,7 @@ local buttons = {}
 
 function M.clearButtons() buttons = {} end
 function M.buttons() return buttons end
+function M.setButtons(list) buttons = list end
 
 --- Draw and register a button. opts: label, color, fg, enabled (default true), small (native text)
 function M.button(id, x, y, w, h, label, color, opts)

@@ -10,7 +10,7 @@ M.DEBUG_FLAG = "arcade_debug.flag"
 
 -- Peripherals. Names are discovered automatically; set a name only to pin a specific one.
 M.MONITOR = nil            -- main wall (default: the largest monitor)
-M.SCOREBOARD = nil         -- optional second monitor that shows the leaderboard (default: any other monitor)
+M.SCOREBOARD = nil         -- optional monitor that shows the leaderboard (default: any monitor that is not a wall)
 M.TEXT_SCALE = 0.5
 
 -- Players and presence
@@ -19,6 +19,8 @@ M.TOUCH_NEARBY = 30        -- seconds a touch counts as being nearby, for rigs w
 M.PRESENCE_WARN = 20       -- seconds a mover may be away before the board says so
 M.PRESENCE_LIMIT = 90      -- seconds away before the match ends: a forfeit if the opponent is here, otherwise called off
 M.PAUSE_LIMIT = 60         -- seconds a pause may last before play carries on, so nobody can stall out a loss
+M.MAX_PAUSES = 3           -- pauses in one match that stop the clock, for the same reason
+M.WALL_GONE = 60           -- seconds a two-wall match waits for a lost wall before it is called off, with no result
 M.LOBBY_IDLE = 120         -- seconds of no touch in the lobby before returning to the idle screen
 M.RESULT_IDLE = 60
 M.GAME_IDLE = 600          -- no moves for this long ends the match the same way as walking away

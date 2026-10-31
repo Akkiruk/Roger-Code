@@ -40,11 +40,34 @@ function M.maySit(name, who)
   return false, name .. " has to tap their own name"
 end
 
---- The seat number a resignation counts against: the toucher's own seat, otherwise the side to move.
+--- The seat number a resignation counts against: the toucher's own seat, otherwise the side to move. A computer never
+-- resigns, so with one to move it counts against the other side.
 function M.resigner(match, who, turn)
   if isIn(match.red, who) then return 1 end
   if isIn(match.blue, who) then return 2 end
+  local slot = turn == 1 and match.red or match.blue
+  if slot.cpu then return 3 - turn end
   return turn
+end
+
+--- The seat a wall belongs to, in a match played on two walls. A wall is a monitor's name, which stays true if the other
+-- wall is lost. A computer has no eyes, so its wall belongs to nobody and shows nothing secret.
+function M.wallSeat(match, wall)
+  if match.red.wall == wall and not match.red.cpu then return 1 end
+  if match.blue.wall == wall and not match.blue.cpu then return 2 end
+  return nil
+end
+
+local function distance(a, b)
+  local dx, dy, dz = a.x - b.x, a.y - b.y, a.z - b.z
+  return math.sqrt(dx * dx + dy * dy + dz * dz)
+end
+
+--- Has a player crossed to the far side of the divider? A wall's spot is where its owner stood when they last touched
+-- it, so this needs no compass and works however the cabinet was built. With any position unknown the answer is no.
+function M.peeking(position, spotHere, spotThere)
+  if not (position and spotHere and spotThere) then return false end
+  return distance(position, spotHere) < distance(position, spotThere)
 end
 
 --- Does a match have two named players, so that either one quitting costs a rating?

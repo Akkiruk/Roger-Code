@@ -437,7 +437,7 @@ local function drawSettings()
   local rep = hw.report()
   ui.small("HARDWARE", 4, hwY, C.hi, C.bg, "left")
   local lines = {
-    "monitor: " .. tostring(rep.monitor) .. " (" .. env.W .. "x" .. env.H .. ")",
+    "monitor: " .. tostring(rep.monitor) .. " (" .. env.W .. "x" .. env.H .. ")" .. (rep.wall2 and ("   second wall: " .. rep.wall2) or ""),
     "scoreboard: " .. tostring(rep.scoreboard or "none"),
     "speaker: " .. tostring(rep.speaker or "none"),
     "player detector: " .. tostring(rep.detector or "none"),

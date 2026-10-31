@@ -47,19 +47,19 @@ local function playerCard(num, slot, x, w, active)
   end
 end
 
-local function statusLine(g)
+local function statusLine(g, viewer)
   local mover = matches.moverSlot(g)
   if g.paused then return "PAUSED", C.warn end
   if g.awaySince and nowMs() - g.awaySince > config.PRESENCE_WARN * 1000 and seats.isHuman(mover) then
     return "Waiting for " .. mover.name .. " to come back...", C.warn
   end
   if g.thinking then return mover.name .. " is thinking...", C.info end
-  return app.plugin.view.prompt(g.state, mover.name)
+  return app.plugin.view.prompt(g.state, mover.name, viewer)
 end
 
-local function drawControls(g, L)
+local function drawControls(g, L, viewer)
   local view = app.plugin.view
-  local hintOn = not matches.moverSlot(g).cpu and #app.plugin.cpuLevels > 0
+  local hintOn = not matches.moverSlot(g).cpu and #app.plugin.cpuLevels > 0 and not app.plugin.noHints
   local soundLabel = app.prefs.sound and "SOUND ON" or "SOUND OFF"
   local bx1, bx2 = 1, L.x0 + L.bw + 1
   local bw = L.sideW - 1
@@ -69,7 +69,7 @@ local function drawControls(g, L)
     ui.button("hint", bx1, y + 9, bw, 7, "HINT", C.panel, { small = true, enabled = hintOn })
     ui.button("resign", bx2, y, bw, 7, g.confirmResign and "SURE?" or "RESIGN", g.confirmResign and C.warn or C.panel, { small = true })
     ui.button("sound", bx2, y + 9, bw, 7, soundLabel, C.panel, { small = true })
-    view.drawSides(L, g, bx1, bx2, bw)
+    view.drawSides(L, g, bx1, bx2, bw, viewer)
   else
     local y = L.footY
     local w = floor((env.W - 10) / 4)
@@ -81,6 +81,7 @@ local function drawControls(g, L)
 end
 
 local function drawPause(g)
+  ui.clearButtons() -- nothing behind the box answers
   local W, H = env.W, env.H
   local w, h = min(W - 10, 60), 36
   local x, y = floor((W - w) / 2), floor((H - h) / 2)
@@ -95,8 +96,11 @@ local function drawPause(g)
   ui.button("abandon", x + 3, y + 23, w - 6, 8, label, C.warn, { small = true })
 end
 
---- Draw a match. final shows the finished board under its headline.
-function M.draw(g, final)
+--- Draw a match. final shows the finished board under its headline. viewer is the seat whose wall this is, when a
+-- game keeps things hidden; nil draws only what anyone may see. A wall its opponent is standing at shows that view too.
+function M.draw(g, final, viewer)
+  local covered = viewer and g.covered[viewer]
+  if covered then viewer = nil end
   local s = g.state
   local L = env.L
   local view = app.plugin.view
@@ -110,9 +114,11 @@ function M.draw(g, final)
   local cx = floor(W / 2)
   ui.fill(cardW, 0, W - 2 * cardW, L.hdr, C.bg)
   local a, b = view.score(s)
-  ui.text(a, cx - 4, 1, C.red, "right")
-  ui.text("-", cx, 1, C.line, "center")
-  ui.text(b, cx + 4, 1, C.blue, "left")
+  if a then
+    ui.text(a, cx - 4, 1, C.red, "right")
+    ui.text("-", cx, 1, C.line, "center")
+    ui.text(b, cx + 4, 1, C.blue, "left")
+  end
   ui.small("MOVE " .. view.moveNumber(s), cx, L.hdr - 3, C.line, C.bg, "center")
   if g.deadline and not g.paused then
     local left = max(0, g.deadline - nowMs()) / 1000
@@ -122,13 +128,15 @@ function M.draw(g, final)
     ui.fill(cardW + 1, L.hdr - 1, floor(bw * frac), 1, left < 5 and C.warn or C.ok)
   end
 
-  view.drawBoard(L, g)
+  view.drawBoard(L, g, viewer)
 
   local text, color
   if final then
     text, color = view.finalLine(g)
+  elseif covered then
+    text, color = "Hidden: your opponent is at this wall", C.warn
   else
-    text, color = statusLine(g)
+    text, color = statusLine(g, viewer)
     if S.toast and nowMs() <= S.toast.untilAt then text, color = S.toast.text, S.toast.color end
   end
   ui.fill(0, L.statusY, env.W, L.statusH, C.bg)
@@ -143,7 +151,7 @@ function M.draw(g, final)
     ui.region("skipFinal", 0, 0, env.W, env.H)
     return
   end
-  drawControls(g, L)
+  drawControls(g, L, viewer)
   if g.paused then drawPause(g) end
 end
 

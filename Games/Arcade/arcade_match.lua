@@ -54,7 +54,7 @@ local function entryOf(g, stage)
   return {
     id = g.id, game = app.plugin.id, stage = stage, red = g.red, blue = g.blue, first = g.first, seed = g.seed,
     options = g.options, actions = g.actions, elapsed = elapsed(g), timer = g.timer, timeouts = g.timeouts,
-    hints = g.hints, extras = g.extras, reason = g.reason,
+    hints = g.hints, extras = g.extras, reason = g.reason, spots = g.spots,
   }
 end
 
@@ -65,7 +65,7 @@ local function newRecord(red, blue, opts)
     options = opts.options, actions = opts.actions or {}, timer = opts.timer or 0,
     state = nil, extras = opts.extras or app.plugin.newExtras(),
     startedAt = now, resumedAt = now, elapsed = opts.elapsed or 0, moveStart = now, deadline = nil,
-    timeouts = opts.timeouts or { 0, 0 }, hints = opts.hints or { 0, 0 },
+    timeouts = opts.timeouts or { 0, 0 }, hints = opts.hints or { 0, 0 }, spots = opts.spots or {}, covered = { false, false },
     hint = nil, hintUntil = 0, paused = false, nudged = false, awaySince = nil, aiAt = nil, thinking = false,
     confirmResign = false, abandonBy = nil,
   }
@@ -93,6 +93,40 @@ local function armTurn(g)
   hw.lamps(g.state.turn == 1, g.state.turn == 2)
 end
 
+--- With hidden pieces, follow where the two players stand so a wall can cover up when the opponent walks round to it.
+local function followPlayers(g)
+  local names = {}
+  if app.plugin.private then
+    if seats.isHuman(g.red) then names[#names + 1] = g.red.name end
+    if seats.isHuman(g.blue) then names[#names + 1] = g.blue.name end
+  end
+  hw.watch(names)
+end
+
+--- Remember where a seated player stands at their own wall.
+function M.noteWallTouch(g, wall, who)
+  local seat = seats.wallSeat(g, wall)
+  local slot = seat and (seat == 1 and g.red or g.blue)
+  if slot and seats.isHuman(slot) and slot.name == who then
+    g.spots[wall] = hw.position(who) or g.spots[wall]
+  end
+end
+
+--- Cover a wall while the opposing player stands on its side of the divider.
+local function guardWalls(g)
+  for seat = 1, 2 do
+    local slot, opponent = seat == 1 and g.red or g.blue, seat == 1 and g.blue or g.red
+    local covered = false
+    if slot.wall and seats.isHuman(opponent) then
+      covered = seats.peeking(hw.position(opponent.name), g.spots[slot.wall], g.spots[opponent.wall])
+    end
+    if covered ~= g.covered[seat] then
+      g.covered[seat] = covered
+      S.dirty = true
+    end
+  end
+end
+
 --- Start a match. first is the seat to move first.
 function M.start(red, blue, opts)
   local plugin = app.plugin
@@ -105,6 +139,11 @@ function M.start(red, blue, opts)
   S.result = nil
   S.view = "game"
   S.demo = {}
+  -- where each player stood to tap their name is their wall's spot, from the very first move
+  for _, slot in ipairs({ red, blue }) do
+    if plugin.private and seats.isHuman(slot) then g.spots[slot.wall] = hw.position(slot.name) end
+  end
+  followPlayers(g)
   audio.cue("start")
   armTurn(g)
   log(string.format("match %s start: %s red=%s(%s) blue=%s(%s) first=%d timer=%d", g.id, plugin.id, red.name, tostring(red.cpu),
@@ -207,6 +246,7 @@ local function finish(g, reason)
   local s = g.state
   log(string.format("match %s end: winner=%d forfeit=%s ranked=%s reason=%s", g.id, s.winner, tostring(s.forfeit), tostring(summary.ranked), tostring(reason)))
   S.match = nil
+  hw.watch({})
   S.dirty = true
 end
 
@@ -233,7 +273,8 @@ local function randomAction(g)
   return actions[math.random(#actions)]
 end
 
---- Yield to the event loop while the computer thinks, keeping every other event (touches, timers) for later.
+--- Yield to the event loop while the computer thinks, keeping other events for later. A touch is dropped: kept, it would
+-- land on the board after the computer's move, as a move the player never saw.
 local function aiYield()
   local saved = {}
   os.queueEvent("arcade_yield")
@@ -241,7 +282,7 @@ local function aiYield()
     local ev = pack(os.pullEventRaw())
     if ev[1] == "arcade_yield" then break end
     if ev[1] == "terminate" then error("Terminated", 0) end
-    saved[#saved + 1] = ev
+    if ev[1] ~= "monitor_touch" and ev[1] ~= "vhcc_touch" then saved[#saved + 1] = ev end
   end
   for _, ev in ipairs(saved) do os.queueEvent(unpack(ev, 1, ev.n)) end
 end
@@ -250,7 +291,7 @@ local function doAiMove(g)
   local slot = moverSlot(g)
   local t0 = nowMs()
   log(string.format("ai %s thinking", tostring(slot.cpu)))
-  local ok, action, info = pcall(app.plugin.chooseAction, g.state, slot.cpu or "medium", { yield = aiYield })
+  local ok, action, info = pcall(app.plugin.chooseAction, app.seen(g.state), slot.cpu or "medium", { yield = aiYield })
   if not ok then
     if tostring(action):find("Terminated", 1, true) then error(action, 0) end
     log("ai error, playing a random move: " .. tostring(action))
@@ -266,6 +307,7 @@ end
 function M.abandon(g, why)
   log("match abandoned: " .. tostring(why))
   hw.allOff()
+  hw.watch({})
   S.match = nil
   journal.clear()
   S.view = "idle"
@@ -321,17 +363,43 @@ local function checkPresence(g)
   end
 end
 
+--- Carry on from a pause with the clocks where they stopped, so a pause never buys time. Past the limit they never stopped.
 function M.resume(g)
+  local stopped = nowMs() - (g.pausedAt or nowMs())
+  if (g.pauses or 0) > config.MAX_PAUSES then stopped = 0 end
   g.paused = false
   g.pausedAt = nil
-  g.moveStart = nowMs()
-  if g.deadline then g.deadline = nowMs() + g.timer * 1000 end
+  g.moveStart = g.moveStart + stopped
+  if g.deadline then g.deadline = g.deadline + stopped end
   S.dirty = true
+end
+
+--- A two-wall match with a wall missing stops: nobody can lose a game on a screen that went dark. True while it waits.
+local function waitForWall(g, t)
+  if #app.env.walls >= 2 then
+    if g.wallGone then
+      g.pausedAt, g.wallGone = g.wallGone, nil
+      M.resume(g)
+      app.setToast("Both walls are back", ui.C.info, 2000)
+    end
+    return false
+  end
+  g.wallGone = g.wallGone or t
+  if t - g.wallGone > config.WALL_GONE * 1000 then
+    M.abandon(g, "a wall went dark")
+  elseif not S.toast then
+    app.setToast("A wall is missing - waiting for it", ui.C.warn, 3000)
+  end
+  return true
 end
 
 --- The clock for the match in progress.
 function M.tick(g, t)
   if app.plugin.view.tick(g, t) then S.dirty = true end
+  if app.plugin.private then
+    if waitForWall(g, t) then return end
+    guardWalls(g)
+  end
   if g.confirmResign and t > (g.confirmUntil or 0) then g.confirmResign = false; S.dirty = true end
   if g.hint and t > g.hintUntil then g.hint = nil; S.dirty = true end
   if g.paused then
@@ -412,6 +480,12 @@ function M.recover()
     journal.clear()
     return false
   end
+  if not app.fits(plugin) then
+    -- a wall can attach a moment after boot, so keep the match until one does
+    log("match waiting: this cabinet cannot play " .. tostring(entry.game) .. " right now")
+    S.recoverLater = true
+    return false
+  end
   app.selectGame(plugin)
   local g, why = rebuild(entry, plugin)
   if not g then
@@ -428,6 +502,7 @@ function M.recover()
   end
   S.match = g
   S.view = "game"
+  followPlayers(g)
   armTurn(g)
   app.setToast("Game resumed", ui.C.info, 3000)
   log("resumed match " .. g.id .. " after " .. #g.actions .. " actions")
