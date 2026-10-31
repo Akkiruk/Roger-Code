@@ -7,12 +7,12 @@
     "description": "Five-card draw for 2 to 6 players on one wall, player against player, with side pots and no rake.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.35"
+    "version": "1.0.36"
   },
   "build": {
-    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-    "generated_at": "2026-10-31T21:26:08Z",
-    "package_hash": "1da6afbe9af6e63612864f81324ce5a5fc9c9cf8bf2af90b60aa544de95a561b"
+    "commit": "547485c8cc728259d669b75949b9fe833c23992f",
+    "generated_at": "2026-10-31T21:26:44Z",
+    "package_hash": "4057d9bfd2672c7b3f428713947d9cd33eda9e3bc2d542f0fce96f4cf529f8d9"
   },
   "install": {
     "preserve": [],
@@ -60,7 +60,7 @@
       {
         "repo_path": "Shared/lib/casino/net.lua",
         "install_path": "lib/casino/net.lua",
-        "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
+        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
       },
       {
         "repo_path": "Shared/lib/casino/lamps.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/canvas.lua",
         "install_path": "lib/casino/canvas.lua",
-        "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
       },
       {
         "repo_path": "Shared/lib/casino/books.lua",
@@ -105,7 +105,7 @@
       {
         "repo_path": "Shared/lib/casino/board.lua",
         "install_path": "lib/casino/board.lua",
-        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
       },
       {
         "repo_path": "Shared/lib/casino/bit32_shim.lua",
@@ -140,7 +140,7 @@
       {
         "repo_path": "Games/PokerTable/pokertable_app.lua",
         "install_path": "pokertable_app.lua",
-        "sha256": "e4705e1bdf7ad4462a82807d5c5a90ebcfbfe6197cb738d625ba88eab90bab0e"
+        "sha256": "f0e9bf16075f4fb999aa4d0475a8abff38c2ebe07853f1ba77d73557bf0063ed"
       },
       {
         "repo_path": "Shared/lib/updater.lua",

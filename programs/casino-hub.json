@@ -7,12 +7,12 @@
     "description": "The casino's central board: shared jackpot, leaderboards, each game's measured return, and the tables on the floor.",
     "source_root": "Games/CasinoHub",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-    "generated_at": "2026-10-31T21:26:08Z",
-    "package_hash": "beaef92b419d96b699e8bf5383d7ea30cf0d6edb07a9e103aad5fa666e83c7e2"
+    "commit": "547485c8cc728259d669b75949b9fe833c23992f",
+    "generated_at": "2026-10-31T21:26:44Z",
+    "package_hash": "b59aa8c6b6f5acfd48ab74dfd5c024bc7300505feef646ea40425c99a37e4fd0"
   },
   "install": {
     "preserve": [],
@@ -40,7 +40,7 @@
       {
         "repo_path": "Shared/lib/casino/net.lua",
         "install_path": "lib/casino/net.lua",
-        "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
+        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
       },
       {
         "repo_path": "Shared/lib/casino/lamps.lua",
@@ -63,19 +63,24 @@
         "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
       },
       {
-        "repo_path": "Shared/lib/casino/canvas.lua",
-        "install_path": "lib/casino/canvas.lua",
-        "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
+        "repo_path": "Shared/lib/casino/chat.lua",
+        "install_path": "lib/casino/chat.lua",
+        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
       },
       {
         "repo_path": "Shared/lib/casino/board.lua",
         "install_path": "lib/casino/board.lua",
-        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
+      },
+      {
+        "repo_path": "Games/CasinoHub/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
         "repo_path": "Games/CasinoHub/startup.lua",
@@ -85,17 +90,27 @@
       {
         "repo_path": "Games/CasinoHub/casino_hub_view.lua",
         "install_path": "casino_hub_view.lua",
-        "sha256": "8bf0db23175763fe308478eb800ca80d6ab0ec3e86f0d6534f68d4fd4665cf1e"
+        "sha256": "1063bd735a0d9c601e8cf3259389d395a9dd6578a71ba13a383d5b6e7a99cc41"
       },
       {
         "repo_path": "Games/CasinoHub/casino_hub_rules.lua",
         "install_path": "casino_hub_rules.lua",
-        "sha256": "587d5969ce8cc9f54bb3a9b2145b68f5e82344e848712bd6b5399ac729dc4bd4"
+        "sha256": "e8abb0d3191411fa62e6238e8496ada0ebcd1304506508887243295ca8846e95"
+      },
+      {
+        "repo_path": "Games/CasinoHub/casino_hub_contest.lua",
+        "install_path": "casino_hub_contest.lua",
+        "sha256": "9ce79dd40ab81aa4c2e68aec956a894dfa01e674c12599738207e43d066c52f8"
+      },
+      {
+        "repo_path": "Games/CasinoHub/casino_hub_contest_view.lua",
+        "install_path": "casino_hub_contest_view.lua",
+        "sha256": "7bbaf0df30d1c70715f8e95d35a029674526ef9c3a166219e286936ff67a2138"
       },
       {
         "repo_path": "Games/CasinoHub/casino_hub_app.lua",
         "install_path": "casino_hub_app.lua",
-        "sha256": "439c93524fbb5f494d30ac4984aec7d6b47aff0d23b50efb1dc3ec4beea3a068"
+        "sha256": "61606be0c4f83f42709ddc5ac00827361e91b314e248dc908da8fdad0bdf692f"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
@@ -123,9 +138,9 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Games/CasinoHub/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -144,6 +159,7 @@
     "lib_modules": [
       "lib.casino.board",
       "lib.casino.canvas",
+      "lib.casino.chat",
       "lib.casino.deck",
       "lib.casino.font",
       "lib.casino.journal",

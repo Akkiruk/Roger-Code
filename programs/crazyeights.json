@@ -7,12 +7,12 @@
     "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.38"
+    "version": "1.0.39"
   },
   "build": {
-    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-    "generated_at": "2026-10-31T21:26:08Z",
-    "package_hash": "67f6a15e1ad737eca6e25829080e3e8a6d71bbf92bf66efe432554683ff09bb1"
+    "commit": "547485c8cc728259d669b75949b9fe833c23992f",
+    "generated_at": "2026-10-31T21:26:44Z",
+    "package_hash": "cb47025044ff39281cbef38fa4d2b2ddbfff0686ed2f0431c0d692b63f201b1b"
   },
   "install": {
     "preserve": [],
@@ -23,59 +23,9 @@
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
       },
       {
-        "repo_path": "Shared/lib/casino/wallet.lua",
-        "install_path": "lib/casino/wallet.lua",
-        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
-      },
-      {
-        "repo_path": "Shared/lib/casino/ui.lua",
-        "install_path": "lib/casino/ui.lua",
-        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
-      },
-      {
-        "repo_path": "Shared/lib/casino/theme.lua",
-        "install_path": "lib/casino/theme.lua",
-        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
-      },
-      {
-        "repo_path": "Shared/lib/casino/table.lua",
-        "install_path": "lib/casino/table.lua",
-        "sha256": "d8425697f1c32e69d8b08684317d1903e6cd6fcca6455e4a7b030ef2cbc8b562"
-      },
-      {
-        "repo_path": "Shared/lib/casino/stats.lua",
-        "install_path": "lib/casino/stats.lua",
-        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
-      },
-      {
-        "repo_path": "Shared/lib/casino/session.lua",
-        "install_path": "lib/casino/session.lua",
-        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
-      },
-      {
-        "repo_path": "Shared/lib/casino/rng.lua",
-        "install_path": "lib/casino/rng.lua",
-        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
-      },
-      {
-        "repo_path": "Shared/lib/casino/presence.lua",
-        "install_path": "lib/casino/presence.lua",
-        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
-      },
-      {
-        "repo_path": "Shared/lib/casino/net.lua",
-        "install_path": "lib/casino/net.lua",
-        "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
-      },
-      {
-        "repo_path": "Shared/lib/casino/limits.lua",
-        "install_path": "lib/casino/limits.lua",
-        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
-      },
-      {
-        "repo_path": "Shared/lib/casino/lamps.lua",
-        "install_path": "lib/casino/lamps.lua",
-        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
         "repo_path": "Shared/lib/casino/journal.lua",
@@ -83,9 +33,84 @@
         "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
       },
       {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+        "repo_path": "Shared/lib/casino/lamps.lua",
+        "install_path": "lib/casino/lamps.lua",
+        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
+        "repo_path": "Shared/lib/casino/limits.lua",
+        "install_path": "lib/casino/limits.lua",
+        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+      },
+      {
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
+      },
+      {
+        "repo_path": "Shared/lib/casino/playercard.lua",
+        "install_path": "lib/casino/playercard.lua",
+        "sha256": "a5c1f6202153dffb77f9767329b7314dcbfb17febb87bb1d3ed0924b4d5e27c8"
+      },
+      {
+        "repo_path": "Shared/lib/casino/presence.lua",
+        "install_path": "lib/casino/presence.lua",
+        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
+      },
+      {
+        "repo_path": "Shared/lib/casino/door.lua",
+        "install_path": "lib/casino/door.lua",
+        "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
+      },
+      {
+        "repo_path": "Shared/lib/casino/pretend.lua",
+        "install_path": "lib/casino/pretend.lua",
+        "sha256": "22bf1d987790d708b389b351a35b2902e01b648bfcd53e070366fe2489d3836f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/casino/stats.lua",
+        "install_path": "lib/casino/stats.lua",
+        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/table.lua",
+        "install_path": "lib/casino/table.lua",
+        "sha256": "ed12ef28a7bc0f3dca7142bd9b8cb01e83e33073f5bf10d59b02562f51fadebc"
+      },
+      {
+        "repo_path": "Shared/lib/casino/theme.lua",
+        "install_path": "lib/casino/theme.lua",
+        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/tournament.lua",
+        "install_path": "lib/casino/tournament.lua",
+        "sha256": "2481b3caf0226edd909f38f5b29ffbf0934376a792348c7cf4b3235a1acec9b9"
+      },
+      {
+        "repo_path": "Shared/lib/casino/ui.lua",
+        "install_path": "lib/casino/ui.lua",
+        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
+      },
+      {
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/casino/demo.lua",
@@ -93,19 +118,9 @@
         "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
       },
       {
-        "repo_path": "Shared/lib/casino/deck.lua",
-        "install_path": "lib/casino/deck.lua",
-        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
-      },
-      {
         "repo_path": "Shared/lib/casino/chat.lua",
         "install_path": "lib/casino/chat.lua",
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
-      },
-      {
-        "repo_path": "Shared/lib/casino/canvas.lua",
-        "install_path": "lib/casino/canvas.lua",
-        "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -135,12 +150,7 @@
       {
         "repo_path": "Games/CrazyEights/crazyeights_game.lua",
         "install_path": "crazyeights_game.lua",
-        "sha256": "f25a0e9fb5526a2b92557576153f9371f3fa2ec24394aa7dd154a2cc9b1db5a7"
-      },
-      {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+        "sha256": "937db0afe3a72a3166a16929b011b76cb3971e8fe6473befa292a2483f9f42b0"
       },
       {
         "repo_path": "Games/CrazyEights/crazyeights_rules.lua",
@@ -148,9 +158,14 @@
         "sha256": "3f084f3e6d5f5bd01a1e934d7ca00baf72fbe80dec140957ffdcf90cac2ab28f"
       },
       {
-        "repo_path": "Games/CrazyEights/startup.lua",
-        "install_path": "crazyeights_startup.lua",
-        "sha256": "52480ea5259d663b1f0c5c8b69972ed2a8d87fc543ae3b3c156f5ebaa279de67"
+        "repo_path": "Shared/lib/casino/deck.lua",
+        "install_path": "lib/casino/deck.lua",
+        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
+      },
+      {
+        "repo_path": "Games/CrazyEights/crazyeights_view.lua",
+        "install_path": "crazyeights_view.lua",
+        "sha256": "44a31f3f15840213a50021343633fc2f2a616b0ac023f7c33775db0c3ec25a25"
       },
       {
         "repo_path": "Games/CrazyEights/vhcc_lockdown.txt",
@@ -163,6 +178,11 @@
         "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
       },
       {
+        "repo_path": "Shared/lib/casino/badges.lua",
+        "install_path": "lib/casino/badges.lua",
+        "sha256": "245eee1952dc962d197c2ba36b7434644094a4135acb9988fed7dcc7cc99b30a"
+      },
+      {
         "repo_path": "Shared/lib/casino/bit32_shim.lua",
         "install_path": "lib/casino/bit32_shim.lua",
         "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
@@ -170,7 +190,7 @@
       {
         "repo_path": "Shared/lib/casino/board.lua",
         "install_path": "lib/casino/board.lua",
-        "sha256": "40683ef3352cd87bef36e45ea2a35a3b4b8e9c4f1964041b60aae317bc41cb00"
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
       },
       {
         "repo_path": "Shared/lib/casino/books.lua",
@@ -178,9 +198,14 @@
         "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
       },
       {
-        "repo_path": "Games/CrazyEights/crazyeights_view.lua",
-        "install_path": "crazyeights_view.lua",
-        "sha256": "44a31f3f15840213a50021343633fc2f2a616b0ac023f7c33775db0c3ec25a25"
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
+      },
+      {
+        "repo_path": "Games/CrazyEights/startup.lua",
+        "install_path": "crazyeights_startup.lua",
+        "sha256": "52480ea5259d663b1f0c5c8b69972ed2a8d87fc543ae3b3c156f5ebaa279de67"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -198,6 +223,7 @@
     "requires_updater": true,
     "lib_modules": [
       "lib.casino.audio",
+      "lib.casino.badges",
       "lib.casino.bit32_shim",
       "lib.casino.board",
       "lib.casino.books",
@@ -205,17 +231,21 @@
       "lib.casino.chat",
       "lib.casino.deck",
       "lib.casino.demo",
+      "lib.casino.door",
       "lib.casino.font",
       "lib.casino.journal",
       "lib.casino.lamps",
       "lib.casino.limits",
       "lib.casino.net",
+      "lib.casino.playercard",
       "lib.casino.presence",
+      "lib.casino.pretend",
       "lib.casino.rng",
       "lib.casino.session",
       "lib.casino.stats",
       "lib.casino.table",
       "lib.casino.theme",
+      "lib.casino.tournament",
       "lib.casino.ui",
       "lib.casino.wallet",
       "lib.roger_logging",
