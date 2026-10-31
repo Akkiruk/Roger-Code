@@ -554,6 +554,7 @@ local function buildStandaloneUtilitySpec(repoPath, commit)
     { repo_path = "System/runtime_startup.lua", install_path = "startup.lua" },
     { repo_path = "Shared/lib/roger_supervisor.lua", install_path = "lib/roger_supervisor.lua" },
     { repo_path = "Shared/lib/updater.lua", install_path = "lib/updater.lua" },
+    { repo_path = "Shared/lib/runtime_exit.lua", install_path = "lib/runtime_exit.lua" },
     { repo_path = repoPath, install_path = fileName },
   }
 

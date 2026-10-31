@@ -43,6 +43,7 @@ $RuntimeUpdateCommandPath = "System/roger_update.lua"
 $RuntimeSupervisorPath = "Shared/lib/roger_supervisor.lua"
 $RuntimeLoggingPath = "Shared/lib/roger_logging.lua"
 $RuntimeUpdaterPath = "Shared/lib/updater.lua"
+$RuntimeRootModules = @("lib.roger_supervisor", "lib.updater")
 $DefaultUpdateInterval = 60
 
 $SkipPatterns = @("*.bak", "*.old", "*.log", "*.md", "manifest.json")
@@ -385,6 +386,13 @@ function Get-LibDependencyClosure {
     $queue = New-Object System.Collections.Generic.Queue[string]
     $seenModules = New-Object "System.Collections.Generic.HashSet[string]" ([System.StringComparer]::OrdinalIgnoreCase)
     $resolved = New-Object System.Collections.Generic.List[string]
+
+    # Every package boots through the runtime supervisor, so whatever it needs ships with every package.
+    foreach ($moduleName in $RuntimeRootModules) {
+        if ($seenModules.Add($moduleName)) {
+            $queue.Enqueue($moduleName)
+        }
+    }
 
     foreach ($relativePath in $LuaRelativePaths) {
         $fullPath = Join-Path $PackageRoot ($relativePath.Replace('/', '\'))
