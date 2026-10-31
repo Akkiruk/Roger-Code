@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-31T19:16:02Z",
+  "generated_at": "2026-10-31T21:26:08Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
+    "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -17,9 +17,9 @@
       "name": "Arcade",
       "category": "Arcade",
       "description": "Restarts the Arcade after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
-      "version": "1.0.3",
-      "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-      "package_hash": "2be325b6d5ecfe1dc75e25e6da09f6be8b3ec2df91a10349d9199e56954514c3",
+      "version": "1.0.4",
+      "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
+      "package_hash": "69f0d8dd1e2d0c35a5700537e8ce2b453c6d5bf6b625f1513db9501739340cfb",
       "spec_path": "programs/arcade.json"
     },
     "baccarat": {
@@ -57,6 +57,15 @@
       "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
       "package_hash": "beaef92b419d96b699e8bf5383d7ea30cf0d6edb07a9e103aad5fa666e83c7e2",
       "spec_path": "programs/casino-hub.json"
+    },
+    "classics": {
+      "name": "Classics",
+      "category": "Arcade",
+      "description": "Restarts the Classics after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+      "version": "1.0.0",
+      "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
+      "package_hash": "d40085352cfe6aed6f4697298e78cd879d2def9ca5f938f064cb58ee950a0cf8",
+      "spec_path": "programs/classics.json"
     },
     "conformance_probe": {
       "name": "Conformance Probe",
