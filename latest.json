@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-30T23:36:49Z",
+  "generated_at": "2026-10-31T00:02:51Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "5ee7959a7db75d04dfd10ece5acee880c224f9d6",
+    "commit": "48d01a40d70e64b646b70dd44e62d6632467d0aa",
     "path": "System/installer.lua",
     "sha256": "8ca7f69efc66493473eaf18e0693cdaf22d1590d4432221c1b7c13985fcc2a2e"
   },
@@ -125,9 +125,9 @@
       "name": "Ultimate Tic-Tac-Toe",
       "category": "Games",
       "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
-      "version": "1.0.1",
-      "commit": "5ee7959a7db75d04dfd10ece5acee880c224f9d6",
-      "package_hash": "bfa83ba2a2ed2e6ae89d755660220c90bdbcaf959875b21ebab11792c34f2716",
+      "version": "1.0.2",
+      "commit": "48d01a40d70e64b646b70dd44e62d6632467d0aa",
+      "package_hash": "3400b7dc9b5ff513cdc710e8fb267fc8643bbb13531a07180ec0e33a168556d2",
       "spec_path": "programs/ultimate-tic-tac-toe.json"
     },
     "vault_item_analyzer": {
