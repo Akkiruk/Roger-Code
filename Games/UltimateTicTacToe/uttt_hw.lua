@@ -4,7 +4,7 @@
 --   monitor         the board (largest monitor), a second monitor becomes a live scoreboard
 --   speaker         sound (through uttt_audio / lib.sound)
 --   playerDetector  who is nearby, and whether a player walked away mid-game
---   chatBox         result announcements and turn reminders
+--   chatBox         results and turn reminders, whispered to the players in the game only
 --   redstoneIntegrator / computer sides   turn lamps and a celebration output
 
 local config = require("uttt_config")
@@ -155,6 +155,7 @@ function M.isNear(name)
 end
 
 -- The chat box has a cooldown between messages, so messages queue up and go out one at a time.
+-- Everything is a whisper to a named player: this game never talks to the whole server.
 local outbox = {}
 local nextChatAt = 0
 local CHAT_GAP_MS = 1100
@@ -179,12 +180,7 @@ local function pumpChat()
   local t = nowMs()
   if t < nextChatAt then return end
   local item = outbox[1]
-  local ok, res
-  if item.player then
-    ok, res = pcall(state.chat.sendMessageToPlayer, item.message, item.player, "UTTT")
-  else
-    ok, res = pcall(state.chat.sendMessage, item.message, "UTTT")
-  end
+  local ok, res = pcall(state.chat.sendMessageToPlayer, item.message, item.player, "UTTT")
   if ok and not res then
     -- the box refused (cooldown or unknown player); try again shortly, but not forever
     item.tries = (item.tries or 0) + 1
