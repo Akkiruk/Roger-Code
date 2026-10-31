@@ -29,7 +29,7 @@ local SOUNDS = {
 -- @param side string|nil  Side to wrap, or nil to auto-find via peripherals.find
 -- @return boolean  true if speaker is available
 local function init(side)
-  if side then
+  if side and peripheral.hasType(side, "speaker") then
     speaker = peripheral.wrap(side)
   end
   if not speaker then

@@ -50,7 +50,11 @@ end
 -- @return peripheral|nil
 local function safewrap(side, fallback)
   assert(type(side) == "string", "side must be a string")
-  local p = peripheral.wrap(side)
+  -- A side name is only a hint. Asking for a monitor must never hand back the chat box that happens to sit there.
+  local p = nil
+  if not fallback or not peripheral.isPresent(side) or peripheral.hasType(side, fallback) then
+    p = peripheral.wrap(side)
+  end
   if p then
     dbg("Wrapped peripheral on " .. side)
     return p
