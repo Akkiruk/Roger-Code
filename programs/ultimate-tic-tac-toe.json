@@ -7,12 +7,12 @@
     "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
-    "version": "1.0.7"
+    "version": "1.0.8"
   },
   "build": {
-    "commit": "856e2460491b7233ee65dd7483f1f0eb822b2ca7",
-    "generated_at": "2026-10-31T01:43:50Z",
-    "package_hash": "c9701dcde2a85227901e17c4e91051e930a6b7f571b25cdaa341a920dbb35596"
+    "commit": "cc92e03db5e588a74f79b75d275d2f3e5cb23a6a",
+    "generated_at": "2026-10-31T01:51:27Z",
+    "package_hash": "605b48bfbd7229ebb69e7a50c29dac4e3ef84e8bb35438df1cd990c238362a6e"
   },
   "install": {
     "preserve": [
@@ -103,7 +103,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "3cf0ba590d122dc838a96d3dc3ea3dd22c1b1a0adabefb4253097bcd41673043"
+        "sha256": "c853942f551769727bded9f16f42a2b6df162cca5addc1fa12d1e431368e4d90"
       },
       {
         "repo_path": "System/roger_update.lua",

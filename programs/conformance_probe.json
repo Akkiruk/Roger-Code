@@ -7,12 +7,12 @@
     "description": "Conformance probe: run it on a real computer, then give conformance_results.json to the emulator project",
     "source_root": "Utilities",
     "entrypoint": "conformance_probe.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "856e2460491b7233ee65dd7483f1f0eb822b2ca7",
-    "generated_at": "2026-10-31T01:43:50Z",
-    "package_hash": "2e88d9da5d2d4e26a1e4ea457030047e3708a25366a142b369b908bf41b89912"
+    "commit": "cc92e03db5e588a74f79b75d275d2f3e5cb23a6a",
+    "generated_at": "2026-10-31T01:51:27Z",
+    "package_hash": "400f5b5d4abda239ff883b64b54e621ca57af3d633c9736b617d8f477a475445"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "3cf0ba590d122dc838a96d3dc3ea3dd22c1b1a0adabefb4253097bcd41673043"
+        "sha256": "c853942f551769727bded9f16f42a2b6df162cca5addc1fa12d1e431368e4d90"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",

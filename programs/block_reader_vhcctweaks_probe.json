@@ -7,12 +7,12 @@
     "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
     "source_root": "Utilities",
     "entrypoint": "block_reader_vhcctweaks_probe.lua",
-    "version": "1.0.13"
+    "version": "1.0.14"
   },
   "build": {
-    "commit": "856e2460491b7233ee65dd7483f1f0eb822b2ca7",
-    "generated_at": "2026-10-31T01:43:50Z",
-    "package_hash": "8c514ec33befbc00dc4eb523101c293483e2464bbe07f6c4cc7448a5995579d3"
+    "commit": "cc92e03db5e588a74f79b75d275d2f3e5cb23a6a",
+    "generated_at": "2026-10-31T01:51:27Z",
+    "package_hash": "fb73ff257ccede494c4e747dd87e76919e7a2d2bc7e465da9905de5f8891feae"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "3cf0ba590d122dc838a96d3dc3ea3dd22c1b1a0adabefb4253097bcd41673043"
+        "sha256": "c853942f551769727bded9f16f42a2b6df162cca5addc1fa12d1e431368e4d90"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
