@@ -41,6 +41,7 @@ local LOG_FILE = "roger_supervisor.log"
 local DEFAULT_RESTART_DELAY = 5
 local DEFAULT_UPDATE_INTERVAL = 60
 local CRASH_UPDATE_CHECK_COOLDOWN = 30
+local CRASHES_BEFORE_REPAIR = 2
 local DEFAULT_GAME_MONITOR_IDLE_TIMEOUT = 60
 local MONITOR_IDLE_CHECK_INTERVAL = 1
 local GAME_CATEGORY = "Games"
@@ -183,14 +184,16 @@ local function monitorIdleWatchdog(timeoutSeconds)
       lastMonitorActivityAt = os.epoch("local")
     elseif event == "timer" and param1 == timerId then
       local idleMs = os.epoch("local") - lastMonitorActivityAt
-      if idleMs >= timeoutMs then
+      if idleMs >= timeoutMs and not updater.isUpdating() then
         logMessage("Monitor idle for " .. tostring(math.floor(idleMs / 1000)) .. "s; rebooting")
-        term.setBackgroundColor(colors.black)
-        term.setTextColor(colors.yellow)
-        term.clear()
-        term.setCursorPos(1, 1)
-        print("No monitor activity for 60 seconds.")
-        print("Rebooting...")
+        pcall(function()
+          term.setBackgroundColor(colors.black)
+          term.setTextColor(colors.yellow)
+          term.clear()
+          term.setCursorPos(1, 1)
+          print("No monitor activity for 60 seconds.")
+          print("Rebooting...")
+        end)
         os.reboot()
       end
 
@@ -292,8 +295,9 @@ local function updateWatcher(updateInterval)
   })
 end
 
-local function checkForUpdatesAfterCrash(runErr)
+local function checkForUpdatesAfterCrash(runErr, repair)
   local status = updater.checkForUpdates({
+    repair = repair,
     rebootOnUpdate = true,
     rebootDelay = 1,
     callback = function(updateStatus, message)
@@ -314,6 +318,9 @@ end
 
 function M.run(...)
   local args = { ... }
+  -- A game can leave term pointing at anything, and the supervisor still has to draw and update after it dies.
+  local homeTerm = term.current()
+  updater.clearStaleLock()
   local runtime, err = loadRuntimeState()
   if not runtime then
     logMessage("Cannot boot installed program: " .. tostring(err))
@@ -342,9 +349,11 @@ function M.run(...)
 
   local function appLoop()
     local lastCrashUpdateCheckAt = nil
+    local crashes = 0
 
     while true do
       local ok, runErr = runProgram(runtime.appEntrypoint, args)
+      term.redirect(homeTerm)
       if ok then
         logMessage("Program exited normally: " .. tostring(runtime.appEntrypoint))
         if not runtime.autoRestart then
@@ -359,6 +368,7 @@ function M.run(...)
           return
         end
 
+        crashes = crashes + 1
         local now = os.epoch("local")
         local shouldCheckForUpdates = (not lastCrashUpdateCheckAt)
           or ((now - lastCrashUpdateCheckAt) >= (CRASH_UPDATE_CHECK_COOLDOWN * 1000))
@@ -371,7 +381,7 @@ function M.run(...)
           term.setCursorPos(1, 8)
           term.setTextColor(colors.lightGray)
           print("Checking for updates before restart...")
-          checkForUpdatesAfterCrash(runErr)
+          checkForUpdatesAfterCrash(runErr, crashes >= CRASHES_BEFORE_REPAIR)
         else
           local secondsUntilRetry = math.ceil(((CRASH_UPDATE_CHECK_COOLDOWN * 1000) - (now - lastCrashUpdateCheckAt)) / 1000)
           logMessage("Skipping crash update check for " .. tostring(secondsUntilRetry) .. "s cooldown")

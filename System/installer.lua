@@ -11,7 +11,7 @@
 --   installer self-update  -- Update just the installer
 --   installer wipe         -- Delete everything except the installer script
 
-local INSTALLER_VERSION = "1.1.7"
+local INSTALLER_VERSION = "1.1.8"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
 local SOURCE_BRANCH = "main"
@@ -25,6 +25,7 @@ local PHONE_HOST_MARKER_FILE = ".phone_os_host_claimed"
 local LOG_FILE = "installer_error.log"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
+local INSTALLER_HASH_FILE = ".installer_hash"
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
@@ -60,6 +61,7 @@ local RESERVED_LOCAL_PATHS = {
   ["vaultgear_error.log"] = true,
   ["vhcc_lockdown.txt"] = true,
   ["installer.lua"] = true,
+  [INSTALLER_HASH_FILE] = true,
   [UNLOCK_FILE] = true,
 }
 
@@ -1252,7 +1254,8 @@ local function selfUpdate(index, silent, commandArgs)
   if not needsUpdate then
     local myPath = shell.getRunningProgram()
     local currentData = readFile(myPath, true)
-    local currentHash = currentData and computeSha256(currentData) or nil
+    -- textutils.sha256 does not exist in game: fall back to the hash of the last installer saved here.
+    local currentHash = currentData and computeSha256(currentData) or readFile(INSTALLER_HASH_FILE, false)
     if currentHash and installer.sha256 then
       needsUpdate = string.lower(currentHash) ~= string.lower(installer.sha256)
     end
@@ -1298,6 +1301,7 @@ local function selfUpdate(index, silent, commandArgs)
   if data and verifyHash(data, installer.sha256) then
     local ok, saveErr = saveFile(myPath, data)
     if ok then
+      saveFile(INSTALLER_HASH_FILE, tostring(installer.sha256 or ""))
       if not silent then
         cprint(colors.lime, "Done! Restarting...")
       end

@@ -58,6 +58,9 @@ local VERSION_FILE = ".installed_program"
 local MANAGED_FILES = ".roger_managed_files"
 local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
+local INSTALLER_HASH_FILE = ".installer_hash"
+local REPAIR_MARK = ".crash_repair"
+local DOWNLOAD_ATTEMPTS = 3
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
 local DEFAULT_WATCH_INTERVAL = 60
@@ -81,6 +84,8 @@ local RESERVED_LOCAL_PATHS = {
   ["vaultgear_error.log"] = true,
   ["vhcc_lockdown.txt"] = true,
   ["installer.lua"] = true,
+  [INSTALLER_HASH_FILE] = true,
+  [REPAIR_MARK] = true,
   [UNLOCK_FILE] = true,
 }
 local logger = openLogger(LOG_FILE, "Updater")
@@ -171,6 +176,20 @@ local function download(url, headers)
     return nil, "Empty response: " .. tostring(url)
   end
   return data
+end
+
+local function downloadPackageFile(url)
+  local data, err
+  for attempt = 1, DOWNLOAD_ATTEMPTS do
+    data, err = download(url)
+    if data then
+      return data
+    end
+    if attempt < DOWNLOAD_ATTEMPTS then
+      os.sleep(attempt)
+    end
+  end
+  return nil, err
 end
 
 local function parseJson(data, label)
@@ -510,11 +529,10 @@ local function acquireLock()
       local raw = f.readAll()
       f.close()
       local lockTime = tonumber(raw)
-      if lockTime and (os.epoch("local") - lockTime) / 1000 > 300 then
-        fs.delete(UPDATE_LOCK)
-      else
+      if lockTime and (os.epoch("local") - lockTime) / 1000 <= 300 then
         return false
       end
+      fs.delete(UPDATE_LOCK)
     end
   end
 
@@ -532,6 +550,15 @@ local function releaseLock()
   if fs.exists(UPDATE_LOCK) then
     fs.delete(UPDATE_LOCK)
   end
+end
+
+-- Only this boot can be updating, so a lock found at boot was left by a reboot mid-check.
+local function clearStaleLock()
+  pcall(releaseLock)
+end
+
+local function isUpdating()
+  return fs.exists(UPDATE_LOCK)
 end
 
 local function deletePath(path)
@@ -557,6 +584,21 @@ local function normalizePath(path)
   return tostring(path or ""):gsub("\\", "/")
 end
 
+-- textutils.sha256 does not exist in game, so the hash of the last installer we saved stands in for the file's own.
+local function installerIsCurrent(path, expected)
+  local data = readFile(path, true)
+  if not data then
+    return false
+  end
+
+  local actual = computeSha256(data)
+  if actual then
+    return string.lower(actual) == string.lower(tostring(expected or ""))
+  end
+
+  return readFile(INSTALLER_HASH_FILE, false) == tostring(expected or "")
+end
+
 local function refreshInstaller(index)
   local installer = index and index.installer or nil
   if type(installer) ~= "table" then
@@ -568,8 +610,7 @@ local function refreshInstaller(index)
     installerPath = INSTALLER_PATH
   end
 
-  local currentData = readFile(installerPath, true)
-  if currentData and verifyHash(currentData, installer.sha256) then
+  if installerIsCurrent(installerPath, installer.sha256) then
     return true, false, "Installer up to date"
   end
 
@@ -608,6 +649,7 @@ local function refreshInstaller(index)
     endWriteWindow(createdUnlock)
     return false, false, saveErr or "Installer save failed"
   end
+  saveFile(INSTALLER_HASH_FILE, tostring(installer.sha256 or ""))
 
   endWriteWindow(createdUnlock)
 
@@ -727,7 +769,7 @@ end
 -- Update logic
 -----------------------------------------------------
 
-local function performUpdate(spec, installed)
+local function performUpdate(spec, installed, repairOf)
   local unlockOk, unlockResult = beginWriteWindow("auto-update")
   if not unlockOk then
     logMsg("Update unlock failed: " .. tostring(unlockResult))
@@ -747,25 +789,15 @@ local function performUpdate(spec, installed)
     managedPaths[#managedPaths + 1] = entry.install_path
   end
 
-  removeStaleFiles(previouslyManaged, managedPaths)
-  pruneLegacyPayload(managedPaths)
-
+  -- Everything is fetched before anything is touched, so a failed download leaves the old version whole.
+  local fetched = {}
   for _, entry in ipairs(spec.install.files or {}) do
     if entry.preserve_existing and fs.exists(entry.install_path) then
       success = success + 1
     else
-      local data, err = download(buildCommitUrl(build.commit, entry.repo_path))
+      local data, err = downloadPackageFile(buildCommitUrl(build.commit, entry.repo_path))
       if data and verifyHash(data, entry.sha256) then
-        if fs.exists(entry.install_path) then
-          fs.delete(entry.install_path)
-        end
-        local saveOk, saveErr = saveFile(entry.install_path, data)
-        if saveOk then
-          success = success + 1
-        else
-          failed = failed + 1
-          logMsg("Save failed: " .. tostring(entry.install_path) .. " - " .. tostring(saveErr))
-        end
+        fetched[#fetched + 1] = { path = entry.install_path, data = data }
       else
         failed = failed + 1
         logMsg("Download failed: " .. tostring(entry.install_path) .. " - " .. tostring(err or "hash mismatch"))
@@ -774,9 +806,31 @@ local function performUpdate(spec, installed)
     os.sleep(0)
   end
 
+  if failed > 0 then
+    logMsg("Update abandoned, nothing changed: " .. tostring(failed) .. " files could not be fetched")
+    endWriteWindow(createdUnlock)
+    return false, success, failed
+  end
+
+  removeStaleFiles(previouslyManaged, managedPaths)
+  pruneLegacyPayload(managedPaths)
+
+  for _, item in ipairs(fetched) do
+    local saveOk, saveErr = saveFile(item.path, item.data)
+    if saveOk then
+      success = success + 1
+    else
+      failed = failed + 1
+      logMsg("Save failed: " .. tostring(item.path) .. " - " .. tostring(saveErr))
+    end
+  end
+
   if failed == 0 then
     saveManagedFiles(managedPaths)
     saveInstalled(buildInstalledRecord(spec, installed))
+    if repairOf then
+      saveFile(REPAIR_MARK, tostring(repairOf))
+    end
   end
 
   endWriteWindow(createdUnlock)
@@ -852,7 +906,12 @@ local function checkForUpdates(opts)
     local localHash = installed.package_hash or installed.content_hash or ""
     local remoteHash = programEntry.package_hash or ""
 
-    local forceMode = opts.force == true
+    -- A game that keeps crashing on the current package gets its files replaced once, in case they were damaged.
+    local repairOf = nil
+    if opts.repair == true and readFile(REPAIR_MARK, false) ~= tostring(remoteHash) then
+      repairOf = remoteHash
+    end
+    local forceMode = opts.force == true or repairOf ~= nil
 
     if not packageNeedsUpdate(localHash, remoteHash, localCommit, remoteCommit, forceMode) then
       logMsg("Up to date: " .. progKey .. " v" .. tostring(installed.version or "?"))
@@ -888,7 +947,7 @@ local function checkForUpdates(opts)
     logMsg("Updating " .. progKey .. ": " .. reason)
     callback("updating", "Updating " .. progKey .. ": " .. reason)
 
-    local updated, filesOk, filesFailed = performUpdate(spec, installed)
+    local updated, filesOk, filesFailed = performUpdate(spec, installed, repairOf)
     if updated and filesFailed == 0 then
       logMsg("Update complete: " .. filesOk .. " files updated")
       status = "updated"
@@ -1001,6 +1060,8 @@ end
 
 return {
   checkForUpdates = checkForUpdates,
+  clearStaleLock = clearStaleLock,
+  isUpdating = isUpdating,
   forceUpdate = forceUpdate,
   watchForUpdates = watchForUpdates,
   getInstallInfo = getInstallInfo,
