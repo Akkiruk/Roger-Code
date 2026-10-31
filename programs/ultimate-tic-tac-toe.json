@@ -7,12 +7,12 @@
     "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "870232d0a3f6485d55c963d8c47eb40adb16a461",
-    "generated_at": "2026-10-31T01:25:48Z",
-    "package_hash": "9e8b8d6871a45186b537103cea925f28875e7e20e04cb2c00a2da88aed605573"
+    "commit": "9f9f4df94d63ff758df12bdc233ed312af9984d7",
+    "generated_at": "2026-10-31T01:27:35Z",
+    "package_hash": "569e5a46b9fc991760a29190237ebe7ec0527f41651795119507caaca82d4d95"
   },
   "install": {
     "preserve": [
@@ -27,7 +27,7 @@
       {
         "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
       },
       {
         "repo_path": "Games/UltimateTicTacToe/vhcc_lockdown.txt",
@@ -123,7 +123,7 @@
       {
         "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
-        "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
+        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
       }
     ]
   },

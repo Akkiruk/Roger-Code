@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.79"
+    "version": "1.0.80"
   },
   "build": {
-    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T01:25:48Z",
-    "package_hash": "b0cabd334c403a5175941a7d3dbb3c2bcabfd06b1c2d4ee0d4d2762cb933501d"
+    "commit": "9f9f4df94d63ff758df12bdc233ed312af9984d7",
+    "generated_at": "2026-10-31T01:27:35Z",
+    "package_hash": "0313b1af7a89870c93743a8c611ae2473b78b9a705bf012bc32e5492f0fd8c1e"
   },
   "install": {
     "preserve": [
@@ -92,7 +92,7 @@
       {
         "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
       },
       {
         "repo_path": "Shared/lib/player_detection.lua",
@@ -122,7 +122,7 @@
       {
         "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
-        "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
+        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
       },
       {
         "repo_path": "Shared/lib/ui_surface.lua",

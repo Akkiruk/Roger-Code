@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.14"
+    "version": "1.0.15"
   },
   "build": {
-    "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T01:25:48Z",
-    "package_hash": "fe495341108c1e726dbd61264b8635df1edbab2da48d16458033f4d1d2f27b94"
+    "commit": "9f9f4df94d63ff758df12bdc233ed312af9984d7",
+    "generated_at": "2026-10-31T01:27:35Z",
+    "package_hash": "52c6278986f382a4fe258b2969f9d2cbfff7bce7e1e35debf5a6dcf97d480091"
   },
   "install": {
     "preserve": [
@@ -28,7 +28,7 @@
       {
         "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
+        "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
       },
       {
         "repo_path": "Shared/lib/monitor_scale.lua",
@@ -150,7 +150,7 @@
       {
         "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
-        "sha256": "893bae883db422e94efcaa4b9263b8b928d2e4ba00cee63b83826db5a4ee71c1"
+        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
       }
     ]
   },
