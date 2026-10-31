@@ -653,7 +653,7 @@ local function drawLobby()
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
 
   -- nearby players
-  local near, ok = hw.nearby(config.DETECT_RANGE)
+  local near, ok = hw.nearby()
   local listY = 27
   local label
   if ok or #near > 0 then label = "NEARBY PLAYERS (" .. #near .. ")" else label = "NO PLAYER DETECTED - USE GUEST OR COMPUTER" end
@@ -1533,7 +1533,7 @@ local function checkPresence(g)
   if g.paused then g.awaySince = nil; return end
   local mover = moverSlot(g)
   if not isHuman(mover) then g.awaySince = nil; return end
-  local _, ok, detected = hw.nearby(config.DETECT_RANGE)
+  local _, ok, detected = hw.nearby()
   if not ok then g.awaySince = nil; return end
   local here = false
   for _, n in ipairs(detected) do if n == mover.name then here = true end end
@@ -1557,7 +1557,6 @@ end
 local function onTick()
   local t = nowMs()
   audio.pump()
-  hw.pump()
   if S.toast and t > S.toast.untilAt then S.toast = nil; S.dirty = true end
   if S.celebrateUntil and t > S.celebrateUntil then
     S.celebrateUntil = nil
@@ -1710,9 +1709,9 @@ local function main()
     S.view = "idle"
   end
 
-  -- The game clock is a timer. A real server computer has been seen to stop ticking (the computer opponent never
-  -- moved), so there are two timers (the spare keeps the loop alive if one is lost), any other event also runs an
-  -- overdue tick, and a gap of more than 1.5 s is logged.
+  -- The game clock is a timer, and a lost timer stops it for good (the computer opponent then never moves). Timers are
+  -- lost to server-thread peripheral calls, which is why those live in hw.worker. As a second line of defence there
+  -- are two timers, any other event runs an overdue tick, and a gap of more than 1.5 s is logged.
   local tickA, tickB
   local lastTickAt = nowMs()
   local function armTicks()
@@ -1732,9 +1731,11 @@ local function main()
     local okTick, errTick = pcall(onTick)
     if not okTick then log("tick error: " .. tostring(errTick)); error(errTick, 0) end
   end
+  hw.pollDetector() -- nothing to lose yet: the game loop has not started
   armTicks()
   render()
-  while true do
+  local function gameLoop()
+   while true do
     local ev, a, b, c = os.pullEventRaw()
     if ev == "terminate" then
       shutdown()
@@ -1759,7 +1760,9 @@ local function main()
     end
     if nowMs() - lastTickAt > 400 then runTick("event " .. tostring(ev)) end
     if S.dirty then render() end
+   end
   end
+  parallel.waitForAny(gameLoop, hw.worker)
 end
 
 local ok, err = pcall(main)

@@ -15,7 +15,7 @@ local state = {
   monitor = nil, monitorName = nil, scoreboard = nil, scoreboardName = nil,
   detector = nil, detectorName = nil, chat = nil, chatName = nil,
   redstone = nil, redstoneName = nil, speakerName = nil,
-  nearbyAt = -1e9, nearbyCache = {}, nearbyOk = false,
+  nearbyAt = -1e9, nearbyDetected = {}, nearbyOk = false,
 }
 
 local function nowMs() return os.epoch("local") end
@@ -110,34 +110,43 @@ function M.livePlayer()
 end
 
 --- Names of players near the detector, sorted. Cached for one second. Falls back to the CCVault player.
--- Returns the list (detector plus the CCVault player), ok (a real detector answered), and the detector-only list.
--- Presence checks must use the detector-only list: the CCVault player stays "live" after walking away.
-function M.nearby(range, force)
-  local t = nowMs()
-  if not force and t - state.nearbyAt < 1000 then return state.nearbyCache, state.nearbyOk, state.nearbyDetected end
-  local list, detected, ok = {}, {}, false
+-- Detector and chat box methods run on the server thread: the caller waits a tick and every event that arrives
+-- meanwhile is thrown away for that coroutine. Called from the game loop, that loses timers (stopping the game clock
+-- for good) and touches. So only M.worker, a coroutine of its own, ever calls them; the game loop reads the results.
+local function byName(a, b) return string.lower(a) < string.lower(b) end
+
+--- Ask the detector who is near. Only call this from M.worker, or before the game loop starts.
+function M.pollDetector()
+  local detected, ok = {}, false
   if state.detector then
-    local players = safe(state.detector.getPlayersInRange, range or config.DETECT_RANGE)
+    local players = safe(state.detector.getPlayersInRange, config.DETECT_RANGE)
     if type(players) == "table" then
       ok = true
-      for _, n in ipairs(players) do list[#list + 1] = n; detected[#detected + 1] = n end
+      for _, n in ipairs(players) do detected[#detected + 1] = n end
     end
   end
-  local live = M.livePlayer()
+  table.sort(detected, byName)
+  state.nearbyDetected, state.nearbyOk, state.nearbyAt = detected, ok, nowMs()
+end
+
+-- Returns the list (detector plus the CCVault player), ok (a real detector answered), and the detector-only list.
+-- Presence checks must use the detector-only list: the CCVault player stays "live" after walking away.
+function M.nearby()
+  local detected = state.nearbyDetected or {}
+  local list = {}
+  for _, n in ipairs(detected) do list[#list + 1] = n end
+  local live = M.livePlayer() -- ccvault runs on the computer thread, so this one is safe here
   if live then
     local have = false
     for _, n in ipairs(list) do if n == live then have = true end end
     if not have then list[#list + 1] = live end
   end
-  local function byName(a, b) return string.lower(a) < string.lower(b) end
   table.sort(list, byName)
-  table.sort(detected, byName)
-  state.nearbyAt, state.nearbyCache, state.nearbyOk, state.nearbyDetected = t, list, ok, detected
-  return list, ok, detected
+  return list, state.nearbyOk, detected
 end
 
-function M.isNear(name, range)
-  local _, ok, detected = M.nearby(range)
+function M.isNear(name)
+  local _, ok, detected = M.nearby()
   if not ok then return true end -- cannot tell, so do not accuse anyone of leaving
   for _, n in ipairs(detected) do
     if n == name then return true end
@@ -164,8 +173,8 @@ function M.tell(player, message)
   return enqueue({ message = message, player = player })
 end
 
---- Send the next queued chat message when the cooldown allows. Call regularly.
-function M.pump()
+--- Send the next queued chat message when the cooldown allows.
+local function pumpChat()
   if #outbox == 0 or not state.chat then return end
   local t = nowMs()
   if t < nextChatAt then return end
@@ -188,6 +197,15 @@ function M.pump()
 end
 
 function M.pending() return #outbox end
+
+--- Background coroutine, run beside the game loop with parallel: polls the detector and sends chat. Never returns.
+function M.worker()
+  while true do
+    if nowMs() - state.nearbyAt >= 1000 then M.pollDetector() end
+    pumpChat()
+    os.sleep(0.25)
+  end
+end
 
 local rsEnabled = true
 
