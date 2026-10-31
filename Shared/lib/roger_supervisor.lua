@@ -38,6 +38,7 @@ end
 
 local STATE_FILE = ".installed_program"
 local LOG_FILE = "roger_supervisor.log"
+local INSTALLER_PATH = "installer.lua"
 local DEFAULT_RESTART_DELAY = 5
 local DEFAULT_UPDATE_INTERVAL = 60
 local CRASH_UPDATE_CHECK_COOLDOWN = 30
@@ -198,6 +199,16 @@ local function monitorIdleWatchdog(timeoutSeconds)
       end
 
       timerId = os.startTimer(MONITOR_IDLE_CHECK_INTERVAL)
+    end
+  end
+end
+
+-- A running game leaves no shell on the computer, so this key is the way to reach the installer.
+local function installerKeyWatcher()
+  while true do
+    local _, typed = os.pullEventRaw("char")
+    if typed == "i" or typed == "I" then
+      return
     end
   end
 end
@@ -399,13 +410,30 @@ function M.run(...)
     end,
   }
 
+  local installerRequested = false
   if runtime.monitorIdleTimeout then
     runners[#runners + 1] = function()
       monitorIdleWatchdog(runtime.monitorIdleTimeout)
     end
+    runners[#runners + 1] = function()
+      installerKeyWatcher()
+      installerRequested = true
+    end
+    print("Press I here to open the installer.")
   end
 
   parallel.waitForAny(unpack(runners))
+  term.redirect(homeTerm)
+
+  if installerRequested and fs.exists(INSTALLER_PATH) then
+    logMessage("Installer opened from the running game")
+    term.setBackgroundColor(colors.black)
+    term.setTextColor(colors.white)
+    term.clear()
+    term.setCursorPos(1, 1)
+    shell.run(INSTALLER_PATH)
+    os.reboot()
+  end
 end
 
 return M
