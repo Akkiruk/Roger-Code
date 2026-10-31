@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.83"
+    "version": "1.0.84"
   },
   "build": {
-    "commit": "cc92e03db5e588a74f79b75d275d2f3e5cb23a6a",
-    "generated_at": "2026-10-31T01:51:27Z",
-    "package_hash": "b5c28ebf5a0c1b69efe8f5198ff456d7fa99a162ba8b6b4b81b264aa0254eba6"
+    "commit": "4036ddb2ef8584c04d8c4d50792b2c2e27213445",
+    "generated_at": "2026-10-31T03:39:56Z",
+    "package_hash": "70fa1ffbf61808b8b00e281a4947bf1a2ed936c85aab59f5372378e5fdd5f35f"
   },
   "install": {
     "preserve": [
@@ -167,7 +167,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c853942f551769727bded9f16f42a2b6df162cca5addc1fa12d1e431368e4d90"
+        "sha256": "9e0501d358f366187966d5a955eaec786b47b5cd035c2e5fb9a7b07acde8cffc"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",

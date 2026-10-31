@@ -7,12 +7,12 @@
     "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
     "source_root": "Utilities",
     "entrypoint": "vault_item_analyzer.lua",
-    "version": "1.0.28"
+    "version": "1.0.29"
   },
   "build": {
-    "commit": "cc92e03db5e588a74f79b75d275d2f3e5cb23a6a",
-    "generated_at": "2026-10-31T01:51:27Z",
-    "package_hash": "d6db9561ea2d9c2b121948b97447eb49c123324a510dcbb9f533baca5dadd4c7"
+    "commit": "4036ddb2ef8584c04d8c4d50792b2c2e27213445",
+    "generated_at": "2026-10-31T03:39:56Z",
+    "package_hash": "1fb9fb76681f417ac2c51c720734862d4f643a9a3d0996f620825befdeb4ca5c"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c853942f551769727bded9f16f42a2b6df162cca5addc1fa12d1e431368e4d90"
+        "sha256": "9e0501d358f366187966d5a955eaec786b47b5cd035c2e5fb9a7b07acde8cffc"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
