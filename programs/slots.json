@@ -7,17 +7,15 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.84"
+    "version": "1.0.85"
   },
   "build": {
-    "commit": "4036ddb2ef8584c04d8c4d50792b2c2e27213445",
-    "generated_at": "2026-10-31T03:39:56Z",
-    "package_hash": "70fa1ffbf61808b8b00e281a4947bf1a2ed936c85aab59f5372378e5fdd5f35f"
+    "commit": "487896ccd68e5e927c4019a1699fb8087709b257",
+    "generated_at": "2026-10-31T16:42:58Z",
+    "package_hash": "c7ff620811bc894d8a3ee6d406e6e4b1d1a24d51ddbdca264616aabc6e3180d0"
   },
   "install": {
-    "preserve": [
-      "slots_config.lua"
-    ],
+    "preserve": [],
     "files": [
       {
         "repo_path": "System/runtime_startup.lua",
@@ -25,225 +23,79 @@
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
       },
       {
-        "repo_path": "Shared/lib/bedrock/theme.lua",
-        "install_path": "lib/bedrock/theme.lua",
-        "sha256": "d2f00d7f891a682df343601702cddd6240f01d05a3eb1887afdf2cbb43b76664"
+        "repo_path": "Shared/lib/casino/ui.lua",
+        "install_path": "lib/casino/ui.lua",
+        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
       },
       {
-        "repo_path": "Shared/lib/bedrock/widgets.lua",
-        "install_path": "lib/bedrock/widgets.lua",
-        "sha256": "63c0bcce23c2a5792f09f815be21c78864d84dcdbfa44e28a547e18c6d19aa71"
+        "repo_path": "Shared/lib/casino/theme.lua",
+        "install_path": "lib/casino/theme.lua",
+        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
       },
       {
-        "repo_path": "Shared/lib/betting.lua",
-        "install_path": "lib/betting.lua",
-        "sha256": "fa7d085bb5a72a71868d28aaedb01e92feed24772638340db88fa59619fd1f12"
+        "repo_path": "Shared/lib/casino/table.lua",
+        "install_path": "lib/casino/table.lua",
+        "sha256": "4fe475c48815f87f2279ffbd65559ebfc7f8158274d331b5c1350a24daa36348"
       },
       {
-        "repo_path": "Shared/lib/cards.lua",
-        "install_path": "lib/cards.lua",
-        "sha256": "c82eb1f49f4c2ca1d3c9657724856c60d256f8727b7bdbe76e3bb5b33f23c6af"
+        "repo_path": "Shared/lib/casino/stats.lua",
+        "install_path": "lib/casino/stats.lua",
+        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
       },
       {
-        "repo_path": "Shared/lib/casino_launcher.lua",
-        "install_path": "lib/casino_launcher.lua",
-        "sha256": "58c18279584e53ff747e3178cc8928b47bed0dacd20121aab8d30242a4c48dfb"
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
-        "repo_path": "Shared/lib/casino_pages.lua",
-        "install_path": "lib/casino_pages.lua",
-        "sha256": "c48bf7987e6bbe53f66dfe743c1ee90f4e30e8c7f55e516f778025bf2cbdc492"
+        "repo_path": "Shared/lib/casino/presence.lua",
+        "install_path": "lib/casino/presence.lua",
+        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
       },
       {
-        "repo_path": "Shared/lib/crash_recovery.lua",
-        "install_path": "lib/crash_recovery.lua",
-        "sha256": "065352942aa275de859eb971e92755fda9b31c5f406f2cc7c763c88a1b3e65a0"
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "a972e68b85c15ae996468eca2bb5b50d679b3d0ccc8c80a4785bef27d6429714"
       },
       {
-        "repo_path": "Shared/lib/currency.lua",
-        "install_path": "lib/currency.lua",
-        "sha256": "a90fd5b7433bba030e578eba885238b71b8140dd908aece1830e0468ea436225"
+        "repo_path": "Shared/lib/casino/limits.lua",
+        "install_path": "lib/casino/limits.lua",
+        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
       },
       {
-        "repo_path": "Shared/lib/game_setup.lua",
-        "install_path": "lib/game_setup.lua",
-        "sha256": "0759c4f50ece5f4ccaeda2e3b40cc45e76beec1614fdfd7dbb812167571d205a"
+        "repo_path": "Shared/lib/casino/journal.lua",
+        "install_path": "lib/casino/journal.lua",
+        "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
       },
       {
-        "repo_path": "Shared/lib/idle_card_animation_presets.lua",
-        "install_path": "lib/idle_card_animation_presets.lua",
-        "sha256": "6a8ff3d7385b38cd92dfdba3bfe9eb1035edc5159a4e802fd027fe23f0be3046"
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
-        "repo_path": "Shared/lib/bedrock/runtime.lua",
-        "install_path": "lib/bedrock/runtime.lua",
-        "sha256": "3675404843d90af695d2965c35825a3f696b5047ae675e057705057fbca6fc87"
+        "repo_path": "Shared/lib/casino/deck.lua",
+        "install_path": "lib/casino/deck.lua",
+        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
       },
       {
-        "repo_path": "Shared/lib/idle_card_animation.lua",
-        "install_path": "lib/idle_card_animation.lua",
-        "sha256": "d8f55914ec7bb0630e275eb91f7e36993b38e274ef40c2d03108142ece75efc1"
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "f50a4635c9c55252a328627806c01d7667b27ebe14c12c02d67417e2f33db27e"
       },
       {
-        "repo_path": "Shared/lib/monitor_scale.lua",
-        "install_path": "lib/monitor_scale.lua",
-        "sha256": "d1686cc3ad8f58937cfd70e1fb5b5e701002478c24c4c185652f9e8d9851b7c8"
+        "repo_path": "Shared/lib/casino/books.lua",
+        "install_path": "lib/casino/books.lua",
+        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
       },
       {
-        "repo_path": "Shared/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
+        "repo_path": "Shared/lib/casino/bit32_shim.lua",
+        "install_path": "lib/casino/bit32_shim.lua",
+        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
       },
       {
-        "repo_path": "Shared/lib/player_detection.lua",
-        "install_path": "lib/player_detection.lua",
-        "sha256": "c25db5c2d71f26e39016eddb8eb5b4c11ede45953dfcfff48ecfa8ca10bb6cfc"
-      },
-      {
-        "repo_path": "Shared/lib/replay_prompt.lua",
-        "install_path": "lib/replay_prompt.lua",
-        "sha256": "2b0fbb04e5e36579ba25e125313d8de24da4f236c731a2a3927d94ab911b4afd"
-      },
-      {
-        "repo_path": "Shared/lib/round_settlement.lua",
-        "install_path": "lib/round_settlement.lua",
-        "sha256": "f2286102f91ed771c442bb8a4719808ced0431ba23fe967d35243acd8a2561a1"
-      },
-      {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
-      },
-      {
-        "repo_path": "Shared/lib/safe_runner.lua",
-        "install_path": "lib/safe_runner.lua",
-        "sha256": "adbdca35ed4cf5fdf96f8abd0125a5c1e40e2e3180a7d093e01f88a8b35d0cd4"
-      },
-      {
-        "repo_path": "Shared/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
-      },
-      {
-        "repo_path": "Shared/lib/ui_surface.lua",
-        "install_path": "lib/ui_surface.lua",
-        "sha256": "2d9633af5a2c3527f797517a96ac83894d922bee43d0d6469669ee6ad01ae9d6"
-      },
-      {
-        "repo_path": "Shared/lib/ui_text.lua",
-        "install_path": "lib/ui_text.lua",
-        "sha256": "1310dcd0b36611b8467998ed1e3b2718df85c6cd49aed89f919eb58519a650f2"
-      },
-      {
-        "repo_path": "Shared/lib/idle_screen.lua",
-        "install_path": "lib/idle_screen.lua",
-        "sha256": "6a8b6ee0b917d58651344340990706db56f6145c511eca129854a736ae3d1d83"
-      },
-      {
-        "repo_path": "Shared/lib/ui_touch.lua",
-        "install_path": "lib/ui_touch.lua",
-        "sha256": "90bf5705b70116972a149aa37de477f9d2c199c854f4e5aac3d781e4679176a8"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/renderer.lua",
-        "install_path": "lib/bedrock/renderer.lua",
-        "sha256": "bc4fdc9d19c8c0d5c83f3cd7f91433e4a337d1545056c49ffb460208496ce405"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock.lua",
-        "install_path": "lib/bedrock.lua",
-        "sha256": "80bb480b280971492dbc619273878b6aa1f03a9946f456e2ad9d0a30d5a6c12c"
-      },
-      {
-        "repo_path": "System/roger_logs.lua",
-        "install_path": "rogerlogs.lua",
-        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
-      },
-      {
-        "repo_path": "System/roger_update.lua",
-        "install_path": "rogerupdate.lua",
-        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
-      },
-      {
-        "repo_path": "Shared/lib/roger_supervisor.lua",
-        "install_path": "lib/roger_supervisor.lua",
-        "sha256": "9e0501d358f366187966d5a955eaec786b47b5cd035c2e5fb9a7b07acde8cffc"
-      },
-      {
-        "repo_path": "Shared/lib/roger_logging.lua",
-        "install_path": "lib/roger_logging.lua",
-        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
-      },
-      {
-        "repo_path": "Shared/lib/updater.lua",
-        "install_path": "lib/updater.lua",
-        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
-      },
-      {
-        "repo_path": "Games/Slots/slots.lua",
-        "install_path": "slots.lua",
-        "sha256": "0ccd7ad2c19d4f9dce1aa11cef34cf6556e70c0f1cd320d04d703b5bddea60a9"
-      },
-      {
-        "repo_path": "Games/Slots/startup.lua",
-        "install_path": "slots_startup.lua",
-        "sha256": "6f15eac0da74eba8a21ca84b7a83e700651aaef0548c5b80e3d5d78711326d6b"
-      },
-      {
-        "repo_path": "Games/Slots/view_art.lua",
-        "install_path": "view_art.lua",
-        "sha256": "74436d2bcec5b17c18b14d796f4bc92f656e3d188044fc18a61e2377f3343c60"
-      },
-      {
-        "repo_path": "Games/Slots/slots_config.lua",
-        "install_path": "slots_config.lua",
-        "sha256": "ea4378b1f4bad8cf2fbc6aa0a6e11fb92abfcc8868552e39ed1971c2f08cc197",
-        "preserve_existing": true
-      },
-      {
-        "repo_path": "Games/Slots/bar.nfp",
-        "install_path": "bar.nfp",
-        "sha256": "381a51a5043e943f00255a566868b6ed5230f96b23f381d1e04e3b6ef309bf1b"
-      },
-      {
-        "repo_path": "Shared/lib/bedrock/layout.lua",
-        "install_path": "lib/bedrock/layout.lua",
-        "sha256": "1dd2315042b5904b36c6156ff9a217a56778662e170ad087d4da0dc44f30f4dc"
-      },
-      {
-        "repo_path": "Games/Slots/bell.nfp",
-        "install_path": "bell.nfp",
-        "sha256": "9b7b044579aeabb4837357caa274d1e94d23b9ff59cec1ba546c8be2679bf9c5"
-      },
-      {
-        "repo_path": "Games/Slots/diamond.nfp",
-        "install_path": "diamond.nfp",
-        "sha256": "39ce4a810c5db34ec27c227275bdaf01c425097988ac4663c8957f94e82de37e"
-      },
-      {
-        "repo_path": "Games/Slots/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
-      },
-      {
-        "repo_path": "Games/Slots/lemon.nfp",
-        "install_path": "lemon.nfp",
-        "sha256": "1a7b27ff3544795e92782775992e4001da6473421d99c848697705c4ab3eeef8"
-      },
-      {
-        "repo_path": "Games/Slots/melon.nfp",
-        "install_path": "melon.nfp",
-        "sha256": "ab561b34de2d367386c3501ec37184f7b0f06ab1c99073fd661508710aa25246"
-      },
-      {
-        "repo_path": "Games/Slots/seven.nfp",
-        "install_path": "seven.nfp",
-        "sha256": "b8cf43329b942abf481bee707b243114f69b09b0076636ae21b9baf26312ee2d"
-      },
-      {
-        "repo_path": "Games/Slots/surface",
-        "install_path": "surface",
-        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+        "repo_path": "Shared/lib/casino/audio.lua",
+        "install_path": "lib/casino/audio.lua",
+        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
       },
       {
         "repo_path": "Games/Slots/vhcc_lockdown.txt",
@@ -251,29 +103,59 @@
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
-        "repo_path": "Shared/lib/activity_timeout.lua",
-        "install_path": "lib/activity_timeout.lua",
-        "sha256": "d46af23d468407b04765b1ab91ab7c6140c1c5f2321f76e838d8d9f095bfd36d"
+        "repo_path": "Games/Slots/startup.lua",
+        "install_path": "slots_startup.lua",
+        "sha256": "db2fc829c072522feaed0b2075aa958240c22c110b7af8e4cb6f853c4ab53fad"
       },
       {
-        "repo_path": "Shared/lib/alert.lua",
-        "install_path": "lib/alert.lua",
-        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
+        "repo_path": "Games/Slots/slots_view.lua",
+        "install_path": "slots_view.lua",
+        "sha256": "26fb739071773599e91e2918d129cca4594d7698b1e75f99aa74c59657fa63f9"
       },
       {
-        "repo_path": "Shared/lib/auth_wait_screen.lua",
-        "install_path": "lib/auth_wait_screen.lua",
-        "sha256": "6103ce9708a280429045f68f72c2ca930c3b91c45c83e90d16193fffc404af48"
+        "repo_path": "Games/Slots/slots_rules.lua",
+        "install_path": "slots_rules.lua",
+        "sha256": "22f5ac4fc939f9fa4ed5578a123706eaebfd27489e891e7ed4c5909a10f9f9b1"
       },
       {
-        "repo_path": "Games/Slots/cherry.nfp",
-        "install_path": "cherry.nfp",
-        "sha256": "648a723cb2edf6070f4212d9d45c7d679d24b6ad9796304a27d27ccc0eb3964d"
+        "repo_path": "Games/Slots/slots_game.lua",
+        "install_path": "slots_game.lua",
+        "sha256": "96f3f5174163fcb0a20d105ab59a3dc3f90dbdf11b6319f9561a286a3c9a9a78"
       },
       {
-        "repo_path": "Shared/lib/ui.lua",
-        "install_path": "lib/ui.lua",
-        "sha256": "a62d31cf6c3a1969b157f6f66a281ee0294bc27a8c005670000ea9d612690c57"
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "5dbb0cce49524487c6376eda8008e2c5daeda24f41f3b1dd2eb2c5fedeea9112"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       }
     ]
   },
@@ -285,39 +167,25 @@
     "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
-      "lib.activity_timeout",
-      "lib.alert",
-      "lib.auth_wait_screen",
-      "lib.bedrock",
-      "lib.bedrock.layout",
-      "lib.bedrock.renderer",
-      "lib.bedrock.runtime",
-      "lib.bedrock.theme",
-      "lib.bedrock.widgets",
-      "lib.betting",
-      "lib.cards",
-      "lib.casino_launcher",
-      "lib.casino_pages",
-      "lib.crash_recovery",
-      "lib.currency",
-      "lib.game_setup",
-      "lib.idle_card_animation",
-      "lib.idle_card_animation_presets",
-      "lib.idle_screen",
-      "lib.monitor_scale",
-      "lib.peripherals",
-      "lib.player_detection",
-      "lib.replay_prompt",
+      "lib.casino.audio",
+      "lib.casino.bit32_shim",
+      "lib.casino.books",
+      "lib.casino.canvas",
+      "lib.casino.deck",
+      "lib.casino.font",
+      "lib.casino.journal",
+      "lib.casino.limits",
+      "lib.casino.net",
+      "lib.casino.presence",
+      "lib.casino.rng",
+      "lib.casino.stats",
+      "lib.casino.table",
+      "lib.casino.theme",
+      "lib.casino.ui",
+      "lib.casino.wallet",
       "lib.roger_logging",
       "lib.roger_supervisor",
-      "lib.round_settlement",
       "lib.runtime_exit",
-      "lib.safe_runner",
-      "lib.sound",
-      "lib.ui",
-      "lib.ui_surface",
-      "lib.ui_text",
-      "lib.ui_touch",
       "lib.updater"
     ]
   }
