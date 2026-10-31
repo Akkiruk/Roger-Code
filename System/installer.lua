@@ -11,7 +11,7 @@
 --   installer self-update  -- Update just the installer
 --   installer wipe         -- Delete everything except the installer script
 
-local INSTALLER_VERSION = "1.1.8"
+local INSTALLER_VERSION = "1.1.9"
 local REPO_OWNER = "Akkiruk"
 local REPO_NAME = "Roger-Code"
 local SOURCE_BRANCH = "main"
@@ -26,6 +26,7 @@ local LOG_FILE = "installer_error.log"
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
 local INSTALLER_HASH_FILE = ".installer_hash"
+local DOWNLOAD_ATTEMPTS = 4
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local API_HEADERS = {
   ["User-Agent"] = "Roger-Code-Installer",
@@ -154,11 +155,15 @@ end
 -- HTTP / file helpers
 ---------------------------------------------------------------------------
 local function download(url, headers)
-  local ok, response = pcall(function()
+  local ok, response, reason, failedResponse = pcall(function()
     return http.get(url, headers, true)
   end)
   if not ok or not response then
-    return nil, "HTTP request failed: " .. tostring(url)
+    if failedResponse then
+      reason = tostring(reason) .. " " .. tostring(failedResponse.getResponseCode())
+      failedResponse.close()
+    end
+    return nil, "HTTP request failed: " .. tostring(url) .. " (" .. tostring(ok and reason or response) .. ")"
   end
   local data = response.readAll()
   local code = response.getResponseCode()
@@ -345,7 +350,17 @@ local function pruneLegacyPayload(desiredPaths)
 end
 
 local function downloadAndSaveVerified(url, finalPath, expectedSha)
-  local data, err = download(url)
+  local data, err
+  for attempt = 1, DOWNLOAD_ATTEMPTS do
+    data, err = download(url)
+    if data then
+      break
+    end
+    logError("Attempt " .. attempt .. ": " .. tostring(err))
+    if attempt < DOWNLOAD_ATTEMPTS then
+      os.sleep(attempt)
+    end
+  end
   if not data then
     return false, err
   end

@@ -60,7 +60,7 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local INSTALLER_HASH_FILE = ".installer_hash"
 local REPAIR_MARK = ".crash_repair"
-local DOWNLOAD_ATTEMPTS = 3
+local DOWNLOAD_ATTEMPTS = 4
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
 local DEFAULT_WATCH_INTERVAL = 60
@@ -160,11 +160,15 @@ local function validateFetchedSpec(programEntry, spec)
 end
 
 local function download(url, headers)
-  local ok, response = pcall(function()
+  local ok, response, reason, failedResponse = pcall(function()
     return http.get(url, headers, true)
   end)
   if not ok or not response then
-    return nil, "HTTP request failed: " .. tostring(url)
+    if failedResponse then
+      reason = tostring(reason) .. " " .. tostring(failedResponse.getResponseCode())
+      failedResponse.close()
+    end
+    return nil, "HTTP request failed: " .. tostring(url) .. " (" .. tostring(ok and reason or response) .. ")"
   end
   local data = response.readAll()
   local code = response.getResponseCode()
@@ -185,6 +189,7 @@ local function downloadPackageFile(url)
     if data then
       return data
     end
+    logMsg("Attempt " .. attempt .. ": " .. tostring(err))
     if attempt < DOWNLOAD_ATTEMPTS then
       os.sleep(attempt)
     end
