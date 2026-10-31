@@ -382,7 +382,9 @@ local function touchAllowed(g)
   if not live then return true end
   local mover = moverSlot(g)
   local other = g.state.turn == 1 and g.blue or g.red
-  if isHuman(other) and live == other.name and not (isHuman(mover) and live == mover.name) then
+  -- Only two named players guard their turns from each other. A guest has no identity of their own, so whoever is at
+  -- the screen plays for them: that is how one person plays hot seat against a guest.
+  if isHuman(mover) and isHuman(other) and live == other.name and live ~= mover.name then
     return false, string.format("%s - it is %s's turn", live, mover.name)
   end
   return true
