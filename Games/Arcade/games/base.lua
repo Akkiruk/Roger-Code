@@ -178,7 +178,9 @@ end
 --- The title over a live demo of the board. Returns the y for the prompt.
 local function drawAttract(plugin, W, H, demo)
   local L = plugin.view.layout(W, H)
-  ui.text(plugin.title, floor(W / 2), 1, ui.C[plugin.color] or ui.C.hi, "center", W - 2)
+  local title = plugin.title
+  if ui.textWidth(title) > W - 2 then title = plugin.short or title end
+  ui.text(title, floor(W / 2), 1, ui.C[plugin.color] or ui.C.hi, "center", W - 2)
   if demo.match then plugin.view.drawBoard(L, demo.match, nil) end
   local caption = demo.script and (demo.script.red .. " vs " .. demo.script.blue .. " - a recent game") or plugin.blurb
   if caption then ui.small(caption, floor(W / 2), L.y0 - 1, ui.C.line, ui.C.bg, "center", W - 2) end

@@ -29,7 +29,7 @@ end
 local view = { scoreName = "SEEDS" }
 
 function view.layout(W, H)
-  local cw, ch = 11, 25
+  local cw, ch = math.min(11, floor((W - 2) / (PITS + 2))), 25 -- narrower on half a wall, for the idle screen
   local L = base.layout(W, H, cw * (PITS + 2), ch * 2 + 3)
   L.cw, L.ch, L.side = cw, ch, true
   L.topY, L.bottomY = L.y0, L.y0 + ch + 3
@@ -47,8 +47,9 @@ end
 
 local function drawPit(L, x, y, count, color, lit)
   ui.fill(x + 1, y, L.cw - 2, L.ch, lit and C.hiTint or C.panel)
-  for n = 1, math.min(count, 21) do
-    local col, row = (n - 1) % 3, floor((n - 1) / 3)
+  local perRow = L.cw >= 11 and 3 or 2
+  for n = 1, math.min(count, perRow * 7) do
+    local col, row = (n - 1) % perRow, floor((n - 1) / perRow)
     ui.fill(x + 2 + col * 3, y + 2 + row * 3, 2, 2, color)
   end
   ui.small(tostring(count), x + floor(L.cw / 2), y + L.ch - 2, C.text, lit and C.hiTint or C.panel, "center")

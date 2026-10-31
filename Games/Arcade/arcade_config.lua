@@ -26,7 +26,7 @@ M.LOBBY_IDLE = 120         -- seconds of no touch in the lobby before returning 
 M.GAME_IDLE = 600          -- no moves for this long ends the match the same way as walking away
 M.NUDGE_AFTER = 25         -- seconds before the chat box whispers a reminder to the mover
 M.MAX_TIMEOUTS = 3         -- missed move timers before a forfeit
-M.ATTRACT_SWAP = 30        -- seconds each game gets on the idle screen, when there are several
+M.ATTRACT_SWAP = 30        -- seconds each pair of games gets on the idle screen, when there are several
 
 -- Redstone outputs (computer sides, or the integrator's sides when one is attached)
 M.REDSTONE = { red = "left", blue = "right", celebrate = "top" }

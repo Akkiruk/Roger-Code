@@ -18,9 +18,9 @@ local function pegColor(c) return C[PEG_COLOURS[tonumber(c)]] end
 local function seatColor(p) return p == 1 and C.red or C.blue end
 
 function view.layout(W, H)
-  local rowH, panelW = 4, 44
+  local rowH, panelW = 4, math.min(44, floor((W - 3) / 2)) -- narrower on half a wall, for the idle screen
   local L = base.layout(W, H, 2 * panelW + 2, ROUNDS * rowH + 11)
-  L.side, L.rowH, L.panelW, L.pegW = true, rowH, panelW, 5
+  L.side, L.rowH, L.panelW, L.pegW = true, rowH, panelW, panelW >= 44 and 5 or 3
   L.leftX, L.rightX = L.x0, L.x0 + panelW + 2
   L.pickY, L.pickH, L.pickW = L.y0 + ROUNDS * rowH + 2, 8, floor((L.bw - 2 * 14) / COLOURS)
   L.debug = { pickY = L.pickY, pickW = L.pickW, pickH = L.pickH, clearX = L.x0 + COLOURS * L.pickW, goX = L.x0 + COLOURS * L.pickW + 14 }
@@ -36,7 +36,7 @@ local function drawCode(L, x, y, code, shown)
 end
 
 local function drawLog(L, x, log, title, color)
-  ui.small(title, x + 4, L.y0 - 1, color, C.bg, "left", L.panelW - 4)
+  if title then ui.small(title, x + 4, L.y0 - 1, color, C.bg, "left", L.panelW - 4) end
   for n = 1, ROUNDS do
     local y = L.y0 + (n - 1) * L.rowH
     local g = log[n]
@@ -45,7 +45,8 @@ local function drawLog(L, x, log, title, color)
     if g then
       local px = x + 4 + PEGS * (L.pegW + 1) + 1
       local cracked = g.black == PEGS
-      ui.small(cracked and "CRACKED!" or string.format("%d right %d close", g.black, g.white), px, y + 1, cracked and C.ok or C.text, C.bg, "left", L.panelW - (px - x))
+      local answer = L.pegW >= 5 and string.format("%d right %d close", g.black, g.white) or (g.black .. "+" .. g.white)
+      ui.small(cracked and (L.pegW >= 5 and "CRACKED!" or "YES") or answer, px, y + 1, cracked and C.ok or C.text, C.bg, "left", L.panelW - (px - x))
     end
   end
 end
@@ -68,6 +69,7 @@ function view.drawBoard(L, match, viewer)
   local me = viewer or (over and 1 or s.turn)
   local function who(seat)
     local slot = seat == 1 and match.red or match.blue
+    if not slot then return nil end -- the idle demo has no players to name
     if seat == viewer then return "YOUR GUESSES" end
     return ((slot and slot.name) or (seat == 1 and "Red" or "Blue")) .. "'s guesses"
   end

@@ -63,7 +63,7 @@ local env = { W = 0, H = 0 }
 local surfaceApi, font, screen
 local stores = {}
 local nextScoreboardAt = 0
-local attractAt, attractIndex = nil, 1 -- the first game gets its full turn too
+local attractAt, attractIndex = nil, 0 -- the first games get their full turn too
 
 local app = { S = S, env = env, log = log, audio = audio, signed = screens.signed }
 
@@ -330,18 +330,62 @@ end
 
 -- ------------------------------------------------------------------ idle and menu
 
---- A computer's action for the demo game, or any legal one.
-local function demoChoose(state, level, opts)
-  local action = app.plugin.chooseAction(app.seen(state), level, opts)
-  if action then return action end
-  local actions = app.plugin.rules.legalActions(state)
-  return actions[math.random(#actions)]
+--- A computer's action for a game's demo, or any legal one. It sees only what the seat to move may see.
+local function demoChooser(plugin)
+  return function(state, level, opts)
+    local rules = plugin.rules
+    local seen = rules.viewFor and rules.viewFor(state, state.turn) or state
+    local action = plugin.chooseAction(seen, level, opts)
+    if action then return action end
+    local actions = rules.legalActions(state)
+    return actions[math.random(#actions)]
+  end
+end
+
+--- The next game this cabinet can play, going round the list.
+local function nextIdleGame()
+  for _ = 1, #registry do
+    attractIndex = attractIndex % #registry + 1
+    if app.fits(registry[attractIndex]) then return registry[attractIndex] end
+  end
+  return registry[1]
+end
+
+local function idleSlot(plugin)
+  return { plugin = plugin, demo = { script = replay.best(plugin.id) }, choose = demoChooser(plugin) }
+end
+
+--- Put the next two games on the idle screen, or one if that is all there is.
+local function pickIdleGames()
+  local first, second = nextIdleGame(), nextIdleGame()
+  S.idle = { idleSlot(first) }
+  if second ~= first then S.idle[2] = idleSlot(second) end
+  app.selectGame(first)
+  if S.idle[2] then setAccent(config.PALETTE.yellow) end -- two games share the wall, so neither's accent wears it
 end
 
 local function drawIdle()
+  if not S.idle then pickIdleGames() end
   screen:clear(C.bg, nil, " ")
   local W, H = env.W, env.H
-  local py = app.plugin.view.drawAttract(W, H, S.demo, app.store)
+  local py
+  if S.idle[2] then
+    -- each game draws on half a wall of its own, as if it had the whole screen
+    local halfW = floor((W - 1) / 2)
+    if not env.half or env.half.width ~= halfW or env.half.height ~= H then env.half = surfaceApi.create(halfW, H) end
+    py = 0
+    for i, slot in ipairs(S.idle) do
+      ui.setScreen(env.half)
+      env.half:clear(C.bg, nil, " ")
+      py = max(py, slot.plugin.view.drawAttract(halfW, H, slot.demo, storeFor(slot.plugin)))
+      ui.setScreen(screen)
+      screen:drawSurface(env.half, (i - 1) * (halfW + 1), 0)
+    end
+    ui.fill(halfW, 0, 1, py, C.panel)
+  else
+    local slot = S.idle[1]
+    py = slot.plugin.view.drawAttract(W, H, slot.demo, storeFor(slot.plugin))
+  end
   if floor(nowMs() / 700) % 2 == 0 then ui.text("TOUCH TO PLAY", floor(W / 2), py, C.text, "center") end
   local near = hw.nearby()
   local line = #near > 0 and (#near .. " player" .. (#near == 1 and "" or "s") .. " nearby") or "Two players or play the computer"
@@ -411,6 +455,10 @@ local function writeDebug()
     d.tour = { rounds = #S.tour.rounds, champion = S.tourChampion, next = tournament.next(S.tour) }
   end
   d.entry = S.entry
+  if S.view == "idle" and S.idle then
+    d.idleGames = {}
+    for i, slot in ipairs(S.idle) do d.idleGames[i] = slot.plugin.id end
+  end
   d.replayStep = S.replay and S.replay.step or nil
   d.players = {}
   for _, p in pairs(app.store.data.players) do
@@ -937,17 +985,18 @@ end
 
 local function attractStep(t)
   attractAt = attractAt or t + config.ATTRACT_SWAP * 1000
-  if #registry > 1 and t >= attractAt then
+  if not S.idle or (#registry > 1 and t >= attractAt) then
     attractAt = t + config.ATTRACT_SWAP * 1000
-    for _ = 1, #registry do
-      attractIndex = attractIndex % #registry + 1
-      if app.fits(registry[attractIndex]) then break end
-    end
-    app.selectGame(registry[attractIndex])
-    S.demo = { script = replay.best(app.plugin.id) }
+    pickIdleGames()
     S.dirty = true
+  elseif app.plugin ~= S.idle[1].plugin then
+    -- back from a match: the idle games take the wall again
+    app.selectGame(S.idle[1].plugin)
+    if S.idle[2] then setAccent(config.PALETTE.yellow) end
   end
-  if app.plugin.view.demoStep(S.demo, t, demoChoose) then S.dirty = true end
+  for _, slot in ipairs(S.idle) do
+    if slot.plugin.view.demoStep(slot.demo, t, slot.choose) then S.dirty = true end
+  end
   if floor(t / 700) ~= S.blinkPhase then S.blinkPhase = floor(t / 700); S.dirty = true end
 end
 
