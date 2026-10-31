@@ -1,4 +1,4 @@
--- games/uttt/uttt_config.lua
+-- games/uttt/uttt_constants.lua
 -- Ultimate Tic-Tac-Toe's own settings and sounds.
 
 local M = {}

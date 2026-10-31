@@ -3,7 +3,7 @@
 -- pure; what happened comes back as events for the game's view. Every action is in the journal before it is shown.
 
 local audio = require("arcade_audio")
-local config = require("arcade_config")
+local config = require("arcade_constants")
 local hw = require("arcade_hw")
 local journal = require("arcade_journal")
 local net = require("arcade_net")

@@ -40,12 +40,15 @@ local STATE_FILE = ".installed_program"
 local LOG_FILE = "roger_supervisor.log"
 local INSTALLER_PATH = "installer.lua"
 local DEFAULT_RESTART_DELAY = 5
-local DEFAULT_UPDATE_INTERVAL = 60
+local DEFAULT_UPDATE_INTERVAL = 300
+local MIN_UPDATE_INTERVAL = 300     -- an install record from before this was 60 seconds
+local BUSY_REPORT_SECONDS = 15      -- a game that stops saying it is busy has stopped being busy
 local CRASH_UPDATE_CHECK_COOLDOWN = 30
 local CRASHES_BEFORE_REPAIR = 2
 local DEFAULT_GAME_MONITOR_IDLE_TIMEOUT = 60
 local MONITOR_IDLE_CHECK_INTERVAL = 1
 local GAME_CATEGORY = "Games"
+local ARCADE_CATEGORY = "Arcade"
 local MONITOR_ACTIVITY_EVENTS = {
   monitor_resize = true,
   monitor_touch = true,
@@ -259,7 +262,8 @@ local function loadRuntimeState()
     autoRestart = installed.auto_restart ~= false,
     monitorIdleTimeout = isGameInstall(installed) and DEFAULT_GAME_MONITOR_IDLE_TIMEOUT or nil,
     restartDelay = tonumber(installed.restart_delay) or DEFAULT_RESTART_DELAY,
-    updateInterval = tonumber(installed.update_interval) or DEFAULT_UPDATE_INTERVAL,
+    updateInterval = math.max(MIN_UPDATE_INTERVAL, tonumber(installed.update_interval) or DEFAULT_UPDATE_INTERVAL),
+    installerKey = isGameInstall(installed) or tostring(installed.category or "") == ARCADE_CATEGORY,
   }
 end
 
@@ -315,9 +319,25 @@ local function runProgram(entrypoint, args)
   return runOk, runErr
 end
 
+-- A game says "roger_busy", true or false, every few seconds. It is a report and not a switch, so a game that crashes
+-- halfway through a round cannot hold updates back: its reports just stop.
+local busyAt = nil
+
+local function busyListener()
+  while true do
+    local _, busy = os.pullEventRaw("roger_busy")
+    busyAt = busy and os.epoch("utc") or nil
+  end
+end
+
+local function gameIsBusy()
+  return busyAt ~= nil and os.epoch("utc") - busyAt < BUSY_REPORT_SECONDS * 1000
+end
+
 local function updateWatcher(updateInterval)
   updater.watchForUpdates({
     interval = updateInterval,
+    isBusy = gameIsBusy,
     callback = function(status, message)
       logMessage("Updater [" .. tostring(status) .. "] " .. tostring(message or ""))
     end,
@@ -426,6 +446,7 @@ function M.run(...)
     function()
       updateWatcher(runtime.updateInterval)
     end,
+    busyListener,
   }
 
   if vhcc and vhcc.rcReply then
@@ -437,6 +458,8 @@ function M.run(...)
     runners[#runners + 1] = function()
       monitorIdleWatchdog(runtime.monitorIdleTimeout)
     end
+  end
+  if runtime.installerKey then
     runners[#runners + 1] = function()
       installerKeyWatcher()
       installerRequested = true

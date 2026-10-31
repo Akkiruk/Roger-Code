@@ -8,7 +8,7 @@
 -- in a game with hidden pieces, where each player's wall draws their own view.
 
 local audio = require("arcade_audio")
-local config = require("arcade_config")
+local config = require("arcade_constants")
 local hw = require("arcade_hw")
 local matches = require("arcade_match")
 local play = require("arcade_play")
@@ -24,6 +24,7 @@ local C = ui.C
 local floor, max, min = math.floor, math.max, math.min
 
 local TICK = 0.1
+local BUSY_REPORT_MS = 5000
 local TOAST_MS = 4000
 
 -- ------------------------------------------------------------------ logging
@@ -355,37 +356,31 @@ local function idleSlot(plugin)
   return { plugin = plugin, demo = { script = replay.best(plugin.id) }, choose = demoChooser(plugin) }
 end
 
---- Put the next two games on the idle screen, or one if that is all there is.
-local function pickIdleGames()
-  local first, second = nextIdleGame(), nextIdleGame()
-  S.idle = { idleSlot(first) }
-  if second ~= first then S.idle[2] = idleSlot(second) end
-  app.selectGame(first)
-  if S.idle[2] then setAccent(config.PALETTE.yellow) end -- two games share the wall, so neither's accent wears it
+--- Each wall wears the accent of the game it is showing.
+local function dressIdleWalls()
+  app.selectGame(S.idle[1].plugin)
+  for i, wall in ipairs(env.walls) do
+    local slot = S.idle[i] or S.idle[1]
+    wall.mon.setPaletteColor(colors.yellow, slot.plugin.accent)
+  end
 end
 
-local function drawIdle()
-  if not S.idle then pickIdleGames() end
-  screen:clear(C.bg, nil, " ")
-  local W, H = env.W, env.H
-  local py
-  if S.idle[2] then
-    -- each game draws on half a wall of its own, as if it had the whole screen
-    local halfW = floor((W - 1) / 2)
-    if not env.half or env.half.width ~= halfW or env.half.height ~= H then env.half = surfaceApi.create(halfW, H) end
-    py = 0
-    for i, slot in ipairs(S.idle) do
-      ui.setScreen(env.half)
-      env.half:clear(C.bg, nil, " ")
-      py = max(py, slot.plugin.view.drawAttract(halfW, H, slot.demo, storeFor(slot.plugin)))
-      ui.setScreen(screen)
-      screen:drawSurface(env.half, (i - 1) * (halfW + 1), 0)
-    end
-    ui.fill(halfW, 0, 1, py, C.panel)
-  else
-    local slot = S.idle[1]
-    py = slot.plugin.view.drawAttract(W, H, slot.demo, storeFor(slot.plugin))
+--- Give every wall the next game, each a different one while there are enough to go round.
+local function pickIdleGames()
+  S.idle = {}
+  for i = 1, #env.walls do
+    local plugin = nextIdleGame()
+    if i == 1 or plugin ~= S.idle[1].plugin then S.idle[#S.idle + 1] = idleSlot(plugin) end
   end
+  dressIdleWalls()
+end
+
+--- One wall's idle screen: a game of its own, filling the wall.
+local function drawIdle(slot)
+  local surf = ui.screen()
+  surf:clear(C.bg, nil, " ")
+  local W, H = env.W, env.H
+  local py = slot.plugin.view.drawAttract(W, H, slot.demo, storeFor(slot.plugin))
   if floor(nowMs() / 700) % 2 == 0 then ui.text("TOUCH TO PLAY", floor(W / 2), py, C.text, "center") end
   local near = hw.nearby()
   local line = #near > 0 and (#near .. " player" .. (#near == 1 and "" or "s") .. " nearby") or "Two players or play the computer"
@@ -497,11 +492,19 @@ local function drawWalls()
     end
     return
   end
-  ui.setScreen(screen)
   if S.view == "idle" then
-    ui.clearButtons()
-    drawIdle()
-  elseif S.view == "menu" then drawMenu()
+    if not S.idle then pickIdleGames() end
+    for i, wall in ipairs(env.walls) do
+      ui.setScreen(wall.surf)
+      ui.clearButtons()
+      drawIdle(S.idle[i] or S.idle[1])
+      wall.buttons = ui.buttons()
+      wall.surf:output(wall.out, 0, 0)
+    end
+    return
+  end
+  ui.setScreen(screen)
+  if S.view == "menu" then drawMenu()
   elseif S.view == "lobby" then screens.drawLobby()
   elseif S.view == "game" then play.draw(S.match)
   elseif S.view == "final" then play.draw(S.finalMatch, true)
@@ -989,11 +992,10 @@ local function attractStep(t)
     attractAt = t + config.ATTRACT_SWAP * 1000
     pickIdleGames()
     S.dirty = true
-  elseif app.plugin ~= S.idle[1].plugin then
-    -- back from a match: the idle games take the wall again
-    app.selectGame(S.idle[1].plugin)
-    if S.idle[2] then setAccent(config.PALETTE.yellow) end
+  elseif not S.idleDressed then
+    dressIdleWalls() -- back from a match or the menu, the walls go back to their own games
   end
+  S.idleDressed = true
   for _, slot in ipairs(S.idle) do
     if slot.plugin.view.demoStep(slot.demo, t, slot.choose) then S.dirty = true end
   end
@@ -1003,6 +1005,12 @@ end
 local function onTick()
   local t = nowMs()
   audio.pump()
+  if S.view ~= "idle" then S.idleDressed = false end
+  -- an update waits for a quiet moment: nobody mid-match, and nobody who has touched the wall in the last while
+  if t - (S.busyAt or 0) > BUSY_REPORT_MS then
+    S.busyAt = t
+    os.queueEvent("roger_busy", S.match ~= nil or (S.view ~= "idle" and t - S.lastTouch < config.LOBBY_IDLE * 1000))
+  end
   if S.toast and t > S.toast.untilAt then S.toast = nil; S.dirty = true end
   -- an animation redraws itself until it ends
   local showing = S.replay or S.match or (S.view == "final" and S.finalMatch)

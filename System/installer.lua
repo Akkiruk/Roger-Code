@@ -907,10 +907,9 @@ local function beginWriteWindow(tag)
   f.write(textutils.serialise({
     source = tag or "installer",
     openedAt = os.epoch("local"),
-    persistent = true,
   }))
   f.close()
-  return true, false
+  return true, true
 end
 
 local function endWriteWindow(createdUnlock)

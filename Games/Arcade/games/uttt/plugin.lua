@@ -3,7 +3,7 @@
 
 local ai = require("games.uttt.ai")
 local base = require("games.base")
-local config = require("games.uttt.uttt_config")
+local config = require("games.uttt.uttt_constants")
 local rules = require("games.uttt.rules")
 local Store = require("games.uttt.store")
 local view = require("games.uttt.view")

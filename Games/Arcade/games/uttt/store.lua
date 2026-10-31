@@ -2,7 +2,7 @@
 -- Ultimate Tic-Tac-Toe's records: the Arcade's records with this game's achievements and settings.
 
 local Records = require("arcade_records")
-local config = require("games.uttt.uttt_config")
+local config = require("games.uttt.uttt_constants")
 
 local M = setmetatable({}, { __index = Records })
 

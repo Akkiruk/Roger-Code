@@ -4,7 +4,7 @@
 
 local M = {}
 
--- Palette slots (values are set from arcade_config.PALETTE by the app)
+-- Palette slots (values are set from arcade_constants.PALETTE by the app)
 M.C = {
   bg = colors.black, panel = colors.gray, line = colors.lightGray, text = colors.white,
   red = colors.red, blue = colors.blue, redTint = colors.brown, blueTint = colors.lightBlue,

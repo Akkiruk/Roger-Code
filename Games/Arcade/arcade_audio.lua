@@ -2,7 +2,7 @@
 -- Sound events on top of lib.sound. A game adds its own events with addSounds; a small timeline lets one event play
 -- several sounds a little apart.
 
-local config = require("arcade_config")
+local config = require("arcade_constants")
 local sound = require("lib.sound")
 
 local M = {}

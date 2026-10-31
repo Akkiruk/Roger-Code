@@ -1,7 +1,7 @@
 -- games/base.lua
 -- Sensible defaults, so a small game only writes what makes it different. See games/README.md.
 
-local config = require("arcade_config")
+local config = require("arcade_constants")
 local journal = require("arcade_journal")
 local Records = require("arcade_records")
 local ui = require("arcade_ui")

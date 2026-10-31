@@ -63,8 +63,12 @@ local REPAIR_MARK = ".crash_repair"
 local DOWNLOAD_ATTEMPTS = 4
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
-local DEFAULT_WATCH_INTERVAL = 60
-local DEFAULT_STARTUP_INTERVALS = { 5, 10, 15, 30, 45 }
+local DEFAULT_WATCH_INTERVAL = 300
+local DEFAULT_STARTUP_INTERVALS = {}
+local BOOT_SPREAD_SECONDS = 30      -- computers that start together do not ask together
+local MAX_BACKOFF_SECONDS = 1800    -- the longest wait after failed checks
+local BUSY_POLL_SECONDS = 5         -- how often a waiting update looks for a quiet moment
+local MAX_UPDATE_WAIT_SECONDS = 1800 -- a game that never goes quiet still gets its update
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local CONTENTS_API_ROOT = API_URL .. "/contents/"
 local CONTENTS_API_HEADERS = {
@@ -487,10 +491,9 @@ local function beginWriteWindow(tag)
   f.write(textutils.serialise({
     source = tag or "updater",
     openedAt = os.epoch("local"),
-    persistent = true,
   }))
   f.close()
-  return true, false
+  return true, true
 end
 
 local function endWriteWindow(createdUnlock)
@@ -557,9 +560,14 @@ local function releaseLock()
   end
 end
 
--- Only this boot can be updating, so a lock found at boot was left by a reboot mid-check.
+-- Only this boot can be updating, so a lock found at boot was left by a reboot mid-check. The same goes for an open
+-- write window, which turns the filesystem lockdown off for as long as it exists.
 local function clearStaleLock()
   pcall(releaseLock)
+  if fs.exists(UNLOCK_FILE) then
+    pcall(fs.delete, UNLOCK_FILE)
+    logMsg("Closed a write window left open")
+  end
 end
 
 local function isUpdating()
@@ -846,6 +854,18 @@ end
 -- Public API
 -----------------------------------------------------
 
+--- A delay for this computer: the same every time, and different from its neighbours.
+local function spread(seconds)
+  local id = os.getComputerID and os.getComputerID() or 0
+  return (id * 7919) % math.max(1, math.floor(seconds))
+end
+
+--- How long to wait after this many failed checks in a row. 0 failures is the plain interval.
+local function nextDelay(interval, failures)
+  local delay = interval * 2 ^ math.min(failures, 8)
+  return math.min(delay, math.max(interval, MAX_BACKOFF_SECONDS))
+end
+
 local function checkForUpdates(opts)
   opts = opts or {}
   local callback = opts.callback or function() end
@@ -928,6 +948,14 @@ local function checkForUpdates(opts)
     end
 
     local reason = buildUpdateReason(forceMode, localHash, remoteHash, localCommit, remoteCommit)
+
+    if opts.holdUntilQuiet and opts.holdUntilQuiet() then
+      logMsg("Update ready, waiting for a quiet moment: " .. reason)
+      releaseLock()
+      status = "waiting"
+      callback("waiting", "Update ready, waiting for a quiet moment")
+      return
+    end
 
     callback("updating", "Fetching package spec...")
     local spec, specErr = fetchProgramSpec(programEntry.spec_path)
@@ -1028,11 +1056,27 @@ local function watchForUpdates(opts)
     callback(status, message)
   end
 
+  local isBusy = opts.isBusy or function() return false end
+  local waitingSince = nil
+
+  --- True while an update has to keep waiting for this game.
+  local function holdUntilQuiet()
+    if not isBusy() then
+      return false
+    end
+    waitingSince = waitingSince or os.epoch("utc")
+    return os.epoch("utc") - waitingSince < MAX_UPDATE_WAIT_SECONDS * 1000
+  end
+
+  local failures = 0
+
   local function runOneCheck()
-    local status = checkForUpdates({ callback = notify })
+    local status = checkForUpdates({ callback = notify, holdUntilQuiet = holdUntilQuiet })
     if status == "terminated" then
       return false
     end
+
+    failures = status == "error" and failures + 1 or 0
 
     if status == "updated" then
       notify("rebooting", "Update applied, rebooting...")
@@ -1040,10 +1084,11 @@ local function watchForUpdates(opts)
       os.reboot()
     end
 
-    return true
+    return true, status
   end
 
   if immediate then
+    os.sleep(spread(BOOT_SPREAD_SECONDS))
     if not runOneCheck() then
       return
     end
@@ -1051,11 +1096,24 @@ local function watchForUpdates(opts)
 
   while true do
     local interval = startupSchedule[startupIndex] or steadyInterval
-    os.sleep(interval)
+    os.sleep(nextDelay(interval, failures) + spread(math.min(60, steadyInterval)))
 
-    if not runOneCheck() then
+    local running, status = runOneCheck()
+    if not running then
       return
     end
+
+    -- with an update waiting, there's no need to ask GitHub again: just watch for the game to go quiet
+    while status == "waiting" do
+      os.sleep(BUSY_POLL_SECONDS)
+      if not holdUntilQuiet() then
+        running, status = runOneCheck()
+        if not running then
+          return
+        end
+      end
+    end
+    waitingSince = nil
 
     if startupSchedule[startupIndex] then
       startupIndex = startupIndex + 1
@@ -1077,4 +1135,6 @@ return {
   getDefaultUpdateInterval = function()
     return DEFAULT_WATCH_INTERVAL
   end,
+  nextDelay = nextDelay,
+  spread = spread,
 }

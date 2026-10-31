@@ -1,4 +1,4 @@
--- arcade_config.lua
+-- arcade_constants.lua
 -- Settings, palette and sound map for the Arcade. Each game adds its own in games/<id>/.
 
 local M = {}

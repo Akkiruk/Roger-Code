@@ -44,7 +44,7 @@ $RuntimeSupervisorPath = "Shared/lib/roger_supervisor.lua"
 $RuntimeLoggingPath = "Shared/lib/roger_logging.lua"
 $RuntimeUpdaterPath = "Shared/lib/updater.lua"
 $RuntimeRootModules = @("lib.roger_supervisor", "lib.updater")
-$DefaultUpdateInterval = 60
+$DefaultUpdateInterval = 300
 
 $SkipPatterns = @("*.bak", "*.old", "*.log", "*.md", "manifest.json")
 $SkipDirs = @("lib", ".git", ".github", ".vscode", "Do", "node_modules", "emulator")
