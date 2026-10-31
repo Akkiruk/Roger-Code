@@ -1,5 +1,6 @@
 -- games/mancala/plugin.lua
--- Mancala as an Arcade game. Red's pits run along the bottom, Blue's along the top, and each store is at its owner's right.
+-- Mancala as an Arcade game. Red's pits run along the bottom to its store on the right, and Blue's run along the top to
+-- its store on the left, so seeds travel anticlockwise.
 
 local base = require("games.base")
 local rules = require("games.mancala.rules")
@@ -28,12 +29,10 @@ end
 local view = { scoreName = "SEEDS" }
 
 function view.layout(W, H)
-  local cw, ch = 11, 14
-  local L = base.layout(W, H, cw * (PITS + 2), ch * 2 + 4)
+  local cw, ch = 11, 25
+  local L = base.layout(W, H, cw * (PITS + 2), ch * 2 + 3)
   L.cw, L.ch, L.side = cw, ch, true
-  L.y0 = L.y0 + 8 -- centred on the wall, under the same player cards
-  L.statusY = L.y0 + L.bh + 9
-  L.topY, L.bottomY = L.y0, L.y0 + ch + 4
+  L.topY, L.bottomY = L.y0, L.y0 + ch + 3
   L.debug = { pits = PITS, topY = L.topY, bottomY = L.bottomY, cw = cw, ch = ch }
   return L
 end
@@ -48,9 +47,9 @@ end
 
 local function drawPit(L, x, y, count, color, lit)
   ui.fill(x + 1, y, L.cw - 2, L.ch, lit and C.hiTint or C.panel)
-  for n = 1, math.min(count, 12) do
+  for n = 1, math.min(count, 21) do
     local col, row = (n - 1) % 3, floor((n - 1) / 3)
-    ui.fill(x + 2 + col * 2 + (col > 0 and 1 or 0), y + 1 + row * 2, 2, 1, color)
+    ui.fill(x + 2 + col * 3, y + 2 + row * 3, 2, 2, color)
   end
   ui.small(tostring(count), x + floor(L.cw / 2), y + L.ch - 2, C.text, lit and C.hiTint or C.panel, "center")
 end
@@ -74,10 +73,10 @@ function view.drawBoard(L, match)
   -- each store sits at its owner's right as they look at their own row
   local storeH = L.bh
   ui.fill(L.x0 + 1, L.y0, L.cw - 2, storeH, C.blueTint)
-  ui.small(tostring(s.stores[2]), L.x0 + floor(L.cw / 2), L.y0 + floor(storeH / 2), C.text, C.blueTint, "center")
+  ui.text(s.stores[2], L.x0 + floor(L.cw / 2), L.y0 + floor(storeH / 2) - 3, C.text, "center")
   local rx = L.x0 + (PITS + 1) * L.cw
   ui.fill(rx + 1, L.y0, L.cw - 2, storeH, C.redTint)
-  ui.small(tostring(s.stores[1]), rx + floor(L.cw / 2), L.y0 + floor(storeH / 2), C.text, C.redTint, "center")
+  ui.text(s.stores[1], rx + floor(L.cw / 2), L.y0 + floor(storeH / 2) - 3, C.text, "center")
 end
 
 --- A touch on either row only ever means the mover's pit: there's no other seat's row to play from.
@@ -132,7 +131,7 @@ local M = {
   minSize = { w = 118, h = 60 }, cpuLevels = { "easy", "medium", "hard" },
   rules = rules, view = view, sounds = base.SOUNDS,
   help = {
-    "Red plays the bottom row and Blue the top. Your store is the tall pit on the right of your own row, as you look at it.",
+    "Red plays the bottom row, with its store on the right. Blue plays the top row, with its store on the left. Seeds travel anticlockwise.",
     "",
     "Tap one of your pits. Its seeds are sown one by one around the board, into your store but never your opponent's.",
     "",

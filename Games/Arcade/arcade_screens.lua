@@ -279,17 +279,17 @@ local function drawEntry()
   app.drawToast()
 end
 
-local function drawBracketLines(t, x, y, w)
+local function drawBracketLines(t, x, y, w, step)
   for n, round in ipairs(t.rounds) do
     ui.small(n == #t.rounds and #round == 1 and "FINAL" or ("ROUND " .. n), x, y, C.hi, C.bg, "left")
-    y = y + 1
+    y = y + step
     for _, p in ipairs(round) do
       local line = p.b and (p.a .. " v " .. p.b) or (p.a .. " (bye)")
       ui.small(line, x + 2, y, p.winner and C.line or C.text, C.bg, "left", w - 16)
       if p.winner and p.b then ui.small(p.winner .. " won", x + w, y, C.ok, C.bg, "right", 14) end
-      y = y + 1
+      y = y + step
     end
-    y = y + 1
+    y = y + step
   end
   return y
 end
@@ -300,7 +300,7 @@ local function drawBracket()
   local W, H = env.W, env.H
   local t = S.tour
   ui.text(S.tourChampion and "CHAMPION" or "KNOCKOUT", floor(W / 2), 1, C.hi, "center")
-  drawBracketLines(t, 6, 11, W - 12)
+  drawBracketLines(t, 24, 13, W - 48, 3)
   if S.tourChampion then
     ui.text(S.tourChampion, floor(W / 2), H - 22, C.ok, "center", W - 4)
     ui.button("tourEnd", floor(W / 2) - 20, H - 12, 40, 9, "FINISH", C.ok, { small = true })
@@ -319,14 +319,14 @@ local function drawRules()
   ui.clearButtons()
   local W, H = env.W, env.H
   ui.text(app.plugin.title, floor(W / 2), 1, C[app.plugin.color] or C.hi, "center", W - 4)
-  local y = 11
+  local y = 13
   for _, line in ipairs(app.plugin.help) do
     if line == "" then
-      y = y + 1
+      y = y + 2
     else
-      for _, part in ipairs(ui.wrap(line, W - 8)) do
-        ui.small(part, 4, y, C.text, C.bg, "left")
-        y = y + 1
+      for _, part in ipairs(ui.wrap(line, W - 16)) do
+        ui.small(part, 8, y, C.text, C.bg, "left")
+        y = y + 2
       end
     end
   end
@@ -573,7 +573,7 @@ local function drawScoreboard()
   -- with a match on, this is a spectator's screen. It draws with no viewer, so nothing secret can reach it
   if S.tour and not S.match then
     ui.text("KNOCKOUT", floor(W / 2), 1, C.hi, "center")
-    drawBracketLines(S.tour, 2, 9, W - 4)
+    drawBracketLines(S.tour, 2, 9, W - 4, 1)
     sc:output(board2.out, 0, 0)
     ui.setScreen(prev)
     return
