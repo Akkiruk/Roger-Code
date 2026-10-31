@@ -2,15 +2,15 @@
 -- A match from first move to recorded result, for any game. Everything goes through plugin.rules.step, so rules stay
 -- pure; what happened comes back as events for the game's view. Every action is in the journal before it is shown.
 
-local audio = require("arcade_audio")
-local config = require("arcade_constants")
-local hw = require("arcade_hw")
-local journal = require("arcade_journal")
-local net = require("arcade_net")
-local replay = require("arcade_replay")
-local seats = require("arcade_seats")
-local tournament = require("arcade_tournament")
-local ui = require("arcade_ui")
+local audio = require("lib.arcade.audio")
+local config = require("lib.arcade.constants")
+local hw = require("lib.arcade.hw")
+local journal = require("lib.arcade.journal")
+local net = require("lib.arcade.net")
+local replay = require("lib.arcade.replay")
+local seats = require("lib.arcade.seats")
+local tournament = require("lib.arcade.tournament")
+local ui = require("lib.arcade.ui")
 
 local M = {}
 

@@ -1,10 +1,10 @@
 -- arcade_play.lua
 -- The match screen every game shares: player cards, status line, controls, pause. The game draws the board.
 
-local config = require("arcade_constants")
-local matches = require("arcade_match")
-local seats = require("arcade_seats")
-local ui = require("arcade_ui")
+local config = require("lib.arcade.constants")
+local matches = require("lib.arcade.match")
+local seats = require("lib.arcade.seats")
+local ui = require("lib.arcade.ui")
 
 local M = {}
 local C = ui.C

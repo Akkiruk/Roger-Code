@@ -1,7 +1,7 @@
 -- games/uttt/store.lua
 -- Ultimate Tic-Tac-Toe's records: the Arcade's records with this game's achievements and settings.
 
-local Records = require("arcade_records")
+local Records = require("lib.arcade.records")
 local config = require("games.uttt.uttt_constants")
 
 local M = setmetatable({}, { __index = Records })

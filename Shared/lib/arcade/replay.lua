@@ -2,7 +2,7 @@
 -- The last few finished matches of each game, kept to watch again. A match is its seed and actions, the same thing the
 -- journal holds, so the rules rebuild it exactly.
 
-local config = require("arcade_constants")
+local config = require("lib.arcade.constants")
 
 local M = {}
 

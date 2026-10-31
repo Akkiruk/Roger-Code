@@ -1,10 +1,10 @@
 -- games/base.lua
 -- Sensible defaults, so a small game only writes what makes it different. See games/README.md.
 
-local config = require("arcade_constants")
-local journal = require("arcade_journal")
-local Records = require("arcade_records")
-local ui = require("arcade_ui")
+local config = require("lib.arcade.constants")
+local journal = require("lib.arcade.journal")
+local Records = require("lib.arcade.records")
+local ui = require("lib.arcade.ui")
 
 local floor, max, min = math.floor, math.max, math.min
 
@@ -69,9 +69,10 @@ local function actionLayout(W, H, bw, bh)
   return L
 end
 
---- Four arrow buttons, centred under the board, for a game steered by direction.
+--- Four arrow buttons, centred under the board, for a game steered by direction. Wide enough for every label in large
+--- letters, and they stop just short of QUIT.
 local function dpad(L)
-  local bw = 22
+  local bw = 30
   local bh = math.floor((L.controlH - 1) / 2)
   local cx = math.floor(L.W / 2)
   local y1, y2 = L.controlY, L.controlY + bh + 1
@@ -224,7 +225,7 @@ local function drawAttract(plugin, W, H, demo)
   ui.text(title, floor(W / 2), 1, ui.C[plugin.color] or ui.C.hi, "center", W - 2)
   if demo.match then plugin.view.drawBoard(L, demo.match, nil) end
   local caption = demo.script and (demo.script.red .. " vs " .. demo.script.blue .. " - a recent game") or plugin.blurb
-  if caption then ui.small(caption, floor(W / 2), L.y0 - 1, ui.C.line, ui.C.bg, "center", W - 2) end
+  if caption and L.y0 - 1 > ui.fontHeight() + 1 then ui.small(caption, floor(W / 2), L.y0 - 1, ui.C.line, ui.C.bg, "center", W - 2) end
   return L.statusY
 end
 

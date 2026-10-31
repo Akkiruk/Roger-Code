@@ -8,7 +8,7 @@
 --   chatBox         results and turn reminders, whispered to the players in the match only
 --   redstoneIntegrator / computer sides   turn lamps and a celebration output
 
-local config = require("arcade_constants")
+local config = require("lib.arcade.constants")
 
 local M = {}
 

@@ -69,7 +69,7 @@ For animation, call `base.animate(match, ms, fields)` from `view.onEvents`, and 
 
 ## Classics
 
-A classic is one player, in real time, playing for a high score. Set `action = true` and it goes on the CLASSICS tab of the menu, with its own START screen, high score table and final screen. The shell owns all of that. See `games/snake` for a complete one.
+A classic is one player, in real time, playing for a high score. Classics are their own package, `Games/Classics`, for a table with one wall, and the shell is shared through `lib/arcade`. Set `action = true` and the game gets its own START screen, high score table and final screen. The shell owns all of that. See `Games/Classics/games/snake` for a complete one.
 
 The screen is a monitor, and a monitor only ever gets separate taps: there's no held button and no joystick. A touch takes a moment to arrive too. So pick games that work in taps, and keep the speed fair: `tickMs` is how often the game steps, and 100 is as fast as it goes. A tap should set something that stays set, such as a direction, or aim at a spot on the board.
 

@@ -2,9 +2,9 @@
 -- Dots and Boxes as an Arcade game.
 
 local ai = require("games.dots.ai")
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local rules = require("games.dots.rules")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local floor = math.floor

@@ -2,9 +2,9 @@
 -- Mastermind as an Arcade game, for a cabinet with two walls: each player's code stays on their own side.
 -- Your wall shows your guesses on the left, and your opponent's guesses at your code on the right.
 
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local rules = require("games.mastermind.rules")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local floor = math.floor

@@ -2,7 +2,7 @@
 -- Ultimate Tic-Tac-Toe as an Arcade game.
 
 local ai = require("games.uttt.ai")
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local config = require("games.uttt.uttt_constants")
 local rules = require("games.uttt.rules")
 local Store = require("games.uttt.store")

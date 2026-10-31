@@ -1,9 +1,9 @@
 -- games/snake/plugin.lua
 -- Snake as an Arcade classic. Tap a side of the head, or use the arrows, and the snake turns that way.
 
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local rules = require("games.snake.rules")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local COLS, ROWS = rules.COLS, rules.ROWS

@@ -3,11 +3,11 @@
 -- A run has three phases: ready (the score table and START), play, and over (the final board, until someone taps).
 -- Runs are not journaled: a reboot ends one, and nothing is at stake but a score.
 
-local config = require("arcade_constants")
-local hw = require("arcade_hw")
-local journal = require("arcade_journal")
-local scores = require("arcade_scores")
-local ui = require("arcade_ui")
+local config = require("lib.arcade.constants")
+local hw = require("lib.arcade.hw")
+local journal = require("lib.arcade.journal")
+local scores = require("lib.arcade.scores")
+local ui = require("lib.arcade.ui")
 
 local M = {}
 local C = ui.C
@@ -15,6 +15,8 @@ local floor = math.floor
 
 local MAX_CATCH_UP = 3   -- a late frame runs at most this many steps, so a stall can't kill the player
 local LEFT_LIMIT_MS = 20000 -- a player the detector has lost for this long has walked away
+local QUIT_WINDOW_MS = 3000 -- how long QUIT waits for its second tap
+local FINAL_HOLD_MS = 1500 -- taps this soon after the end were aimed at the game, not at the final board
 
 local app, S, env
 
@@ -39,7 +41,7 @@ function M.start(who)
   a.seed = math.random(1, 2147483646)
   a.rng = journal.rng(a.seed)
   a.state = plugin.rules.new({ rng = a.rng })
-  a.phase, a.place, a.awaySince = "play", nil, nil
+  a.phase, a.place, a.awaySince, a.reviewed, a.quitUntil = "play", nil, nil, false, nil
   a.nextAt = nowMs() + (plugin.tickMs or 150)
   app.audio.cue("start")
   S.dirty = true
@@ -49,15 +51,31 @@ local function finish()
   local a = S.action
   local s = a.state
   a.phase = "over"
+  a.overAt = nowMs()
   a.place = a.scores:add(a.player, s.score, s.level)
   app.audio.cue(a.place == 1 and "win" or "lose")
   S.lastTouch = nowMs()
   S.dirty = true
 end
 
---- End the run where it stands: the score still counts.
-function M.quit()
-  if S.action and S.action.phase == "play" then finish() end
+--- QUIT sits close to the game, so it takes two taps: a stray one can't end a run.
+function M.askToQuit()
+  local a = S.action
+  if not a or a.phase ~= "play" then return end
+  if a.quitUntil and nowMs() < a.quitUntil then
+    finish()
+  else
+    a.quitUntil = nowMs() + QUIT_WINDOW_MS
+    app.audio.play("tap")
+  end
+end
+
+--- The final board has been looked at: on to the score table. Returns true if it moved on.
+function M.seen()
+  local a = S.action
+  if not a or nowMs() - (a.overAt or 0) < FINAL_HOLD_MS then return false end
+  a.reviewed = true
+  return true
 end
 
 function M.leave()
@@ -133,12 +151,20 @@ local function drawHeader(a)
   ui.small("BEST " .. math.max(a.scores:best(), s.score), 2, 3, C.line, C.bg, "left", 24)
   ui.text(s.score, floor(W / 2), 1, C.hi, "center")
   ui.small("LEVEL " .. (s.level or 1), W - 2, 1, C.line, C.bg, "right")
-  if s.lives then ui.small("LIVES " .. s.lives, W - 2, 3, s.lives <= 1 and C.warn or C.text, C.bg, "right") end
+  if s.lives then
+    ui.small((app.plugin.livesName or "LIVES") .. " " .. s.lives, W - 2, 3, s.lives <= 1 and C.warn or C.text, C.bg, "right")
+  end
 end
 
 local function drawControls(a)
-  for i, control in ipairs(app.plugin.view.controls(env.L, a.state)) do
-    ui.button("act", control.x, control.y, control.w, control.h, control.label, C.panel, { small = true, data = i })
+  local controls = app.plugin.view.controls(env.L, a.state)
+  -- one size for the whole set, or some labels shout and the rest whisper
+  local small = false
+  for _, control in ipairs(controls) do
+    small = small or ui.textWidth(control.label) > control.w - 2
+  end
+  for i, control in ipairs(controls) do
+    ui.button("act", control.x, control.y, control.w, control.h, control.label, C.panel, { data = i, small = small })
   end
 end
 
@@ -179,8 +205,21 @@ local function drawOver(a)
   ui.small(line, floor(W / 2), 20, a.place and C.ok or C.line, C.bg, "center", W - 4)
   drawTable(a, 23)
   local y = H - 14
-  ui.button("actStart", floor(W / 2) - 42, y, 40, 11, "PLAY AGAIN", C.ok)
+  ui.button("actStart", floor(W / 2) - 42, y, 40, 11, "AGAIN", C.ok)
   ui.button("actDone", floor(W / 2) + 2, y, 40, 11, "DONE", C.panel)
+end
+
+--- The last moment of the game, kept up until someone taps, so it can be looked over.
+local function drawFinalBoard(a)
+  local W = env.W
+  drawHeader(a)
+  app.plugin.view.draw(env.L, a.state)
+  local y = floor(env.H / 2) - 6
+  ui.fill(4, y, W - 8, 13, C.panel)
+  ui.frame(4, y, W - 8, 13, C.warn, 1)
+  ui.text("GAME OVER", floor(W / 2), y + 2, C.warn, "center")
+  ui.small("TAP TO SEE THE SCORES", floor(W / 2), y + 10, C.text, C.panel, "center")
+  ui.region("actSeen", 0, 0, W, env.H)
 end
 
 --- Draw whatever phase the run is in.
@@ -191,12 +230,13 @@ function M.draw()
   if a.phase == "ready" then
     drawReady(a)
   elseif a.phase == "over" then
-    drawOver(a)
+    if a.reviewed then drawOver(a) else drawFinalBoard(a) end
   else
     drawHeader(a)
     app.plugin.view.draw(env.L, a.state)
     drawControls(a)
-    ui.button("actQuit", env.W - 14, env.H - 8, 12, 7, "QUIT", C.panel, { small = true })
+    local asking = a.quitUntil and nowMs() < a.quitUntil
+    ui.button("actQuit", env.W - 14, env.H - 8, 12, 7, asking and "SURE?" or "QUIT", asking and C.warn or C.panel, { small = true })
     app.drawToast()
   end
 end
@@ -206,7 +246,7 @@ function M.debug()
   local a = S.action
   local s = a.state
   return {
-    phase = a.phase, player = a.player, place = a.place, best = a.scores:best(), table = #a.scores.rows,
+    phase = a.phase, reviewed = a.reviewed, player = a.player, place = a.place, best = a.scores:best(), table = #a.scores.rows,
     score = s and s.score, lives = s and s.lives, level = s and s.level, over = s and s.over,
   }
 end

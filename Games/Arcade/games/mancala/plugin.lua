@@ -2,10 +2,10 @@
 -- Mancala as an Arcade game. Red's pits run along the bottom to its store on the right, and Blue's run along the top to
 -- its store on the left, so seeds travel anticlockwise.
 
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local rules = require("games.mancala.rules")
 local search = require("games.search")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local floor = math.floor

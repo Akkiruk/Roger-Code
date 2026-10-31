@@ -3,8 +3,8 @@
 -- may do what. The full proof, with independent oracles on every position, is tools/arcadetest in craftos-agent.
 
 local testing = require("testing")
-local seats = require("arcade_seats")
-local tournament = require("arcade_tournament")
+local seats = require("lib.arcade.seats")
+local tournament = require("lib.arcade.tournament")
 local t, eq, truthy = testing.test, testing.eq, testing.truthy
 
 local function rulesOf(id) return require("games." .. id .. ".rules") end

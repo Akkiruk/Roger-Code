@@ -3,7 +3,7 @@
 -- monitor is 120x81 cells.
 
 local rules = require("games.uttt.rules")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local M = {}
 local C = ui.C

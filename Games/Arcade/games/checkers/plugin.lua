@@ -1,10 +1,10 @@
 -- games/checkers/plugin.lua
 -- Checkers as an Arcade game. Tap a piece, then tap where it goes.
 
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local rules = require("games.checkers.rules")
 local search = require("games.search")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local floor = math.floor

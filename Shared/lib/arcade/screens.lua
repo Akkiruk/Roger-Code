@@ -2,10 +2,11 @@
 -- The screens every game shares: lobby, results, stats, settings and the scoreboard monitor.
 -- A game only supplies words and its own settings, through its plugin.
 
-local hw = require("arcade_hw")
-local Records = require("arcade_records")
-local tournament = require("arcade_tournament")
-local ui = require("arcade_ui")
+local hw = require("lib.arcade.hw")
+local Records = require("lib.arcade.records")
+local scores = require("lib.arcade.scores")
+local tournament = require("lib.arcade.tournament")
+local ui = require("lib.arcade.ui")
 
 local M = {}
 local C = ui.C
@@ -570,6 +571,18 @@ local function drawScoreboard()
   ui.setScreen(sc)
   sc:clear(C.bg, nil, " ")
   local W, H = board2.W, board2.H
+  if app.plugin.action then
+    ui.text(app.plugin.short or app.plugin.title, floor(W / 2), 1, C.hi, "center", W - 2)
+    local rows = scores.open(app.plugin.id).rows
+    if #rows == 0 then ui.small("Nobody yet. Be the first!", floor(W / 2), 14, C.line, C.bg, "center", W - 2) end
+    for i, row in ipairs(rows) do
+      ui.small(i .. ". " .. row.name, 3, 9 + i * 2, i == 1 and C.hi or C.text, C.bg, "left", W - 14)
+      ui.small(tostring(row.score), W - 3, 9 + i * 2, i == 1 and C.hi or C.text, C.bg, "right")
+    end
+    sc:output(board2.out, 0, 0)
+    ui.setScreen(prev)
+    return
+  end
   -- with a match on, this is a spectator's screen. It draws with no viewer, so nothing secret can reach it
   if S.tour and not S.match then
     ui.text("KNOCKOUT", floor(W / 2), 1, C.hi, "center")

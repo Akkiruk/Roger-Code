@@ -4,10 +4,10 @@
 -- Everything drawn from a fleet takes a viewer: with none, as for a spectator or a covered wall, only shots are shown.
 
 local ai = require("games.battleship.ai")
-local base = require("games.base")
+local base = require("lib.arcade.base")
 local hash = require("lib.casino.rng")
 local rules = require("games.battleship.rules")
-local ui = require("arcade_ui")
+local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local floor = math.floor
