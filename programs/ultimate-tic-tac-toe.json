@@ -7,12 +7,12 @@
     "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "efa19391e604221a13dfd9c433d72887c7f82f45",
-    "generated_at": "2026-10-31T01:02:19Z",
-    "package_hash": "87b818b609e21e98e4882f2816adad3c0feb15f28d4344eebf323b3379401e31"
+    "commit": "870232d0a3f6485d55c963d8c47eb40adb16a461",
+    "generated_at": "2026-10-31T01:25:48Z",
+    "package_hash": "9e8b8d6871a45186b537103cea925f28875e7e20e04cb2c00a2da88aed605573"
   },
   "install": {
     "preserve": [
@@ -53,7 +53,7 @@
       {
         "repo_path": "Games/UltimateTicTacToe/uttt.lua",
         "install_path": "uttt.lua",
-        "sha256": "64df96d1956cbc002b3c6b4382bd2864acf4aa8afe44a1e267490bd2dbf7ed01"
+        "sha256": "3e954a85a2585509f79470913b1bcbd0c912a03631209bd27b761abe1b59c39f"
       },
       {
         "repo_path": "Games/UltimateTicTacToe/uttt_ui.lua",
