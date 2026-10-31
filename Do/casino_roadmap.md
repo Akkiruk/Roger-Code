@@ -1,63 +1,44 @@
 # Casino Roadmap
 
-Last updated: 2026-04-13
+Last updated: 2026-10-31
 
-## What Is Already Shipped
+## What Is Shipped
 
-- Blackjack is live.
-- Baccarat is live.
-- VideoPoker is live.
-- HiLo is live.
-- Slots is live.
-- Roulette is already shipped, not just planned.
-- CrazyEights is already shipped, not just planned.
-- PokerTable already exists as a multiplayer foundation, but it is only Phase 1.
+Every wagering game was rebuilt on one engine, `Shared/lib/casino/`. Read the header of `table.lua` first; `Games/HiLo` is the reference game.
 
-## Stabilize Current Games First
+| Game | Package | Return with good play | How it is proved |
+| --- | --- | --- | --- |
+| Blackjack | `blackjack` | 98.65% | Basic-strategy simulation |
+| Baccarat | `baccarat` | Banker 98.94%, Player 98.77%, Tie 85.64% | Exact enumeration |
+| Video Poker | `videopoker` | 98.373% | Exact, optimal hold on every deal |
+| 3 Card Poker | `three-card-poker` | Ante 96.63%, Pair Plus 92.72% | Exact enumeration |
+| Ultimate Texas Hold'em | `ultimate-holdem` | 97.57%, Trips 96.50% | Simulation, 150M hands |
+| Hi-Lo | `hilo` | 96% at every stopping point | Pricing rule plus simulation |
+| Crazy Eights | `crazyeights` | At most 97.4% found | Simulation against the best plan found |
+| Slots | `slots` | 95.02% before the jackpot | Exact |
+| Roulette | `roulette` | 97.30% | Exact |
+| Horse Racing | `horse-racing` | 95.18% to 96.00% on every bet | Exact over all finishing orders |
+| Five-card draw | `pokertable` | Players against each other, no rake | Conservation and side-pot tests |
+| Casino Hub | `casino-hub` | Leaderboards, measured returns, shared jackpot | Scenario suite |
 
-### VideoPoker
+The monitor is always a 6x6 wall at text scale 0.5.
 
-- Keep the current game as Jacks or Better.
-- Current payout table in code is `250 / 50 / 25 / 9 / 6 / 4 / 3 / 2 / 1`.
-- Current hand evaluation already matches Jacks-or-Better rules, including ace-low straights and high-pair qualification.
-- Remaining work is QA, not a rules rewrite.
+## Rules That Must Hold
 
-### Blackjack
+- Stakes are never taken up front. This is the owner's decision: nobody gives up tokens and then waits to get them back.
+- A round's net moves once, before the final reveal plays. What cannot move is kept as owed and settled when that player next sits down.
+- A reboot resumes the round. Nothing is voided.
+- Paytables are total return on the bet, in every game.
+- `Tests/run.lua` runs in the publish workflow. A game outside its target return stops the deploy.
+- Anti-cheat stays light: make abuse awkward, don't build around it.
 
-- The current table is intentionally tight, not player-friendly Vegas blackjack.
-- Current rules are: blackjack pays even money, dealer hits soft 17, doubles are hard-11 only, no insurance, no surrender, one split, split aces get one card.
-- That is a product decision more than a bug. If the game feels too punishing, tune the rules as a balance pass instead of treating it like a defect.
+## Testing
 
-### Bet Caps
+- `Tests/`: rules, payouts and returns, pure Lua.
+- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules.
+- `craftos-agent/tools/mcbridge/rc-casino.mjs`: every game with real tokens on a real server.
 
-- Every shipped house game already has bankroll-based host coverage caps.
-- Blackjack and Baccarat also already have absolute token caps.
-- Roulette already has a per-wager liability cap tied to payout odds.
-- Follow-up QA should verify the cap messaging and edge cases, not add another cap system from scratch.
+## Later
 
-## Actual Build Order
-
-1. Finish stabilization and QA on Blackjack, VideoPoker, Roulette, and the newer CrazyEights cabinet.
-2. Build the next house-vs-dealer games: 3 Card Poker and Ultimate Texas Hold'em.
-3. Add horse racing only after the two poker house games have specs and payout math locked.
-4. Move PokerTable from Phase 1 foundation into a real playable multiplayer poker variant.
-
-## Multiplayer Scope
-
-- 3 Card Poker is a house game, not multiplayer poker.
-- Ultimate Texas Hold'em is a house game, not multiplayer poker.
-- PokerTable should stay reserved for true player-vs-player poker.
-- Multiplayer tic-tac-toe can exist as a framework test, but it is below the casino stabilization and house-game work.
-
-## Poker Decision
-
-- Treat PokerTable as the base for true multiplayer poker only.
-- Build five-card draw before Texas Hold'em.
-- Reason: it needs fewer betting rounds, less table-state rendering, and a simpler private-card flow across seat terminals.
-- Hold'em should come after the betting, side-pot, reconnect, and settlement engine is proven.
-
-## Out-Of-Band Economy Issue
-
-- The weird `100,413` trinket cost issue does not look like a casino-game task.
-- If it is real and reproducible, it likely belongs in VaultGear or vhcctweaks item-detail/economy code, not in the casino games.
-- Do not block casino roadmap work on it without a concrete reproduction path.
+- PhoneOS still has its old blackjack and slots. They are deprecated and were left alone.
+- Texas Hold'em on PokerTable, once five-card draw has proved itself on a live server.

@@ -49,6 +49,8 @@ local GAME_CATEGORY = "Games"
 local MONITOR_ACTIVITY_EVENTS = {
   monitor_resize = true,
   monitor_touch = true,
+  -- A casino table says this while it runs, so a quiet table waiting for its player is not taken for a hung one
+  roger_alive = true,
 }
 local GAME_PROGRAM_KEYS = {
   baccarat = true,

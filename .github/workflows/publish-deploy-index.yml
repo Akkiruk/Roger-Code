@@ -19,6 +19,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Rules, payouts and returns: a game outside its target return stops the publish
+      - name: Test casino rules
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.1
+          lua5.1 Tests/run.lua
+
       - name: Prepare previous deploy index
         shell: pwsh
         run: |

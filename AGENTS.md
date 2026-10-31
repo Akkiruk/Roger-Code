@@ -34,6 +34,14 @@
 - Assume runtime computers live on the dedicated server and are not directly accessible from this workspace.
 - Validate changes through source inspection, package metadata, and the published installer/update flow unless the user explicitly supplies external runtime evidence.
 
+## Casino
+
+- Every wagering game is a plugin on `Shared/lib/casino/table.lua`: pure rules, a view, a game table. Read that file's header first; `Games/HiLo` is the reference.
+- Rules never touch ccvault, the screen or sound, and hold plain numbers, so they test without a monitor and survive a reboot.
+- Stakes are deliberately not taken up front: nobody gives up tokens before a round ends. A round's net moves once, before the final reveal, and anything that cannot move is kept in `journal` as owed.
+- Paytables are total return on the bet. A new paytable needs a return check in `Tests/`.
+- Tables are built for one fixed 6x6 monitor wall at text scale 0.5, about 121x81 cells, each cell 2 wide by 3 tall.
+
 ## Lua And ComputerCraft Rules
 
 - Target Lua 5.1 and CC:Tweaked-compatible APIs.
@@ -51,6 +59,6 @@
 - After any completed repo change, finish the loop in the same turn by pushing the full change set unless the user explicitly says not to push yet.
 - Do not stop to ask for verification or review before pushing to `main` unless a failed git operation forces recovery work.
 - Do not attempt direct local deployment or runtime log inspection. Push to GitHub and let the server-side installer/update flow pull the new version.
-- Skip tests, linting, emulator runs, and other verification by default. Only run verification when the user explicitly asks for it or when it is required to recover from a failed git operation.
+- Casino rules and payouts must pass `Tests/run.lua` before pushing: the publish workflow runs it and a failure stops the deploy. Skip other verification by default.
 - Use `scripts/push-all.ps1` for the default fast path unless the task needs a custom flow.
 - Do not fake success or use destructive history rewrites. If a push fails, report it plainly.

@@ -930,6 +930,8 @@ local function writePhoneHostMarker(info)
   return true
 end
 
+local HOST_CLAIM_WAIT_MS = 60000
+
 local function claimPhoneHostIfNeeded(shouldClaim)
   if not shouldClaim then
     return true
@@ -939,12 +941,25 @@ local function claimPhoneHostIfNeeded(shouldClaim)
     return false, "ccvault.claimHost is unavailable"
   end
 
+  -- Since vhcctweaks 2.2.35 a claim lands when the player clicks [CONFIRM] in chat, so wait for it
   local ok, result, err = pcall(ccvault.claimHost)
   if not ok then
     return false, tostring(result)
   end
   if type(result) ~= "table" then
-    return false, tostring(err or "host claim failed")
+    print(tostring(err or "Confirm the host claim in chat."))
+    local deadline = os.epoch("utc") + HOST_CLAIM_WAIT_MS
+    while os.epoch("utc") < deadline do
+      os.sleep(0.5)
+      local infoOk, info = pcall(ccvault.getSessionInfo)
+      if infoOk and type(info) == "table" and info.isSelfPlay then
+        result = { hostName = info.playerName, changed = true }
+        break
+      end
+    end
+    if type(result) ~= "table" then
+      return false, "host claim was not confirmed in chat"
+    end
   end
 
   local markerOk, markerErr = writePhoneHostMarker({

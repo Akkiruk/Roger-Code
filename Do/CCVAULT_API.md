@@ -1,5 +1,7 @@
 # CCVault API — Developer Documentation
 
+> The current reference lives in the vhcctweaks repo at `docs/CCVAULT_API.md`. This copy covers the core calls.
+
 > **Server-authoritative economy API for CC:Tweaked computers on Vault Hunters**
 > Part of the **vhcctweaks** mod
 
@@ -175,14 +177,10 @@ local info = ccvault.getSessionInfo()
 -- info.hostName              string?  computer owner's name (nil if unregistered)
 -- info.isSelfPlay            boolean  true if player == host (test mode)
 -- info.authenticated         boolean  whether current session is authenticated
--- info.transfersRemaining    number   min of terminal + player budget
--- info.terminalTransfersRemaining  number  terminal rate limit remaining
--- info.playerTransfersRemaining    number  player rate limit remaining
 ```
 
 Useful for:
 - Detecting test/self-play mode server-authoritatively
-- Showing rate limit warnings before they hit
 - Display UI without needing auth first
 
 ---
@@ -193,7 +191,7 @@ Useful for:
 |----------|---------|:---:|
 | `ccvault.transferSelf(amount, reason)` | `{success, txId, testMode}` \| `nil, error` | **Yes** |
 
-Executes a real transfer where player and host are the same account. Goes through the full pipeline (WAL, ledger, rate limiter) with net-zero balance effect. Tagged as `[test]` in the ledger.
+Executes a real transfer where player and host are the same account. Goes through the ledger with net-zero balance effect. Tagged as `[test]` in the ledger.
 
 **Only works when player == host.** Returns an error otherwise.
 
@@ -290,10 +288,7 @@ end
 | `reason is required` | Must provide a reason string |
 | `reason too long (max 64 chars)` | Shorten the reason |
 | `amount exceeds maximum (1000000)` | Over the per-transfer cap |
-| `terminal rate limit exceeded` | Too many transfers from this computer (default: 10/min) |
-| `player rate limit exceeded` | Player making too many transfers (default: 20/min) |
 | `economy system not available` | PlayerShops not installed |
-| `transfer partially failed — will be recovered automatically` | Server crashed mid-transfer; WAL will fix it on restart |
 
 ---
 
@@ -320,8 +315,6 @@ end
 |---------|---------|-------------|
 | Auth nonce expiry | 60 seconds | How long the [APPROVE] button stays valid |
 | Max transfer amount | 1,000,000 | Per-transaction cap |
-| Terminal rate limit | 10/min | Max transfers per computer per minute |
-| Player rate limit | 20/min | Max transfers per player per minute |
 | Interaction staleness | 30 seconds | Right-click must be this recent for financial ops |
 | Max history results | 50 | Max entries returned by getTransactionHistory |
 
@@ -338,14 +331,14 @@ Server admins can change all of these in the vhcctweaks server config.
 - ❌ Destroy tokens
 - ❌ Read balances without player authentication
 - ❌ Forge the authentication prompt
-- ❌ Bypass rate limits or transfer caps
+- ❌ Bypass transfer caps
 - ❌ Operate on a player who hasn't recently right-clicked
 
 **The server guarantees:**
 
 - ✅ Every debit has an equal credit (double-entry ledger)
 - ✅ All transfers are permanently logged with TX ID, amounts, parties, reason, and timestamp
-- ✅ Crash-safe execution via Write-Ahead Log (incomplete transfers auto-recover on restart)
+- ✅ Atomic transfers: the economy moves both balances in one database transaction
 - ✅ Auth prompts are unforgeable server chat messages with clickable approve buttons
 - ✅ Transaction history is filtered to only show the requesting player's own data
 - ✅ Self-transfers are explicitly tagged as test mode in the ledger
