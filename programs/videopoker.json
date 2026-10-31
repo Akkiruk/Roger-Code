@@ -7,12 +7,12 @@
     "description": "Jacks or Better draw poker with payout and tutorial screens.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.80"
+    "version": "1.0.81"
   },
   "build": {
-    "commit": "713364ee44df5532973aa765b923bc61da3ef93f",
-    "generated_at": "2026-10-31T01:37:57Z",
-    "package_hash": "a53b1b59db5b080165b4f695896a0376ccc80a5c665f350786c99e555b038ead"
+    "commit": "856e2460491b7233ee65dd7483f1f0eb822b2ca7",
+    "generated_at": "2026-10-31T01:43:50Z",
+    "package_hash": "1ee7b8561f94ce19fbaee2658e0c1938cb8a392b8a53e9c29512865de0ffb179"
   },
   "install": {
     "preserve": [
@@ -187,7 +187,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "fcd659e3270aa97e3c9e5cae3cf450cf83f8cd5d95bbfbac211bf40733496dea"
+        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
       },
       {
         "repo_path": "Games/VideoPoker/startup.lua",

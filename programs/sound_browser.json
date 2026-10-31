@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "713364ee44df5532973aa765b923bc61da3ef93f",
-    "generated_at": "2026-10-31T01:37:57Z",
-    "package_hash": "37de674083f692486195c931800248bc0ea8d78905a2a6a3d7de2254e3ff011c"
+    "commit": "856e2460491b7233ee65dd7483f1f0eb822b2ca7",
+    "generated_at": "2026-10-31T01:43:50Z",
+    "package_hash": "7f6186506dfc9a0899310b61924f37dfb94cfd907434a872b743d1b782d4ad0a"
   },
   "install": {
     "preserve": [],
@@ -70,7 +70,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "fcd659e3270aa97e3c9e5cae3cf450cf83f8cd5d95bbfbac211bf40733496dea"
+        "sha256": "1daefacc6d045bb85e96185511b01c862b226123235065349cd39662f447a804"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
