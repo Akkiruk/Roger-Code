@@ -11,7 +11,7 @@
   },
   "build": {
     "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T00:02:51Z",
+    "generated_at": "2026-10-31T01:02:19Z",
     "package_hash": "fe495341108c1e726dbd61264b8635df1edbab2da48d16458033f4d1d2f27b94"
   },
   "install": {
@@ -170,6 +170,7 @@
       "lib.monitor_scale",
       "lib.peripherals",
       "lib.roger_logging",
+      "lib.roger_supervisor",
       "lib.runtime_exit",
       "lib.sound",
       "lib.updater"

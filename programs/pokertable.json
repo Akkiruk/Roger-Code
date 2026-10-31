@@ -7,12 +7,12 @@
     "description": "Multiplayer poker table foundation with dealer and seat modes.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.26"
+    "version": "1.0.27"
   },
   "build": {
     "commit": "9686211f6e184390584532f910e2dd949f1eebda",
-    "generated_at": "2026-10-31T00:02:51Z",
-    "package_hash": "772f8afe39252d79f61e20a9eb688df3aefe8e438edaa0e0b210314be9732d82"
+    "generated_at": "2026-10-31T01:02:19Z",
+    "package_hash": "aedf8e7164f42bfd9429574de4b84fe4569b055a1d6fe22a0267f9948b46a5ba"
   },
   "install": {
     "preserve": [
@@ -23,6 +23,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
+      },
+      {
+        "repo_path": "Shared/lib/poker_store.lua",
+        "install_path": "lib/poker_store.lua",
+        "sha256": "1d238e951d8f4c9f36245421c7b5b7f5b2670c5be3605c8e7d7f465d1ce738e1"
       },
       {
         "repo_path": "Shared/lib/poker_protocol.lua",
@@ -65,15 +70,15 @@
         "sha256": "68af55dc4b664cf66136653f376d4f318fb8b73b29cb26dec405a3e0e82dee90"
       },
       {
-        "repo_path": "Shared/lib/poker_store.lua",
-        "install_path": "lib/poker_store.lua",
-        "sha256": "1d238e951d8f4c9f36245421c7b5b7f5b2670c5be3605c8e7d7f465d1ce738e1"
-      },
-      {
         "repo_path": "Games/PokerTable/pokertable_config.lua",
         "install_path": "pokertable_config.lua",
         "sha256": "ca75f8b55f66f34b988e19fa7d00ff8a469a6c540b06a974d4fb6dbd84275076",
         "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/PokerTable/startup.lua",
+        "install_path": "pokertable_startup.lua",
+        "sha256": "f1831ae945cb406341b24d2f8a167651bb830a0df8ced864fce02e48302071ed"
       },
       {
         "repo_path": "Games/PokerTable/seat.lua",
@@ -116,14 +121,14 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Games/PokerTable/startup.lua",
-        "install_path": "pokertable_startup.lua",
-        "sha256": "f1831ae945cb406341b24d2f8a167651bb830a0df8ced864fce02e48302071ed"
-      },
-      {
         "repo_path": "Shared/lib/poker_transport.lua",
         "install_path": "lib/poker_transport.lua",
         "sha256": "bcbac84b3a2e5a09ae3a9cfe01b255780515d5b2beb22bcf9d115942f3a5186a"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       }
     ]
   },
@@ -144,7 +149,10 @@
       "lib.poker_protocol",
       "lib.poker_store",
       "lib.poker_transport",
-      "lib.roger_logging"
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.updater"
     ]
   }
 }

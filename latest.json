@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-31T00:02:51Z",
+  "generated_at": "2026-10-31T01:02:19Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,9 +8,9 @@
   },
   "installer": {
     "version": "1.1.7",
-    "commit": "48d01a40d70e64b646b70dd44e62d6632467d0aa",
+    "commit": "66d341b13980d0a8ebee221246e7b6d074abfe32",
     "path": "System/installer.lua",
-    "sha256": "8ca7f69efc66493473eaf18e0693cdaf22d1590d4432221c1b7c13985fcc2a2e"
+    "sha256": "8c48bf820b29df803380502a07911cdb66e321b5fce36901eeb2f1b540a77bdc"
   },
   "programs": {
     "baccarat": {
@@ -35,18 +35,18 @@
       "name": "Block Reader vhcctweaks Probe",
       "category": "Utilities",
       "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
-      "version": "1.0.10",
+      "version": "1.0.11",
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "c6d83a842221a1ed13315ca6318c65f664a4b8b6b681c8b69ae612f5db52bec3",
+      "package_hash": "ff076a2f7fe85cfce530c6349c902c1c93164e8245fbb16ea7697d4887422e8a",
       "spec_path": "programs/block_reader_vhcctweaks_probe.json"
     },
     "conformance_probe": {
       "name": "Conformance Probe",
       "category": "Utilities",
       "description": "Conformance probe: run it on a real computer, then give conformance_results.json to the emulator project",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "commit": "9686211f6e184390584532f910e2dd949f1eebda",
-      "package_hash": "b53a6f5630367bde69c44257c17e440c3b3a4ce8c716d4c2cb4d5515b2f8fadc",
+      "package_hash": "7988f049403e133f9bafc7a3f2c3951339caca9025050f3954d764fef996742d",
       "spec_path": "programs/conformance_probe.json"
     },
     "crazyeights": {
@@ -80,9 +80,9 @@
       "name": "PokerTable",
       "category": "Games",
       "description": "Multiplayer poker table foundation with dealer and seat modes.",
-      "version": "1.0.26",
+      "version": "1.0.27",
       "commit": "9686211f6e184390584532f910e2dd949f1eebda",
-      "package_hash": "772f8afe39252d79f61e20a9eb688df3aefe8e438edaa0e0b210314be9732d82",
+      "package_hash": "aedf8e7164f42bfd9429574de4b84fe4569b055a1d6fe22a0267f9948b46a5ba",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
@@ -107,54 +107,54 @@
       "name": "Sound Browser",
       "category": "Apps",
       "description": "Browse the pack's generated sound catalog and save favorites.",
-      "version": "1.0.8",
+      "version": "1.0.9",
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "f86206bdc6d657fca04493f0e67cdd9a340369126c7b94b5e4dce67792594b8d",
+      "package_hash": "28767f77d545dcae8a9359d310034b6891d42e738bcebdf85ecc8cc4bc87bd93",
       "spec_path": "programs/sound_browser.json"
     },
     "taskmaster": {
       "name": "TaskMaster",
       "category": "Apps",
       "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
-      "version": "1.0.22",
+      "version": "1.0.23",
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "4ada4dc1f63b70b067e97cebc3b93baf79db7a55c7ab0543877dcce6c13184d9",
+      "package_hash": "f8f486e33f509d929885ef58a8ea78a7931f8ae1ec025f328ff0f0d76e05aedd",
       "spec_path": "programs/taskmaster.json"
     },
     "ultimate-tic-tac-toe": {
       "name": "Ultimate Tic-Tac-Toe",
       "category": "Games",
       "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
-      "version": "1.0.2",
-      "commit": "48d01a40d70e64b646b70dd44e62d6632467d0aa",
-      "package_hash": "3400b7dc9b5ff513cdc710e8fb267fc8643bbb13531a07180ec0e33a168556d2",
+      "version": "1.0.3",
+      "commit": "efa19391e604221a13dfd9c433d72887c7f82f45",
+      "package_hash": "87b818b609e21e98e4882f2816adad3c0feb15f28d4344eebf323b3379401e31",
       "spec_path": "programs/ultimate-tic-tac-toe.json"
     },
     "vault_item_analyzer": {
       "name": "vault_item_analyzer",
       "category": "Utilities",
       "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
-      "version": "1.0.24",
+      "version": "1.0.25",
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "47e4db7152a343d96ff6c8dac94feab1d09f1069b0d55ec7ddc6ab4dd6b97509",
+      "package_hash": "dfd31ccd81f4f504a468909ab8ac0fbfa04d0cd6cbe950376606eae14ad297f9",
       "spec_path": "programs/vault_item_analyzer.json"
     },
     "vaultgear": {
       "name": "VaultGear",
       "category": "Apps",
       "description": "Vault Storage Manager startup entry point.",
-      "version": "1.0.55",
+      "version": "1.0.56",
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "6c2109fe37c4376bcfda1957da53438c33eaf13b62197db2e1134b05b0ec5b7f",
+      "package_hash": "bb247b7ef9799858c76deca1c3491fa925bddd9cd49241c6cbf142c51ee78605",
       "spec_path": "programs/vaultgear.json"
     },
     "vhcctweaks_smoke_test": {
       "name": "VH CC Tweaks Smoke Test",
       "category": "Utilities",
       "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
-      "version": "1.0.8",
+      "version": "1.0.9",
       "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-      "package_hash": "701db72e80d59395534432e27f0a7ba226b967239a375582dd1416ec74064b5c",
+      "package_hash": "e1a26def8dbd790d043fbaadcab161cdd2d0a8a633b0efff5a53fc7f12ebd807",
       "spec_path": "programs/vhcctweaks_smoke_test.json"
     },
     "videopoker": {

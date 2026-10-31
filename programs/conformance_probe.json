@@ -7,12 +7,12 @@
     "description": "Conformance probe: run it on a real computer, then give conformance_results.json to the emulator project",
     "source_root": "Utilities",
     "entrypoint": "conformance_probe.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
     "commit": "9686211f6e184390584532f910e2dd949f1eebda",
-    "generated_at": "2026-10-31T00:02:51Z",
-    "package_hash": "b53a6f5630367bde69c44257c17e440c3b3a4ce8c716d4c2cb4d5515b2f8fadc"
+    "generated_at": "2026-10-31T01:02:19Z",
+    "package_hash": "7988f049403e133f9bafc7a3f2c3951339caca9025050f3954d764fef996742d"
   },
   "install": {
     "preserve": [],
@@ -51,6 +51,11 @@
         "repo_path": "Utilities/conformance_probe.lua",
         "install_path": "conformance_probe.lua",
         "sha256": "2f6c8d7b7defa38cb61d021f30ee5a259a281bd42241ae4b94b1c88803ff23db"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       }
     ]
   },
@@ -62,7 +67,10 @@
     "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
-      "lib.roger_logging"
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.updater"
     ]
   }
 }

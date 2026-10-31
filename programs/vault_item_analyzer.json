@@ -7,12 +7,12 @@
     "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
     "source_root": "Utilities",
     "entrypoint": "vault_item_analyzer.lua",
-    "version": "1.0.24"
+    "version": "1.0.25"
   },
   "build": {
     "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T00:02:51Z",
-    "package_hash": "47e4db7152a343d96ff6c8dac94feab1d09f1069b0d55ec7ddc6ab4dd6b97509"
+    "generated_at": "2026-10-31T01:02:19Z",
+    "package_hash": "dfd31ccd81f4f504a468909ab8ac0fbfa04d0cd6cbe950376606eae14ad297f9"
   },
   "install": {
     "preserve": [],
@@ -51,6 +51,11 @@
         "repo_path": "Utilities/vault_item_analyzer.lua",
         "install_path": "vault_item_analyzer.lua",
         "sha256": "7554485565b3757b6f179e0b97043e0a2b7a31ab524153dc66d183b2919ef117"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       }
     ]
   },
@@ -62,7 +67,10 @@
     "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
-      "lib.roger_logging"
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.updater"
     ]
   }
 }

@@ -11,7 +11,7 @@
   },
   "build": {
     "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T00:02:51Z",
+    "generated_at": "2026-10-31T01:02:19Z",
     "package_hash": "b7a62372a1bdb8499afd0c4e966f1c5c6c1ccbb308540970024bc99f07a2ef57"
   },
   "install": {
@@ -331,6 +331,7 @@
       "lib.player_detection",
       "lib.replay_prompt",
       "lib.roger_logging",
+      "lib.roger_supervisor",
       "lib.round_settlement",
       "lib.runtime_exit",
       "lib.safe_runner",

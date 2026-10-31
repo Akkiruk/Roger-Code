@@ -7,12 +7,12 @@
     "description": "Probes an Advanced Peripherals Block Reader and reports whether vhcctweaks is blocking it.",
     "source_root": "Utilities",
     "entrypoint": "block_reader_vhcctweaks_probe.lua",
-    "version": "1.0.10"
+    "version": "1.0.11"
   },
   "build": {
     "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T00:02:51Z",
-    "package_hash": "c6d83a842221a1ed13315ca6318c65f664a4b8b6b681c8b69ae612f5db52bec3"
+    "generated_at": "2026-10-31T01:02:19Z",
+    "package_hash": "ff076a2f7fe85cfce530c6349c902c1c93164e8245fbb16ea7697d4887422e8a"
   },
   "install": {
     "preserve": [],
@@ -51,6 +51,11 @@
         "repo_path": "Utilities/block_reader_vhcctweaks_probe.lua",
         "install_path": "block_reader_vhcctweaks_probe.lua",
         "sha256": "50142be9789be621b6a23234a633358f647d145f927367c2abd0c0c3c88ac89d"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       }
     ]
   },
@@ -62,7 +67,10 @@
     "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
-      "lib.roger_logging"
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.updater"
     ]
   }
 }

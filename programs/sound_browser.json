@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
     "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T00:02:51Z",
-    "package_hash": "f86206bdc6d657fca04493f0e67cdd9a340369126c7b94b5e4dce67792594b8d"
+    "generated_at": "2026-10-31T01:02:19Z",
+    "package_hash": "28767f77d545dcae8a9359d310034b6891d42e738bcebdf85ecc8cc4bc87bd93"
   },
   "install": {
     "preserve": [],
@@ -23,59 +23,9 @@
         "sha256": "0f3d5ad9ccbcf490f8d4e1dceaa5c02b080516965e5aa585745b23b775248ef7"
       },
       {
-        "repo_path": "System/roger_logs.lua",
-        "install_path": "rogerlogs.lua",
-        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
-      },
-      {
-        "repo_path": "System/roger_update.lua",
-        "install_path": "rogerupdate.lua",
-        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
-      },
-      {
-        "repo_path": "Shared/lib/roger_supervisor.lua",
-        "install_path": "lib/roger_supervisor.lua",
-        "sha256": "c71a0e77c99ab45fa69333e9d2d48a5b846b3b5d224c7712decfce38bdc6ac08"
-      },
-      {
-        "repo_path": "Shared/lib/roger_logging.lua",
-        "install_path": "lib/roger_logging.lua",
-        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
-      },
-      {
-        "repo_path": "Shared/lib/updater.lua",
-        "install_path": "lib/updater.lua",
-        "sha256": "8f18b8bd0cdb492f3d2a8d4c6c75a69db5227bcbb72197fc604771d7dd7df46f"
-      },
-      {
-        "repo_path": "Apps/SoundBrowser/export_report.lua",
-        "install_path": "export_report.lua",
-        "sha256": "069d19b7c94a149d8f711995c90115f4554b97b8178f11a7f076fb8dc14f8028"
-      },
-      {
-        "repo_path": "Apps/SoundBrowser/sound_browser.lua",
-        "install_path": "sound_browser.lua",
-        "sha256": "6fcf12ca7c961fd61c3c65a0aa296b6389adc482d576df1c8b260d26cac6c29a"
-      },
-      {
-        "repo_path": "Apps/SoundBrowser/startup.lua",
-        "install_path": "sound_browser_startup.lua",
-        "sha256": "c70ce90b3b629d46d4783aa8092f7d5aa5db3a5636da51f4999fbb04f6ae3cb8"
-      },
-      {
-        "repo_path": "Shared/lib/peripherals.lua",
-        "install_path": "lib/peripherals.lua",
-        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
-      },
-      {
-        "repo_path": "Shared/lib/sound_catalog.lua",
-        "install_path": "lib/sound_catalog.lua",
-        "sha256": "65e79173e038fad122246305e05959fd945839893003be94b23a2d4fbdf7936f"
-      },
-      {
-        "repo_path": "Shared/lib/sound_metadata.lua",
-        "install_path": "lib/sound_metadata.lua",
-        "sha256": "f0021103aeae589371af8bc2ebd235ae0b4e87ff3c9379b401a012ef595cb252"
+        "repo_path": "Shared/lib/sound_review_store.lua",
+        "install_path": "lib/sound_review_store.lua",
+        "sha256": "b1e7e35b0d158168b1fe5adf6451829a17ac2ae8b5afa1c9a0d55614a75f61cd"
       },
       {
         "repo_path": "Shared/lib/sound_recommendations.lua",
@@ -83,14 +33,69 @@
         "sha256": "4ebe1dd168f711cd5419aaed3615775fd2e4fa46ae2eab4c4df8e2edbe9469ee"
       },
       {
-        "repo_path": "Shared/lib/sound_review_store.lua",
-        "install_path": "lib/sound_review_store.lua",
-        "sha256": "b1e7e35b0d158168b1fe5adf6451829a17ac2ae8b5afa1c9a0d55614a75f61cd"
+        "repo_path": "Shared/lib/sound_metadata.lua",
+        "install_path": "lib/sound_metadata.lua",
+        "sha256": "f0021103aeae589371af8bc2ebd235ae0b4e87ff3c9379b401a012ef595cb252"
+      },
+      {
+        "repo_path": "Shared/lib/sound_catalog.lua",
+        "install_path": "lib/sound_catalog.lua",
+        "sha256": "65e79173e038fad122246305e05959fd945839893003be94b23a2d4fbdf7936f"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "1f98db4c271879a98ec593e3cd588180d4022ef8b100e616dcc8373c630531ab"
       },
       {
         "repo_path": "Shared/lib/sound_roles.lua",
         "install_path": "lib/sound_roles.lua",
         "sha256": "f140ac21913119e9c48ada11a04ded6561ef9a5491ce62926f4fe3faab05fbd2"
+      },
+      {
+        "repo_path": "Apps/SoundBrowser/startup.lua",
+        "install_path": "sound_browser_startup.lua",
+        "sha256": "c70ce90b3b629d46d4783aa8092f7d5aa5db3a5636da51f4999fbb04f6ae3cb8"
+      },
+      {
+        "repo_path": "Apps/SoundBrowser/export_report.lua",
+        "install_path": "export_report.lua",
+        "sha256": "069d19b7c94a149d8f711995c90115f4554b97b8178f11a7f076fb8dc14f8028"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "8f18b8bd0cdb492f3d2a8d4c6c75a69db5227bcbb72197fc604771d7dd7df46f"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "c71a0e77c99ab45fa69333e9d2d48a5b846b3b5d224c7712decfce38bdc6ac08"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "Apps/SoundBrowser/sound_browser.lua",
+        "install_path": "sound_browser.lua",
+        "sha256": "6fcf12ca7c961fd61c3c65a0aa296b6389adc482d576df1c8b260d26cac6c29a"
       },
       {
         "repo_path": "Shared/lib/sound.lua",
@@ -109,12 +114,15 @@
     "lib_modules": [
       "lib.peripherals",
       "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
       "lib.sound",
       "lib.sound_catalog",
       "lib.sound_metadata",
       "lib.sound_recommendations",
       "lib.sound_review_store",
-      "lib.sound_roles"
+      "lib.sound_roles",
+      "lib.updater"
     ]
   }
 }

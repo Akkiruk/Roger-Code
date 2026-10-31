@@ -7,12 +7,12 @@
     "description": "Guided proof-check for ccvault, vhcc, auth, and vault item detail enrichment.",
     "source_root": "Utilities/VHCCTweaksSmokeTest",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
     "commit": "49c6d8df57392e53c7f73ed9b3a9ffb110e8c158",
-    "generated_at": "2026-10-31T00:02:51Z",
-    "package_hash": "701db72e80d59395534432e27f0a7ba226b967239a375582dd1416ec74064b5c"
+    "generated_at": "2026-10-31T01:02:19Z",
+    "package_hash": "e1a26def8dbd790d043fbaadcab161cdd2d0a8a633b0efff5a53fc7f12ebd807"
   },
   "install": {
     "preserve": [],
@@ -66,6 +66,11 @@
         "repo_path": "Utilities/VHCCTweaksSmokeTest/vhcctweaks_smoke_test.lua",
         "install_path": "vhcctweaks_smoke_test.lua",
         "sha256": "77cb73c2a2bd35d788173df47431d2e8f141d58d4af96b6aa0ae06c36c70eefc"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       }
     ]
   },
@@ -77,7 +82,10 @@
     "update_interval": 60,
     "requires_updater": true,
     "lib_modules": [
-      "lib.roger_logging"
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.updater"
     ]
   }
 }
