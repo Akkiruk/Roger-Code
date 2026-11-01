@@ -7,12 +7,12 @@
     "description": "Dig Dug, Flappy Bird, Minesweeper, Tapper, Mappy and more, played by touch for the high score.",
     "source_root": "Games/Classics2",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "6b66931595290a9b196c0f12ff6221fdebaa15aa",
-    "generated_at": "2026-11-01T14:57:23Z",
-    "package_hash": "adf1fa4213da7203f9ef98c70c0b32795600833ec5a475119be48b3c6e3f6f10"
+    "commit": "04c3e1dd693d5331472ca265f628adaae5286d0e",
+    "generated_at": "2026-11-01T17:07:01Z",
+    "package_hash": "c822ba3f3050ba290c4452c443006976f1fd7401d7bacdeb13113d14bbbb28a1"
   },
   "install": {
     "preserve": [],
@@ -30,7 +30,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "18a84a29abad17bace574589307fe15c70ca49a61b34dd4191e1cef7df810d14"
+        "sha256": "d2dfaa318dd4f71a79d9daa0810a111857853a1b4a57dbdc6ef86afdbd339c2a"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",

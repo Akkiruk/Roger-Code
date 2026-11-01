@@ -7,12 +7,12 @@
     "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
     "source_root": "Games/Arcade",
     "entrypoint": "startup.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "6b66931595290a9b196c0f12ff6221fdebaa15aa",
-    "generated_at": "2026-11-01T14:57:23Z",
-    "package_hash": "e144afc237b21b4fd6188fe7c90eb82ebc0aaed2c7a82ccb5697539ce79836e5"
+    "commit": "04c3e1dd693d5331472ca265f628adaae5286d0e",
+    "generated_at": "2026-11-01T17:07:01Z",
+    "package_hash": "335efb42a4789bd78ea6f963f74d8a4ae54f98a1a16f3c3e24437016e1d3d325"
   },
   "install": {
     "preserve": [],
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "18a84a29abad17bace574589307fe15c70ca49a61b34dd4191e1cef7df810d14"
+        "sha256": "d2dfaa318dd4f71a79d9daa0810a111857853a1b4a57dbdc6ef86afdbd339c2a"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
