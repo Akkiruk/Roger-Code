@@ -7,12 +7,12 @@
     "description": "Six horses, fresh odds each race, with win, place, show and exacta bets.",
     "source_root": "Games/HorseRacing",
     "entrypoint": "startup.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
-    "generated_at": "2026-11-01T06:07:58Z",
-    "package_hash": "b36018d01f2fa4c93d7628853bbf4a23cb96dcfd0ab13e1c69156d95abad3913"
+    "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
+    "generated_at": "2026-11-01T14:53:54Z",
+    "package_hash": "d6a46a9dc2e5cad298ea56a2766cad72731268c72169edf71b8e9fa253673eb0"
   },
   "install": {
     "preserve": [],
@@ -30,7 +30,7 @@
       {
         "repo_path": "Shared/lib/casino/journal.lua",
         "install_path": "lib/casino/journal.lua",
-        "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
+        "sha256": "477c1f9b9dca49e1ddd33c6dadea92ab06696f6e399b93d6641adec2564bfc6b"
       },
       {
         "repo_path": "Shared/lib/casino/lamps.lua",
@@ -100,7 +100,7 @@
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
         "install_path": "lib/casino/wallet.lua",
-        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+        "sha256": "e563912b8e46b97511b59b50cee77757a4abb100456c6f03db7dd31f4db1bb25"
       },
       {
         "repo_path": "Shared/lib/casino/rng.lua",
