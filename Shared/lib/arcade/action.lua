@@ -101,7 +101,7 @@ function M.start(who)
   a.player = who or a.player or "Player"
   a.seed = math.random(1, 2147483646)
   a.rng, a.rngAt = journal.trackedRng(a.seed)
-  a.state = plugin.rules.new({ rng = a.rng })
+  a.state = plugin.rules.new({ rng = a.rng, player = a.player })
   begin(a)
   if plugin.saves then saveRun(a) end
 end
@@ -351,7 +351,7 @@ local function drawReady(a)
   local W, H = env.W, env.H
   ui.text(app.plugin.title, floor(W / 2), 2, C[app.plugin.color] or C.hi, "center", W - 4)
   if app.plugin.blurb then ui.small(app.plugin.blurb, floor(W / 2), 12, C.line, C.bg, "center", W - 4) end
-  drawTable(a, 15)
+  if not app.plugin.story then drawTable(a, 15) end
   local y = H - 22
   if a.saved then
     local asking = a.newUntil and nowMs() < a.newUntil
@@ -409,7 +409,7 @@ function M.draw()
   elseif a.phase == "over" then
     if a.reviewed then drawOver(a) else drawFinalBoard(a) end
   else
-    drawHeader(a)
+    if not app.plugin.story then drawHeader(a) end -- a story game has the whole wall, and no score to show
     app.plugin.view.draw(env.L, a.state)
     drawControls(a)
     if app.plugin.split and nowMs() - a.startedAt < SPLIT_HINT_MS then
