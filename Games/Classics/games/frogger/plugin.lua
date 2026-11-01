@@ -7,8 +7,7 @@ local ui = require("lib.arcade.ui")
 
 local C = ui.C
 local COLS, ROWS, TILE = rules.COLS, rules.ROWS, rules.TILE
-local ROW_H = 4               -- a tile is 6 x 4, which looks square on a monitor
-local CELL_W, CELL_H = 2, 3   -- how a monitor cell looks, wide by tall
+local ROW_H = 5               -- a tile is 6 x 5, a little taller than square, to fill the wall
 local CAR_COLORS = { [8] = C.text, [9] = C.red, [10] = C.info, [11] = C.warn, [12] = C.accent }
 local BLURB = "Hop the road, ride the river"
 
@@ -128,22 +127,9 @@ function view.draw(L, s)
   drawTime(L, s)
 end
 
-function view.controls(L)
-  return base.dpad(L)
-end
-
---- A tap on the board hops toward it, along whichever way it's further as the eye sees it.
--- A tap right on the frog hops the way it faces, so tapping one spot keeps a frog going.
-function view.actionAt(L, s, px, py)
-  if px < L.x0 or px >= L.x0 + L.bw or py < L.y0 or py >= L.y0 + L.bh then return nil end
-  local f = s.frog
-  local dx = (px - L.x0 - f.x - TILE / 2 + 0.5) * CELL_W
-  local dy = (py - rowY(L, f.row) - ROW_H / 2 + 0.5) * CELL_H
-  if math.abs(dx) <= TILE * CELL_W / 2 and math.abs(dy) <= ROW_H * CELL_H / 2 then
-    return { kind = "turn", dir = f.facing }
-  end
-  if math.abs(dy) >= math.abs(dx) then return { kind = "turn", dir = dy < 0 and "up" or "down" } end
-  return { kind = "turn", dir = dx < 0 and "left" or "right" }
+--- The whole wall steers: tap the side you want to hop.
+function view.actionAt(L, _, px, py)
+  return base.splitAction(L, px, py)
 end
 
 --- The idle screen. The title's tails hang into the line under it, so that line goes at the foot of the wall instead.
@@ -166,12 +152,12 @@ end
 
 return base.fill({
   id = "frogger", title = "Frogger", blurb = BLURB, color = "ok", accent = 0x35D07F,
-  action = true, tickMs = 100, minSize = { w = 100, h = 74 },
+  action = true, split = true, tickMs = 100, minSize = { w = 100, h = 74 },
   rules = rules, view = view, sounds = base.SOUNDS,
   help = {
     "Get a frog home to each of the five bays at the top.",
     "",
-    "Every tap is one hop. Use the arrows, or tap the board: the frog hops toward your tap. A tap on the frog hops the way it faces.",
+    "Every tap is one hop. Tap the side of the wall you want to go: the top hops up, the bottom down, the left side left and the right side right. The wall is split corner to corner, so you never have to look away.",
     "",
     "Cross the road without being hit, then ride the logs and turtles over the river. The water is deadly. So is riding off the edge, or a turtle that dives under you: they sink slowly and turn pale first.",
     "",

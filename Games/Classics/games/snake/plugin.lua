@@ -26,20 +26,9 @@ function view.draw(L, s)
   end
 end
 
-function view.controls(L)
-  return base.dpad(L)
-end
-
---- A tap on the board turns the snake toward it.
-function view.actionAt(L, s, px, py)
-  if px < L.x0 or px >= L.x0 + L.bw or py < L.y0 or py >= L.y0 + L.bh then return nil end
-  local head = s.snake[1]
-  local dx = (px - L.x0) / CELL_W + 1 - head[1]
-  local dy = (py - L.y0) / CELL_H + 1 - head[2]
-  -- the way the snake is going stays open: a tap picks one of the two sides
-  if s.dir == "left" or s.dir == "right" then return { kind = "turn", dir = dy < 0 and "up" or "down" } end
-  if math.abs(dx) >= 0 then return { kind = "turn", dir = dx < 0 and "left" or "right" } end
-  return nil
+--- The whole wall steers: tap the side you want.
+function view.actionAt(L, _, px, py)
+  return base.splitAction(L, px, py)
 end
 
 function view.onEvents(app, _, events)
@@ -52,12 +41,12 @@ end
 
 return base.fill({
   id = "snake", title = "Snake", blurb = "Eat, grow, don't crash", color = "ok", accent = 0x35D07F,
-  action = true, tickMs = 100, minSize = { w = 118, h = 78 },
+  action = true, split = true, tickMs = 100, minSize = { w = 118, h = 78 },
   rules = rules, view = view, sounds = base.SOUNDS,
   help = {
     "Steer the snake to the red food. Each one makes it longer.",
     "",
-    "Use the arrows, or tap the board: a tap above or below the head turns up or down, and a tap to either side turns that way.",
+    "Tap the side of the wall you want to go: the top goes up, the bottom down, the left side left and the right side right. The wall is split corner to corner, so you never have to look away.",
     "",
     "Hitting a wall or yourself ends the game. Every five foods the snake speeds up and food is worth more.",
   },

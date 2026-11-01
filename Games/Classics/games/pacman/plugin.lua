@@ -220,21 +220,9 @@ function view.draw(L, s)
   drawNotes(L, s)
 end
 
-function view.controls(L)
-  return base.dpad(L)
-end
-
---- A tap on the board picks the way from Pac-Man to the tap, whichever is further on the screen.
-function view.actionAt(L, s, px, py)
-  if px < L.x0 or px >= L.x0 + L.bw or py < L.y0 or py >= L.y0 + L.bh then return nil end
-  local dx = px - (tileX(L, s.pac.x) + CELL_W / 2 - 0.5)
-  local dy = py - (tileY(L, s.pac.y) + CELL_H / 2 - 0.5)
-  if math.abs(dx) < CELL_W / 2 and math.abs(dy) < CELL_H / 2 then return nil end
-  -- cells are taller than wide, so a cell of height counts for more than a cell of width
-  if math.abs(dx) * 2 >= math.abs(dy) * 3 then
-    return { kind = "turn", dir = dx < 0 and "left" or "right" }
-  end
-  return { kind = "turn", dir = dy < 0 and "up" or "down" }
+--- The whole wall steers: tap the side you want.
+function view.actionAt(L, _, px, py)
+  return base.splitAction(L, px, py)
 end
 
 function view.onEvents(app, s, events)
@@ -257,12 +245,12 @@ end
 
 return base.fill({
   id = "pacman", title = "Pac-Man", blurb = "Eat every dot, dodge the ghosts", color = "hi", accent = 0xFFD257,
-  action = true, tickMs = 150, minSize = { w = 118, h = 78 },
+  action = true, split = true, tickMs = 150, minSize = { w = 118, h = 78 },
   rules = rules, view = view, sounds = base.SOUNDS,
   help = {
     "Eat every dot on the board to reach the next level. Four ghosts are after you, and you have three lives.",
     "",
-    "Use the arrows, or tap the board: a tap above, below or to either side of Pac-Man sends him that way.",
+    "Tap the side of the wall you want to go: the top goes up, the bottom down, the left side left and the right side right. The wall is split corner to corner, so you never have to look away.",
     "",
     "You don't need perfect timing. Your last tap stays set, and Pac-Man turns at the first junction that lets him, so tap before you get there. A small yellow mark shows a turn is waiting.",
     "",

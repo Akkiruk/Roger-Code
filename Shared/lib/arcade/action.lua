@@ -3,6 +3,7 @@
 -- A run has three phases: ready (the score table and START), play, and over (the final board, until someone taps).
 -- Runs are not journaled: a reboot ends one, and nothing is at stake but a score.
 
+local base = require("lib.arcade.base")
 local config = require("lib.arcade.constants")
 local hw = require("lib.arcade.hw")
 local journal = require("lib.arcade.journal")
@@ -16,6 +17,7 @@ local floor = math.floor
 local MAX_CATCH_UP = 3   -- a late frame runs at most this many steps, so a stall can't kill the player
 local LEFT_LIMIT_MS = 20000 -- a player the detector has lost for this long has walked away
 local QUIT_WINDOW_MS = 3000 -- how long QUIT waits for its second tap
+local SPLIT_HINT_MS = 4000 -- how long a game steered by the whole wall shows how
 local FINAL_HOLD_MS = 1500 -- taps this soon after the end were aimed at the game, not at the final board
 
 local app, S, env
@@ -43,6 +45,7 @@ function M.start(who)
   a.state = plugin.rules.new({ rng = a.rng })
   a.phase, a.place, a.awaySince, a.reviewed, a.quitUntil = "play", nil, nil, false, nil
   a.nextAt = nowMs() + (plugin.tickMs or 150)
+  a.startedAt = nowMs()
   app.audio.cue("start")
   S.dirty = true
 end
@@ -100,6 +103,7 @@ function M.touch(px, py, who)
   local a = S.action
   if not a or a.phase ~= "play" or not M.mayPlay(who) then return end
   local action = app.plugin.view.actionAt(env.L, a.state, px, py)
+  a.lastAction = action
   if action then app.plugin.rules.input(a.state, action) end
 end
 
@@ -235,6 +239,9 @@ function M.draw()
     drawHeader(a)
     app.plugin.view.draw(env.L, a.state)
     drawControls(a)
+    if app.plugin.split and nowMs() - a.startedAt < SPLIT_HINT_MS then
+      base.drawSplit(env.W, env.H, app.plugin.splitMiddle)
+    end
     local asking = a.quitUntil and nowMs() < a.quitUntil
     ui.button("actQuit", env.W - 14, env.H - 8, 12, 7, asking and "SURE?" or "QUIT", asking and C.warn or C.panel, { small = true })
     app.drawToast()
@@ -248,6 +255,7 @@ function M.debug()
   return {
     phase = a.phase, reviewed = a.reviewed, player = a.player, place = a.place, best = a.scores:best(), table = #a.scores.rows,
     score = s and s.score, lives = s and s.lives, level = s and s.level, over = s and s.over,
+    lastAction = a.lastAction,
   }
 end
 

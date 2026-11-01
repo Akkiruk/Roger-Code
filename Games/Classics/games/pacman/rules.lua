@@ -4,7 +4,7 @@
 -- Pac-Man moves a tile a step, but every few steps is a rest when nobody moves: fewer rests make a level faster.
 -- A ghost's speed is percent of Pac-Man's: it banks its speed each moving step and moves a tile for every 100 banked.
 
-local M = { COLS = 29, ROWS = 19 }
+local M = { COLS = 29, ROWS = 22 }
 
 local COLS, ROWS = M.COLS, M.ROWS
 local DIRECTIONS = { up = { 0, -1 }, down = { 0, 1 }, left = { -1, 0 }, right = { 1, 0 } }
@@ -38,8 +38,8 @@ local PHASES = { 47, 133, 47, 133, 33, 133, 33 }
 local GHOSTS = {
   { name = "blinky", x = 15, y = 8, mode = "roam", wait = 0, corner = { 28, 0 } },
   { name = "pinky", x = 15, y = 10, mode = "house", wait = 6, corner = { 2, 0 } },
-  { name = "inky", x = 13, y = 10, mode = "house", wait = 40, corner = { 28, 20 } },
-  { name = "clyde", x = 17, y = 10, mode = "house", wait = 80, corner = { 2, 20 } },
+  { name = "inky", x = 13, y = 10, mode = "house", wait = 40, corner = { 28, 23 } },
+  { name = "clyde", x = 17, y = 10, mode = "house", wait = 80, corner = { 2, 23 } },
 }
 
 -- The left half of the maze and the middle column. The right half is its mirror.
@@ -61,6 +61,9 @@ local LEFT = {
   "#o..##........ ",
   "###.##.##.#####",
   "#......##.....#",
+  "#.####.##.###.#",
+  "#.####.##.###.#",
+  "#..............",
   "#.###########.#",
   "#..............",
   "###############",

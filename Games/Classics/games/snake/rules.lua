@@ -2,7 +2,7 @@
 -- Snake. Pure: no screen, sound or files. This is the pattern for a classic: see "Classics" in games/README.md.
 -- The snake is a list of cells, head first. A step moves it one cell the way it faces.
 
-local M = { COLS = 36, ROWS = 24 }
+local M = { COLS = 38, ROWS = 33 }
 
 local COLS, ROWS = M.COLS, M.ROWS
 local DIRECTIONS = { up = { 0, -1 }, down = { 0, 1 }, left = { -1, 0 }, right = { 1, 0 } }

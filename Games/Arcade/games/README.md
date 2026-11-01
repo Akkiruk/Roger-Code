@@ -84,7 +84,7 @@ Rules are pure and take chance only from `rng`:
 
 The state must have `score`, `level`, `over`, and `lives` if the game has them. Setting `over` to true ends the run.
 
-The view has `layout(W, H)` (`base.actionLayout` makes one), `draw(L, state)`, `controls(L, state)` for buttons as `{ label, x, y, w, h, action }` (`base.dpad` makes four arrows), `actionAt(L, state, px, py)` for taps on the board, and `onEvents(app, state, events)` for sound. `help` and `blurb` work as for any game.
+The view has `layout(W, H)` (`base.actionLayout` makes one), `draw(L, state)`, `controls(L, state)` for buttons as `{ label, x, y, w, h, action }` (leave them out for a game steered by the whole wall: set `split = true` and return `base.splitAction(L, px, py)` from `actionAt`, so a player taps the side they want without looking down), `actionAt(L, state, px, py)` for taps on the board, and `onEvents(app, state, events)` for sound. `help` and `blurb` work as for any game.
 
 ## Proving a game
 

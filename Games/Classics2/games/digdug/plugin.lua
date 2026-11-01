@@ -10,7 +10,6 @@ local C = ui.C
 local floor = math.floor
 local COLS, ROWS = rules.COLS, rules.ROWS
 local CELL_W, CELL_H = 8, 5
-local PUMP_X, PUMP_W = 76, 44 -- right of UP, and clear of QUIT because it stays in the top row of buttons
 
 -- Dirt by layer, with the flecks that give it some grain.
 local LAYERS = { C.hi, C.warn, C.red, C.redTint }
@@ -295,26 +294,13 @@ function view.draw(L, s)
   drawDigger(L, s)
   drawBursts(L, s)
   drawNotes(L, s)
+  base.drawMiddle(L, C.text)
 end
 
-function view.controls(L)
-  local list = base.dpad(L)
-  local up = list[1]
-  list[#list + 1] = { label = "PUMP", x = PUMP_X, y = up.y, w = PUMP_W, h = up.h, action = { kind = "pump" } }
-  return list
-end
-
---- A tap on the board picks the way from the digger to the tap, whichever is further on the screen.
-function view.actionAt(L, s, px, py)
-  if px < L.x0 or px >= L.x0 + L.bw or py < L.y0 or py >= L.y0 + L.bh then return nil end
-  local dx = px - (tileX(L, s.player.x) + CELL_W / 2 - 0.5)
-  local dy = py - (tileY(L, s.player.y) + CELL_H / 2 - 0.5)
-  if math.abs(dx) < CELL_W / 2 and math.abs(dy) < CELL_H / 2 then return nil end
-  -- cells are taller than wide, so a cell of height counts for more than a cell of width
-  if math.abs(dx) * CELL_H >= math.abs(dy) * CELL_W then
-    return { kind = "turn", dir = dx < 0 and "left" or "right" }
-  end
-  return { kind = "turn", dir = dy < 0 and "up" or "down" }
+--- The whole wall steers: tap the side you want. The middle of the wall is PUMP.
+function view.actionAt(L, _, px, py)
+  if base.inMiddle(L, px, py) then return { kind = "pump" } end
+  return base.splitAction(L, px, py)
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
@@ -348,14 +334,14 @@ end
 return base.fill({
   -- the accent paints the yellow slot, and the top layer of dirt needs that slot to stay yellow
   id = "digdug", title = "Dig Dug", blurb = "Dig, pump, drop the rocks", color = "warn", accent = 0xFFD257,
-  action = true, tickMs = 100, minSize = { w = 120, h = 78 },
+  action = true, split = true, splitMiddle = "PUMP", tickMs = 130, minSize = { w = 120, h = 78 },
   rules = rules, view = view, sounds = base.SOUNDS,
   help = {
     "Dig through the ground and get rid of every enemy to reach the next level. You have three lives.",
     "",
-    "Use the arrows, or tap the board: a tap above, below or to either side of the digger sends him that way. He keeps going, so PUMP is how you stop.",
+    "Tap the side of the wall you want to go: the top goes up, the bottom down, the left side left and the right side right. The wall is split corner to corner, so you never have to look away. He keeps going, so PUMP is how you stop.",
     "",
-    "PUMP fires a short harpoon the way you face. It stops at dirt. If it hooks an enemy, keep tapping PUMP: four more taps pop it. Stop, or tap an arrow to let go, and the enemy shrinks back and gets free.",
+    "The middle of the wall, between the four marks, is PUMP. It fires a short harpoon the way you face, and stops at dirt. If it hooks an enemy, keep tapping PUMP: four more taps pop it. Stop, or tap a side to let go, and the enemy shrinks back and gets free.",
     "",
     "Dig under a rock and move away: it wobbles, then falls. It crushes anything below, for big points, and more for each one it takes down. It will crush you too.",
     "",

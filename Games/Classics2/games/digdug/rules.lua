@@ -5,7 +5,7 @@
 -- Actors bank their speed each step and move a tile for every 100 banked, so a level can be quicker without a shorter tick.
 -- PUMP fires a short harpoon. Each further tap inflates what it hooked, and the original's held button is gone for good.
 
-local M = { COLS = 15, ROWS = 11 }
+local M = { COLS = 15, ROWS = 13 }
 
 local COLS, ROWS = M.COLS, M.ROWS
 local DIRECTIONS = { up = { 0, -1 }, down = { 0, 1 }, left = { -1, 0 }, right = { 1, 0 } }
@@ -36,7 +36,7 @@ local CLEAR_TICKS = 14
 local POPUP_TICKS = 9
 local BURST_TICKS = 3
 
-local LAYER = { 0, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4 } -- by row
+local LAYER = { 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 } -- by row
 local POP_SCORES = { 200, 300, 400, 500 }         -- by layer
 local CRUSH_SCORES = { 1000, 2500, 4000, 6000, 8000, 10000, 12000, 15000 } -- by how many one rock takes
 local VEGETABLES = { 400, 600, 800, 1000, 1000, 2000, 2000, 3000, 3000, 4000, 5000, 6000, 7000, 8000 } -- by level

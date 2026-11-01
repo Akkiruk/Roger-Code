@@ -107,7 +107,7 @@ function M.new(opts)
 end
 
 --- A player's input. Each tap is one hop, taken in turn at the next steps: unlike Snake's direction, it doesn't stay set.
--- The action is "turn" because that's what base.dpad sends. A tap while a frog is lost means nothing.
+-- The action is "turn" because that's what base.splitAction sends. A tap while a frog is lost means nothing.
 function M.input(s, action)
   if action.kind == "turn" and DIRECTIONS[action.dir] and s.dead == 0 and not s.over then
     s.hops[#s.hops + 1] = action.dir
