@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.109"
+    "version": "1.0.110"
   },
   "build": {
-    "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
-    "generated_at": "2026-11-01T19:13:25Z",
-    "package_hash": "b8ca6417a989b95234abf8018bc2e570414c94d09eb943f5527a2f0bc804355d"
+    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
+    "generated_at": "2026-11-01T21:38:33Z",
+    "package_hash": "1c16365a2232de6e8456417cefa4e7089ec342a639b8315f39e273bcb176f64c"
   },
   "install": {
     "preserve": [],
@@ -21,11 +21,6 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
-      },
-      {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
         "repo_path": "Shared/lib/casino/journal.lua",
@@ -58,19 +53,19 @@
         "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
       },
       {
-        "repo_path": "Shared/lib/casino/door.lua",
-        "install_path": "lib/casino/door.lua",
-        "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
-      },
-      {
         "repo_path": "Shared/lib/casino/pretend.lua",
         "install_path": "lib/casino/pretend.lua",
         "sha256": "22bf1d987790d708b389b351a35b2902e01b648bfcd53e070366fe2489d3836f"
       },
       {
-        "repo_path": "Shared/lib/casino/session.lua",
-        "install_path": "lib/casino/session.lua",
-        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
@@ -103,14 +98,19 @@
         "sha256": "e563912b8e46b97511b59b50cee77757a4abb100456c6f03db7dd31f4db1bb25"
       },
       {
-        "repo_path": "Shared/lib/casino/rng.lua",
-        "install_path": "lib/casino/rng.lua",
-        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
-      },
-      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/casino/door.lua",
+        "install_path": "lib/casino/door.lua",
+        "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
       },
       {
         "repo_path": "Shared/lib/casino/demo.lua",
@@ -118,9 +118,9 @@
         "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
       },
       {
-        "repo_path": "Shared/lib/casino/chat.lua",
-        "install_path": "lib/casino/chat.lua",
-        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
+        "repo_path": "Shared/lib/casino/deck.lua",
+        "install_path": "lib/casino/deck.lua",
+        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -158,14 +158,14 @@
         "sha256": "c85c2b57389dd5564726a9195ebeae1229fad69745cb25fbecf820bbb6f104eb"
       },
       {
-        "repo_path": "Shared/lib/casino/deck.lua",
-        "install_path": "lib/casino/deck.lua",
-        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
-      },
-      {
         "repo_path": "Games/Roulette/roulette_view.lua",
         "install_path": "roulette_view.lua",
-        "sha256": "53821f2f2a0514c2eb519f8b4ce4c27bdf43669d1a8744d8e011cd6969e4ecf0"
+        "sha256": "c5de168fce8023aac7b8893065914d45e17a7fa83e256b466bd5c552d2dfc320"
+      },
+      {
+        "repo_path": "Games/Roulette/startup.lua",
+        "install_path": "roulette_startup.lua",
+        "sha256": "90cda96b3cd41cf853a16f80add1d148ef37780ad70349f73ab72796637583ac"
       },
       {
         "repo_path": "Games/Roulette/vhcc_lockdown.txt",
@@ -175,7 +175,7 @@
       {
         "repo_path": "Shared/lib/casino/audio.lua",
         "install_path": "lib/casino/audio.lua",
-        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
+        "sha256": "a9be08da7bd9b514ee1671092c9297d7883b79aab9b58fe9237a46b385f94b3c"
       },
       {
         "repo_path": "Shared/lib/casino/badges.lua",
@@ -203,9 +203,14 @@
         "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
       },
       {
-        "repo_path": "Games/Roulette/startup.lua",
-        "install_path": "roulette_startup.lua",
-        "sha256": "90cda96b3cd41cf853a16f80add1d148ef37780ad70349f73ab72796637583ac"
+        "repo_path": "Shared/lib/casino/chat.lua",
+        "install_path": "lib/casino/chat.lua",
+        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -251,6 +256,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.sound_picks",
       "lib.update_screen",
       "lib.updater"
     ]

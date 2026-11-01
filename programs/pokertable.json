@@ -7,12 +7,12 @@
     "description": "Five-card draw for 2 to 6 players on one wall, player against player, with side pots and no rake.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.38"
+    "version": "1.0.39"
   },
   "build": {
-    "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
-    "generated_at": "2026-11-01T19:13:25Z",
-    "package_hash": "8cf4dc0f8bd76fa83c77f3fc66ddc1fff7af5571e1e43864d61a4713594d3d1d"
+    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
+    "generated_at": "2026-11-01T21:38:33Z",
+    "package_hash": "53e66f261975eacfe3f0c4cdd2add391d09576c0af90ddbea9035347c36b68c5"
   },
   "install": {
     "preserve": [],
@@ -21,6 +21,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -88,14 +93,14 @@
         "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
       },
       {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
+      },
+      {
         "repo_path": "Shared/lib/casino/chat.lua",
         "install_path": "lib/casino/chat.lua",
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
-      },
-      {
-        "repo_path": "Shared/lib/casino/canvas.lua",
-        "install_path": "lib/casino/canvas.lua",
-        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
       },
       {
         "repo_path": "Shared/lib/casino/books.lua",
@@ -115,7 +120,7 @@
       {
         "repo_path": "Shared/lib/casino/audio.lua",
         "install_path": "lib/casino/audio.lua",
-        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
+        "sha256": "a9be08da7bd9b514ee1671092c9297d7883b79aab9b58fe9237a46b385f94b3c"
       },
       {
         "repo_path": "Games/PokerTable/vhcc_lockdown.txt",
@@ -168,9 +173,9 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -209,6 +214,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.sound_picks",
       "lib.update_screen",
       "lib.updater"
     ]

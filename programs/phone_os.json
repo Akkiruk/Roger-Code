@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.22"
+    "version": "1.0.23"
   },
   "build": {
-    "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-    "generated_at": "2026-11-01T19:13:25Z",
-    "package_hash": "7fb82a6b1b51ba87ba20edb2184a244e9733508fd2a04e3366a703c634a47afa"
+    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
+    "generated_at": "2026-11-01T21:38:33Z",
+    "package_hash": "ffcc6960349f668d0c70958a376ee9ae266539741cd52c8914096789079a72c8"
   },
   "install": {
     "preserve": [
@@ -24,6 +24,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
@@ -83,14 +88,14 @@
         "preserve_existing": true
       },
       {
-        "repo_path": "Shared/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
-      },
-      {
         "repo_path": "Apps/PhoneOS/startup.lua",
         "install_path": "phone_os_startup.lua",
         "sha256": "b534086dd9e1f23d1cb0a88fc29ca01ad546a14f5b99ef2218ba0f43555ee48d"
+      },
+      {
+        "repo_path": "Apps/PhoneOS/phoneos/ui.lua",
+        "install_path": "phoneos/ui.lua",
+        "sha256": "8dfed28ea10f6a7c20f9f7a15a6955e7edd739a261b975838ce7bb2d1a0dcb67"
       },
       {
         "repo_path": "Apps/PhoneOS/phoneos/storage.lua",
@@ -148,9 +153,9 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Apps/PhoneOS/phoneos/ui.lua",
-        "install_path": "phoneos/ui.lua",
-        "sha256": "8dfed28ea10f6a7c20f9f7a15a6955e7edd739a261b975838ce7bb2d1a0dcb67"
+        "repo_path": "Shared/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "eca86e621b8d9241d354b4038704def7d07e800e4640a357e3b4876e6b967754"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -178,6 +183,7 @@
       "lib.roger_supervisor",
       "lib.runtime_exit",
       "lib.sound",
+      "lib.sound_picks",
       "lib.update_screen",
       "lib.updater"
     ]

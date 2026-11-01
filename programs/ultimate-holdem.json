@@ -7,12 +7,12 @@
     "description": "Ante and Blind against the dealer, with one raise from 4x down to 1x and a Trips side bet.",
     "source_root": "Games/UltimateHoldem",
     "entrypoint": "startup.lua",
-    "version": "1.0.5"
+    "version": "1.0.6"
   },
   "build": {
-    "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
-    "generated_at": "2026-11-01T19:13:25Z",
-    "package_hash": "f5ee532e00c179fa01b2b0bba7a71a4961e674d96be23f8fe3d0bb0f9be1f0ec"
+    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
+    "generated_at": "2026-11-01T21:38:33Z",
+    "package_hash": "a242afcd9841fa3577e2cf92e58e7661479dce3da693f9a53f4f09ed45afe3e8"
   },
   "install": {
     "preserve": [],
@@ -58,14 +58,14 @@
         "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
       },
       {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
-      },
-      {
         "repo_path": "Shared/lib/casino/pretend.lua",
         "install_path": "lib/casino/pretend.lua",
         "sha256": "22bf1d987790d708b389b351a35b2902e01b648bfcd53e070366fe2489d3836f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
         "repo_path": "Shared/lib/casino/session.lua",
@@ -103,19 +103,24 @@
         "sha256": "e563912b8e46b97511b59b50cee77757a4abb100456c6f03db7dd31f4db1bb25"
       },
       {
-        "repo_path": "Shared/lib/casino/rng.lua",
-        "install_path": "lib/casino/rng.lua",
-        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
       },
       {
         "repo_path": "Shared/lib/casino/door.lua",
         "install_path": "lib/casino/door.lua",
         "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
-      },
-      {
-        "repo_path": "Shared/lib/casino/demo.lua",
-        "install_path": "lib/casino/demo.lua",
-        "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
       },
       {
         "repo_path": "Shared/lib/casino/deck.lua",
@@ -175,7 +180,7 @@
       {
         "repo_path": "Shared/lib/casino/audio.lua",
         "install_path": "lib/casino/audio.lua",
-        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
+        "sha256": "a9be08da7bd9b514ee1671092c9297d7883b79aab9b58fe9237a46b385f94b3c"
       },
       {
         "repo_path": "Shared/lib/casino/badges.lua",
@@ -208,9 +213,9 @@
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+        "repo_path": "Shared/lib/casino/demo.lua",
+        "install_path": "lib/casino/demo.lua",
+        "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -257,6 +262,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.sound_picks",
       "lib.update_screen",
       "lib.updater"
     ]

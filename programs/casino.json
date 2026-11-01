@@ -7,12 +7,12 @@
     "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
     "source_root": "Games/Casino",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
-    "generated_at": "2026-11-01T19:13:25Z",
-    "package_hash": "88e60723f2bafd99a5bbe8f7a022a749237adde59c7d481460b079499fa749c6"
+    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
+    "generated_at": "2026-11-01T21:38:33Z",
+    "package_hash": "3c3c5c928d593b077bbc0dc1ed256ecc57c76e75de3bfce3604f77f4d98c8560"
   },
   "install": {
     "preserve": [],
@@ -65,7 +65,7 @@
       {
         "repo_path": "Shared/lib/casino/audio.lua",
         "install_path": "lib/casino/audio.lua",
-        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
+        "sha256": "a9be08da7bd9b514ee1671092c9297d7883b79aab9b58fe9237a46b385f94b3c"
       },
       {
         "repo_path": "Games/VideoPoker/videopoker_view.lua",
@@ -98,19 +98,24 @@
         "sha256": "245eee1952dc962d197c2ba36b7434644094a4135acb9988fed7dcc7cc99b30a"
       },
       {
-        "repo_path": "Games/UltimateHoldem/holdem_rules.lua",
-        "install_path": "holdem_rules.lua",
-        "sha256": "92b686f6f3a8f7c0ba0332a4ae226dcd496c0255347a95ab1fb712c4af96622d"
-      },
-      {
         "repo_path": "Shared/lib/casino/font.lua",
         "install_path": "lib/casino/font.lua",
         "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
+        "repo_path": "Shared/lib/casino/journal.lua",
+        "install_path": "lib/casino/journal.lua",
+        "sha256": "477c1f9b9dca49e1ddd33c6dadea92ab06696f6e399b93d6641adec2564bfc6b"
+      },
+      {
         "repo_path": "Shared/lib/casino/lamps.lua",
         "install_path": "lib/casino/lamps.lua",
         "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -143,14 +148,14 @@
         "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
       },
       {
-        "repo_path": "Shared/lib/casino/journal.lua",
-        "install_path": "lib/casino/journal.lua",
-        "sha256": "477c1f9b9dca49e1ddd33c6dadea92ab06696f6e399b93d6641adec2564bfc6b"
-      },
-      {
         "repo_path": "Shared/lib/casino/session.lua",
         "install_path": "lib/casino/session.lua",
         "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
         "repo_path": "Shared/lib/casino/pretend.lua",
@@ -183,19 +188,19 @@
         "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
       },
       {
-        "repo_path": "Shared/lib/casino/rng.lua",
-        "install_path": "lib/casino/rng.lua",
-        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+        "repo_path": "Games/UltimateHoldem/holdem_rules.lua",
+        "install_path": "holdem_rules.lua",
+        "sha256": "92b686f6f3a8f7c0ba0332a4ae226dcd496c0255347a95ab1fb712c4af96622d"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
       },
       {
         "repo_path": "Games/UltimateHoldem/holdem_game.lua",
         "install_path": "holdem_game.lua",
         "sha256": "ef8dc0fb8147823731a8f0179bbe62b2a3a32cbd32eb8477580015fa9f6a5329"
-      },
-      {
-        "repo_path": "Games/ThreeCardPoker/threecard_view.lua",
-        "install_path": "threecard_view.lua",
-        "sha256": "9a1665948314e3c18967e343e60bfa60df7de16878a7276c84575deb54ef09b4"
       },
       {
         "repo_path": "Games/ThreeCardPoker/threecard_rules.lua",
@@ -205,7 +210,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack_view.lua",
         "install_path": "blackjack_view.lua",
-        "sha256": "81b60ad5000ea32f698a80c356b1b45765208d83de3ca4f39f338cd3df025f6b"
+        "sha256": "27f6ce07c4a31328855628b42cc2df4ccd19585d838b28b13328d0aa624305f8"
       },
       {
         "repo_path": "Games/Blackjack/blackjack_rules.lua",
@@ -300,7 +305,7 @@
       {
         "repo_path": "Games/Slots/slots_view.lua",
         "install_path": "slots_view.lua",
-        "sha256": "9963550bdf7b9cf8d977f9f9439a2f44c0b16b150bac2ab3290bf9ca202ae65b"
+        "sha256": "d0950b7cb935ab720994e0407ecf1ca001caaeb50c870c89fa36c036b80fc20c"
       },
       {
         "repo_path": "Games/Slots/slots_rules.lua",
@@ -315,7 +320,7 @@
       {
         "repo_path": "Games/Roulette/roulette_view.lua",
         "install_path": "roulette_view.lua",
-        "sha256": "53821f2f2a0514c2eb519f8b4ce4c27bdf43669d1a8744d8e011cd6969e4ecf0"
+        "sha256": "c5de168fce8023aac7b8893065914d45e17a7fa83e256b466bd5c552d2dfc320"
       },
       {
         "repo_path": "Games/Roulette/roulette_rules.lua",
@@ -368,9 +373,9 @@
         "sha256": "0b812b168761ad78fa1dfc51abc3c5fe73d5b79cc5149f47316e0578ec5694e6"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+        "repo_path": "Games/ThreeCardPoker/threecard_view.lua",
+        "install_path": "threecard_view.lua",
+        "sha256": "9a1665948314e3c18967e343e60bfa60df7de16878a7276c84575deb54ef09b4"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -417,6 +422,7 @@
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
+      "lib.sound_picks",
       "lib.update_screen",
       "lib.updater"
     ]
