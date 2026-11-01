@@ -26,6 +26,7 @@ local MAP_MARGIN = 1
 
 local FACING_MARK = { "^", ">", "v", "<" }
 local ACT_WORD = { foe = "FIGHT", npc = "TALK", chest = "OPEN", door = "OPEN", locked = "UNLOCK" }
+local GOAL_INK = C.accent            -- nothing else on the map or the land is this colour
 
 -- ---------------------------------------------------------------- pictures
 
@@ -77,11 +78,11 @@ local function actWord(s)
     local x, y = world.ahead(s)
     return world.tileAt(s.map, x, y) == ">" and "GO DOWN" or "LEAVE"
   end
-  return ACT_WORD[target or ""] or "MENU"
+  return ACT_WORD[target or ""] or "WALK"
 end
 
 --- The strip along the bottom: the party on the left, where you are and what ACT does on the right, clear of SAVE & QUIT.
-local function drawHud(L, s)
+local function drawHud(L, s, goal)
   local party = require("games.blightmare.party")
   local y = HUD_Y
   ui.fill(0, y, L.W, L.H - y, C.panel)
@@ -101,10 +102,48 @@ local function drawHud(L, s)
     end
   end
   local map = world.map(s.map)
-  ui.small(map and map.name or "", 60, y + 1, C.line, C.panel, "left", HUD_RIGHT - 60)
-  ui.small("GOLD " .. s.gold, 60, y + 3, C.hi, C.panel, "left", 20)
-  ui.small("MIDDLE:", 60, y + 5, C.line, C.panel)
-  ui.small(actWord(s), 68, y + 5, C.hi, C.panel)
+  ui.small(s.mode == "world" and (overworld.REGION_NAME[overworld.region(s.wx, s.wy) or ""] or "") or (map and map.name or ""), 60, y + 1, C.line, C.panel, "left", HUD_RIGHT - 60)
+  ui.small("GOLD " .. s.gold, 60, y + 3, C.hi, C.panel, "left", 12)
+  ui.small("MIDDLE:", 73, y + 3, C.line, C.panel)
+  ui.small(s.mode == "world" and (s.heading and "STOP" or "WALK") or actWord(s), 81, y + 3, C.hi, C.panel)
+  if goal then ui.small("GOAL: " .. goal.text, 60, y + 5, C.accent, C.panel, "left", HUD_RIGHT - 60) end
+  ui.small("TAP THIS BAR: MENU", 60, y + 7, C.line, C.panel)
+end
+
+--- An arrow's mark for a way that's mostly along one axis.
+local function pointer(dx, dy)
+  if math.abs(dx) >= math.abs(dy) then return dx > 0 and ">" or "<" end
+  return dy > 0 and "v" or "^"
+end
+
+--- The goal on the automap: its square if that's in the window, or an arrow on the window's edge on the line toward it.
+local function drawMapGoal(goal, s, x0, y0, left, top)
+  local col, row = goal.x - left, goal.y - top
+  if col >= 1 and col <= MAP_COLS and row >= 1 and row <= MAP_ROWS then
+    ui.fill(x0 + 1 + (col - 1) * MAP_CELL_W, y0 + row, MAP_CELL_W, 1, GOAL_INK)
+    return
+  end
+  local dx, dy = goal.x - s.x, goal.y - s.y
+  local halfW, halfH = floor(MAP_COLS / 2), floor(MAP_ROWS / 2)
+  local stretch = min(dx ~= 0 and halfW / math.abs(dx) or math.huge, dy ~= 0 and halfH / math.abs(dy) or math.huge)
+  local edgeCol = halfW + 1 + floor(dx * stretch + 0.5)
+  local edgeRow = halfH + 1 + floor(dy * stretch + 0.5)
+  ui.small(pointer(dx, dy) .. " ", x0 + 1 + (edgeCol - 1) * MAP_CELL_W, y0 + edgeRow, C.bg, GOAL_INK)
+end
+
+--- At the top of the view: which way the goal lies from the way the player is facing.
+local function drawFacingGoal(L, s, goal)
+  local dx, dy = goal.x - s.x, goal.y - s.y
+  if dx == 0 and dy == 0 then return end
+  local d = world.DIRS[s.dir]
+  local fore, side = dx * d[1] + dy * d[2], dy * d[1] - dx * d[2]
+  local word = " ^ GOAL AHEAD "
+  if math.abs(side) > math.abs(fore) then
+    word = side > 0 and " GOAL RIGHT > " or " < GOAL LEFT "
+  elseif fore < 0 then
+    word = " v GOAL BEHIND "
+  end
+  ui.small(word, floor(L.W / 2), 1, C.bg, GOAL_INK, "center")
 end
 
 local function mapInk(s, foes, x, y)
@@ -118,7 +157,7 @@ local function mapInk(s, foes, x, y)
 end
 
 --- The automap in the top right corner, following the player, in runs of colour along each row.
-local function drawMap(L, s)
+local function drawMap(L, s, goal)
   local boxW, boxH = MAP_COLS * MAP_CELL_W + 2, MAP_ROWS + 2
   local x0, y0 = L.W - boxW - MAP_MARGIN, MAP_MARGIN
   ui.fill(x0, y0, boxW, boxH, C.bg)
@@ -136,6 +175,7 @@ local function drawMap(L, s)
       end
     end
   end
+  if goal and goal.x then drawMapGoal(goal, s, x0, y0, left, top) end
   local px, py = x0 + 1 + floor(MAP_COLS / 2) * MAP_CELL_W, y0 + 1 + floor(MAP_ROWS / 2)
   ui.small(FACING_MARK[s.dir] .. " ", px, py, C.bg, C.hi)
 end
@@ -144,8 +184,10 @@ local function paintWalk(L, s)
   scene.draw(floor((L.W - scene.VIEW_W) / 2), 0, s)
   local fx = s.fx or {}
   if (fx.hurt or 0) > 0 then ui.frame(0, 0, L.W, HUD_Y, C.red, 2) end
-  drawMap(L, s)
-  drawHud(L, s)
+  local goal = rules.goal(s)
+  drawMap(L, s, goal)
+  if goal and goal.x then drawFacingGoal(L, s, goal) end
+  drawHud(L, s, goal)
 end
 
 function M.drawWalk(L, s) drawCached(L, s, "walk", paintWalk) end
@@ -361,6 +403,23 @@ local function paintParty(px, py, heading)
   end
 end
 
+--- The goal on the land: a ring on its tile when it's in view, and a short arrow beside the party on the line toward it.
+local function drawWorldGoal(s, goal, ox, oy, sight)
+  local dx, dy = goal.x - s.wx, goal.y - s.wy
+  if dx == 0 and dy == 0 then return end
+  local px, py = ox + dx * TILE_W, oy + dy * TILE_H
+  if dx * dx + dy * dy <= sight * sight and py >= 0 and py + TILE_H <= HUD_Y then ui.frame(px, py, TILE_W, TILE_H, GOAL_INK) end
+  -- eight ways: a tile is close to square, so the tile counts give the true bearing
+  local ax, ay = math.abs(dx), math.abs(dy)
+  local ux = ax * 2 >= ay and (dx > 0 and 1 or -1) or 0
+  local uy = ay * 2 >= ax and (dy > 0 and 1 or -1) or 0
+  local cx, cy = ox + 2, oy + 1
+  ui.fill(cx + ux * 7, cy + uy * 4, 2, 1, GOAL_INK)
+  ui.fill(cx + ux * 9, cy + uy * 5, 2, 1, GOAL_INK)
+  local head = ux == 0 and pointer(0, dy) or (uy == 0 and pointer(dx, 0) or (ux == uy and "\\" or "/"))
+  ui.small(" " .. head .. " ", cx - 1 + ux * 12, cy + uy * 6, C.bg, GOAL_INK)
+end
+
 local function drawSiteNames(L, s, ox, oy, sight)
   for _, site in ipairs(overworld.SITES) do
     local dx, dy = site.x - s.wx, site.y - s.wy
@@ -388,15 +447,16 @@ local function paintWorld(L, s)
       end
     end
   end
+  local goal = rules.goal(s)
+  if goal and goal.x then drawWorldGoal(s, goal, ox, oy, deep and GRASS_SIGHT or NAME_NEAR * 2) end
   paintParty(ox, oy, s.heading)
   drawSiteNames(L, s, ox, oy, deep and GRASS_SIGHT or NAME_NEAR)
-  local region = overworld.region(s.wx, s.wy)
-  local name = overworld.REGION_NAME[region or ""]
-  if name then ui.small(" " .. name .. " ", 1, 1, C.text, C.bg) end
+  drawHud(L, s, goal)
 end
 
 function M.drawWorld(L, s) drawCached(L, s, "world", paintWorld) end
 
+M.HUD_Y = HUD_Y
 M.portrait = art.portrait -- the talk and menu views can reach a face from here too
 
 return M

@@ -1,10 +1,11 @@
 -- games/blightmare/view_battle.lua
--- Battle screen B: the side view in a middle box, and when someone's ready the whole wall is the menu, split corner to corner.
+-- Battle screen A, the Final Fantasy layout: a message across the top, the side view under it with foes left and the party
+-- staggered down the right, and under the line big commands on the left beside a status strip. SAVE & QUIT is the shell's, in
+-- the bottom right corner, so the strip stops short of it.
 -- The field and sprites change rarely and gauges change every tick, so the still part is kept in a surface of its own and the
 -- gauges go over it. The shell's steady redraw only copies the finished picture across, until s.rev moves on.
 
 local art = require("games.blightmare.art_battle")
-local base = require("lib.arcade.base")
 local battle = require("games.blightmare.battle")
 local enemies = require("games.blightmare.enemies")
 local party = require("games.blightmare.party")
@@ -15,22 +16,39 @@ local floor, max, min = math.floor, math.max, math.min
 
 local M = {}
 
-local FX, FY, FW, FH = 16, 8, 89, 64 -- the field
-local LETTER_H = 8                   -- the side words are stacked a letter at a time
-local ROW_X, ROW_Y, ROW_W, ROW_H = 24, 13, 73, 9
+local FX, FY, FW, FH = 0, 7, 121, 49 -- the field
+local LINE_Y = 56
+local TOP_Y = FY + 1                 -- nothing on the field stands above this
+local ALLY_ROOM = 48                 -- rows the party shares
+local ALLY_STEP = 8                  -- each one stands this much further right than the last
+local ALLY_MAX_H = 22
 
--- where foes stand, by how many there are
+-- the command block, and the four commands in it
+local BLOCK_W, BLOCK_Y = 71, 57
+local BTN_W, BTN_H = 35, 11
+local BTN_Y1, BTN_Y2 = 58, 69
+local BTN_X2 = 36
+
+-- the status strip: x + w stops before SAVE & QUIT at x 107, whichever row it is
+M.STRIP = { x = 72, y = 58, w = 35, rowH = 6 }
+local NAME_W, HP_RIGHT, MP_X, TAG_X = 8, 88, 89, 92
+local HP_BAR_W, ATB_X, ATB_W = 20, 93, 14
+
+-- a list opens over the foes, and leaves the party in view. Six rows fit, which is more than any list has.
+local ROW_X, ROW_Y, ROW_W, ROW_H = 2, 8, 73, 8
+
+-- where foes stand, by how many there are: { x, y }, and the size each takes. No two boxes meet, bars included.
 local SLOTS = {
-  { { 28, 26 } },
-  { { 22, 12 }, { 36, 42 } },
-  { { 18, 10 }, { 40, 28 }, { 18, 48 } },
-  { { 18, 10 }, { 44, 12 }, { 18, 46 }, { 44, 48 } },
-  { { 18, 9 }, { 44, 12 }, { 30, 30 }, { 18, 50 }, { 44, 50 } },
+  { w = 50, h = 34, { 12, 11 } },
+  { w = 34, h = 23, { 2, 9 }, { 37, 28 } },
+  { w = 30, h = 20, { 2, 8 }, { 36, 19 }, { 2, 31 } },
+  { w = 30, h = 20, { 2, 8 }, { 36, 8 }, { 2, 31 }, { 36, 31 } },
+  { w = 22, h = 18, { 2, 8 }, { 26, 8 }, { 50, 8 }, { 14, 31 }, { 38, 31 } },
 }
-local FOE_W, FOE_H = 26, 18
-local BOSS = { x = 34, y = 12, w = 37, h = 50 }
-local ADDS = { { 17, 14 }, { 17, 46 } }
-local ADD_W, ADD_H = 20, 14
+-- the Foreman fills the left of the field, and whoever he calls stands in front of him
+local BOSS = { x = 1, y = 8, w = 50, h = 45 }
+local ADDS = { { 53, 9 }, { 53, 30 } }
+local ADD_W, ADD_H = 21, 14
 
 --- The box a foe stands in. The bars go just under it.
 function M.foeRect(b, i)
@@ -39,16 +57,21 @@ function M.foeRect(b, i)
     local at = ADDS[(i - 2) % #ADDS + 1]
     return { x = at[1], y = at[2], w = ADD_W, h = ADD_H }
   end
-  local at = (SLOTS[#b.foes] or SLOTS[#SLOTS])[i] or { 18, 10 }
-  return { x = at[1], y = at[2], w = FOE_W, h = FOE_H }
+  local slot = SLOTS[#b.foes] or SLOTS[#SLOTS]
+  local at = slot[i] or slot[1]
+  return { x = at[1], y = at[2], w = slot.w, h = slot.h }
 end
 
---- The box a party member stands in, numbers and bars included. Fewer people stand bigger.
+--- The box a party member stands in, staggered down the right. Fewer people stand bigger.
 function M.allyRect(b, i)
   local n = max(1, #b.allies)
-  local h = min(20, floor(FH / n))
-  local top = FY + floor((FH - h * n) / 2)
-  return { x = 74 + ((i + 1) % 2) * 6, y = top + (i - 1) * h, w = 24, h = h }
+  local h = min(ALLY_MAX_H, floor(ALLY_ROOM / n))
+  local w = floor(h * 1.5)
+  return {
+    x = FW - 1 - w - (n - i) * ALLY_STEP,
+    y = TOP_Y + floor((ALLY_ROOM - h * n) / 2) + (i - 1) * h,
+    w = w, h = h,
+  }
 end
 
 local function rowRect(i) return { x = ROW_X, y = ROW_Y + (i - 1) * ROW_H, w = ROW_W, h = ROW_H } end
@@ -57,14 +80,22 @@ local function inside(r, px, py) return px >= r.x and px < r.x + r.w and py >= r
 
 -- ---------------------------------------------------------------- tapping
 
-local SPLIT = { up = "attack", left = "special", right = "item", down = "defend" }
+--- The command under a tap. The block has no dead gaps, so a tap that lands between two buttons still counts.
+local function commandAt(px, py)
+  if px < 0 or px >= BLOCK_W or py < BLOCK_Y then return nil end
+  if py < BTN_Y2 then return px < BTN_X2 and "attack" or "special" end
+  return px < BTN_X2 and "defend" or "item"
+end
 
 --- What a tap means now. Time stops for a menu, so a tap outside a list or a target is always a step back.
 function M.actionAt(L, s, px, py)
   local b = s and s.battle
   if not b or b.result then return nil end
   if b.phase == "spoils" then return { kind = "tap" } end
-  if b.phase == "cmd" then return { kind = "cmd", cmd = SPLIT[base.splitAction(L, px, py).dir] } end
+  if b.phase == "cmd" then
+    local cmd = commandAt(px, py)
+    return cmd and { kind = "cmd", cmd = cmd } or nil
+  end
   if b.phase == "list" then
     for i = 1, #battle.rows(s) do
       if inside(rowRect(i), px, py) then return { kind = "pick", i = i } end
@@ -108,12 +139,6 @@ end
 
 -- ---------------------------------------------------------------- the still part
 
-local function allySpriteBox(r)
-  local h = r.h - 4
-  local w = min(r.w, floor(h * 1.5))
-  return r.x + floor((r.w - w) / 2), r.y, w, h
-end
-
 local function drawUnits(s, b)
   for i, f in ipairs(b.foes) do
     if f.hp > 0 then
@@ -123,11 +148,11 @@ local function drawUnits(s, b)
   end
   for i, u in ipairs(b.allies) do
     local m = s.party[u.m]
-    local x, y, w, h = allySpriteBox(M.allyRect(b, i))
+    local r = M.allyRect(b, i)
     if m.hp <= 0 then
-      art.draw("downed", x, y, w, h)
+      art.draw("downed", r.x, r.y, r.w, r.h)
     else
-      art.draw(m.id, x, y, w, h, u.flash > 0 and "flash" or u.sleep > 0 and "dim" or nil)
+      art.draw(m.id, r.x, r.y, r.w, r.h, u.flash > 0 and "flash" or u.sleep > 0 and "dim" or nil)
     end
   end
 end
@@ -156,6 +181,7 @@ local function drawStill(L, s, b)
     ui.setScreen(still.surf)
     ui.fill(0, 0, L.W, L.H, C.bg)
     art.ground(b.bg, FX, FY, FW, FH)
+    ui.fill(0, LINE_Y, L.W, 1, C.line)
     drawUnits(s, b)
     ui.setScreen(screen)
     still.key = key
@@ -169,13 +195,13 @@ local function drawFoeBars(b)
   for i, f in ipairs(b.foes) do
     if f.hp > 0 then
       local r = M.foeRect(b, i)
-      local y = min(FY + FH - 1, r.y + r.h)
+      local y = r.y + r.h
       bar(r.x + 3, y, r.w - 6, f.hp / f.mhp, C.red)
       if f.charge > 0 then
         local ab = enemies.ABILITIES[f.charging]
         bar(r.x + 3, y + 1, r.w - 6, 1 - f.charge / ab.windup, C.warn, C.bg)
         foeRing(r, blink(b) and C.warn or C.red)
-        ui.text("!", r.x - 5, r.y + floor(r.h / 2) - 3, blink(b) and C.warn or C.red, "center")
+        ui.text("!", r.x + r.w + 3, y - 6, blink(b) and C.warn or C.red, "center")
       end
       local tags = statusText(f)
       if tags ~= "" then ui.small(tags, r.x + floor(r.w / 2), y - 1, C.accent, C.bg, "center") end
@@ -183,83 +209,96 @@ local function drawFoeBars(b)
   end
 end
 
-local function drawAllyBars(s, b)
+--- A member's name, the player's own for the hero, cut to fit.
+local function shortName(s, m)
+  local name = m.id == "hero" and s.heroName and s.heroName:upper() or party.CHARS[m.id].name
+  return name:sub(1, NAME_W)
+end
+
+--- Name, HP, MP and status on one line, with the HP bar and ATB gauge on the line under it.
+local function drawStrip(s, b)
+  local strip = M.STRIP
   for i, u in ipairs(b.allies) do
     local m = s.party[u.m]
     local st = party.stats(m)
-    local r = M.allyRect(b, i)
-    local y = r.y + r.h - 4
+    local y = strip.y + (i - 1) * strip.rowH
     local share = m.hp / st.hp
     local low = share < 0.25
-    local line = m.hp .. "/" .. st.hp
-    ui.small(line, r.x, y, low and C.warn or C.text, C.bg, "left")
-    local x = r.x + #line
-    if st.mp > 0 then
-      local mana = " " .. m.mp
-      ui.small(mana, x, y, C.info, C.bg, "left")
-      x = x + #mana
-    end
+    ui.small(shortName(s, m), strip.x, y, b.active == i and C.hi or m.hp > 0 and C.text or C.tie, C.bg)
+    ui.small(m.hp .. "/" .. st.hp, HP_RIGHT, y, low and C.warn or C.text, C.bg, "right")
+    if st.mp > 0 then ui.small(m.mp, MP_X, y, C.info, C.bg) end
     local tags = statusText(u)
-    if tags ~= "" then ui.small(tags, x, y, C.accent, C.bg, "left", r.x + r.w - x) end
-    bar(r.x, y + 1, r.w, share, low and C.warn or C.ok)
-    bar(r.x, y + 2, r.w, u.atb / battle.GAUGE, u.atb >= battle.GAUGE and C.hi or C.info)
+    if tags ~= "" then ui.small(tags, TAG_X, y, C.accent, C.bg, "left", strip.x + strip.w - TAG_X) end
+    bar(strip.x, y + 1, HP_BAR_W, share, low and C.warn or C.ok)
+    bar(ATB_X, y + 1, ATB_W, u.atb / battle.GAUGE, u.atb >= battle.GAUGE and C.hi or C.info)
   end
 end
 
 local function drawFloats(b)
   for _, f in ipairs(b.floats) do
     local r = f.side == "foe" and M.foeRect(b, f.i) or M.allyRect(b, f.i)
-    local y = max(FY, r.y + floor(r.h / 2) - 7 + floor(f.t / 2))
+    local y = max(TOP_Y, r.y + floor(r.h / 2) - 7 + floor(f.t / 2))
     ui.text(f.text, r.x + floor(r.w / 2), y, C[f.color] or C.text, "center")
   end
 end
 
-local function topLine(b)
-  ui.text(b.msg, 60, 1, C.text, "center", 119)
+local function button(x, y, label, frame, ink)
+  ui.fill(x, y, BTN_W, BTN_H, C.panel)
+  ui.frame(x, y, BTN_W, BTN_H, frame)
+  ui.text(label, x + floor(BTN_W / 2), y + floor((BTN_H - ui.fontHeight()) / 2), ink, "center")
 end
 
---- A word down the side of the wall, a letter at a time.
-local function downWord(word, x, color)
-  local top = 40 - #word * floor(LETTER_H / 2)
-  for i = 1, #word do ui.text(word:sub(i, i), x, top + (i - 1) * LETTER_H, color, "center") end
+local function drawCommands(s, b)
+  local u = b.allies[b.active]
+  local warned = battle.blowIn(b) ~= nil
+  local defend = warned and (blink(b) and C.warn or C.hi) or C.line
+  button(0, BTN_Y1, "ATTACK", C.line, C.text)
+  button(BTN_X2, BTN_Y1, party.CHARS[s.party[u.m].id].special, C.hi, C.hi)
+  button(0, BTN_Y2, "DEFEND", defend, warned and defend or C.text)
+  button(BTN_X2, BTN_Y2, "ITEM", C.line, C.text)
+  ring(M.allyRect(b, b.active), C.hi)
 end
 
---- Dots from each corner of the wall to the field, showing the split.
-local function drawSplit(L)
-  for i = 2, 15, 3 do
-    local x, y = floor(i * 1.5), i - 1
-    ui.fill(x, y, 1, 1, C.line)
-    ui.fill(L.W - 1 - x, y, 1, 1, C.line)
-    ui.fill(x, L.H - 1 - y, 1, 1, C.line)
-    ui.fill(L.W - 1 - x, L.H - 1 - y, 1, 1, C.line)
+--- Split a message into lines of the big font that fit the block, at spaces.
+local function bigLines(text)
+  local lines, line = {}, ""
+  for word in text:gmatch("%S+") do
+    local longer = line == "" and word or (line .. " " .. word)
+    if line ~= "" and ui.textWidth(longer) > BLOCK_W - 2 then
+      lines[#lines + 1] = line
+      line = word
+    else
+      line = longer
+    end
+  end
+  lines[#lines + 1] = line
+  return lines
+end
+
+--- A line or two of big text in the command block.
+local function blockLines(first, second, color, under)
+  local cx = floor(BLOCK_W / 2)
+  if second then
+    ui.text(first, cx, 61, color, "center", BLOCK_W - 2)
+    ui.text(second, cx, 71, under or color, "center", BLOCK_W - 2)
+  else
+    ui.text(first, cx, 66, color, "center", BLOCK_W - 2)
   end
 end
 
-local function drawCommands(L, s, b)
-  local u = b.allies[b.active]
-  local warned = battle.blowIn(b) ~= nil
-  ui.text("ATTACK", 60, 1, C.text, "center")
-  ui.text("DEFEND", 60, 74, warned and (blink(b) and C.warn or C.hi) or C.text, "center")
-  downWord(party.CHARS[s.party[u.m].id].special, 8, C.hi)
-  downWord("ITEM", 112, C.text)
-  drawSplit(L)
-  ring(M.allyRect(b, b.active), C.hi)
-  ui.small(b.msg, 60, 7, C.hi, C.bg, "center", FW)
-end
-
-local function drawList(s)
+local function drawList(s, b)
   local rows = battle.rows(s)
-  local x, y, w = ROW_X - 2, ROW_Y - 2, ROW_W + 4
-  local h = #rows * ROW_H + 4
-  ui.fill(x, y, w, h, C.panel)
-  ui.frame(x, y, w, h, C.hi)
+  local x, y, w = ROW_X - 1, ROW_Y - 1, ROW_W + 2
+  ui.fill(x, y, w, #rows * ROW_H + 2, C.panel)
+  ui.frame(x, y, w, #rows * ROW_H + 2, C.hi)
   for i, row in ipairs(rows) do
     local r = rowRect(i)
     local ink = row.ok and C.text or C.line
     ui.text(row.name, r.x + 2, r.y + 1, ink)
     if row.note ~= "" then ui.text(row.note, r.x + r.w - 2, r.y + 1, row.ok and C.info or C.line, "right") end
   end
-  ui.text("TAP AWAY: BACK", 60, 74, C.line, "center", 100)
+  ring(M.allyRect(b, b.active), C.hi)
+  blockLines("TAP A ROW", "AWAY: BACK", C.hi, C.line)
 end
 
 local function drawTarget(s, b)
@@ -275,12 +314,11 @@ local function drawTarget(s, b)
       ring(r, on and C.hi or C.warn)
     end
   end
-  ui.text("TAP WHO", 60, 73, C.hi, "center")
-  ui.small("tap away to go back", 60, 80, C.line, C.bg, "center")
+  blockLines("TAP WHO", "AWAY: BACK", C.hi, C.line)
 end
 
 local function drawSpoils(s, b)
-  local x, y, w, h = 28, 22, 65, 34
+  local x, y, w, h = 28, 12, 65, 34
   local won = b.outcome == "won"
   ui.fill(x, y, w, h, C.bg)
   ui.frame(x, y, w, h, won and C.ok or (b.outcome == "lost" and C.red or C.line))
@@ -292,22 +330,24 @@ local function drawSpoils(s, b)
       if i <= 4 then ui.small((up.id == "hero" and s.heroName and s.heroName:upper() or party.CHARS[up.id].name) .. " REACHED LEVEL " .. up.lvl, 60, y + 25 + i, C.soft, C.bg, "center") end
     end
   end
+  blockLines("TAP", nil, C.line)
 end
 
 local function paint(L, s)
   local b = s.battle
   drawStill(L, s, b)
   drawFoeBars(b)
-  drawAllyBars(s, b)
-  if b.phase == "cmd" then
-    drawCommands(L, s, b)
-  elseif b.phase ~= "spoils" then
-    topLine(b)
-  end
-  if b.phase == "list" then drawList(s) end
+  drawStrip(s, b)
+  if b.phase ~= "spoils" then ui.text(b.msg, 60, 0, C.text, "center", 119) end
+  if b.phase == "cmd" then drawCommands(s, b) end
   if b.phase == "target" then drawTarget(s, b) end
   drawFloats(b)
+  if b.phase == "list" then drawList(s, b) end
   if b.phase == "spoils" then drawSpoils(s, b) end
+  if b.phase == "run" then
+    local lines = bigLines(b.msg)
+    blockLines(lines[1], lines[2], C.text)
+  end
 end
 M.paint = paint
 

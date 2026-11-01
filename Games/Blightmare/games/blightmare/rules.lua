@@ -237,6 +237,11 @@ local function nextStep(run)
       return step
     end
     run.at[#run.at] = nil
+    -- a topic that's been heard goes back to the question list it came from
+    if frame.again then
+      local parent = run.at[#run.at]
+      parent.i = parent.i - 1
+    end
   end
   return nil
 end
@@ -266,7 +271,7 @@ end
 local function settle(run)
   if run.big or run.page < pages(run) then return end
   local following = peekStep(run)
-  if following and following.choice then
+  if following and following.choice and not following.text then
     nextStep(run)
     run.wait = "pick"
   end
@@ -333,6 +338,11 @@ local function doStep(s, step, rng, events)
   if step.when and (step.steps or step.other) then
     local k = s.flags[step.when] and "steps" or "other"
     if step[k] then run.at[#run.at + 1] = { k = k, i = 1 } end
+  elseif step.choice then
+    -- a choice can carry its own short question, so a list that comes back still has someone asking it
+    if step.text then show(s, step.say, step.text, step.name) end
+    run.wait = "pick"
+    changed(s)
   elseif step.say or step.text then
     show(s, step.say, step.text or "", step.name)
     emit(events, "talk")
@@ -340,9 +350,6 @@ local function doStep(s, step, rng, events)
     run.say, run.name, run.text, run.page, run.wait = nil, nil, nil, 1, "tap"
     run.big = fillName(s, step.big)
     emit(events, "big")
-    changed(s)
-  elseif step.choice then
-    run.wait = "pick"
     changed(s)
   elseif step.set then
     s.flags[step.set] = true
@@ -425,7 +432,7 @@ local function talkInput(s, action, events)
     local step = choiceStep(run)
     local option = action.kind == "pick" and step and step.choice and step.choice[action.i]
     if option then
-      run.at[#run.at + 1] = { k = action.i, i = 1 }
+      run.at[#run.at + 1] = { k = action.i, i = 1, again = option.again }
       run.wait, run.say, run.name, run.text = nil, nil, nil, nil
       emit(events, "pick")
     end
@@ -639,7 +646,8 @@ local function act(s, rng, events)
   elseif target == "exit" then
     takeExit(s, exitAt(s, x, y), events)
   else
-    openMenu(s, events)
+    local d = DIRS[s.dir]
+    move(s, d[1], d[2], rng, events)
   end
 end
 
@@ -747,11 +755,19 @@ end
 
 local function worldInput(s, action, events)
   if action.kind == "turn" then
-    s.heading = WAYS[action.dir]
+    s.heading, s.lastWay = WAYS[action.dir], WAYS[action.dir]
     s.walkClock = WORLD_TICKS_A_TILE - 1 -- the first tile answers the tap
     emit(events, "turn")
   elseif action.kind == "act" then
-    if s.heading then s.heading = nil else openMenu(s, events) end
+    if s.heading then
+      s.heading = nil
+    elseif s.lastWay then -- stopped: on the way they were going
+      s.heading = s.lastWay
+      s.walkClock = WORLD_TICKS_A_TILE - 1
+      emit(events, "turn")
+    end
+  elseif action.kind == "menu" then
+    openMenu(s, events)
   end
 end
 
@@ -943,6 +959,7 @@ local function apply(s, action, rng, events)
   if mode == "walk" then
     if action.kind == "act" then act(s, rng, events) end
     if action.kind == "turn" then steer(s, action.dir, rng, events) end
+    if action.kind == "menu" then openMenu(s, events) end
   elseif mode == "world" then
     worldInput(s, action, events)
   elseif mode == "talk" then
@@ -958,10 +975,35 @@ end
 
 -- ---------------------------------------------------------------- the contract
 
+local VERSION = 2
+
+--- A save from before the script was last rewritten. A run in progress holds its place by step number, so it can't carry
+-- over: the conversation is dropped, and whatever started it can be had again. Anything in the world that moved is put right.
+local function upgrade(s)
+  if (s.v or 1) >= VERSION then return end
+  s.v = VERSION
+  local run = s.run
+  if run then
+    s.run = nil
+    if s.mode == "talk" then
+      s.mode = run.back or "walk"
+    elseif s.back == "talk" then
+      s.back = run.back or "walk"
+    end
+    s.queue = {}
+  end
+  if s.flags.foreman_down or s.opened["mine_3:step:10,7"] then s.flags.saw_shift = true end
+  local spot = s.savepoint
+  if s.mode == "walk" and spot and part("world").solid(s.map, s.x, s.y, s) then
+    s.map, s.x, s.y, s.dir = spot.map, spot.x, spot.y, spot.dir
+  end
+  changed(s)
+end
+
 function M.new(opts)
   local name = opts and opts.player
   local s = {
-    v = 1, score = 0, level = 1, over = false, won = false, rev = 0, frame = 0,
+    v = VERSION, score = 0, level = 1, over = false, won = false, rev = 0, frame = 0,
     heroName = (type(name) == "string" and name ~= "") and name or "Hero",
     mode = "talk", back = nil,
     map = "scythebreak", x = 3, y = 3, dir = 1,
@@ -985,6 +1027,7 @@ end
 --- A tap, kept for the next step. In a battle it goes straight to the battle, which queues it itself.
 function M.input(s, action)
   if s.over or not action then return end
+  upgrade(s)
   if s.mode == "battle" then
     part("battle").input(s, action)
     return
@@ -1017,6 +1060,7 @@ end
 function M.tick(s, rng)
   local events = {}
   if s.over then return events end
+  upgrade(s)
   s.frame = s.frame + 1
   fxTick(s)
   hintTick(s)
@@ -1313,7 +1357,14 @@ function M.bot(s, rng)
   elseif mode == "talk" then
     local run = s.run
     if not run or run.wait == "fade" or not run.wait then return nil end
-    if run.wait == "pick" then return { kind = "pick", i = 1 } end
+    if run.wait == "pick" then
+      -- the first option that moves on: a topic comes back to the list, so it would never finish
+      local step = choiceStep(run)
+      for i, option in ipairs(step and step.choice or {}) do
+        if not option.again then return { kind = "pick", i = i } end
+      end
+      return { kind = "pick", i = 1 }
+    end
     return { kind = "tap" }
   elseif mode == "menu" then
     return botMenu(s)
@@ -1323,10 +1374,131 @@ function M.bot(s, rng)
   if s.fin then return nil end
   local mem = botMem(s)
   if hurtMember(s) and (s.bag.potion or 0) > 0 or betterGear(s) then
-    if mode == "world" or not M.target(s) then return { kind = "act" } end
+    if mode == "world" or not M.target(s) then return { kind = "menu" } end
   end
   if mode == "world" then return botOnWorld(s, mem) end
   return botOnFoot(s, mem)
+end
+
+-- ---------------------------------------------------------------- the guide
+
+-- Where the main story goes next. Nothing here is kept in the state: it's worked out from the flags and the data for each
+-- picture, so an old save simply gets a guide, and a story with no GOALS gets none. Places link up as a small graph: each map
+-- by its exits, and the overworld by its sites. "world" is the overworld's name in it.
+
+local function currentGoal(s)
+  for _, goal in ipairs(story().GOALS or {}) do
+    if not (goal.done and s.flags[goal.done]) and (not goal.when or s.flags[goal.when]) then return goal end
+  end
+  return nil
+end
+
+--- Which ground the player is on: a menu, a fight or speech is on top of one, and goes back to it.
+local function groundOf(s)
+  local mode = s.mode
+  if mode == "battle" or mode == "menu" or mode == "shop" then mode = s.back end
+  if mode == "talk" then mode = s.run and s.run.back end
+  return mode == "world" and "world" or "walk"
+end
+
+--- The ways out of a place, as { to, x, y }. Only ones open now: a closed exit or a site not yet known leads nowhere.
+local function linksFrom(s, place)
+  local links = {}
+  if place == "world" then
+    for _, site in ipairs(part("overworld").SITES or {}) do
+      if siteAt(s, site.x, site.y) then links[#links + 1] = { to = site.map, x = site.x, y = site.y } end
+    end
+  else
+    local map = mapOf(place)
+    for _, e in ipairs(map and map.exits or {}) do
+      if passes(s, e) and not e.script then
+        links[#links + 1] = { to = e.world and "world" or e.map, x = e.x, y = e.y }
+      end
+    end
+  end
+  return links
+end
+
+--- How many hops from one place to another, not going back through avoid, or nil if there's no way.
+local function hopsBetween(s, from, target, avoid)
+  local hops = { [from] = 0 }
+  if avoid then hops[avoid] = -1 end
+  local order = { from }
+  local head = 1
+  while order[head] do
+    local place = order[head]
+    head = head + 1
+    if place == target then return hops[place] end
+    for _, link in ipairs(linksFrom(s, place)) do
+      if not hops[link.to] then
+        hops[link.to] = hops[place] + 1
+        order[#order + 1] = link.to
+      end
+    end
+  end
+  return nil
+end
+
+--- Steps to stand beside a square on this map, or on it, or nil if it can't be walked to.
+local function stepsTo(dist, x, y)
+  local best = dist[y * 1000 + x]
+  for _, d in ipairs(DIRS) do
+    local steps = dist[(y - d[2]) * 1000 + x - d[1]]
+    if steps and (not best or steps < best) then best = steps end
+  end
+  return best
+end
+
+--- The first link on the shortest way from a place: the fewest hops, then the nearest. One that can be walked to beats any
+-- that can't, so a blocked door doesn't send the marker through a wall while another way is open.
+local function firstLink(s, here, target, nearness)
+  local best, bestReach, bestHops, bestSteps
+  for _, link in ipairs(linksFrom(s, here)) do
+    local hops = hopsBetween(s, link.to, target, here)
+    if hops then
+      local steps = nearness(link)
+      local reach = steps ~= nil
+      local better = not best or (reach and not bestReach) or (reach == bestReach and hops < bestHops)
+        or (reach == bestReach and hops == bestHops and (steps or 0) < (bestSteps or 0))
+      if better then best, bestReach, bestHops, bestSteps = link, reach, hops, steps end
+    end
+  end
+  return best
+end
+
+--- The story's next goal and the place to head for from here: { text, x, y }, or nil with no goal. A goal with no way there
+-- from here keeps its text and has no x and y, so the bar can still say what to do.
+function M.goal(s)
+  local goal = currentGoal(s)
+  if not goal then return nil end
+  local out = { text = goal.text }
+  local onWorld = groundOf(s) == "world"
+  local target, tx, ty = goal.map, goal.x, goal.y
+  if goal.site then
+    for _, site in ipairs(part("overworld").SITES or {}) do
+      if site.id == goal.site then
+        if onWorld then
+          out.x, out.y = site.x, site.y
+          return out
+        end
+        target, tx, ty = site.map, site.mx, site.my
+      end
+    end
+  end
+  if not target then return out end
+  if not onWorld and target == s.map then
+    out.x, out.y = tx, ty
+    return out
+  end
+  local link
+  if onWorld then
+    link = firstLink(s, "world", target, function(l) return abs(l.x - s.wx) + abs(l.y - s.wy) end)
+  elseif mapOf(s.map) then
+    local dist = botFlood(s)
+    link = firstLink(s, s.map, target, function(l) return stepsTo(dist, l.x, l.y) end)
+  end
+  if link then out.x, out.y = link.x, link.y end
+  return out
 end
 
 return M

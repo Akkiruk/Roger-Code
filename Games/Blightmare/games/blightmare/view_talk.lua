@@ -23,14 +23,23 @@ local function rowY(L, count, i)
   return boxY(L) - (count - i + 1) * (ROW_H + ROW_GAP)
 end
 
-local function drawBox(L, talk)
+--- Who the player is facing, on foot: most people who speak in a borrowed voice are standing right there.
+local function facing(s)
+  local run = s.run
+  if not run or run.back == "world" or s.x == nil then return nil end
+  local npc = rules.npcAt(s, rules.ahead(s))
+  return npc and npc.id
+end
+
+local function drawBox(L, s, talk)
   local y = boxY(L)
   ui.fill(0, y, L.W, BOX_H, C.panel)
   ui.fill(0, y, L.W, 1, C.line)
   local x, top = PLAIN_X, y + 2
   if talk.say then
     ui.fill(2, y + 1, 20, 15, C.bg)
-    require("games.blightmare.art").portrait(talk.say, 2, y + 1)
+    local art = require("games.blightmare.art")
+    art.portrait(art.faceFor and art.faceFor(talk.say, talk.name, facing(s)) or talk.say, 2, y + 1)
     x, top = TEXT_X, y + 3
     ui.small(talk.name, x, y + 1, C.hi, C.panel, "left", rules.SAY_WIDE)
   end
@@ -66,7 +75,7 @@ function M.draw(L, s)
   local talk = rules.talk(s)
   if not talk then return end
   if talk.big then drawBig(L, talk) end
-  if talk.lines then drawBox(L, talk) end
+  if talk.lines then drawBox(L, s, talk) end
   if talk.choices then drawChoices(L, talk) end
 end
 

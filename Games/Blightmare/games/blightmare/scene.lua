@@ -667,7 +667,7 @@ local function indexThings(s, map)
     put(c.x, c.y, { sprite = (s.opened or {})[s.map .. ":" .. c.id] and "openChest" or "chest" })
   end
   for _, n in ipairs(map.npcs or {}) do
-    if passes(s, n) then put(n.x, n.y, { sprite = n.sprite }) end
+    if passes(s, n) then put(n.x, n.y, { sprite = art.lookSprite(n.id) or n.sprite }) end
   end
   local sprites = {}
   for _, f in ipairs(map.foes or {}) do sprites[f.id] = f.sprite end

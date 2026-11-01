@@ -44,25 +44,30 @@ M.DATA.scythebreak = {
     { id = "wick", x = 7, y = 7, sprite = "villager", script = "talk_wick", unless = "horn" },
     { id = "kid", x = 11, y = 3, sprite = "child", script = "talk_kid", unless = "lockdown" },
     { id = "clerk", x = 12, y = 10, sprite = "villager", script = "talk_clerk", unless = "lockdown" },
-    { id = "gossip", x = 10, y = 12, sprite = "villager", script = "talk_gossip", unless = "lockdown" },
     { id = "widow", x = 4, y = 17, sprite = "villager", script = "talk_widow", unless = "tested" },
-    { id = "corner", x = 13, y = 7, sprite = "soldier", script = "talk_corner", unless = "tested" },
     { id = "watch", x = 4, y = 11, sprite = "soldier", script = "talk_watch", unless = "lockdown" },
     { id = "doorman", x = 16, y = 9, sprite = "guard", script = "talk_doorman", unless = "lockdown" },
     { id = "gateman", x = 22, y = 11, sprite = "orderly", script = "talk_gateman", unless = "gate_won" },
+    { id = "lioth", x = 10, y = 17, sprite = "villager", script = "talk_lioth", unless = "lockdown" },
+    { id = "satchel", x = 15, y = 12, sprite = "guard", script = "talk_satchel", unless = "lockdown" },
     -- what's left of Wick
     { id = "wick_changed", x = 9, y = 11, sprite = "blighted", script = "scene_wick", when = "breach", unless = "wick_down" },
     -- the queue for the draught
-    { id = "q_gossip", x = 12, y = 9, sprite = "villager", script = "talk_q_gossip", when = "lockdown", unless = "tested" },
     { id = "q_kid", x = 13, y = 9, sprite = "child", script = "talk_q_kid", when = "lockdown", unless = "tested" },
     { id = "q_clerk", x = 14, y = 9, sprite = "villager", script = "talk_q_clerk", when = "lockdown", unless = "tested" },
     { id = "q_nan", x = 15, y = 9, sprite = "villager", script = "talk_q_nan", when = "lockdown", unless = "tested" },
+    { id = "q_lioth", x = 12, y = 9, sprite = "villager", script = "talk_lioth", when = "lockdown", unless = "tested" },
+    { id = "q_satchel", x = 15, y = 13, sprite = "guard", script = "talk_satchel", when = "lockdown", unless = "tested" },
+    { id = "chalker", x = 8, y = 15, sprite = "orderly", script = "talk_chalker", when = "lockdown", unless = "tested" },
     -- the ward, that night
     { id = "w_nan", x = 19, y = 7, sprite = "shroud", script = "ward_nan", when = "tested" },
     { id = "w_kid", x = 17, y = 5, sprite = "shroud", script = "ward_kid", when = "tested" },
     { id = "w_clerk", x = 20, y = 5, sprite = "shroud", script = "ward_clerk", when = "tested" },
     { id = "w_watch", x = 15, y = 7, sprite = "shroud", script = "ward_watch", when = "tested" },
     { id = "w_bed", x = 22, y = 7, sprite = "shroud", script = "ward_bed", when = "tested" },
+    { id = "w_lioth", x = 23, y = 5, sprite = "shroud", script = "talk_lioth", when = "tested" },
+    -- the counting goes on, at midnight, in an empty square
+    { id = "n_satchel", x = 13, y = 12, sprite = "guard", script = "talk_satchel", when = "tested", unless = "left_town" },
   },
   steps = {
     { x = 3, y = 3, script = "turned_back", when = "left_town" }, -- walking back in from the overworld lands here
@@ -109,21 +114,18 @@ M.DATA.orrenshire = {
   },
   npcs = {
     { id = "innkeeper", x = 6, y = 6, sprite = "innkeeper", script = "talk_innkeeper" },
-    { id = "dozer", x = 8, y = 6, sprite = "gnome", script = "talk_dozer" },
     { id = "smith", x = 18, y = 6, sprite = "smith", script = "talk_smith" },
-    { id = "apprentice", x = 16, y = 6, sprite = "gnome", script = "talk_apprentice" },
     { id = "mayor", x = 18, y = 12, sprite = "mayor", script = "talk_mayor" },
     { id = "chair", x = 6, y = 12, sprite = "gnome", script = "talk_chair" },
     { id = "ledger", x = 10, y = 10, sprite = "gnome", script = "talk_ledger" },
     { id = "well", x = 13, y = 12, sprite = "gnome", script = "talk_well" },
     { id = "frog", x = 11, y = 11, sprite = "frogman", script = "talk_frog", unless = "foreman_down" },
     { id = "stocks", x = 11, y = 11, sprite = "gnome", script = "talk_stocks", when = "foreman_down" },
-    { id = "shopkeep", x = 11, y = 16, sprite = "gnome", script = "talk_shopkeep" },
     { id = "pip", x = 4, y = 17, sprite = "child", script = "talk_pip" },
-    { id = "linen", x = 20, y = 17, sprite = "gnome", script = "talk_linen" },
-    { id = "sweeper", x = 7, y = 14, sprite = "gnome", script = "talk_sweeper" },
-    { id = "tally", x = 20, y = 9, sprite = "miner", script = "talk_tally" },
-    { id = "lane", x = 12, y = 7, sprite = "gnome", script = "talk_lane" },
+    { id = "hatter", x = 14, y = 10, sprite = "gnome", script = "talk_hatter" },
+    { id = "silt", x = 12, y = 13, sprite = "frogman", script = "talk_silt" },
+    { id = "bascombe", x = 20, y = 11, sprite = "guard", script = "talk_bascombe" },
+    { id = "dunnock_up", x = 12, y = 11, sprite = "miner", script = "talk_dunnock_up", when = "freed_dunnock" },
   },
   steps = {
     { x = 3, y = 3, script = "scene_orrenshire", unless = "arrived" },
@@ -167,6 +169,7 @@ M.DATA.mine_1 = {
     { id = "sick2", x = 13, y = 2, sprite = "shroud", script = "talk_sick" },
     { id = "sick3", x = 14, y = 4, sprite = "shroud", script = "talk_sick" },
     { id = "nib", x = 15, y = 14, sprite = "gnome", script = "talk_nib" },
+    { id = "propsetter", x = 4, y = 14, sprite = "miner", script = "talk_propsetter" },
   },
   steps = {
     { x = 10, y = 3, script = "scene_cleric", unless = "cleric_in" },
@@ -213,6 +216,9 @@ M.DATA.mine_2 = {
   npcs = {
     { id = "logkeeper", x = 3, y = 3, sprite = "gnome", script = "talk_logkeeper" },
     { id = "valve", x = 11, y = 12, sprite = "shroud", script = "scene_valve", unless = "gas_off" },
+    { id = "dunnock", x = 3, y = 8, sprite = "miner", script = "talk_dunnock", unless = "freed_dunnock" },
+    { id = "handler_big", x = 17, y = 11, sprite = "orderly", script = "talk_handlers", unless = "handlers_gone" },
+    { id = "handler_small", x = 15, y = 11, sprite = "orderly", script = "talk_handlers", unless = "handlers_gone" },
   },
   steps = {
     { x = 11, y = 3, script = "scene_gas", unless = "gas_off" },

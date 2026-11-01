@@ -81,6 +81,7 @@ function view.actionAt(L, s, px, py)
   if mode == "battle" then return part("view_battle").actionAt(L, s, px, py) end
   if mode == "menu" or mode == "shop" then return part("view_menu").actionAt(L, s, px, py) end
   if mode == "talk" then return part("view_talk").actionAt(L, s, px, py) end
+  if py >= part("view_world").HUD_Y then return { kind = "menu" } end -- the info bar along the bottom
   if base.inMiddle(L, px, py) then return { kind = "act" } end
   return base.splitAction(L, px, py)
 end
@@ -166,14 +167,16 @@ return base.fill({
     "",
     "On foot, tap the top of the wall to step forward and the bottom to step back. Tap a side to turn.",
     "",
-    "The middle of the wall, between the four marks, is ACT. It talks, opens doors and chests, and starts a fight with what's ahead. With nothing ahead it opens the menu: items, gear and how everyone is doing.",
+    "The middle of the wall, between the four marks, is ACT. It talks, opens doors and chests, and starts a fight with what's ahead. With nothing ahead it walks forward. Tap the bar along the bottom for the menu: items, gear and how everyone is doing.",
     "",
-    "On the road, tap a side and the party walks that way until something stops them. The middle stops them, and opens the menu if they've stopped already.",
+    "On the road, tap a side and the party walks that way until something stops them. The middle stops them, and sets them walking again. The bar along the bottom opens the menu here too.",
     "",
     "When someone is talking, tap anywhere to go on. A question waits for a tap on the answer.",
     "",
     "In a fight, gauges fill and a full one gives that character a turn. Time stands still while you choose. Top is ATTACK, left the character's special, right ITEM, bottom DEFEND. Then tap the target, or tap away to go back.",
     "",
     "If the whole party falls you wake at the last safe place, with half your gold gone.",
+    "",
+    "Lost? The purple mark on the map is where the story goes next, and an arrow points to it when it's further off. The bar along the bottom says what to do there.",
   },
 })
