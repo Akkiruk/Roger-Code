@@ -67,8 +67,16 @@ local function saveRun(a)
   return ok
 end
 
+--- A tap that came with no name: if one person is here, it's them.
+local function nearestName(who)
+  if who then return who end
+  local list = hw.nearby()
+  return #list == 1 and list[1] or nil
+end
+
 --- The ready screen for the current game.
 function M.open(who)
+  who = nearestName(who)
   S.action = { phase = "ready", player = who, scores = scores.open(app.plugin.id) }
   if app.plugin.saves then offerSave(S.action, who or "Player") end
   S.view = "action"
@@ -90,7 +98,7 @@ function M.start(who)
   local a = S.action
   local plugin = app.plugin
   if plugin.saves then
-    local owner = who or a.player or "Player"
+    local owner = nearestName(who) or a.player or "Player"
     -- START and AGAIN must not write over a game: this tapper's save may not be what the screen was showing
     if readSave(owner) then
       M.open(owner)
@@ -98,7 +106,7 @@ function M.start(who)
     end
     saves.delete(plugin.id, owner)
   end
-  a.player = who or a.player or "Player"
+  a.player = nearestName(who) or a.player or "Player"
   a.seed = math.random(1, 2147483646)
   a.rng, a.rngAt = journal.trackedRng(a.seed)
   a.state = plugin.rules.new({ rng = a.rng, player = a.player })

@@ -952,11 +952,44 @@ local function closeShop(s)
   s.back = nil
 end
 
+-- ---------------------------------------------------------------- asking a name
+
+local UNNAMED = "Player"    -- what the shell calls someone it can't name
+local NAME_LONGEST = 12
+M.NAME_DELETE, M.NAME_DONE = 27, 28 -- the keys after the 26 letters
+
+--- Nobody could tell who this is, so the game asks, wherever they are.
+local function askName(s)
+  s.naming = { text = "", back = s.mode }
+  s.mode = "name"
+  s.queue = {}
+  s.heading = nil
+  changed(s)
+end
+
+local function nameInput(s, action)
+  local naming = s.naming
+  if action.kind ~= "pick" or not naming then return end
+  local key = action.i
+  if key == M.NAME_DONE then
+    s.heroName = naming.text ~= "" and naming.text or "Hero"
+    s.mode, s.naming = naming.back, nil
+  elseif key == M.NAME_DELETE then
+    naming.text = naming.text:sub(1, -2)
+  elseif key >= 1 and key <= 26 and #naming.text < NAME_LONGEST then
+    local letter = string.char(64 + key)
+    naming.text = naming.text .. (naming.text == "" and letter or letter:lower())
+  end
+  changed(s)
+end
+
 -- ---------------------------------------------------------------- one tap
 
 local function apply(s, action, rng, events)
   local mode = s.mode
-  if mode == "walk" then
+  if mode == "name" then
+    nameInput(s, action)
+  elseif mode == "walk" then
     if action.kind == "act" then act(s, rng, events) end
     if action.kind == "turn" then steer(s, action.dir, rng, events) end
     if action.kind == "menu" then openMenu(s, events) end
@@ -1061,6 +1094,7 @@ function M.tick(s, rng)
   local events = {}
   if s.over then return events end
   upgrade(s)
+  if s.heroName == UNNAMED and s.mode ~= "name" and s.mode ~= "battle" then askName(s) end
   s.frame = s.frame + 1
   fxTick(s)
   hintTick(s)
@@ -1351,7 +1385,9 @@ end
 function M.bot(s, rng)
   if s.over then return nil end
   local mode = s.mode
-  if mode == "battle" then
+  if mode == "name" then
+    return { kind = "pick", i = M.NAME_DONE }
+  elseif mode == "battle" then
     if s.battle and s.battle.result then return nil end
     return part("battle").bot(s, rng)
   elseif mode == "talk" then

@@ -36,7 +36,9 @@ end
 
 local function paint(L, s)
   local mode = s.mode
-  if mode == "battle" then
+  if mode == "name" then
+    part("view_talk").drawName(L, s)
+  elseif mode == "battle" then
     part("view_battle").draw(L, s)
   elseif mode == "menu" or mode == "shop" then
     part("view_menu").draw(L, s)
@@ -78,6 +80,7 @@ end
 function view.actionAt(L, s, px, py)
   if not s then return nil end
   local mode = s.mode
+  if mode == "name" then return part("view_talk").nameAt(L, px, py) end
   if mode == "battle" then return part("view_battle").actionAt(L, s, px, py) end
   if mode == "menu" or mode == "shop" then return part("view_menu").actionAt(L, s, px, py) end
   if mode == "talk" then return part("view_talk").actionAt(L, s, px, py) end

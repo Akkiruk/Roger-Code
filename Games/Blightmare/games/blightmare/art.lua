@@ -917,25 +917,25 @@ end
 --- The upper shapes, which the sprite and the portrait share: head, hair, beard and hat.
 local function headParts(look)
   local under, over = {}, {}
-  local a = function(s) under[#under + 1] = s end
+  local addShape = function(s) under[#under + 1] = s end
   local b = function(s) over[#over + 1] = s end
   local hx, hy, rx, ry = 0.5 + (look.tilt or 0), 0.17, look.rx, look.ry
-  a(R(hx - 0.05, hy + ry - 0.02, 0.1, 0.07, look.shade))
+  addShape(R(hx - 0.05, hy + ry - 0.02, 0.1, 0.07, look.shade))
   if look.ears == "long" then
-    a(P(look.skin, hx - rx * 0.9, hy - 0.01, hx - rx * 2.1, hy - 0.08, hx - rx * 0.9, hy + 0.05))
-    a(P(look.skin, hx + rx * 0.9, hy - 0.01, hx + rx * 2.1, hy - 0.08, hx + rx * 0.9, hy + 0.05))
+    addShape(P(look.skin, hx - rx * 0.9, hy - 0.01, hx - rx * 2.1, hy - 0.08, hx - rx * 0.9, hy + 0.05))
+    addShape(P(look.skin, hx + rx * 0.9, hy - 0.01, hx + rx * 2.1, hy - 0.08, hx + rx * 0.9, hy + 0.05))
   elseif look.ears == "round" then
-    a(E(hx - rx * 1.05, hy + 0.01, 0.03, 0.04, look.skin))
-    a(E(hx + rx * 1.05, hy + 0.01, 0.03, 0.04, look.skin))
+    addShape(E(hx - rx * 1.05, hy + 0.01, 0.03, 0.04, look.skin))
+    addShape(E(hx + rx * 1.05, hy + 0.01, 0.03, 0.04, look.skin))
   end
   if look.kind == "owlin" then
-    a(P(look.skin, hx - rx, hy - 0.05, hx - rx * 1.2, hy - ry * 1.7, hx - rx * 0.2, hy - ry * 0.9))
-    a(P(look.skin, hx + rx, hy - 0.05, hx + rx * 1.2, hy - ry * 1.7, hx + rx * 0.2, hy - ry * 0.9))
+    addShape(P(look.skin, hx - rx, hy - 0.05, hx - rx * 1.2, hy - ry * 1.7, hx - rx * 0.2, hy - ry * 0.9))
+    addShape(P(look.skin, hx + rx, hy - 0.05, hx + rx * 1.2, hy - ry * 1.7, hx + rx * 0.2, hy - ry * 0.9))
   end
-  a(E(hx, hy, rx, ry, look.skin))
+  addShape(E(hx, hy, rx, ry, look.skin))
   if look.kind == "frog" then
-    a(E(hx - rx * 0.62, hy - ry * 0.85, 0.075, 0.07, look.skin))
-    a(E(hx + rx * 0.62, hy - ry * 0.85, 0.075, 0.07, look.skin))
+    addShape(E(hx - rx * 0.62, hy - ry * 0.85, 0.075, 0.07, look.skin))
+    addShape(E(hx + rx * 0.62, hy - ry * 0.85, 0.075, 0.07, look.skin))
     b(E(hx - rx * 0.62, hy - ry * 0.85, 0.05, 0.05, C.hi))
     b(E(hx + rx * 0.62, hy - ry * 0.85, 0.05, 0.05, C.hi))
     b(R(hx - rx * 0.62 - 0.04, hy - ry * 0.85, 0.08, 0.018, C.bg))
@@ -957,7 +957,7 @@ local function headParts(look)
   hairShapes(b, look, hx, hy, rx, ry)
   beardShapes(b, look, hx, hy, rx, ry)
   if look.beak then
-    -- the Clinic's mask, turned a little aside, so the beak breaks the outline of the head
+    -- the Clinic's mask, turned addShape little aside, so the beak breaks the outline of the head
     b(E(hx, hy, rx * 1.02, ry * 1.02, look.maskInk or C.line))
     b(P(look.beakInk or C.text, hx - 0.03, hy - 0.01, hx + rx * 0.8, hy - 0.04, hx + rx + look.beak, hy + 0.1, hx + rx * 0.5, hy + 0.1))
     b(P(C.tie, hx - 0.03, hy + 0.04, hx + rx * 0.5, hy + 0.1, hx + rx + look.beak, hy + 0.1))
@@ -975,7 +975,7 @@ end
 local function standingBody(look, bare)
   settle(look)
   local list = {}
-  local a = function(s) list[#list + 1] = s end
+  local addShape = function(s) list[#list + 1] = s end
   local build = LOOK_BUILD[look.build]
   local sh, hip = build[1], build[2]
   local hem = LOOK_HEM[look.cut] or 0.84
@@ -985,50 +985,50 @@ local function standingBody(look, bare)
   stick = 0.036 / look.tall
   if look.wear then
     for _, name in ipairs(look.wear) do
-      if name == "cape" then WEAR.cape(a, sh, hip, hem, look) end
+      if name == "cape" then WEAR.cape(addShape, sh, hip, hem, look) end
     end
   end
-  if carry and not front then carry(a, handX, handY, sh) end
+  if carry and not front then carry(addShape, handX, handY, sh) end
   if look.cut ~= "robe" then
-    a(R(0.5 - hip * 0.8, hem - 0.02, hip * 0.7, 0.96 - hem + 0.02, look.legs))
-    a(R(0.5 + hip * 0.1, hem - 0.02, hip * 0.7, 0.96 - hem + 0.02, look.legs))
-    a(R(0.5 - hip * 0.85 - 0.02, 0.95, hip * 0.75 + 0.03, 0.05, look.oneShoe and look.skin or C.redTint))
-    a(R(0.5 + hip * 0.1, 0.95, hip * 0.75 + 0.03, 0.05, C.redTint))
+    addShape(R(0.5 - hip * 0.8, hem - 0.02, hip * 0.7, 0.96 - hem + 0.02, look.legs))
+    addShape(R(0.5 + hip * 0.1, hem - 0.02, hip * 0.7, 0.96 - hem + 0.02, look.legs))
+    addShape(R(0.5 - hip * 0.85 - 0.02, 0.95, hip * 0.75 + 0.03, 0.05, look.oneShoe and look.skin or C.redTint))
+    addShape(R(0.5 + hip * 0.1, 0.95, hip * 0.75 + 0.03, 0.05, C.redTint))
   end
-  a(P(look.coat, 0.5 - sh, 0.3, 0.5 + sh, 0.3, 0.5 + hip, hem, 0.5 - hip, hem))
-  a(P(look.trim, 0.47, 0.3, 0.53, 0.3, 0.52, hem, 0.48, hem))
+  addShape(P(look.coat, 0.5 - sh, 0.3, 0.5 + sh, 0.3, 0.5 + hip, hem, 0.5 - hip, hem))
+  addShape(P(look.trim, 0.47, 0.3, 0.53, 0.3, 0.52, hem, 0.48, hem))
   if look.wear then
     for _, name in ipairs(look.wear) do
-      if name ~= "cape" then WEAR[name](a, sh, hip, hem, look) end
+      if name ~= "cape" then WEAR[name](addShape, sh, hip, hem, look) end
     end
   end
   for side = -1, 1, 2 do
     local x = 0.5 + side * (sh + 0.04)
-    a(P(look.coat, 0.5 + side * sh * 0.9, 0.3, 0.5 + side * (sh + 0.075), 0.33, 0.5 + side * (sh + 0.11), 0.6, 0.5 + side * (sh + 0.04), 0.6, 0.5 + side * sh * 0.85, 0.42))
-    a(E(x + side * 0.035, 0.625, 0.04, 0.04, look.skin))
+    addShape(P(look.coat, 0.5 + side * sh * 0.9, 0.3, 0.5 + side * (sh + 0.075), 0.33, 0.5 + side * (sh + 0.11), 0.6, 0.5 + side * (sh + 0.04), 0.6, 0.5 + side * sh * 0.85, 0.42))
+    addShape(E(x + side * 0.035, 0.625, 0.04, 0.04, look.skin))
   end
   local under, over = headParts(look)
-  for _, s in ipairs(under) do a(s) end
+  for _, s in ipairs(under) do addShape(s) end
   if look.kind ~= "frog" and look.kind ~= "owlin" then
     local hx, hy, rx = 0.5 + (look.tilt or 0), 0.17, look.rx
-    if look.nose == "big" then a(E(hx, hy + 0.035, 0.05, 0.05, look.noseInk or look.shade)) end
+    if look.nose == "big" then addShape(E(hx, hy + 0.035, 0.05, 0.05, look.noseInk or look.shade)) end
     if not look.beak and not bare then
       local ink = look.eyes == "red" and C.red or look.eyes == "closed" and look.shade or C.bg
       local high = (look.eyes == "closed" or look.eyes == "narrow") and 0.022 or 0.055
-      a(R(hx - rx * 0.62, hy - 0.04, 0.055, high, ink))
-      a(R(hx + rx * 0.62 - 0.055, hy - 0.04, 0.055, high, ink))
-      if look.mouth ~= "none" then a(R(hx - 0.05, hy + 0.075, 0.1, 0.02, C.bg)) end
+      addShape(R(hx - rx * 0.62, hy - 0.04, 0.055, high, ink))
+      addShape(R(hx + rx * 0.62 - 0.055, hy - 0.04, 0.055, high, ink))
+      if look.mouth ~= "none" then addShape(R(hx - 0.05, hy + 0.075, 0.1, 0.02, C.bg)) end
     end
   end
-  for _, s in ipairs(over) do a(s) end
+  for _, s in ipairs(over) do addShape(s) end
   if look.beak then
     local hx, hy, rx = 0.5 + (look.tilt or 0), 0.17, look.rx
-    a(E(hx - rx * 0.5, hy - 0.025, 0.04, 0.04, C.bg))
-    a(E(hx + rx * 0.45, hy - 0.03, 0.04, 0.04, C.bg))
-    a(E(hx - rx * 0.5, hy - 0.025, 0.026, 0.026, C.info))
-    a(E(hx + rx * 0.45, hy - 0.03, 0.026, 0.026, C.info))
+    addShape(E(hx - rx * 0.5, hy - 0.025, 0.04, 0.04, C.bg))
+    addShape(E(hx + rx * 0.45, hy - 0.03, 0.04, 0.04, C.bg))
+    addShape(E(hx - rx * 0.5, hy - 0.025, 0.026, 0.026, C.info))
+    addShape(E(hx + rx * 0.45, hy - 0.03, 0.026, 0.026, C.info))
   end
-  if carry and front then carry(a, handX, handY, sh) end
+  if carry and front then carry(addShape, handX, handY, sh) end
   return list
 end
 
@@ -1051,54 +1051,54 @@ local function standingLook(look)
   return out
 end
 
---- Someone lying down: sacking in the mine, a Clinic cot in the ward. Their hair and hat still say who it is.
+--- Someone lying down: sacking in the mine, addShape Clinic cot in the ward. Their hair and hat still say who it is.
 local function lyingLook(look)
   settle(look)
   local list = {}
-  local a = function(s) list[#list + 1] = s end
+  local addShape = function(s) list[#list + 1] = s end
   if look.bed then
-    a(R(0.04, 0.82, 0.03, 0.18, C.line))
-    a(R(0.93, 0.82, 0.03, 0.18, C.line))
-    a(R(0.0, 0.72, 1, 0.12, C.line))
-    a(R(0.92, 0.4, 0.05, 0.42, C.line))
+    addShape(R(0.04, 0.82, 0.03, 0.18, C.line))
+    addShape(R(0.93, 0.82, 0.03, 0.18, C.line))
+    addShape(R(0.0, 0.72, 1, 0.12, C.line))
+    addShape(R(0.92, 0.4, 0.05, 0.42, C.line))
   else
-    a(R(0.0, 0.88, 1, 0.12, look.sackInk or C.hiTint))
-    a(R(0.0, 0.9, 1, 0.012, C.panel))
+    addShape(R(0.0, 0.88, 1, 0.12, look.sackInk or C.hiTint))
+    addShape(R(0.0, 0.9, 1, 0.012, C.panel))
   end
   local ground = look.bed and 0.74 or 0.9
   if not look.empty then
     local big = look.size or 1
-    a(P(look.coat, 0.08, ground, 0.7, ground, 0.72, ground - 0.28 * big, 0.36, ground - 0.33 * big, 0.12, ground - 0.2 * big))
-    a(P(look.trim, 0.08, ground, 0.7, ground, 0.7, ground - 0.07, 0.08, ground - 0.04))
+    addShape(P(look.coat, 0.08, ground, 0.7, ground, 0.72, ground - 0.28 * big, 0.36, ground - 0.33 * big, 0.12, ground - 0.2 * big))
+    addShape(P(look.trim, 0.08, ground, 0.7, ground, 0.7, ground - 0.07, 0.08, ground - 0.04))
     if look.wear and look.wear[1] == "patches" then
-      a(R(0.2, ground - 0.2, 0.09, 0.08, C.warn))
-      a(R(0.42, ground - 0.24, 0.1, 0.09, C.ok))
+      addShape(R(0.2, ground - 0.2, 0.09, 0.08, C.warn))
+      addShape(R(0.42, ground - 0.24, 0.1, 0.09, C.ok))
     end
     local hx, hy, rx, ry = 0.8, ground - 0.17, look.rx * 1.05, look.ry * 1.25
-    a(E(hx, hy, rx, ry, look.skin))
-    a(R(hx - rx * 0.6, hy - 0.04, 0.06, 0.016, look.shade))
-    a(R(hx + rx * 0.1, hy - 0.04, 0.06, 0.016, look.shade))
-    if look.hair then a(P(look.hairInk or C.bg, hx - rx, hy, hx - rx * 0.7, hy - ry, hx + rx * 0.7, hy - ry, hx + rx, hy, hx + rx * 0.6, hy - ry * 0.55, hx - rx * 0.6, hy - ry * 0.55)) end
-    if look.beard then a(E(hx, hy + ry * 0.75, rx * 0.9, ry * 0.6, look.beardInk or look.hairInk or C.bg)) end
+    addShape(E(hx, hy, rx, ry, look.skin))
+    addShape(R(hx - rx * 0.6, hy - 0.04, 0.06, 0.016, look.shade))
+    addShape(R(hx + rx * 0.1, hy - 0.04, 0.06, 0.016, look.shade))
+    if look.hair then addShape(P(look.hairInk or C.bg, hx - rx, hy, hx - rx * 0.7, hy - ry, hx + rx * 0.7, hy - ry, hx + rx, hy, hx + rx * 0.6, hy - ry * 0.55, hx - rx * 0.6, hy - ry * 0.55)) end
+    if look.beard then addShape(E(hx, hy + ry * 0.75, rx * 0.9, ry * 0.6, look.beardInk or look.hairInk or C.bg)) end
     local hat = HAT[look.hat]
-    if hat then hat(a, hx, hy, rx, ry, look.hatInk or C.bg, look.hatTrim or C.line) end
-    a(R(0.58, ground - 0.13, 0.08, 0.03, look.skin))
-    if look.thread then a(R(0.6, ground - 0.135, 0.02, 0.04, C.bg)) end
+    if hat then hat(addShape, hx, hy, rx, ry, look.hatInk or C.bg, look.hatTrim or C.line) end
+    addShape(R(0.58, ground - 0.13, 0.08, 0.03, look.skin))
+    if look.thread then addShape(R(0.6, ground - 0.135, 0.02, 0.04, C.bg)) end
   else
-    a(R(0.08, ground - 0.05, 0.84, 0.05, C.text))
-    a(R(0.7, ground - 0.12, 0.2, 0.08, C.text))
+    addShape(R(0.08, ground - 0.05, 0.84, 0.05, C.text))
+    addShape(R(0.7, ground - 0.12, 0.2, 0.08, C.text))
   end
   local carry = CARRY[look.carry]
-  if carry then carry(a, look.carryX or 0.14, look.carryY or (ground - 0.24), 0.1) end
+  if carry then carry(addShape, look.carryX or 0.14, look.carryY or (ground - 0.24), 0.1) end
   if look.beam then
     -- the prop that came down on Dunnock
-    a(P(C.redTint, 0.02, 0.5, 0.08, 0.42, 0.68, 0.84, 0.6, 0.9))
-    a(P(C.warn, 0.05, 0.46, 0.08, 0.42, 0.68, 0.84, 0.65, 0.86))
+    addShape(P(C.redTint, 0.02, 0.5, 0.08, 0.42, 0.68, 0.84, 0.6, 0.9))
+    addShape(P(C.warn, 0.05, 0.46, 0.08, 0.42, 0.68, 0.84, 0.65, 0.86))
   end
   return list
 end
 
---- The same shapes the other way round, so that one of a pair can face the other.
+--- The same shapes the other way round, so that one of addShape pair can face the other.
 local function mirrored(list)
   local out = {}
   for _, s in ipairs(list) do
@@ -1148,7 +1148,7 @@ local CLERK = { kind = "human", tall = 0.84, build = "hunched", coat = C.panel, 
 local GOSSIP = { kind = "human", tall = 0.78, build = "stout", cut = "dress", coat = C.hiTint, trim = C.hiTint, hair = "curls", hairInk = C.redTint, skin = C.warn, wear = { "shawl" },
   carry = "basket", mouth = "open", eyes = "wide", back = C.redTint }
 local SERGEANT = { kind = "human", tall = 0.9, build = "stout", coat = C.tie, trim = C.panel, hat = "sallet", hatInk = C.text, hatTrim = C.red, hair = "short", hairInk = C.line, beard = "whiskers", beardInk = C.text,
-  wear = { "collar", "belt", "badge" }, carry = "pie", eyes = "narrow", mouth = "smile", back = C.tie } -- nineteen years on the wall, boots polished, mask off: there's a pie
+  wear = { "collar", "belt", "badge" }, carry = "pie", eyes = "narrow", mouth = "smile", back = C.tie } -- nineteen years on the wall, boots polished, mask off: there's addShape pie
 local SEXTON = { kind = "old", tall = 0.92, build = "hunched", lean = 0.12, coat = C.bg, trim = C.panel, cut = "coat", hat = "wide", hatInk = C.bg, hatTrim = C.tie, hair = "short", hairInk = C.text, beard = "stubble",
   skin = C.line, carry = "shovel", mouth = "frown", eyes = "tired", back = C.hiTint }
 local HANLEY = { kind = "child", tall = 0.52, cut = "tunic", coat = C.red, trim = C.redTint, legs = C.blueTint, hair = "wild", hairInk = C.redTint, hat = "cap", hatInk = C.hi, hatTrim = C.warn, carry = "goose", mouth = "smile", back = C.blueTint }
@@ -1188,7 +1188,7 @@ local LOOKS = {
   doctor = { kind = "clinic", tall = 0.94, build = "thin", cut = "robe", coat = C.text, trim = C.line, hat = "beakhat", hatInk = C.bg, hatTrim = C.line, beak = 0.2, maskInk = C.text,
     carry = "clipboard", back = C.redTint },
 
-  -- the ward, that night. Every patient gets a bed.
+  -- the ward, that night. Every patient gets addShape bed.
   w_nan = asleep(NAN, { bed = true, coat = C.text, trim = C.line, carry = "none" }),
   w_kid = asleep(KID, { bed = true, coat = C.line, trim = C.text, carry = "doll", carryX = 0.62, carryY = 0.46, beak = false, size = 0.75 }),
   w_clerk = asleep(CLERK, { bed = true, coat = C.text, trim = C.tie, carry = "none", hat = false, eyes = "closed" }),
@@ -1266,12 +1266,12 @@ local LOOKS = {
   sleeper4 = { kind = "gnome", pose = "lying", coat = C.hiTint, trim = C.panel, hat = "earflap", hatInk = C.line, hatTrim = C.bg, beard = "moustache", beardInk = C.bg, carry = "hammer", carryX = 0.2, carryY = 0.8 },
   lampwoman = { kind = "gnome", pose = "lying", coat = C.tie, trim = C.panel, hair = "bun", hairInk = C.redTint, wear = { "patches" }, carry = "greenlamp", carryX = 0.06, carryY = 0.68 },
 
-  -- a people of their own, for whoever comes next
+  -- addShape people of their own, for whoever comes next
   owlin = { kind = "owlin", tall = 0.8, cut = "robe", coat = C.blueTint, trim = C.tie, hair = "tufts", hairInk = C.line, wear = { "shawl" }, shawlInk = C.tie },
 }
 M.LOOKS = LOOKS
 
--- A name over a talk box, for the people who borrow a portrait.
+-- A name over addShape talk box, for the people who borrow addShape portrait.
 M.NAMES = {
   NAN = "nan", WICK = "wick", CLERK = "clerk", PIP = "pip", NIB = "nib", NOB = "nob", TOBIN = "tobin", ALWIN = "dozer", ["GENTLEMAN BOGG"] = "frog", BOGG = "frog",
   ["OTTILIE BRASSCAP"] = "mayor", ["MAYOR BRASSCAP"] = "mayor", MAYOR = "mayor", CAPTAIN = "captain", DOCTOR = "doctor", INNKEEPER = "innkeeper", SMITH = "smith", FOREMAN = "foreman",
@@ -1281,12 +1281,12 @@ M.NAMES = {
   ["CASK HANDLER"] = "handler_small",
 }
 
--- Who speaks in a borrowed voice: these say ids and names belong to whoever the player is facing, when that person has a look.
+-- Who speaks in addShape borrowed voice: these say ids and names belong to whoever the player is facing, when that person has addShape look.
 local BORROWED = { gnome = true, villager = true, child = true }
 local BORROWED_NAME = { SOLDIER = true, ORDERLY = true, ["CASK HANDLER"] = true }
 
---- The portrait for a line of speech. say is the script's portrait id, name the name over the box, and npcId whoever the player
--- is facing: a name that means someone wins, then a borrowed voice goes to the person in front of you, and otherwise it's say.
+--- The portrait for addShape line of speech. say is the script's portrait id, name the name over the box, and npcId whoever the player
+-- is facing: addShape name that means someone wins, then addShape borrowed voice goes to the person in front of you, and otherwise it's say.
 function M.faceFor(say, name, npcId)
   local spoken = BORROWED[say] or BORROWED_NAME[name]
   if spoken and npcId and LOOKS[npcId] and (BORROWED_NAME[name] or not M.NAMES[name]) then return npcId end
@@ -1298,7 +1298,7 @@ for id, look in pairs(LOOKS) do
   SPRITES["look:" .. id] = { build = function() return lookShapes(look) end, size = lying and 0.62 or 1, near = lying and 0.45 or 0.1 }
 end
 
---- The sprite of an npc, if it has a look of its own.
+--- The sprite of an npc, if it has addShape look of its own.
 function M.lookSprite(id) return LOOKS[id] and ("look:" .. id) or nil end
 
 -- ---------------------------------------------------------------- baking
@@ -1397,7 +1397,7 @@ end
 
 local baked = {}
 
---- Runs { x, y, w, colour, ... } for a sprite w by h cells. remap swaps colours, for distance or a flash; its name goes in
+--- Runs { x, y, w, colour, ... } for addShape sprite w by h cells. remap swaps colours, for distance or addShape flash; its name goes in
 -- the key, so each look is baked once.
 function M.bake(name, w, h, remap, remapName)
   local look = name .. ":" .. w .. "x" .. h .. ":" .. (remapName or "")
@@ -1422,9 +1422,9 @@ local INK = {
 }
 
 -- The faces with no look: the party, drawn by hand, and the stock faces for anyone who just says "gnome" or "villager".
--- 20 by 15, one letter a cell, from the table above. A dot is the portrait's backdrop.
+-- 20 by 15, one letter addShape cell, from the table above. A dot is the portrait's backdrop.
 local PORTRAITS = {
-  hero = { back = C.blueTint, -- young, watchful, a chin of scabs from a town that doesn't like orphans
+  hero = { back = C.blueTint, -- young, watchful, addShape chin of scabs from addShape town that doesn't like orphans
     "....................",
     "......kkkkkkkk......",
     "....kkkkkkkkkkkk....",
@@ -1527,10 +1527,10 @@ local PORTRAITS = {
     ".bbbbbbbbbbbbbbbbbb.",
   },
 }
-M.PORTRAITS = PORTRAITS -- every face there is: anyone with a look has one too, so a say id can be checked here either way
+M.PORTRAITS = PORTRAITS -- every face there is: anyone with addShape look has one too, so addShape say id can be checked here either way
 for id, look in pairs(LOOKS) do PORTRAITS[id] = look end
 
--- The part of a body a portrait shows: wide enough for shoulders, tall enough for most hats. 20 cells by 15 is 40 by 45 on the
+-- The part of addShape body addShape portrait shows: wide enough for shoulders, tall enough for most hats. 20 cells by 15 is 40 by 45 on the
 -- wall, which is why the window is taller than it's wide.
 local FACE_X, FACE_Y, FACE_W, FACE_H = 0.22, -0.21, 0.56, 0.63
 
@@ -1552,7 +1552,7 @@ local function zoomed(list)
   return out
 end
 
---- Eyes, nose and mouth, a cell at a time. The eyes are on row 8, either side of the middle, and the mouth on row 11.
+--- Eyes, nose and mouth, addShape cell at addShape time. The eyes are on row 8, either side of the middle, and the mouth on row 11.
 local function paintFace(grid, look)
   local dx = floor((look.tilt or 0) / FACE_W * 20 + 0.5)
   local function put(x, y, ink) grid[y][x + dx] = ink end
@@ -1634,7 +1634,7 @@ end
 
 local portraitRuns = {}
 
---- Runs { x, y, w, colour, ... } for a portrait. Letters outside the table show as the backdrop, not as a crash.
+--- Runs { x, y, w, colour, ... } for addShape portrait. Letters outside the table show as the backdrop, not as addShape crash.
 local function bakePortrait(id)
   local runs = {}
   local face = PORTRAITS[id]
@@ -1652,7 +1652,7 @@ local function bakePortrait(id)
   return runs
 end
 
---- A face, 20 cells wide and 15 tall, with its top left corner at x, y. An unknown id gets a villager.
+--- A face, 20 cells wide and 15 tall, with its top left corner at x, y. An unknown id gets addShape villager.
 function M.portrait(id, x, y)
   id = (LOOKS[id] or PORTRAITS[id]) and id or "villager"
   local runs = portraitRuns[id]

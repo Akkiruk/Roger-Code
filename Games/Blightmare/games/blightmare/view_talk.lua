@@ -94,4 +94,44 @@ function M.actionAt(L, s, px, py)
   return { kind = "tap" }
 end
 
+-- ---------------------------------------------------------------- asking a name
+
+local KEY_W, KEY_H, KEY_X, KEY_Y, KEYS_A_ROW = 12, 10, 2, 22, 9
+local DONE_X, DONE_Y, DONE_W, DONE_H = 42, 57, 38, 12
+
+local function keyAt(key)
+  local col, row = (key - 1) % KEYS_A_ROW, floor((key - 1) / KEYS_A_ROW)
+  return KEY_X + col * (KEY_W + 1), KEY_Y + row * (KEY_H + 1)
+end
+
+function M.drawName(L, s)
+  ui.fill(0, 0, L.W, L.H, C.bg)
+  ui.text("WHAT IS YOUR NAME?", floor(L.W / 2), 2, C.hi, "center", L.W - 4)
+  ui.text(s.naming.text .. "_", floor(L.W / 2), 12, C.text, "center", L.W - 4)
+  for key = 1, 26 do
+    local x, y = keyAt(key)
+    ui.fill(x, y, KEY_W, KEY_H, C.panel)
+    ui.frame(x, y, KEY_W, KEY_H, C.line)
+    ui.text(string.char(64 + key), x + floor(KEY_W / 2), y + 2, C.text, "center")
+  end
+  local x, y = keyAt(rules.NAME_DELETE)
+  ui.fill(x, y, KEY_W, KEY_H, C.panel)
+  ui.frame(x, y, KEY_W, KEY_H, C.warn)
+  ui.small("DEL", x + floor(KEY_W / 2), y + 4, C.warn, C.panel, "center")
+  ui.fill(DONE_X, DONE_Y, DONE_W, DONE_H, C.panel)
+  ui.frame(DONE_X, DONE_Y, DONE_W, DONE_H, C.ok)
+  ui.text("DONE", DONE_X + floor(DONE_W / 2), DONE_Y + 3, C.ok, "center")
+end
+
+function M.nameAt(L, px, py)
+  if px >= DONE_X and px < DONE_X + DONE_W and py >= DONE_Y and py < DONE_Y + DONE_H then
+    return { kind = "pick", i = rules.NAME_DONE }
+  end
+  for key = 1, rules.NAME_DELETE do
+    local x, y = keyAt(key)
+    if px >= x and px < x + KEY_W and py >= y and py < y + KEY_H then return { kind = "pick", i = key } end
+  end
+  return nil
+end
+
 return M
