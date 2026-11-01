@@ -29,17 +29,17 @@ The Arcade stays free. Nothing here goes in `Games/Arcade` or adds tokens to `Sh
 
 - One **dealer**: advanced computer, 6x6 wall at scale 0.5 (121x81), any modem. The wall shows what everyone may see: pot, community cards, wheel, dice, seats, whose turn.
 - Up to 8 **seats**: each an advanced computer, a 4x4 wall at scale 0.5 (78x52 cells), and an ender modem. Each shows that player's private cards and their buttons. A bigger seat wall centres the same 78x52 layout.
-- All computers are placed by the same owner. A seat whose `ccvault.getHostName` differs from the dealer's is refused at pairing.
-- The same package goes on every computer. On first boot the owner's touch picks DEALER or SEAT, kept in `group_role.dat`.
+- All computers are placed by the same owner.
+- The same package goes on every computer.
 
-## Link security
+## Setting up is automatic
 
-Ender modems are heard everywhere on the server, by anyone with a modem, so the plain-network rule in `casino_roadmap.md` is not enough here: hole cards would be readable, and a forged "pay this player" would drain the host. This is the one place more than light anti-cheat is justified, because it guards the host's tokens. Light otherwise.
+The owner decided on 2026-11-01: griefers are not a worry, so easy to use beats secure. No codes, no keys, no encryption, no keypad, no setup screens. Anti-cheat stays light, the same as the rest of the casino.
 
-- Pairing: the dealer shows a 6-digit table code on its wall and terminal. The owner keys it into each seat on a touch keypad. Key is `sha256(code .. dealerId .. hostName)`. The code never goes over the air. The dealer gives each seat a number in pairing order. Saved in `group_link.dat`.
-- Every message on protocol `casino.group.v1` is `{ to, from, seq, nonce, box, mac }`: `box` is the serialized body under the ChaCha20 stream from `lib/casino/rng.lua` keyed from key and nonce; `mac` is HMAC-SHA256 from `rng.sha256` over everything else. Anything with a bad mac, wrong recipient or a seq at or below the last seen is dropped silently. `seq` starts from `os.epoch("utc")` so a reboot never reuses one.
-- Nothing secret ever goes in a toast, the dealer wall or a log. In a `house` game secrets are few; in a `players` game each seat is only ever sent that seat's view.
-- Accepted weakness: a 6-digit code can be brute-forced offline by someone who captured traffic and writes the tool. Say so in the roadmap.
+- Install the package on every computer and it works. The wall decides the role: a 6x6 wall makes a dealer, a smaller one makes a seat. No touch is needed.
+- A seat finds its dealer by itself: it broadcasts on protocol `casino.group.v1` until a dealer with the same `ccvault.getHostName` answers, and joins it. If one owner has several dealers in range of the network, the seat shows them as tiles for one tap, and remembers the choice in `group_link.dat`. The dealer gives seats numbers in the order they arrive.
+- Messages are plain rednet, addressed to one computer, with a `seq` from `os.epoch("utc")` so stale or repeated ones are dropped. Shape and size are checked like `net.lua` does, so junk cannot crash a table. Nothing is signed or sealed, so a private view can be overheard by someone who goes looking, and the owner accepts that.
+- Nothing secret goes in a toast, on the dealer wall or in a log. In a `players` game each seat is sent only that seat's view.
 
 ## Money
 
@@ -50,7 +50,6 @@ ccvault sessions are per player per computer, so **only the seat's computer can 
 - The dealer's owed book (`journal`) holds every result. A hand's nets are booked there once, under a tag, before anything moves.
 - A move is an order `{ tag, name, amount }` to that player's seat. Tags are unique per attempt. The seat handles it exactly once: it writes `open[tag]`, calls `journal.book` then `books.move`, takes any part that did not move back off its own book so only the dealer's book carries a debt, writes `done[tag] = moved`, and answers `{ tag, moved }`. A repeated tag gets the stored answer. After a reboot the seat resolves `open` with `books.resolve` before answering anything.
 - The dealer comes off its book only on that answer. An order with no answer is sent again under the same tag.
-- A seat refuses an order whose amount exceeds what the dealer's own limits allow (`limits.lua`), so a stolen key has a ceiling per order.
 - `players` games use `pokertable_rules.settle`'s order, across the network: collect from every loser first, pay winners only from what was collected, never below even. A loser's failure never costs the host.
 - `house` games settle each seat against the host on its own. Before a round the dealer checks `wallet.hostBalance()` covers the sum of every seat's `maxWin`, and shrinks or refuses bets that do not fit.
 - The dealer reads balances itself with `wallet.balance`, which needs no touch.
@@ -64,7 +63,7 @@ ccvault sessions are per player per computer, so **only the seat's computer can 
 
 | File | Job |
 | --- | --- |
-| `link.lua` | Pairing, sealing, seq, heartbeats, resend |
+| `link.lua` | Finding the dealer, seq, heartbeats, resend |
 | `station.lua` | One interface over a remote seat (through `link`) and a local wall (Duel): `show(view)`, input as `(seat, who, buttonId, value)` |
 | `dealer.lua` | Runs a table: lobby, game choice, seats, the hand loop, timers, journal, FAIR, settling, results |
 | `seat.lua` | The seat computer. Thin: draws what it is sent, reports touches, carries out moves |
@@ -104,4 +103,4 @@ Views are pure functions of a serialized view: `tableView.draw(c, view, anim)` o
 - Pure tests go in `Tests/group_<id>_test.lua` and are picked up by `Tests/run.lua`, so a game outside its return target stops the deploy.
 - `craftos-agent/tools/casinotest/group.mjs` runs a dealer and real seats with `SessionManager.createNetwork`, ender modems and real rednet. Each emulated computer has its own world and ledger, so the harness must keep balances in step or prove conservation across the ledgers. Log that in `docs/conformance/emulator-vs-real-deviations.md`.
 - Crash tests take the dealer and a seat down at each step of a move. Each step of `settle` must be exactly once.
-- A forged, replayed or tampered message must change nothing.
+- Junk and repeated messages must not crash a table or move tokens twice.
