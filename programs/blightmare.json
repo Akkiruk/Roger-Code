@@ -7,12 +7,12 @@
     "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
     "source_root": "Games/Blightmare",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "04c3e1dd693d5331472ca265f628adaae5286d0e",
-    "generated_at": "2026-11-01T17:07:01Z",
-    "package_hash": "e5721d529253621cfcd0dc891e33bb3f33bc80efa82d58fb0e8889db8d71869f"
+    "commit": "e588dcef7fac155d18637c0d4d71cc84dba75482",
+    "generated_at": "2026-11-01T17:21:15Z",
+    "package_hash": "302404ad98948c053ee2aaf5641ef59fd6459ef3de538aca754551813dfcd02d"
   },
   "install": {
     "preserve": [],
@@ -30,7 +30,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "d2dfaa318dd4f71a79d9daa0810a111857853a1b4a57dbdc6ef86afdbd339c2a"
+        "sha256": "e0871647ea48f8e00f5a8ce618ded2aafd28f30c9ec2606473bd40dc5b4eb9b0"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -60,7 +60,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "59cd63e647d8f222fd02fe273d0c77c633cbcdd7995f19e155e45139c804a45b"
+        "sha256": "cb999d02fee4a2871ecdd2f2ac26575b53e44fb303cd90f8f3ae72ced77e5600"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",

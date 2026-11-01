@@ -7,12 +7,12 @@
     "description": "MOAG, Pong, Bomberman and Tron light cycles: two players, one wall each, in real time.",
     "source_root": "Games/Versus",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "04c3e1dd693d5331472ca265f628adaae5286d0e",
-    "generated_at": "2026-11-01T17:07:01Z",
-    "package_hash": "c528f3b89f9b63958a43a51343ed391cfc1c3717dc5b6e1ff6550081ef40df53"
+    "commit": "e588dcef7fac155d18637c0d4d71cc84dba75482",
+    "generated_at": "2026-11-01T17:21:15Z",
+    "package_hash": "c2b24944774e4c4a96bb38234e1a74370f8a60d2f8c131ffa84c8b7cc1e8f93a"
   },
   "install": {
     "preserve": [],
@@ -40,7 +40,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "59cd63e647d8f222fd02fe273d0c77c633cbcdd7995f19e155e45139c804a45b"
+        "sha256": "cb999d02fee4a2871ecdd2f2ac26575b53e44fb303cd90f8f3ae72ced77e5600"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -175,7 +175,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "d2dfaa318dd4f71a79d9daa0810a111857853a1b4a57dbdc6ef86afdbd339c2a"
+        "sha256": "e0871647ea48f8e00f5a8ce618ded2aafd28f30c9ec2606473bd40dc5b4eb9b0"
       },
       {
         "repo_path": "Games/Versus/games/moag/rules.lua",

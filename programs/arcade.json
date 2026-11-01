@@ -7,12 +7,12 @@
     "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
     "source_root": "Games/Arcade",
     "entrypoint": "startup.lua",
-    "version": "1.0.7"
+    "version": "1.0.8"
   },
   "build": {
-    "commit": "04c3e1dd693d5331472ca265f628adaae5286d0e",
-    "generated_at": "2026-11-01T17:07:01Z",
-    "package_hash": "335efb42a4789bd78ea6f963f74d8a4ae54f98a1a16f3c3e24437016e1d3d325"
+    "commit": "e588dcef7fac155d18637c0d4d71cc84dba75482",
+    "generated_at": "2026-11-01T17:21:15Z",
+    "package_hash": "25cc3ebed121a94cefb0d2c9fafc1b03727642941f1685a3692e40998ba28870"
   },
   "install": {
     "preserve": [],
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "d2dfaa318dd4f71a79d9daa0810a111857853a1b4a57dbdc6ef86afdbd339c2a"
+        "sha256": "e0871647ea48f8e00f5a8ce618ded2aafd28f30c9ec2606473bd40dc5b4eb9b0"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -75,7 +75,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "59cd63e647d8f222fd02fe273d0c77c633cbcdd7995f19e155e45139c804a45b"
+        "sha256": "cb999d02fee4a2871ecdd2f2ac26575b53e44fb303cd90f8f3ae72ced77e5600"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
