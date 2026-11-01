@@ -7,12 +7,12 @@
     "description": "Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.",
     "source_root": "Games/LongGames",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "e588dcef7fac155d18637c0d4d71cc84dba75482",
-    "generated_at": "2026-11-01T17:21:15Z",
-    "package_hash": "3fa9cd0d0c6de640c32aa4c7b0c622a04806c430c61f826632f27cb86a1cc18a"
+    "commit": "e819d194163120b6cf74293ddaa49cc4c4e02539",
+    "generated_at": "2026-11-01T19:13:25Z",
+    "package_hash": "ac6b577bf882f9f51f1969ff81cfcc58595c2c68d0eb8504d8479d1c1c80bdb6"
   },
   "install": {
     "preserve": [],
@@ -125,7 +125,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "e0871647ea48f8e00f5a8ce618ded2aafd28f30c9ec2606473bd40dc5b4eb9b0"
+        "sha256": "42a1bc8e64ce69c0cb7309e113a814d736db68ab9955ef2d8c96971f32f543e6"
       },
       {
         "repo_path": "Games/LongGames/vhcc_lockdown.txt",
