@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "storage_check",
+    "name": "Storage Check",
+    "category": "Utilities",
+    "description": "Shows how much disk space this computer has, its drives, and its private vhcc folder. It only reads: nothing is written.",
+    "source_root": "Utilities",
+    "entrypoint": "storage_check.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "dd9ab619237f6afed0f009a143eb7ef2a6d603c0",
+    "generated_at": "2026-11-01T14:57:23Z",
+    "package_hash": "7ecc2b1726df58baf6b6f387d87d27ec1d6e50e01e59860b64410f040cb17629"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "System/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Utilities/storage_check.lua",
+        "install_path": "storage_check.lua",
+        "sha256": "15c0e6074901c66c922879468922bbd5a9c2e67d93c63901a5e147a4cd47a510"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
+      }
+    ]
+  },
+  "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "storage_check.lua",
+    "auto_restart": false,
+    "update_interval": 300,
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.update_screen",
+      "lib.updater"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-01T14:53:54Z",
+  "generated_at": "2026-11-01T14:57:23Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
+    "commit": "dd9ab619237f6afed0f009a143eb7ef2a6d603c0",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -192,6 +192,15 @@
       "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
       "package_hash": "189c29a3afae01cf9aea0537bbe6058be3dfd8583d6b714401896d9f6676b526",
       "spec_path": "programs/sound_browser.json"
+    },
+    "storage_check": {
+      "name": "Storage Check",
+      "category": "Utilities",
+      "description": "Shows how much disk space this computer has, its drives, and its private vhcc folder. It only reads: nothing is written.",
+      "version": "1.0.0",
+      "commit": "dd9ab619237f6afed0f009a143eb7ef2a6d603c0",
+      "package_hash": "7ecc2b1726df58baf6b6f387d87d27ec1d6e50e01e59860b64410f040cb17629",
+      "spec_path": "programs/storage_check.json"
     },
     "taskmaster": {
       "name": "TaskMaster",
