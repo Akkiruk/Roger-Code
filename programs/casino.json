@@ -1,0 +1,424 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "casino",
+    "name": "Casino",
+    "category": "Games",
+    "description": "manifest-bundle: Games/Baccarat Games/Blackjack Games/CrazyEights Games/HiLo Games/HorseRacing Games/PokerTable Games/Roulette Games/Slots Games/ThreeCardPoker Games/UltimateHoldem Games/VideoPoker",
+    "source_root": "Games/Casino",
+    "entrypoint": "startup.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
+    "generated_at": "2026-11-01T03:13:59Z",
+    "package_hash": "d2d42fa3fa291d68126169cb4a8d5f7a01c24c9a7d1c26487c41e41bbe7aa989"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "System/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/casino/demo.lua",
+        "install_path": "lib/casino/demo.lua",
+        "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
+      },
+      {
+        "repo_path": "Shared/lib/casino/deck.lua",
+        "install_path": "lib/casino/deck.lua",
+        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
+      },
+      {
+        "repo_path": "Shared/lib/casino/chat.lua",
+        "install_path": "lib/casino/chat.lua",
+        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
+      },
+      {
+        "repo_path": "Shared/lib/casino/books.lua",
+        "install_path": "lib/casino/books.lua",
+        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+      },
+      {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
+      },
+      {
+        "repo_path": "Shared/lib/casino/door.lua",
+        "install_path": "lib/casino/door.lua",
+        "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
+      },
+      {
+        "repo_path": "Shared/lib/casino/bit32_shim.lua",
+        "install_path": "lib/casino/bit32_shim.lua",
+        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
+      },
+      {
+        "repo_path": "Shared/lib/casino/audio.lua",
+        "install_path": "lib/casino/audio.lua",
+        "sha256": "16e1cc8433ddb60f95839cd01de641de0f10600bf31d8972b975b686e0806fe1"
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker_view.lua",
+        "install_path": "videopoker_view.lua",
+        "sha256": "4837944d9e5ccffc23709d63fef6470feea12d15ad00185fee9499d92b8085df"
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker_rules.lua",
+        "install_path": "videopoker_rules.lua",
+        "sha256": "7b5925beb033a42ed814edfcf1c536f0df044596bf0dd78dcbb9b3cf5dfe2aea"
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker_hint.lua",
+        "install_path": "videopoker_hint.lua",
+        "sha256": "b2b6b49978a223fae6354503be972ebfda98d81bf024a01ff56c3af4d93cdaa9"
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker_game.lua",
+        "install_path": "videopoker_game.lua",
+        "sha256": "74c9b3b72b08d24ca6deb0fceb67ec0a37f5f1cdc584e85afec8aa60a8b2b4c7"
+      },
+      {
+        "repo_path": "Games/UltimateHoldem/holdem_view.lua",
+        "install_path": "holdem_view.lua",
+        "sha256": "a44b495b0bd2f9850e949d31c0cace9b58821666ac3066a1aa26e93dc3cdf5dd"
+      },
+      {
+        "repo_path": "Shared/lib/casino/badges.lua",
+        "install_path": "lib/casino/badges.lua",
+        "sha256": "245eee1952dc962d197c2ba36b7434644094a4135acb9988fed7dcc7cc99b30a"
+      },
+      {
+        "repo_path": "Games/UltimateHoldem/holdem_rules.lua",
+        "install_path": "holdem_rules.lua",
+        "sha256": "92b686f6f3a8f7c0ba0332a4ae226dcd496c0255347a95ab1fb712c4af96622d"
+      },
+      {
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
+        "repo_path": "Shared/lib/casino/lamps.lua",
+        "install_path": "lib/casino/lamps.lua",
+        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "c9dddc6f0e268251bcb07e2e9f5edb431067696c8feef37b31d62553bb602ad1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/ui.lua",
+        "install_path": "lib/casino/ui.lua",
+        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/tournament.lua",
+        "install_path": "lib/casino/tournament.lua",
+        "sha256": "2481b3caf0226edd909f38f5b29ffbf0934376a792348c7cf4b3235a1acec9b9"
+      },
+      {
+        "repo_path": "Shared/lib/casino/theme.lua",
+        "install_path": "lib/casino/theme.lua",
+        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
+      },
+      {
+        "repo_path": "Shared/lib/casino/table.lua",
+        "install_path": "lib/casino/table.lua",
+        "sha256": "ff358ab641cf663a23bf59b89a1cd42a1eac9021ecc22f009bccd4d67a0b5b0b"
+      },
+      {
+        "repo_path": "Shared/lib/casino/stats.lua",
+        "install_path": "lib/casino/stats.lua",
+        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/journal.lua",
+        "install_path": "lib/casino/journal.lua",
+        "sha256": "17d78f9c8783f8f3d34eb8f20c1b5a4cf7c2293d54810ff6cd0a31522684ce98"
+      },
+      {
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/casino/pretend.lua",
+        "install_path": "lib/casino/pretend.lua",
+        "sha256": "22bf1d987790d708b389b351a35b2902e01b648bfcd53e070366fe2489d3836f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/presence.lua",
+        "install_path": "lib/casino/presence.lua",
+        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
+      },
+      {
+        "repo_path": "Shared/lib/casino/poker.lua",
+        "install_path": "lib/casino/poker.lua",
+        "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
+      },
+      {
+        "repo_path": "Shared/lib/casino/playercard.lua",
+        "install_path": "lib/casino/playercard.lua",
+        "sha256": "226c5d6fd936cea49401b2bfb603c41b8645fa93a457420c217119649815dd06"
+      },
+      {
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
+      },
+      {
+        "repo_path": "Shared/lib/casino/limits.lua",
+        "install_path": "lib/casino/limits.lua",
+        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+      },
+      {
+        "repo_path": "Games/UltimateHoldem/holdem_game.lua",
+        "install_path": "holdem_game.lua",
+        "sha256": "ef8dc0fb8147823731a8f0179bbe62b2a3a32cbd32eb8477580015fa9f6a5329"
+      },
+      {
+        "repo_path": "Games/ThreeCardPoker/threecard_view.lua",
+        "install_path": "threecard_view.lua",
+        "sha256": "9a1665948314e3c18967e343e60bfa60df7de16878a7276c84575deb54ef09b4"
+      },
+      {
+        "repo_path": "Games/ThreeCardPoker/threecard_rules.lua",
+        "install_path": "threecard_rules.lua",
+        "sha256": "5272f89551c5325279067c3d2722015fdac4efc61b57866b43cd9a0ae694bf35"
+      },
+      {
+        "repo_path": "Games/Blackjack/blackjack_view.lua",
+        "install_path": "blackjack_view.lua",
+        "sha256": "81b60ad5000ea32f698a80c356b1b45765208d83de3ca4f39f338cd3df025f6b"
+      },
+      {
+        "repo_path": "Games/Blackjack/blackjack_rules.lua",
+        "install_path": "blackjack_rules.lua",
+        "sha256": "7448017942ba915526e34a92cc1efb801d692032e4da4d67dba007ee775dc0d6"
+      },
+      {
+        "repo_path": "Games/Blackjack/blackjack_game.lua",
+        "install_path": "blackjack_game.lua",
+        "sha256": "ab3241ca3fd66fb2d46755a1bcce2e8b5968a1bcf16f7eb4e583b4567877dc83"
+      },
+      {
+        "repo_path": "Games/Baccarat/baccarat_view.lua",
+        "install_path": "baccarat_view.lua",
+        "sha256": "612b29ec0f8ee3014f7fe134e2a2d00b20037d64ecbedc18248931fa71538479"
+      },
+      {
+        "repo_path": "Games/Baccarat/baccarat_rules.lua",
+        "install_path": "baccarat_rules.lua",
+        "sha256": "aa116be0a33bfae9b3e2c79701b01eef87f2fbd238dd37cafd4a14d6ad188385"
+      },
+      {
+        "repo_path": "Games/Baccarat/baccarat_game.lua",
+        "install_path": "baccarat_game.lua",
+        "sha256": "a036c4d6d6bcbf2e52e3b30ecea554ed049fe3e84ab4a7cbf51612e4aceda60f"
+      },
+      {
+        "repo_path": "Games/CrazyEights/crazyeights_game.lua",
+        "install_path": "crazyeights_game.lua",
+        "sha256": "937db0afe3a72a3166a16929b011b76cb3971e8fe6473befa292a2483f9f42b0"
+      },
+      {
+        "repo_path": "Games/Casino/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "Games/Casino/casino_cabinet.lua",
+        "install_path": "casino_cabinet.lua",
+        "sha256": "1db19e7b96554d0502c35a1094dfbfe809ce289822d1beb2b68f9947f87bd024"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "Games/Casino/startup.lua",
+        "install_path": "casino_startup.lua",
+        "sha256": "4bab04ebe92578456fc63de6e19d13c7e89505f5635f778215b0315695a71aac"
+      },
+      {
+        "repo_path": "Games/CrazyEights/crazyeights_rules.lua",
+        "install_path": "crazyeights_rules.lua",
+        "sha256": "3f084f3e6d5f5bd01a1e934d7ca00baf72fbe80dec140957ffdcf90cac2ab28f"
+      },
+      {
+        "repo_path": "Games/CrazyEights/crazyeights_view.lua",
+        "install_path": "crazyeights_view.lua",
+        "sha256": "522c45b14754386aae50ab16dbaef00ef36fe05349da8e0994967244810f40f2"
+      },
+      {
+        "repo_path": "Games/HiLo/hilo_game.lua",
+        "install_path": "hilo_game.lua",
+        "sha256": "90d1097308c22b752350cc64c7739ae261b9e2f802c42b0dd248a529846d2ac3"
+      },
+      {
+        "repo_path": "Games/ThreeCardPoker/threecard_game.lua",
+        "install_path": "threecard_game.lua",
+        "sha256": "9f0df53060f896b26f4621c0cd4ee1e4472c0972d4a7d80e18eae232def5b954"
+      },
+      {
+        "repo_path": "Games/Slots/slots_view.lua",
+        "install_path": "slots_view.lua",
+        "sha256": "9963550bdf7b9cf8d977f9f9439a2f44c0b16b150bac2ab3290bf9ca202ae65b"
+      },
+      {
+        "repo_path": "Games/Slots/slots_rules.lua",
+        "install_path": "slots_rules.lua",
+        "sha256": "22f5ac4fc939f9fa4ed5578a123706eaebfd27489e891e7ed4c5909a10f9f9b1"
+      },
+      {
+        "repo_path": "Games/Slots/slots_game.lua",
+        "install_path": "slots_game.lua",
+        "sha256": "4521042b587f4f081c6fb892fbdb26f5dbc5c7816373050bd3708cbf4d1a1e2e"
+      },
+      {
+        "repo_path": "Games/Roulette/roulette_view.lua",
+        "install_path": "roulette_view.lua",
+        "sha256": "53821f2f2a0514c2eb519f8b4ce4c27bdf43669d1a8744d8e011cd6969e4ecf0"
+      },
+      {
+        "repo_path": "Games/Roulette/roulette_rules.lua",
+        "install_path": "roulette_rules.lua",
+        "sha256": "c85c2b57389dd5564726a9195ebeae1229fad69745cb25fbecf820bbb6f104eb"
+      },
+      {
+        "repo_path": "Games/Roulette/roulette_game.lua",
+        "install_path": "roulette_game.lua",
+        "sha256": "792512c2aaf5ecd5c9eb09fe38241b5924703a7022794948077be733ac3b7796"
+      },
+      {
+        "repo_path": "Games/PokerTable/pokertable_view.lua",
+        "install_path": "pokertable_view.lua",
+        "sha256": "26a433501e607d19ed61400e77730bd66d2511d570113feb05c18a504cd98c95"
+      },
+      {
+        "repo_path": "Games/PokerTable/pokertable_rules.lua",
+        "install_path": "pokertable_rules.lua",
+        "sha256": "f8b810d03ee585bfbc58faf1f8637539a4e20e0da08b6b4ddab8934fc2f00719"
+      },
+      {
+        "repo_path": "Games/PokerTable/pokertable_app.lua",
+        "install_path": "pokertable_app.lua",
+        "sha256": "cadc0b24e036e94ab6e88d2b17dc12962081b366aae0f2ad71c93d901ac96cdf"
+      },
+      {
+        "repo_path": "Games/HorseRacing/horseracing_view.lua",
+        "install_path": "horseracing_view.lua",
+        "sha256": "13993f2cc57bdf357b7b4db2a8f7a746394f1cd225b6f84c441a2e7d323df0e0"
+      },
+      {
+        "repo_path": "Games/HorseRacing/horseracing_rules.lua",
+        "install_path": "horseracing_rules.lua",
+        "sha256": "04468b5e23b802ef360e1cdaae1f42f29818a6c4c29daf3706101ca8950403fa"
+      },
+      {
+        "repo_path": "Games/HorseRacing/horseracing_game.lua",
+        "install_path": "horseracing_game.lua",
+        "sha256": "7570e25aa7da9a79b8258105059e727acf8e9934f8c7c41e3bb091ad98abd196"
+      },
+      {
+        "repo_path": "Games/HiLo/hilo_view.lua",
+        "install_path": "hilo_view.lua",
+        "sha256": "28c377d8d5e46b89edb6b2481db1cdbc482991af6fd6287866f15e54c9ac8933"
+      },
+      {
+        "repo_path": "Games/HiLo/hilo_rules.lua",
+        "install_path": "hilo_rules.lua",
+        "sha256": "bfe2a14254916f229b39caf68d14468c856d1b362c3891eac3a02a72d145c0c7"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
+      }
+    ]
+  },
+  "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "casino_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.casino.audio",
+      "lib.casino.badges",
+      "lib.casino.bit32_shim",
+      "lib.casino.board",
+      "lib.casino.books",
+      "lib.casino.canvas",
+      "lib.casino.chat",
+      "lib.casino.deck",
+      "lib.casino.demo",
+      "lib.casino.door",
+      "lib.casino.font",
+      "lib.casino.journal",
+      "lib.casino.lamps",
+      "lib.casino.limits",
+      "lib.casino.net",
+      "lib.casino.playercard",
+      "lib.casino.poker",
+      "lib.casino.presence",
+      "lib.casino.pretend",
+      "lib.casino.rng",
+      "lib.casino.session",
+      "lib.casino.stats",
+      "lib.casino.table",
+      "lib.casino.theme",
+      "lib.casino.tournament",
+      "lib.casino.ui",
+      "lib.casino.wallet",
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.update_screen",
+      "lib.updater"
+    ]
+  }
+}

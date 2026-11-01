@@ -7,12 +7,12 @@
     "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
     "source_root": "Games/ThreeCardPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "547485c8cc728259d669b75949b9fe833c23992f",
-    "generated_at": "2026-10-31T21:26:44Z",
-    "package_hash": "2c00a927449feff6c14b20865cc8e3a20c6f0a49adc74b499a61bd8eca936182"
+    "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
+    "generated_at": "2026-11-01T03:13:59Z",
+    "package_hash": "afa06613a0135f97b0beb343235dd3bcb5d46401d79b6cbf81decbc54caddf2a"
   },
   "install": {
     "preserve": [],
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/casino/playercard.lua",
         "install_path": "lib/casino/playercard.lua",
-        "sha256": "a5c1f6202153dffb77f9767329b7314dcbfb17febb87bb1d3ed0924b4d5e27c8"
+        "sha256": "226c5d6fd936cea49401b2bfb603c41b8645fa93a457420c217119649815dd06"
       },
       {
         "repo_path": "Shared/lib/casino/poker.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "ed12ef28a7bc0f3dca7142bd9b8cb01e83e33073f5bf10d59b02562f51fadebc"
+        "sha256": "ff358ab641cf663a23bf59b89a1cd42a1eac9021ecc22f009bccd4d67a0b5b0b"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
+        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -155,7 +155,7 @@
       {
         "repo_path": "Games/ThreeCardPoker/threecard_game.lua",
         "install_path": "threecard_game.lua",
-        "sha256": "a9f4daf570c5077e2d7619c2784cf3bb7239802450d20795f7225d78c1feb946"
+        "sha256": "9f0df53060f896b26f4621c0cd4ee1e4472c0972d4a7d80e18eae232def5b954"
       },
       {
         "repo_path": "Games/ThreeCardPoker/threecard_rules.lua",
@@ -165,7 +165,7 @@
       {
         "repo_path": "Games/ThreeCardPoker/threecard_view.lua",
         "install_path": "threecard_view.lua",
-        "sha256": "a1f678b8b370a38411b69e7cd6993a15b939bb9490d5362d2730b4b1db02c1c5"
+        "sha256": "9a1665948314e3c18967e343e60bfa60df7de16878a7276c84575deb54ef09b4"
       },
       {
         "repo_path": "Games/ThreeCardPoker/vhcc_lockdown.txt",

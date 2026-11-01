@@ -7,12 +7,12 @@
     "description": "Jacks or Better draw poker with payout and tutorial screens.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.87"
+    "version": "1.0.88"
   },
   "build": {
-    "commit": "547485c8cc728259d669b75949b9fe833c23992f",
-    "generated_at": "2026-10-31T21:26:44Z",
-    "package_hash": "d086cce9c6047ea79f5459fe679dea25814a78149e782a48cc50249ac5171204"
+    "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
+    "generated_at": "2026-11-01T03:13:59Z",
+    "package_hash": "de5856d31e75628f1cf3128ed21acc83ae8a875cab6dc46cb6bd85755c304c06"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/casino/playercard.lua",
         "install_path": "lib/casino/playercard.lua",
-        "sha256": "a5c1f6202153dffb77f9767329b7314dcbfb17febb87bb1d3ed0924b4d5e27c8"
+        "sha256": "226c5d6fd936cea49401b2bfb603c41b8645fa93a457420c217119649815dd06"
       },
       {
         "repo_path": "Shared/lib/casino/poker.lua",
@@ -85,7 +85,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "ed12ef28a7bc0f3dca7142bd9b8cb01e83e33073f5bf10d59b02562f51fadebc"
+        "sha256": "ff358ab641cf663a23bf59b89a1cd42a1eac9021ecc22f009bccd4d67a0b5b0b"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -100,7 +100,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
+        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -175,7 +175,7 @@
       {
         "repo_path": "Games/VideoPoker/videopoker_view.lua",
         "install_path": "videopoker_view.lua",
-        "sha256": "11c8ca22bb3a0fbc0764c1ac44cb47a284ac76d20fb6fc38ee6a99b79a49cf07"
+        "sha256": "4837944d9e5ccffc23709d63fef6470feea12d15ad00185fee9499d92b8085df"
       },
       {
         "repo_path": "Games/VideoPoker/vhcc_lockdown.txt",

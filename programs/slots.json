@@ -7,12 +7,12 @@
     "description": "Three-reel slot machine with weighted symbols and pair payouts.",
     "source_root": "Games/Slots",
     "entrypoint": "startup.lua",
-    "version": "1.0.88"
+    "version": "1.0.89"
   },
   "build": {
-    "commit": "547485c8cc728259d669b75949b9fe833c23992f",
-    "generated_at": "2026-10-31T21:26:44Z",
-    "package_hash": "601220c5b8412c049b62b09e9fa362a407b2923282e436894ed8286adee8f3f4"
+    "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
+    "generated_at": "2026-11-01T03:13:59Z",
+    "package_hash": "1e2a04448ad88a2a14c27aa526d8ab8a17400afdd8c8cd4379ffe0c9397f5612"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/casino/playercard.lua",
         "install_path": "lib/casino/playercard.lua",
-        "sha256": "a5c1f6202153dffb77f9767329b7314dcbfb17febb87bb1d3ed0924b4d5e27c8"
+        "sha256": "226c5d6fd936cea49401b2bfb603c41b8645fa93a457420c217119649815dd06"
       },
       {
         "repo_path": "Shared/lib/casino/presence.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "ed12ef28a7bc0f3dca7142bd9b8cb01e83e33073f5bf10d59b02562f51fadebc"
+        "sha256": "ff358ab641cf663a23bf59b89a1cd42a1eac9021ecc22f009bccd4d67a0b5b0b"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5c42bb4dad36e738d9dafe5721e6cd0859b86e730fad0342e2bf4ae901179a15"
+        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -165,7 +165,7 @@
       {
         "repo_path": "Games/Slots/slots_view.lua",
         "install_path": "slots_view.lua",
-        "sha256": "26fb739071773599e91e2918d129cca4594d7698b1e75f99aa74c59657fa63f9"
+        "sha256": "9963550bdf7b9cf8d977f9f9439a2f44c0b16b150bac2ab3290bf9ca202ae65b"
       },
       {
         "repo_path": "Games/Slots/vhcc_lockdown.txt",
