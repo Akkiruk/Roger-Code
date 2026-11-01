@@ -21,17 +21,17 @@ function M.sync(model, state)
   for i, card in ipairs(state.trail) do model.trail[i] = card end
   model.current = state.current
   model.multiple = state.multiple
+  model.next = state.next
 end
 
 function M.event(model, ev)
   if ev.type == "first" then
     model.current = nil
     model.trail = {}
+    model.next = nil
     return 0.35, "deal"
-  elseif ev.type == "reveal" then
-    return 0.55, "flip"
   end
-  return 0.2, "chip"
+  return 0.55, "flip"
 end
 
 function M.commit(model, ev)
@@ -39,6 +39,8 @@ function M.commit(model, ev)
     model.current = ev.card
     model.trail[#model.trail + 1] = ev.card
     if ev.multiple then model.multiple = ev.multiple end
+  elseif ev.type == "cash" then
+    model.next = ev.card
   end
 end
 
@@ -57,12 +59,13 @@ function M.draw(c, model, state, anim)
   local left, right = cx - half - 3 - ui.CARD_W, cx + half + 4
   if model.current then ui.card(c, left, CARD_Y, model.current, false) end
 
-  if anim and anim.ev.type == "reveal" then
+  if anim and (anim.ev.type == "reveal" or anim.ev.type == "cash") then
     -- The card lifts as it turns
     ui.card(c, right, CARD_Y - math.floor(math.sin(anim.t * math.pi) * 3), anim.t > 0.5 and anim.ev.card or nil, false)
   else
-    ui.card(c, right, CARD_Y, nil, false)
+    ui.card(c, right, CARD_Y, model.next, false)
   end
+  if model.next then c:textCenter(right + math.floor(ui.CARD_W / 2), CARD_Y - 2, "NEXT CARD", C.text) end
 
   c:bigCenter(cx, CARD_Y + 3, ("x%.2f"):format(model.multiple), C.gold, 2)
   c:textCenter(cx, GUESS_Y, "Guess " .. math.min(state.guesses + 1, rules.MAX_GUESSES)

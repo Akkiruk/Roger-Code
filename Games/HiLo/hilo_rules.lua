@@ -65,6 +65,13 @@ function M.actions(state)
   return list
 end
 
+--- The round ends here, and the card they would have turned next is shown. It stays in the deck: nothing was drawn.
+local function cashOut(state)
+  state.over = true
+  state.next = state.cards[#state.cards]
+  return { type = "cash", card = state.next }
+end
+
 local function guess(state, side, rng)
   local _ = rng
   local higher, lower, total = counts(state)
@@ -82,15 +89,13 @@ local function guess(state, side, rng)
     return { { type = "reveal", card = card, right = false, multiple = state.multiple } }
   end
   state.multiple = multiple
-  if state.guesses >= M.MAX_GUESSES or multiple >= M.MAX_MULTIPLE then state.over = true end
-  return { { type = "reveal", card = card, right = true, multiple = multiple } }
+  local events = { { type = "reveal", card = card, right = true, multiple = multiple } }
+  if state.guesses >= M.MAX_GUESSES or multiple >= M.MAX_MULTIPLE then events[2] = cashOut(state) end
+  return events
 end
 
 function M.act(state, id, rng)
-  if id == "cash" then
-    state.over = true
-    return { { type = "cash" } }
-  end
+  if id == "cash" then return { cashOut(state) } end
   return guess(state, id, rng)
 end
 

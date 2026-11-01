@@ -24,7 +24,7 @@ return {
       "Guess whether the next card is higher or lower. An equal rank loses.",
       "",
       "Each guess shows what it pays and how likely it is, worked out from the cards still in the deck.",
-      "Cash out after any right guess. A wrong guess loses your bet.",
+      "Cash out after any right guess, and the next card is shown. A wrong guess loses your bet.",
       ("A streak ends by itself after %d guesses or at x%d."):format(rules.MAX_GUESSES, rules.MAX_MULTIPLE),
       "",
       ("The game returns %d%% of what is bet at every point you can stop, whatever you do."):format(rules.RETURN * 100),
