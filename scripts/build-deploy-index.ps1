@@ -576,6 +576,24 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
 
     $libClosure = Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $dir.FullName -LuaRelativePaths $discovered.lua_files
 
+    # "-- manifest-bundle: Games/HiLo Games/Slots" in startup.lua carries those packages' files too, for a cabinet of several games
+    $bundled = New-Object System.Collections.Generic.List[object]
+    $startupPath = Join-Path $dir.FullName "startup.lua"
+    if (Test-Path -LiteralPath $startupPath) {
+        foreach ($line in Get-Content -LiteralPath $startupPath) {
+            if ($line -notmatch '^\s*--\s*manifest-bundle:\s*(.+)$') { continue }
+            foreach ($bundleRoot in ($Matches[1].Trim() -split '\s+')) {
+                $bundleDir = Join-Path $RepoRoot ($bundleRoot.Replace('/', '\'))
+                $bundleFiles = Get-ProgramFiles -Dir $bundleDir
+                $libClosure = @(@($libClosure) + @(Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $bundleDir -LuaRelativePaths $bundleFiles.lua_files) | Sort-Object -Unique)
+                foreach ($file in @($bundleFiles.files)) {
+                    if ($file -ieq "startup.lua" -or $file -ieq "vhcc_lockdown.txt") { continue }
+                    $bundled.Add([pscustomobject]@{ repo_path = "$bundleRoot/$file"; install_path = $file; full_path = (Join-Path $bundleDir ($file.Replace('/', '\'))) })
+                }
+            }
+        }
+    }
+
     foreach ($entrypoint in $entrypoints) {
         $meta = Get-ProgramMetadata -Dir $dir.FullName -DirName $dir.Name -SourceRoot $sourceRoot -DefaultCategory $category -Entrypoint $entrypoint
         if (-not $seenProgramKeys.Add($meta.key)) {
@@ -616,11 +634,15 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
             Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $repoPath -InstallPath $file -Sha256 (Get-FileSha256 -Path $fullPath)
         }
 
+        foreach ($file in $bundled) {
+            Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath $file.repo_path -InstallPath $file.install_path -Sha256 (Get-FileSha256 -Path $file.full_path)
+        }
+
         foreach ($libFile in $libClosure) {
             $fullPath = Join-Path $SharedLibDir ($libFile.Replace('/', '\'))
             Add-InstallFileEntry -InstallFiles $installFiles -InstallPathMap $installPathMap -RepoPath "Shared/lib/$libFile" -InstallPath "lib/$libFile" -Sha256 (Get-FileSha256 -Path $fullPath)
 
-            $moduleName = "lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
+            $moduleName ="lib." + (($libFile -replace '\.lua$', '') -replace '/', '.')
             $libModules.Add($moduleName)
         }
 
