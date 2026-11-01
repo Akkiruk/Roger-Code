@@ -4,14 +4,14 @@
     "key": "casino",
     "name": "Casino",
     "category": "Games",
-    "description": "manifest-bundle: Games/Baccarat Games/Blackjack Games/CrazyEights Games/HiLo Games/HorseRacing Games/PokerTable Games/Roulette Games/Slots Games/ThreeCardPoker Games/UltimateHoldem Games/VideoPoker",
+    "description": "Every casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
     "source_root": "Games/Casino",
     "entrypoint": "startup.lua",
     "version": "1.0.0"
   },
   "build": {
     "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
-    "generated_at": "2026-11-01T03:13:59Z",
+    "generated_at": "2026-11-01T03:16:47Z",
     "package_hash": "d2d42fa3fa291d68126169cb4a8d5f7a01c24c9a7d1c26487c41e41bbe7aa989"
   },
   "install": {
