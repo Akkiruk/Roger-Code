@@ -10,16 +10,18 @@ local rules = require("holdem_rules")
 local C = theme.C
 local M = {}
 
-local BOARD_Y = 10
-local NAME_Y = 27
-local LABEL_Y = 32
-local HOLE_Y = 34
+local BOARD_Y = ui.TOP + 1    -- a row over it for the frame round a winning card
+local BOARD_GAP = 5
+local NAME_Y = 30
+local LABEL_Y = 36
+local HOLE_Y = 39             -- small cards, so the hands, the bets and all they say stay above the banner
 local DEALER_X = 4
-local CARD_GAP = 2
-local SPOT_W, SPOT_H = 19, 7
-local SPOT_Y = 34
-local STAGE_Y = 51
-local HINT_Y = 58             -- in the banner's place, so the result covers it
+local CARD_GAP = 3            -- so the frames round two winning cards do not meet
+local SPOT_W, SPOT_H = 21, 7
+local SPOT_Y = 37
+local SPOT_STEP = 8           -- from one row of bets to the next, ending clear of the line a badge takes over the banner
+local STAGE_Y = 56            -- this and the pay lines are in the banner's place, so the result covers them
+local HINT_Y = 63
 
 local STAGES = { preflop = "PRE-FLOP", flop = "THE FLOP", river = "THE RIVER" }
 local RANK_LETTERS = {
@@ -155,7 +157,7 @@ local function drawBoard(c, model, anim, used, xs)
 end
 
 local function holeXs(left)
-  return { left, left + ui.CARD_W + CARD_GAP }
+  return { left, left + ui.SMALL_W + CARD_GAP }
 end
 
 --- A betting spot: its name, the stake on it, and how it came out.
@@ -163,13 +165,16 @@ local function drawSpot(c, x, y, label, amount, result)
   local active = amount > 0
   c:rect(x, y, SPOT_W, SPOT_H, active and C.feltDark or C.felt)
   c:frame(x, y, SPOT_W, SPOT_H, active and C.feltLight or C.feltDark)
-  c:text(x + 2, y + 1, label, active and C.gold or C.mute)
-  if amount > 0 then c:text(x + 2, y + 3, ui.group(amount), C.text) end
+  c:text(x + 3, y + 2, label, active and C.gold or C.mute)
+  if amount > 0 then
+    local stake = ui.group(amount)
+    c:text(x + SPOT_W - 3 - #stake, y + 2, stake, C.text)
+  end
   if result and result ~= 0 then
     local text = ui.signed(result)
-    c:text(x + SPOT_W - 2 - #text, y + 5, text, result > 0 and C.win or C.orange)
+    c:text(x + SPOT_W - 3 - #text, y + 4, text, result > 0 and C.win or C.orange)
   elseif result == 0 and amount > 0 then
-    c:text(x + SPOT_W - 6, y + 5, "push", C.mute)
+    c:text(x + SPOT_W - 7, y + 4, "push", C.mute)
   end
 end
 
@@ -189,7 +194,7 @@ local SHORT = {
 function M.draw(c, model, state, anim)
   c:clear(C.felt)
   local cx = math.floor(c.w / 2) + 1
-  local boardXs = ui.fan(cx, rules.BOARD_SIZE, ui.CARD_W, c.w - 10, 3)
+  local boardXs = ui.fan(cx, rules.BOARD_SIZE, ui.CARD_W, c.w - 10, BOARD_GAP)
   local dealing = anim and anim.ev.type == "deal" and anim.ev or nil
   local turning = anim and anim.ev.type == "reveal" and anim.ev.i or nil
 
@@ -212,47 +217,47 @@ function M.draw(c, model, state, anim)
     local x = dealerXs[i]
     if turning == i then
       local y = HOLE_Y - math.floor(math.sin(anim.t * math.pi) * 3)
-      ui.card(c, x, y, anim.t > 0.5 and anim.ev.card or nil, false)
+      ui.card(c, x, y, anim.t > 0.5 and anim.ev.card or nil, true)
     elseif model.faces[i] then
-      ui.card(c, x, HOLE_Y, model.faces[i], false)
+      ui.card(c, x, HOLE_Y, model.faces[i], true)
     elseif model.dealer[i] and not (dealing and dealing.who == "dealer" and dealing.i == i) then
-      ui.card(c, x, HOLE_Y, nil, false)
+      ui.card(c, x, HOLE_Y, nil, true)
     else
-      ui.cardSlot(c, x, HOLE_Y, false)
+      ui.cardSlot(c, x, HOLE_Y, true)
     end
   end
 
   -- You, right
-  local playerLeft = c.w - 3 - (ui.CARD_W * 2 + CARD_GAP)
+  local playerLeft = c.w - 2 - (ui.SMALL_W * 2 + CARD_GAP)
   local playerXs = holeXs(playerLeft)
-  local right = playerLeft + ui.CARD_W * 2 + CARD_GAP
+  local right = playerLeft + ui.SMALL_W * 2 + CARD_GAP
   c:big(right - c:bigWidth(myName, 1), NAME_Y, myName, model.folded and C.mute or (mine and C.gold or C.mute), 1)
   local label = model.folded and "Folded" or "Your hand"
   c:text(right - #label, LABEL_Y, label, C.mute)
   for i = 1, rules.HOLE_SIZE do
     local x = playerXs[i]
     if model.player[i] and not (dealing and dealing.who == "player" and dealing.i == i) then
-      if used[model.player[i]] then c:frame(x - 1, HOLE_Y - 1, ui.CARD_W + 2, ui.CARD_H + 2, C.win) end
-      ui.card(c, x, HOLE_Y, model.player[i], false)
+      if used[model.player[i]] then c:frame(x - 1, HOLE_Y - 1, ui.SMALL_W + 2, ui.SMALL_H + 2, C.win) end
+      ui.card(c, x, HOLE_Y, model.player[i], true)
     else
-      ui.cardSlot(c, x, HOLE_Y, false)
+      ui.cardSlot(c, x, HOLE_Y, true)
     end
   end
 
   if dealing then
     local who = dealing.who == "player"
     local tx = who and playerXs[dealing.i] or dealerXs[dealing.i]
-    ui.card(c, lerp(cx - 8, tx, anim.t), lerp(BOARD_Y, HOLE_Y, anim.t), (who and anim.t > 0.6) and dealing.card or nil, false)
+    ui.card(c, lerp(cx - 6, tx, anim.t), lerp(BOARD_Y, HOLE_Y, anim.t), (who and anim.t > 0.6) and dealing.card or nil, true)
   end
 
   -- The bets, between the hands
-  local spotLeft = cx - SPOT_W - 1
-  local spotRight = cx + 1
+  local spotLeft = cx - SPOT_W - 2
+  local spotRight = cx + 3
   local outcome = model.final and state.outcome or {}
   drawSpot(c, spotLeft, SPOT_Y, "ANTE", state.ante, outcome.ante)
   drawSpot(c, spotRight, SPOT_Y, "BLIND", state.blind, outcome.blind)
-  drawSpot(c, spotLeft, SPOT_Y + SPOT_H + 1, "PLAY", model.play, model.play > 0 and outcome.play or nil)
-  drawSpot(c, spotRight, SPOT_Y + SPOT_H + 1, "TRIPS", state.side, outcome.side)
+  drawSpot(c, spotLeft, SPOT_Y + SPOT_STEP, "PLAY", model.play, model.play > 0 and outcome.play or nil)
+  drawSpot(c, spotRight, SPOT_Y + SPOT_STEP, "TRIPS", state.side, outcome.side)
 
   if not model.final and not anim then
     c:bigCenter(cx, STAGE_Y, STAGES[state.stage] or "", C.text, 1)

@@ -1,6 +1,7 @@
 -- blackjack_view.lua
--- Blackjack's table: the dealer above, the player below, the shoe in the corner. Everything drawn here sits above
--- row h-26, where the engine's result banner goes, so the final hands stay in view under it.
+-- Blackjack's table: the dealer above, the player below, the shoe in the corner. The hands and totals sit above
+-- ui.BANNER_Y, where the engine's result banner goes, so the final hands stay in view over it. Only the printed legend
+-- is under the banner.
 -- Only the model is drawn: the hole card is in the state from the start, and the model never holds it until the reveal.
 
 local theme = require("lib.casino.theme")
@@ -10,18 +11,19 @@ local rules = require("blackjack_rules")
 local C = theme.C
 local M = {}
 
-local CX = 66                 -- the middle of the cards, between the side columns
-local FAN_W = 64              -- how wide a hand may fan out
+local CX = 64                 -- the middle of the cards, between the side columns
+local FAN_W = 66              -- how wide a hand may fan out
 local LEFT_CX = 16            -- the column for totals
 local RIGHT_CX = 109          -- the column for the shoe and the bet
-local DEALER_Y = 9
+local DEALER_Y = ui.TOP + 1
 local PLAYER_Y = 33
-local SHOE_X, SHOE_Y = 100, 9
-local LEGEND_Y = 57
-local SPLIT_TOP, SPLIT_H = 26, 29  -- the two hand panels
-local SPLIT_TOTAL_Y = 27
-local SPLIT_CARD_Y = 37
-local PANELS = { { x = 3, w = 57 }, { x = 62, w = 57 } }
+local SHOE_X, SHOE_Y = 100, DEALER_Y
+local LEGEND_Y = 56
+-- A split has the rows between the dealer and the banner to share, so its two hands go down to small cards
+local SPLIT_TOP, SPLIT_H = 30, 23  -- the two hand panels
+local SPLIT_TOTAL_Y = 32
+local SPLIT_CARD_Y = 38
+local PANELS = { { x = 4, w = 56 }, { x = 63, w = 56 } }
 
 local function copy(list)
   local out = {}
@@ -117,20 +119,21 @@ local function drawTotal(c, cx, y, label, cards, tag, tagColor)
   c:textCenter(cx, y, label, C.text)
   if #cards == 0 then return end
   local total = rules.total(cards)
-  if tag then c:textCenter(cx, y + 1, tag, tagColor) end
-  c:bigCenter(cx, y + 2, tostring(total), totalColor(total), 3)
+  if tag then c:textCenter(cx, y + 2, tag, tagColor) end
+  c:bigCenter(cx, y + 4, tostring(total), totalColor(total), 2)
 end
 
 local function dealerSpot(n)
   return ui.fan(CX, n, ui.CARD_W, FAN_W, 2), DEALER_Y
 end
 
+--- Where a hand's cards go, and whether they are the small ones.
 local function playerSpot(model, index, n)
   if #model.hands > 1 then
     local panel = PANELS[index]
-    return ui.fan(panel.x + math.floor(panel.w / 2), n, ui.CARD_W, panel.w - 4, 1), SPLIT_CARD_Y
+    return ui.fan(panel.x + math.floor(panel.w / 2), n, ui.SMALL_W, panel.w - 6, 1), SPLIT_CARD_Y, true
   end
-  return ui.fan(CX, n, ui.CARD_W, FAN_W, 2), PLAYER_Y
+  return ui.fan(CX, n, ui.CARD_W, FAN_W, 2), PLAYER_Y, false
 end
 
 local function flying(anim, who, index)
@@ -141,15 +144,16 @@ end
 
 --- A row of cards, with room kept for the one on its way in, which lands from the shoe.
 local function drawCards(c, cards, spot, incoming, anim)
-  local xs, y = spot(#cards + (incoming and 1 or 0))
+  local xs, y, small = spot(#cards + (incoming and 1 or 0))
+  local w, h = small and ui.SMALL_W or ui.CARD_W, small and ui.SMALL_H or ui.CARD_H
   for i, card in ipairs(cards) do
-    ui.card(c, xs[i], y, card or nil, false)
+    ui.card(c, xs[i], y, card or nil, small)
     -- White on white runs together when a fan overlaps, so each card gets an edge
-    if i > 1 and xs[i] - xs[i - 1] < ui.CARD_W then c:rect(xs[i], y + 1, 1, ui.CARD_H - 2, C.mute) end
+    if i > 1 and xs[i] - xs[i - 1] < w then c:rect(xs[i], y + 1, 1, h - 2, C.mute) end
   end
   if incoming then
     local x, t = xs[#xs], anim.t
-    ui.card(c, SHOE_X + math.floor((x - SHOE_X) * t), SHOE_Y + math.floor((y - SHOE_Y) * t), incoming.card, false)
+    ui.card(c, SHOE_X + math.floor((x - SHOE_X) * t), SHOE_Y + math.floor((y - SHOE_Y) * t), incoming.card, small)
   end
 end
 
@@ -194,8 +198,8 @@ local function drawSplitHand(c, model, index, anim)
   c:frame(panel.x, SPLIT_TOP, panel.w, SPLIT_H, playing and C.gold or C.feltLight)
 
   local total = rules.total(hand.cards)
-  c:big(panel.x + 3, SPLIT_TOTAL_Y, total, totalColor(total), 2)
-  local right = panel.x + panel.w - 3
+  c:big(panel.x + 3, SPLIT_TOTAL_Y, total, totalColor(total), 1)
+  local right = panel.x + panel.w - 4
   local title = "HAND " .. index
   c:text(right - #title + 1, SPLIT_TOTAL_Y, title, playing and C.gold or C.text)
   local bet = "Bet " .. ui.group(hand.bet)
@@ -206,10 +210,10 @@ local function drawSplitHand(c, model, index, anim)
     local look = OUTCOME[outcome.result]
     local word = look[1]
     if outcome.net ~= 0 then word = word .. " " .. ui.signed(outcome.net) end
-    c:text(right - #word + 1, SPLIT_TOTAL_Y + 5, word, C[look[2]])
+    c:text(right - #word + 1, SPLIT_TOTAL_Y + 4, word, C[look[2]])
   else
     local tag, color = totalTag(hand)
-    if tag then c:text(right - #tag + 1, SPLIT_TOTAL_Y + 5, tag, color) end
+    if tag then c:text(right - #tag + 1, SPLIT_TOTAL_Y + 4, tag, color) end
   end
 
   drawCards(c, hand.cards, function(n) return playerSpot(model, index, n) end, flying(anim, "player", index), anim)
@@ -223,8 +227,8 @@ local function drawSingleHand(c, model, anim)
   drawTotal(c, LEFT_CX, PLAYER_Y, label, hand.cards, tag, color)
   drawCards(c, hand.cards, function(n) return playerSpot(model, 1, n) end, flying(anim, "player", 1), anim)
 
-  c:textCenter(RIGHT_CX, PLAYER_Y + 2, hand.doubled and "DOUBLED" or "BET", C.text)
-  c:bigCenter(RIGHT_CX, PLAYER_Y + 4, ui.group(hand.bet), C.gold, 1)
+  c:textCenter(RIGHT_CX, PLAYER_Y + 4, hand.doubled and "DOUBLED" or "BET", C.text)
+  c:bigCenter(RIGHT_CX, PLAYER_Y + 6, ui.group(hand.bet), C.gold, 1)
 end
 
 local function drawShoe(c, left)

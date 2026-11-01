@@ -16,12 +16,13 @@ local LINE_SECONDS = 0.9
 local IDLE_BET_MS = 45000
 local WARN_MS = 10000
 
--- Track geometry: six lanes between two rails, then the strip the result banner lands on
+-- Track geometry: six lanes between two rails, then the strip the result banner lands on. The far rail takes the last
+-- lane's spare row, so the track ends a clear row above the banner
 local LANE_H = 7
-local RAIL_Y = 9
+local RAIL_Y = ui.TOP
 local LANES_Y = RAIL_Y + 1
-local FAR_RAIL_Y = LANES_Y + 6 * LANE_H
-local STRIP_Y = FAR_RAIL_Y + 2
+local FAR_RAIL_Y = LANES_Y + 6 * LANE_H - 1
+local STRIP_Y = ui.BANNER_Y
 local NOSE_X = 100              -- where the leader's nose runs on the wall
 local GATE_X = 22               -- where the noses start
 local CELLS_PER_UNIT = 0.45
@@ -30,6 +31,16 @@ local POST_EVERY = 50
 local HORSE_COLOR = { C.red, C.blue, C.gold, C.win, C.card, C.ink }
 local HORSE_TEXT = { C.text, C.text, C.ink, C.ink, C.ink, C.text }
 local CHIPS = { 5, 10, 25, 100, 500, 1000 }
+
+-- The bet scene, top to bottom: the tabs, a line of captions, the card, the chips, and a line of what is on the card
+local LEFT, RIGHT = 5, 117       -- the same margins as the button rows
+local TABS_Y, TABS_H = ui.TOP, 5
+local CAPTION_Y = TABS_Y + TABS_H + 4
+local CARD_Y = CAPTION_Y + 2
+local BADGE_W = 8
+local CHIPS_Y, CHIPS_H = 58, 7
+local NOTE_Y = 67                -- the last row before the strip the table keeps for itself
+local BADGE_STEP = 11            -- a row of badges, as in the last winners and the running order
 
 M.COLORS = HORSE_COLOR
 
@@ -85,9 +96,8 @@ M.multipleText = multipleText
 
 --- The number on a horse's colours.
 local function badge(c, x, y, horse, h)
-  h = h or 6
-  c:rect(x, y, 8, h, HORSE_COLOR[horse])
-  c:big(x + 2, y + math.floor((h - 5) / 2), tostring(horse), HORSE_TEXT[horse], 1)
+  c:rect(x, y, BADGE_W, h, HORSE_COLOR[horse])
+  c:textCenter(x + math.floor(BADGE_W / 2), y + math.floor((h - 1) / 2), tostring(horse), HORSE_TEXT[horse])
 end
 
 local function clock()
@@ -118,59 +128,63 @@ local function wagerOf(s)
   return { race = s.race, bets = bets }
 end
 
---- One bet on the card. Odds fill it until a chip lands, then the chip takes over and the odds shrink above it.
-local function drawCell(c, s, x, y, w, h, key, hundredths, big)
+--- One bet on the card: its odds, and once a chip lands, what is on it under them.
+local function drawCell(c, s, x, y, w, h, key, hundredths)
   local amount = s.chips[key]
   local cx = x + math.floor(w / 2)
   c:rect(x, y, w, h, amount and C.gold or C.panel2)
   local text = multipleText(hundredths)
   if amount then
-    c:textCenter(cx, y, text, C.ink)
-    c:bigCenter(cx, y + 1, amount >= 1000 and (amount / 1000 .. "K") or tostring(amount), C.ink, 1)
-  elseif big and c:bigWidth(text, 1) <= w - 2 then
-    c:bigCenter(cx, y, text, C.text, 1)
+    c:textCenter(cx, y + 1, text, C.ink)
+    c:textCenter(cx, y + h - 2, amount >= 1000 and (amount / 1000 .. "K") or tostring(amount), C.ink)
   else
-    c:textCenter(cx, y + math.floor(h / 2), text, C.text)
+    c:textCenter(cx, y + math.floor((h - 1) / 2), text, C.text)
   end
   s.buttons[#s.buttons + 1] = { id = "cell", value = key, x = x, y = y, w = w, h = h, label = text }
 end
 
 local function drawWinCard(c, s, prices)
   local headers = { "WIN  1st", "PLACE  1st or 2nd", "SHOW  top 3" }
-  local columnX, columnW = 42, 25
+  local columnW, gap = 24, 3
+  local columnX = RIGHT + 1 - 3 * columnW - 2 * gap
+  local rowH, rowStep = 5, 6
+  local nameX = LEFT + BADGE_W + 2
   local chance = rules.chances(s.race.strengths)
   for i in ipairs(rules.KINDS) do
-    c:textCenter(columnX + (i - 1) * (columnW + 1) + math.floor(columnW / 2), 15, headers[i], C.gold)
+    c:textCenter(columnX + (i - 1) * (columnW + gap) + math.floor(columnW / 2), CAPTION_Y, headers[i], C.gold)
   end
   for horse = 1, rules.HORSES do
-    local y = 16 + (horse - 1) * 7
-    badge(c, 3, y, horse)
-    c:text(13, y + 1, s.race.names[horse], C.text)
-    c:text(13, y + 3, ("Wins %d in 100"):format(math.floor(chance.win[horse] * 100 + 0.5)), C.mute)
+    local y = CARD_Y + (horse - 1) * rowStep
+    badge(c, LEFT, y, horse, rowH)
+    c:text(nameX, y + 1, s.race.names[horse], C.text)
+    c:text(nameX, y + 3, ("Wins %d in 100"):format(math.floor(chance.win[horse] * 100 + 0.5)), C.mute)
     for i, kind in ipairs(rules.KINDS) do
-      drawCell(c, s, columnX + (i - 1) * (columnW + 1), y, columnW, 6, betKey(kind, horse), prices[kind][horse], true)
+      drawCell(c, s, columnX + (i - 1) * (columnW + gap), y, columnW, rowH, betKey(kind, horse), prices[kind][horse])
     end
   end
 end
 
 local function drawExactaCard(c, s, prices)
-  c:text(3, 15, "FIRST down, SECOND across: both, in that order", C.gold)
-  local left, cellW = 23, 15
+  c:text(LEFT, CAPTION_Y, "FIRST down, SECOND across: both, in that order", C.gold)
+  local cellW, cellH, gap, rowStep = 12, 4, 3, 5
+  local left = RIGHT + 1 - 6 * cellW - 5 * gap
+  local rowsY = CARD_Y + cellH + 1
+  local nameX = LEFT + BADGE_W + 2
   for second = 1, rules.HORSES do
-    local x = left + (second - 1) * (cellW + 1)
-    c:rect(x, 16, cellW, 5, HORSE_COLOR[second])
-    c:bigCenter(x + 7, 16, tostring(second), HORSE_TEXT[second], 1)
+    local x = left + (second - 1) * (cellW + gap)
+    c:rect(x, CARD_Y, cellW, cellH, HORSE_COLOR[second])
+    c:textCenter(x + math.floor(cellW / 2), CARD_Y + 1, tostring(second), HORSE_TEXT[second])
   end
   for first = 1, rules.HORSES do
-    local y = 22 + (first - 1) * 6
-    badge(c, 3, y, first, 5)
-    c:text(12, y + 2, s.race.names[first]:match("%S+"):sub(1, 10), C.text)
+    local y = rowsY + (first - 1) * rowStep
+    badge(c, LEFT, y, first, cellH)
+    c:text(nameX, y + 1, s.race.names[first]:match("%S+"):sub(1, 10), C.text)
     for second = 1, rules.HORSES do
-      local x = left + (second - 1) * (cellW + 1)
+      local x = left + (second - 1) * (cellW + gap)
       if first == second then
-        c:rect(x, y, cellW, 5, C.panel)
+        c:rect(x, y, cellW, cellH, C.panel)
       else
-        drawCell(c, s, x, y, cellW, 5, betKey("exacta", first, second), prices.exacta[first][second], false)
+        drawCell(c, s, x, y, cellW, cellH, betKey("exacta", first, second), prices.exacta[first][second])
       end
     end
   end
@@ -210,15 +224,16 @@ function M.bet(ctx, tbl, lastWager)
     s.buttons = ui.newButtons()
 
     -- The two sides of the card, and how the last races went
-    ui.button(c, s.buttons, { id = "tab", value = "card", label = "WIN PLACE SHOW", x = 3, y = 9, w = 38, h = 5,
-      color = s.tab == "card" and C.accent or C.panel2, textColor = s.tab == "card" and C.ink or C.text })
-    ui.button(c, s.buttons, { id = "tab", value = "exacta", label = "EXACTA", x = 43, y = 9, w = 20, h = 5,
-      color = s.tab == "exacta" and C.accent or C.panel2, textColor = s.tab == "exacta" and C.ink or C.text })
+    ui.button(c, s.buttons, { id = "tab", value = "card", label = "WIN PLACE SHOW", x = LEFT, y = TABS_Y, w = 24, h = TABS_H,
+      small = true, color = s.tab == "card" and C.accent or C.panel2, textColor = s.tab == "card" and C.ink or C.text })
+    ui.button(c, s.buttons, { id = "tab", value = "exacta", label = "EXACTA", x = LEFT + 28, y = TABS_Y, w = 13, h = TABS_H,
+      small = true, color = s.tab == "exacta" and C.accent or C.panel2, textColor = s.tab == "exacta" and C.ink or C.text })
     local recent = tbl.keep.recent or {}
     if #recent > 0 then
-      c:text(66, 11, "Last", C.mute)
+      local recentX = RIGHT + 1 - 5 * BADGE_STEP - BADGE_W
+      c:text(recentX - 7, TABS_Y + 2, "Last", C.mute)
       for i, horse in ipairs(recent) do
-        if i <= 6 then badge(c, 71 + (i - 1) * 8, 9, horse, 5) end
+        if i <= 6 then badge(c, recentX + (i - 1) * BADGE_STEP, TABS_Y, horse, TABS_H) end
       end
     end
 
@@ -234,29 +249,29 @@ function M.bet(ctx, tbl, lastWager)
       specs[#specs + 1] = { id = "chip", value = value, label = label, color = chosen and C.gold or C.panel2,
         textColor = chosen and C.ink or C.text }
     end
-    specs[#specs + 1] = { id = "clear", label = "CLEAR", color = C.panel2 }
-    if #choices > 0 then ui.actionRow(c, s.buttons, specs, 59, 6) end
+    specs[#specs + 1] = { id = "clear", label = "CLEAR", color = C.panel2, small = true }
+    if #choices > 0 then ui.actionRow(c, s.buttons, specs, CHIPS_Y, CHIPS_H) end
 
     local wager = wagerOf(s)
     local stake = rules.stake(wager)
     local maxWin = rules.maxWin(wager)
     local left = s.deadline - clock()
     if #choices == 0 then
-      c:textCenter(cx, 62, ("It takes %d tokens to bet here."):format(rules.MIN_BET), C.orange)
+      c:textCenter(cx, CHIPS_Y + math.floor(CHIPS_H / 2), ("It takes %d tokens to bet here."):format(rules.MIN_BET), C.orange)
     elseif maxWin > room then
-      c:textCenter(cx, 67, "The house cannot cover that card. Take something off.", C.orange)
+      c:textCenter(cx, NOTE_Y, "The house cannot cover that card. Take something off.", C.orange)
     elseif left < WARN_MS then
-      c:textCenter(cx, 67, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
+      c:textCenter(cx, NOTE_Y, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
     else
-      c:textCenter(cx, 67, ("On the card %s   Best case +%s   Each tap adds %s"):format(ui.group(stake),
+      c:textCenter(cx, NOTE_Y, ("On the card %s   Best case +%s   Each tap adds %s"):format(ui.group(stake),
         ui.group(maxWin), ui.group(s.chip or 0)), C.text)
     end
 
     ui.actionBar(c, s.buttons, {
-      { id = "leave", label = "LEAVE", color = C.red },
-      { id = "rules", label = "RULES", color = C.blue },
-      { id = "stats", label = "STATS", color = C.blue },
-      { id = "card", label = "CARD", color = C.blue },
+      { id = "leave", label = "LEAVE", color = C.red, small = true },
+      { id = "rules", label = "RULES", color = C.blue, small = true },
+      { id = "stats", label = "STATS", color = C.blue, small = true },
+      { id = "card", label = "CARD", color = C.blue, small = true },
       { id = "deal", label = "RACE", color = C.win, textColor = C.ink,
         disabled = stake < 1 or stake > (ctx.balance or 0) or maxWin > room },
     })
@@ -392,10 +407,10 @@ end
 
 local function drawTrack(c, camX, leaderAt, t)
   c:rect(1, RAIL_Y, c.w, LANES_Y - RAIL_Y, C.card)
-  c:rect(1, FAR_RAIL_Y, c.w, 1, C.card)
   for lane = 1, 6 do
     c:rect(1, LANES_Y + (lane - 1) * LANE_H, c.w, LANE_H, lane % 2 == 0 and C.felt or C.feltLight)
   end
+  c:rect(1, FAR_RAIL_Y, c.w, 1, C.card)
   -- Posts race past on both rails, each a world distance from the start, so speed reads from them
   local firstPost = math.floor((leaderAt - camX / CELLS_PER_UNIT) / POST_EVERY) - 1
   local lastPost = math.ceil((leaderAt + (c.w - camX) / CELLS_PER_UNIT) / POST_EVERY) + 1
@@ -437,35 +452,37 @@ local function drawLaneResults(c, state)
     local y = LANES_Y + (lane - 1) * LANE_H + 3
     local rank = state.rankOf[lane]
     local line = ordinal(rank) .. "  #" .. lane .. " " .. state.race.names[lane]
-    c:text(3, y, line, rank == 1 and C.gold or C.text)
-    if earned[lane] then c:text(3 + #line + 2, y, "pays " .. ui.group(earned[lane]), C.win) end
+    c:text(LEFT, y, line, rank == 1 and C.gold or C.text)
+    if earned[lane] then c:text(LEFT + #line + 3, y, "pays " .. ui.group(earned[lane]), C.win) end
   end
 end
 
---- The running order, a commentary line, and the player's bets, in small type under the track.
-local function drawStrip(c, model, state, t, order)
-  c:text(3, STRIP_Y + 1, "Running order", C.mute)
+--- The running order, a commentary line, and the player's bets, in small type under the track. width is how far across
+-- the bets may run.
+local function drawStrip(c, model, state, t, order, width)
+  local badgeY = STRIP_Y + 1
+  c:text(LEFT, badgeY + 2, "Running order", C.mute)
   for place, horse in ipairs(order) do
-    badge(c, 18 + (place - 1) * 10, STRIP_Y, horse, 5)
+    badge(c, 21 + (place - 1) * BADGE_STEP, badgeY, horse, 5)
   end
   -- How much of the race is left, along the same row
-  local barX, barW = 80, 38
-  c:rect(barX, STRIP_Y + 2, barW, 1, C.feltDark)
-  c:rect(barX, STRIP_Y + 2, math.floor(barW * math.min(1, t)), 1, C.gold)
-  c:rect(barX + barW - 1, STRIP_Y + 1, 1, 3, C.card)
+  local barX, barW = 87, 31
+  c:rect(barX, badgeY + 2, barW, 1, C.feltDark)
+  c:rect(barX, badgeY + 2, math.floor(barW * math.min(1, t)), 1, C.gold)
+  c:rect(barX + barW - 1, badgeY + 1, 1, 3, C.card)
   local text = ""
   for _, call in ipairs(model.calls or {}) do
     if call.t <= t then text = call.text end
   end
-  c:text(3, STRIP_Y + 7, text, C.gold)
+  c:text(LEFT, STRIP_Y + 8, text, C.gold)
   local parts = {}
   for _, bet in ipairs(state.bets) do
     local name = rules.KIND_NAMES[bet.kind]
     parts[#parts + 1] = name .. " #" .. bet.a .. (bet.b and ("-" .. bet.b) or "") .. " " .. ui.group(bet.amount)
   end
   local line = "Your bets: " .. table.concat(parts, ", ")
-  for i, part in ipairs(ui.wrap(line, c.w - 6)) do
-    if i <= 3 then c:text(3, STRIP_Y + 8 + i, part, C.text) end
+  for i, part in ipairs(ui.wrap(line, width)) do
+    if i <= 3 then c:text(LEFT, STRIP_Y + 10 + i, part, C.text) end
   end
 end
 
@@ -489,19 +506,22 @@ function M.draw(c, model, state, anim)
     local x = camX + math.floor((places[horse] - leaderAt) * CELLS_PER_UNIT) - GALLOP_W
     local y = LANES_Y + (horse - 1) * LANE_H
     local stride = raceT >= 1 and 1 or (math.floor(raceT * 160 + horse * 3) % 4) + 1
-    drawHorse(c, math.max(2, x), y, horse, stride)
+    drawHorse(c, math.max(4, x), y, horse, stride)
   end
   table.sort(order, function(a, b) return places[a] > places[b] end)
 
   if raceT >= 1 then drawLaneResults(c, state) end
-  -- The result banner takes this space once the race is run
-  if anim then drawStrip(c, model, state, raceT, raceT >= 1 and state.order or order) end
+  -- The result banner takes this space once the race is run. The photo sign takes the right of the bottom rows, so the
+  -- bets wrap short of it while it is up
+  local photo = anim and anim.ev.type == "race" and raceT > 0.93 and state.photo
+  local photoX = RIGHT - 1 - c:bigWidth("PHOTO FINISH", 1)
+  if anim then
+    drawStrip(c, model, state, raceT, raceT >= 1 and state.order or order, photo and photoX - 2 - 3 - LEFT or RIGHT - LEFT + 1)
+  end
 
-  if anim and anim.ev.type == "race" and raceT > 0.93 and state.photo then
-    local width = c:bigWidth("PHOTO FINISH", 1)
-    local x = c.w - width - 5
-    c:rect(x - 2, STRIP_Y + 6, width + 4, 7, C.ink)
-    c:big(x, STRIP_Y + 7, "PHOTO FINISH", C.gold, 1)
+  if photo then
+    c:rect(photoX - 2, STRIP_Y + 7, c:bigWidth("PHOTO FINISH", 1) + 4, 7, C.ink)
+    c:big(photoX, STRIP_Y + 8, "PHOTO FINISH", C.gold, 1)
   end
   if model.flash and anim and anim.t < 0.35 then
     -- The camera at the line goes off

@@ -92,9 +92,15 @@ function M.actionRow(c, list, specs, y, h)
     if width > equal then fits = false end
   end
   local spare = math.floor((room - total) / n)
+  local widths, used = {}, 0
+  for i, spec in ipairs(specs) do
+    widths[i] = (fits or spare < 0) and equal or wants(c, spec) + spare
+    used = used + widths[i]
+  end
   local x = margin + 1
-  for _, spec in ipairs(specs) do
-    local w = (fits or spare < 0) and equal or wants(c, spec) + spare
+  for i, spec in ipairs(specs) do
+    -- What rounding left over goes one cell at a time, so the row ends square with the margin
+    local w = widths[i] + (i <= room - used and 1 or 0)
     spec.x, spec.y, spec.w, spec.h = x, y, w, h
     M.button(c, list, spec)
     x = x + w + gap

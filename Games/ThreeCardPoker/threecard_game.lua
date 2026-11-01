@@ -49,15 +49,15 @@ local function chooseBet(ctx, tableObject, lastWager)
     c:clear(C.felt)
     c:frame(1, 1, c.w, c.h, C.feltDark)
     ui.bar(c, ctx)
-    c:bigCenter(cx, 11, "PLACE YOUR ANTE", C.text, 1)
-    c:bigCenter(cx, 18, ui.group(s.ante), C.gold, 2)
-    c:textCenter(cx, 30, "Table limit " .. ui.group(maxAnte) .. "   You will need the same again to play", C.text)
+    c:bigCenter(cx, ui.TOP, "PLACE YOUR ANTE", C.text, 1)
+    c:bigCenter(cx, 16, ui.group(s.ante), C.gold, 2)
+    c:textCenter(cx, 29, "Table limit " .. ui.group(maxAnte) .. "   You will need the same again to play", C.text)
     s.buttons = ui.newButtons()
     if maxAnte < 1 then
-      c:textCenter(cx, 44, "The house cannot cover a bet right now.", C.orange)
+      c:textCenter(cx, 46, "The house cannot cover a bet right now.", C.orange)
     else
       ui.button(c, s.buttons, {
-        id = "side", x = cx - 30, y = 32, w = 60, h = 8,
+        id = "side", x = cx - 36, y = 31, w = 72, h = 7,
         label = s.side and "PAIR PLUS ON" or "PAIR PLUS OFF",
         color = s.side and C.gold or C.panel2, textColor = s.side and C.ink or C.text,
       })
@@ -66,24 +66,24 @@ local function chooseBet(ctx, tableObject, lastWager)
         local label = value >= 1000 and (value / 1000 .. "K") or tostring(value)
         specs[#specs + 1] = { id = "chip", value = value, label = label, color = C.accent, textColor = C.ink }
       end
-      ui.actionRow(c, s.buttons, specs, 42, 11)
+      ui.actionRow(c, s.buttons, specs, 43, 11)
       ui.actionRow(c, s.buttons, {
         { id = "clear", label = "CLEAR", color = C.panel2 },
         { id = "double", label = "X2", color = C.panel2, disabled = s.ante == 0 },
         { id = "max", label = "MAX", color = C.panel2 },
         { id = "repeat", label = "SAME", color = C.panel2, disabled = not lastWager },
-      }, 55, 9)
+      }, 57, 9)
     end
-    if ctx.owedNotice then c:textCenter(cx, 66, ctx.owedNotice, C.orange) end
+    if ctx.owedNotice then c:textCenter(cx, 41, ctx.owedNotice, C.orange) end
     local left = s.deadline - now()
     if left < WARN_MS then
       c:textCenter(cx, 40, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
     end
     ui.actionBar(c, s.buttons, {
-      { id = "leave", label = "LEAVE", color = C.red },
-      { id = "rules", label = "RULES", color = C.blue },
-      { id = "stats", label = "STATS", color = C.blue },
-      { id = "card", label = "CARD", color = C.blue },
+      { id = "leave", label = "LEAVE", color = C.red, small = true },
+      { id = "rules", label = "RULES", color = C.blue, small = true },
+      { id = "stats", label = "STATS", color = C.blue, small = true },
+      { id = "card", label = "CARD", color = C.blue, small = true },
       { id = "deal", label = "DEAL", color = C.win, textColor = C.ink, disabled = s.ante < 1 },
     })
   end

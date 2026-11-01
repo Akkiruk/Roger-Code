@@ -62,6 +62,8 @@ local tournament = require("lib.casino.tournament")
 local ui = require("lib.casino.ui")
 
 -- The one seam: everything that can touch money, or anything a round leaves behind, comes through a door. See door.lua
+local BACK_IDLE_S = 90 -- a cabinet nobody is using goes back to its menu after this long
+
 local badges = door.to("badges")
 local books = door.to("books")
 local journal = door.to("journal")
@@ -597,6 +599,9 @@ function Table:drawChoices(s)
   local c = self.c
   local y = c.h - ui.ACTIONS_H + 2
   s.buttons = ui.newButtons()
+  if self.back then
+    ui.button(c, s.buttons, { id = "back", label = "ALL GAMES", small = true, x = c.w - 16, y = 1, w = 14, h = 6, color = C.blue })
+  end
   ui.button(c, s.buttons, { id = "practice", label = "PRACTICE", sub = "no tokens", x = c.w - 19, y = y, w = 18, h = 9,
     color = C.orange, textColor = C.ink })
   if tournament.offer(self.game.id, now()) then
@@ -626,6 +631,7 @@ function Table:attract(message)
   function scene.tick(s, dt)
     s.t = s.t + dt
     if self.farewell and now() > self.farewell.untilAt then self.farewell = nil end
+    if self.back and s.t > BACK_IDLE_S and not self.farewell then self.back() end
     if show then
       local ok, err = pcall(show.tick, show, dt)
       if not ok then give("step", err) end
@@ -670,6 +676,7 @@ function Table:attract(message)
 
   function scene.touch(s, x, y, who)
     local hit = ui.hit(s.buttons or {}, x, y)
+    if hit and hit.id == "back" then self.back() end
     s.who = who or wallet.livePlayer()
     s.choice = hit and hit.id or (not wallet.available() and "practice") or nil
     if s.who or s.choice == "practice" then s.finished = true end
@@ -1216,11 +1223,12 @@ function Table:showResult(round, model)
     local detail = result.detail or ""
     if round.net ~= 0 then detail = detail .. "  (" .. ui.signed(round.net) .. ")" end
     ui.banner(c, bannerY, result.title, detail, color)
-    if earned ~= "" then c:textCenter(math.floor(c.w / 2), bannerY - 2, " BADGE: " .. earned .. " ", C.gold, C.ink) end
+    -- On the banner's own edges, so news of this kind never lands on the table's cards
+    if earned ~= "" then c:textCenter(math.floor(c.w / 2), bannerY, " BADGE: " .. earned .. " ", C.gold, C.ink) end
     s.buttons = ui.newButtons()
     if s.left ~= 0 then
-      c:textCenter(math.floor(c.w / 2), bannerY - 1,
-        s.left > 0 and ("Owed to you: " .. ui.group(s.left)) or ("You still owe: " .. ui.group(-s.left)), C.orange)
+      c:textCenter(math.floor(c.w / 2), bannerY + ui.BANNER_H - 1,
+        " " .. (s.left > 0 and ("Owed to you: " .. ui.group(s.left)) or ("You still owe: " .. ui.group(-s.left))) .. " ", C.orange, C.ink)
       ui.actionBar(c, s.buttons, {
         { id = "collect", label = s.left > 0 and "COLLECT" or "SETTLE", color = C.win, textColor = C.ink },
         { id = "leave", label = "LEAVE", color = C.red },
@@ -1380,11 +1388,12 @@ function Table:session()
 end
 
 --- Run a table for ever.
-function M.run(game)
+--- opts.back, on a cabinet: leave this game for the menu. It never returns.
+function M.run(game, opts)
   audio.init()
   net.open()
   chat.scan()
-  local self = setmetatable({ game = game, keep = journal.loadKeep(), ctx = { title = game.title } }, Table)
+  local self = setmetatable({ game = game, back = opts and opts.back, keep = journal.loadKeep(), ctx = { title = game.title } }, Table)
   self.monitorName = board.largest()
   assert(self.monitorName, "this table needs a monitor")
   self:attachCanvas()

@@ -12,15 +12,22 @@ local M = {}
 
 -- ------------------------------------------------------------------ layout geometry
 
-local ZERO_X, ZERO_W = 2, 5          -- the zero, spanning all three rows
-local CELL_X, PITCH_X = 8, 9         -- first number column, and column spacing; each cell has a gap column after it
-local PITCH_Y = 9                    -- row spacing; each cell has a gap row after it
-local COLUMN_X, COLUMN_W = 116, 5    -- the 2:1 bets
+local ZERO_X, ZERO_W = 5, 8          -- the zero, spanning all three rows
+local CELL_X, PITCH_X = 14, 8        -- first number column, and column spacing; each cell has a gap column after it
+local PITCH_Y = 8                    -- row spacing; each cell has a gap row after it
+local COLUMN_X, COLUMN_W = 110, 8    -- the 2:1 bets
 local BOARD_H = PITCH_Y * 3          -- the numbers, down to the rail under the bottom row
-local OUT_H = 7                      -- the rows of outside bets
+local OUT_TOP = BOARD_H + 1          -- the first row of outside bets, two clear rows under the numbers
+local OUT_H = 7                      -- outside row spacing; each row has two gap rows after it
 local CHIP_W = 4
 
-M.HEIGHT = BOARD_H + OUT_H * 2
+-- The rows inside a number cell. A stake sits apart from the number, and stakes that share a row never meet
+local NUMBER_ROW = 3                 -- the number, and the splits with the next column either side of it
+local STAKE_ROW = 1                  -- a straight bet
+local EDGE_ROW = 6                   -- the bottom row of a cell: splits with the number below, and streets
+local GAP_ROW = 7                    -- the gap row: corners and lines
+
+M.HEIGHT = OUT_TOP + OUT_H * 2 - 1
 M.MODES = { "straight", "split", "street", "corner", "line" }
 
 local HINTS = {
@@ -31,14 +38,15 @@ local HINTS = {
   line = "Tap a dot between two columns",
 }
 
-local DOZEN_W = 36
+local DOZEN_W = PITCH_X * 4
+local EVEN_W = PITCH_X * 2
 local EVEN_ROW = {
-  { id = "low", w = 17, label = "1-18" },
-  { id = "even", w = 17, label = "EVEN" },
-  { id = "red", w = 16, label = "RED", bg = "red" },
-  { id = "black", w = 21, label = "BLACK", bg = "ink" },
-  { id = "odd", w = 16, label = "ODD" },
-  { id = "high", w = 21, label = "19-36" },
+  { id = "low", label = "1-18" },
+  { id = "even", label = "EVEN" },
+  { id = "red", label = "RED", bg = "red" },
+  { id = "black", label = "BLACK", bg = "ink" },
+  { id = "odd", label = "ODD" },
+  { id = "high", label = "19-36" },
 }
 
 local function cellX(column)
@@ -57,36 +65,36 @@ local function rowOf(n)
   return (n - 1) % 3 + 1
 end
 
--- Where a spot's stake sits, relative to the board's top. Every cell has two chip rows: one inside it (y + 7) and
--- the gap row under it (y + 8). Chips sit either mid-cell or over the gap column, so no two can ever overlap.
+-- Where a spot's stake sits, relative to the board's top. A pitch holds two chips across, one mid-cell and one over
+-- the gap column, and the rows above keep those apart from the next cell's, so no two can ever touch.
 local function chipSpot(id)
   local spot = rules.spot(id)
   local nums, kind = spot.nums, spot.kind
   local a, b = nums[1], nums[2]
   if kind == "straight" then
-    if a == 0 then return ZERO_X, cellY(2) + 7 end
-    return cellX(columnOf(a)) + 2, cellY(rowOf(a)) + 7
+    if a == 0 then return ZERO_X + 2, cellY(2) + STAKE_ROW end
+    return cellX(columnOf(a)) + 1, cellY(rowOf(a)) + STAKE_ROW
   elseif kind == "split" then
-    if a == 0 then return cellX(1) - 2, cellY(b) + 7 end
-    if b == a + 3 then return cellX(columnOf(a)) + 7, cellY(rowOf(a)) + 7 end
-    return cellX(columnOf(a)) + 2, cellY(rowOf(b)) + 8
+    if a == 0 then return cellX(1) - 4, cellY(b) + NUMBER_ROW end
+    if b == a + 3 then return cellX(columnOf(a)) + 5, cellY(rowOf(a)) + NUMBER_ROW end
+    return cellX(columnOf(a)) + 1, cellY(rowOf(b)) + EDGE_ROW
   elseif kind == "street" then
-    if a == 0 then return cellX(1) - 2, cellY(nums[3]) + 8 end
-    return cellX(columnOf(a)) + 2, cellY(1) + 8
+    if a == 0 then return cellX(1) - 4, cellY(nums[3]) + GAP_ROW end
+    return cellX(columnOf(a)) + 1, cellY(1) + EDGE_ROW
   elseif kind == "corner" then
-    if a == 0 then return cellX(1) - 2, cellY(1) + 8 end
-    return cellX(columnOf(a)) + 7, cellY(rowOf(a) + 1) + 8
+    if a == 0 then return cellX(1) - 4, cellY(1) + GAP_ROW end
+    return cellX(columnOf(a)) + 5, cellY(rowOf(a) + 1) + GAP_ROW
   elseif kind == "line" then
-    return cellX(columnOf(a)) + 7, cellY(1) + 8
+    return cellX(columnOf(a)) + 5, cellY(1) + GAP_ROW
   elseif kind == "column" then
-    return COLUMN_X, cellY(rowOf(a)) + 7
+    return COLUMN_X + 2, cellY(rowOf(a)) + STAKE_ROW
   elseif kind == "dozen" then
-    return cellX(1) + (columnOf(a + 2) - 1) / 4 * DOZEN_W + 15, BOARD_H + 5
+    return cellX(columnOf(a)) + 13, OUT_TOP + 3
   end
   local x = cellX(1)
   for _, part in ipairs(EVEN_ROW) do
-    if part.id == kind then return x + math.floor((part.w - CHIP_W) / 2), BOARD_H + OUT_H + 5 end
-    x = x + part.w
+    if part.id == kind then return x + 5, OUT_TOP + OUT_H + 3 end
+    x = x + EVEN_W
   end
   error("no place for " .. id)
 end
@@ -96,12 +104,12 @@ M.chipSpot = chipSpot
 --- The tap targets of the outside bets, the same in every mode.
 local function outsideTargets(top, list)
   for d = 1, 3 do
-    list[#list + 1] = { id = "spot", value = "dozen:" .. d, x = cellX(1) + (d - 1) * DOZEN_W, y = top + BOARD_H, w = DOZEN_W, h = OUT_H }
+    list[#list + 1] = { id = "spot", value = "dozen:" .. d, x = cellX(1) + (d - 1) * DOZEN_W, y = top + OUT_TOP, w = DOZEN_W, h = OUT_H }
   end
   local x = cellX(1)
   for _, part in ipairs(EVEN_ROW) do
-    list[#list + 1] = { id = "spot", value = part.id, x = x, y = top + BOARD_H + OUT_H, w = part.w, h = OUT_H }
-    x = x + part.w
+    list[#list + 1] = { id = "spot", value = part.id, x = x, y = top + OUT_TOP + OUT_H, w = EVEN_W, h = OUT_H }
+    x = x + EVEN_W
   end
   for row = 1, 3 do
     list[#list + 1] = { id = "spot", value = "column:" .. row, x = COLUMN_X, y = top + cellY(row), w = COLUMN_W, h = PITCH_Y }
@@ -122,14 +130,14 @@ function M.targets(top, mode)
   elseif mode == "split" then
     -- Bands round the gaps between columns take the side-by-side splits; bands down the middle of a column the rest
     for row = 1, 3 do
-      add(rules.insideId("split", { 0, row }), ZERO_X, cellY(row), cellX(1) - ZERO_X + 2, PITCH_Y)
+      add(rules.insideId("split", { 0, row }), ZERO_X, cellY(row), cellX(1) - ZERO_X + 1, PITCH_Y)
       for column = 1, 11 do
         local n = 3 * (column - 1) + row
-        add(rules.insideId("split", { n, n + 3 }), cellX(column) + 6, cellY(row), 5, PITCH_Y)
+        add(rules.insideId("split", { n, n + 3 }), cellX(column) + 5, cellY(row), 4, PITCH_Y)
       end
     end
     for column = 1, 12 do
-      local x, w = cellX(column) + 2, column == 12 and 7 or 4
+      local x, w = cellX(column) + 1, column == 12 and 7 or 4
       local first = 3 * (column - 1) + 1
       add(rules.insideId("split", { first + 1, first + 2 }), x, 0, w, half)
       add(rules.insideId("split", { first, first + 1 }), x, half, w, BOARD_H - half)
@@ -146,8 +154,8 @@ function M.targets(top, mode)
     for column = 1, 11 do
       local first = 3 * (column - 1) + 1
       -- The end columns reach the edges of the board
-      local x = column == 1 and cellX(1) or cellX(column) + 4
-      local right = column == 11 and cellX(12) + PITCH_X or cellX(column) + 13
+      local x = column == 1 and cellX(1) or cellX(column) + 3
+      local right = column == 11 and cellX(12) + PITCH_X or cellX(column) + 11
       if mode == "line" then
         add(rules.insideId("line", { first, first + 1, first + 2, first + 3, first + 4, first + 5 }), x, 0, right - x, BOARD_H)
       else
@@ -161,42 +169,6 @@ function M.targets(top, mode)
 end
 
 -- ------------------------------------------------------------------ small pieces
-
--- Numbers and the words on the layout, narrower than the casino font so two digits sit in one cell
-local TINY = {
-  ["0"] = { "###", "#.#", "#.#", "#.#", "###" }, ["1"] = { ".#.", "##.", ".#.", ".#.", "###" },
-  ["2"] = { "###", "..#", "###", "#..", "###" }, ["3"] = { "###", "..#", ".##", "..#", "###" },
-  ["4"] = { "#.#", "#.#", "###", "..#", "..#" }, ["5"] = { "###", "#..", "###", "..#", "###" },
-  ["6"] = { "###", "#..", "###", "#.#", "###" }, ["7"] = { "###", "..#", ".#.", ".#.", ".#." },
-  ["8"] = { "###", "#.#", "###", "#.#", "###" }, ["9"] = { "###", "#.#", "###", "..#", "###" },
-  ["-"] = { "...", "...", "###", "...", "..." }, [":"] = { "...", ".#.", "...", ".#.", "..." },
-  A = { ".#.", "#.#", "###", "#.#", "#.#" }, B = { "##.", "#.#", "##.", "#.#", "##." },
-  C = { ".##", "#..", "#..", "#..", ".##" }, D = { "##.", "#.#", "#.#", "#.#", "##." },
-  E = { "###", "#..", "##.", "#..", "###" }, K = { "#.#", "#.#", "##.", "#.#", "#.#" },
-  L = { "#..", "#..", "#..", "#..", "###" }, N = { "#.#", "###", "###", "###", "#.#" },
-  O = { ".#.", "#.#", "#.#", "#.#", ".#." }, R = { "##.", "#.#", "##.", "#.#", "#.#" },
-  S = { ".##", "#..", ".#.", "..#", "##." }, T = { "###", ".#.", ".#.", ".#.", ".#." },
-  V = { "#.#", "#.#", "#.#", "#.#", ".#." }, [" "] = { "...", "...", "...", "...", "..." },
-}
-
-local function tinyWidth(text)
-  return #text * 4 - 1
-end
-
-local function tiny(c, x, y, text, color)
-  for i = 1, #text do
-    local glyph = TINY[text:sub(i, i)]
-    for row = 1, 5 do
-      for col = 1, 3 do
-        if glyph[row]:sub(col, col) == "#" then c:rect(x + (i - 1) * 4 + col - 1, y + row - 1, 1, 1, color) end
-      end
-    end
-  end
-end
-
-local function tinyCenter(c, cx, y, text, color)
-  tiny(c, cx - math.floor(tinyWidth(text) / 2), y, text, color)
-end
 
 --- A stake in at most four characters: 250, 1.2K, 12K, 3.5M. Rounds down, so a marker never overstates.
 function M.short(amount)
@@ -254,15 +226,15 @@ local function drawNumber(c, top, n, look)
   if look == "winnerFlash" then bg, fg = C.gold, C.ink end
   c:rect(x, y, w, h, bg)
   if n == 0 then
-    tinyCenter(c, x + 2, y + math.floor(h / 2) - 3, "0", fg)
+    c:textCenter(x + 3, top + cellY(2) + NUMBER_ROW, "0", fg)
   else
-    tinyCenter(c, x + 4, y + 1, tostring(n), fg)
+    c:textCenter(x + 3, y + NUMBER_ROW, tostring(n), fg)
   end
 end
 
 local function drawOutside(c, x, y, w, label, bg, lit)
-  c:rect(x, y, w - 1, OUT_H - 1, lit and C.gold or bg)
-  tinyCenter(c, x + math.floor((w - 1) / 2), y, label, lit and C.ink or C.text)
+  c:rect(x, y, w - 1, OUT_H - 2, lit and C.gold or bg)
+  c:textCenter(x + math.floor((w - 1) / 2), y + 1, label, lit and C.ink or C.text)
 end
 
 --- Dots that show where each target of the chosen mode lies.
@@ -295,19 +267,19 @@ function M.drawBoard(c, top, opts)
     local bg = on and C.gold or C.panel
     if opts.litSpot == "column:" .. row then bg = C.gold end
     c:rect(COLUMN_X, top + cellY(row), COLUMN_W, PITCH_Y - 1, bg)
-    c:textCenter(COLUMN_X + 2, top + cellY(row) + 3, "2:1", bg == C.gold and C.ink or C.text)
+    c:textCenter(COLUMN_X + 4, top + cellY(row) + NUMBER_ROW, "2:1", bg == C.gold and C.ink or C.text)
   end
 
   for d = 1, 3 do
     local id = "dozen:" .. d
     local on = (number ~= nil and rules.covers(id, number)) or opts.litSpot == id
-    drawOutside(c, cellX(1) + (d - 1) * DOZEN_W, top + BOARD_H, DOZEN_W, ({ "1ST 12", "2ND 12", "3RD 12" })[d], C.panel, on)
+    drawOutside(c, cellX(1) + (d - 1) * DOZEN_W, top + OUT_TOP, DOZEN_W, ({ "1ST 12", "2ND 12", "3RD 12" })[d], C.panel, on)
   end
   local x = cellX(1)
   for _, part in ipairs(EVEN_ROW) do
     local on = (number ~= nil and rules.covers(part.id, number)) or opts.litSpot == part.id
-    drawOutside(c, x, top + BOARD_H + OUT_H, part.w, part.label, part.bg and C[part.bg] or C.panel, on)
-    x = x + part.w
+    drawOutside(c, x, top + OUT_TOP + OUT_H, EVEN_W, part.label, part.bg and C[part.bg] or C.panel, on)
+    x = x + EVEN_W
   end
 
   if opts.mode then drawMarkers(c, top, opts.mode) end
@@ -326,8 +298,8 @@ function M.modeRow(c, buttons, y, active, x, w, h)
     local kind = rules.KINDS[i]
     local on = mode == active
     ui.button(c, buttons, {
-      id = "mode", value = mode, x = x + (i - 1) * (w + 1), y = y, w = w, h = h,
-      label = kind.label:upper(), sub = kind.pay .. " to 1",
+      id = "mode", value = mode, x = x + (i - 1) * (w + 3), y = y, w = w, h = h,
+      label = kind.label:upper(), sub = kind.pay .. " to 1", small = true,
       color = on and C.gold or C.panel2, textColor = on and C.ink or C.text,
     })
   end
@@ -346,7 +318,7 @@ local BALL_TURNS, WHEEL_TURNS = 7, 3
 local TRACK_R, POCKET_R = 0.885, 0.66
 -- Bands of the wheel as shares of its radius
 local RIM, TRACK, RING, CONE, HUB = 1, 0.955, 0.82, 0.6, 0.22
-local CENTER_X, CENTER_Y, RADIUS = 61, 39, 87 -- RADIUS in half-column units: a column is 2 wide, a row 3 tall
+local CENTER_X, CENTER_Y, RADIUS = 61, 39, 84 -- RADIUS in half-column units: a column is 2 wide, a row 3 tall
 
 local pocketIndex = {}
 for i, n in ipairs(rules.WHEEL) do pocketIndex[n] = i end
@@ -469,15 +441,15 @@ local function drawBall(c, angle, radius)
 end
 
 local function sidePanels(c, state, recent)
-  c:text(4, 12, "BET", C.mute)
-  c:text(4, 13, ui.group(state.stake), C.gold)
-  c:text(4, 15, "SPOTS", C.mute)
+  c:text(4, ui.TOP + 2, "BET", C.mute)
+  c:text(4, ui.TOP + 4, ui.group(state.stake), C.gold)
+  c:text(4, ui.TOP + 7, "SPOTS", C.mute)
   local spots = 0
   for _ in pairs(state.spots) do spots = spots + 1 end
-  c:text(4, 16, tostring(spots), C.text)
-  c:text(c.w - 9, 12, "LAST", C.mute)
+  c:text(4, ui.TOP + 9, tostring(spots), C.text)
+  c:text(c.w - 6, ui.TOP + 2, "LAST", C.mute)
   for i = 1, math.min(#recent, rules.RECENT_KEPT) do
-    M.recentRow(c, c.w - 9, 12 + i * 2, { recent[i] }, 1)
+    M.recentRow(c, c.w - 6, ui.TOP + 2 + i * 2, { recent[i] }, 1)
   end
 end
 
@@ -504,7 +476,7 @@ end
 
 -- ------------------------------------------------------------------ the engine's view
 
-local RESULT_TOP = 10
+local RESULT_TOP = ui.TOP + 2 -- so the board ends with two rows clear above the line of badge news over the banner
 
 function M.new(ctx)
   return { ctx = ctx, phase = "board" }

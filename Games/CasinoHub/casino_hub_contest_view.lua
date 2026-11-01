@@ -11,20 +11,37 @@ local M = {}
 
 M.MENU_MS = 30000   -- a menu left alone closes by itself
 
-local TOP = 18      -- first row under the title
+local TOP = ui.TOP + 9  -- first row under the title
 local ROW_H = 7
 local NAME_MAX = 16
+local NAME_X = 14       -- where a name starts, after its rank
+local SMALL_X = 76      -- where a row's small print starts, unless what is right of it needs the room
+local MIDDLE = 48       -- halfway down what a page has, for a line alone on it
+local MENU_MIDDLE = 43  -- the same over the bottom bar
 
-local function short(name)
+local function short(name, limit)
   name = tostring(name)
-  if #name <= NAME_MAX then return name end
-  return name:sub(1, NAME_MAX - 1) .. "."
+  limit = limit or NAME_MAX
+  if #name <= limit then return name end
+  return name:sub(1, limit - 1) .. "."
+end
+
+--- A name in big letters, shortened until it fits, so it gives way before it runs into what is beside it.
+local function fit(c, name, room)
+  name = short(name)
+  while #name > 2 and c:bigWidth(name, 1) > room do name = short(name, #name - 1) end
+  return name
 end
 
 local function title(c, text, note)
-  c:big(4, 10, text, C.gold, 1)
-  if note then c:text(c.w - 2 - #note, 11, note, C.text) end
-  c:rect(4, 16, c.w - 6, 1, C.feltLight)
+  c:big(4, ui.TOP, text, C.gold, 1)
+  if note then c:text(c.w - 2 - #note, ui.TOP + 2, note, C.text) end
+  c:rect(4, ui.TOP + 7, c.w - 6, 1, C.feltLight)
+end
+
+--- One band of a table, every other row, in line with the rule under the title.
+local function band(c, i, y)
+  if i % 2 == 1 then c:rect(4, y, c.w - 6, ROW_H, C.feltDark) end
 end
 
 local function minutesLeft(ms)
@@ -34,18 +51,21 @@ end
 
 --- A row of a standings table: rank, name, chips, and how many rounds it took.
 local function standingRow(c, y, rank, row)
-  if rank % 2 == 1 then c:rect(3, y, c.w - 4, ROW_H, C.feltDark) end
+  band(c, rank, y)
   local color = rank == 1 and C.gold or C.text
-  c:big(5, y + 1, tostring(rank), color, 1)
-  c:big(12, y + 1, short(row.name), color, 1)
+  c:big(6, y + 1, tostring(rank), color, 1)
   local amount = ui.group(row.chips)
-  c:big(c.w - 3 - c:bigWidth(amount, 1), y + 1, amount, row.final and C.red or C.win, 1)
-  c:text(76, y + 3, row.rounds .. (row.rounds == 1 and " round" or " rounds"), C.text)
+  local amountX = c.w - 4 - c:bigWidth(amount, 1)
+  c:big(amountX, y + 1, amount, row.final and C.red or C.win, 1)
+  local rounds = row.rounds .. (row.rounds == 1 and " round" or " rounds")
+  local roundsX = math.min(SMALL_X, amountX - 3 - #rounds)
+  c:text(roundsX, y + 3, rounds, C.text)
+  c:big(NAME_X, y + 1, fit(c, row.name, roundsX - 3 - NAME_X), color, 1)
 end
 
 local function standings(c, list)
   if #list == 0 then
-    c:textCenter(math.floor(c.w / 2), 44, "No scores yet", C.mute)
+    c:textCenter(math.floor(c.w / 2), MIDDLE, "No scores yet", C.mute)
     return
   end
   for i, row in ipairs(list) do
@@ -57,31 +77,31 @@ end
 local function pageLive(c, live, at)
   title(c, "TOURNAMENT", rules.gameName(live.game) .. ", " .. minutesLeft(live.ends - at))
   standings(c, contest.standings(live, contest.TOP))
-  c:textCenter(math.floor(c.w / 2), c.h - 4, ("Chips, not tokens. Everyone starts with %s. Best chips at the end wins."):format(ui.group(live.chips)), C.text)
+  c:textCenter(math.floor(c.w / 2), c.h - 5, ("Chips, not tokens. Everyone starts with %s. Best chips at the end wins."):format(ui.group(live.chips)), C.text)
 end
 
 local function pageFinal(c, record)
   title(c, "FINAL STANDINGS", rules.gameName(record.game))
   standings(c, record.top)
-  c:textCenter(math.floor(c.w / 2), c.h - 4, "Chips, not tokens.", C.text)
+  c:textCenter(math.floor(c.w / 2), c.h - 5, "Chips, not tokens.", C.text)
 end
 
 local function pagePast(c, past, at)
   title(c, "WINNERS", "owner: touch the wall to start a tournament")
   if #past == 0 then
-    c:textCenter(math.floor(c.w / 2), 44, "No tournaments played yet", C.mute)
+    c:textCenter(math.floor(c.w / 2), MIDDLE, "No tournaments played yet", C.mute)
     return
   end
   for i, record in ipairs(past) do
     local y = TOP + (i - 1) * ROW_H
     local winner = record.top[1]
-    if i % 2 == 1 then c:rect(3, y, c.w - 4, ROW_H, C.feltDark) end
-    c:big(5, y + 1, short(winner.name), C.gold, 1)
-    c:text(76, y + 2, rules.gameName(record.game), C.text)
-    c:text(76, y + 4, ui.group(winner.chips) .. " chips", C.text)
+    band(c, i, y)
+    c:big(6, y + 1, fit(c, winner.name, SMALL_X - 3 - 6), C.gold, 1)
+    c:text(SMALL_X, y + 2, rules.gameName(record.game), C.text)
+    c:text(SMALL_X, y + 4, ui.group(winner.chips) .. " chips", C.text)
     local ago = math.floor((at - record.at) / 3600000)
     local when = ago < 1 and "today" or ago < 24 and (ago .. "h ago") or (math.floor(ago / 24) .. "d ago")
-    c:text(c.w - 3 - #when, y + 4, when, C.text)
+    c:text(c.w - 4 - #when, y + 4, when, C.text)
   end
 end
 
@@ -114,13 +134,15 @@ function M.openMenu(book, at)
 end
 
 local function drawGames(c, menu)
-  local width = math.floor((c.w - 8) / 2)
+  local width = math.floor((c.w - 11) / 2)  -- in line with the bottom bar's button
   title(c, "START A TOURNAMENT", "no tokens move")
-  c:text(4, TOP - 1, "Pick a game", C.text)
+  -- Up beside the title: five rows of buttons leave no room for a line of its own over them
+  c:text(c.w - 2 - 11, ui.TOP + 4, "Pick a game", C.text)
   for i, id in ipairs(contest.GAMES) do
     local column, row = (i - 1) % 2, math.floor((i - 1) / 2)
-    ui.button(c, menu.buttons, { id = "game", value = id, label = rules.gameName(id), x = 4 + column * (width + 2),
-      y = TOP + 1 + row * 10, w = width, h = 9, color = C.blue })
+    local label = rules.gameName(id)
+    ui.button(c, menu.buttons, { id = "game", value = id, label = label, x = 5 + column * (width + 3),
+      y = TOP + row * 10, w = width, h = 8, color = C.blue, small = c:bigWidth(label, 1) > width - 4 })
   end
   ui.actionBar(c, menu.buttons, { { id = "cancel", label = "CANCEL", color = C.red } })
 end
@@ -128,23 +150,23 @@ end
 local function drawLengths(c, menu)
   local specs = {}
   title(c, rules.gameName(menu.game), "no tokens move")
-  c:textCenter(math.floor(c.w / 2), TOP + 4, "How long?", C.text)
+  c:textCenter(math.floor(c.w / 2), MENU_MIDDLE - 9, "How long?", C.text)
   for _, minutes in ipairs(contest.LENGTHS) do
     specs[#specs + 1] = { id = "length", value = minutes, label = minutes .. " MIN", color = C.win, textColor = C.ink }
   end
-  ui.actionRow(c, menu.buttons, specs, TOP + 8, 13)
+  ui.actionRow(c, menu.buttons, specs, MENU_MIDDLE - 7, 13)
   ui.actionBar(c, menu.buttons, { { id = "back", label = "BACK", color = C.panel2 }, { id = "cancel", label = "CANCEL", color = C.red } })
 end
 
 local function drawStop(c, menu, book, at)
   title(c, "TOURNAMENT", rules.gameName(book.live.game) .. ", " .. minutesLeft(book.live.ends - at))
-  c:textCenter(math.floor(c.w / 2), TOP + 8, "End it now? Rounds still playing get to finish.", C.text)
+  c:textCenter(math.floor(c.w / 2), MENU_MIDDLE, "End it now? Rounds still playing get to finish.", C.text)
   ui.actionBar(c, menu.buttons, { { id = "stop", label = "END IT", color = C.red }, { id = "cancel", label = "KEEP GOING", color = C.win, textColor = C.ink } })
 end
 
 local function drawClosing(c, menu)
   title(c, "TOURNAMENT", "time up")
-  c:textCenter(math.floor(c.w / 2), TOP + 8, "The last scores are coming in. Touch again in a minute.", C.text)
+  c:textCenter(math.floor(c.w / 2), MENU_MIDDLE, "The last scores are coming in. Touch again in a minute.", C.text)
   ui.actionBar(c, menu.buttons, { { id = "cancel", label = "OK", color = C.blue } })
 end
 

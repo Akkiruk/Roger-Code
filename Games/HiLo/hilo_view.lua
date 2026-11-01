@@ -8,6 +8,10 @@ local rules = require("hilo_rules")
 local C = theme.C
 local M = {}
 
+local TRAIL_Y = 16
+local CARD_Y = 36          -- the cards and the multiple between them end above the result banner
+local GUESS_Y = 59
+
 function M.new(ctx)
   return { ctx = ctx, trail = {}, current = nil, multiple = 1, turning = nil }
 end
@@ -41,26 +45,27 @@ end
 function M.draw(c, model, state, anim)
   c:clear(C.felt)
   local cx = math.floor(c.w / 2)
-  local top = ui.BAR_H + 2
 
   -- The streak so far, oldest first
   local xs = ui.fan(cx, math.max(1, #model.trail), ui.SMALL_W, c.w - 10, 1)
   for i, card in ipairs(model.trail) do
-    ui.card(c, xs[i], top, card, true)
+    ui.card(c, xs[i], TRAIL_Y, card, true)
   end
 
-  local y = top + ui.SMALL_H + 3
-  if model.current then ui.card(c, cx - 22, y, model.current, false) end
+  -- The multiple sits between the two cards, which stand clear of the widest it can get
+  local half = math.floor(c:bigWidth(("x%.2f"):format(rules.MAX_MULTIPLE), 2) / 2)
+  local left, right = cx - half - 3 - ui.CARD_W, cx + half + 4
+  if model.current then ui.card(c, left, CARD_Y, model.current, false) end
 
   if anim and anim.ev.type == "reveal" then
     -- The card lifts as it turns
-    ui.card(c, cx + 5, y - math.floor(math.sin(anim.t * math.pi) * 3), anim.t > 0.5 and anim.ev.card or nil, false)
+    ui.card(c, right, CARD_Y - math.floor(math.sin(anim.t * math.pi) * 3), anim.t > 0.5 and anim.ev.card or nil, false)
   else
-    ui.card(c, cx + 5, y, nil, false)
+    ui.card(c, right, CARD_Y, nil, false)
   end
 
-  c:bigCenter(cx, y + ui.CARD_H + 3, ("x%.2f"):format(model.multiple), C.gold, 2)
-  c:textCenter(cx, y + ui.CARD_H + 17, "Guess " .. math.min(state.guesses + 1, rules.MAX_GUESSES)
+  c:bigCenter(cx, CARD_Y + 3, ("x%.2f"):format(model.multiple), C.gold, 2)
+  c:textCenter(cx, GUESS_Y, "Guess " .. math.min(state.guesses + 1, rules.MAX_GUESSES)
     .. " of " .. rules.MAX_GUESSES, C.text)
 end
 

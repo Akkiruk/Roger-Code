@@ -15,10 +15,11 @@ local M = {}
 
 local FORM = { W = C.win, L = C.red, P = C.gold }
 local MARGIN = 5
-local TILES_Y, TILE_H = 16, 9
-local BAR_Y, BAR_H = 26, 3
-local FORM_Y, BLOCK_W, BLOCK_H, BLOCK_GAP = 34, 7, 5, 2
-local BADGES_Y, BADGE_ROWS = 41, 4
+local NAME_Y = ui.TOP + 1
+local TILES_Y, TILE_H, TILE_GAP = 20, 10, 3
+local BAR_Y, BAR_H = 33, 3
+local FORM_Y, BLOCK_W, BLOCK_H, BLOCK_GAP = 43, 7, 5, 2
+local BADGES_Y, BADGE_ROWS = 53, 4   -- BADGES_Y is the first badge, with its heading 2 rows up
 
 M.COLUMNS = 2
 
@@ -28,9 +29,10 @@ local function short(text, limit)
   return text:sub(1, math.max(1, limit - 1)) .. "."
 end
 
---- Rows of badges the wall has room for.
+--- Rows of badges the wall has room for, keeping 2 clear rows over the bottom bar. A badge is 2 rows tall.
 function M.rowsFree(c)
-  return math.floor((c.h - ui.ACTIONS_H - 1 - BADGES_Y - 1) / BADGE_ROWS)
+  local last = c.h - ui.ACTIONS_H - 3
+  return math.floor((last - BADGES_Y - 1) / BADGE_ROWS) + 1
 end
 
 --- The hub's word on this player's favourite game, if it has one.
@@ -53,11 +55,11 @@ end
 
 local function tile(c, x, w, label, value, color)
   c:rect(x, TILES_Y, w, TILE_H, C.feltDark)
-  c:text(x + 1, TILES_Y, label, C.mute)
-  if c:bigWidth(value, 1) <= w - 2 then
-    c:big(x + 1, TILES_Y + 2, value, color, 1)
+  c:text(x + 2, TILES_Y + 1, label, C.mute)
+  if c:bigWidth(value, 1) <= w - 4 then
+    c:big(x + 2, TILES_Y + 3, value, color, 1)
   else
-    c:text(x + 1, TILES_Y + 4, short(value, w - 2), color)
+    c:text(x + 2, TILES_Y + 5, short(value, w - 4), color)
   end
 end
 
@@ -74,7 +76,7 @@ local function winLossBar(c, p)
   end
   local line = ("%s won   %s lost   %s level"):format(ui.group(p.wins), ui.group(p.losses), ui.group(p.pushes))
   if total > 0 then line = line .. ("   %d%% won"):format(math.floor(p.wins / total * 100 + 0.5)) end
-  c:textCenter(math.floor(c.w / 2), BAR_Y + BAR_H, line, C.text)
+  c:textCenter(math.floor(c.w / 2), BAR_Y + BAR_H + 1, line, C.text)
 end
 
 --- Oldest on the left, so the newest round is always the last block filled.
@@ -97,14 +99,14 @@ local function badgeList(c, p)
   for _, def in ipairs(p.list) do
     if p.have[def.id] then got = got + 1 end
   end
-  c:text(MARGIN, BADGES_Y, ("BADGES %d OF %d"):format(got, #p.list), C.gold)
+  c:text(MARGIN, BADGES_Y - 2, ("BADGES %d OF %d"):format(got, #p.list), C.gold)
   local rows = M.rowsFree(c)
   local w = math.floor((c.w - MARGIN * 2) / M.COLUMNS)
   for i, def in ipairs(p.list) do
     local row = math.floor((i - 1) / M.COLUMNS)
     if row >= rows then break end
     local column = (i - 1) % M.COLUMNS
-    badgeRow(c, MARGIN + column * w, BADGES_Y + 2 + row * BADGE_ROWS, w, def, p.have[def.id])
+    badgeRow(c, MARGIN + column * w, BADGES_Y + row * BADGE_ROWS, w, def, p.have[def.id])
   end
 end
 
@@ -113,23 +115,29 @@ function M.draw(c, ctx, p)
   c:clear(C.felt)
   c:frame(1, 1, c.w, c.h, C.feltDark)
   ui.bar(c, ctx)
-  c:big(MARGIN, ui.BAR_H + 1, short(p.name, 18), C.gold, 1)
+  local name = short(p.name, 18)
+  local room = c.w - MARGIN * 2 + 1
   if p.fav then
-    local line = "Favourite game " .. p.fav
-    c:text(c.w - MARGIN - #line + 1, ui.BAR_H + 3, short(line, 40), C.text)
+    local line = short("Favourite game " .. p.fav, 40)
+    local x = c.w - MARGIN - #line + 1
+    c:text(x, NAME_Y + 2, line, C.text)
+    room = x - 3 - MARGIN
   end
+  -- A long name gives way to the favourite game beside it
+  while #name > 2 and c:bigWidth(name, 1) > room do name = short(name, #name - 1) end
+  c:big(MARGIN, NAME_Y, name, C.gold, 1)
 
   -- Money wants the room: a net has a sign and a comma, and a streak is two or three characters
   local x = MARGIN
   local streak = p.streak > 0 and ("W" .. p.streak) or p.streak < 0 and ("L" .. -p.streak) or "-"
   for _, part in ipairs({
-    { 24, "ROUNDS", ui.group(p.rounds), C.text },
-    { 34, "NET", ui.signed(p.net), p.net >= 0 and C.win or C.red },
-    { 32, "BEST WIN", ui.group(p.best), C.gold },
-    { 16, "STREAK", streak, p.streak > 0 and C.win or p.streak < 0 and C.red or C.text },
+    { 26, "ROUNDS", ui.group(p.rounds), C.text },
+    { 33, "NET", ui.signed(p.net), p.net >= 0 and C.win or C.red },
+    { 27, "BEST WIN", ui.group(p.best), C.gold },
+    { 17, "STREAK", streak, p.streak > 0 and C.win or p.streak < 0 and C.red or C.text },
   }) do
     tile(c, x, part[1], part[2], part[3], part[4])
-    x = x + part[1] + 2
+    x = x + part[1] + TILE_GAP
   end
 
   winLossBar(c, p)

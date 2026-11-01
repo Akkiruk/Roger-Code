@@ -14,7 +14,11 @@ local C = theme.C
 local IDLE_MS = 45000
 local WARN_MS = 10000
 local UNDO_DEPTH = 60
-local BOARD_TOP = 15
+local BOARD_TOP = ui.TOP + 9
+local PAD_Y, PAD_H = 60, 7      -- the row of chips and edit buttons, ending clear of the strip above the button band
+local PAD_LEFT, PAD_RIGHT = 4, 118
+local CHIPS_W = 63              -- chips share this much of the row out between them, and the edit buttons sit at its far end
+local PAD_GAP = 3
 local CHIP_COLORS = { "blue", "red", "win", "orange", "panel2", "line" }
 
 local parked = {} -- chips left on the layout when a player walked off, by name
@@ -118,9 +122,12 @@ local function bet(ctx, table_, lastWager)
     local buttons = ui.newButtons()
     c:clear(C.felt)
     ui.bar(c, ctx, ui.group(total))
-    c:text(46, 6, "TOTAL BET", C.mute, C.panel)
+    -- Stacked in the space the bar leaves between its title and the total, however long the total gets
+    local captionX = c:bigWidth(ctx.title, 1) + 7
+    c:textCenter(captionX, 3, "TOTAL", C.mute, C.panel)
+    c:textCenter(captionX, 5, "BET", C.mute, C.panel)
 
-    view.modeRow(c, buttons, 9, s.mode, 3, 13, 5)
+    view.modeRow(c, buttons, ui.TOP, s.mode, 4, 11, 5)
     local litNums = {}
     local info = view.hint(s.mode)
     if s.litSpot and s.spots[s.litSpot] then
@@ -128,47 +135,46 @@ local function bet(ctx, table_, lastWager)
       for _, n in ipairs(spot.nums) do litNums[n] = true end
       info = rules.describe(s.litSpot) .. "  " .. spot.pay .. " to 1  on it " .. ui.group(s.spots[s.litSpot])
     end
-    c:text(74, 9, info, s.litSpot and C.gold or C.text)
+    c:text(74, ui.TOP, info, s.litSpot and C.gold or C.text)
     local left = s.deadline - now()
     if left < WARN_MS then
-      c:text(74, 13, "Leaving in " .. math.ceil(left / 1000) .. "s. Your chips wait.", C.orange)
+      c:text(74, ui.TOP + 4, "Leaving in " .. math.ceil(left / 1000) .. "s. Your chips wait.", C.orange)
     elseif ctx.owedNotice then
-      c:text(74, 13, ctx.owedNotice, C.orange)
+      c:text(74, ui.TOP + 4, ctx.owedNotice, C.orange)
     end
-    c:text(74, 11, "LAST", C.mute)
-    view.recentRow(c, 79, 11, table_.keep.recent or {}, 10)
+    c:text(74, ui.TOP + 2, "LAST", C.mute)
+    view.recentRow(c, 79, ui.TOP + 2, table_.keep.recent or {}, 10)
 
     view.drawBoard(c, BOARD_TOP, { spots = s.spots, mode = s.mode, lit = litNums, litSpot = s.litSpot })
     for _, target in ipairs(view.targets(BOARD_TOP, s.mode)) do buttons[#buttons + 1] = target end
 
     -- Chips, each in its own colour, with the one in hand filled gold
-    local chipSpecs = {}
+    if #chips == 0 then
+      c:textCenter(PAD_LEFT + math.floor(CHIPS_W / 2), PAD_Y + 3, "The house cannot cover a bet right now.", C.orange)
+    end
+    local chipW = #chips > 0 and math.floor((CHIPS_W - PAD_GAP * (#chips - 1)) / #chips)
     for i, value in ipairs(chips) do
       local on = value == s.chip
-      chipSpecs[i] = { id = "chip", value = value, label = chipLabel(value), color = on and C.gold or C[CHIP_COLORS[i]],
-        textColor = on and C.ink or C.text }
+      ui.button(c, buttons, { id = "chip", value = value, label = chipLabel(value), small = true,
+        x = PAD_LEFT + (i - 1) * (chipW + PAD_GAP), y = PAD_Y, w = chipW, h = PAD_H,
+        color = on and C.gold or C[CHIP_COLORS[i]], textColor = on and C.ink or C.text })
     end
-    if #chips == 0 then
-      c:textCenter(math.floor(c.w / 2), 58, "The house cannot cover a bet right now.", C.orange)
-    else
-      ui.actionRow(c, buttons, chipSpecs, 56, 6)
-    end
-    local x = 4
+    local x = PAD_RIGHT + 1 - (37 + PAD_GAP * 3) -- the four widths below, and the gaps between them
     for _, spec in ipairs({
-      { id = "clear", label = "CLEAR", w = 28, color = C.panel2, disabled = next(s.spots) == nil },
-      { id = "undo", label = "UNDO", w = 24, color = C.panel2, disabled = #s.undo == 0 },
-      { id = "repeat", label = "REPEAT", w = 34, color = C.panel2, disabled = not lastWager },
-      { id = "double", label = "X2", w = 23, color = C.panel2, disabled = next(s.spots) == nil },
+      { id = "clear", label = "CLEAR", w = 10, color = C.panel2, disabled = next(s.spots) == nil },
+      { id = "undo", label = "UNDO", w = 9, color = C.panel2, disabled = #s.undo == 0 },
+      { id = "repeat", label = "REPEAT", w = 11, color = C.panel2, disabled = not lastWager },
+      { id = "double", label = "X2", w = 7, color = C.panel2, disabled = next(s.spots) == nil },
     }) do
-      spec.x, spec.y, spec.h = x, 63, 6
+      spec.x, spec.y, spec.h, spec.small = x, PAD_Y, PAD_H, true
       ui.button(c, buttons, spec)
-      x = x + spec.w + 2
+      x = x + spec.w + PAD_GAP
     end
     ui.actionBar(c, buttons, {
-      { id = "leave", label = "LEAVE", color = C.red },
-      { id = "rules", label = "RULES", color = C.blue },
-      { id = "stats", label = "STATS", color = C.blue },
-      { id = "card", label = "CARD", color = C.blue },
+      { id = "leave", label = "LEAVE", color = C.red, small = true },
+      { id = "rules", label = "RULES", color = C.blue, small = true },
+      { id = "stats", label = "STATS", color = C.blue, small = true },
+      { id = "card", label = "CARD", color = C.blue, small = true },
       { id = "spin", label = "SPIN", color = C.win, textColor = C.ink, disabled = total < 1 },
     })
     s.buttons = buttons

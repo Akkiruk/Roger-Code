@@ -239,10 +239,10 @@ function App:topBar()
   local c = self.c
   ui.bar(c, self.ctx)
   local text = ("Ante %d   Bets %d/%d"):format(rules.ANTE, rules.SMALL, rules.BIG)
-  c:text(c.w - #text - 1, 2, text, C.text)
+  c:text(c.w - #text - 2, 3, text, C.text)
   local hub = net.hub()
   local hands = "Hand " .. ui.group(self.keep.hands or 0)
-  c:text(c.w - #hands - 1, 4, hands, hub and C.win or C.mute)
+  c:text(c.w - #hands - 2, 5, hands, hub and C.win or C.mute)
 end
 
 -- ------------------------------------------------------------------ seats
@@ -488,8 +488,8 @@ function App:drawDemo(buttons, show)
     for _, player in ipairs(show.state.players) do taken[player.seat] = true end
     for seat = 1, rules.MAX_SEATS do
       if taken[seat] then
-        local x, y, w = view.seatBox(c, seat)
-        buttons[#buttons + 1] = { id = "sit", value = seat, x = x + 8, y = y + 5, w = w - 16, h = 9 }
+        local x, y, w, h = view.sitSpot(c, seat)
+        buttons[#buttons + 1] = { id = "sit", value = seat, x = x, y = y, w = w, h = h }
       else
         view.emptySeat(c, buttons, seat, true)
       end
@@ -515,6 +515,14 @@ function App:page(title, lines)
       for _, part in ipairs(ui.wrap(text, c.w - 10)) do wrapped[#wrapped + 1] = { part, color } end
     end
   end
+  -- What the lines leave of the room above the buttons goes between the paragraphs
+  local top = ui.BAR_H + 10
+  local breaks = 0
+  for _, line in ipairs(wrapped) do
+    if line[1] == "" then breaks = breaks + 1 end
+  end
+  local spare = c.h - ui.ACTIONS_H - top - #wrapped
+  local air = breaks > 0 and math.max(0, math.min(3, math.floor(spare / breaks))) or 0
 
   function scene.tick(s)
     if now() > s.deadline then s.finished = true end
@@ -525,10 +533,10 @@ function App:page(title, lines)
     c:frame(1, 1, c.w, c.h, C.feltDark)
     self:topBar()
     c:big(5, ui.BAR_H + 2, title, C.gold, 1)
-    local y = ui.BAR_H + 10
+    local y = top
     for _, line in ipairs(wrapped) do
       c:text(6, y, line[1], line[2])
-      y = y + 1
+      y = y + (line[1] == "" and air + 1 or 1)
     end
     s.buttons = ui.newButtons()
     ui.actionBar(c, s.buttons, { { id = "close", label = "DONE", color = C.win, textColor = C.ink } })
@@ -603,8 +611,8 @@ function App:buyIn(who, seatIndex, topUp)
   function scene.draw(s)
     view.felt(c)
     self:topBar()
-    c:panel(13, 11, c.w - 26, 56, C.panel, C.feltDark)
-    c:frame(13, 11, c.w - 26, 56, C.ink)
+    c:panel(14, 11, c.w - 26, 56, C.panel, C.feltDark)
+    c:frame(14, 11, c.w - 26, 56, C.ink)
     c:bigCenter(cx, 14, topUp and "TOP UP" or "BUY IN", C.gold, 2)
     c:textCenter(cx, 28, view.short(who) .. (topUp and (" has " .. ui.group(base) .. " on the table") or ""), C.text)
     c:bigCenter(cx, 31, ui.group(s.amount), C.gold, 3)
@@ -619,9 +627,10 @@ function App:buyIn(who, seatIndex, topUp)
     end
     specs[#specs + 1] = { id = "max", label = "MAX", color = C.panel2 }
     specs[#specs + 1] = { id = "clear", label = "CLEAR", color = C.panel2 }
-    local w = math.floor((c.w - 34 - 2 * (#specs - 1)) / #specs)
+    local w = math.floor((c.w - 34 - 3 * (#specs - 1)) / #specs)
+    local x = cx + 1 - math.floor((w * #specs + 3 * (#specs - 1)) / 2)
     for i, spec in ipairs(specs) do
-      spec.x, spec.y, spec.w, spec.h = 18 + (i - 1) * (w + 2), 54, w, 9
+      spec.x, spec.y, spec.w, spec.h = x + (i - 1) * (w + 3), 54, w, 9
       ui.button(c, s.buttons, spec)
     end
     ui.actionBar(c, s.buttons, {
@@ -774,46 +783,57 @@ function App:lobby()
           view.emptySeat(c, s.buttons, index, not pending or pending.seat ~= index)
         end
       end
-      c:bigCenter(cx, 30, "DRAW POKER", C.gold, 2)
+      c:bigCenter(cx, 31, "DRAW POKER", C.gold, 2)
     end
 
+    -- Under a demo's pot and whose turn it is, or under the title
+    local statusY, noteY = playing and 46 or 43, playing and 47 or 45
     if pending then
-      c:textCenter(cx, 43, view.short(pending.name) .. ": click [APPROVE] in chat to use your wallet here.", C.text)
+      c:textCenter(cx, statusY, view.short(pending.name) .. ": click [APPROVE] in chat to use your wallet here.", C.text)
     elseif s.dealAt then
-      c:textCenter(cx, 43, "Next hand in " .. math.max(0, math.ceil((s.dealAt - now()) / 1000)) .. "s", C.text)
+      c:textCenter(cx, statusY, "Next hand in " .. math.max(0, math.ceil((s.dealAt - now()) / 1000)) .. "s", C.text)
     elseif #self:seatedNames() == 0 then
-      if math.floor(s.t * 1.5) % 2 == 0 then c:textCenter(cx, 43, "Tap SIT to play", C.text) end
+      if math.floor(s.t * 1.5) % 2 == 0 then c:textCenter(cx, statusY, "Tap SIT to play", C.text) end
     else
-      c:textCenter(cx, 43, "Waiting for another player", C.text)
+      c:textCenter(cx, statusY, "Waiting for another player", C.text)
     end
     local line = self:owedLine()
     if not wallet.available() then
-      c:textCenter(cx, 45, "Economy offline", C.orange)
+      c:textCenter(cx, noteY, "Economy offline", C.orange)
     elseif line then
-      c:textCenter(cx, 45, line, C.orange)
+      c:textCenter(cx, noteY, line, C.orange)
     elseif self.wantsLock then
-      c:textCenter(cx, 45, LOCK_NOTICE, C.mute)
+      c:textCenter(cx, noteY, LOCK_NOTICE, C.mute)
     else
-      c:textCenter(cx, 45, ("%d to %d players. The house takes nothing."):format(rules.MIN_PLAYERS, rules.MAX_SEATS), C.text)
+      c:textCenter(cx, noteY, ("%d to %d players. The house takes nothing."):format(rules.MIN_PLAYERS, rules.MAX_SEATS), C.text)
     end
-    if playing and show:finished() then
+    local finished = playing and show:finished()
+    if finished then
       local result = rules.result(show.state)
-      view.banner(c, 30, result.title, result.detail)
+      view.banner(c, view.BANNER_Y, result.title, result.detail)
     end
-    if self.farewell then c:textCenter(cx, 46, self.farewell.text, C.gold, C.ink) end
+    if self.farewell then
+      c:textCenter(cx, finished and 48 or (playing and 45 or 47), self.farewell.text, C.gold, C.ink)
+    end
 
-    ui.actionBar(c, s.buttons, {
+    local specs = {
       { id = "leave", label = "LEAVE", color = C.red, disabled = #self:seatedNames() == 0 },
       { id = "rules", label = "RULES", color = C.blue },
       { id = "topup", label = "CHIPS", color = C.blue, disabled = #self:seatedNames() == 0 },
       { id = "deal", label = "DEAL", color = C.win, textColor = C.ink, disabled = self:readyCount() < rules.MIN_PLAYERS },
-    })
+    }
+    if self.back then
+      for i = 1, 3 do specs[i].small = true end
+      table.insert(specs, 1, { id = "back", label = "ALL GAMES", small = true, color = C.panel2, disabled = #self:seatedNames() > 0 })
+    end
+    ui.actionBar(c, s.buttons, specs)
   end
 
   function scene.touch(s, x, y, who)
     local hit = ui.hit(s.buttons or {}, x, y)
     if not hit then return end
     audio.play("tap")
+    if hit.id == "back" then self.back() end
     if hit.id == "rules" then
       self:page("RULES", helpLines())
       return
@@ -1098,14 +1118,14 @@ function App:showResult(round)
     if state.uncontested then
       view.table(c, state)
       self:topBar()
-      view.banner(c, 30, result.title, result.detail)
+      view.banner(c, view.BANNER_Y, result.title, result.detail)
       local line = self:owedLine()
-      if line then c:textCenter(math.floor(c.w / 2), 45, line, C.orange) end
+      if line then c:textCenter(math.floor(c.w / 2), 47, line, C.orange) end
     else
       c:clear(C.felt)
       c:frame(1, 1, c.w, c.h, C.feltDark)
       self:topBar()
-      view.banner(c, 9, result.title, result.detail)
+      view.banner(c, ui.TOP, result.title, result.detail)
       view.reveal(c, state, self:owedLine())
     end
     s.buttons = ui.newButtons()
@@ -1135,11 +1155,12 @@ function App:showResult(round)
 end
 
 --- Run the table for ever.
-function M.run()
+--- opts.back, on a cabinet: leave this game for the menu. It never returns.
+function M.run(opts)
   audio.init()
   net.open()
   chat.scan()
-  local self = setmetatable({ keep = journal.loadKeep(), ctx = { title = TITLE } }, App)
+  local self = setmetatable({ back = opts and opts.back, keep = journal.loadKeep(), ctx = { title = TITLE } }, App)
   self.monitorName = board.largest()
   assert(self.monitorName, "this table needs a monitor")
   self:attachCanvas()

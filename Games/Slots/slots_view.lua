@@ -12,12 +12,13 @@ local M = {}
 
 local SPRITE_H = 13
 local STEP = SPRITE_H + 1            -- rows from one symbol to the next on the reel
-local REEL_W, REEL_GAP = 22, 2
-local CAB_X, CAB_Y, CAB_W, CAB_H = 3, 9, 76, 45
-local WIN_Y, WIN_H = 18, 35          -- the reel window
-local LINE_Y = WIN_Y + 11            -- the top of the symbol on the pay line
-local PAY_X, PAY_W = 81, 38
-local STRIP_Y = 55                   -- what is happening; the result banner lands here
+local REEL_W, REEL_GAP = 22, 3
+local CAB_X, CAB_Y, CAB_W, CAB_H = 5, ui.TOP, 78, ui.BANNER_Y - ui.TOP - 1
+local WIN_Y, WIN_H = CAB_Y + 9, 32   -- the reel window
+local LINE_Y = WIN_Y + 9             -- the top of the symbol on the pay line
+local PAY_X, PAY_W = 86, 32
+local PAY_ROWS = { 0, 6, 12, 17, 22, 28, 34 }  -- a row each in pay order: the bar's own blank rows do for its gaps
+local STRIP_Y = ui.BANNER_Y          -- what is happening; the result banner lands here
 local LAST_STOP = { 0.9, 1.5, 2.2 }  -- seconds into the spin at which each reel lands
 local SPIN_SPEED = 18                -- stops a second at full speed
 local BRAKE = 0.35                   -- seconds a reel takes to slow down
@@ -279,21 +280,23 @@ local function drawPayLine(c, state, lit)
 end
 
 local function drawPayTable(c, state, lit)
-  c:panel(PAY_X, CAB_Y, PAY_W + 1, CAB_H, C.panel, C.felt)
-  c:text(PAY_X + 3, CAB_Y + 1, "PAYS x", C.gold)
-  c:text(PAY_X + 13, CAB_Y + 1, "3 alike", C.mute)
-  c:text(PAY_X + 31, CAB_Y + 1, "any 2", C.mute)
+  c:panel(PAY_X, CAB_Y, PAY_W, CAB_H, C.panel, C.felt)
+  local tripleEnd, pairEnd = PAY_X + 22, PAY_X + 30  -- the columns of numbers, by the column after each
+  local top = CAB_Y + 3
+  c:text(PAY_X + 2, CAB_Y + 1, "PAYS x", C.gold)
+  c:text(tripleEnd - 7, CAB_Y + 1, "3 alike", C.mute)
+  c:text(pairEnd - 5, CAB_Y + 1, "any 2", C.mute)
+  c:rect(PAY_X + 2, top, 13, CAB_H - 4, C.card)
   for i, symbol in ipairs(rules.SYMBOLS) do
-    local y = CAB_Y + 3 + (i - 1) * 6
+    local y = top + PAY_ROWS[i]
     local hot = lit and state.symbol == i
-    if hot then c:rect(PAY_X + 1, y - 1, PAY_W - 1, 6, blink() and C.panel2 or C.panel) end
-    c:rect(PAY_X + 2, y - 1, 9, 6, C.card)
-    c:sprite(PAY_X + 3, y, MINI[symbol.id], PAINT)
+    if hot then c:rect(PAY_X + 15, y, PAY_W - 16, 5, blink() and C.panel2 or C.panel) end
+    c:sprite(PAY_X + 4, y, MINI[symbol.id], PAINT)
     local tripleLit = hot and state.kind == "triple"
     local pairLit = hot and state.kind == "pair"
     local triple, pair = tostring(symbol.triple), tostring(symbol.pair)
-    c:big(PAY_X + 26 - c:bigWidth(triple, 1), y - 1, triple, tripleLit and C.win or C.gold, 1)
-    c:big(PAY_X + PAY_W - 1 - c:bigWidth(pair, 1), y - 1, pair, pairLit and C.win or C.text, 1)
+    c:text(tripleEnd - #triple, y + 2, triple, tripleLit and C.win or C.gold)
+    c:text(pairEnd - #pair, y + 2, pair, pairLit and C.win or C.text)
   end
 end
 
@@ -315,6 +318,15 @@ local function drawCoin(c, cx, y, t, won)
   end
 end
 
+--- A word that should fill the strip, at full size if the wall is wide enough for it.
+local function headline(c, cx, text, color)
+  if c:bigWidth(text, 2) <= c.w - 8 then
+    c:bigCenter(cx, STRIP_Y + 1, text, color, 2)
+  else
+    c:bigCenter(cx, STRIP_Y + 3, text, color, 1)
+  end
+end
+
 local function drawStrip(c, model, state, anim)
   local cx = math.floor(c.w / 2)
   local kind = anim and anim.ev.type
@@ -329,31 +341,31 @@ local function drawStrip(c, model, state, anim)
       c:bigCenter(cx, STRIP_Y + 4, "GOOD LUCK", C.feltLight, 1)
     end
   elseif kind == "flip" then
-    drawCoin(c, cx, STRIP_Y + 1, anim.t, anim.ev.won)
-    c:big(6, STRIP_Y + 3, "DOUBLE", C.gold, 1)
-    c:big(6, STRIP_Y + 10, ui.group(model.payout * 2), C.text, 1)
-    local right = c.w - 5
+    drawCoin(c, cx, STRIP_Y + 3, anim.t, anim.ev.won)
+    c:big(5, STRIP_Y + 1, "DOUBLE", C.gold, 1)
+    c:big(5, STRIP_Y + 8, ui.group(model.payout * 2), C.text, 1)
+    local right = c.w - 3
     if anim.t > 0.82 then
       local word = anim.ev.won and "DOUBLED" or "LOST"
-      c:big(right - c:bigWidth(word, 1), STRIP_Y + 3, word, anim.ev.won and C.win or C.red, 1)
+      c:big(right - c:bigWidth(word, 1), STRIP_Y + 1, word, anim.ev.won and C.win or C.red, 1)
     else
-      c:big(right - c:bigWidth("OR", 1), STRIP_Y + 3, "OR", C.gold, 1)
-      c:big(right - c:bigWidth("NOTHING", 1), STRIP_Y + 10, "NOTHING", C.gold, 1)
+      c:big(right - c:bigWidth("OR", 1), STRIP_Y + 1, "OR", C.gold, 1)
+      c:big(right - c:bigWidth("NOTHING", 1), STRIP_Y + 8, "NOTHING", C.gold, 1)
     end
   elseif model.landed == 3 and not state.over and not kind then
     -- The choice: the buttons are live under this, and the flash needs no event
     local text = ui.group(model.payout)
-    c:bigCenter(cx, STRIP_Y, "WIN " .. text, blink(300) and C.win or C.gold, 2)
+    headline(c, cx, "WIN " .. text, blink(300) and C.win or C.gold)
     local left = rules.gamblesLeft(state)
     c:textCenter(cx, STRIP_Y + 12, ("Collect it, or gamble it on a fair flip. %d flip%s left."):format(left,
       left == 1 and "" or "s"), C.text)
   elseif kind == "win" then
     local color = blink(150) and C.win or C.gold
     if anim.ev.jackpot then
-      c:bigCenter(cx, STRIP_Y, "JACKPOT", color, 2)
+      headline(c, cx, "JACKPOT", color)
       c:textCenter(cx, STRIP_Y + 12, "+" .. ui.group(anim.ev.amount), C.gold)
     else
-      c:bigCenter(cx, STRIP_Y, "WIN " .. ui.group(anim.ev.amount), color, 2)
+      headline(c, cx, "WIN " .. ui.group(anim.ev.amount), color)
     end
   end
 end

@@ -1,6 +1,6 @@
 -- baccarat_view.lua
 -- Baccarat's table: Player on the left, Banker on the right, the shoe by the legend. Everything that matters
--- sits above row h-26, where the engine's result banner goes, so the final coup stays in view under it.
+-- sits above ui.BANNER_Y, where the engine's result banner goes, so the final coup stays in view over it.
 
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
@@ -10,17 +10,19 @@ local C = theme.C
 local M = {}
 
 local ZONES = {
-  player = { x = 3, w = 57, label = "PLAYER" },
-  banker = { x = 62, w = 57, label = "BANKER" },
+  player = { x = 4, w = 56, label = "PLAYER" },
+  banker = { x = 63, w = 56, label = "BANKER" },
 }
-local ZONE_Y, ZONE_H = 10, 44
-local LABEL_Y = 12
-local TOTAL_Y = 19
-local CARD_Y = 36
-local LEGEND_Y = 57
+local ZONE_Y, ZONE_H = ui.TOP, 40
+local LABEL_Y = ZONE_Y + 2
+local TOTAL_Y = LABEL_Y + 7
+local BET_Y = TOTAL_Y + 3      -- the bet on one side of the total
+local NATURAL_Y = TOTAL_Y + 4  -- the word on the other
+local CARD_Y = TOTAL_Y + 12
+local LEGEND_Y = 56
 local SHOE_X, SHOE_Y = 4, 55
 local CANCEL = { x = 103, y = 56, w = 15, h = 10 }
-local ROAD_X, ROAD_Y = 3, 54   -- the one row between the zones and the shoe, and above the result banner
+local ROAD_X, ROAD_Y = 4, ui.BANNER_Y - 2   -- between the zones and the shoe, and above the result banner
 local ROAD_COLORS = { P = "blue", B = "red", T = "gold" }
 
 local function copy(list)
@@ -63,6 +65,11 @@ local function won(model, name)
   return model.winner == name or model.winner == "tie"
 end
 
+--- The three card places in a zone, which share a column to keep two clear inside its frame.
+local function slots(zone)
+  return ui.fan(zone.x + math.floor(zone.w / 2), 3, ui.CARD_W, zone.w - 6, 1)
+end
+
 local function drawZone(c, model, state, name, anim)
   local zone, cards = ZONES[name], model[name]
   local cx = zone.x + math.floor(zone.w / 2)
@@ -73,22 +80,24 @@ local function drawZone(c, model, state, name, anim)
 
   -- The bet lies on its side of the table; a Tie bet shows on both, between which it is decided
   if model.side == name or model.side == "tie" then
-    c:text(zone.x + 3, ZONE_Y + 2, model.side == "tie" and "Tie bet" or "Your bet", C.gold)
-    c:text(zone.x + 3, ZONE_Y + 3, ui.group(state.bet), C.gold)
+    c:text(zone.x + 3, BET_Y, model.side == "tie" and "Tie bet" or "Your bet", C.gold)
+    c:text(zone.x + 3, BET_Y + 2, ui.group(state.bet), C.gold)
   end
 
   if #cards > 0 then
     local total = rules.total(cards)
     local natural = #cards == 2 and total >= rules.NATURAL
-    c:bigCenter(cx, TOTAL_Y, tostring(total), (natural or lit) and C.gold or C.text, 3)
-    if natural then c:textCenter(cx, TOTAL_Y + 15, "NATURAL", C.gold) end
+    c:bigCenter(cx, TOTAL_Y, tostring(total), (natural or lit) and C.gold or C.text, 2)
+    if natural then c:text(zone.x + zone.w - 10, NATURAL_Y, "NATURAL", C.gold) end
   end
 
   local incoming = anim and anim.ev.type == "deal" and anim.ev.who == name and anim.ev or nil
-  local xs = ui.fan(cx, 3, ui.CARD_W, zone.w - 3, 1)
+  local xs = slots(zone)
   for slot = 1, 3 do
     if cards[slot] then
       ui.card(c, xs[slot], CARD_Y, cards[slot], false)
+      -- White on white runs together, so each card gets an edge
+      if cards[slot - 1] then c:rect(xs[slot], CARD_Y + 1, 1, ui.CARD_H - 2, C.mute) end
     elseif not incoming or incoming.slot ~= slot then
       ui.cardSlot(c, xs[slot], CARD_Y, false)
     end
@@ -98,14 +107,13 @@ end
 --- The card on its way from the shoe goes over everything else.
 local function drawIncoming(c, anim)
   if not anim or anim.ev.type ~= "deal" then return end
-  local zone = ZONES[anim.ev.who]
-  local xs = ui.fan(zone.x + math.floor(zone.w / 2), 3, ui.CARD_W, zone.w - 3, 1)
+  local xs = slots(ZONES[anim.ev.who])
   local t = anim.t
   ui.card(c, SHOE_X + math.floor((xs[anim.ev.slot] - SHOE_X) * t), SHOE_Y + math.floor((CARD_Y - SHOE_Y) * t), anim.ev.card, false)
 end
 
 local function drawLegend(c, model, state)
-  local cx = math.floor(c.w / 2) + 4
+  local cx = math.floor(c.w / 2)
   if model.side then
     c:bigCenter(cx, LEGEND_Y, ("%s %s"):format(model.side:upper(), ui.group(state.bet)), C.gold, 1)
   elseif not state.over then
