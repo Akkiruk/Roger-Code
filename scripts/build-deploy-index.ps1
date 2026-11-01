@@ -213,6 +213,7 @@ function Get-ProgramMetadata {
         if ($line -match '^\s*--\s*(.+)$') {
             $desc = $Matches[1].Trim()
             if (
+                -not $meta.description -and
                 $desc.Length -gt 10 -and
                 $desc -notmatch '^manifest-(entrypoint|key|name|description|category|bundle):' -and
                 $desc -notmatch '^\S+\.lua$' -and
