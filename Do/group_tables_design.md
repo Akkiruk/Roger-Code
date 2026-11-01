@@ -41,7 +41,18 @@ The owner decided on 2026-11-01: griefers are not a worry, so easy to use beats 
 - Messages are plain rednet, addressed to one computer, with a `seq` from `os.epoch("utc")` so stale or repeated ones are dropped. Shape and size are checked like `net.lua` does, so junk cannot crash a table. Nothing is signed or sealed, so a private view can be overheard by someone who goes looking, and the owner accepts that.
 - Nothing secret goes in a toast, on the dealer wall or in a log. In a `players` game each seat is sent only that seat's view.
 
+## Nobody has to be the dealer
+
+The owner said on 2026-11-01 that no game may need a person dealing or running it. "Dealer" only ever means the computer.
+
+- A round starts by itself: once enough seats are ready, a short countdown runs and the computer shuffles, deals, spins, rolls, draws for the house and pays. Nobody presses start, and more players can sit during the countdown.
+- A player who does not act is handled by `auto` when their turn timer runs out, so one person cannot stall the table.
+- In Craps the shooter taps ROLL, and the computer rolls for them when the timer runs out. The computer rolls with nobody seated as shooter.
+- The owner does not need to be online or at the table. Nothing in a round waits for them, and their touch is only ever an option, never a requirement.
+
 ## Money
+
+The owner's flow, on 2026-11-01: when a game resolves, money goes from the losers to the computer's owner, and from the owner out to the winners. That is the `players` order below. The owner is the go-between and keeps only the rounding: when a split pot cannot divide evenly, the odd chips go to the owner, not to a player. That is the only cut in a `players` game, and there is no rake. The lead adds this after the review fixes, so nobody else changes it yet.
 
 The rules in `casino_roadmap.md` hold, all of them: stakes never up front, one settle before the final reveal, a reboot resumes, every transfer through `books.lua`, chips declared not taken, `transfer` needs a touch within 30 seconds on that computer. vhcctweaks stays on 2.2.35.
 
@@ -71,7 +82,7 @@ ccvault sessions are per player per computer, so **only the seat's computer can 
 
 A dealer reboot resumes the hand from its journal while seats show WAITING FOR THE DEALER. A seat that goes quiet is auto-acted after the turn limit and loses the seat after 2 hands, as Poker Table does.
 
-The game on Big Table is picked from 8 tiles on the dealer wall while no hand is running. Picking needs no seated player; a change while players are seated happens between hands and needs the owner or every seated player's agreement on their screens. An idle wall runs a demo or a tile menu.
+The game on Big Table is picked from 8 tiles on the dealer wall while no hand is running. Picking needs no seated player; a change while players are seated happens between hands and needs every seated player to agree on their screens. An idle wall runs a demo or a tile menu.
 
 ### A game plugin
 

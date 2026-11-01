@@ -11,7 +11,10 @@ package.path = table.concat({
 }, ";") .. ";" .. package.path
 
 -- Each game's rules live in its own folder, the root of its computer once installed
+-- The Arcade, Big Table and Duel all have a games.registry and a games folder. Each folder here goes in front of the last, so the
+-- Arcade's stay the ones a plain require finds, and a group game's test loads its game through group_kit.plugin
 for _, game in ipairs({
+  "BigTable", "Duel",
   "Arcade", "Baccarat", "Blackjack", "CasinoHub", "CrazyEights", "HiLo", "HorseRacing", "PokerTable",
   "Roulette", "Slots", "ThreeCardPoker", "UltimateHoldem", "VideoPoker",
 }) do

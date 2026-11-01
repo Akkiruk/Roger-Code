@@ -1,6 +1,6 @@
 # Casino Roadmap
 
-Last updated: 2026-10-31
+Last updated: 2026-11-01
 
 ## What Is Shipped
 
@@ -21,8 +21,12 @@ Every wagering game was rebuilt on one engine, `Shared/lib/casino/`. Read the he
 | Five-card draw | `pokertable` | Players against each other, no rake | Conservation and side-pot tests |
 | Casino Hub | `casino-hub` | Leaderboards, measured returns, shared jackpot | Scenario suite |
 | Casino cabinet | `casino` | All 10 single-player games on one computer, one at a time, from a menu | Emulator walk-through |
+| Big Table | `big-table` | 8 games on one dealer and up to 8 seats. Hold'em, Omaha, Stud and Five-Card Draw are players against each other, no rake. Blackjack, Roulette, Baccarat and Craps are against the house, each with a return its test holds to | Each game's `Tests/group_<id>_test.lua`, and `group.mjs` on real rednet across real seats, with a crash at each step of a move |
+| Duel | `duel` | Heads-Up Hold'em, Gin Rummy, Liar's Dice and Battleship for stakes, 1v1 on two walls of one computer, no rake | Each game's `Tests/group_<id>_test.lua`, and `group.mjs` |
 
 The cabinet bundles the game folders through `manifest-bundle` in `Games/Casino/startup.lua`. A game starts by reboot, and its `casino_*` files are stored as `cabinet_<game>_casino_*`, so each game keeps its own books. A round left open returns to its game on boot.
+
+Big Table and Duel run on their own engine, `Shared/lib/casino/group/`. `Do/group_tables_design.md` says how and why. Games are listed in each cabinet's `games/registry.lua`, and `Games/BigTable/games/README.md` is what a game provides.
 
 The monitor is always a 6x6 wall at text scale 0.5.
 
@@ -59,6 +63,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 - The hash is on the table before any card, in the play scene and on PokerTable. FAIR must only promise what is true.
 - The owner's touch locks a table's terminal, on tables, PokerTable and the hub. A table stays playable, and asks on its idle screen until it is locked. `isTerminalLocked` only reads.
 - The network is not trusted and not signed. Anything a table or the hub hears is checked for shape and size, nothing more.
+- Big Table's network is unsigned and unencrypted on purpose. The owner chose this on 2026-11-01: griefers are not a worry, so easy to use beats secure. A private view can be overheard by someone who goes looking, and that is accepted. No codes, keys or setup screens are to be added.
 - A jackpot claim the hub has not answered pays the seed at once and stays open until it answers, and then the player is booked the rest.
 - vhcctweaks stays on 2.2.35. Money only moves within 30 seconds of the player's last touch. Pressing a button is a touch, so a slow decision settles at once.
 - With a player detector (`presence.lua`, range 12) someone at the table gets 5 minutes, and someone gone for 5 seconds has the round finished and settled at once. After 25 seconds with no touch they are asked to tap, which keeps the money able to move. With no detector the round finishes after 60 seconds. What could not move is owed until that player next touches the table.
@@ -78,7 +83,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 ## Testing
 
 - `Tests/`: rules, payouts and returns, pure Lua.
-- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, `badges.mjs` covers badges and the card, `practice.mjs` and `tournament.mjs` cover pretend seats, `hint.mjs` the HINT button, `hint-oracle.mjs` its advice, and `mutants.mjs`, `pretend-mutants.mjs` and `hint-mutants.mjs` prove those tests can fail.
+- `craftos-agent/tools/casinotest/`: every game played on the emulator; `money.mjs` proves the money rules, `crash.mjs` takes the computer down at each step of a settle, `floor.mjs` covers the peripherals around a table, `badges.mjs` covers badges and the card, `practice.mjs` and `tournament.mjs` cover pretend seats, `hint.mjs` the HINT button, `hint-oracle.mjs` its advice, and `mutants.mjs`, `pretend-mutants.mjs` and `hint-mutants.mjs` prove those tests can fail. `group.mjs` runs the group engine on real rednet, `group-all.mjs` runs its cases a few at a time, `group-<game>.mjs` and `group-play.mjs` play the real games, and `group-mutants.mjs` proves `group.mjs` can fail.
 - `craftos-agent/tools/mcbridge/rc-casino.mjs`: every game with real tokens on a real server.
 
 ## Later
