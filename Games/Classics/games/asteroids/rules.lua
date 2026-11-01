@@ -10,9 +10,9 @@ local TAU = math.pi * 2
 local atan2, cos, floor, min, sin, sqrt = math.atan2, math.cos, math.floor, math.min, math.sin, math.sqrt
 
 M.SIZES = {
-  { radius = 6, score = 100, speed = 3.6 },  -- small
-  { radius = 10, score = 50, speed = 2.6 },  -- medium
-  { radius = 16, score = 20, speed = 1.8 },  -- large
+  { radius = 6, score = 100, speed = 4.8 },  -- small: about five seconds across, as in the arcade game
+  { radius = 10, score = 50, speed = 3.4 },  -- medium
+  { radius = 16, score = 20, speed = 2.4 },  -- large: about ten seconds
 }
 M.LOOKS = 4              -- rock outlines, for the plugin to pick from
 local LARGE = #M.SIZES
@@ -37,7 +37,7 @@ local TAP_REACH = 5       -- a tap this close to a target counts as a tap on it
 local WARP_TICKS = 6
 local WARP_COOL = 40
 local WAVE_BREATHER = 20
-local MOST_ROCKS = 9
+local MOST_ROCKS = 11     -- the arcade game's four, six, eight and ten, then this
 local CLEAR_START = 70    -- a new rock starts at least this far from the ship
 local BLAST_TICKS = 6
 local SAUCER_SPEED = 2.4
@@ -46,8 +46,8 @@ local BOMB_SPEED = 6
 local BOMB_LIFE = 30
 local SMALL_SAUCER_AT = 5000
 local SAUCERS = {
-  large = { radius = 8, score = 200, fire = 20 },
-  small = { radius = 5, score = 1000, fire = 12 },
+  large = { radius = 8, score = 200, fire = 14 },
+  small = { radius = 5, score = 1000, fire = 10 },
 }
 local BOT_EVERY = 4       -- steps between the bot's taps: about what a person can do
 local BOT_SLIP = 0.3      -- how often the bot taps wide of its target
@@ -111,10 +111,10 @@ local function clearSpot(s, rng)
   return spot
 end
 
---- A wave: one more rock each time, up to a limit, and a little quicker.
+--- A wave: two more rocks each time, up to a limit, and a little quicker.
 local function startWave(s, rng)
   local pace = min(1.5, 1 + (s.level - 1) * 0.05)
-  for _ = 1, min(MOST_ROCKS, 3 + s.level) do
+  for _ = 1, min(MOST_ROCKS, 2 + 2 * s.level) do
     local spot = clearSpot(s, rng)
     local rock = newRock(spot.x, spot.y, LARGE, rng)
     rock.vx, rock.vy = rock.vx * pace, rock.vy * pace
@@ -123,7 +123,7 @@ local function startWave(s, rng)
 end
 
 local function saucerWait(s, rng)
-  return 220 + rng(200) - min(100, s.level * 10)
+  return 130 + rng(130) - min(80, s.level * 10)
 end
 
 --- A fresh game. opts.rng is the only source of chance.

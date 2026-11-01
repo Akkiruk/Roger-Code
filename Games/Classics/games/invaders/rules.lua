@@ -24,9 +24,10 @@ local TOTAL = RACK_COLS * #ROW_POINTS
 local START_Y = 7
 local WAVE_LOWER, MOST_LOWER = 2, 14       -- rows each wave starts lower, and how far that can go
 local MARCH_STEP, DROP_STEP = 2, 2         -- cells across on a step, rows down at a wall
+local MOST_STEP = 6                        -- the last invader's stride: about two seconds across, as in the original
 
 local CANNON_SPEED = 4                     -- cells a step: quick, but it does have to travel
-local SHOT_SPEED = 4                       -- rows a step
+local SHOT_SPEED = 8                       -- rows a step: the original's, under a second up the board
 local FIRE_EVERY = 8                       -- steps between shots: a steady pace, whatever the player does
 
 local UFO_SPEED = 2
@@ -82,20 +83,26 @@ local function newBases(s)
 end
 
 local function nextBomb(s, rng)
-  return math.max(4, 16 - s.level) + rng(12)
+  return math.max(3, 9 - s.level) + rng(8)
 end
 
 local function nextUfo(rng)
   return 150 + rng(150)
 end
 
---- Steps between marches. The fewer invaders are left the faster they go, and later waves start quicker.
+--- Steps between marches. As in the original the pace goes with one over the number left, so it runs away at the end,
+-- and later waves start quicker.
 local function marchDelay(s)
-  local thinned = 2 + math.floor(8 * #s.invaders / TOTAL)
-  return math.max(1, thinned - math.floor((s.level - 1) / 2))
+  local paced = math.floor(10 * #s.invaders / TOTAL + 0.5)
+  return math.max(1, paced - math.floor((s.level - 1) / 2))
 end
 
-M.marchDelay = marchDelay
+--- Cells across on a march. Once they march every step, the only way to go faster is a longer stride.
+local function marchStep(s)
+  return math.min(MOST_STEP, math.max(MARCH_STEP, math.floor(10 / #s.invaders)))
+end
+
+M.marchDelay, M.marchStep = marchDelay, marchStep
 
 --- A fresh game. opts.rng is the only source of chance.
 function M.new(opts)
@@ -224,9 +231,9 @@ local function loseLife(s, events)
   end
 end
 
---- Rows a bomb falls this step: about one and a half to begin with, two from wave five.
+--- Rows a bomb falls this step: two to begin with, three from wave five.
 local function bombStep(s)
-  return (s.level >= 5 or s.clock % 2 == 0) and 2 or 1
+  return s.level >= 5 and 3 or 2
 end
 
 --- Move one bomb down a row. True once it's spent; the second answer is true if it hit the cannon.
@@ -342,7 +349,7 @@ local function march(s, events)
   for _, inv in ipairs(s.invaders) do
     left, right = math.min(left, inv.x), math.max(right, inv.x + INVADER_W - 1)
   end
-  local dx = s.dir * MARCH_STEP
+  local dx = s.dir * marchStep(s)
   if left + dx < 1 or right + dx > COLS then
     s.dir = -s.dir
     step(s, 0, DROP_STEP)
@@ -411,7 +418,7 @@ local function aimPoint(s)
   end
   if not best then return s.x end
   local flight = (CANNON_Y - best.y) / SHOT_SPEED
-  local drift = math.floor(flight / marchDelay(s)) * MARCH_STEP * s.dir
+  local drift = math.floor(flight / marchDelay(s)) * marchStep(s) * s.dir
   return clamp(best.x + math.floor(INVADER_W / 2) + drift)
 end
 

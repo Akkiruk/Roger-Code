@@ -571,6 +571,12 @@ local function drawScoreboard()
   ui.setScreen(sc)
   sc:clear(C.bg, nil, " ")
   local W, H = board2.W, board2.H
+  if app.plugin.versus then
+    app.versus.drawScoreboard(W, H)
+    sc:output(board2.out, 0, 0)
+    ui.setScreen(prev)
+    return
+  end
   if app.plugin.action then
     ui.text(app.plugin.short or app.plugin.title, floor(W / 2), 1, C.hi, "center", W - 2)
     local rows = scores.open(app.plugin.id).rows

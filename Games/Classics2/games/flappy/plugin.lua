@@ -93,6 +93,6 @@ return base.fill({
     "",
     "Touching a pipe, the ground or the top of the screen ends the game. You only get one bird.",
     "",
-    "Every ten pipes the gaps get a little tighter and closer together. A touch takes a moment to arrive, so flap a little early.",
+    "Every ten pipes the gaps get a little tighter and closer together.",
   },
 })

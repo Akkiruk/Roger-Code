@@ -13,7 +13,7 @@ local ROCKETS = 10          -- rockets at each base, every wave
 local FLOOR = GROUND - 4    -- the lowest a rocket can be aimed
 local HIT_Y = GROUND - 3    -- how low a missile gets before it lands
 local SHOT_SPEED = 5        -- rows a rocket climbs each step
-local BLAST = 7             -- a blast's widest radius, in rows
+local BLAST = 5             -- a blast's widest radius, in rows
 local CHAIN_BLAST = 4       -- the same for a blast set off by a kill, one less with each link in a chain
 local GROW, HOLD, SHRINK = 6, 4, 6 -- steps a blast spends on each
 local LAND_BLAST = 4        -- the flash where a missile lands
@@ -40,19 +40,20 @@ local function multiplier(wave)
 end
 
 local function missileSpeed(wave)
-  return math.min(2.2, 0.32 + 0.1 * wave)
+  return math.min(3.5, 0.55 + 0.2 * wave)
 end
 
 local function salvoSize(wave)
-  return math.min(8, 1 + math.ceil(wave / 2))
+  return math.min(10, 2 + math.ceil(wave / 2))
 end
 
 local function salvoGap(wave)
-  return math.max(14, 34 - 2 * wave)
+  return math.max(10, 26 - 3 * wave)
 end
 
+--- More than thirty rockets can stop for long: this is what makes it a game you lose.
 local function waveSize(wave)
-  return 10 + 3 * wave
+  return 12 + 4 * wave
 end
 
 local function citiesLeft(s)

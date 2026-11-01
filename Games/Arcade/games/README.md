@@ -71,7 +71,7 @@ For animation, call `base.animate(match, ms, fields)` from `view.onEvents`, and 
 
 A classic is one player, in real time, playing for a high score. Classics are their own package, `Games/Classics`, for a table with one wall, and the shell is shared through `lib/arcade`. Set `action = true` and the game gets its own START screen, high score table and final screen. The shell owns all of that. See `Games/Classics/games/snake` for a complete one.
 
-The screen is a monitor, and a monitor only ever gets separate taps: there's no held button and no joystick. A touch takes a moment to arrive too. So pick games that work in taps, and keep the speed fair: `tickMs` is how often the game steps, and 100 is as fast as it goes. A tap should set something that stays set, such as a direction, or aim at a spot on the board.
+The screen is a monitor, and a monitor only ever gets separate taps: there's no held button and no joystick. So pick games that work in taps, and keep the speed fair: `tickMs` is how often the game steps, and 100 is as fast as it goes. A tap should set something that stays set, such as a direction, or aim at a spot on the board.
 
 Rules are pure and take chance only from `rng`:
 
@@ -82,9 +82,37 @@ Rules are pure and take chance only from `rng`:
 | `tick(state, rng)` | One step of the clock. Returns a list of events |
 | `bot(state, rng)` | An action for the idle screen and tests, or nil |
 
-The state must have `score`, `level`, `over`, and `lives` if the game has them. Setting `over` to true ends the run.
+The state must have `score`, `level`, `over`, and `lives` if the game has them. Setting `over` to true ends the run, and setting `won` too makes the final screen say YOU WON!
 
 The view has `layout(W, H)` (`base.actionLayout` makes one), `draw(L, state)`, `controls(L, state)` for buttons as `{ label, x, y, w, h, action }` (leave them out for a game steered by the whole wall: set `split = true` and return `base.splitAction(L, px, py)` from `actionAt`, so a player taps the side they want without looking down), `actionAt(L, state, px, py)` for taps on the board, and `onEvents(app, state, events)` for sound. `help` and `blurb` work as for any game.
+
+A game too long for one sitting sets `saves = true`, and the shell keeps one save for each player and game. It saves every 30 seconds of play and whenever play pauses. Walking away, 10 minutes with no tap, and SAVE & QUIT all save the run and free the wall, so only `over` ends a run: then the save is deleted and the score posted. The ready screen offers the tapper CONTINUE and NEW GAME, with a line from `view.saveSummary(state)` if there is one, such as "Day 34, Fort Kearney". Everything needed to resume must be in `state` as plain data, because it comes back from a file: no functions, metatables or the rng, which continues by itself. Two fields sharing a table come back as two tables, so compare by value; fractions keep 14 digits; and a new version of a game has to cope with states saved by the last one. `input` may end the game itself: a long game's `tick` may be rare. `ONLY=<id>,saves` in `tools/arcadetest` checks a game resumes exactly.
+
+## Versus
+
+A Versus game is two players in real time, one wall each, for the Versus cabinet (`Games/Versus`): two equal 6x6 walls back to back with the computer between them. Each player sees only their own wall. The shell owns picking, joining, the 3-2-1, the clock, the header with both names and the score, QUIT, walking away, the final board, the wins table and REMATCH. A one-wall cabinet plays the computer.
+
+A plugin sets `versus = true`, `tickMs` (100 or more), `title`, `blurb`, `help`, `rules` and `view`, and returns `base.fill(M)`.
+
+| Rules | Contract |
+|---|---|
+| `new({ rng })` | A fresh state: plain data, and `rng` is the only source of chance |
+| `input(state, player, action)` | Player 1 or 2's action. Takes effect on the next step |
+| `tick(state, rng)` | One step of the clock. Returns a list of events |
+| `bot(state, rng, player, level)` | An action for that player, or nil. Plays the computer and the idle demo. `level` is one of `cpuLevels`, or nil if the game has none |
+
+The state must have `over`, `winner` (1, 2, or 0 for a draw) and `score = { p1, p2 }`, the round or match score the header shows. A game plays its own match inside the state, such as first to five, and sets `over` when it's decided.
+
+| View | Contract |
+|---|---|
+| `layout(W, H)` | `base.actionLayout` makes one |
+| `draw(L, state, player)` | Drawn once per wall from that player's side, so a game can be mirrored |
+| `actionAt(L, state, px, py, player)` | Turns a tap on that player's wall into an action, or nil |
+| `onEvents(app, state, events)` | Sound. Must not block |
+
+`split = true` and `splitMiddle = "BOMB"` show the corner-to-corner hint for the first four seconds, as for classics, and `base.splitAction`, `base.inMiddle` and `base.drawMiddle` work the same. QUIT sits in the bottom right corner, and a tap there doesn't reach `actionAt`. To offer a difficulty, set `cpuLevels = { "easy", "hard" }`: the ready screen shows them under PLAY THE COMPUTER.
+
+Wins and losses are kept per game in `arcade_versus_<id>.dat`. A match against the computer isn't counted, and neither is a draw. A forfeit, by QUIT twice or by being away for 20 seconds, counts as a loss.
 
 ## Proving a game
 

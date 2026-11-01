@@ -1,28 +1,29 @@
 -- games/flappy/rules.lua
 -- Flappy Bird. Pure: no screen, sound or files. See "Classics" in games/README.md.
 -- The board is WIDTH x HEIGHT monitor cells, with y growing down, so a square on the wall is 3 wide by 2 tall.
--- The bird keeps its x and the pipes come to it. A tap has a real delay behind it, so the bird is slow and floaty:
--- see "Prove fairness" in tools/arcadetest/tests/flappy.test.lua before changing a number here.
+-- The bird keeps its x and the pipes come to it. The numbers are the phone game's, scaled to this board: its 288 x 400
+-- screen, 120 pixels a second of pipe, and a gap of 100, at ten steps a second. It's meant to be quick and punishing.
+-- The limit on all of this is the test that a perfect player can still clear 50 pipes.
 
-local M = { WIDTH = 116, HEIGHT = 66, GROUND = 61, BIRD_X = 26, BIRD_W = 6, BIRD_H = 4, PIPE_W = 10, PER_LEVEL = 10 }
+local M = { WIDTH = 116, HEIGHT = 66, GROUND = 61, BIRD_X = 26, BIRD_W = 6, BIRD_H = 4, PIPE_W = 12, PER_LEVEL = 10 }
 
 local WIDTH, GROUND = M.WIDTH, M.GROUND
 local BIRD_X, BIRD_W, BIRD_H, PIPE_W, PER_LEVEL = M.BIRD_X, M.BIRD_W, M.BIRD_H, M.PIPE_W, M.PER_LEVEL
 
-local GRAVITY = 0.5         -- cells a step, each step
-local FLAP = 2              -- the upward speed a flap sets, whatever the bird was doing
-local MAX_FALL = 2          -- so a long fall can still be caught
-local SPEED = 1.25          -- cells a step the pipes move
+local GRAVITY = 1.2         -- cells a step, each step
+local FLAP = 3.4            -- the upward speed a flap sets, whatever the bird was doing
+local MAX_FALL = 4.5        -- the fall's top speed
+local SPEED = 2.75          -- cells a step the pipes move
 
-local START_GAP = 28        -- the opening in the first pipes
-local MIN_GAP = 22          -- the fair limit: see the fairness test
+local START_GAP = 17        -- the opening in the first pipes
+local MIN_GAP = 15          -- the tightest a perfect player can still pass for good
 local GAP_STEP = 1          -- taken off the opening each level
 local START_SPACING = 46    -- from one pipe to the next
-local MIN_SPACING = 38
+local MIN_SPACING = 40
 local SPACING_STEP = 2
 
 local MARGIN = 6            -- an opening stays this far from the ceiling and the ground
-local MAX_SWING = 16        -- the most one opening's middle sits from the last, so the climb can always be made
+local MAX_SWING = 20        -- the most one opening's middle sits from the last, so the climb can always be made
 local FIRST_PIPE = 96       -- where the first pipe waits for the first tap
 local START_Y = 26
 local BOB_HEIGHT = 1        -- how far the waiting bird drifts
@@ -30,8 +31,9 @@ local BOB_BEAT = 4          -- steps between its moves: the wall rests in betwee
 local WING_STEPS = 3        -- steps the wing stays up after a flap
 
 local BOT_WAIT = 15         -- steps of bobbing the idle screen shows
-local BOT_MARGIN = 9        -- how high over the opening's lower lip the bot flaps
-local BOT_SLOP = 0.7        -- cells of error per pipe passed: its luck runs out, so the idle screen moves on
+local BOT_SIGHT = 18       -- steps ahead the bot looks, which is past the next pipe to the one after
+local BOT_SLIP = 0.03       -- the chance per pipe passed that it fumbles the next one, so the idle screen moves on
+local BOT_RANGE = 24        -- how near a pipe the fumble comes
 
 M.GRAVITY, M.FLAP, M.MAX_FALL, M.SPEED, M.WING_STEPS = GRAVITY, FLAP, MAX_FALL, SPEED, WING_STEPS
 M.START_GAP, M.MIN_GAP, M.START_SPACING, M.MIN_SPACING = START_GAP, MIN_GAP, START_SPACING, MIN_SPACING
@@ -146,8 +148,30 @@ function M.tick(s, rng)
   return events
 end
 
---- A plain player for the idle screen and tests. It flaps when it's sinking too near the lower lip, and a new error
--- for each pipe grows with the score, so sooner or later it misses and the idle screen moves on.
+--- Would the bird come through this many more steps from here, whatever else it has to do? Pipes are given by their
+-- place now, and shift as the steps go by. seen keeps the spots already found hopeless, so a search stays short.
+local function survives(s, y, vy, flapped, step, seen)
+  if flapped then vy = -FLAP else vy = math.min(MAX_FALL, vy + GRAVITY) end
+  y = y + vy
+  if y <= 0 or y + BIRD_H >= GROUND then return false end
+  for _, p in ipairs(s.pipes) do
+    local x = p.x - SPEED * step
+    if BIRD_X + BIRD_W > x and BIRD_X < x + PIPE_W and (y < p.top or y + BIRD_H > p.bottom) then return false end
+  end
+  if step >= BOT_SIGHT then return true end
+  local spot = step * 1000000 + math.floor(y * 10) * 100 + math.floor(vy * 5 + 50)
+  if seen[spot] then return false end
+  seen[spot] = true
+  return survives(s, y, vy, false, step + 1, seen) or survives(s, y, vy, true, step + 1, seen)
+end
+
+--- Perfect play: flap only when leaving it would be fatal. The search counts this coming step as the first.
+function M.mustFlap(s)
+  return not survives(s, s.y, s.vy, false, 1, {})
+end
+
+--- A plain player for the idle screen and tests. It flies well, and the further it gets the likelier it is to fumble the
+-- next pipe, so sooner or later it hits one and the idle screen moves on.
 function M.bot(s, rng)
   if not s.started then
     if s.clock >= BOT_WAIT then return { kind = "flap" } end
@@ -155,11 +179,10 @@ function M.bot(s, rng)
   end
   if s.slipFor ~= s.score then
     s.slipFor = s.score
-    s.slip = (rng() * 2 - 1) * BOT_SLOP * s.score
+    s.slip = rng() < BOT_SLIP * s.score
   end
-  local p = nextPipe(s)
-  local floor = p.bottom - BOT_MARGIN + (s.slip or 0)
-  if s.vy >= 0 and s.y + BIRD_H + s.vy * 2 > floor then return { kind = "flap" } end
+  if s.slip and nextPipe(s).x - BIRD_X <= BOT_RANGE then return nil end
+  if M.mustFlap(s) then return { kind = "flap" } end
   return nil
 end
 

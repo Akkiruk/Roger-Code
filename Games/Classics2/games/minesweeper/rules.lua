@@ -14,7 +14,7 @@ local PAUSE_STEPS = 20      -- how long BOARD CLEAR stays up
 local ENDING_STEPS = 20     -- the mines stay in plain view this long, because the final board's banner covers the middle
 local CLEAR_BONUS = 50      -- for each level
 local TIME_BONUS = 10       -- for each mine, on a board cleared in no time
-local PAR_SECONDS = 6       -- for each mine, the time at which the time bonus has run out
+local PAR_SECONDS = 3       -- for each mine, the time at which the time bonus has run out: 30 seconds on the first board
 local BOT_EVERY = 6         -- steps between the bot's moves
 
 --- Width, height and mines of a level's board.

@@ -15,13 +15,13 @@ local PADDLE_Y = 30        -- the top of the paddle
 local PADDLE_H = 1
 local PADDLE_LONG = 8
 local PADDLE_SHORT = 5     -- after the ball has reached the top wall
-local PADDLE_SPEED = 1.6   -- units a step: it beats the ball sideways at top speed
+local PADDLE_SPEED = 2.8   -- units a step: it beats the ball sideways at top speed
 
-local START_SPEED = 0.6    -- units a step
-local SPEED_PER_BRICK = 0.015
-local SPEED_PER_LEVEL = 0.1
-local LEVEL_SPEED_CAP = 1.1
-local MAX_SPEED = 1.4
+local START_SPEED = 1.2    -- units a step: the arcade's serve, a bit over two seconds from paddle to wall
+local SPEED_PER_BRICK = 0.03
+local SPEED_PER_LEVEL = 0.2
+local LEVEL_SPEED_CAP = 2.2
+local MAX_SPEED = 2.6      -- the arcade's top speed, about a second from paddle to wall
 local MOVE_STEP = 0.25     -- the longest single move: less than the thinnest brick or paddle
 
 local MAX_ANGLE = math.rad(60) -- from straight up, at the very end of the paddle
@@ -31,6 +31,7 @@ local SERVE_WAIT = 12      -- steps the ball sits on the paddle before it goes
 
 M.BALL_R, M.PADDLE_Y, M.PADDLE_H, M.PADDLE_SPEED = BALL_R, PADDLE_Y, PADDLE_H, PADDLE_SPEED
 M.PADDLE_LONG, M.PADDLE_SHORT, M.MAX_SPEED, M.ROW_SCORE = PADDLE_LONG, PADDLE_SHORT, MAX_SPEED, ROW_SCORE
+M.START_SPEED = START_SPEED
 
 local function clamp(v, low, high)
   return math.max(low, math.min(high, v))
@@ -242,7 +243,7 @@ function M.bot(s, rng)
     return nil
   end
   if not s.miss then
-    local spread = reach(s) * (0.5 + s.speed)
+    local spread = reach(s) * (0.6 + s.speed / 3)
     s.miss = (rng() * 2 - 1) * spread
   end
   return { kind = "aim", x = landing(b) + s.miss }

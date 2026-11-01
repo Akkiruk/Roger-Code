@@ -2,7 +2,7 @@
 -- Duck Hunt. Pure: no screen, sound or files. See "Classics" in Games/Arcade/games/README.md.
 -- The board is measured in monitor cells, x across and y down, with the sky above y = GRASS_Y. A cell is 2 wide by 3 tall
 -- on screen, so a row counts ASPECT columns: that keeps diagonals looking diagonal. A duck's x, y is its middle.
--- A tap can't land where the player saw the duck: it arrives late. So a shot counts against the duck's last few places too.
+-- A tap lands on the duck as it's drawn: the next step resolves the shot before anything moves.
 -- A run goes round these phases: intro (the round's banner), fly (the only one that takes shots), settle (ducks fall or leave),
 -- dog (he fetches or laughs), then fly again, or tally (the round's result) once all ten have flown.
 
@@ -18,13 +18,13 @@ local KINDS = {
   { name = "red", points = 1500, pace = 1.5 },
 }
 
-local HIT_W, HIT_H = 9, 6     -- a shot hits this far from a duck's middle, across and down. The sprite is 6 and 4
-local BASE_SPEED = 1.1        -- columns a step for a black duck on round 1, about ten seconds across the wall
-local SPEED_STEP = 0.1        -- added each round
-local MAX_SPEED = 3           -- no duck goes faster: a tap 4 steps late must still land, and it does up to here
-local FLIGHT_STEPS = 80       -- steps before a release flies away, on round 1
+local HIT_W, HIT_H = 7, 5     -- a shot hits this far from a duck's middle, across and down. The sprite is 6 and 4
+local BASE_SPEED = 3          -- columns a step for a black duck on round 1, about four seconds across the wall
+local SPEED_STEP = 0.4        -- added each round
+local MAX_SPEED = 7           -- no duck goes faster: past here it jumps more than its own hit box in a step
+local FLIGHT_STEPS = 55       -- steps before a release flies away, on round 1
 local FLIGHT_STEP = 3         -- that many fewer each round
-local MIN_FLIGHT = 50
+local MIN_FLIGHT = 30
 local FIRST_QUOTA, MAX_QUOTA, QUOTA_EVERY = 6, 9, 3 -- hits needed: up by one every QUOTA_EVERY rounds
 local PERFECT_BONUS = 10000
 local START_Y = GRASS_Y + 6   -- ducks start here, hidden in the grass, and fall back to here
@@ -41,8 +41,7 @@ local DOG_LAUGH = 10          -- steps he laughs
 local TALLY_STEPS = 22        -- the pause on a round's result
 local DOG_EDGE = 16           -- how near the sides the dog comes up
 local BOT_GAP = 13            -- steps between its shots
-local BOT_LAG = 3             -- how many steps behind the duck it aims
-local BOT_SPREAD_X, BOT_SPREAD_Y = 18, 11 -- how far off it can be, either way
+local BOT_SPREAD_X, BOT_SPREAD_Y = 11, 7 -- how far off it can be, either way
 
 M.KINDS, M.HIT_W, M.HIT_H, M.PERFECT_BONUS = KINDS, HIT_W, HIT_H, PERFECT_BONUS
 M.DOG_RISE, M.INTRO_STEPS = DOG_RISE, INTRO_STEPS
@@ -72,7 +71,7 @@ end
 
 --- The chance a flying duck changes its mind on any one step.
 local function turnChance(round)
-  return min(0.05, 0.008 * (round - 1))
+  return min(0.1, 0.02 + 0.01 * (round - 1))
 end
 
 local function pickKind(round, rng)
@@ -95,7 +94,7 @@ local function newDuck(s, slot, rng)
   local x = MARGIN + 8 + rng(WIDTH - 2 * (MARGIN + 8))
   local d = {
     kind = kind, slot = slot, state = "fly", rising = true, speed = speedOf(kind, s.level), frame = rng(4),
-    x = x, y = START_Y, x1 = x, y1 = START_Y, x2 = x, y2 = START_Y,
+    x = x, y = START_Y,
   }
   setCourse(d, rng, true)
   return d
@@ -142,13 +141,9 @@ function M.input(s, action)
   s.taps[#s.taps + 1] = { x = x, y = y }
 end
 
-local function within(x, y, tap)
-  return math.abs(tap.x - x) <= HIT_W and math.abs(tap.y - y) <= HIT_H
-end
-
---- Does a tap land on this duck, where it is or where it was one or two steps ago?
+--- Does a tap land on this duck?
 local function struck(d, tap)
-  return within(d.x, d.y, tap) or within(d.x1, d.y1, tap) or within(d.x2, d.y2, tap)
+  return math.abs(tap.x - d.x) <= HIT_W and math.abs(tap.y - d.y) <= HIT_H
 end
 
 --- The flying duck a tap landed on, the nearest if it could be either.
@@ -212,7 +207,6 @@ local function escape(s, events)
 end
 
 local function moveFlying(s, d, rng)
-  d.x2, d.y2, d.x1, d.y1 = d.x1, d.y1, d.x, d.y
   d.x, d.y = d.x + d.vx, d.y + d.vy
   if d.rising then
     if d.y <= FLOOR then
@@ -343,14 +337,14 @@ function M.tick(s, rng)
   return events
 end
 
---- A fair human-looking player for the idle screen and tests: it waits to see a duck, takes a shot every so often, aims
---- a moment behind it and a little off, so it gets both hits and laughs.
+--- A fair human-looking player for the idle screen and tests: it waits to see a duck, takes a shot every so often and
+--- aims a little off, so it gets both hits and laughs.
 function M.bot(s, rng)
   if s.phase ~= "fly" then return nil end
   for _, d in ipairs(s.ducks) do
     if d.state == "fly" and not d.rising and s.aloft % BOT_GAP == 0 then
-      local x = d.x - d.vx * BOT_LAG + (rng() * 2 - 1) * BOT_SPREAD_X
-      local y = d.y - d.vy * BOT_LAG + (rng() * 2 - 1) * BOT_SPREAD_Y
+      local x = d.x + (rng() * 2 - 1) * BOT_SPREAD_X
+      local y = d.y + (rng() * 2 - 1) * BOT_SPREAD_Y
       return { kind = "shoot", x = max(0, min(WIDTH - 1, floor(x))), y = max(0, min(GRASS_Y - 1, floor(y))) }
     end
   end

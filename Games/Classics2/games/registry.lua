@@ -7,4 +7,7 @@ return {
   require("games.minesweeper.plugin"),
   require("games.lander.plugin"),
   require("games.duckhunt.plugin"),
+  require("games.tapper.plugin"),
+  require("games.pipedream.plugin"),
+  require("games.mappy.plugin"),
 }

@@ -2,7 +2,7 @@
 -- Blocks, the falling-blocks classic. Pure: no screen, sound or files. See "Classics" in games/README.md.
 -- The well is a table of rows, and a cell holds a piece's letter or false. Rows -1 and 0 sit out of sight above the top,
 -- so a piece can turn up there. A tap sets an aim, a column the piece keeps sliding to until it lands, so the order of
--- the taps doesn't matter and a late or repeated tap can't overshoot.
+-- the taps doesn't matter and a repeated tap can't overshoot.
 
 local M = { COLS = 10, ROWS = 20 }
 
@@ -11,7 +11,8 @@ local TOP = -1           -- the highest row, out of sight
 local PER_LEVEL = 10     -- lines for each level
 local LINE_SCORE = { 100, 300, 500, 800 }
 local LOCK_TICKS = 3     -- steps a landed piece waits before it locks, however fast the fall
-local DROP_GUARD = 2     -- steps a new piece ignores DROP, so a late or double tap can't throw it down too
+local DROP_GUARD = 2     -- steps a new piece ignores DROP, so a double tap can't throw it down too
+local FALL_STEPS = { 8, 6, 5, 4, 3, 2, 2, 1 } -- steps between falls, by level: the NES game's curve, 0.8 s a row to 0.1 s
 local ENDING_TICKS = 12  -- steps the full well stays up after a top-out, before the run ends
 local MAX_INPUTS = 4     -- taps kept for the next step
 local KICKS = { { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, -1 }, { -2, 0 }, { 2, 0 } } -- where a turn may land, tried in order
@@ -98,9 +99,9 @@ function M.landing(s)
   return landingRow(s, p.letter, p.rot, p.x, p.y)
 end
 
---- Steps between falls: one fewer each level, down to one.
+--- Steps between falls, down to one.
 local function delay(s)
-  return math.max(1, 11 - s.level)
+  return FALL_STEPS[math.min(s.level, #FALL_STEPS)]
 end
 
 --- The next letter from the bag: all seven, shuffled, then a new bag.

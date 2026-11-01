@@ -49,14 +49,20 @@ function M.newId()
 end
 
 --- A small seeded generator for games with chance in them. Same seed, same numbers, so any match can be replayed.
-function M.rng(seed)
+--- trackedRng also returns a function that says where the generator has got to: trackedRng(position - 1) carries on from
+-- exactly there, so a saved game keeps the numbers it would have had.
+function M.trackedRng(seed)
   local state = seed % 2147483646 + 1
   return function(n)
     state = state * 16807 % 2147483647 -- small enough to stay exact in a double
     local value = state - 1
     if n then return value % n + 1 end
     return value / 2147483646
-  end
+  end, function() return state end
+end
+
+function M.rng(seed)
+  return (M.trackedRng(seed))
 end
 
 return M

@@ -1,7 +1,7 @@
 -- manifest-entrypoint: true
 -- manifest-key: classics2
 -- manifest-name: Classics 2
--- manifest-description: Dig Dug, Flappy Bird, Minesweeper, Lunar Lander and Duck Hunt, played by touch for the high score.
+-- manifest-description: Dig Dug, Flappy Bird, Minesweeper, Tapper, Mappy and more, played by touch for the high score.
 -- manifest-category: Arcade
 
 -- Restarts Classics 2 after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.

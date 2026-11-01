@@ -4,7 +4,7 @@
 -- Across, a row is measured in steps a sixth of a tile wide. A hop is one whole tile.
 -- Every lane is a ring of things that turns past the board and comes round again.
 -- The clock ticks fast so a hop answers at once, but the world moves on a slower beat: everything shifts together, then
--- holds still. That's easier to time by tap, and it spares the monitors a full redraw at every tick.
+-- holds still. That spares the monitors a full redraw at every tick.
 
 local M = { COLS = 16, ROWS = 13, TILE = 6 }
 

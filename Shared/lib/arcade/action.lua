@@ -2,11 +2,14 @@
 -- Classic games: one player, in real time, playing for a high score. See "Classics" in games/README.md.
 -- A run has three phases: ready (the score table and START), play, and over (the final board, until someone taps).
 -- Runs are not journaled: a reboot ends one, and nothing is at stake but a score.
+-- A plugin with saves = true is a long game: its run is kept in a file for its player (saves.lua). Walking away or SAVE &
+-- QUIT pauses the run and frees the wall, and only `over` ends it. A plugin without saves takes none of those paths.
 
 local base = require("lib.arcade.base")
 local config = require("lib.arcade.constants")
 local hw = require("lib.arcade.hw")
 local journal = require("lib.arcade.journal")
+local saves = require("lib.arcade.saves")
 local scores = require("lib.arcade.scores")
 local ui = require("lib.arcade.ui")
 
@@ -28,37 +31,141 @@ end
 
 local function nowMs() return os.epoch("local") end
 
+--- This player's save, if it's one this game can show. A file can be sound and still not suit the game as it is now, so
+-- it's tried here rather than on the player's first frame. The line is what the ready screen says about it.
+local function readSave(owner)
+  local plugin = app.plugin
+  local save = saves.read(plugin.id, owner)
+  if not save then return nil end
+  local ok, summary = pcall(function()
+    plugin.view.draw(env.L, save.state)
+    plugin.view.controls(env.L, save.state)
+    return plugin.view.saveSummary and plugin.view.saveSummary(save.state)
+  end)
+  if not ok then
+    app.log("save for " .. tostring(owner) .. " on " .. plugin.id .. " can't be shown: " .. tostring(summary))
+    return nil
+  end
+  save.line = owner .. ": " .. (summary and tostring(summary):gsub("%c", " ") or "your game is saved")
+  return save
+end
+
+--- The ready screen speaks to whoever tapped it last, and shows them their own save and nobody else's.
+local function offerSave(a, owner)
+  a.saveOwner, a.saved, a.newUntil = owner, readSave(owner), nil
+  S.dirty = true
+end
+
+--- Keep this run's place on disk. Returns false if it couldn't, which never stops the run.
+local function saveRun(a)
+  if a.phase ~= "play" or a.midRules or a.state.over then return false end
+  local ok, why = saves.write(app.plugin.id, a.player, a.state, a.rngAt())
+  if not ok then
+    app.log("could not save " .. app.plugin.id .. " for " .. tostring(a.player) .. ": " .. tostring(why))
+    app.setToast("Could not save your game", C.warn, 2500)
+  end
+  return ok
+end
+
 --- The ready screen for the current game.
 function M.open(who)
   S.action = { phase = "ready", player = who, scores = scores.open(app.plugin.id) }
+  if app.plugin.saves then offerSave(S.action, who or "Player") end
   S.view = "action"
   S.lastTouch = nowMs()
+  S.dirty = true
+end
+
+--- Into play, on a new run or a saved one.
+local function begin(a)
+  a.phase, a.place, a.awaySince, a.reviewed, a.quitUntil = "play", nil, nil, false, nil
+  a.nextAt = nowMs() + (app.plugin.tickMs or 150)
+  a.startedAt = nowMs()
+  a.touchedAt, a.saveAt = a.startedAt, a.startedAt + saves.AUTOSAVE_MS
+  app.audio.cue("start")
   S.dirty = true
 end
 
 function M.start(who)
   local a = S.action
   local plugin = app.plugin
+  if plugin.saves then
+    local owner = who or a.player or "Player"
+    -- START and AGAIN must not write over a game: this tapper's save may not be what the screen was showing
+    if readSave(owner) then
+      M.open(owner)
+      return
+    end
+    saves.delete(plugin.id, owner)
+  end
   a.player = who or a.player or "Player"
   a.seed = math.random(1, 2147483646)
-  a.rng = journal.rng(a.seed)
+  a.rng, a.rngAt = journal.trackedRng(a.seed)
   a.state = plugin.rules.new({ rng = a.rng })
-  a.phase, a.place, a.awaySince, a.reviewed, a.quitUntil = "play", nil, nil, false, nil
-  a.nextAt = nowMs() + (plugin.tickMs or 150)
-  a.startedAt = nowMs()
-  app.audio.cue("start")
-  S.dirty = true
+  begin(a)
+  if plugin.saves then saveRun(a) end
+end
+
+--- If this tap is someone else's, the ready screen turns to them and the tap has done its job.
+local function readyForOther(a, who)
+  if not who or who == a.saveOwner then return false end
+  offerSave(a, who)
+  return true
+end
+
+--- CONTINUE: the save carries on from where its numbers left off.
+function M.continue(who)
+  local a = S.action
+  if not a or a.phase ~= "ready" or not a.saved or readyForOther(a, who) then return end
+  local save = a.saved
+  a.player, a.state, a.saved = save.player, save.state, nil
+  a.rng, a.rngAt = journal.trackedRng(save.rng - 1)
+  begin(a)
+end
+
+--- NEW GAME takes two taps: the second one loses the save.
+function M.newGame(who)
+  local a = S.action
+  if not a or a.phase ~= "ready" or not a.saved or readyForOther(a, who) then return end
+  if a.newUntil and nowMs() < a.newUntil then
+    saves.delete(app.plugin.id, a.saved.player)
+    a.saved, a.newUntil = nil, nil
+    M.start(who)
+  else
+    a.newUntil = nowMs() + QUIT_WINDOW_MS
+    app.audio.play("tap")
+  end
 end
 
 local function finish()
   local a = S.action
   local s = a.state
+  if a.phase == "over" then return end
   a.phase = "over"
   a.overAt = nowMs()
+  if app.plugin.saves then saves.delete(app.plugin.id, a.player) end
   a.place = a.scores:add(a.player, s.score, s.level)
   app.audio.cue(a.place == 1 and "win" or "lose")
   S.lastTouch = nowMs()
   S.dirty = true
+end
+
+--- A long game stops without ending: save it and free the wall.
+local function pause(a)
+  saveRun(a)
+  app.audio.play("back")
+  M.leave()
+end
+
+--- A player told their save failed can still go, but they get told first.
+local function saveAndQuit(a)
+  if saveRun(a) or a.leaveUnsaved then
+    app.audio.play("back")
+    M.leave()
+    return
+  end
+  a.leaveUnsaved, a.quitUntil = true, nil
+  app.setToast("Not saved! SAVE & QUIT again to leave anyway", C.warn, 4000)
 end
 
 --- QUIT sits close to the game, so it takes two taps: a stray one can't end a run.
@@ -66,7 +173,7 @@ function M.askToQuit()
   local a = S.action
   if not a or a.phase ~= "play" then return end
   if a.quitUntil and nowMs() < a.quitUntil then
-    finish()
+    if app.plugin.saves then saveAndQuit(a) else finish() end
   else
     a.quitUntil = nowMs() + QUIT_WINDOW_MS
     app.audio.play("tap")
@@ -98,20 +205,38 @@ function M.mayPlay(who)
   return false
 end
 
+--- Hand an action to the rules. A long game's clock may be slow or stopped, so nothing else is coming to show the result
+-- of a tap, or to notice that it ended the game.
+local function applyInput(a, action)
+  local plugin = app.plugin
+  if not plugin.saves then
+    plugin.rules.input(a.state, action)
+    return
+  end
+  a.midRules = true
+  plugin.rules.input(a.state, action)
+  a.midRules = nil
+  if a.state.over then finish() end
+  S.dirty = true
+end
+
 --- A touch on the game itself.
 function M.touch(px, py, who)
   local a = S.action
+  if a and a.phase == "ready" and app.plugin.saves then readyForOther(a, who) end
   if not a or a.phase ~= "play" or not M.mayPlay(who) then return end
+  a.touchedAt = nowMs()
   local action = app.plugin.view.actionAt(env.L, a.state, px, py)
   a.lastAction = action
-  if action then app.plugin.rules.input(a.state, action) end
+  if action then applyInput(a, action) end
 end
 
 function M.press(index, who)
   local a = S.action
   if not a or a.phase ~= "play" or not M.mayPlay(who) then return end
+  a.touchedAt = nowMs()
   local control = app.plugin.view.controls(env.L, a.state)[index]
-  if control then app.plugin.rules.input(a.state, control.action) end
+  if control then applyInput(a, control.action) end
 end
 
 local function checkPresence(a, t)
@@ -120,22 +245,55 @@ local function checkPresence(a, t)
     a.awaySince = nil
   else
     a.awaySince = a.awaySince or t
-    if t - a.awaySince > LEFT_LIMIT_MS then finish() end
+    if t - a.awaySince > LEFT_LIMIT_MS then
+      if app.plugin.saves then pause(a) else finish() end
+    end
   end
+end
+
+--- A question on the wall has to clear itself: in a long game, nothing else may redraw it.
+local function clearLapsed(a, t)
+  if a.newUntil and t >= a.newUntil then a.newUntil, S.dirty = nil, true end
+  if a.phase ~= "play" then return end
+  if a.quitUntil and t >= a.quitUntil then a.quitUntil, S.dirty = nil, true end
+  if app.plugin.split and not a.hintDone and t - a.startedAt >= SPLIT_HINT_MS then a.hintDone, S.dirty = true, true end
+end
+
+--- A long game's own clock: autosave, and a player who has stopped playing gives the wall back, even if the detector
+-- still sees them or there's no detector to ask.
+local function keepRun(a, t)
+  if t >= a.saveAt then
+    a.saveAt = t + saves.AUTOSAVE_MS
+    saveRun(a)
+  end
+  if t - a.touchedAt > config.GAME_IDLE * 1000 then
+    pause(a)
+    return false
+  end
+  return true
+end
+
+--- Save the run in play, if there is one, before something closes it. Not with the rules part way through a step: the
+-- last autosave is better than a state that's half changed.
+function M.saveNow()
+  local a = S.action
+  if a and app.plugin and app.plugin.saves then saveRun(a) end
 end
 
 --- Run the game's clock. Called on every tick of the shell.
 function M.tick(t)
   local a = S.action
   if not a then return end
+  local plugin = app.plugin
+  if plugin.saves then clearLapsed(a, t) end
   if a.phase == "ready" and t - S.lastTouch > config.LOBBY_IDLE * 1000 then
     M.leave()
     return
   end
   if a.phase ~= "play" then return end
-  local plugin = app.plugin
   local step = plugin.tickMs or 150
   local steps = 0
+  a.midRules = true
   while t >= a.nextAt and steps < MAX_CATCH_UP and a.phase == "play" do
     steps = steps + 1
     a.nextAt = a.nextAt + step
@@ -143,8 +301,10 @@ function M.tick(t)
     plugin.view.onEvents(app, a.state, events or {})
     if a.state.over then finish() end
   end
+  a.midRules = nil
   if t >= a.nextAt then a.nextAt = t + step end -- too far behind to catch up: carry on from now
   if steps > 0 then S.dirty = true end
+  if plugin.saves and (a.phase ~= "play" or not keepRun(a, t)) then return end
   checkPresence(a, t)
 end
 
@@ -193,17 +353,30 @@ local function drawReady(a)
   if app.plugin.blurb then ui.small(app.plugin.blurb, floor(W / 2), 12, C.line, C.bg, "center", W - 4) end
   drawTable(a, 15)
   local y = H - 22
-  ui.button("actStart", floor(W / 2) - 25, y, 50, 11, "START", C.ok)
+  if a.saved then
+    local asking = a.newUntil and nowMs() < a.newUntil
+    local line = asking and "Tap again to lose your saved game" or a.saved.line
+    ui.small(line, floor(W / 2), y - 3, asking and C.warn or C.text, C.bg, "center", W - 4)
+    ui.button("actContinue", floor(W / 2) - 44, y, 50, 11, "CONTINUE", C.ok)
+    ui.button("actNew", floor(W / 2) + 8, y, 36, 11, asking and "SURE?" or "NEW GAME", asking and C.warn or C.panel)
+  else
+    ui.button("actStart", floor(W / 2) - 25, y, 50, 11, "START", C.ok)
+  end
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
   ui.button("rules", W - 18, 1, 16, 7, "HOW TO PLAY", C.panel, { small = true })
   ui.button("actBoards", 2, H - 9, 24, 7, "OTHER GAMES", C.panel, { small = true })
   app.drawToast()
 end
 
+--- What the end of a run says. A game that can be won sets s.won.
+local function endLine(s)
+  return s.won and "YOU WON!" or "GAME OVER"
+end
+
 local function drawOver(a)
   local W, H = env.W, env.H
   local s = a.state
-  ui.text("GAME OVER", floor(W / 2), 2, C.warn, "center")
+  ui.text(endLine(s), floor(W / 2), 2, s.won and C.ok or C.warn, "center")
   ui.text(s.score, floor(W / 2), 11, C.hi, "center")
   local line = a.place == 1 and "A NEW HIGH SCORE!" or (a.place and ("Number " .. a.place .. " on the table") or (a.player .. ", level " .. (s.level or 1)))
   ui.small(line, floor(W / 2), 20, a.place and C.ok or C.line, C.bg, "center", W - 4)
@@ -221,7 +394,7 @@ local function drawFinalBoard(a)
   local y = floor(env.H / 2) - 6
   ui.fill(4, y, W - 8, 13, C.panel)
   ui.frame(4, y, W - 8, 13, C.warn, 1)
-  ui.text("GAME OVER", floor(W / 2), y + 2, C.warn, "center")
+  ui.text(endLine(a.state), floor(W / 2), y + 2, a.state.won and C.ok or C.warn, "center")
   ui.small("TAP TO SEE THE SCORES", floor(W / 2), y + 10, C.text, C.panel, "center")
   ui.region("actSeen", 0, 0, W, env.H)
 end
@@ -243,7 +416,8 @@ function M.draw()
       base.drawSplit(env.W, env.H, app.plugin.splitMiddle)
     end
     local asking = a.quitUntil and nowMs() < a.quitUntil
-    ui.button("actQuit", env.W - 14, env.H - 8, 12, 7, asking and "SURE?" or "QUIT", asking and C.warn or C.panel, { small = true })
+    local quit = app.plugin.saves and "SAVE & QUIT" or "QUIT"
+    ui.button("actQuit", env.W - 14, env.H - 8, 12, 7, asking and "SURE?" or quit, asking and C.warn or C.panel, { small = true })
     app.drawToast()
   end
 end
@@ -255,7 +429,7 @@ function M.debug()
   return {
     phase = a.phase, reviewed = a.reviewed, player = a.player, place = a.place, best = a.scores:best(), table = #a.scores.rows,
     score = s and s.score, lives = s and s.lives, level = s and s.level, over = s and s.over,
-    lastAction = a.lastAction,
+    lastAction = a.lastAction, saveFor = a.saveOwner, saveLine = a.saved and a.saved.line,
   }
 end
 

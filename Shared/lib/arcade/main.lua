@@ -20,6 +20,7 @@ local screens = require("lib.arcade.screens")
 local seats = require("lib.arcade.seats")
 local tournament = require("lib.arcade.tournament")
 local ui = require("lib.arcade.ui")
+local versus = require("lib.arcade.versus")
 local registry = require("games.registry")
 
 local C = ui.C
@@ -259,6 +260,8 @@ local function openFront(who, wall)
     S.view = "menu"
     S.lastTouch = nowMs()
     S.dirty = true
+  elseif registry[1].versus then
+    versus.open(who, wall)
   else
     openLobby(who, wall)
   end
@@ -391,11 +394,11 @@ local function pickIdleGames()
 end
 
 --- One wall's idle screen: a game of its own, filling the wall.
-local function drawIdle(slot)
+local function drawIdle(slot, wallNumber)
   local surf = ui.screen()
   surf:clear(C.bg, nil, " ")
   local W, H = env.W, env.H
-  local py = slot.plugin.view.drawAttract(W, H, slot.demo, storeFor(slot.plugin))
+  local py = slot.plugin.view.drawAttract(W, H, slot.demo, storeFor(slot.plugin), wallNumber)
   if floor(nowMs() / 700) % 2 == 0 then ui.text("TOUCH TO PLAY", floor(W / 2), py, C.text, "center") end
   local near = hw.nearby()
   local line = #near > 0 and (#near .. " player" .. (#near == 1 and "" or "s") .. " nearby") or "Two players or play the computer"
@@ -470,6 +473,10 @@ local function writeDebug()
     d.action = actions.debug()
     d.board = env.L and { x0 = env.L.x0, y0 = env.L.y0, bw = env.L.bw, bh = env.L.bh } or nil
   end
+  if S.versus then
+    d.versus = versus.debug()
+    d.board = env.L and { x0 = env.L.x0, y0 = env.L.y0, bw = env.L.bw, bh = env.L.bh } or nil
+  end
   if S.view == "idle" and S.idle then
     d.idleGames = {}
     d.idleMoves, d.idleWon = {}, {}
@@ -518,12 +525,16 @@ local function drawWalls()
     end
     return
   end
+  if S.view == "versus" then
+    versus.drawWalls()
+    return
+  end
   if S.view == "idle" then
     if not S.idle then pickIdleGames() end
     for i, wall in ipairs(env.walls) do
       ui.setScreen(wall.surf)
       ui.clearButtons()
-      drawIdle(S.idle[i] or S.idle[1])
+      drawIdle(S.idle[i] or S.idle[1], i)
       wall.buttons = ui.buttons()
       wall.surf:output(wall.out, 0, 0)
     end
@@ -649,7 +660,9 @@ handlers.game = function(b, who, wall)
   app.selectGame(plugin)
   S.demo = {}
   S.lobby = nil
-  if plugin.action then
+  if plugin.versus then
+    versus.open(who, wall)
+  elseif plugin.action then
     actions.open(who)
   else
     openLobby(who, wall)
@@ -660,6 +673,8 @@ end
 handlers.actStart = function(_, who)
   actions.start(who)
 end
+handlers.actContinue = function(_, who) actions.continue(who) end
+handlers.actNew = function(_, who) actions.newGame(who) end
 handlers.act = function(b, who)
   actions.press(b.data, who)
 end
@@ -1014,6 +1029,10 @@ local function onTouch(side, x, y, who)
     openFront(who, wall)
     return
   end
+  if S.view == "versus" then
+    versus.touch(side, index, px, py, who)
+    return
+  end
   if S.view == "game" and S.match then matches.noteWallTouch(S.match, wall, who) end
   ui.setButtons(env.walls[index].buttons)
   local b = ui.hit(px, py)
@@ -1068,7 +1087,7 @@ local function onTick()
   -- an update waits for a quiet moment: nobody mid-match, and nobody who has touched the wall in the last while
   if t - (S.busyAt or 0) > BUSY_REPORT_MS then
     S.busyAt = t
-    os.queueEvent("roger_busy", S.match ~= nil or (S.action ~= nil and S.action.phase == "play")
+    os.queueEvent("roger_busy", S.match ~= nil or (S.action ~= nil and S.action.phase == "play") or versus.busy()
       or (S.view ~= "idle" and t - S.lastTouch < config.LOBBY_IDLE * 1000))
   end
   if S.toast and t > S.toast.untilAt then S.toast = nil; S.dirty = true end
@@ -1111,12 +1130,15 @@ local function onTick()
     matches.tick(S.match, t)
   elseif S.view == "action" then
     actions.tick(t)
+  elseif S.view == "versus" then
+    versus.tick(t)
   end
 end
 
 -- ------------------------------------------------------------------ startup
 
 local function shutdown()
+  actions.saveNow()
   hw.allOff()
   for _, wall in ipairs(env.walls or {}) do
     wall.mon.setBackgroundColor(colors.black)
@@ -1131,6 +1153,7 @@ local function main()
   screens.bind(app)
   matches.bind(app)
   actions.bind(app)
+  versus.bind(app, registry)
   play.bind(app)
   local rep = hw.init()
   -- peripherals can attach a moment after the computer boots; give the optional ones a short window
@@ -1196,6 +1219,8 @@ local function main()
       error("Terminated", 0)
     elseif ev == "timer" then
       if a == tickA or a == tickB then runTick(a == tickA and "timer" or "spare timer") end
+    elseif ev == "char" and (a == "i" or a == "I") then
+      actions.saveNow() -- the supervisor's installer key: this same event ends the game
     elseif ev == "vhcc_touch" then
       toucher = a
       hw.noteToucher(a)
@@ -1239,6 +1264,7 @@ function M.run(opts)
   local ok, err = pcall(main)
   if not ok then
     log("fatal: " .. tostring(err))
+    pcall(actions.saveNow)
     pcall(function() if app.store then app.store:save() end end)
     pcall(hw.allOff)
     error(err, 0)
