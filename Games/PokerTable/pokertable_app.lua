@@ -984,13 +984,14 @@ function App:playHand(round, firstEvents)
     view.table(c, state, s.playing)
     self:topBar()
     -- The promise the FAIR page makes: the hash is up before any card is
-    c:text(3, ui.BAR_H - 2, "Hash " .. round.commit:sub(1, HASH_SHOWN), C.mute)
+    local hash = round.commit:sub(1, HASH_SHOWN)
     local left = s.deadline - now()
     if not s.settled then view.centre(c, state, s.playing, left < WARN_MS, math.max(0, left / TURN_MS)) end
     s.buttons = ui.newButtons()
     if s.playing or #s.queue > 0 or s.settled then
-      c:rect(1, c.h - ui.ACTIONS_H + 1, c.w, ui.ACTIONS_H - 1, C.feltDark)
+      c:rect(1, c.h - ui.ACTIONS_H, c.w, ui.ACTIONS_H + 1, C.feltDark)
       c:textCenter(math.floor(c.w / 2), c.h - 5, "Tap to skip", C.feltLight)
+      ui.hash(c, hash)
       return
     end
     local actor = rules.actor(state)
@@ -1005,6 +1006,7 @@ function App:playHand(round, firstEvents)
       end
     end
     ui.actionBar(c, s.buttons, specs)
+    ui.hash(c, hash)
     if s.peek then
       local player = rules.find(state, s.peek.name)
       local drawing = state.phase == "draw" and s.peek.name == actor

@@ -582,9 +582,9 @@ function Table:drawDemo(show, showCtx, t, message)
   if show:finished() then
     local result = game.rules.result(show.state)
     local color = result.kind == "win" and C.win or result.kind == "push" and C.gold or C.red
-    ui.banner(c, c.h - ui.ACTIONS_H - 14, result.title, result.detail or "", color)
+    ui.banner(c, ui.BANNER_Y, result.title, result.detail or "", color)
   end
-  c:rect(1, c.h - ui.ACTIONS_H + 1, c.w, ui.ACTIONS_H, C.feltDark)
+  c:rect(1, c.h - ui.ACTIONS_H, c.w, ui.ACTIONS_H + 1, C.feltDark)
   if math.floor(t * 1.5) % 2 == 0 then c:bigCenter(cx, c.h - 10, "TOUCH TO PLAY", C.text, 1) end
   c:textCenter(cx, c.h - 4, ctx.jackpot and ("JACKPOT " .. ui.group(ctx.jackpot) .. " TOKENS") or (game.tagline or ""),
     ctx.jackpot and C.win or C.text)
@@ -778,7 +778,7 @@ end
 --- A pager over lines of small text: rules, stats.
 function Table:page(title, lines)
   local c, ctx = self.c, self.ctx
-  local perPage = c.h - ui.BAR_H - ui.ACTIONS_H - 5
+  local perPage = c.h - ui.BAR_H - ui.ACTIONS_H - 11 -- the lines stop short of the button band, which would cover them
   local scene = { name = "page", index = 1, deadline = now() + IDLE_BET_MS }
   local wrapped = {}
   for _, line in ipairs(lines) do
@@ -869,36 +869,36 @@ function Table:chooseBet(lastBet)
   function scene.draw(s)
     feltBase(c)
     ui.bar(c, ctx)
-    c:bigCenter(cx, 11, "PLACE YOUR BET", C.text, 1)
-    c:textCenter(cx, 38, "Table limit " .. ui.group(maxBet), C.text)
+    c:bigCenter(cx, 12, "PLACE YOUR BET", C.text, 1)
     c:bigCenter(cx, 20, ui.group(s.bet), C.gold, 3)
+    c:textCenter(cx, 37, "Table limit " .. ui.group(maxBet), C.text)
     s.buttons = ui.newButtons()
     if maxBet < 1 then
-      c:textCenter(cx, 44, "The house cannot cover a bet right now.", C.orange)
+      c:textCenter(cx, 46, "The house cannot cover a bet right now.", C.orange)
     else
       local specs = {}
       for _, value in ipairs(chips) do
         local label = value >= 1000 and (value / 1000 .. "K") or tostring(value)
         specs[#specs + 1] = { id = "chip", value = value, label = label, color = C.accent, textColor = C.ink }
       end
-      ui.actionRow(c, s.buttons, specs, 42, 11)
+      ui.actionRow(c, s.buttons, specs, 43, 11)
       ui.actionRow(c, s.buttons, {
         { id = "clear", label = "CLEAR", color = C.panel2 },
         { id = "double", label = "X2", color = C.panel2, disabled = s.bet == 0 },
         { id = "max", label = "MAX", color = C.panel2 },
         { id = "repeat", label = "SAME", color = C.panel2, disabled = not lastBet },
-      }, 55, 9)
+      }, 57, 9)
     end
-    if ctx.owedNotice then c:textCenter(cx, 66, ctx.owedNotice, C.orange) end
+    if ctx.owedNotice then c:textCenter(cx, 40, ctx.owedNotice, C.orange) end
     local left = s.deadline - now()
     if left < WARN_MS then
-      c:textCenter(cx, 40, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
+      c:textCenter(cx, 39, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
     end
     ui.actionBar(c, s.buttons, {
-      { id = "leave", label = "LEAVE", color = C.red },
-      { id = "rules", label = "RULES", color = C.blue },
-      { id = "stats", label = "STATS", color = C.blue },
-      { id = "card", label = "CARD", color = C.blue },
+      { id = "leave", label = "LEAVE", color = C.red, small = true },
+      { id = "rules", label = "RULES", color = C.blue, small = true },
+      { id = "stats", label = "STATS", color = C.blue, small = true },
+      { id = "card", label = "CARD", color = C.blue, small = true },
       { id = "deal", label = self.game.dealLabel or "DEAL", color = C.win, textColor = C.ink, disabled = s.bet < 1 },
     })
   end
@@ -1083,8 +1083,6 @@ function Table:playRound(round, stream, firstEvents)
   function scene.draw(s)
     view.draw(c, model, round.state, s.playing)
     ui.bar(c, ctx, ui.group(round.stake))
-    -- The promise the FAIR page makes: the hash is up before any card or result is
-    c:text(3, ui.BAR_H - 2, "Hash " .. round.commit:sub(1, HASH_SHOWN), C.mute)
     s.buttons = ui.newButtons()
     if not s.playing and #s.queue == 0 and not s.settled then
       local specs = {}
@@ -1118,9 +1116,11 @@ function Table:playRound(round, stream, firstEvents)
         c:textCenter(math.floor(c.w / 2), c.h - ui.ACTIONS_H - 1, "Still there? Tap the table", C.orange)
       end
     else
-      c:rect(1, c.h - ui.ACTIONS_H + 1, c.w, ui.ACTIONS_H - 1, C.feltDark)
+      c:rect(1, c.h - ui.ACTIONS_H, c.w, ui.ACTIONS_H + 1, C.feltDark)
       c:textCenter(math.floor(c.w / 2), c.h - 5, "Tap to skip", C.feltLight)
     end
+    -- The promise the FAIR page makes: the hash is up before any card or result is
+    ui.hash(c, round.commit:sub(1, HASH_SHOWN))
   end
 
   function scene.touch(s, x, y)
@@ -1188,7 +1188,7 @@ function Table:showResult(round, model)
   local rules, view = game.rules, game.view
   local result = rules.result(round.state)
   local color = result.kind == "win" and C.win or result.kind == "push" and C.gold or C.red
-  local bannerY = c.h - ui.ACTIONS_H - 14
+  local bannerY = ui.BANNER_Y
   local stake = round.stake
   local bigWin = result.kind == "win" and round.net >= stake * BIG_WIN_TIMES
   audio.play(result.kind == "win" and (bigWin and "bigWin" or "win")
@@ -1231,7 +1231,7 @@ function Table:showResult(round, model)
       ui.actionBar(c, s.buttons, {
         { id = "again", label = "AGAIN", color = C.win, textColor = C.ink, disabled = not again },
         { id = "bet", label = "NEW BET", color = C.blue },
-        { id = "fair", label = "FAIR?", color = C.panel2 },
+        { id = "fair", label = "FAIR?", color = C.panel2, small = true },
         { id = "leave", label = "LEAVE", color = C.red },
       })
     end

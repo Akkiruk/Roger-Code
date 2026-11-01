@@ -7,8 +7,11 @@ local theme = require("lib.casino.theme")
 local C = theme.C
 local M = {}
 
-M.BAR_H = 8           -- the top bar
+M.BAR_H = 9           -- the top bar: a row of air over its text, its accent line, and a row clear under that
+M.TOP = M.BAR_H + 1   -- the first row a table draws on
 M.ACTIONS_H = 12      -- the button rows along the bottom
+M.BANNER_H = 15       -- a result banner with a line of detail
+M.BANNER_Y = 81 - M.ACTIONS_H - M.BANNER_H  -- where a result goes, so a table keeps what must stay in view above this row
 -- Monitor cells are 2 wide by 3 tall, so a card with real proportions has about as many rows as columns
 M.CARD_W, M.CARD_H = 17, 16
 M.SMALL_W, M.SMALL_H = 13, 12
@@ -27,12 +30,15 @@ end
 
 -- ------------------------------------------------------------------ buttons
 
+local LABEL_PAD = 2   -- a big label keeps this many cells clear across its button, or it goes to plain text
+
 --- A list of touch regions, rebuilt with every draw so the screen and the touch map cannot disagree.
 function M.newButtons()
   return {}
 end
 
---- Draw a button and add its region. spec: x, y, w, h, label, color, textColor, sub, disabled, id.
+--- Draw a button and add its region. spec: x, y, w, h, label, color, textColor, sub, disabled, id, and small for a label in
+-- plain text, for buttons that sit beside the one that matters.
 function M.button(c, list, spec)
   local x, y, w, h = spec.x, spec.y, spec.w, spec.h
   local bg = spec.disabled and C.panel2 or (spec.color or C.blue)
@@ -43,7 +49,7 @@ function M.button(c, list, spec)
   local label = tostring(spec.label)
   local cx = x + math.floor(w / 2)
   local scale = (h >= 16 and c:bigWidth(label, 2) <= w - 4) and 2 or 1
-  if c:bigWidth(label, scale) <= w then
+  if not spec.small and c:bigWidth(label, scale) <= w - LABEL_PAD then
     local textTop = y + math.floor((h - 6 * scale - (spec.sub and 2 or 0)) / 2) + (scale == 1 and 1 or 0)
     c:bigCenter(cx, textTop, label, fg, scale)
     if spec.sub then c:textCenter(cx, y + h - 2, spec.sub, fg) end
@@ -63,45 +69,78 @@ function M.hit(list, x, y)
   return nil
 end
 
---- Lay a row of buttons evenly across the screen. specs carry label, color, id, sub, disabled.
+--- The width a button wants for its label.
+local function wants(c, spec)
+  local label = tostring(spec.label)
+  local width = spec.small and #label + 2 or c:bigWidth(label, 1) + LABEL_PAD
+  if spec.sub then width = math.max(width, #spec.sub + 2) end
+  return width
+end
+
+--- Lay a row of buttons across the screen, all one width if every label fits that, or else each sized to its label, with what
+-- is left shared out. specs carry label, color, id, sub, disabled, small.
 function M.actionRow(c, list, specs, y, h)
-  local gap = 2
-  local margin = 3
+  local gap = 3
+  local margin = 4
   local n = #specs
-  local w = math.floor((c.w - margin * 2 - gap * (n - 1)) / n)
-  for i, spec in ipairs(specs) do
-    spec.x, spec.y, spec.w, spec.h = margin + 1 + (i - 1) * (w + gap), y, w, h
+  local room = c.w - margin * 2 - gap * (n - 1)
+  local equal = math.floor(room / n)
+  local total, fits = 0, true
+  for _, spec in ipairs(specs) do
+    local width = wants(c, spec)
+    total = total + width
+    if width > equal then fits = false end
+  end
+  local spare = math.floor((room - total) / n)
+  local x = margin + 1
+  for _, spec in ipairs(specs) do
+    local w = (fits or spare < 0) and equal or wants(c, spec) + spare
+    spec.x, spec.y, spec.w, spec.h = x, y, w, h
     M.button(c, list, spec)
+    x = x + w + gap
   end
 end
 
 --- The bottom bar, one row of up to five actions.
 function M.actionBar(c, list, specs)
   local y = c.h - M.ACTIONS_H + 2
-  c:rect(1, y - 2, c.w, M.ACTIONS_H, C.feltDark)
+  c:rect(1, y - 2, c.w, M.ACTIONS_H + 1, C.feltDark)
   M.actionRow(c, list, specs, y, 9)
+end
+
+--- The hash along the very bottom, under the buttons, so it is up all round and in nobody's way.
+function M.hash(c, text)
+  c:text(5, c.h, "Hash " .. text, C.mute)
 end
 
 -- ------------------------------------------------------------------ the top bar
 
 --- ctx carries title, seat, balance. info is optional text for the middle, such as the bet.
 function M.bar(c, ctx, info)
-  c:rect(1, 1, c.w, M.BAR_H - 1, C.panel)
+  c:rect(1, 1, c.w, M.BAR_H - 2, C.panel)
   c:rect(1, M.BAR_H - 1, c.w, 1, C.accent)
-  c:big(3, 1, ctx.title, C.gold, 1)
+  c:big(4, 2, ctx.title, C.gold, 1)
+  local infoX = c:bigWidth(ctx.title, 1) + 11
+  local used = infoX
+  if info then
+    c:big(infoX, 2, info, C.text, 1)
+    used = infoX + c:bigWidth(info, 1)
+  end
   if ctx.seat then
     -- A long reveal sets heldBalance, so the wall does not give away a result the money already reflects
     local shown = ctx.heldBalance or ctx.balance
     local balance = shown and group(shown) or "?"
-    local x = c.w - c:bigWidth(balance, 1) - 1
-    c:big(x, 1, balance, C.gold, 1)
-    c:text(x - #ctx.seat - 2, 2, ctx.seat, C.text)
+    local x = c.w - c:bigWidth(balance, 1) - 2
+    c:big(x, 2, balance, C.gold, 1)
+    -- A long name beside a long title gives way, so neither runs into the money
+    local room = math.max(0, x - used - 5)
+    local seat = ctx.seat:sub(1, room)
+    c:text(x - #seat - 3, 3, seat, C.text)
     if ctx.jackpot then
       local line = "Jackpot " .. group(ctx.jackpot)
-      c:text(x - #line - 2, 4, line, C.win)
+      if #line <= room then c:text(x - #line - 3, 5, line, C.win) end
     end
   end
-  if info then c:big(c:bigWidth(ctx.title, 1) + 8, 1, info, C.text, 1) end
 end
 
 -- ------------------------------------------------------------------ cards
@@ -182,12 +221,12 @@ end
 
 --- A banner over the table. It never clears what is under it, so the final hand stays in view.
 function M.banner(c, y, title, detail, color)
-  local h = detail and 13 or 11
+  local h = detail and M.BANNER_H or 11
   c:rect(1, y, c.w, h, C.ink)
   c:rect(1, y, c.w, 1, color)
   c:rect(1, y + h - 1, c.w, 1, color)
   local scale = c:bigWidth(title, 2) <= c.w - 6 and 2 or 1
-  c:bigCenter(math.floor(c.w / 2), y + 3 - scale, title, color, scale) -- big titles sit one row higher, clear of the detail
+  c:bigCenter(math.floor(c.w / 2), y + 2, title, color, scale)
   if detail then c:textCenter(math.floor(c.w / 2), y + h - 2, detail, C.text) end
 end
 
