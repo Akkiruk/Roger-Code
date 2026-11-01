@@ -20,7 +20,7 @@ Every wagering game was rebuilt on one engine, `Shared/lib/casino/`. Read the he
 | Horse Racing | `horse-racing` | 95.18% to 96.00% on every bet | Exact over all finishing orders |
 | Five-card draw | `pokertable` | Players against each other, no rake | Conservation and side-pot tests |
 | Casino Hub | `casino-hub` | Leaderboards, measured returns, shared jackpot | Scenario suite |
-| Casino cabinet | `casino` | All 11 games on one computer, one at a time, from a menu | Emulator walk-through |
+| Casino cabinet | `casino` | All 10 single-player games on one computer, one at a time, from a menu | Emulator walk-through |
 
 The cabinet bundles the game folders through `manifest-bundle` in `Games/Casino/startup.lua`. A game starts by reboot, and its `casino_*` files are stored as `cabinet_<game>_casino_*`, so each game keeps its own books. A round left open returns to its game on boot.
 

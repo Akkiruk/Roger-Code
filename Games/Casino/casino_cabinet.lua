@@ -7,6 +7,7 @@
 local audio = require("lib.casino.audio")
 local board = require("lib.casino.board")
 local canvas = require("lib.casino.canvas")
+local journal = require("lib.casino.journal")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
 
@@ -28,7 +29,8 @@ local GAMES = {
   { id = "hilo", title = "HI-LO", module = "hilo_game" },
   { id = "horseracing", title = "HORSES", module = "horseracing_game" },
   { id = "crazyeights", title = "CRAZY 8S", module = "crazyeights_game" },
-  { id = "pokertable", title = "POKER", app = "pokertable_app" },
+  -- Poker moved to its own cabinet. Only a cabinet that still holds someone's poker debt or hand shows it, so that can finish
+  { id = "pokertable", title = "POKER", app = "pokertable_app", retired = true },
 }
 
 local function find(id)
@@ -48,6 +50,23 @@ local function hasFile(id, name)
     if fs.exists(path) and fs.getSize(path) > 0 then return true end
   end
   return false
+end
+
+--- Whether anyone is owed or owes tokens at this game, or a transfer is still in doubt. The book stays on disk once it is
+-- clear, holding the tags it has seen, so its size says nothing.
+local function hasOwed(id)
+  local book = journal.load(stored(id, "casino_owed.dat")) or {}
+  book["#done"] = nil
+  return next(book) ~= nil
+end
+
+--- The games on the menu.
+local function shown()
+  local list = {}
+  for _, game in ipairs(GAMES) do
+    if not game.retired or hasOwed(game.id) then list[#list + 1] = game end
+  end
+  return list
 end
 
 --- Give this game's files their own names, for everything it does until the next reboot.
@@ -109,11 +128,12 @@ local function drawMenu(c)
   ui.bar(c, { title = "CASINO" })
   local buttons = ui.newButtons()
   local y = ui.TOP + 1
-  for i = 1, #GAMES, 2 do
+  local games = shown()
+  for i = 1, #games, 2 do
     local specs = {}
-    for j = i, math.min(i + 1, #GAMES) do
-      local game = GAMES[j]
-      local owed = hasFile(game.id, "casino_owed.dat")
+    for j = i, math.min(i + 1, #games) do
+      local game = games[j]
+      local owed = hasOwed(game.id)
       specs[#specs + 1] = { id = game.id, label = game.title, color = owed and C.orange or C.panel2,
         textColor = owed and C.ink or C.gold }
     end
