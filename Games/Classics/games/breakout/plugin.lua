@@ -68,17 +68,14 @@ function view.actionAt(L, _, px)
   return { kind = "aim", x = (px + 0.5 - L.x0) / CELL_W }
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  brick = "brick", paddle = "bounce", wall = "wall", shrink = "ui_warning", level = "level_clear",
+  lost = "death", over = "death",
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "brick" then
-      app.audio.play(ev.row <= 2 and "captureRed" or (ev.row <= 4 and "capture" or "captureBlue"))
-    end
-    if ev.type == "paddle" then app.audio.play("placeRed") end
-    if ev.type == "wall" then app.audio.play("placeBlue") end
-    if ev.type == "shrink" then app.audio.later("select", 80) end
-    if ev.type == "level" then app.audio.later("select", 120) end
-    if ev.type == "lost" or ev.type == "over" then app.audio.play("error") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

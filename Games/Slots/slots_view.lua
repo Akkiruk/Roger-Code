@@ -212,7 +212,7 @@ function M.event(model, ev)
   elseif ev.type == "flip" then
     return 1.1, "flip"
   end
-  return 0.3, "chipBig"
+  return 0.3, "payout"
 end
 
 function M.commit(model, ev)

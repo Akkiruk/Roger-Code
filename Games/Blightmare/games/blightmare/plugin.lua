@@ -96,50 +96,34 @@ function view.saveSummary(s)
   return "Level " .. s.level .. ", " .. place .. ", " .. s.gold .. " gold"
 end
 
--- What a script's { sfx = name } plays. A name not here plays the plain tap sound rather than nothing.
-local SFX = {
-  hit = { "captureRed", 0.8, 0.8 }, door = { "placeRed", 0.8, 0.6 }, horn = { "captureBlue", 1, 0.4 },
-  thud = { "captureBlue", 1, 0.5 }, coin = { "capture", 0.7, 1.5 },
+-- Which sounds each foe makes.
+local FAMILY = {
+  rat = "rat", crawler = "bug", harpy = "harpy", frogman = "frog", stalker = "stalker", orderly = "staff",
+  doctor = "staff", blighted = "blighted", miner = "blighted", foreman = "boss",
 }
 
---- One sound of each kind a step: a fight can bring several of the same.
+-- What a script's { sfx = name } plays. A name not here plays the plain tap sound rather than nothing.
+local SCRIPTED = { hit = "sword_hit", door = "door_open", horn = "horn", thud = "crush", coin = "coin" }
+
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  step = "step", turn = "ui_page", page = "ui_page", pick = "ui_tap", bump = "wall", door = "door_open",
+  unlock = "unlock", chest = "chest", gold = "coin", buy = "coin", item = "pickup", heal = "heal",
+  join = "save", save = "save", fin = "level_clear", battle = "battle", wipe = "death", sting = "sting",
+  hurt = "player_hurt", fall = "death", miss = "miss", defend = "block", menu = "ui_tap", spell = "spell",
+  focus = "powerup", cure = "heal", status = "curse", telegraph = "telegraph", phase = "telegraph",
+  cavein = "cave_in", fled = "flee", levelup = "level_up", win = "win_big", lose = "lose",
+  hit = function(ev, app)
+    app.audio.later(base.monster(FAMILY[ev.id], "hurt"), 90)
+    return "sword_hit"
+  end,
+  foeStrike = function(ev) return base.monster(FAMILY[ev.id], "attack") end,
+  kill = function(ev) return base.monster(FAMILY[ev.id], "die") end,
+  sfx = function(ev) return SCRIPTED[ev.name] or "ui_tap" end, -- a script's { sfx = name }
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    local kind = ev.type
-    if kind == "step" then once("placeBlue", 0.3, 0.7) end
-    if kind == "turn" or kind == "page" or kind == "pick" then once("placeBlue", 0.2, 1.1) end
-    if kind == "bump" then once("placeRed", 0.4, 0.5) end
-    if kind == "door" or kind == "unlock" then once("placeRed", 0.8, 0.6) end
-    if kind == "chest" then once("placeRed", 0.8, 1.0) end
-    if kind == "gold" or kind == "buy" then once("capture", 0.7, 1.5) end
-    if kind == "item" or kind == "heal" then once("captureRed", 0.8, 1.5) end
-    if kind == "join" or kind == "save" then app.audio.later("capture", 120, 1, 1.5) end
-    if kind == "fin" then app.audio.later("capture", 120, 1, 1.7) end
-    if kind == "battle" then once("captureBlue", 1, 0.5) end
-    if kind == "wipe" then once("captureBlue", 1, 0.4) end
-    if kind == "hit" or kind == "sting" then once("captureRed", 0.8, 0.8) end
-    if kind == "hurt" or kind == "fall" then once("captureBlue", 1, 0.5) end
-    if kind == "miss" or kind == "defend" or kind == "menu" then once("placeBlue", 0.4, 1.4) end
-    if kind == "spell" or kind == "focus" or kind == "cure" then once("captureRed", 0.8, 1.2) end
-    if kind == "status" then once("placeRed", 0.6, 0.5) end
-    if kind == "kill" then once("capture", 1, 1.3) end
-    if kind == "telegraph" or kind == "phase" then once("placeRed", 1, 0.4) end
-    if kind == "cavein" then once("captureBlue", 1, 0.4) end
-    if kind == "fled" then once("placeBlue", 0.6, 0.8) end
-    if kind == "levelup" or kind == "win" then app.audio.later("capture", 120, 1, 1.5) end
-    if kind == "lose" then once("captureBlue", 1, 0.4) end
-    if kind == "sfx" then
-      local sound = SFX[ev.name] or { "placeBlue", 0.5, 1 }
-      once(sound[1], sound[2], sound[3])
-    end
-  end
+  base.sfx(app, events, SFX)
 end
 
 --- No demo: the story isn't to be seen before it's played, so the idle screen never moves.

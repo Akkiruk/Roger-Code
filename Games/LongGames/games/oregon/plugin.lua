@@ -714,31 +714,14 @@ function view.saveSummary(s)
   return rules.summary(s)
 end
 
--- one sound for each plain event: id, volume and pitch
-local SOUND = {
-  pick = { "placeBlue", 0.5, 1.2 }, buy = { "capture", 0.7, 1.1 }, shot = { "placeBlue", 1, 0.7 }, hit = { "capture", 1, 0.9 },
-  good = { "captureRed", 1, 1 }, ill = { "placeRed", 1, 0.6 }, ["break"] = { "placeRed", 0.9, 0.75 }, splash = { "placeBlue", 1, 0.5 },
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  pick = "ui_tap", buy = "coin", shot = "gun", hit = "hit_small", good = "ui_hint", ill = "curse",
+  ["break"] = "clang", splash = "splash", death = "bell", landmark = "wagon", arrive = "level_clear",
 }
 
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    local sound = SOUND[ev.type]
-    if sound then app.audio.play(sound[1], sound[2], sound[3]) end
-    if ev.type == "death" then
-      app.audio.play("captureBlue", 1, 0.6)
-      app.audio.later("captureBlue", 300, 1, 0.5)
-    end
-    if ev.type == "landmark" then
-      app.audio.play("capture")
-      app.audio.later("captureRed", 150)
-    end
-    if ev.type == "arrive" then
-      app.audio.play("captureBlue")
-      app.audio.later("capture", 130)
-      app.audio.later("captureRed", 260)
-      app.audio.later("captureRed", 400, 1, 1.4)
-    end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

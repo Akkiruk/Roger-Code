@@ -235,24 +235,14 @@ function view.controls()
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  pour = "pour", drink = "drink", served = "slide", empty = "slide", catch = "knock", tip = "tip",
+  smash = "smash", clear = "level_clear",
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "pour" then once("placeBlue", 0.7, 1.2) end
-    if ev.type == "drink" then once("placeRed", 0.5, 0.8) end
-    if ev.type == "served" then once("capture", 0.8, 1.2) end
-    if ev.type == "empty" then once("placeBlue", 0.4, 0.6) end
-    if ev.type == "catch" then once("captureBlue", 0.9, 1.1) end
-    if ev.type == "tip" then once("captureRed", 1, 1.4) end
-    if ev.type == "smash" then app.audio.play("captureBlue", 1, 0.5) end
-    if ev.type == "clear" then app.audio.later("capture", 120, 1, 1.5) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

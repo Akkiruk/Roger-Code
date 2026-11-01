@@ -118,7 +118,8 @@ function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
     base.animate(match, 450, { side = ev.side, last = ev.last })
     local name = (ev.seat == 1 and match.red or match.blue).name
-    app.audio.play(ev.captured and (ev.seat == 2 and "captureBlue" or "captureRed") or (ev.seat == 2 and "placeBlue" or "placeRed"))
+    app.audio.play("pebbles")
+    if ev.captured then app.audio.later("capture", 300) end
     if match.state.winner == 0 and ev.captured then
       app.setToast(string.format("%s captures %d seeds", name, ev.captured), seatColor(ev.seat), 2000)
     elseif match.state.winner == 0 and ev.again then

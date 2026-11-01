@@ -24,7 +24,7 @@ return {
   tableView = tableView,
   seatView = seatView,
   event = function(ev)
-    if ev.type == "start" and ev.fresh then return 0.6, "spin" end
+    if ev.type == "start" and ev.fresh then return 0.6, "flip" end
     local timing = TIMES[ev.type] or { 0.1 }
     return timing[1], timing[2]
   end,

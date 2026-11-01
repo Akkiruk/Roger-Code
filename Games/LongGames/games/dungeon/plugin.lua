@@ -187,32 +187,25 @@ function view.saveSummary(s)
 end
 
 --- One sound of each kind a step: a fight can bring several of the same.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  step = "step", turn = "swish", bump = "wall", miss = "miss", dodge = "miss", trap = "player_hurt",
+  fire = "flame", door = "door_open", unlock = "unlock", chest = "chest", gold = "coin", potion = "potion",
+  key = "pickup", gear = "pickup", drink = "drink", levelup = "level_up", descend = "step", win = "win_big",
+  death = "death",
+  hit = function(ev, app)
+    app.audio.later(base.monster(ev.kind, "hurt"), 90)
+    return "sword_hit"
+  end,
+  hurt = function(ev, app)
+    app.audio.later("player_hurt", 90)
+    return base.monster(ev.kind, "attack")
+  end,
+  kill = function(ev) return base.monster(ev.kind, "die") end,
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "step" then once("placeBlue", 0.3, 0.7) end
-    if ev.type == "turn" then once("placeBlue", 0.2, 1.1) end
-    if ev.type == "bump" then once("placeRed", 0.4, 0.5) end
-    if ev.type == "hit" then once("captureRed", 0.8, 0.8) end
-    if ev.type == "miss" or ev.type == "dodge" then once("placeBlue", 0.4, 1.4) end
-    if ev.type == "hurt" or ev.type == "trap" then once("captureBlue", 1, 0.5) end
-    if ev.type == "fire" then once("captureBlue", 1, 0.4) end
-    if ev.type == "kill" then once("capture", 1, 1.3) end
-    if ev.type == "door" or ev.type == "unlock" then once("placeRed", 0.8, 0.6) end
-    if ev.type == "chest" then once("placeRed", 0.8, 1.0) end
-    if ev.type == "gold" then once("capture", 0.7, 1.5) end
-    if ev.type == "potion" or ev.type == "key" or ev.type == "gear" then once("captureRed", 0.8, 1.5) end
-    if ev.type == "drink" then once("placeBlue", 0.7, 1.5) end
-    if ev.type == "levelup" or ev.type == "descend" then app.audio.later("capture", 120, 1, 1.5) end
-    if ev.type == "win" then app.audio.later("capture", 120, 1, 1.7) end
-    if ev.type == "death" then once("captureBlue", 1, 0.4) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 local function demoRng(n)

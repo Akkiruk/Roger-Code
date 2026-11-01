@@ -323,36 +323,32 @@ function view.saveSummary(s)
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
+-- Which sounds each enemy makes.
+local FAMILY = {
+  green = "slime", black = "slime", red = "slime", blueKnight = "knight", greenKnight = "knight",
+  redKnight = "knight", blackKnight = "knight", mage = "mage", ghost = "ghost", wisp = "ghost",
+  hunter = "ghost", roper = "roper", dragon = "dragon", silverDragon = "dragon", druaga = "boss",
+}
+
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  sword = "sword", clink = "clang", block = "block", charge = "telegraph", spell = "spell", fire = "flame",
+  windup = "telegraph", jump = "jump", dig = "dig", key = "pickup", knock = "knock", chest = "chest",
+  item = "pickup", potion = "potion", timeUp = "ui_warning", zap = "teleport", death = "death",
+  clear = "level_clear", win = "level_clear",
+  hit = function(ev, app)
+    app.audio.later(base.monster(FAMILY[ev.kind], "hurt"), 90)
+    return "sword_hit"
+  end,
+  clash = function(ev, app)
+    app.audio.later("player_hurt", 90)
+    return base.monster(FAMILY[ev.kind], "attack")
+  end,
+  kill = function(ev) return base.monster(FAMILY[ev.kind], "die") end,
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "sword" then once("placeBlue", 0.5, ev.drawn and 1.3 or 0.9) end
-    if ev.type == "hit" then once("placeRed", 0.7, 1.2) end
-    if ev.type == "clash" then once("placeBlue", 0.9, 1.5) end
-    if ev.type == "clink" then once("placeBlue", 0.7, 0.6) end
-    if ev.type == "kill" then once("capture", 0.9, 1.2) end
-    if ev.type == "block" then once("placeRed", 0.8, 1.6) end
-    if ev.type == "charge" then once("captureBlue", 0.4, 1.4) end
-    if ev.type == "spell" or ev.type == "fire" then once("captureBlue", 0.7, 0.7) end
-    if ev.type == "windup" then once("captureBlue", 0.5, 0.6) end
-    if ev.type == "jump" then once("placeBlue", 0.3, 1.5) end
-    if ev.type == "dig" then once("placeRed", 1, 0.6) end
-    if ev.type == "key" then once("captureRed", 1, 1.4) end
-    if ev.type == "knock" then once("placeRed", 0.8, 0.7) end
-    if ev.type == "chest" then once("capture", 1, 1.5) end
-    if ev.type == "item" then app.audio.later("capture", 120, 1, 1.5) end
-    if ev.type == "potion" then once("captureRed", 1, 0.8) end
-    if ev.type == "timeUp" then once("captureRed", 1, 0.6) end
-    if ev.type == "zap" then once("captureBlue", 1, 0.5) end
-    if ev.type == "death" then once("captureBlue", 1, 0.5) end
-    if ev.type == "clear" or ev.type == "win" then app.audio.later("capture", 120, 1, 1.5) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

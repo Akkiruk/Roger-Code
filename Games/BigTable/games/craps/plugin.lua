@@ -31,7 +31,7 @@ end
 local EVENTS = {
   comeout = { 0.3, "start" },
   throw = { 0.1, "tap" },
-  roll = { 1.6, "spin" },
+  roll = { 1.6, "dice" },
   bet = { 0.05, "chip" },
   pass = { 0.05 },
   shooter = { 0.3 },

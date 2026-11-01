@@ -118,15 +118,13 @@ end
 
 --- One electronic beep at three pitches, as the original had: the paddle's blip is high, the wall's boop is low, and a point
 --- is lower still and held a little longer.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  paddle = "bounce", wall = "wall", point = "coin",
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "paddle" then app.audio.play("select", 1, 1.5) end
-    if ev.type == "wall" then app.audio.play("select", 0.8, 0.75) end
-    if ev.type == "point" then
-      app.audio.play("select", 1, 0.5)
-      app.audio.later("select", 110, 1, 0.5)
-    end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

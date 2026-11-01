@@ -266,33 +266,17 @@ function view.actionAt(L, _, px, py)
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  hop = "hop", good = "pickup", balloon = "pop", allBalloons = "coin", goro = "capture",
+  doorOpen = "door_open", doorShut = "door_shut", knock = "knock", belled = "knock", wave = "zap",
+  flying = "swish", bell = "bell", clang = "clang", hurry = "ui_warning", ghost = "telegraph",
+  death = "death", clear = "level_clear", level = "level_clear", bonus = "level_clear",
+  bounce = function(ev) return "bounce", 1, 0.8 + 0.2 * ev.hits end, -- higher as the trampoline wears out
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "bounce" then once("placeBlue", 0.5, 0.8 + 0.2 * ev.hits) end
-    if ev.type == "hop" then once("placeRed", 0.4, 1.3) end
-    if ev.type == "good" then once(ev.pair and "captureRed" or "capture", 1, ev.pair and 1.4 or 1) end
-    if ev.type == "balloon" then once("capture", 0.8, 1.5) end
-    if ev.type == "allBalloons" then app.audio.later("capture", 120, 1, 1.5) end
-    if ev.type == "goro" then app.audio.later("captureRed", 120, 1, 0.7) end
-    if ev.type == "doorOpen" then once("placeRed", 0.8, 0.8) end
-    if ev.type == "doorShut" then once("placeBlue", 0.7, 0.7) end
-    if ev.type == "knock" or ev.type == "belled" then once("captureBlue", 1, 1.2) end
-    if ev.type == "wave" then once("captureRed", 1, 0.6) end
-    if ev.type == "flying" then once("captureRed", 1, 1.3) end
-    if ev.type == "bell" then once("placeRed", 0.8, 1.6) end
-    if ev.type == "clang" then once("placeBlue", 1, 1.8) end
-    if ev.type == "hurry" then once("captureBlue", 0.8, 0.6) end
-    if ev.type == "ghost" then once("captureBlue", 1, 0.5) end
-    if ev.type == "death" then once("captureBlue", 1, 0.5) end
-    if ev.type == "clear" or ev.type == "level" or ev.type == "bonus" then app.audio.later("capture", 120, 1, 1.5) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

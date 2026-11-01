@@ -1,6 +1,8 @@
 -- arcade_constants.lua
 -- Settings, palette and sound map for the Arcade. Each game adds its own in games/<id>/.
 
+local picks = require("lib.sound_picks")
+
 local M = {}
 
 M.NAME = "ARCADE"
@@ -50,27 +52,13 @@ M.PALETTE = {
   lime = 0x8BE0A8,
 }
 
--- Every sound is one the other games already use (the_vault, casinocraft, lightmanscurrency, quark,
--- buildinggadgets). Events share a few sounds and differ by pitch and volume.
+-- The cabinet's own events. The sounds live in lib/sound_picks.lua.
 M.SOUNDS = {
-  tap       = { "buildinggadgets:beep", 0.35, 1.4 },
-  select    = { "buildinggadgets:beep", 0.5, 1.0 },
-  back      = { "buildinggadgets:beep", 0.35, 0.7 },
-  error     = { "the_vault:mob_trap", 0.4, 1.0 },
-  boot      = { "buildinggadgets:beep", 0.5, 1.0 },
-  start     = { "the_vault:raid_gate_open", 0.6, 1.0 },
-  tick      = { "quark:ambient.clock", 0.5, 1.5 },
-  timeout   = { "the_vault:robot_death", 0.5, 1.0 },
-  win       = { "the_vault:puzzle_completion_major", 0.9, 1.0 },
-  winFanfare = { "the_vault:artifact_complete", 0.7, 1.0 },
-  lose      = { "the_vault:puzzle_completion_fail", 0.5, 1.0 },
-  draw      = { "the_vault:rampage", 0.45, 1.0 },
-  resign    = { "the_vault:puzzle_completion_fail", 0.4, 0.8 },
-  rank      = { "the_vault:coin_pile_place", 0.7, 1.0 },
-  achievement = { "the_vault:artifact_complete", 0.55, 1.2 },
-  page      = { "buildinggadgets:beep", 0.3, 1.2 },
-  hint      = { "lightmanscurrency:coins_clinking", 0.4, 1.4 },
-  presence  = { "the_vault:mob_trap", 0.25, 1.4 },
+  tap = picks.ui_tap, select = picks.ui_select, back = picks.ui_back, error = picks.ui_error,
+  boot = picks.ui_boot, start = picks.ui_start, tick = picks.ui_tick, timeout = picks.ui_timeout,
+  win = picks.win_small, winFanfare = picks.win_big, lose = picks.lose, draw = picks.draw,
+  resign = picks.resign, rank = picks.ui_rank, achievement = picks.ui_achievement,
+  page = picks.ui_page, hint = picks.ui_hint, presence = picks.ui_presence,
 }
 
 return M

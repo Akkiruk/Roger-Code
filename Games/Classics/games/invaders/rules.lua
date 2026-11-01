@@ -268,11 +268,12 @@ local function moveBombs(s, rng, events)
   end
 end
 
-local function fire(s)
+local function fire(s, events)
   s.fireWait = s.fireWait - 1
   if s.fireWait <= 0 then
     s.fireWait = FIRE_EVERY
     s.shots[#s.shots + 1] = { x = s.x, y = CANNON_Y }
+    events[#events + 1] = { type = "shot" }
   end
 end
 
@@ -383,7 +384,7 @@ function M.tick(s, rng)
   end
   moveBombs(s, rng, events)
   if s.pause > 0 or s.over then return events end
-  fire(s)
+  fire(s, events)
   dropBomb(s, rng)
   moveUfo(s, rng, events)
   march(s, events)

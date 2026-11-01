@@ -204,17 +204,18 @@ function view.onEvents(app, match, events)
     if ev.type == "shot" then
       base.animate(match, 600, { x = ev.x, y = ev.y, seat = ev.seat })
       local name = (ev.seat == 1 and match.red or match.blue).name
+      app.audio.play("cannon")
       if ev.sunk then
-        app.audio.play(ev.seat == 2 and "captureBlue" or "captureRed")
+        app.audio.later("boom_big", 420)
         app.setToast(string.format("%s sank the %s!", name, ev.sunk), seatColor(ev.seat), 3000)
       elseif ev.hit then
-        app.audio.play("capture")
+        app.audio.later("ship_hit", 420)
         app.setToast(name .. " scored a hit!", seatColor(ev.seat), 1500)
       else
-        app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
+        app.audio.later("splash", 420)
       end
     elseif ev.type == "placed" then
-      app.audio.play("select")
+      app.audio.play("piece_a")
       -- seal each fleet as it is finished, so neither side can say the other moved a ship
       if match.state.placed[ev.seat] == #SHIPS then
         local seals = match.extras.seals or {}

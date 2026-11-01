@@ -242,29 +242,15 @@ function view.actionAt(L, _, px, py)
   return { kind = "tap", x = floor((px - L.x0) / L.cw) + 1, y = floor((py - L.y0) / L.ch) + 1 }
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  place = "lock_in", replace = "brick", refused = "ui_error", go = "ui_start", rush = "ui_warning",
+  enough = "coin", leak = "splash", clear = "level_clear", level = "ui_select",
+  flow = function(ev) return "pour", 1, ev.rush and 1.3 or 1 end,
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "place" then app.audio.play("placeBlue") end
-    if ev.type == "replace" then app.audio.play("placeRed", 1, 0.6) end
-    if ev.type == "refused" then app.audio.play("back") end
-    if ev.type == "go" then app.audio.play("captureBlue", 1, 0.6) end
-    if ev.type == "flow" then app.audio.play("placeRed", 0.5, ev.rush and 1.5 or 1.1) end
-    if ev.type == "rush" then
-      app.audio.play("captureRed", 1, 1.3)
-      app.audio.later("captureRed", 120, 1, 1.5)
-    end
-    if ev.type == "enough" then app.audio.play("capture") end
-    if ev.type == "leak" then
-      app.audio.play("captureRed", 1.2, 0.5)
-      app.audio.later("captureRed", 200, 1.2, 0.5)
-    end
-    if ev.type == "clear" then
-      app.audio.play("capture")
-      app.audio.later("captureRed", 120)
-      app.audio.later("captureRed", 240, 1, 1.2)
-    end
-    if ev.type == "level" then app.audio.play("placeBlue") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

@@ -270,25 +270,14 @@ function view.actionAt(L, _, px, py)
 end
 
 --- A big chain can hold many of one thing: one sound of each is plenty.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  death = "death", blast = "boom_small", wall = "brick", bomb = "bomb_set", kick = "bounce", powerup = "powerup",
+  sudden = "ui_warning", go = "ui_start", round = "win_small",
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "death" then once("captureBlue", 1, 0.5) end
-    if ev.type == "blast" then once("captureRed", 1, 0.6) end
-    if ev.type == "wall" then once("placeBlue", 0.7, 0.5) end
-    if ev.type == "bomb" then once("placeRed", 0.6, 0.8) end
-    if ev.type == "kick" then once("placeBlue", 0.8, 1.3) end
-    if ev.type == "powerup" then once("capture", 1, 1.5) end
-    if ev.type == "sudden" then once("captureBlue", 1, 0.8) end
-    if ev.type == "go" then once("placeBlue", 0.8, 1.5) end
-    if ev.type == "round" then app.audio.later("capture", 120, 1, 1.3) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

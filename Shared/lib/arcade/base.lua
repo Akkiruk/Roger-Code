@@ -137,13 +137,27 @@ local function boardGrid(L, shade)
 end
 
 -- Sounds a board game wants: a piece down for each seat, and a capture.
-local SOUNDS = {
-  placeRed = { "casinocraft:casinocraft.card.place", 0.7, 1.15 },
-  placeBlue = { "casinocraft:casinocraft.card.place", 0.7, 0.8 },
-  capture = { "the_vault:coin_single_place", 0.8, 1.0 },
-  captureRed = { "the_vault:coin_single_place", 0.8, 1.2 },
-  captureBlue = { "the_vault:coin_single_place", 0.8, 0.85 },
-}
+local SOUNDS = require("lib.sound_picks")
+
+--- Play what a game's table says for each event. An entry is an effect name, or a function of the
+-- event returning name, volume and pitch scale. One of each a step: a fight can bring several.
+local function sfx(app, events, map)
+  local heard = {}
+  for _, ev in ipairs(events) do
+    local name, vol, pitch = map[ev.type], nil, nil
+    if type(name) == "function" then name, vol, pitch = name(ev, app) end
+    if name and not heard[name] then
+      heard[name] = true
+      app.audio.play(name, vol, pitch)
+    end
+  end
+end
+
+--- A monster's own sound, for "attack", "hurt" or "die". A monster with no family gets the plain ones.
+local function monster(family, what)
+  if family then return "mon_" .. family .. "_" .. what end
+  return what == "hurt" and "monster_hurt" or what == "die" and "monster_die" or nil
+end
 
 -- Badges any game earns the same way. A game adds its own with plugin.badges: id -> { name, text, test(m, sd, p, won) }.
 local COMMON_BADGES = {
@@ -336,7 +350,7 @@ local function fill(plugin)
 end
 
 return {
-  fill = fill, layout = layout, grid = grid, cellAt = cellAt, disc = disc, boardGrid = boardGrid, SOUNDS = SOUNDS,
+  fill = fill, layout = layout, grid = grid, cellAt = cellAt, disc = disc, boardGrid = boardGrid, SOUNDS = SOUNDS, sfx = sfx, monster = monster,
   animT = animT, animate = animate, actionLayout = actionLayout, splitAction = splitAction, inMiddle = inMiddle,
   drawMiddle = drawMiddle, drawSplit = drawSplit,
 }

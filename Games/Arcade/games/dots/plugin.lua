@@ -118,12 +118,12 @@ function view.onEvents(app, match, events)
     if ev.type == "line" then
       if ev.scored > 0 then
         base.animate(match, 500, { closed = ev.closed, seat = ev.seat })
-        app.audio.play(ev.seat == 2 and "captureBlue" or "captureRed")
+        app.audio.play("capture")
         if match.state.winner == 0 then
           app.setToast((ev.seat == 1 and match.red or match.blue).name .. " scores and goes again", seatColor(ev.seat), 1500)
         end
       else
-        app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
+        app.audio.play("pen_line")
       end
     end
   end

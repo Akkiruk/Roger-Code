@@ -56,7 +56,7 @@ function M.event(model, ev)
     model.dealer, model.down, model.active = {}, true, 1
     model.hands = { { cards = {}, bet = model.hands[1].bet } }
     model.outcomes = nil
-    if ev.fresh then return 0.6, "spin" end
+    if ev.fresh then return 0.6, "flip" end
   end
   local timing = DURATIONS[ev.type] or { 0.2 }
   return timing[1], timing[2]

@@ -117,12 +117,13 @@ function view.historyLine(h) return string.format("%dmv %d-%d", h.moves or 0, h.
 function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
     if ev.type == "place" then
-      app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
-      if ev.flipped >= 6 then app.audio.later("capture", 110, 0.6, ev.seat == 2 and 0.8 or 1.2) end
+      app.audio.play(ev.seat == 2 and "piece_b" or "piece_a")
+      app.audio.later("card_flip", 120)
       local flips = {}
       for i, cell in ipairs(ev.cells) do flips[cell[2] * 10 + cell[1]] = i / (#ev.cells + 1) end
       base.animate(match, 120 * (#ev.cells + 1), { flips = flips })
     elseif ev.type == "pass" then
+      app.audio.play("ui_back")
       app.setToast((ev.seat == 1 and match.red or match.blue).name .. " has no move and passes", C.warn, 2500)
     end
   end

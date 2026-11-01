@@ -225,22 +225,15 @@ function view.actionAt(L, _, px, py)
   return base.splitAction(L, px, py)
 end
 
-function view.onEvents(app, s, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "dot" then
-      app.audio.play(s.dotsLeft % 2 == 0 and "placeRed" or "placeBlue", 0.4)
-    elseif ev.type == "pellet" then
-      app.audio.play("captureRed")
-    elseif ev.type == "ghost" then
-      app.audio.play("capture", 1, 0.8 + 0.2 * ev.combo)
-    elseif ev.type == "fruit" then
-      app.audio.play("captureBlue")
-    elseif ev.type == "clear" or ev.type == "level" then
-      app.audio.later("select", 120)
-    elseif ev.type == "death" then
-      app.audio.play("error")
-    end
-  end
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  dot = "blip", pellet = "powerup", fruit = "pickup", clear = "level_clear", level = "level_clear",
+  death = "death",
+  ghost = function(ev) return "capture", 1, 0.8 + 0.2 * ev.combo end, -- each ghost in a row is higher
+}
+
+function view.onEvents(app, _, events)
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

@@ -301,27 +301,17 @@ local function learnNames(app, s)
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  fire = "cannon", sight = "ui_tap", stuck = "ui_tap", dig = "dig", pile = "dig", hit = "ship_hit",
+  crateDown = "lock_in", pickup = "pickup", sudden = "ui_warning", kill = "death",
+  blast = function(ev) return ev.kind == "nuke" and "boom_big" or "boom_small" end,
+  round = function(ev) return ev.winner == 0 and "draw" or "win_small" end,
+}
+
 function view.onEvents(app, s, events)
   learnNames(app, s)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "fire" then once("placeRed", 0.9, ev.kind == "nuke" and 0.6 or 0.8) end
-    if ev.type == "sight" or ev.type == "stuck" then once("placeBlue", 0.3, 1.4) end
-    if ev.type == "dig" or ev.type == "pile" then once("placeBlue", 0.9, 0.6) end
-    if ev.type == "blast" then once("captureBlue", ev.kind == "nuke" and 1.6 or 1, ev.kind == "nuke" and 0.5 or 0.8) end
-    if ev.type == "hit" then once("captureRed", 1, 0.8) end
-    if ev.type == "crateDown" then once("placeBlue", 0.5, 1) end
-    if ev.type == "pickup" then once("capture", 1, 1.3) end
-    if ev.type == "sudden" then once("captureRed", 1, 0.5) end
-    if ev.type == "kill" then once("captureBlue", 1.6, 0.5) end
-    if ev.type == "round" then app.audio.later("capture", 200, 1, ev.winner == 0 and 0.7 or 1.2) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

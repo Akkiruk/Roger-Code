@@ -640,7 +640,7 @@ local function monsterHit(s, m, rng, events)
   end
   local damage = max(1, m.attack + rng(3) - 2 - armourOf(p))
   say(s, "The " .. def.name .. " hits you for " .. damage .. ".")
-  events[#events + 1] = { type = "hurt", amount = damage }
+  events[#events + 1] = { type = "hurt", amount = damage, kind = m.kind }
   hurt(s, damage, "a " .. def.name, events)
 end
 

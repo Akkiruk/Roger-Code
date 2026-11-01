@@ -147,16 +147,14 @@ function view.controls()
   return {}
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  count = "ui_count", go = "ui_start", turn = "swish", crash = "boom_small",
+  round = function(ev) return ev.winner == 0 and "draw" or "win_small" end,
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "count" then app.audio.play("tap") end
-    if ev.type == "go" then app.audio.play("select", 1, 1.5) end
-    if ev.type == "turn" then app.audio.play("placeBlue", 0.25, 1.3) end
-    if ev.type == "crash" then app.audio.play("captureBlue", 1, 0.5) end
-    if ev.type == "round" then
-      if ev.winner == 0 then app.audio.later("back", 160) else app.audio.later("capture", 160, 1, 1.2) end
-    end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

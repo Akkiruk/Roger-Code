@@ -190,15 +190,15 @@ function view.actionAt(L, _, px)
   return { kind = "aim", x = px - L.x0 + 1 }
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  shot = "laser", hit = "boom_small", mystery = "boom_small", ufo = "ufo", wave = "level_clear",
+  lost = "death", landed = "death",
+  march = function(ev) return "march", 1, ev.frame == 1 and 1 or 0.85 end,
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "march" then app.audio.play("placeBlue", 0.6, ev.frame == 1 and 1 or 0.85) end
-    if ev.type == "hit" then app.audio.play("capture") end
-    if ev.type == "mystery" then app.audio.play("captureRed") end
-    if ev.type == "ufo" then app.audio.play("select") end
-    if ev.type == "wave" then app.audio.later("select", 120) end
-    if ev.type == "lost" or ev.type == "landed" then app.audio.play("error") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

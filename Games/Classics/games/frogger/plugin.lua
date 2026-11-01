@@ -141,13 +141,13 @@ function view.drawAttract(W, H, demo)
   return L.statusY + 2
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  hop = "hop", home = "coin", level = "level_clear", die = "death",
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "hop" then app.audio.play("placeRed") end
-    if ev.type == "home" then app.audio.play("capture") end
-    if ev.type == "level" then app.audio.later("select", 120) end
-    if ev.type == "die" then app.audio.play("error") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

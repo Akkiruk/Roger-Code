@@ -74,12 +74,13 @@ function view.controls()
   return {}
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  flap = "flap", point = "coin", crash = "death",
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "flap" then app.audio.play("placeBlue") end
-    if ev.type == "point" then app.audio.play("capture") end
-    if ev.type == "crash" then app.audio.play("placeRed", 1, 0.5) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

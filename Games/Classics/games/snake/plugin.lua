@@ -31,12 +31,13 @@ function view.actionAt(L, _, px, py)
   return base.splitAction(L, px, py)
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  eat = "pickup", level = "level_clear", crash = "death",
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "eat" then app.audio.play("capture") end
-    if ev.type == "level" then app.audio.later("select", 120) end
-    if ev.type == "crash" then app.audio.play("error") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

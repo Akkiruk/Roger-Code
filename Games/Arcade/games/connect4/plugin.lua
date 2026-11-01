@@ -112,7 +112,7 @@ function view.scoreLine(match) return "move " .. match.state.moves end
 function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
     if ev.type == "drop" then
-      app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
+      app.audio.play("disc_drop")
       base.animate(match, 90 * (ROWS - ev.row + 2), { col = ev.col, row = ev.row, seat = ev.seat })
     end
   end

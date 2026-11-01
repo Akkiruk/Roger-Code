@@ -34,7 +34,7 @@ local function help()
   return lines
 end
 
-local TIMES = { spin = { 3.8, "spin" }, landed = { 1.3, "stop" }, payout = { 1.0, "chip" }, open = { 0.3, "tap" } }
+local TIMES = { spin = { 3.8, "spin" }, landed = { 1.3, "stop" }, payout = { 1.0, "payout" }, open = { 0.3, "tap" } }
 
 --- A bet or a chip change is only a nudge for the screens. It must not hold up the next press.
 local function event(ev)

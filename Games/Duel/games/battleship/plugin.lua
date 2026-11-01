@@ -12,8 +12,8 @@ local TIMINGS = {
 
 local function event(ev)
   if ev.type == "shot" then
-    if ev.sunk then return 0.9, "chipBig" end
-    return 0.6, ev.hit and "stop" or "chip"
+    if ev.sunk then return 0.9, "boom_big" end
+    return 0.6, ev.hit and "ship_hit" or "splash"
   end
   local timing = TIMINGS[ev.type]
   if timing then return timing[1], timing[2] end

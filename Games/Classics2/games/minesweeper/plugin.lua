@@ -193,20 +193,15 @@ function view.drawAttract(W, H, demo)
   return L.y0 + L.bh + 1
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  flag = "piece_a", unflag = "ui_back", mode = "ui_select", boom = "boom_big", clear = "win_small",
+  board = "ui_select",
+  open = function(ev) return ev.count > 1 and "capture" or "ui_tap" end, -- a big opening is worth more
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "open" then app.audio.play(ev.count > 1 and "capture" or "placeBlue") end
-    if ev.type == "flag" then app.audio.play("placeRed") end
-    if ev.type == "unflag" then app.audio.play("placeRed", 0.7, 0.8) end
-    if ev.type == "mode" then app.audio.play("placeBlue", 0.6, 1.3) end
-    if ev.type == "boom" then app.audio.play("captureRed", 1.2, 0.5) end
-    if ev.type == "clear" then
-      app.audio.play("capture")
-      app.audio.later("captureRed", 120)
-      app.audio.later("captureRed", 240, 1, 1.2)
-    end
-    if ev.type == "board" then app.audio.play("placeBlue") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

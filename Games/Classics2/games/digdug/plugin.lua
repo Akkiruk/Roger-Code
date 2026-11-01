@@ -304,31 +304,16 @@ function view.actionAt(L, _, px, py)
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  dig = "dig", fire = "inflate", hook = "hit_small", pop = "pop", wobble = "brick", land = "lock_in",
+  crush = "crush", windup = "telegraph", flame = "flame", vegOut = "ui_back", veg = "pickup",
+  flee = "flee", death = "death", clear = "level_clear", level = "level_clear",
+  inflate = function(ev) return "inflate", 1, 0.9 + 0.2 * ev.stage end, -- higher as he swells
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "dig" then once("placeBlue", 0.25, 0.7) end
-    if ev.type == "fire" then once("placeRed", 0.6) end
-    if ev.type == "hook" then once("placeBlue", 0.8, 1.2) end
-    if ev.type == "inflate" then once("placeRed", 0.8, 0.9 + 0.2 * ev.stage) end
-    if ev.type == "pop" then once("capture", 1, 1.3) end
-    if ev.type == "wobble" then once("placeBlue", 0.6, 0.6) end
-    if ev.type == "land" then once("placeBlue", 1, 0.5) end
-    if ev.type == "crush" then once("captureRed", 1, 0.8 + 0.2 * math.min(ev.count, 4)) end
-    if ev.type == "windup" then once("captureBlue", 0.5, 0.6) end
-    if ev.type == "flame" then once("captureBlue", 0.8, 0.5) end
-    if ev.type == "vegOut" then once("captureRed", 0.7) end
-    if ev.type == "veg" then once("captureRed", 1, 1.4) end
-    if ev.type == "flee" then once("placeRed", 0.7, 1.5) end
-    if ev.type == "death" then once("captureBlue", 1, 0.5) end
-    if ev.type == "clear" or ev.type == "level" then app.audio.later("capture", 120, 1, 1.5) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

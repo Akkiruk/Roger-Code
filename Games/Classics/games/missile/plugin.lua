@@ -138,24 +138,15 @@ function view.actionAt(L, _, px, py)
 end
 
 --- A busy step can hold many of one thing: one sound of each is plenty.
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  fire = "missile", city = "boom_big", base = "boom_big", empty = "ui_error", wave = "level_clear",
+  bonus = "powerup",
+  kill = function(ev) return "boom_small", 1, ev.chain > 1 and 1.25 or 1 end,
+}
+
 function view.onEvents(app, _, events)
-  local heard = {}
-  local function once(name, ...)
-    if not heard[name] then
-      heard[name] = true
-      app.audio.play(name, ...)
-    end
-  end
-  for _, ev in ipairs(events) do
-    if ev.type == "fire" then once("placeBlue") end
-    if ev.type == "kill" then
-      if ev.bomber then once("captureBlue") elseif ev.chain > 1 then once("captureRed") else once("capture") end
-    end
-    if ev.type == "city" or ev.type == "base" then once("error") end
-    if ev.type == "empty" then once("error", 0.5) end
-    if ev.type == "wave" then once("select") end
-    if ev.type == "bonus" then app.audio.later("select", 120) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

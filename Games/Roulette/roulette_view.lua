@@ -498,7 +498,7 @@ function M.event(model, ev)
   end
   model.phase = "board"
   model.ctx.heldBalance = nil
-  return 1.0, "chip"
+  return 1.0, "payout"
 end
 
 function M.commit(model, ev)

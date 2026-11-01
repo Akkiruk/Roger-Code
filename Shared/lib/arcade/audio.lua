@@ -3,6 +3,7 @@
 -- several sounds a little apart.
 
 local config = require("lib.arcade.constants")
+local picks = require("lib.sound_picks")
 local sound = require("lib.sound")
 
 local M = {}
@@ -14,6 +15,7 @@ local pending = {} -- { at = ms, event = name } sorted by time
 local lastAny = -1e9
 local MIN_GAP_MS = 60 -- a speaker takes one sound per game tick (50 ms); a second in the same tick is refused
 
+for name, def in pairs(picks) do sounds[name] = def end
 for name, def in pairs(config.SOUNDS) do sounds[name] = def end
 
 local function nowMs()

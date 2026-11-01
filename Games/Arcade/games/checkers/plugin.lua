@@ -173,12 +173,12 @@ function view.onEvents(app, match, events)
       })
     end
     if ev.type == "jump" then
-      app.audio.play(ev.seat == 2 and "captureBlue" or "captureRed")
+      app.audio.play("capture")
     elseif ev.type == "step" then
-      app.audio.play(ev.seat == 2 and "placeBlue" or "placeRed")
+      app.audio.play(ev.seat == 2 and "piece_b" or "piece_a")
     end
     if ev.crowned then
-      app.audio.later("capture", 150, 0.7, 1.4)
+      app.audio.later("ui_rank", 150)
       app.setToast((ev.seat == 1 and match.red or match.blue).name .. " has a king!", seatColor(ev.seat), 2000)
     end
   end

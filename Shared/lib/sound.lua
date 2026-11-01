@@ -8,21 +8,22 @@
 --   sound.play("minecraft:block.note_block.pling", 0.8)
 
 local peripherals = require("lib.peripherals")
+local picks = require("lib.sound_picks")
 
 local speaker = nil
 
 -- Common casino sound effects (game-specific ones can be added via addSounds)
 local SOUNDS = {
-  ERROR   = "the_vault:mob_trap",
-  SUCCESS = "the_vault:puzzle_completion_major",
-  FAIL    = "the_vault:puzzle_completion_fail",
-  ALL_IN  = "the_vault:coin_pile_place",
-  CLEAR   = "the_vault:mega_jump",
-  START   = "the_vault:artifact_complete",
-  PUSH    = "the_vault:rampage",
-  CARD_PLACE = "casinocraft:casinocraft.card.place",
-  BOOT    = "buildinggadgets:beep",
-  TIMEOUT = "the_vault:robot_death",
+  ERROR   = picks.ui_error[1],
+  SUCCESS = picks.win_big[1],
+  FAIL    = picks.lose[1],
+  ALL_IN  = picks.chip_stack[1],
+  CLEAR   = picks.ui_back[1],
+  START   = picks.ui_start[1],
+  PUSH    = picks.draw[1],
+  CARD_PLACE = picks.card_deal[1],
+  BOOT    = picks.ui_boot[1],
+  TIMEOUT = picks.ui_timeout[1],
 }
 
 --- Initialize the speaker peripheral.

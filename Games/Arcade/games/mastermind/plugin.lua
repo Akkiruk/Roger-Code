@@ -2,6 +2,7 @@
 -- Mastermind as an Arcade game, for a cabinet with two walls: each player's code stays on their own side.
 -- Your wall shows your guesses on the left, and your opponent's guesses at your code on the right.
 
+local audio = require("lib.arcade.audio")
 local base = require("lib.arcade.base")
 local rules = require("games.mastermind.rules")
 local ui = require("lib.arcade.ui")
@@ -128,7 +129,12 @@ end
 function view.onSelect(match, action)
   local picks = match.extras.picks or {}
   local pick = picks[action.seat] or ""
-  if action.clear then pick = "" elseif #pick < PEGS then pick = pick .. action.peg end
+  if action.clear then
+    pick = ""
+  elseif #pick < PEGS then
+    pick = pick .. action.peg
+    audio.play("piece_b")
+  end
   picks[action.seat] = pick
   match.extras.picks = picks
 end
@@ -167,12 +173,12 @@ function view.onEvents(app, match, events)
   for _, ev in ipairs(events) do
     match.extras.picks = {}
     if ev.type == "guess" then
-      app.audio.play(ev.black == PEGS and (ev.seat == 2 and "captureBlue" or "captureRed") or (ev.seat == 2 and "placeBlue" or "placeRed"))
+      app.audio.play(ev.black == PEGS and "win_small" or "ui_select")
       if ev.black == PEGS and s.winner == 0 then
         app.setToast((ev.seat == 1 and match.red or match.blue).name .. " cracked it! One guess left to match it", seatColor(ev.seat), 3000)
       end
     else
-      app.audio.play("select")
+      app.audio.play("ui_select")
     end
   end
 end

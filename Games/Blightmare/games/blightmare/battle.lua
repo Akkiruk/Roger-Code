@@ -95,7 +95,7 @@ local function float(b, u, text, color)
 end
 
 local function emit(events, kind, u, n)
-  events[#events + 1] = { type = kind, side = u and u.side, i = u and u.i, n = n }
+  events[#events + 1] = { type = kind, side = u and u.side, i = u and u.i, id = u and u.id, n = n }
 end
 
 local function statusClear(u)
@@ -257,6 +257,7 @@ local function strike(s, b, from, to, percent, rng, events)
     from.focus = false
   end
   if rng(CRIT_ONE_IN) == 1 then raw = raw * 3 / 2 end
+  if not from.m then emit(events, "foeStrike", from) end
   return hurt(s, b, to, floor(raw - power(s, to).def / 2), events)
 end
 

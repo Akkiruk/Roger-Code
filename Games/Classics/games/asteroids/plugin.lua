@@ -200,18 +200,15 @@ function view.actionAt(L, _, px, py)
   return { kind = "aim", x = (px - L.x0 + 0.5) * CELL_W, y = (py - L.y0 + 0.5) * CELL_H }
 end
 
-local ROCK_SOUNDS = { "captureRed", "capture", "captureBlue" }
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  shot = "laser", hyper = "teleport", saucer = "ufo", saucerHit = "boom_small", level = "level_clear",
+  life = "powerup", crash = "boom_big",
+  rock = function(ev) return "boom_small", 1, ({ 1.25, 1, 0.8 })[ev.size] end, -- small rocks crack higher
+}
 
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "shot" then app.audio.play("placeRed") end
-    if ev.type == "hyper" then app.audio.play("placeBlue") end
-    if ev.type == "rock" then app.audio.play(ROCK_SOUNDS[ev.size]) end
-    if ev.type == "saucer" then app.audio.play("select") end
-    if ev.type == "saucerHit" then app.audio.play("capture") end
-    if ev.type == "level" or ev.type == "life" then app.audio.later("select", 120) end
-    if ev.type == "crash" then app.audio.play("error") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

@@ -253,15 +253,13 @@ function view.controls(L)
   }
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  thrust = "thrust", landed = "win_small", crash = "boom_big",
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "thrust" then app.audio.play("placeBlue", 0.8, 0.8) end
-    if ev.type == "landed" then
-      app.audio.play("capture")
-      app.audio.later("captureRed", 140)
-    end
-    if ev.type == "crash" then app.audio.play("captureBlue", 1.4, 0.7) end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({

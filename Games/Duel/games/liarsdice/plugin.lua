@@ -6,7 +6,7 @@ local seatView = require("games.liarsdice.seatView")
 local tableView = require("games.liarsdice.tableView")
 
 local LENGTHS = {
-  roll = { 0.6, "deal" },
+  roll = { 0.6, "dice" },
   bid = { 0.5, "chip" },
   pick = { 0.05, "tap" },
   liar = { 1.0, "warn" },

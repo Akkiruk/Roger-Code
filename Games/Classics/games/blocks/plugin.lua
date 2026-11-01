@@ -136,15 +136,14 @@ function view.actionAt(L, _, px, py)
   return { kind = "aim", col = math.floor((px - L.x0) / CELL_W) + 1 }
 end
 
+-- What each event sounds like. Names are in lib/sound_picks.lua.
+local SFX = {
+  turn = "rotate", level = "level_clear", topout = "death",
+  lock = function(ev) return ev.lines > 0 and "line_clear" or "lock_in", 1, ev.lines == 4 and 1.25 or 1 end,
+}
+
 function view.onEvents(app, _, events)
-  for _, ev in ipairs(events) do
-    if ev.type == "turn" then app.audio.play("select", 0.5) end
-    if ev.type == "lock" and ev.lines == 0 then app.audio.play("placeBlue") end
-    if ev.type == "lock" and ev.lines > 0 then app.audio.play("capture") end
-    if ev.type == "lock" and ev.lines == 4 then app.audio.later("captureRed", 120) end
-    if ev.type == "level" then app.audio.later("select", 120) end
-    if ev.type == "topout" then app.audio.play("error") end
-  end
+  base.sfx(app, events, SFX)
 end
 
 return base.fill({
