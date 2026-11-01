@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-01T05:20:13Z",
+  "generated_at": "2026-11-01T05:22:25Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "ec5dfdae6e1d9dc4b1998a116104febd86fbc97e",
+    "commit": "d83c5f5c7e66bd691a1651ad7c1ee5d357873d20",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -52,10 +52,10 @@
     "casino": {
       "name": "Casino",
       "category": "Games",
-      "description": "Every casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
-      "version": "1.0.1",
-      "commit": "81c96123ba3a9246d6405e42836b067402a14ce4",
-      "package_hash": "3e32568eeeb3061b9e867a698a6d16df683dd211a91b2897473ab8ef00625d12",
+      "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
+      "version": "1.0.2",
+      "commit": "d83c5f5c7e66bd691a1651ad7c1ee5d357873d20",
+      "package_hash": "cb13994d5851aa15f9df0b61b0b07c69d5b3dde995c1cd1a1e41b509c5b4807d",
       "spec_path": "programs/casino.json"
     },
     "casino-hub": {
