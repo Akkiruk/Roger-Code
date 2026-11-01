@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "longgames",
+    "name": "Long Games",
+    "category": "Arcade",
+    "description": "Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.",
+    "source_root": "Games/LongGames",
+    "entrypoint": "startup.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "6b66931595290a9b196c0f12ff6221fdebaa15aa",
+    "generated_at": "2026-11-01T06:07:58Z",
+    "package_hash": "278f472dd36f5d9a30a225660f4fe259e249248ebc1e582030c13ba597666f28"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "System/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/constants.lua",
+        "install_path": "lib/arcade/constants.lua",
+        "sha256": "0d9da69106386f4d66ed1f4ad4133d4e7ec9bedf9252287040213ba0d71c1bbf"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/hw.lua",
+        "install_path": "lib/arcade/hw.lua",
+        "sha256": "7beed0860024d65b6184c1284a9469d74cabd41d2366df867dfeaa6667f412cc"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/journal.lua",
+        "install_path": "lib/arcade/journal.lua",
+        "sha256": "517902530c047a5c741745bb06196a3201fd15f80699906317f69929956ff51b"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/main.lua",
+        "install_path": "lib/arcade/main.lua",
+        "sha256": "59cd63e647d8f222fd02fe273d0c77c633cbcdd7995f19e155e45139c804a45b"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/match.lua",
+        "install_path": "lib/arcade/match.lua",
+        "sha256": "88bd87e375928369531fd1c3791c36654545f1fa2d611a74fc95576389ca161b"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/net.lua",
+        "install_path": "lib/arcade/net.lua",
+        "sha256": "1975a30cfaf6215cb7cccaa920f25853d5329fccc283873549ee0ceb12aad7e2"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/play.lua",
+        "install_path": "lib/arcade/play.lua",
+        "sha256": "eddbb81d6a6c02d5249dee74ae19a66621312c8b0c5bcf4151889855266a088c"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/records.lua",
+        "install_path": "lib/arcade/records.lua",
+        "sha256": "61ca9bfd75b01016e302afe95b0019134501c92dc3b4e56ee833b11758047f6d"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/base.lua",
+        "install_path": "lib/arcade/base.lua",
+        "sha256": "50fb8337009e8b72eb9e620fa226a2d5ff69f9b44ef5ffd1719a48de711a05a6"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/replay.lua",
+        "install_path": "lib/arcade/replay.lua",
+        "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/scores.lua",
+        "install_path": "lib/arcade/scores.lua",
+        "sha256": "bf64c3fe361a3968977dfcf8f6807004e0a68f789807a57976ba7f09758f2fa4"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/screens.lua",
+        "install_path": "lib/arcade/screens.lua",
+        "sha256": "34c52b9174062880707958be80d19cf33ff9ab6db67921b2c0eaf725a9564296"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/seats.lua",
+        "install_path": "lib/arcade/seats.lua",
+        "sha256": "8a660f8e0bde9461956517fffb2525c6862b4b8a0c1b85baa0c58a5f75e85dad"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/tournament.lua",
+        "install_path": "lib/arcade/tournament.lua",
+        "sha256": "399669963e5282f901f9b0ce0a48d7c44992f6d70cd93be0d8ce6fb4c7941a48"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/ui.lua",
+        "install_path": "lib/arcade/ui.lua",
+        "sha256": "3c420274e74dcce98d7faa27e3a0d33efd9abda89d91d2f80a21d99282b187ad"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/versus.lua",
+        "install_path": "lib/arcade/versus.lua",
+        "sha256": "8668f379d690e16fbe124437b00a99400242f6058baf547a813054dc1a897d65"
+      },
+      {
+        "repo_path": "Shared/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/saves.lua",
+        "install_path": "lib/arcade/saves.lua",
+        "sha256": "9e35e045d084f571aa4c6bcb804da68d88f04a22a78dade95e9c4549f7e1848e"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/audio.lua",
+        "install_path": "lib/arcade/audio.lua",
+        "sha256": "7ab0a971e56e470caf436130a2ddc29049f7220008422576dcc041d27edf5cc1"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/action.lua",
+        "install_path": "lib/arcade/action.lua",
+        "sha256": "18a84a29abad17bace574589307fe15c70ca49a61b34dd4191e1cef7df810d14"
+      },
+      {
+        "repo_path": "Games/LongGames/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Games/LongGames/games/druaga/plugin.lua",
+        "install_path": "games/druaga/plugin.lua",
+        "sha256": "ccdb3ef95e5834ccc7cbd43839b8edc1a653c449a34d37ee77fe5d13418f7bb4"
+      },
+      {
+        "repo_path": "Games/LongGames/games/druaga/rules.lua",
+        "install_path": "games/druaga/rules.lua",
+        "sha256": "7f127c36151a2f87380bebce549fd5a4fdf155a74e53669b768fd6e9b9ba6a2f"
+      },
+      {
+        "repo_path": "Games/LongGames/games/dungeon/art.lua",
+        "install_path": "games/dungeon/art.lua",
+        "sha256": "948f1a6bf448d5add3952c21c419606ded195f712f924931178b851a9d4b8bc3"
+      },
+      {
+        "repo_path": "Games/LongGames/games/dungeon/plugin.lua",
+        "install_path": "games/dungeon/plugin.lua",
+        "sha256": "d8b3b3ad8b99c5cc6b241fb4c2d26f803ce48821b03e0bfd3da7531eec82b40f"
+      },
+      {
+        "repo_path": "Games/LongGames/games/dungeon/rules.lua",
+        "install_path": "games/dungeon/rules.lua",
+        "sha256": "4001393195161751ee2e4dbbcba46c4d8ed5efdf67b39e05af6ec490779b6ba5"
+      },
+      {
+        "repo_path": "Games/LongGames/games/dungeon/scene.lua",
+        "install_path": "games/dungeon/scene.lua",
+        "sha256": "f03f0c9f9817bf45c8bee15434053aa9bfa26adc342522e71efe77a405c1e924"
+      },
+      {
+        "repo_path": "Games/LongGames/games/oregon/plugin.lua",
+        "install_path": "games/oregon/plugin.lua",
+        "sha256": "86887135f4fa1726e2498aad901ac2b5c6804a2b00691c98337b143426505d24"
+      },
+      {
+        "repo_path": "Games/LongGames/games/oregon/rules.lua",
+        "install_path": "games/oregon/rules.lua",
+        "sha256": "aab6de145a8755b53f8bd3e3d4434a405b7920ec064e0fcc1bb59f4e041f525a"
+      },
+      {
+        "repo_path": "Games/LongGames/games/oregon/text.lua",
+        "install_path": "games/oregon/text.lua",
+        "sha256": "ca3d347987b20d7e2485349614c4c7cc3a483e83a986654d55ed36408f965883"
+      },
+      {
+        "repo_path": "Games/LongGames/games/registry.lua",
+        "install_path": "games/registry.lua",
+        "sha256": "ec01b55c2b433849a76210a3c413b0db9af6eb0e021da0102433466ad1cc6f74"
+      },
+      {
+        "repo_path": "Games/LongGames/longgames.lua",
+        "install_path": "longgames.lua",
+        "sha256": "cf9a2a8e9b7e97f78c9849a28ed0f86ee8d363bfa88d0070eb023973f9dbfb34"
+      },
+      {
+        "repo_path": "Games/LongGames/startup.lua",
+        "install_path": "longgames_startup.lua",
+        "sha256": "ff09d815182c41d5c8c3837298e4b170b6c16d0b0a3aac54e7ee6813d21f5692"
+      },
+      {
+        "repo_path": "Games/LongGames/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+      },
+      {
+        "repo_path": "Games/LongGames/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
+        "repo_path": "Shared/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
+      }
+    ]
+  },
+  "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "longgames_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.arcade.action",
+      "lib.arcade.audio",
+      "lib.arcade.base",
+      "lib.arcade.constants",
+      "lib.arcade.hw",
+      "lib.arcade.journal",
+      "lib.arcade.main",
+      "lib.arcade.match",
+      "lib.arcade.net",
+      "lib.arcade.play",
+      "lib.arcade.records",
+      "lib.arcade.replay",
+      "lib.arcade.saves",
+      "lib.arcade.scores",
+      "lib.arcade.screens",
+      "lib.arcade.seats",
+      "lib.arcade.tournament",
+      "lib.arcade.ui",
+      "lib.arcade.versus",
+      "lib.peripherals",
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.sound",
+      "lib.update_screen",
+      "lib.updater"
+    ]
+  }
+}

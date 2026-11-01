@@ -7,12 +7,12 @@
     "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
     "source_root": "Games/Classics",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "ec5dfdae6e1d9dc4b1998a116104febd86fbc97e",
-    "generated_at": "2026-11-01T05:22:25Z",
-    "package_hash": "9d7b3605688a5f9cce075c9f6ee651472c6e13c48c6e51f09752b9ad266b8a4d"
+    "commit": "6b66931595290a9b196c0f12ff6221fdebaa15aa",
+    "generated_at": "2026-11-01T06:07:58Z",
+    "package_hash": "139a4aadec85f9054565f6435142697c25e3f4b055ea2e473477be0eb1b38530"
   },
   "install": {
     "preserve": [],
@@ -23,11 +23,6 @@
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
       },
       {
-        "repo_path": "Games/Classics/surface",
-        "install_path": "surface",
-        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
-      },
-      {
         "repo_path": "Games/Classics/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
@@ -35,7 +30,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "9098549c1d5956d0bb5be1784b49f04d750bfd9d55f977a0e5f399f6582f007f"
+        "sha256": "18a84a29abad17bace574589307fe15c70ca49a61b34dd4191e1cef7df810d14"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -60,12 +55,12 @@
       {
         "repo_path": "Shared/lib/arcade/journal.lua",
         "install_path": "lib/arcade/journal.lua",
-        "sha256": "7beed173b4fcce6dd2fab85254a50755aa7bbd99a500a4a117e0b6d9825f1b30"
+        "sha256": "517902530c047a5c741745bb06196a3201fd15f80699906317f69929956ff51b"
       },
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "87e2feef1e3f5b2277295bcc50ad4921fc112a8170495d8fea99cde8ed81b716"
+        "sha256": "59cd63e647d8f222fd02fe273d0c77c633cbcdd7995f19e155e45139c804a45b"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -78,19 +73,24 @@
         "sha256": "1975a30cfaf6215cb7cccaa920f25853d5329fccc283873549ee0ceb12aad7e2"
       },
       {
+        "repo_path": "Games/Classics/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
         "repo_path": "Shared/lib/arcade/play.lua",
         "install_path": "lib/arcade/play.lua",
         "sha256": "eddbb81d6a6c02d5249dee74ae19a66621312c8b0c5bcf4151889855266a088c"
       },
       {
-        "repo_path": "Shared/lib/arcade/records.lua",
-        "install_path": "lib/arcade/records.lua",
-        "sha256": "61ca9bfd75b01016e302afe95b0019134501c92dc3b4e56ee833b11758047f6d"
-      },
-      {
         "repo_path": "Shared/lib/arcade/replay.lua",
         "install_path": "lib/arcade/replay.lua",
         "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/saves.lua",
+        "install_path": "lib/arcade/saves.lua",
+        "sha256": "9e35e045d084f571aa4c6bcb804da68d88f04a22a78dade95e9c4549f7e1848e"
       },
       {
         "repo_path": "Shared/lib/arcade/scores.lua",
@@ -100,7 +100,7 @@
       {
         "repo_path": "Shared/lib/arcade/screens.lua",
         "install_path": "lib/arcade/screens.lua",
-        "sha256": "4691199c31f26f1cbb908684da945648a17082f3467f5db7b85734f2998d78c2"
+        "sha256": "34c52b9174062880707958be80d19cf33ff9ab6db67921b2c0eaf725a9564296"
       },
       {
         "repo_path": "Shared/lib/arcade/seats.lua",
@@ -118,6 +118,11 @@
         "sha256": "3c420274e74dcce98d7faa27e3a0d33efd9abda89d91d2f80a21d99282b187ad"
       },
       {
+        "repo_path": "Shared/lib/arcade/versus.lua",
+        "install_path": "lib/arcade/versus.lua",
+        "sha256": "8668f379d690e16fbe124437b00a99400242f6058baf547a813054dc1a897d65"
+      },
+      {
         "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
         "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
@@ -128,9 +133,9 @@
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
-        "repo_path": "Games/Classics/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+        "repo_path": "Shared/lib/arcade/records.lua",
+        "install_path": "lib/arcade/records.lua",
+        "sha256": "61ca9bfd75b01016e302afe95b0019134501c92dc3b4e56ee833b11758047f6d"
       },
       {
         "repo_path": "Shared/lib/sound.lua",
@@ -138,14 +143,14 @@
         "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
       },
       {
-        "repo_path": "Games/Classics/startup.lua",
-        "install_path": "classics_startup.lua",
-        "sha256": "c679a70886013d8100dc46b1ce24189a3eb1c62ec42b11c46cd5afb5b0fb4728"
+        "repo_path": "Games/Classics/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
-        "repo_path": "Games/Classics/games/snake/plugin.lua",
-        "install_path": "games/snake/plugin.lua",
-        "sha256": "d05c3ad8af17a822507f4c4d4803ecbb5388e7d1484c14088f2561060e819e3f"
+        "repo_path": "Games/Classics/games/snake/rules.lua",
+        "install_path": "games/snake/rules.lua",
+        "sha256": "657e715a9235c73d9ad970d9ecfeaddc2f6a27aacf3e23848b1a16af38676152"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -185,7 +190,7 @@
       {
         "repo_path": "Games/Classics/games/asteroids/rules.lua",
         "install_path": "games/asteroids/rules.lua",
-        "sha256": "94025c6c44b4b553ec24be02a05be6863320c86070b888246a8f6758f6516f96"
+        "sha256": "50f440912a00a8586c14b39ea7b64eaf8fa9e9375c416069e3a3cae7a23b6ca2"
       },
       {
         "repo_path": "Games/Classics/games/blocks/plugin.lua",
@@ -195,17 +200,17 @@
       {
         "repo_path": "Games/Classics/games/blocks/rules.lua",
         "install_path": "games/blocks/rules.lua",
-        "sha256": "b8bc0c90ce5e226eaeeea3de21221ad636412c7048640c81516d2e23444541c7"
+        "sha256": "b76c22b34618c5e2a9050e4d24cb98ec7515cde350beb1cae8253153eb7e401d"
+      },
+      {
+        "repo_path": "Games/Classics/startup.lua",
+        "install_path": "classics_startup.lua",
+        "sha256": "c679a70886013d8100dc46b1ce24189a3eb1c62ec42b11c46cd5afb5b0fb4728"
       },
       {
         "repo_path": "Games/Classics/games/breakout/plugin.lua",
         "install_path": "games/breakout/plugin.lua",
         "sha256": "d7276080c3385f52ee71b7b00621b9222e5e10bfafb445b82e3bfe00a8371384"
-      },
-      {
-        "repo_path": "Games/Classics/games/breakout/rules.lua",
-        "install_path": "games/breakout/rules.lua",
-        "sha256": "4a817fbff5eae2a285b7295d7173481f932e5411a915fc60e68aed3be3781ccc"
       },
       {
         "repo_path": "Games/Classics/games/frogger/plugin.lua",
@@ -215,7 +220,7 @@
       {
         "repo_path": "Games/Classics/games/frogger/rules.lua",
         "install_path": "games/frogger/rules.lua",
-        "sha256": "2a3abb63de88017608d3005f4629f30f851b5ccc454474f2b0c638cad7dd993f"
+        "sha256": "62674d434f176f62d829fe664feffe182ab1324520a18483c30eac9f69686767"
       },
       {
         "repo_path": "Games/Classics/games/invaders/plugin.lua",
@@ -225,7 +230,7 @@
       {
         "repo_path": "Games/Classics/games/invaders/rules.lua",
         "install_path": "games/invaders/rules.lua",
-        "sha256": "219848d4b52797205ba3fea207d20cf581422348f3e029dd57eba351e0999fdf"
+        "sha256": "170a82cb468400379ef8601fa13bf57c053ab4784c0b7056e171a00feb392486"
       },
       {
         "repo_path": "Games/Classics/games/missile/plugin.lua",
@@ -235,7 +240,7 @@
       {
         "repo_path": "Games/Classics/games/missile/rules.lua",
         "install_path": "games/missile/rules.lua",
-        "sha256": "6b8d59ff77102de2ef71ef2f125711f772db0b483dc233cd904e4d3f10a321bf"
+        "sha256": "c6a21288de21503bf05ca7d37e2edb5837595732fa9735e1d856419e011f281f"
       },
       {
         "repo_path": "Games/Classics/games/pacman/plugin.lua",
@@ -253,9 +258,14 @@
         "sha256": "7d8495b1e6268629bdc8c5c0eb8ad6f60a5e5bfae6cca9ecaac2c35c6cb1f4fb"
       },
       {
-        "repo_path": "Games/Classics/games/snake/rules.lua",
-        "install_path": "games/snake/rules.lua",
-        "sha256": "657e715a9235c73d9ad970d9ecfeaddc2f6a27aacf3e23848b1a16af38676152"
+        "repo_path": "Games/Classics/games/snake/plugin.lua",
+        "install_path": "games/snake/plugin.lua",
+        "sha256": "d05c3ad8af17a822507f4c4d4803ecbb5388e7d1484c14088f2561060e819e3f"
+      },
+      {
+        "repo_path": "Games/Classics/games/breakout/rules.lua",
+        "install_path": "games/breakout/rules.lua",
+        "sha256": "adb03d04d06d327cdb89cc739d89480b27e5dbf0ce8819e8e1b8c2f173d4c0f0"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -284,11 +294,13 @@
       "lib.arcade.play",
       "lib.arcade.records",
       "lib.arcade.replay",
+      "lib.arcade.saves",
       "lib.arcade.scores",
       "lib.arcade.screens",
       "lib.arcade.seats",
       "lib.arcade.tournament",
       "lib.arcade.ui",
+      "lib.arcade.versus",
       "lib.peripherals",
       "lib.roger_logging",
       "lib.roger_supervisor",
