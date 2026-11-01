@@ -4,14 +4,14 @@
     "key": "ultimate-tic-tac-toe",
     "name": "Ultimate Tic-Tac-Toe",
     "category": "Games",
-    "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+    "description": "Nine boards in one: two players (or the computer) fight for three small boards in a row, with ratings, leaderboards and sound.",
     "source_root": "Games/UltimateTicTacToe",
     "entrypoint": "startup.lua",
     "version": "1.0.12"
   },
   "build": {
     "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-    "generated_at": "2026-11-01T03:16:47Z",
+    "generated_at": "2026-11-01T04:54:58Z",
     "package_hash": "6ff04170a6330a2351c07b450edb94680229304c396f1690212fc6d799406c04"
   },
   "install": {

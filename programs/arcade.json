@@ -4,14 +4,14 @@
     "key": "arcade",
     "name": "Arcade",
     "category": "Arcade",
-    "description": "Restarts the Arcade after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+    "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
     "source_root": "Games/Arcade",
     "entrypoint": "startup.lua",
     "version": "1.0.4"
   },
   "build": {
     "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
-    "generated_at": "2026-11-01T03:16:47Z",
+    "generated_at": "2026-11-01T04:54:58Z",
     "package_hash": "69f0d8dd1e2d0c35a5700537e8ce2b453c6d5bf6b625f1513db9501739340cfb"
   },
   "install": {

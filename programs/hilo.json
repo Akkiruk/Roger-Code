@@ -7,12 +7,12 @@
     "description": "Higher or lower through one deck, with every guess priced from the cards left.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.92"
+    "version": "1.0.93"
   },
   "build": {
-    "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
-    "generated_at": "2026-11-01T03:16:47Z",
-    "package_hash": "0d40797db7e8ab09e2e14a5a74b9b0475b6896637492c81f0ff8fbb9a1ff5a22"
+    "commit": "81c96123ba3a9246d6405e42836b067402a14ce4",
+    "generated_at": "2026-11-01T04:54:58Z",
+    "package_hash": "50053af2c5e73426c989942693967af608ffcbd6e3bbe5a039835d0f211877e4"
   },
   "install": {
     "preserve": [],
@@ -150,12 +150,12 @@
       {
         "repo_path": "Games/HiLo/hilo_game.lua",
         "install_path": "hilo_game.lua",
-        "sha256": "90d1097308c22b752350cc64c7739ae261b9e2f802c42b0dd248a529846d2ac3"
+        "sha256": "cdaee3efdff40d1b364497143f23ee1664eebd6c405901e920f4233a9bf58c33"
       },
       {
         "repo_path": "Games/HiLo/hilo_rules.lua",
         "install_path": "hilo_rules.lua",
-        "sha256": "bfe2a14254916f229b39caf68d14468c856d1b362c3891eac3a02a72d145c0c7"
+        "sha256": "0b812b168761ad78fa1dfc51abc3c5fe73d5b79cc5149f47316e0578ec5694e6"
       },
       {
         "repo_path": "Shared/lib/casino/deck.lua",
@@ -165,7 +165,7 @@
       {
         "repo_path": "Games/HiLo/hilo_view.lua",
         "install_path": "hilo_view.lua",
-        "sha256": "28c377d8d5e46b89edb6b2481db1cdbc482991af6fd6287866f15e54c9ac8933"
+        "sha256": "299789eb417a6551b770af394c062333adeba971496db4dc62cc6d3e2b5e74b0"
       },
       {
         "repo_path": "Games/HiLo/vhcc_lockdown.txt",

@@ -1,0 +1,271 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "classics2",
+    "name": "Classics 2",
+    "category": "Arcade",
+    "description": "Dig Dug, Flappy Bird, Minesweeper, Lunar Lander and Duck Hunt, played by touch for the high score.",
+    "source_root": "Games/Classics2",
+    "entrypoint": "startup.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "de120d9d41cf64fc72acf08aaad4427a0370311a",
+    "generated_at": "2026-11-01T04:54:58Z",
+    "package_hash": "be5b843c0b3592e8d18e10139e2fd04a3384343bcd3ee5519304551b7bfd0885"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "System/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/audio.lua",
+        "install_path": "lib/arcade/audio.lua",
+        "sha256": "7ab0a971e56e470caf436130a2ddc29049f7220008422576dcc041d27edf5cc1"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/base.lua",
+        "install_path": "lib/arcade/base.lua",
+        "sha256": "c9ab81a3dde8bff6495e33590382d37d5a265d911acd1a6390bd772798520ffe"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/constants.lua",
+        "install_path": "lib/arcade/constants.lua",
+        "sha256": "0d9da69106386f4d66ed1f4ad4133d4e7ec9bedf9252287040213ba0d71c1bbf"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/hw.lua",
+        "install_path": "lib/arcade/hw.lua",
+        "sha256": "7beed0860024d65b6184c1284a9469d74cabd41d2366df867dfeaa6667f412cc"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/journal.lua",
+        "install_path": "lib/arcade/journal.lua",
+        "sha256": "7beed173b4fcce6dd2fab85254a50755aa7bbd99a500a4a117e0b6d9825f1b30"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/main.lua",
+        "install_path": "lib/arcade/main.lua",
+        "sha256": "87e2feef1e3f5b2277295bcc50ad4921fc112a8170495d8fea99cde8ed81b716"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/match.lua",
+        "install_path": "lib/arcade/match.lua",
+        "sha256": "88bd87e375928369531fd1c3791c36654545f1fa2d611a74fc95576389ca161b"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/net.lua",
+        "install_path": "lib/arcade/net.lua",
+        "sha256": "1975a30cfaf6215cb7cccaa920f25853d5329fccc283873549ee0ceb12aad7e2"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/action.lua",
+        "install_path": "lib/arcade/action.lua",
+        "sha256": "4c3782bf0a7234d0346bae36679d3923f87ec8a2b00fef58f34e433b63953177"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/play.lua",
+        "install_path": "lib/arcade/play.lua",
+        "sha256": "eddbb81d6a6c02d5249dee74ae19a66621312c8b0c5bcf4151889855266a088c"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/replay.lua",
+        "install_path": "lib/arcade/replay.lua",
+        "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/scores.lua",
+        "install_path": "lib/arcade/scores.lua",
+        "sha256": "bf64c3fe361a3968977dfcf8f6807004e0a68f789807a57976ba7f09758f2fa4"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/screens.lua",
+        "install_path": "lib/arcade/screens.lua",
+        "sha256": "4691199c31f26f1cbb908684da945648a17082f3467f5db7b85734f2998d78c2"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/seats.lua",
+        "install_path": "lib/arcade/seats.lua",
+        "sha256": "8a660f8e0bde9461956517fffb2525c6862b4b8a0c1b85baa0c58a5f75e85dad"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/tournament.lua",
+        "install_path": "lib/arcade/tournament.lua",
+        "sha256": "399669963e5282f901f9b0ce0a48d7c44992f6d70cd93be0d8ce6fb4c7941a48"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/ui.lua",
+        "install_path": "lib/arcade/ui.lua",
+        "sha256": "3c420274e74dcce98d7faa27e3a0d33efd9abda89d91d2f80a21d99282b187ad"
+      },
+      {
+        "repo_path": "Shared/lib/peripherals.lua",
+        "install_path": "lib/peripherals.lua",
+        "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/records.lua",
+        "install_path": "lib/arcade/records.lua",
+        "sha256": "61ca9bfd75b01016e302afe95b0019134501c92dc3b4e56ee833b11758047f6d"
+      },
+      {
+        "repo_path": "Shared/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "faa17dcb07da6d32c22699473b9a0388dd9edf229336b17ae5dc6982af02e201"
+      },
+      {
+        "repo_path": "Games/Classics2/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "Games/Classics2/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Games/Classics2/classics2.lua",
+        "install_path": "classics2.lua",
+        "sha256": "370e47a951996957ce7dc9ccfce94b58ab592e6e5c93a1afe4e91245d005dfa0"
+      },
+      {
+        "repo_path": "Games/Classics2/games/digdug/plugin.lua",
+        "install_path": "games/digdug/plugin.lua",
+        "sha256": "b2f37dc7b3ca8fcf4a51b2568107f47831de115be130d51a9bb0b824160e60c3"
+      },
+      {
+        "repo_path": "Games/Classics2/games/digdug/rules.lua",
+        "install_path": "games/digdug/rules.lua",
+        "sha256": "342d8adede955d52bf7bac0bd4e95133a6ecf35f7d1701dde3a7bfcc4055f9f7"
+      },
+      {
+        "repo_path": "Games/Classics2/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
+      },
+      {
+        "repo_path": "Games/Classics2/games/duckhunt/plugin.lua",
+        "install_path": "games/duckhunt/plugin.lua",
+        "sha256": "4c14948e66d3b6f0d41a5c8a623eff595e55fabd9c1b5e4f036d1456c59a1c43"
+      },
+      {
+        "repo_path": "Games/Classics2/games/flappy/plugin.lua",
+        "install_path": "games/flappy/plugin.lua",
+        "sha256": "4790234e83fdfb839740cd329ce0c10be401abe609955abf23776ff2ae72b21f"
+      },
+      {
+        "repo_path": "Games/Classics2/games/flappy/rules.lua",
+        "install_path": "games/flappy/rules.lua",
+        "sha256": "a748ae20010d877ec9a9c6d2da5c35a4ea9c416cb77c642408320f6a809fd482"
+      },
+      {
+        "repo_path": "Games/Classics2/games/lander/plugin.lua",
+        "install_path": "games/lander/plugin.lua",
+        "sha256": "64d36a589d1333d26c9642e0ba918557ba6c7268c9eb63d1989c883e6ca67af8"
+      },
+      {
+        "repo_path": "Games/Classics2/games/lander/rules.lua",
+        "install_path": "games/lander/rules.lua",
+        "sha256": "8839a6d24f32d888008b915791c19b98b0889bb73368f342be41d548d9447f01"
+      },
+      {
+        "repo_path": "Games/Classics2/games/minesweeper/plugin.lua",
+        "install_path": "games/minesweeper/plugin.lua",
+        "sha256": "5213cac2a1dfe8d0ce89a14c7555ddcf38dadbee67b3d16ed80218dfdfda7b07"
+      },
+      {
+        "repo_path": "Games/Classics2/games/minesweeper/rules.lua",
+        "install_path": "games/minesweeper/rules.lua",
+        "sha256": "32cf842d44a82fcfa0b93fc261e21dbf96929ea84af907fcf96b49a02a2612b8"
+      },
+      {
+        "repo_path": "Games/Classics2/games/registry.lua",
+        "install_path": "games/registry.lua",
+        "sha256": "d9f1d648fc221336cde9c47212fc43027313a3c22ef45fb16dff1bbd1e168023"
+      },
+      {
+        "repo_path": "Games/Classics2/startup.lua",
+        "install_path": "classics2_startup.lua",
+        "sha256": "24615c44e4dc090b0796fdd2cc2b5a09105fcee5471dc734f01a43cadcf220e7"
+      },
+      {
+        "repo_path": "Games/Classics2/games/duckhunt/rules.lua",
+        "install_path": "games/duckhunt/rules.lua",
+        "sha256": "cc2981109cf834dbd506a3d2266c91eed89e6dc6ad80ca3eb93ee539597d4280"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
+      }
+    ]
+  },
+  "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "classics2_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.arcade.action",
+      "lib.arcade.audio",
+      "lib.arcade.base",
+      "lib.arcade.constants",
+      "lib.arcade.hw",
+      "lib.arcade.journal",
+      "lib.arcade.main",
+      "lib.arcade.match",
+      "lib.arcade.net",
+      "lib.arcade.play",
+      "lib.arcade.records",
+      "lib.arcade.replay",
+      "lib.arcade.scores",
+      "lib.arcade.screens",
+      "lib.arcade.seats",
+      "lib.arcade.tournament",
+      "lib.arcade.ui",
+      "lib.peripherals",
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.sound",
+      "lib.update_screen",
+      "lib.updater"
+    ]
+  }
+}

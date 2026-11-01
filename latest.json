@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-01T03:16:47Z",
+  "generated_at": "2026-11-01T04:54:58Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "59cea36ccc04f71ccae4eda925ddc89589ff130d",
+    "commit": "81c96123ba3a9246d6405e42836b067402a14ce4",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -16,7 +16,7 @@
     "arcade": {
       "name": "Arcade",
       "category": "Arcade",
-      "description": "Restarts the Arcade after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+      "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
       "version": "1.0.4",
       "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
       "package_hash": "69f0d8dd1e2d0c35a5700537e8ce2b453c6d5bf6b625f1513db9501739340cfb",
@@ -53,9 +53,9 @@
       "name": "Casino",
       "category": "Games",
       "description": "Every casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
-      "version": "1.0.0",
-      "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
-      "package_hash": "d2d42fa3fa291d68126169cb4a8d5f7a01c24c9a7d1c26487c41e41bbe7aa989",
+      "version": "1.0.1",
+      "commit": "81c96123ba3a9246d6405e42836b067402a14ce4",
+      "package_hash": "3e32568eeeb3061b9e867a698a6d16df683dd211a91b2897473ab8ef00625d12",
       "spec_path": "programs/casino.json"
     },
     "casino-hub": {
@@ -70,11 +70,20 @@
     "classics": {
       "name": "Classics",
       "category": "Arcade",
-      "description": "Restarts the Classics after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+      "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
       "version": "1.0.0",
       "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
       "package_hash": "d40085352cfe6aed6f4697298e78cd879d2def9ca5f938f064cb58ee950a0cf8",
       "spec_path": "programs/classics.json"
+    },
+    "classics2": {
+      "name": "Classics 2",
+      "category": "Arcade",
+      "description": "Dig Dug, Flappy Bird, Minesweeper, Lunar Lander and Duck Hunt, played by touch for the high score.",
+      "version": "1.0.0",
+      "commit": "de120d9d41cf64fc72acf08aaad4427a0370311a",
+      "package_hash": "be5b843c0b3592e8d18e10139e2fd04a3384343bcd3ee5519304551b7bfd0885",
+      "spec_path": "programs/classics2.json"
     },
     "conformance_probe": {
       "name": "Conformance Probe",
@@ -98,9 +107,9 @@
       "name": "Hi-Lo",
       "category": "Games",
       "description": "Higher or lower through one deck, with every guess priced from the cards left.",
-      "version": "1.0.92",
-      "commit": "f734fbd111b7b91edd2e09d9c82170dc7b1bdc9e",
-      "package_hash": "0d40797db7e8ab09e2e14a5a74b9b0475b6896637492c81f0ff8fbb9a1ff5a22",
+      "version": "1.0.93",
+      "commit": "81c96123ba3a9246d6405e42836b067402a14ce4",
+      "package_hash": "50053af2c5e73426c989942693967af608ffcbd6e3bbe5a039835d0f211877e4",
       "spec_path": "programs/hilo.json"
     },
     "horse-racing": {
@@ -187,7 +196,7 @@
     "ultimate-tic-tac-toe": {
       "name": "Ultimate Tic-Tac-Toe",
       "category": "Games",
-      "description": "Restarts the game after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+      "description": "Nine boards in one: two players (or the computer) fight for three small boards in a row, with ratings, leaderboards and sound.",
       "version": "1.0.12",
       "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
       "package_hash": "6ff04170a6330a2351c07b450edb94680229304c396f1690212fc6d799406c04",

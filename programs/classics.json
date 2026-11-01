@@ -4,14 +4,14 @@
     "key": "classics",
     "name": "Classics",
     "category": "Arcade",
-    "description": "Restarts the Classics after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.",
+    "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
     "source_root": "Games/Classics",
     "entrypoint": "startup.lua",
     "version": "1.0.0"
   },
   "build": {
     "commit": "45becb22570a02cc0ab23b0d611a1dbcb50bdc7e",
-    "generated_at": "2026-11-01T03:16:47Z",
+    "generated_at": "2026-11-01T04:54:58Z",
     "package_hash": "d40085352cfe6aed6f4697298e78cd879d2def9ca5f938f064cb58ee950a0cf8"
   },
   "install": {
