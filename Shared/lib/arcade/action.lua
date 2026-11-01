@@ -364,7 +364,7 @@ local function drawReady(a)
   end
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
   ui.button("rules", W - 18, 1, 16, 7, "HOW TO PLAY", C.panel, { small = true })
-  ui.button("actBoards", 2, H - 9, 24, 7, "OTHER GAMES", C.panel, { small = true })
+  if not app.oneGame then ui.button("actBoards", 2, H - 9, 24, 7, "OTHER GAMES", C.panel, { small = true }) end
   app.drawToast()
 end
 

@@ -71,7 +71,7 @@ local attractIndex = 0
 local IDLE_END_HOLD_MS = 4000 -- how long the last move of an idle game stays up before the next game
 local IDLE_LONGEST_MS = 360000 -- a game that drags on this long gives way in the end
 
-local app = { S = S, env = env, log = log, audio = audio, signed = screens.signed }
+local app = { S = S, env = env, log = log, audio = audio, signed = screens.signed, oneGame = #registry == 1 }
 
 local function setToast(text, color, ms)
   S.toast = { text = text, color = color or C.text, untilAt = nowMs() + (ms or TOAST_MS) }
@@ -262,6 +262,8 @@ local function openFront(who, wall)
     S.dirty = true
   elseif registry[1].versus then
     versus.open(who, wall)
+  elseif registry[1].action then
+    actions.open(who)
   else
     openLobby(who, wall)
   end
