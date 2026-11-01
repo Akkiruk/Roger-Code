@@ -139,6 +139,23 @@ function M.ledgerShows(name, tag, at)
   return nil, who == name
 end
 
+--- How many tokens the ledger shows moved under a tag, parts included, for a transfer another computer made. As ledgerShows: nil when
+-- that cannot be told yet, and nil, true when it never can. Only the player it names can read it, on a computer they have touched.
+function M.ledgerMoved(name, tag, at)
+  local shown, never = M.ledgerShows(name, tag, at)
+  if shown == nil then return nil, never end
+  local list = guarded(vault().getTransactionHistory, HISTORY_LIMIT)
+  if type(list) ~= "table" then return nil end
+  local total = 0
+  for _, entry in ipairs(list) do
+    local reason = tostring(entry.reason):gsub("^%[self%-play%] ", "")
+    if (reason == tag or reason:sub(1, #tag + 1) == tag .. "/") and not entry.rejectionReason then
+      total = total + (tonumber(entry.amount) or 0)
+    end
+  end
+  return total
+end
+
 --- Whether a failure may heal by itself: the player only has to come back and touch the table.
 local function isRetryable(reason)
   reason = tostring(reason)

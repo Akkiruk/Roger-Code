@@ -58,6 +58,7 @@ M.HOUSE = "@house"       -- what follows a name in the book for what stands agai
 M.MAX_SEATS = 8
 
 local FRAME = 0.1
+local MAX_TOUCHES = 6          -- a frame's worth of mashing. Each touch can wait on the bank, so a backlog would lag the whole table
 local SETTLE_EVERY_MS = 400      -- how often the book is looked at
 local TURN_MS = 45000
 local LOBBY_MS = 10000           -- from enough players ready to the deal. Nobody has to press anything
@@ -2136,7 +2137,9 @@ function Dealer:pump()
     elseif event == "monitor_touch" then
       local who = self.toucher
       self.toucher = nil
-      if a == self.monitorName then
+      if #self.touches >= MAX_TOUCHES then
+        self.dropped = (self.dropped or 0) + 1
+      elseif a == self.monitorName then
         self.touches[#self.touches + 1] = { x = b, y = c, who = who }
       else
         for number, st in pairs(self.stations) do

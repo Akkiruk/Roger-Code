@@ -38,6 +38,7 @@ M.LINK_FILE = "group_link.dat"
 M.ORDER_FILE = "group_orders.dat"
 
 local FRAME = 0.1
+local MAX_TOUCHES = 6          -- a frame's worth of mashing. Each touch can wait on the bank, so a backlog would lag the whole seat
 local DONE_KEPT = 64           -- answers remembered. Far more than a dealer can have open
 local HELLO_MS = 2000          -- how often a seat with no dealer asks
 local CHOOSE_WAIT_MS = 2500    -- how long the first answer waits for others
@@ -602,7 +603,9 @@ function Seat:pump()
     elseif event == "vhcc_touch" then
       self.toucher = a
     elseif event == "monitor_touch" then
-      if a == self.front.monitorName then self.touches[#self.touches + 1] = { x = b, y = c, who = self.toucher } end
+      if a == self.front.monitorName and #self.touches < MAX_TOUCHES then
+        self.touches[#self.touches + 1] = { x = b, y = c, who = self.toucher }
+      end
       self.toucher = nil
     elseif event == "monitor_resize" and a == self.front.monitorName then
       self.resized = true

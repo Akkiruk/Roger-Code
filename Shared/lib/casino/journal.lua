@@ -149,6 +149,18 @@ function M.book(name, amount, tag)
   return write(OWED_FILE, all)
 end
 
+--- Two lines of the book that point opposite ways cancel as far as they can, in one write, so nothing can land between them.
+-- No tokens move. Returns how much went, 0 if nothing did.
+function M.offset(first, second)
+  local all = book()
+  local a, b = all[first] or 0, all[second] or 0
+  if a * b >= 0 then return 0 end
+  local amount = math.min(math.abs(a), math.abs(b))
+  change(all, first, a > 0 and -amount or amount)
+  change(all, second, b > 0 and -amount or amount)
+  return write(OWED_FILE, all) and amount or 0
+end
+
 --- Say a transfer is about to happen. Returns false if that could not be written, and then it must not happen.
 function M.beginMove(name, amount, tag)
   local all = book()
