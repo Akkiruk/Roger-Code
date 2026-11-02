@@ -472,7 +472,7 @@ local LEDGER = {
     { when = "fn_colette_down", steps = {
       t("The gnomes' hook is by the rock wall, if you want to settle up."),
     }, other = {
-      t("Past that bridge you won't be able to carry anything forward. The gnomes' hook is by the rock wall, if you want to settle up."),
+      t("Whatever's past that bridge, you'd want your accounts in order first. The gnomes' hook is by the rock wall, if you want to settle up."),
     } },
   } },
 }
@@ -585,11 +585,11 @@ local HINGE = {
   { fade = true },
   t("After. He's in the hall, drawing on his gloves, a finger at a time. He isn't out of breath."),
   t("He goes by a door. There's a gap at the hinge, and an eye in the gap, wet and nine years old. He sees it. It's all here: he knows whose it is. He stops."),
-  t("You wait. All of you wait. You go through everything he has, looking for what comes next. What comes next is the rain, and how long she's been standing out in it."),
+  t("You wait. All of you wait. You go through everything he has, looking for what comes next. What comes next is the rain, and how long the mare's been standing out in it."),
   t("'Has someone seen to the horse?' he says, to the house. And he goes out to her."),
   { dark = false },
   owlin("That's the whole of him. I've read every page there is. I kept waiting for the place where he refuses to be sorry. There isn't one. It never came up."),
-  jezzara("I've killed for money since I could reach. You know what you've done. That's the whole trade. That's not a monster. That's a man thinking about something else."),
+  jezzara("I've killed for money since I could reach a knife. You always know what you've done. That's the whole trade. That's not a monster. That's a man thinking about something else."),
   deserter("Thirty years, friend. A kingdom, the Book, every door in Embia, to hear one word. And he'd told her all he had to say when she was nine."),
   t("The eye has one page left. The reading room, from his side. A woman in a plain dress is saying 'Yes. Go on.' He turns. He's found the word for her, and behind the word there's a stable yard, and a bucket."),
   t("His mouth opens. The eye goes dark. It can't go further than he did."),
@@ -796,7 +796,7 @@ S.fn_scene_qarhuul = {
   owlin("It can't die here, because it isn't here. All of this is an arm through a window, and the rest is on the far side, looking for a bigger way in."),
   t("One arm has come all the way across the dark. It stops a hand's width from your chest. It isn't attacking you. It's feeling, quite gently, for the latch."),
   t("Behind your left ear, the small hard place turns over. You've never felt that before. You've had it all your life."),
-  owlin("I've been thinking about your mother's page. A piece of a thing is joined to the thing. It's a door, the only one never opened, and it's come to see if it has risen."),
+  owlin("I've been thinking about your mother's page. A piece of a thing is joined to the thing. Yours is a door, the only one never opened, and that arm has come to see if it has risen."),
   owlin("If it wakes, all of that comes through. If it's shut, from inside, all of it goes back: one sleeper to hold down the rest. Your eyes stopped halfway across, on the eleventh night. Something was on its way, that night, and it never got to you. It's been waiting ever since. It's the way in."),
   deserter("From inside. Then how do they get out?"),
   t("Nobody says anything. The sister's hand is on her black thread."),
@@ -816,7 +816,7 @@ S.fn_bye_doctor = {
   { when = "fn_bye_a", steps = {
     deserter("I'm counting drops, friend. Go on. I'll be right here."),
   }, other = {
-    deserter("It'll have to be a draught, or it'll eat the dream as it always has. I've done the sum four times. It's a good sum. I hate it."),
+    deserter("It'll have to be a draught, or that thing will eat the dream as it always has. I've done the sum four times. It's a good sum. I hate it."),
     deserter("Two hundred and seven, and I never said goodbye to one of them. It was against procedure. I find I don't know how it's done."),
     { choice = {
       { "You make very good soup.", {
@@ -885,7 +885,7 @@ S.fn_bye_asphodel = {
   { when = "fn_bye_e", steps = {
     asphodel("I can hear it from here. It's a good one. Go on."),
   }, other = {
-    asphodel("I've known you the shortest of any of them, so I'll be plain. Once you're under, your heart will want to stop. In Sindal we learn to hold a pulse, to keep the supply alive. It's the worst thing I know how to do. I'll do it for as long as it takes. I don't sleep."),
+    asphodel("I've known you the shortest of any of them, so I'll be plain. Once you're under, your heart will want to stop. In Sindal we learn to hold a pulse, to keep the supply alive. It's the worst thing I know how to do. I'll hold it until it steadies, and I'll come back and check. I don't sleep."),
     hero("Thank you."),
     asphodel("Don't. In my country that's what they say instead of screaming. All right. Just the once."),
     { set = "fn_bye_e" },
@@ -909,7 +909,7 @@ local GO_UNDER = {
   t("You have heard all about it."),
   { dark = false },
   t("You're standing in a room, and the room is wrong, and then you see that it's the colours. There are a great many, and nobody has told them where to go."),
-  t("Something the size of a barn goes honking past behind the wall. That's the Hanley boy's goose. You'd know it anywhere. You've never seen it in your life."),
+  t("Something the size of a barn goes honking past behind the wall. That's the Hanley boy's goose. You'd know it anywhere, though you've only ever heard about it."),
   hero("None of this is mine."),
   t("It isn't. It's only what you were told. You've nothing of your own to dream with."),
 }
@@ -944,7 +944,7 @@ S.fn_d_teeth = {
 }
 
 S.fn_d_uncle = {
-  t("A man is sitting on a kitchen chair, with his hat on his knee. He's dead, and he's your uncle. You've no uncle, and you know him at once. Everybody does."),
+  t("A man is sitting on a kitchen chair, with his hat on his knee. He's dead, and he's your uncle, the way people are in dreams. You've no uncle, but you know him at once. Everybody does."),
   ask(uncle("Ah, there you are. Has someone seen to the horse?"), {
     { "I've no uncle, and we've no horse.", {
       uncle("Have you not? I do beg your pardon. I'm so sorry. I took you for someone else."),
@@ -1051,7 +1051,7 @@ local CARRIED = {
 local WAKE = chain(CARRIED, {
   t("The doctor tells them what Colette said. Called back, if you're asked properly. So word goes out, by every bird and lift and ship that's left, to everyone who ever owed you anything."),
   t("Gentleman Bogg comes up from Hayford, at very reasonable rates, and waives them. He clears his throat, and asks what you dreamed."),
-  t("The Ribbed District sends a delegation, having voted on the wording. Two lamps come up from under the world, each pretending it hasn't seen the other. Somebody thin from Crysathula asks politely, inside everyone's head."),
+  t("The Ribbed District sends a delegation, having voted on the wording. Touarch and Blackhold come up from under the world with their lamps, each pretending it hasn't seen the other. Somebody thin from Crysathula asks politely, inside everyone's head."),
   t("What's left of Sindal comes, with its own faces. Nobody sees who leaves a diamond the size of a loaf on the step. Nan props the door with it."),
   t("They fill Orrenshire, and the mine road, and the hills. Every morning for a year, all together, they ask."),
   t("A long way in, on a very small bed, you open one eye. Someone is knocking. Not that door. That one's staying shut. A little door you never saw, with a draught under it, and a smell of burnt porridge."),
@@ -1059,7 +1059,7 @@ local WAKE = chain(CARRIED, {
   t("You get up. It's the hardest thing you've ever done, and you've done some things."),
   t("You open your eyes. It is morning. There was something before it."),
   nan("Up, {hero}! The bell's gone and the porridge has started to set, and I'm not chiselling it off the pot a second time. Come on, out of there."),
-  t("There are a great many people at the window, none of them breathing. She doesn't look at them. She has put her hands in her apron, so nobody can see them shake."),
+  t("There are a great many people at the window, all of them holding their breath. She doesn't look at them. She has put her hands in her apron, so nobody can see them shake."),
   ask(nan("Well, then? What did you dream?"), {
     { "A dead uncle asked after the horse.", {
       nan("You've no uncle and we've no horse. You had that off the Hanley boy, and you can't even lie about it properly. Eat your porridge."),

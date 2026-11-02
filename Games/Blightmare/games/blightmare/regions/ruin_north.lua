@@ -1104,7 +1104,7 @@ S.rn_talk_harrow = {
           harrow("You. The ones with the book. We rose without it. The sky went wrong, the pay stopped, and we walked up with hammers."),
           ask(harrow("It found its way to me in the end, and I never printed it. People are starting to ask what it was all for, and I've nothing to show them but a big saucepan."), {
             topic("Why didn't you print it?", {
-              harrow("I needed the drains. Then I needed a week. Then I'd read page ninety again. It's a hard thing to set in type, your brother."),
+              harrow("I needed the drains. Then I needed a week. Then I'd read page ninety again. It's a hard thing, setting your own brother in type."),
             }),
             { "Print it. Every name. Today.", {
               t("The doctor takes the ledger from under the mangle and lays it on the press-bed, open at a page with a very nice signature on it."),
@@ -1237,10 +1237,10 @@ S.rn_talk_hale = {
       hale("That's your chit. There is always a test."),
     }, other = {
       ask(hale("Is it the two o'clock? Sit. I've a full hall at last. The orderlies come in at night and sit very straight. Nobody's slept through a lecture in a year. It's the most frightening thing that's ever happened to me."), {
-        topic("Colette left a boy in charge.", {
-          hale("Prynne. Fainted at his first dissection. Best bedside manner I ever saw. He asked her what he should do while she was gone, and she told him. She's the only one who ever did."),
+        topic("Who's in charge up here now?", {
+          hale("Prynne, the House Officer. Colette left him to mind things. Fainted at his first dissection. Best bedside manner I ever saw. He asked her what he should do while she was gone, and she told him. She's the only one who ever did."),
         }),
-        { "We need to get past the Porter.", {
+        { "We need to get into the hospital.", {
           hale("Do you? I'm still the Regius Professor, though nobody's told the Regius. Here. Visiting hours, by a physician's hand."),
           { set = "rn_chit" },
         } },
@@ -1250,7 +1250,7 @@ S.rn_talk_hale = {
 }
 
 S.rn_talk_henman = {
-  ask(henman("I carry Lady Margaret, thirteenth of that name, Taster to the Crown. Since last spring she's also the senior surviving officer of the realm. I've had it looked up."), {
+  ask(henman("I carry Lady Margaret, thirteenth of that name, Taster to the Crown. It's been a hard year for tasters. Since last spring she's also the senior surviving officer of the realm. I've had it looked up."), {
     topic("You mean Plexios is ruled by a hen?", {
       henman("In strict order of precedence, yes. There've been no new taxes."),
     }),
@@ -1301,9 +1301,9 @@ S.rn_scene_prynne = {
   prynne("Doctor! I've had time to get over that. It's been thirteen months. Or one day, if you do it without a break, and I've found that's simpler."),
   { when = "px_gave_blood", steps = {
     prynne("She left a small glass in the cold room, with your name on it. I've had a drop on my tongue every night. One needn't sleep at all, did you know? There's nothing there. Nothing, nothing, nothing, all the way down."),
-    t("He says it in a voice you've heard every morning of your life, from a clerk with a Dream Book."),
+    t("He says it the way you said it every morning of your life, to a clerk with a Dream Book."),
   }, other = {
-    prynne("She left your chair out, and a needle on a cloth. She said you'd bring it yourself. I've not slept since, in case I missed you. It's quite easy, once one stops."),
+    prynne("She left your chair out, and a needle on a cloth. She said you'd come and give it yourself, in the end. I've not slept since, in case I missed you. It's quite easy, once one stops."),
   } },
   { when = "rn_cray_word", steps = {
     prynneAsks({ "Mother Cray says the window bed wants turning.", {
@@ -1474,9 +1474,9 @@ local FIRST_MEETING = {
       asphodel("Everything. I told you they weren't in pain. That's true. It was all being kept for them."),
     }),
     topic("Why are you so thin?", {
-      asphodel("Nobody gives a cup any more, and I don't take. I've told a hundred and forty Stitchers to do the same. Eleven have stopped being able to."),
+      asphodel("Nobody gives a cup any more, and I won't take one. The hundred and forty on my wall make do with what the line sends up. Eleven have stopped being able to."),
     }),
-    { "What is she doing down there?", {} },
+    { "What's under the Spear now?", {} },
   }),
 }
 
@@ -1515,7 +1515,7 @@ local CUT_THE_LINE = {
   asphodel("No! You've said no twice in your life, and it nearly finished you. Don't you dare say yes to me. Not you."),
   ask(t("She's on her knees, looking at the floor with enormous care. The veins are standing out in her hands."), {
     { "The doctor can spare a cup.", {
-      doc("Juniper and lamp oil, I'm told, with a long finish of regret. You'll not get that off a Thursday. One moment, Lady Asphodel."),
+      doc("Juniper and lamp oil, I'm told, with a long finish of regret. A Cellarmaster said so, and he'd know. One moment, Lady Asphodel."),
     } },
     { "Take mine.", {
       t("She lifts your wrist, breathes in, and goes very still. Then she lays it down, as you'd put back something that was ticking."),
@@ -1611,7 +1611,7 @@ S.rn_talk_corin = {
   { when = "sn_vales_out", steps = {
     corin("I came back. I said no, and I've still got my own face. I'm the only one here who knows what they could have done instead, and I sit with them and don't say so. It's the hardest work I've done."),
   }, other = {
-    t("A man with a very flat calm sits on a bench with his hands on his knees. He said no twice, once. It's been ten days, and he's started to look at his hands."),
+    t("A man with a very flat calm sits on a bench with his hands on his knees. Once, he said no twice. It's been ten days, and he's started to look at his hands."),
     corin("It is a lovely day. Have you... Who's that boy?"),
   } },
 }
@@ -1654,7 +1654,7 @@ S.rn_talk_hesper = {
     hesper("You told me about Ansel, straight. I've kept that."),
   }, other = {
     { when = "sn_lied_hesper", steps = {
-      hesper("'He's well,' you said. I went up to the post, after the sky went. I cut the stone myself. I know why people do it. I had a very nice letter once."),
+      hesper("You told me Ansel was well. I went up to the post, after the sky went. I cut the stone myself. I know why people do it. I had a very nice letter once."),
     } },
   } },
   { when = "rn_met_asphodel", steps = {
@@ -1765,7 +1765,7 @@ S.rn_scene_sea = {
       t("The sea line comes through the wall in a great rusted elbow, and a thin woman, wet to the waist, is turning the wheel on it. She looks up. There's somebody in there. That's the first thing you notice, and you wish you hadn't."),
       seawoman("You needn't whisper. I woke up the same night as everyone."),
       owl("Madam, then why on earth are you still turning it?"),
-      seawoman("Because I know what's up those stairs. I've a husband up there, and a boy. I sent down for him when the list came, and I smiled at him. As long as I've got this in my hands, I'm working. I'm not anyone."),
+      seawoman("Because I know what's up those stairs. I've a husband up there, and a boy. When the list came I sent the boy down myself, and I smiled at him. As long as I've got this in my hands, I'm working. I'm not anyone."),
       ask(t("She doesn't stop. The wheel comes round, and her hands go with it."), {
         { "You have to let go.", {
           seawoman("Do I? Yes. I know."),
@@ -1986,7 +1986,7 @@ local AFTER_TYAMET = {
   { fade = true },
   t("The top of the Spear comes down in the night, a little at a time. In the morning the whole of Ebrein is silent, and it's raining, and for once it's only rain."),
   warp("rn_antarith", "k", 1),
-  asp("I haven't got a country. I've got a list, and I'm on the spring of the fourth. I'll come with you, if you'll have me."),
+  asp("I haven't got a country. I've got a list, and I'm on the spring of the fourth. I'll stay with you, if you'll still have me."),
   { when = "rd_done", steps = {
     doc("That's the north and the deep, friend. There's only one way left to go, and we all know where. Mind you keep hold of that spoon."),
     owl("Something that patient won't have only one way in. We know what it's been growing, and where. I'd like to get there before it wakes."),

@@ -777,7 +777,7 @@ S.wm_talk_arle = {
     { set = "wm_arle_left" },
   }, other = {
     { when = "wm_took", steps = {
-      arle("She went by me on the road, and she wished me good morning. The jar's still up there. A thing paid is a thing paid. I expect I'll come again next year, and ask the birds."),
+      arle("She went by me on her way out of town, and she wished me good morning. The jar's still up there. A thing paid is a thing paid. I expect I'll come again next year, and ask the birds."),
     }, other = {
       arle("I've come to ask for my son's face again. I come every year. He had the fever, and I went to her, and he lived, and that was the price. She keeps it in a jar. She's very fair about it."),
       ask(arle("He writes to me, you know. A nice young man, he sounds. I'm told I'm very proud of him."), {
@@ -947,7 +947,7 @@ local SAY_THE_NAME = { "Read out the name on the strip.", {
 
 S.wm_lucilda = {
   { when = "wm_fight", steps = {
-    lucilda("Back already? Good. I was afraid you'd lost your nerve, and then I'd have had to respect you."),
+    lucilda("Back already? Good. I was afraid you'd have the sense to stay away, and then I'd have had to respect you."),
     { when = "wm_used_name", steps = {
       { battle = "wm_fight_named" },
     }, other = {
@@ -991,7 +991,7 @@ S.wm_lucilda = {
         t("The cap of the mill has no floor to speak of. A single beam runs out over the drop to the great shaft, and on the end of it, as if she had grown there, sits what's left of a very old woman and the better part of a very old vulture."),
         lucilda("There you are. Hands full, and it only took you a kingdom each. Put them on the beam. Gently, now. One of those has been under a vampire since the Horned War, and they do so hate a smudge."),
         t("She doesn't touch them. She sniffs one and then the other and shuts her eyes, and a long slow shudder of pleasure goes down her from the neck to the claws."),
-                ask(lucilda("You've got a look on your face, chick. Out with it."), {
+                ask(lucilda("You've got a look on your face, my duck. Out with it."), {
           topic("What do you want them for?", {
             lucilda("When the Moot of Thuluan put me off the ice, they said I could come home the day two crowns bowed to me. It was a joke. It's the sort of joke you tell a sister you never mean to see again."),
             lucilda("Well, there are two crowns bowing. It only needs the Moot to look at them and say so, and I can't set foot on that ice to show them."),
@@ -1115,7 +1115,7 @@ S.wm_talk_tallow = {
   }, other = {
     ask(tallow("Mother Tallow. I don't get up. You'd be the ones she sent. Does she still take her soup too hot? She was always in such a hurry. Sit anywhere but there."), {
       topic("You still lay her a place?", {
-        tallow("Every night. There were three of us, child, and we swore never to sit down to supper without the other two. That was the night before she sold us. An oath is an oath. I'll have her at this table. I don't say on which side of the bowl."),
+        tallow("Every night. There were three of us, child, and we swore to keep a place at supper for whichever of us was away. That was the night before she sold us. An oath is an oath. I'll have her at this table. I don't say on which side of the bowl."),
       }),
       topic("Did she ever send word?", {
         tallow("A feather, the first winter. Nothing with it. I keep thinking about that feather. I ate it, of course."),
@@ -1132,7 +1132,7 @@ S.wm_talk_bitty = {
   }, other = {
     ask(bitty("Are you dinner? Aunt Sedge says you're not dinner. I'm Bitty. I'm only ninety. What's warm? They all keep saying warm. Is it like bleeding?"), {
       { "A bit. But it stays in you.", {
-        bitty("Ooh. Keep your secrets, then. When I'm big I'm going to go and get some, and I'll keep it in a box."),
+        bitty("Ooh. It stays in. When I'm big I'm going to go and get some, and I'll keep it in a box so it can't get out."),
       } },
       { "Nothing like that, Bitty.", {
         bitty("That's what they all say. I bet it's made up. I bet it's like Tuesdays."),
@@ -1268,7 +1268,7 @@ S.wm_talk_oarsman = {
       sister("I can do one thing. The Raven Queen doesn't ask anyone to wait. Look at me, cooper. What was your wife's name?"),
       oarsman("Hetty. It was Hetty. Oh, there she is."),
       { fade = true },
-      t("The sister takes her hand from his eyes. The oar has come free. She lays it across his knees, and is quiet for some time."),
+      t("The sister closes his eyes with two fingers, and takes her hand away. The oar has come free. She lays it across his knees, and is quiet for some time."),
       { set = "wm_mercy" },
     } },
   }),

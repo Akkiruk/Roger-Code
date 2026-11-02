@@ -943,8 +943,8 @@ S.rd_read_ring = {
 
 S.rd_scene_touarch = {
   t("You come out of the bore into a line of warm yellow. It moves slowly as the hand of a clock, passes over you, and goes on. The Light of Touarch is still burning."),
-  t("Half the city has gone down a crack you could lose a town in, and gnomes and duergar are asleep on the plaza in rows, which you'd been told would never happen."),
-  deserter("The keeper of the Light sees further than anyone down here. If there's a hard-faced woman out there asking for thread, friend, that's who'll know. The door's in the rock, in the middle of town."),
+  t("Half the city has gone down a crack you could lose a town in, and gnomes and duergar are asleep on the plaza in rows, side by side, which you'd been told would never happen."),
+  deserter("The keeper of the Light sees further than anyone down here. If our sister's anywhere below, friend, that's who'll know. The door's in the rock, in the middle of town."),
   { set = "rd_touarch_in" },
 }
 
@@ -960,7 +960,7 @@ S.rd_talk_kindle = {
       kindle("The threads start east of the south gate. Black ones, knee high. She's very particular about the knots."),
     } },
   }, other = {
-    kindle("Tollo Kindle. Forty tons a night, that hopper took, and we ran out of coal in the spring. Don't ask what's going in it now. Ask the Keeper. He's reading it out."),
+    kindle("Tollo Kindle. Forty tons a night, that hopper took, and we ran out of coal in the spring. Don't ask what's going in it now. Ask Keeper Tally. He's reading it out."),
     ask(kindle("Who have you lost? Everyone who comes in has lost somebody. I keep a list."), {
       topic("What do you see from up there now?", {
         kindle("Those folk at the edge of the beam, with no lamps? They've come in closer. They stand with their backs to us. I think they're waiting for somebody to go by."),
@@ -984,7 +984,7 @@ S.rd_talk_tally = {
     { "Nothing to declare.", {
       tally("None at all? After the year we've had? I'm putting you down as suspicious."),
     } },
-    topic("Six hundred years of grudges, for this?", {
+    topic("Sixty years of grudges, for this?", {
       tally("It has never done anyone so much good. I'm thinking of entering that as a grudge."),
     }),
   }),
@@ -1060,7 +1060,7 @@ S.rd_talk_winder = {
   ask(winder("Line's mended. It took a year, and every knot anyone knew. Basket to the Lip, about an hour, if you don't mind swinging."), {
     { "Stay here.", {} },
     { "Take us up.", {
-      t("You'd still rather not talk about it."),
+      t("You'd still rather not talk about the ride."),
       { warp = { "rd_abyss", 4, 2, 2 } },
     } },
   }),
@@ -1214,7 +1214,7 @@ S.rd_scene_ward = {
   { battle = "rd_e_consultant" },
   t("He folds up neatly, section by section, like a screen. His lips go on for a little while under the bandage, and then they stop in the middle of a word."),
   t("The sister goes down on one knee and ties a thread on him. She doesn't seem to think about it."),
-  cleric("He was somebody's. Eleven."),
+  cleric("He was somebody's. Eleven lengths left."),
   t("She looks along the row, bed by bed, the way you'd check a sum. Ilzra has come in behind you with a bowl. She looks at the stool, and sets the bowl down, and sits on it."),
   ilzra("Go on. I know how to sit up straight. It's the only thing I was ever taught. Give me some thread."),
   cleric("You'll stay till it's over, and you won't ask for anything, and you won't look away."),
@@ -1306,7 +1306,7 @@ S.rd_talk_houndrin = {
 
 S.rd_talk_sael = {
   { when = "rd_jezzara_in", steps = {
-    sael("I've got the rim. I taste it, and then I look pleased. Lunch has the door. He's very good. He's had two."),
+    sael("I've got the rim. I taste her dinner first, and then I look pleased. Lunch has the door. He's very good. He's had two."),
   }, other = {
     sael("This is Lunch. He's bigger than me now. I take the Queen her dinner, and he goes first, in case it's poison. I told him it might be. He looked pleased. It's the same face."),
     { choice = {
@@ -1381,7 +1381,7 @@ S.rd_scene_cradle = {
     } },
   } },
   t("The sister ties the thread. She looks at what's left of it, and puts it away."),
-  cleric("Ten. I don't suppose there's a prayer for it."),
+  cleric("Ten left. I don't suppose there's a prayer for it."),
   halryna("That was the last of my old household. Jezzara, dear, I release you. Go and do what you came down here to do. Not to me. To her."),
   jezzara("And who sits up here? You'll have a street over the edge by Thursday."),
   t("Something small comes round the door on eight careful legs, leading something much larger on a string. She has a spoon on a cord round her neck, and it's far too big for her."),
@@ -1393,7 +1393,7 @@ S.rd_scene_cradle = {
   t("You've no idea what she means. The sister does. You watch her not say so."),
   { join = "jezzara", lvl = 38 },
   { big = "JEZZARA DETH RETURNS" },
-  jezzara("The first one was free. This one I'd pay for. West end of the low street, the Web Road. Let's go and see what's left of her."),
+  jezzara("The first time I turned on Vierrela, it was free. This time I'd pay for it. West end of the low street, the Web Road. Let's go and see what's left of her."),
   { set = "rd_jezzara_in" },
 }
 
@@ -1418,7 +1418,7 @@ S.rd_scene_rain = {
 S.rd_talk_fall = {
   { when = "rd_crate_got", steps = {
     t("You set the crate against the salt and take off the lid. Then there's a small, contented sound, like someone starting on a very large biscuit."),
-    jezzara("I've changed my mind. I do want to know what it says in the ninth language."),
+    jezzara("All right. Now I do want to know what it says in the ninth language."),
     t("The salt goes down in about the time it takes to be sorry you stayed. The crate is a good deal heavier, and it moves off along the stair by itself."),
     { set = "rd_gate_open" },
   }, other = {
@@ -1547,7 +1547,7 @@ S.rd_scene_nest = {
     t("A drow woman sits in a plain chair with a shawl round her shoulders, facing it, like someone's aunt at a window. Behind her is a row of empty chairs."),
     { when = "rn_done", steps = { t("There are exactly six.") }, other = { t("There are exactly five.") } },
     vierrela("There you are. Sit down, {hero}. You've come such a long way, and you've done it so... you've done it so well. I've been saying that every day for a month, in case I lost it."),
-    jezzara("I've come about the second one."),
+    jezzara("I've come to finish it. This one's on me."),
     vierrela("Jezzara. You kept your knife. It's good of you to come, dear, but I'm afraid somebody has got there first."),
     t("She turns her head. It takes longer than it should. There's a fine grey line along her brow, and you take it at first for a strand of hair."),
     ask(vierrela("Ask quickly, please. I've been dismissed, you see. I'm only working out my notice."), {
@@ -1584,7 +1584,7 @@ S.rd_scene_nest = {
   cleric("There's nobody in there to sit up with. I've never had that before. I don't know that I know how."),
   t("She takes out her black thread anyway. She looks at it for some time, and then she ties it round that thin wrist."),
   jezzara("She'd have hated that."),
-  cleric("Yes. Nine."),
+  cleric("Yes. Nine left."),
   t("Nobody says anything. The rain comes in. Out on the wet floor, by the last of the chairs, lies the page."),
   { set = "rd_husk_down" },
 }
@@ -1659,7 +1659,7 @@ S.rd_scene_page = {
   t("The doctor looks round at the rain and the cracked glass and the woman in the chair. Then a spirit lamp comes out of the bag, and a pot, and they go down on the floor of the Cortex Nest."),
   deserter("I've given a lot of bad news, and I've only ever found the one treatment. Sit down, all of you. She went to the trouble of getting the chairs."),
   t("You sit. They're very comfortable chairs. Nobody says so. For some time nobody says anything at all, and the rain comes in, and it's very good soup."),
-  t("You find that you can eat. You've always been able to eat. She said you would."),
+  t("You find that you can eat. You've always been able to eat. Your mother said you would."),
   { set = "rd_done" },
   { save = true },
   { when = "rn_done", steps = {
@@ -1688,7 +1688,7 @@ S.rd_way_down = {
 
 S.rd_hive_in = {
   t("The hatch lets you down into something older than the city. These walls were grown, and they've dried, like the inside of a gourd. Somewhere ahead there's a small, patient sound, like someone finishing a drink."),
-  jezzara("I've been in a lot of places I shouldn't. This is the first that's been in me."),
+  jezzara("I've been in a lot of places I shouldn't. This is the first one that's wanted to get into me."),
 }
 
 S.rd_read_pool = {
@@ -1783,8 +1783,8 @@ S.rd_scene_chylbad = {
     owlin("Chylbad, the Diamond Fang. It took the whole Empire to tie him down. I have a sum here about our chances, {hero}, and I'd rather not finish it."),
     { set = "rd_chyl_seen" },
   } },
-  t("The great eyes come round to you, and slide to the side of your head, and stay there. It's the first thing you've ever met that looks at that place and isn't afraid. It only looks hungry."),
-  ask({ text = "He hasn't moved. You're quite sure he's moved." }, {
+  t("The great eyes come round to you, and slide to the side of your head, and stay there. It's the first thing you've ever met that looks at that place behind your ear and isn't afraid. It only looks hungry."),
+  ask({ text = "He hasn't moved. You'd swear he's closer." }, {
     { "Back out, slowly. Not today.", {
       t("You go back the way you came, facing him, one step at a time. He lets you. He has all the time there is."),
       { warp = { "rd_crystal", 14, 17, 1 } },

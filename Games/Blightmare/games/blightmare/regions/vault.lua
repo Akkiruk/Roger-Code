@@ -567,7 +567,7 @@ S.vt_toll = {
     }),
     topic("Read the sister.", {
       margin("A thousand nights at a thousand beds, and you've never once asked for one of them to live. You only ask that it's quick. You've started looking forward to it."),
-      cleric("That's between her and me. Turn the page."),
+      cleric("That's between my lady and me. Turn the page."),
     }),
     topic("Read the scholar.", {
       margin("The failed cure. You tell them your name was on the third line of the report. It was the first. You signed it before the trial was over, because you wanted to be right."),
@@ -844,7 +844,7 @@ S.vt_scene_matron = {
   { battle = "vt_e_matron" },
   t("She gets back to the chair by herself, and sits, and straightens the pen on the blotter. The little bell rolls off the desk. Nobody picks it up."),
   matron("Nineteen minutes. You've made up one. That was very nice work. Do wash your hands."),
-  t("The doctor stands over her for a moment, then closes her eyes and sets her cap straight. There's nobody else left who'd know how it goes."),
+  t("She doesn't speak again. The doctor stands over her for a moment, then closes the Matron's eyes and sets her cap straight. There's nobody else left who'd know how it goes."),
   { set = "vt_matron_down" },
   deserter("Through the door. Come on, friend, it's only nineteen minutes!"),
 }
@@ -924,7 +924,7 @@ S.vt_scene_colette = {
 S.vt_scene_qarhuul = {
   t("Ahead of you the mist has begun to climb. It comes up the chains in no hurry at all, and then it isn't mist."),
   t("It's an arm. You know it's an arm the way you know a hill is a hill, by how long it takes to get past. There are others behind it. Far down, something has opened."),
-  cleric("She doesn't look away. Oh, I wish she'd look away."),
+  cleric("My lady doesn't look away. Oh, I wish she would, just this once."),
   owlin("Qarhuul. It's in the oldest margin of the oldest book in Owlundia. It only says: do not."),
   jezzara("Can it be killed?"),
   owlin("No."),

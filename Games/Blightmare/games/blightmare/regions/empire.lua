@@ -134,7 +134,7 @@ S.em_s_nan = {
     } },
   } },
   { when = "lied_to_nan", steps = {
-    sis("The doctor heard you lie to her, at the end. You said you'd had a dream. A small one, and a nice one."),
+    sis("The doctor told me what you said to her, at the end. That you'd had a dream. A small one, and a nice one."),
     sis("I've heard a great many last things. I'd have let that one stand."),
   } },
 }
@@ -144,7 +144,7 @@ S.em_t_book = {
   t("You find your own page, and the page above it. Nothing, nothing, nothing, back and back."),
   { when = "sass_clerk", steps = {
     t("The last entry against your name has been struck through with a ruler. Beside it, very small and very neat: 'One dragon. A big one.'"),
-    t("And under that, in the margin, the same hand. 'Apologies for the note about the attitude.'"),
+    t("And under that, in the margin, the same hand. 'Apologies for the note about the attitude. The candle may lean as it likes.'"),
   }, other = {
     t("The last line is the clerk's own, dated the day of the queue. 'Nothing further to declare.' He has signed it, and blotted it."),
   } },
@@ -295,7 +295,7 @@ S.em_t_satchel = {
         satchel("Adaphis, on transfer. Forty-one carts. I have the receipt for each of them, and I've never yet seen one come back with anything in it but a very clean floor."),
       }),
       topic("Where's Nan?", {
-        satchel("Name? Yes. Second column, the narrow one. Cart nineteen, lying very straight, and complaining of the driver in her sleep. I'm not supposed to have that. It isn't a figure. I wrote it down anyway, and I couldn't tell you why."),
+        satchel("Nan? Yes. Second column, the narrow one. Cart nineteen, lying very straight, and complaining of the driver in her sleep. I'm not supposed to have that. It isn't a figure. I wrote it down anyway, and I couldn't tell you why."),
       }),
       topic("Why are you still counting?", {
         satchel("I've been thinking about that. If I stop, then the last thing that ever happened here was a sum. I'm not an imaginative man. It just doesn't seem as though it ought to come out so neatly."),
@@ -374,7 +374,7 @@ S.em_out = {
   { big = "OWLUNDIA" },
   t("Low hills, and rain coming. Every hill has a tower on it, stopped halfway through falling down. Paper blows across the road and catches in the hedges like snow."),
   owl("Ah. Yes. Well. It's smaller. No, it isn't. I expect that I am."),
-  owl("West, then. Agoshull is the cluster of towers on the skyline, and Evrastin's the light on the coast. We don't go near that. And please don't let the owl beasts hear you make a weak argument."),
+  owl("West, then. Agoshull is the cluster of towers on the skyline, and Evrastin's the light on the coast. We don't go near that until we must. And please don't let the owl beasts hear you make a weak argument."),
   { set = "em_through" },
 }
 
@@ -615,7 +615,7 @@ S.em_stacks_in = {
 
 S.em_card_a = {
   t("A drawer of the great catalogue hangs open on the reading desk. One card has been pulled up, and held with a pin."),
-  t("'PROOF, THE LAST. Reserved to the Provost. See the Provost's own shelf mark. Do not ask at the desk. She will not tell you. She thinks it's funny.'"),
+  t("'PROOF, THE LAST. Reserved to the Provost. See the Provost's own shelf mark. Do not ask at the desk. The desk does not know. The Provost does, and thinks it's funny.'"),
 }
 
 S.em_card_b = {
@@ -1009,7 +1009,7 @@ S.em_scene_doc = {
       mask("Reading. Doctor Colette asked me to find out where a clean result comes from, and it comes from here. I've sent a copy of the page by bird. I've never seen her so interested."),
     }),
     { "Step away from the desk.", {
-      mask("Of course. You may refuse. It's on the form. The form says that you will then be held down."),
+      mask("I'm afraid not. But you may ask. It's on the form. The form says that you will then be held down."),
     } },
     { "I accept your apology.", {
       mask("Do you? How gracious. Nobody ever has. I shall put that in your notes. It won't help, but it's true."),
@@ -1091,7 +1091,7 @@ S.em_bed_nine = {
     { give = "em_record", n = 1 },
     { set = "em_read" },
     t("Someone comes in at the far end of the ward, walking fast, in a stained coat, with a roll of paper under one arm."),
-    dole("It went out! The whole quarter's awake. Matron, I need the record for bed nine. It's the blank, I've been staring at that blank for twenty-two years. Where's..."),
+    dole("They're waking! The whole quarter, street by street. Matron, I need the record for bed nine. It's the blank, I've been staring at that blank for twenty-two years. Where's..."),
     t("She looks down at the book, at the name, and then at you. It doesn't take her long, and she has to sit down."),
     dole("Well. There's my missing tooth. Hello. I've been on the verge of you for some time."),
     t("She spreads the roll across the blanket: a whole wall's worth of tiny neat lines, and in the very middle a gap with three words in it. 'See bed nine.'"),
@@ -1115,7 +1115,7 @@ S.em_bed_nine = {
     t("Outside it's getting light. A real, plain, ordinary morning is coming up over the harbour."),
     owl("I've got a thought, and I don't care for it. I'm going to keep it until I've tried to prove it wrong. I've learned something about keeping quiet, {hero}, and I promise you this isn't that. I'll show my working."),
     sis("I've had hold of your thread since Orrenshire. I'm not going to say any more than that. I've been wrong before. Once."),
-    doc("Like a clock. I told you that, the first night, and said to forget it. I'm going to stay right here beside you, friend. You can consider that a clinical opinion."),
+    doc("Like a clock. I've watched you sleep since the first night, friend, and that's just what you do. I'm going to stay right here beside you, friend. You can consider that a clinical opinion."),
     { choice = {
       { "Let's go. Kess's road goes down.", {
         doc("It does. The Abyss, then. It's a long walk, and I've got a spoon."),

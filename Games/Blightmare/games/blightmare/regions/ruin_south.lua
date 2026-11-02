@@ -878,7 +878,7 @@ S.rs_wake = {
 S.rs_t_chart = {
   ask(t("Two bed cards on a board, in a small upright hand. BED FOUR: NAN, OF SCYTHEBREAK. BED FIVE: NUMBER 412, OF SCYTHEBREAK. OUTSTANDING has been ruled through, and over it is written RECEIVED."), {
     topic("Read Bed Four, the old driver's note.", {
-      t("It's pinned to the card, on a Clinic waybill. 'Cart 19. Orders stopped coming at the Greywater so I turned round. She wouldn't leave off about my driving, and she never once opened her eyes. She says I'm too thin. Nobody has said so since my mother.'"),
+      t("It's pinned to the card, on a Clinic waybill. 'Cart 19. Orders stopped coming at the Greywater so I turned round and brought her home. She wouldn't leave off about my driving, and she never once opened her eyes. She says I'm too thin. Nobody has said so since my mother.'"),
       t("'The night the wall went, every bed on the Adaphis road got up and walked. She didn't. I was sitting with her. I don't say that's why. I say don't leave her alone at night.'"),
     }),
     topic("Read the winter.", {
@@ -1024,10 +1024,10 @@ S.rs_t_chalk = {
 
 S.rs_t_pole = {
   t("A lamp at the end of the street, and a pole leaning by it. It's been lit every night for months by someone who didn't know how, with the wick cut far too long."),
-  t("Tonight nobody has lit it."),
+  t("Last night, nobody lit it."),
   { choice = {
     { "Light it.", {
-      t("It takes two tries. It's getting easier, and you wish it weren't."),
+      t("It takes two tries. Somebody has to do it now, and it seems that's you."),
     } },
     { "Leave it.", {} },
   } },
@@ -1040,7 +1040,7 @@ S.rs_s_orrenshire = {
   gnome("Halt! State your name, your business, your height, and whether you have at any time today been asleep! Take your time! I've found the form!"),
   { choice = {
     { "I've been asleep for a year.", {
-      gnome("For a... all in one go? A YEAR? Oh, you monster. Was it soft? No! Don't tell me! I've got a wife!"),
+      gnome("For a... all in one go? A YEAR? Oh, you monster. Was it soft? No! Don't tell me! I'm on duty till spring!"),
     } },
     { "You're still doing this?", {
       gnome("Still? Still, the tall one says! Day three hundred and sixty-seven! It's the only reason any of us are here!"),
@@ -1112,7 +1112,7 @@ S.rs_t_mayor = {
         { save = true },
       } },
     }),
-    mayor("Now go and find that doctor, before the doctor runs out of posts. East, over the Greywater. We'll be here. We're always here. We can't seem to stop."),
+    mayor("Now go and find that doctor of yours, the one with the notices, before the doctor runs out of posts. East, over the Greywater. We'll be here. We're always here. We can't seem to stop."),
   } },
 }
 
@@ -1124,7 +1124,7 @@ S.rs_t_nib = {
       topic("Why doesn't it go?", {
         nib("No key. There's one winding key for the whole line, and in the last audit the Clinic came and impounded it, with a form, and put it in their Annexe at Oplinas. Nob's at that end, sulking over a very long hole."),
       }),
-      topic("Who's the Annexe, these days?", {
+      topic("Who runs the Annexe, these days?", {
         nib("Nobody. That's what's wrong with it. It's still doing the rounds."),
       }),
       { "I'll keep an eye out for it.", {
@@ -1155,7 +1155,7 @@ S.rs_t_lump_held = {
   }, other = {
     t("A very large man is sitting on a very small chair by a sleeper's bed, playing patience on the blanket."),
     lump("You. From the second level. You said I'd stand in front of the Mayor. I did. She gave me a chair. It's been a while now, and the door was never locked. I just never left."),
-    lump("I hooked those casks up. I never asked what was in them. So I sit with what came of it. My eleventh's a gnome called Old Bruddle. He cheats. He's been asleep for a year and I don't know how."),
+    lump("I hooked those casks up. I never asked what was in them. So I sit with what came of it. Mine's the eleventh bed, a gnome called Old Bruddle. He cheats at patience. He's been asleep for a year, and I still don't know how he does it."),
     { set = "rs_lump_met" },
   } },
 }
@@ -1220,7 +1220,7 @@ S.rs_t_bogg = {
     askUntil("rs_doc_back", bogg("Tall party. You'll forgive me if I don't get up. There was a town here, and I'd a mind to have it to dinner. Well. The swamp's had it instead."), {
       topic("What happened here?", {
         bogg("Offertory Night, the night it broke. They'd all gone to bed full and locked their doors. Humans do love a lock. We came up in the morning and every door stood open, and they were walking away north, in their nightshirts."),
-        bogg("A frog sleeps with its eyes open, so I saw it. I called after them. I don't know why I should have minded so. We'd been robbing them for thirty years."),
+        bogg("A frog sleeps with its eyes open, so I saw it. I called after them. I don't know why I should have minded so. We'd been robbing them for two hundred years."),
       }),
       topic("Did a doctor come through?", {
         bogg("With a hammer. It's on the plank. I'd have sent a bill, but there's nobody left to take it to. I've left it up. It's something to read."),
@@ -1240,9 +1240,9 @@ S.rs_t_notice_h = {
 local FARTHING_NOTICE = {
   { "Yes. Please read it.", {
     t("She gets it out of the ledger, and reads it aloud in a flat clear voice, with her finger under the words. It's a letter to you. It's mostly about eating."),
-    farthing("That's the whole contract, discharged. I don't do on the house. But it's a funny thing. Nobody's ever paid me in advance before. They all thought I'd be here."),
+    farthing("That's the whole contract, discharged. I don't do on the house. But it's a funny thing. Nobody's ever paid me in advance before. It means somebody thought I'd still be here."),
   } },
-  { "No. I've read it.", {
+  { "No, thank you. Keep it.", {
     farthing("I'll keep the four coppers, then. I don't do refunds. I've thought about it, and I don't."),
   } },
 }
@@ -1325,7 +1325,7 @@ local IONE_FEUD = topic("How are the refugees and the Heartlanders?", {
 
 S.rs_t_ione = {
   { when = "rs_cart_down", steps = {
-    ask(ione("Fires, please, not lamps. I know the hill's gone dark. The first quiet night in a year, and I've four streets of people who won't believe it. Neither do I."), {
+    ask(ione("Fires, please, not lamps. Habit. The hill's gone dark, and it's the first quiet night in a year, and I've four streets of people who won't believe it. Neither do I."), {
       IONE_FEUD,
       { "Keep warm, Speaker.", {
         ione("That's the whole of my programme."),
@@ -1351,7 +1351,7 @@ S.rs_t_ione = {
 
 S.rs_t_wenna = {
   { when = "hr_tied_aude", steps = {
-    wenna("Soup. It's mostly water, but it's hot water, and I've called it soup, so don't start. Old Aude's still with us, across the way. Your sister's thread's on her yet. She's not stirred, and she's not got up."),
+    wenna("Soup. It's mostly water, but it's hot water, and I've called it soup, so don't start. Old Aude's still with us, across the way. The sister's thread's on her yet. She's not stirred, and she's not got up."),
   }, other = {
     wenna("Soup. It's mostly water, but it's hot water, and I've called it soup, so don't start. I've got a mage on my left who says it wants thyme. I may hit her. It's been a long winter, and it's nice to have a hobby."),
   } },
@@ -1394,7 +1394,7 @@ S.rs_t_nob = {
       { big = "THE LINE IS RUNNING" },
       nob("Every town we've got a shaft under! Anywhere you've already been, you can be there by dinner! Just ask at the map! I mean the TRAVEL page. It's on your... it's what we're calling it!"),
       doc("A railway that the Clinic didn't build. I'd like to sit in it and do nothing for an hour. Friend, before we go anywhere, there's something I've got to tell you about the scholar."),
-      ask(doc("We came up out of that hole together, and it took a month. I had the scholar on my back for the last of it. Do you want it now, or after you've eaten?"), {
+      ask(doc("We came up out of that hole together, and it took a month. I had the scholar on my back for the last of it, once the wing went. Do you want it now, or after you've eaten?"), {
         topic("What happened to the scholar?", {
           doc("'I can carry one,' the scholar said, and then did, for eleven hours, straight up, with me hanging off one claw. Owls aren't built for that. I set the left wing on a kitchen table. I set it badly. It doesn't open."),
         }),
@@ -1610,7 +1610,7 @@ S.rs_t_keel = {
     t("At the end of the quay a tall woman in a grey coat is sitting on a bollard. She has one clean glove. Beside her is a sheet of very good paper, weighted with a small crossbow."),
     keel("You got away from me, and you told me to go. I said I'd send them the bill. I did. Here's the reply."),
     t("She holds up the paper. The Clinic's seal, and one line. 'Account closed. Thank you for your patience.'"),
-    ask(keel("A thousand for the tall one. I've never failed to collect. Now the only client I ever had is a thing in a hole. So I've taken to walking the quay at night, and sitting up with the children on the wrecks. Don't look at me."), {
+    ask(keel("A thousand for the tall one. I've never failed to collect. Now my last client is a thing in a hole. So I've taken to walking the quay at night, and sitting up with the children on the wrecks. Don't look at me."), {
       topic("Why would you do that?", {
         keel("Because somebody's got to, and they can't pay, and I find I'm very good at watching a door. I've stopped asking why it should matter. I shall deny all this."),
       }),
@@ -1765,7 +1765,7 @@ S.rs_t_hob = {
     hob("Nothing's got through the Proceedings of the Constellation yet. I don't believe anything's tried. I've still got you down as friend."),
     { when = "rs_ev_seen", steps = {
       { choice = {
-        { "Come with us, Hob. You're relieved.", {
+        { "Go to Evrastin, Hob. You're relieved.", {
           hob("Relieved? I am? Is that allowed? Who's relieving... oh. Oh, I see. I've never been relieved. What do I do? Do I give you the spear?"),
           doc("Keep the spear. Evrastin's got a warm room and a Warden who'll shout at you. Off you go."),
           t("He looks at the barricade for some time. Then he picks up the one book that was on top, and tucks it under his wing, and walks away down the road in the rain, very upright, not looking back."),
@@ -1777,10 +1777,10 @@ S.rs_t_hob = {
       } },
     } },
   }, other = {
-    hob("Halt! Friend or foe? And mind, I've got to write down which, so... oh. It's you. Oh, that's three! Oh, this is a very good year."),
+    hob("Halt! Friend or foe? And mind, I've got to write down which, so... oh. It's you. Oh, that's three friends this year! Oh, this is a very good year."),
     ask(hob("Twelve years I've been doing this. I'm to hold the line until relieved. Warden Tawn took everyone to Evrastin when the rain got into the Orrery. She said she'd send somebody."), {
       topic("Has anyone come this way?", {
-        hob("One! An owl, up from the coast on foot, wing in a sling. I put 'friend'. I wasn't sure about that, because of the first thing, you know, the thing with the arithmetic. But it stopped, and it looked at the Proceedings, and it said 'That's a very good barricade.' Nobody's ever said that."),
+        hob("One! An owl, up from the coast on foot, wing in a sling. I put 'friend'. I wasn't sure about that, what with the sums, you know, and the Provost and all that. But it stopped, and it looked at the Proceedings, and it said 'That's a very good barricade.' Nobody's ever said that."),
       }),
       topic("Who's left in the towers?", {
         hob("Only the ones that come down for the rain. Mind them. Corvin's one. I say good morning to him. It seems only right."),
@@ -1823,7 +1823,7 @@ S.rs_t_gannet = {
 }
 
 local TAWN_TOPICS = {
-  topic("You're feeding the scholar?", {
+  topic("Has anyone been feeding the scholar?", {
     tawn("Oil and biscuits. I said I'd moved that one off the list. I didn't say what list it had moved to. It's turned out to be useful. I remain unforgiving. It's in very good health, I'm sorry to say."),
   }),
   { "We'll see you, Warden.", {
@@ -1840,9 +1840,9 @@ S.rs_t_tawn = {
 }
 
 S.rs_t_tyto = {
-  ask(tyto("You've got her chin. Someone ought to have told you that. Sit down before you fall down. Bed nine's still made up. I don't know why I do it."), {
+  ask(tyto("You've still got her chin. I did tell you. Sit down before you fall down. Bed nine's still made up. I don't know why I do it."), {
     topic("What was she like, the Keeper?", {
-      tyto("Loud. She'd bawl you out of bed for a lazy knot. And the night you came into my ward she sat in that chair till morning, with her boots on, and she never said a word. I think she knew she only had the one night."),
+      tyto("Loud. I told you that. What I didn't tell you: the night you stopped, she got out of her own bed and sat in that chair till morning, boots on, watching you breathe. She knew she'd only get the one night."),
     }),
     topic("Did the sleepers get up here?", {
       tyto("Every bed in my ward had somebody in the chair. It's what a ward is, or was, before people started counting them. Not one of mine walked. I've had a year to be proud of that, and I'm getting quite good."),
@@ -1946,7 +1946,7 @@ S.rs_s_scholar = {
       topic("What happened to your wing?", {
         owl("It carried one. It's what it was for. I'd do it again, and I'd complain again, and I've been told that I'm very bad at sitting still for a splint."),
         doc("I set that on a kitchen table, with a fork handle, because I hadn't got a spoon. I'm sorry. I'm sorry I said what I said."),
-        owl("I know. You've been saying it in your own terrible hand on every post in the Heart. I had a lot of time on the ship. They told me."),
+        owl("I know. I had a great deal of time on that ship to work out that you were. I'm sorry as well. Don't make me say it twice."),
       }),
       topic("What's all that chalk?", {
         owl("My working. I said I'd show you when it was finished, {hero}. I keep my promises now. It isn't finished. I came here to prove something wrong, and I've rubbed it out three hundred times."),
@@ -1963,7 +1963,7 @@ S.rs_s_scholar = {
     }),
   } },
   t("Under your feet, the floor gives one long low hum. Down on the gallery, every blade of crystal in the tower has begun to sing the same note."),
-  owl("Ah. That's why the note says not to come up. I've been keeping very quiet up here. The Proctor doesn't hear small sounds. But you've brought the one thing in the world that she's been working on."),
+  owl("Ah. That's the other reason my note said not to come up. I've been keeping very quiet up here. The Proctor doesn't hear small sounds. But you've brought the one thing in the world that she's been working on."),
   dole("Is that the key? I've been on the verge of you for some time."),
   t("She comes up through the floor of the lamp room, without using the door, in a long slow shining line. It's her voice, very clear and interested. Nothing else about her has stayed the same."),
   dole("It's such a lovely working. You should see it from in here. There's only the blank in the middle, like a tooth. It asks for you the way a lock asks for a key. Do hold still."),

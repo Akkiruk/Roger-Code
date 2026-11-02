@@ -117,8 +117,8 @@ S.px_bp_arrive = {
   t("Across the inner face, in letters as tall as a house: THE WELL PASS. THE SICK WAIT."),
   quill("Next. Stand on the mark, tongue out, say 'Plexios'. Thank you. Papers."),
   ask(quill("'Two barley factors of Hayford, and a patient in their care.' I count four and no barley. The sick wait, so which of you is the patient?"), {
-    { "She got better. It was a miracle.", {
-      K("Not that kind."),
+    { "The sister. She got better. It was a miracle.", {
+      K("A very small one, Inspector. Nothing anyone could hang me for."),
       quill("Recovered. I'll note that down. We get so few."),
     } },
     { "The owl. It always looks like that.", {
@@ -128,7 +128,7 @@ S.px_bp_arrive = {
   }),
   quill("Blackpool only, mind. The road north to Adaphis is for the Well, and for that you want a Well Paper, signed by a Clinic physician. I'm not a physician. I'm a man with a stamp."),
   K("Something from the throne of Plexios, the Vulture said. She didn't say how one gets within a day's walk of it."),
-  D("I know one physician who'd sign and not ask. Doctor Nye, at Murkwell, in the mud, because she once asked a question in front of people."),
+  D("I know one physician who'd sign and not ask. Doctor Nye, at Murkwell. She's in the mud there because she once asked a question in front of people."),
   O("All that's let in at Murkwell's gate is meat, from the hunters of Killerth. I read it on a crate."),
   D("Then we go west, and ask how a person gets to be meat."),
   { when = "sn_done", steps = {
@@ -171,7 +171,7 @@ S.px_talk_nell = {
       nell("Whatever they've finished with. My husband used to ask questions like that. Very thin man. Eat your crab."),
     }),
     { "No crab for me, thank you.", {
-      nell("That's what the fat ones say, dear."),
+      nell("Suit yourself, dear. They're not fussy what they eat, either."),
     } },
   }),
 }
@@ -368,7 +368,7 @@ S.px_talk_orla = {
 
 S.px_talk_mount = {
   t("The room is full of stuffed animals. Every one of them looks as if it has just been told something very surprising."),
-  ask(mount("Master Mount, Taxidermist. That's a stag. I've never in fact seen a stag, I work from descriptions. I'm told the eyes are close together. That one has four. It came in with four."), {
+  ask(mount("Master Mount, Taxidermist. That's a stag. I've never seen a live one, I work from descriptions. I'm told the eyes are close together. That one has four. It came in with four."), {
     { "It's very lifelike.", {
       mount("You're the first who's said so! The last gentleman was sick in that bucket."),
     } },
@@ -499,7 +499,7 @@ R.maps.px_sending_2 = {
 
 S.px_sending_in = {
   t("A long, low house on a bare hill. The causeway to its door crosses ground burned so hard that nothing has grown back. The roof has gone in places, but the floors are swept."),
-  O("A house for a thousand years of the unwanted, and they gave it a bell that wouldn't trouble the family."),
+  O("A house for a thousand years of the unwanted, and by the door a bell with felt on the clapper, so as not to trouble the family."),
   K("I'd like to say something for them. I'm told that's illegal. Remind me to do it anyway."),
 }
 
@@ -696,7 +696,7 @@ S.px_talk_ormond = {
   } },
   ask(ormond("We're under a ceasefire, and I'm told I should be pleased."), {
     topic("Why so many new guns, then?", {
-      ormond("I've asked. I was sent forty more. King Fabian doesn't want a war, and they keep arriving with Doctor Colette's seal on the crate."),
+      ormond("I asked once, in writing. The answer was forty more. King Fabian doesn't want a war, and they keep arriving with Doctor Colette's seal on the crate."),
     }),
     { "Just stretching my legs, Captain.", {
       ormond("Stretch them on the boards."),
@@ -709,10 +709,10 @@ S.px_talk_mire = {
   ask(mire("Sir! Private Mire, sir! Corporal Dampier told me to hold this position till relieved, sir! That was Tuesday! Sergeant says I'm not getting shorter, it's the angle!"), {
     { "You're relieved, Private. Get out of there.", {
       { when = "px_mire_out", steps = {
-        mire("Thank you, sir! It turns out it's not up to me, sir."),
+        mire("Thank you, sir! I've thought it over, sir, and I'd rather stay. It's the only post I've got."),
       }, other = {
         t("It takes the whole party, and the mud gives him up with a noise like a very rude old man. He looks at where his boots went, and goes back in to his knees, on principle."),
-        mire("Permission to take up the position again, sir? I don't know what else I'd do."),
+        mire("Permission to resume the position, sir? I've already started. I don't know what else I'd do."),
         { set = "px_mire_out" },
       } },
     } },
@@ -1434,7 +1434,7 @@ S.px_talk_harrow = {
     { when = "px_ledger", steps = {
       { when = "px_drains_open", steps = {
         t("Harrow slides the ledger out from under the mangle and lays it on the press-bed. She turns the pages with one blackened finger, and stops at a name for some time."),
-        harrow("My brother's on page ninety. Inky. Set this, every name, every cart. Every street in the Ribs by morning. People can stand a great deal. What they can't stand is a number with their own name in it."),
+        harrow("My brother's on page ninety. Set it, lads. Every name, every cart. Every street in the Ribs by morning. People can stand a great deal. What they can't stand is a number with their own name in it."),
         t("The press starts to thump, slowly, like something waking up. Somewhere along the rib, one hammer stops, and then another."),
         { gold = 800 },
         { give = "tonic", n = 3 },
@@ -1612,7 +1612,7 @@ R.maps.px_works_2 = {
 
 S.px_works_in = {
   t("Harrow's chit gets a grunt from the sentry. Inside are rail-lines, vats that steam, and, drawn up in perfect rows, the closed carts. Far up the yard is a single door, and a thin orderly at a very small desk."),
-  D("Forty. I never thought about there being a place where they were parked."),
+  D("Forty carts. I never thought about there being a place where they were parked."),
 }
 
 S.px_read_filling = {
@@ -1705,7 +1705,7 @@ S.px_talk_tobin = {
   { when = "heard_tobin", steps = {
     ask(K("You know this one, don't you?"), {
       { "His boots are by a door in Scythebreak.", {
-        K("Then she'll know where to look for him. I've tied the thread. I couldn't wake him, and I doubt I should."),
+        K("Then someone's still waiting for him. I've tied the thread. I couldn't wake him, and I doubt I should."),
         t("The hand moves. He smiles a little. He is, as far as anyone will ever know, a fish."),
       } },
       { "He said it was the happiest he'd ever been.", {
@@ -1719,7 +1719,7 @@ S.px_talk_tobin = {
 
 S.px_boss_crake = {
   t("A surgical theatre, tiered and spotless. At a basin a very tall old man in a long white coat is washing his hands, and he has been washing them for some time."),
-  crake("Mind the floor, it's just been done. Is that my best signature? Eleven carts and not one query. Do you know how rare that is?"),
+  crake("Mind the floor, it's just been done. Is that my best walking officer? Eleven carts and not one query. Do you know how rare that is?"),
   D("Surgeon-General."),
   crake("You made soup. I did laugh. Your commission was never cancelled, you know. I've kept it in a drawer. Say the word, and that badge can be back on by morning."),
   ask(crake("And this will be the clean one. How do you do? Do tell the doctor what you think. People so rarely ask the transfers."), {
@@ -1923,7 +1923,7 @@ S.px_scene_fabian = {
     } },
     ask(fabian("You've come for something. Everyone does. I've got an army I didn't want and a city dying very politely. Which is it?"), {
       topic("Why does the hen have the soup first?", {
-        fabian("I gave Colette the army because she asked nicely, and the police because she was right. Every morning she comes up to ask after my health. She doesn't look at my face. She listens to how I breathe."),
+        fabian("Because I have a doctor. I gave Colette the army because she asked nicely, and the police because she was right. Every morning she comes up to ask after my health. She doesn't look at my face. She listens to how I breathe."),
         henman("This is the eleventh Lady Margaret, Sire."),
         fabian("Is it? They do go on so bravely. Promote her."),
       }),
@@ -1931,7 +1931,7 @@ S.px_scene_fabian = {
         fabian("I know what I signed. If one stays very old for long enough, nobody expects one to read things. I'm a coward, and I'm still breathing. It's more than the others can say."),
       }),
       { "We need a token from the throne of Plexios.", {
-        fabian("For a hag, in a windmill? Ha! Oh, my chest."),
+        fabian("For the hag in the windmill? Oh, word gets up here. Ha! Oh, my chest."),
         t("The King stops laughing. He looks around the great room, very quickly. Then one spotted hand goes into the purple, and comes out holding something small on a chain."),
         fabian("The Knuckle of Hollodin Adaphis, last joint of the Founder's right hand. No one is King in Plexios who hasn't got that on him. It's the only law she hasn't rewritten."),
         fabian("She can't sit in this chair without it. So take it, to your hag, to the bottom of the sea. That's the bravest thing I've ever done, and I want you to go away before I think of it again."),

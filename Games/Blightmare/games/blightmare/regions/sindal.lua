@@ -1164,7 +1164,7 @@ S.sn_scene_ansel = {
   { set = "sn_ansel_down" },
   { set = "sn_crossed" },
   ivrael("Thank you. Leave him, I'll see to him. They all get a letter. 'Gave his service gladly.' I write them myself. I've a nice hand."),
-  deserter("I know that letter. Where I come from there's an office for it. I'd wondered whether anyone did it by hand."),
+  deserter("I know that letter. Where I come from there's a whole office for it, every spring."),
 }
 
 -- ---------------------------------------------------------------- Syndalia
@@ -1221,7 +1221,7 @@ S.sn_talk_usher = {
 S.sn_talk_anwen = {
   { when = "sn_tam_gone", steps = {
     { when = "sn_tam_found", steps = {
-      anwen("You've brought her up! She'll go down again for her Giving when she's better, won't she?"),
+      anwen("You brought her up! And now she's off to Antarith for a rest. She'll come home for her Giving when she's better, won't she?"),
     }, other = {
       anwen("Tam's gone below for a rest. Two lovely young men came with a chair. Wasn't that thoughtful?"),
     } },
@@ -1238,7 +1238,7 @@ S.sn_talk_anwen = {
     }),
     topic("Tam seems frightened.", {
       { when = "sn_tam_gone", steps = {
-        anwen("Frightened? She's having a lovely rest. It's only nerves, they all have them, the young ones. I said no myself. I can't think why."),
+        anwen("Frightened? Tam? It's only nerves, they all have them, the young ones. I said no myself, once. I can't think why."),
       }, other = {
         anwen("It's only nerves. She said no the first time. They do, the young ones. They ask so nicely. I said no myself. I can't think why."),
       } },
@@ -1268,8 +1268,8 @@ S.sn_talk_tam = {
 S.sn_talk_amareth = {
   { when = "sn_prayed", steps = {
     ask(amareth("The door's never shut. Have you eaten?"), {
-      topic("And the ones who go below?", {
-        amareth("Oh, they aren't dead. Their threads aren't cut. They're only... stretched. I don't look at those ones much. It's a very big wheel."),
+      topic("And the threads that go through the floor?", {
+        amareth("Oh, those ones aren't dead. The threads aren't cut. They're only... stretched. I don't look at those much. It's a very big wheel."),
       }),
       { "We'd like to pray.", {
         t("The sister prays in her full voice. You all go out feeling better than you have any right to."),
@@ -1304,7 +1304,7 @@ S.sn_talk_severin = {
     topic("Why does everyone smile the same way?", {
       severin("Do they? What a lovely thing to say."),
       deserter("Look at the woman in the chair, friend. Under the ear, that silver line. There's a nerve just there that lifts the corner of the mouth."),
-      deserter("Nick it once a month for twenty years and it scars, and the scar pulls. That isn't a smile. It's the same scar on all of them. They can't put it down."),
+      deserter("Nick it once a month and it scars, and the scar pulls. That isn't a smile. It's the same scar on all of them. They can't put it down."),
       { set = "sn_knows_scar" },
     }),
     { "I'll give a cup.", {
@@ -1341,7 +1341,7 @@ S.sn_talk_melon = {
 }
 
 S.sn_talk_fenwick = {
-  ask(fenwick("You're frowning. Do that again. Oh, that's lovely. I've only the one left to look at, and I have to use a spoon."), {
+  ask(fenwick("You're frowning. Do that again. Oh, that's lovely. I've only my own left to look at, and I have to use a spoon."), {
     topic("You don't smile like the others.", {
       fenwick("I said no. Twice. I was ninety-one, and they sent a lovely young vampire who laughed and went home. It's the only freedom in the country, and it takes ninety years to earn."),
     }),
@@ -1432,7 +1432,7 @@ S.sn_talk_asphodel = {
           asphodel("A person with the part removed that minds. They aren't in pain. I went on checking for years."),
         }),
         topic("And what are you?", {
-          asphodel("I asked for it. There were three men in line for this chair, and I knew what each of them would do with it. I've touched no one unwilling in a hundred and ninety years. Don't admire that. I've signed every list that ever crossed this desk."),
+          asphodel("A vampire who asked for this chair. There were three men in line for it, and I knew what each of them would do with it. I've touched no one unwilling in a hundred and ninety years. Don't admire that. I've signed every list that ever crossed this desk."),
         }),
         topic("Some people go further than thrall.", {
           asphodel("Yes. A list comes round every season. They go below Syndalia, and they don't come back as anything. It's the one thing here nobody will tell you, however nicely you ask."),
@@ -1781,7 +1781,7 @@ S.sn_talk_barnabas = {
   }, other = {
     { when = "sn_has_card", steps = {
       { when = "sn_reserve_done", steps = BARNABAS_SIGNS, other = {
-        barnabas("A frown! Look at that, a real one, that's Clinic work! Come in, shut the door, you're letting the money out. Barnabas Knife Tooth, Lord of Upriftin. Yes, it's real. I had it made."),
+        barnabas("A frown! Look at that, a real one, that's Clinic work! Come in, shut the door, you're letting the money out. Barnabas Knife Tooth, Lord of Upriftin. Yes, the tooth is real. I had it made."),
         t("He taps it with a fingernail, and it rings. One of his teeth is a hand's length of bright steel."),
         ask(barnabas("I'm the only crook in the Veins of Sindal, my friends, and you'll find me very refreshing. What do you need?"), {
           topic("Why are there poor people here?", {
@@ -1845,7 +1845,7 @@ S.sn_talk_hesper = {
     { when = "sn_coup_broken", steps = {
       hesper("It's a bad end to a bad business, and it's the best I've seen. I'll take that."),
     }, other = {
-      hesper("Count the sleds, if you want to know what's wrong in this town. Meat goes in at the old icehouse every week, and more lads go through that door than ever reached the Crevice. Tell old Dowd he owes me for a winter."),
+      hesper("Count the sleds, if you want to know what's wrong in this town. Meat goes in at the old icehouse every week, and more lads go through that door than ever reached the Crevice. Tell old Dowd on the icehouse door I said to let you by. He owes me for a winter."),
       { set = "sn_ice_tip" },
     } },
     { set = "sn_hesper_met" },
@@ -1874,7 +1874,7 @@ S.sn_talk_host_frown = {
 }
 
 S.sn_talk_beggar = {
-  beggar("Spare a coin for the only beggar in the Empire? I've a licence, and three houses. A lady from Syndalia asked to touch my coat. Sod off, then. People pay extra for that."),
+  beggar("Spare a coin for the only beggar in the Empire? I've a licence, and three houses. A lady from Syndalia paid extra just to touch my coat. No? Sod off, then."),
 }
 
 S.sn_talk_furrier = {
@@ -2017,7 +2017,7 @@ S.sn_talk_steward = {
 }
 
 S.sn_scene_dinner = {
-  t("The dining room is at the top of the world, with all of Ebrein below turning gold. A small table has been laid for four. Nobody told them there'd be four."),
+  t("The dining room is at the top of the world, with all of Ebrein below turning gold. A small table has been laid for four. Nobody sent word that there would be four of you."),
   sindal("Come in, come in! What a dreadful journey, I've had it all read to me. Sit. I'm Sindal. This is my wife Undella, who doesn't talk at table, and I find that very restful."),
   t("He looks about forty, brown from the sun, like someone who has slept well every night of his life, and he has the easiest laugh you've ever heard. You like him. You notice yourself doing it."),
   sindal("Sister, would you say the grace? No, I insist. It's such a long time since anyone here meant one."),
@@ -2066,7 +2066,7 @@ S.sn_scene_dinner = {
   } },
   t("He has been looking at you for some time, like a man trying to place a tune."),
   { when = "sn_gave", steps = {
-    sindal("My Almoner sent up a very small glass today, with a very worried note."),
+    sindal("My Almoner sent up a very small glass of yours, with a very worried note."),
   } },
   ask(sindal("Forgive me, this isn't polite. I've had every sort of blood at this table for two thousand years, and there's always a note of something. Fear, mutton, somebody's grandfather. Yours has a door in it, and the door is shut."), {
     { "What does that mean?", {
@@ -2110,7 +2110,7 @@ S.sn_veins_in = {
 S.sn_veins_threads = {
   t("Black threads come down through the ceiling in their thousands, fine as hair, and run along the wall beside the pipes. The sister puts out one finger, not quite touching."),
   { when = "sn_prayed", steps = {
-    cleric("Every one of them's a life. Most go on along the wall. A few go through the floor. Those are the ones Mother Amareth doesn't look at."),
+    cleric("Every one of them's a life. Most go on along the wall. A few go through the floor, like the ones off Mother Amareth's spool."),
   }, other = {
     cleric("Every one of them's a life. Most go on along the wall. A few go through the floor. I don't think anyone up there looks at those."),
   } },

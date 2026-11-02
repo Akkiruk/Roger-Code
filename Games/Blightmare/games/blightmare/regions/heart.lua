@@ -846,12 +846,12 @@ S.hr_scene_hayford = {
   { when = "hr_passes_read", steps = {
     doctor("One tithe receipt, friend, and back to that gate. Try not to pay for the welcome."),
   }, other = {
-    doctor("Don't pay that. I've been reading what Mayor Brasscap left for us at the bridge. Forged in triplicate, and beautifully: 'Two barley factors of Hayford, and a patient in their care.'"),
+    doctor("Don't pay that. I've been reading the passes Mayor Brasscap had waiting for us at the bridge. Forged in triplicate, and beautifully: 'Two barley factors of Hayford, and a patient in their care.'"),
     sister("I'm the patient, I take it."),
     doctor("You've the face for it, sister. In Oplinas that thread would hang you, so you're a mute with a cough until we're out again."),
     { give = "hr_passes" },
     { set = "hr_passes_read" },
-    ask(sister("And why a swamp? You said the library at Oplinas was the whole point."), {
+    ask(sister("And why a swamp? I thought the library at Oplinas was the whole point."), {
       topic("Why the library at all?", {
         doctor("Every book the Empire's people carried over the wall is in it. If anyone wrote down what this sickness is, and why it walks round you, friend, it's there."),
       }),
@@ -915,10 +915,10 @@ S.hr_talk_ambry = {
 S.hr_talk_farthing = {
   { when = "hr_dividend_down", steps = {
     { when = "hr_paid_farthing", steps = {
-      farthing("Mum's cross about the premiums. It's the best sound there is. You've got credit."),
+      farthing("Mum's cross about the premiums. It's the best sound there is. You've got credit with me."),
     }, other = {
       t("The girl with the ledger isn't looking at the ledger."),
-      farthing("My mum woke up. She asked who'd been at her good pans. I was going to charge you for that, but I don't do on the house, so take this, or it won't balance."),
+      farthing("My mum woke up. She asked who'd been at her good pans. That puts me in your debt, and I don't leave a debt on the books, so take this, or it won't balance."),
       { give = "hipotion", n = 2 },
       { set = "hr_paid_farthing" },
     } },
@@ -958,7 +958,7 @@ S.hr_talk_loam = {
 
 S.hr_talk_claim = {
   { when = "hr_dividend_down", steps = {
-    t("The cot has been stripped, and there's a black thread on the pillow. The sister has been here."),
+    t("The cot has been stripped, and the sleeper's gone home. There's a black thread folded on the pillow. The sister tied it on at some point, and never said."),
   }, other = {
     t("Clean straw, a good blanket, and a bowl of well water. The eyes move back and forth under the lids, all together."),
     { when = "hr_barn_seen", steps = {}, other = {
@@ -973,7 +973,7 @@ S.hr_talk_tolliver = {
     tolliver("I've had that frog to dinner. I've had to buy a second set of spoons, and I don't know whose the first set are now. Hayford thanks you. That was free. Don't tell anyone."),
   }, other = {
     { has = "hr_hat", steps = {
-      t("You set the hat on the counter. The Mayor looks at it the way one looks at a son come home from the sea."),
+      t("You set the hat on the counter, with Notary Rush's treaty tucked in the band. The Mayor looks at it the way one looks at a son come home from the sea."),
       tolliver("It's damp. There's a smell of duck. Oh, you beauty."),
       t("He puts it on. Thirty years go back into his face."),
       tolliver("Licensed Collectors of the Offertory, one gold in ten to the swamp. That's a thief with a licence. Do you know what we call that in Hayford? A partner. Give me the pen."),
@@ -1080,7 +1080,7 @@ S.hr_talk_skim = {
       { set = "hr_skim_ok" },
     } },
     { "We'll try the north road.", {
-      skim("That's why the things on it are so hungry."),
+      skim("Nobody uses the north road. That's why the things on it are so hungry."),
     } },
   }),
 }
@@ -1100,7 +1100,7 @@ S.hr_talk_duck = {
 
 S.hr_talk_bogg = {
   { when = "hr_treaty", steps = {
-    bogg("A partner of the Mayor of Hayford! I'm a respectable frog now, tall one, so I'll have to rob you more carefully."),
+    bogg("A licensed Collector of the Offertory, tall one! I'm a respectable frog now, tall one, so I'll have to rob you more carefully."),
   }, other = {
     { when = "hr_dividend_down", steps = {
       bogg("It's dead! There was a splash this morning, out on the Offertory, and it was only a coin. It's the most beautiful thing I've ever heard."),
@@ -1122,13 +1122,13 @@ S.hr_talk_bogg = {
       { when = "hr_bogg_asked", steps = {
         bogg("The stair's at the south end. Mind the pool. It's got a sense of humour, and it's very slow to get to the end of it."),
       }, other = {
-        t("Gentleman Bogg sits at the head of the court in a very good hat, with the town stocks of Orrenshire still around his neck. He has laid a napkin on the plank, and is using it as a table."),
+        t("Gentleman Bogg sits at the head of the court in a very good hat, with the plank of the Orrenshire stocks still around his neck. He has laid a napkin on the plank, and is using it as a table."),
         { when = "frog_wet", steps = {
           bogg("The tall one with the bucket! Don't get up. I can't. Owed, one favour, and Gentleman Bogg pays when he's cornered. Left boot. It's slightly warm."),
           { give = "hipotion", n = 1 },
         }, other = {
           { when = "rude_frog", steps = {
-            bogg("Dry up, you thief! I'd know that face anywhere. Oh, sit down, I've told that one all over the swamp."),
+            bogg("'Dry up, you thief!' I'd know that face anywhere. Oh, don't look like that, I've told that one all over the swamp."),
           }, other = {
             bogg("Tall ones! Gentleman Bogg, redistributor. You'll forgive my not rising. I've come by a piece of civic furniture, and I can't put it down."),
           } },
@@ -1185,7 +1185,7 @@ S.hr_scene_dividend = {
       t("It burns blue for a long time, and the smell of pears goes off across the water."),
     } },
     { "It wasn't the turtle's fault.", {
-      sister("No. It rarely is. She'll have made a note of that."),
+      sister("No. It rarely is. The Raven Queen will have made a note of that."),
     } },
   }),
 }
@@ -1216,7 +1216,7 @@ S.hr_scene_oplinas = {
     }, other = {
       crue("Two barley factors of Hayford, are you? Then where's your tithe receipt? No receipt, no barley."),
       t("The doctor walks you a little way back along the road."),
-      doctor("Mayor Brasscap's passes, friend, and the best forgery I've seen. I'd assumed that was the end of it. We need a receipt from Hayford, in the swamps to the south. And in that city, sister, you're mute. That thread would hang you."),
+      doctor("Mayor Brasscap had these passes waiting for us at the bridge, friend, and they're the best forgery I've seen. I'd thought they'd be enough. We need a receipt from Hayford, in the swamps to the south. And in that city, sister, you're mute. That thread would hang you."),
       { give = "hr_passes" },
       { set = "hr_passes_read" },
     } },
@@ -1355,12 +1355,12 @@ S.hr_talk_ione = {
           topic("What's the Clinic doing in the library?", {
             ione("Every morning a very polite man goes down to the Closed Stack with an empty cart. Every evening that chimney smokes. I signed the order. We eat because I signed."),
           }),
-          topic("Who's the polite man?", {
-            ione("He signs himself Inspector. That's not a name, and I've asked. He came a month ago from a mine in the west. He told me it had gone very well."),
+          topic("Who runs the Clinic here?", {
+            ione("A very polite man who signs himself Inspector. That's not a name, and I've asked. He came a month ago from a mine in the west. He told me it had gone very well."),
             doctor("Orrenshire. He gave the Foreman his casks."),
           }),
           { "We need the first case files.", {
-            ione("If there are any left. It's the only thing he came here to burn."),
+            ione("If there are any left. That's the one thing he came here to burn. The rest is kindling."),
           } },
           { "We're only here to read.", {
             ione("Nobody's only here to read. I had that carved over the door, once."),
@@ -1377,7 +1377,7 @@ S.hr_talk_ione = {
 -- ---------------------------------------------------------------- the library
 
 S.hr_scene_library = {
-  t("You hadn't known there were so many things to say. The shelves go up into the dark, and old men and women in old good robes are reading as if someone might take it away."),
+  t("You hadn't known there was so much to write down. The shelves go up into the dark, and old men and women in old good robes are reading as if someone might take it away."),
   { set = "hr_in_library" },
 }
 
@@ -1410,9 +1410,9 @@ S.hr_talk_tessaly = {
 
 S.hr_talk_vance = {
   { when = "hr_inspector_down", steps = {
-    vance("They've stopped taking them! I can read on. I don't suppose you know how it ends. No, don't say."),
+    vance("They've stopped taking the books! So there'll be another after this one, and I've turned the page. I don't suppose you know how it ends? No, don't say."),
   }, other = {
-    vance("Shh. I was halfway through this on the morning of the fall, and I picked it up on the way out of the door. I've been on page ten for twenty-two years. Once I turn it, I'll be that much nearer the end."),
+    vance("Shh. I'd just begun this on the morning of the fall, and I picked it up on the way out of the door. I've been on page ten for twenty-two years. Once I turn it, I'll be that much nearer the end."),
     t("The page under his finger has worn pale."),
   } },
 }
@@ -1444,11 +1444,11 @@ S.hr_scene_scholar = {
       scholar("I keep a list of what I would rather not discuss. That is item one. Item two is the spell. Please do not ask me about the spell."),
     }),
     { "We're looking for the first known case.", {
-      scholar("So is he. Then you're both late."),
+      scholar("So is the man downstairs with the furnace. You are both late."),
     } },
   }),
   t("The head turns to look at you. It goes on turning, a good way after you think it ought to stop."),
-  scholar("No circlet, a yard from the worst case notes in the world, and you've not so much as blinked in time. What do you dream?"),
+  scholar("No circlet, a yard from the worst case notes in the world, and you've not so much as twitched. What do you dream?"),
   { choice = {
     { "Nothing. I never have.", {
       scholar("Incorrect. Everyone in the literature dreams. There are eleven thousand cases on these shelves, and not one exception."),
@@ -1570,7 +1570,7 @@ S.hr_scene_inspector = {
   { set = "hr_inspector_down" },
   t("The Inspector sits down against the furnace, quite neatly, takes out a form, and begins to fill it in. The pen goes on a little way by itself, and stops."),
   doctor("It's his own. 'Cause.' He's left it blank. In eleven years I never once saw that man leave a blank."),
-  scholar("It's gone. All of it. Nineteen years of a person's life, reduced to a smell. However."),
+  scholar("It's gone. All of it. A man's whole life, reduced to a smell. However."),
   t("The scholar makes a small, private motion of the throat, and brings up a neat grey pellet onto the lid of a crate."),
   scholar("The index card. I swallowed it on the sixteenth, when he came for the catalogue. An owl keeps what it can't digest. It's the last reliable filing system in the Heart."),
   t("Unpicked and smoothed flat, it's a small card. Where a name should be there's a neat little window, cut clean through."),
@@ -1604,7 +1604,7 @@ S.hr_scene_glamouth = {
     t("Someone has added, in pencil: IN A VERY BAD HAT."),
   } },
   doctor("Unbled. That's not a word you put on a poster by accident, friend."),
-  doctor("It's lovely to be somewhere nobody cares what you believe. They also don't care if you're stabbed."),
+  sister("It's lovely to be somewhere nobody cares what I believe. They also don't care if you're stabbed."),
   { set = "hr_at_glamouth" },
 }
 
@@ -1677,7 +1677,7 @@ S.hr_talk_annis = {
 
 S.hr_talk_drum = {
   { when = "hr_verdant_open", steps = {
-    drum("Still alive? Good. It's bad luck to have sold someone twice."),
+    drum("Still alive? Good. I'd hate to have to sell you twice."),
   }, other = {
     { when = "hr_keel_down", steps = {
       t("Captain Drum looks up from her dinner, and sees the Log. Then she sees who isn't behind you. She finishes her mouthful."),
@@ -1686,7 +1686,7 @@ S.hr_talk_drum = {
         { "You sold us.", {
           drum("I took her money for the door and gave you my word on the Log, and I kept both. It's nothing personal, love. It's a port."),
         } },
-        { "Give me one reason.", {
+        { "Give me one reason not to draw on you.", {
           drum("I can give you forty, stood behind that door with crossbows. Don't sulk. You're worth more to me now than you were this morning."),
         } },
       } },
@@ -1888,7 +1888,7 @@ S.hr_talk_thatch = {
     thatch("You got past Aunt Carrion! I saw it all, between the crows. I mean, I've got no eyes. They had them the first week."),
   }, other = {
     t("A scarecrow on a long pole, with a very small bird on its head. It speaks out of the side of its stitching."),
-    thatch("Psst. Are they watching? Mister Thatch, the only scarecrow in Embia ever hired by the crows. She made me out of a dead man's coat, for a joke. The joke's that I can feel it when they land."),
+    thatch("Psst. Are they watching? Mister Thatch, the only scarecrow in Embia ever hired by the crows. The lady at the mill made me out of a dead man's coat, for a joke. The joke's that I can feel it when they land."),
     ask(thatch("A hundred and forty years up here."), {
       topic("How do we get into the mill?", {
         thatch("Past Aunt Carrion, who sits on the door. She's got one good wing, a terrible memory for faces, and a very good memory for how they taste."),
@@ -1958,7 +1958,7 @@ S.hr_read_crown = {
 
 S.hr_scene_lucilda = {
   { when = "hr_done", steps = {
-    lucilda("Two shelves, my ducks, and both still bare. Off you go. You've let the warm out."),
+    lucilda("Two stands, my ducks, and both still bare. Off you go. You've let the warm out."),
   }, other = {
     t("The great wheel has stopped. Something is sitting up among the gears, eating from a bowl, and watching you with its head on one side."),
     lucilda("Wipe your feet. I've had this floor since before your kingdoms."),
@@ -1969,7 +1969,7 @@ S.hr_scene_lucilda = {
     scholar("You hold a nothic's eye. We have read the bill of sale."),
     lucilda("Then you'll know what I paid. I sold every sister I ever had for it, the whole of Thuluan, to a pretty man with a castle. Would you like to see?"),
     t("She tips the bowl. In a little cold milk lies something the size of a plum. It's wet, and it's not dead. It rolls, and steadies, and looks down and away to the north-west, through the floor."),
-    lucilda("It looks at a corpse, and everything he ever laid eyes on. A general, dead as mutton, and still walking. Three hundred years I've had it, and for the last thirty it hasn't looked at anything else."),
+    lucilda("It looks at one corpse, and sees everything he ever laid eyes on. A general, dead as mutton, and still walking. Three hundred years I've had it, and for the last thirty it hasn't looked at anything else."),
     t("The eye moves. It turns in the milk, slowly, against the pull of the whole world, and it stops. It's looking at you."),
     t("Up in the rafters, nine thousand birds have stopped shifting from foot to foot. For the first time, Lucilda isn't smiling."),
     lucilda("Well, now."),
@@ -1997,7 +1997,7 @@ S.hr_scene_lucilda = {
         lucilda("Then you'll have learned what's in them."),
       } },
     }),
-    doctor("An old man who's dying, and a vampire who won't. And beside Fabian's throne, friend, is the person who pressed that seal."),
+    doctor("Plexios is an old king who's dying, and Sindal is a vampire who won't. And beside Fabian's throne, friend, stands the person who pressed that seal."),
     { fade = true },
     { dark = true },
     t("Far to the north-east, in Adaphis, a high room. One lamp. A clerk's report: OPLINAS. INSPECTOR: NOT RETURNED. CASE THE FIRST: DESTROYED AS ORDERED."),

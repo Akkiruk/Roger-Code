@@ -1123,9 +1123,9 @@ S.ud_cut_east = {
 S.ud_scene_matron = {
   t("The floor of the Abyss at last. The violet stops here. In a chair made of spiders' legs a drow woman sits waiting, with a very large spider beside her like a dog."),
   matron("You cut my curtain. That was eleven years' work. Stand where I can see you, surfacers. I'd like to look at what she's sent."),
-  ask(matron("Vierrela promised me the throne of Strathe, and all I've had for it is a note. She'd send something to try the door. Well? Are you what she sent?"), {
+  ask(matron("Vierrela promised me the throne of Strathe, and all I've had for it is a note. It would be like her to send something to try the door. Well? Are you what she sent?"), {
     topic("Who is Vierrela to you?", {
-      matron("We were lords in Strathe, before she made the spiders sane. I went to her on my knees, and I sold her the way to a nothic ruin with an old scroll in it. She went somewhere, and came back with something in a jar. I've wondered since what I sold."),
+      matron("We were lords in Strathe, before she made the driders sane. I went to her on my knees, and I sold her the way to a nothic ruin with an old scroll in it. She went somewhere, and came back with something in a jar. I've wondered since what I sold."),
     }),
     { "Nobody sent us. Stand aside.", {
       matron("Nobody ever thinks they were sent. Lolth doesn't hear much down here. I've checked. So I shall have to do this myself."),
@@ -1135,7 +1135,7 @@ S.ud_scene_matron = {
     } },
   }),
   { battle = "ud_boss_matron" },
-  t("The chair goes over. The great spider folds its legs, one at a time, like someone putting away a tent. Sabral looks at the dark for a while, as though waiting to be told something."),
+  t("The chair goes over. The great spider folds its legs, one at a time, like someone putting away a tent. Sabral looks at the dark for a while, as though waiting to be told something. Nothing comes, and after a while she stops waiting."),
   deserter("V. That's this Vierrela, friend, and I'd like to know who she is. She's had these people waiting in a hole for eleven years, for something she never meant to give them."),
   { set = "ud_matron_down" },
 }
@@ -1198,8 +1198,8 @@ S.ud_talk_olive = {
     olive("I've had a very stiff letter from Dimsael. It says 'yours' at the bottom. I've had it framed."),
   } },
   ask(olive("So what's brought you down, past all the reasons not to come?"), {
-    topic("Is that the Crown of Comets?", {
-      olive("It is. It gives you the right to rule every duergar living, and a very bad neck. I stole it off Barris Underbelly sixty-three years ago. It holds about two pounds of walnuts."),
+    topic("Is that a real crown?", {
+      olive("It is. The Crown of Comets. It gives you the right to rule every duergar living, and a very bad neck. I stole it off Barris Underbelly sixty-three years ago. It holds about two pounds of walnuts."),
     }),
     topic("Why keep a light burning down here?", {
       olive("I was lost once, as a girl. Eleven days. I swore that if I ever got hold of a city, nobody would have to do that again. Then I got hold of a city."),
@@ -1241,7 +1241,7 @@ S.ud_talk_mag = {
 }
 
 S.ud_talk_jez_inn = {
-  t("Someone at the end of the bench is sitting about a yard to the left of where she's sitting. Your eyes keep sliding off her: a long, grey, cat-shaped woman, with something extra moving at her shoulders."),
+  t("Someone at the end of the bench is sitting about a yard to the right of where she seems to be. Your eyes keep sliding off her: a long, grey, cat-shaped woman, with something extra moving at her shoulders."),
   jezzara("I've paid for your beds. Don't thank me, it isn't kindness. I like to see what's been ordered before it arrives."),
   { heal = true },
   { set = "ud_jez_met" },
@@ -1317,12 +1317,12 @@ S.ud_talk_sevria = {
       sevria("You've got something. I can tell, you're walking as if it weighs more than it does. Take it where it has to go. Please."),
     }, other = {
       { when = "ud_seam_open", steps = {
-        sevria("He's answered? Eleven thousand. Oh, that idiot. The Seam's off the south side of the Pillar Road. You'll want a lamp."),
+        sevria("You've seen him? He's on eleven thousand? Oh, that idiot. The Seam's off the south side of the Pillar Road. You'll want a lamp."),
       }, other = {
         { has = "ud_letter", steps = {
           sevria("Blackhold's north along the Pillar Road. Just give it to him. Thirty-one days. I keep doing the coal sums wrong."),
         }, other = {
-          sevria("Coal book. If you've come about the smoke, it's Princess Sevria, and I don't care. If you're going anywhere near Blackhold, it's just Sevria, and please sit down."),
+          sevria("This is the coal book. If you've come about the smoke, it's Princess Sevria, and I don't care. If you're going anywhere near Blackhold, it's just Sevria, and please sit down."),
           ask(sevria("Are you? Going near Blackhold? It's north, up the Pillar Road."), {
             topic("Why Blackhold?", {
               sevria("There's a prince there. I've been writing to him for four years. We met in an old seam between the pillars. He'd come to sabotage it. I'd come to sabotage it first."),
@@ -1381,9 +1381,9 @@ S.ud_scene_blackhold = {
 S.ud_talk_tally = {
   { when = "side_lovers", steps = {
     { when = "ud_grudge_filed", steps = {
-      tally("Struck, all of them, and thirty-eight thousand still to go. Yours is the only live entry in the Book: the Clinic, for everything. I've kept it. A Keeper has to have something."),
+      tally("Two thousand struck, and thirty-eight thousand still to go. Yours is the one entry I'm not striking: the Clinic, for everything. I've kept it. A Keeper has to have something."),
     }, other = {
-      tally("Struck, all of them, and thirty-eight thousand still to go. I hear gnomes have hobbies."),
+      tally("Two thousand struck, and thirty-eight thousand still to go. After that I'm told I'll need a hobby. I hear gnomes have them."),
     } },
   }, other = {
     ask(tally("Halt and declare. Name, people of origin, and any grudges you're bringing into the city. A party, is it? I can do you a group grudge. It saves on ink."), {
@@ -1431,7 +1431,7 @@ S.ud_talk_drycup = {
 S.ud_talk_murgrum = {
   t("In a niche off the inner road a young duergar sits with ink to his elbows, copying. He's grey and broad, and he looks like a doorstep that has been crying."),
   { when = "ud_seam_open", steps = {
-    murgrum("You'll want the far end of the Seam, the wall with Barris's mark. Number eleven thousand, three hundred and two: 'A gnome laughed.' I'd like to have met that gnome."),
+    murgrum("If you've not been yet, it's the far end of the Seam, the wall with Barris's mark. Number eleven thousand, three hundred and two: 'A gnome laughed.' I'd like to have met that gnome."),
   }, other = {
     murgrum("Number eleven thousand, two hundred and six. 'A gnome sold my grandfather a cracked bucket.' Sorry, who are you? I'm not supposed to have visitors. I'm not supposed to have anything."),
     { has = "ud_letter", steps = {
@@ -1524,7 +1524,7 @@ S.ud_talk_barris = {
     t("Barris Underbelly lies on the stone in his war-harness, boots off, hands folded on a single sheet of copper. He's been dead for sixty-three years, and he looks extremely pleased with himself."),
     t('"To whoever has the stomach. This is the first grudge and the last, and it\'s against me. The lads were going to melt the Crown down for war-iron, and I could not stop them. So I asked the cleverest thief I ever met to steal it."'),
     t('"She did it in one night. A people will melt a crown, but they will keep a grudge for ever, and it has held you together better than any hat. Forgive me. Do not tell Olive about the laughing. B."'),
-    deserter("He had it stolen. The whole Book, forty thousand entries. He did it on purpose, and then he went off and lay down."),
+    deserter("He had his own crown stolen, friend. Forty thousand grudges, and he started them on purpose, and then he went off and lay down."),
     cleric("There's a second line, very small, at the bottom. 'She said she would wait.' I don't think that one was meant for anybody."),
     { give = "ud_page" },
     { set = "ud_barris_read" },
@@ -1639,12 +1639,12 @@ S.ud_talk_halryna = {
 }
 
 S.ud_talk_ruaryn = {
-  ruaryn("The cat-woman's been seen on the south rail. If you see her, don't look directly at her. Look a yard to the right."),
+  ruaryn("There's a grey cat-woman been seen on the south rail. My twelfth, I'd say. If you see her, don't look directly at her. Look a yard to the right."),
 }
 
 S.ud_talk_nulliira = {
   { when = "ud_jezzara_in", steps = {
-    nulliira("I've settled forty thousand children. You didn't see what we were before. I'd do it again. Go away, please. They're all still sleeping."),
+    nulliira("I've settled a hundred thousand of my people. You didn't see what we were before. I'd do it again. Go away, please. They're all still sleeping."),
   }, other = {
     { when = "ud_audience", steps = {
       ask(nulliira("The Queen has asked, so the door's open. Walk softly. Don't wake anyone. I can't stress that enough. Don't wake anyone."), {
@@ -1761,13 +1761,13 @@ S.ud_talk_cradle = {
 
 S.ud_scene_cradle = {
   { when = "ud_cradle_talked", other = {
-    t("The Queen lies in a great silk cradle with her eyes shut. Standing on the rim of it, as easily as on a pavement, is Jezzara Deth. Or a yard to the left of that. Her knife is very small and very clean, and it's resting under the Queen's ear."),
+    t("The Queen lies in a great silk cradle with her eyes shut. Standing on the rim of it, as easily as on a pavement, is Jezzara Deth. Or a yard to the right of that. Her knife is very small and very clean, and it's resting under the Queen's ear."),
     jezzara("You're early. I had this timed to the breath. Her brother's asleep on the front steps. I left him a note."),
     ask(jezzara("Go on, then. Tell me why I shouldn't. People usually have something, and I do like to hear it."), {
       topic("Who's paying you?", {
         jezzara("Vierrela. The drow begged her for their throne back, and paid up front. She always delivers. One queen for one chair. I've done worse before breakfast."),
       }),
-      { "Kill her, and the whole city wakes.", {} },
+      { "Kill her, and you'll wake more than her.", {} },
       { "Look at what they've got in the drawers.", {} },
     }),
     t("The doctor sets a glass phial on the rim of the cradle. The scholar, who can't pass a shelf, lays the first settling-book beside it, open at the first page. Jezzara doesn't move. Her eyes do."),
@@ -1955,7 +1955,7 @@ S.ud_talk_vel = {
 
 S.ud_stair_shut = {
   t("A low arch at the end of the bay opens on old, dry steps going down. Two gith stand in it, doing nothing, with enormous skill."),
-  t("One of them says, without looking round, that this is the Brain Sipper's stair, and that it's not without her leave. She's in the hall behind you. He wouldn't keep her waiting."),
+  t("One of them says, without looking round, that this is the Brain Sipper's old stair, and that nobody takes it without the Queen's leave. She's in the hall behind you. He wouldn't keep her waiting."),
 }
 
 -- ---------------------------------------------------------------- the Cortex Nest
