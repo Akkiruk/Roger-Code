@@ -24,6 +24,8 @@ local ENCOUNTER_GRACE = 5       -- steps after a fight before the next can come
 local CHASE_RANGE = 3
 local FADE_TICKS = 6
 local HINT_TICKS = 34
+local TOLL_PER_LEVEL = 10       -- gold a lost fight costs, for each level of the hero's
+local FALLEN_SCENES = 4         -- after the first, the Raven Queen's scenes fallen_1 to fallen_4 take turns
 
 -- How text pages. The box is laid out in view_talk.lua around these: a portrait leaves SAY_WIDE, and narration keeps clear
 -- of SAVE & QUIT all the same.
@@ -78,7 +80,8 @@ end
 M.wrap = wrap
 
 local function fillName(s, text)
-  return (tostring(text):gsub("{hero}", function() return s.heroName end))
+  local out = tostring(text):gsub("{hero}", function() return s.heroName end)
+  return (out:gsub("{toll}", function() return tostring(s.toll or 0) end))
 end
 
 local function pageCount(text, width)
@@ -380,7 +383,10 @@ end
 
 --- A fight. The engine keeps its own note of what it was for, so it needn't read inside the battle.
 local function startFight(s, enc, foeId, back, rng, events)
-  s.fight = { enc = enc, foe = foeId }
+  -- what the party carried going in, so a loss can hand back whatever the fight used up
+  local bag = {}
+  for id, n in pairs(s.bag) do bag[id] = n end
+  s.fight = { enc = enc, foe = foeId, bag = bag, gold = s.gold }
   s.back = back
   s.queue = {}
   s.heading = nil
@@ -604,17 +610,41 @@ end
 
 -- ---------------------------------------------------------------- fights ending
 
+--- What the Raven Queen's gate takes for sending the party back: a little, the same for every loss at a level.
+local function tollFor(s)
+  return TOLL_PER_LEVEL * heroOf(s).lvl
+end
+M.tollFor = tollFor
+
+--- A lost fight costs nothing it used up: every item comes back, and any gold it spent. Then a small toll, and the Raven Queen
+--- sends everyone back to the last safe place, well. There's no telling how hard a fight is before it starts, so exploring
+--- mustn't be punished for it.
 local function wipe(s, events)
+  local fight = s.fight or {}
   s.run, s.back, s.battle, s.fight, s.dark = nil, nil, nil, nil, nil
   endSolo(s) -- whatever they went into alone can be gone into again
-  s.gold = floor(s.gold / 2)
+  for id, n in pairs(fight.bag or {}) do
+    if (s.bag[id] or 0) < n then s.bag[id] = n end
+  end
+  s.gold = max(s.gold, fight.gold or 0)
+  local toll = min(s.gold, tollFor(s))
+  s.gold = s.gold - toll
+  s.toll = toll
+  s.flags.toll_free = toll == 0 or nil -- the scenes thank an empty purse instead
+  s.deaths = (s.deaths or 0) + 1
   healAll(s)
   local at = s.savepoint
   if at then enterMap(s, at.map, at.x, at.y, at.dir, nil) end
   s.fx.fade = FADE_TICKS
   s.mode = "walk"
   emit(events, "wipe")
-  note(s, "Everything goes dark. You come to at the last safe place, with half your gold gone.", "walk")
+  local SCRIPTS = story().SCRIPTS
+  local id = s.deaths == 1 and "fallen_first" or ("fallen_" .. ((s.deaths - 2) % FALLEN_SCENES + 1))
+  if SCRIPTS[id] then
+    startScript(s, id)
+  else
+    note(s, "Everything goes dark. You come to at the last safe place. Whatever you used in the fight is back in your pack, and the toll was " .. toll .. " gold.", "walk")
+  end
 end
 
 local function dropFoe(s, id)

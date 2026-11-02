@@ -1793,6 +1793,71 @@ S.gate_thuluan = { t("The road ends in black ice and reeds. Nobody sane goes fur
 S.gate_crack = { t("The wall has a crack in it here, and something breathes in it. Without something to guard your mind, you won't come out the same.") }
 S.gate_abyss = { t("The Violet Abyss. The light goes down a long way and doesn't come back. Not yet.") }
 
+-- ---------------------------------------------------------------- when the whole party falls
+
+-- The engine runs one of these after a lost fight, with the party already back at the last safe place, well, and with
+-- everything the fight used up back in the pack. fallen_first plays once, then fallen_1 to fallen_4 take turns.
+-- {toll} is the gold Zariel took at the gate, and toll_free is set when the purse was empty.
+
+local function waking()
+  return {
+    { dark = false },
+    { when = "toll_free", steps = {
+      t("Zariel, who keeps her gate, turns out your empty purse, sighs, and waves you through. You wake at the last safe place. Everything the fight used up is back in your pack, and everyone is on their feet."),
+    }, other = {
+      t("Zariel, who keeps her gate, takes {toll} gold for the crossing. You wake at the last safe place. Everything the fight used up is back in your pack, and everyone is on their feet."),
+    } },
+  }
+end
+
+--- A scene in the dark, then the waking.
+local function fallen(steps)
+  local list = { { dark = true } }
+  for _, step in ipairs(steps) do list[#list + 1] = step end
+  for _, step in ipairs(waking()) do list[#list + 1] = step end
+  return list
+end
+
+S.fallen_first = fallen({
+  t("Everything goes dark, and then darker, and then quiet. Somewhere in it, someone is holding the end of a thread. It's yours."),
+  t("A voice that isn't loud, and has never needed to be. \"I notice everyone, {hero}. Every life is a thread, and most of them come to me slack, from wandering.\""),
+  ask(t("\"Yours is pulled tight. It has never wandered once. I don't know where it's tied, and I would very much like to. So: not yet.\""), {
+    topic("Who are you?", {
+      t("\"The one at the end of every road. The Raven Queen, if you like. Most people only get to say it once.\""),
+    }),
+    topic("What does it cost?", {
+      t("\"Nothing, from me. Zariel keeps my gate, and Zariel charges a toll. Soldiers. They do love a toll. It won't be much.\""),
+    }),
+    { "Send me back.", {
+      t("\"Gladly. Go and be noticed a while longer.\""),
+    } },
+    { "Thank you.", {
+      t("\"Don't. I'm not being kind, I'm being curious. Go on.\""),
+    } },
+  }),
+  t("A wingbeat, very close, and the dark tips over into light."),
+})
+
+S.fallen_1 = fallen({
+  t("Dark, and a thread, and someone holding it up to the light."),
+  t("\"You again, {hero}. Still pulled tight. Still not mine. Back you go.\""),
+})
+
+S.fallen_2 = fallen({
+  t("A rustle in the dark, like a great many black feathers settling, or pages turning."),
+  t("\"I keep a list, {hero}. You aren't on it. Do stop trying to get on it.\""),
+})
+
+S.fallen_3 = fallen({
+  t("Cold, and still, and a long way down. A beak taps your forehead twice, as if knocking."),
+  t("\"Anyone home? Yes. Then go home.\""),
+})
+
+S.fallen_4 = fallen({
+  t("This time there's a gate in the dark, and a figure in red armour leaning on it, who looks you over the way a quartermaster looks at a dented helmet."),
+  t("\"Her Majesty says through. I say pay. We're both right, as usual.\""),
+})
+
 -- ---------------------------------------------------------------- the rest of the game
 
 --- A shop written as a tier is that tier's standard stock, with any extras after it.

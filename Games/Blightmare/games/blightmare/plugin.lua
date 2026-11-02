@@ -179,7 +179,7 @@ return base.fill({
     "",
     "In a fight, gauges fill and a full one gives that character a turn. Time stands still while you choose. Top is ATTACK, left the character's special, right ITEM, bottom DEFEND. Then tap the target, or tap away to go back.",
     "",
-    "If the whole party falls you wake at the last safe place, with half your gold gone.",
+    "If the whole party falls you wake at the last safe place with everything the fight used up, less a small toll.",
     "",
     "Lost? The purple mark on the map is where the story goes next, and an arrow points to it when it's further off. The bar along the bottom says what to do there.",
   },
