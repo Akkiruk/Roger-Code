@@ -9,7 +9,10 @@ import { chromium } from "playwright";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(process.argv[2] || join(here, "out", "blightmare"));
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".wasm": "application/wasm", ".txt": "text/plain" };
+const TYPES = {
+  ".html": "text/html", ".js": "text/javascript", ".wasm": "application/wasm", ".txt": "text/plain", ".png": "image/png",
+  ".webmanifest": "application/manifest+json",
+};
 
 const server = createServer(async (req, res) => {
   const name = new URL(req.url, "http://x").pathname.replace(/^\/+/, "") || "index.html";
@@ -71,6 +74,40 @@ try {
   }
   await check("walking");
   if (await colours() < 4) throw new Error("the game stopped drawing");
+
+  // the home screen app: everything the service worker promises has to exist, or installing it fails outright
+  const worker = await readFile(join(root, "sw.js"), "utf8");
+  const listed = JSON.parse(worker.match(/const FILES = (\[.*\]);/)[1]);
+  for (const name of listed) await readFile(join(root, name === "./" ? "index.html" : name));
+  if (/__VERSION__|__FILES__/.test(worker)) throw new Error("the service worker was not filled in");
+  const manifest = JSON.parse(await readFile(join(root, "manifest.webmanifest"), "utf8"));
+  for (const icon of manifest.icons) {
+    const png = await readFile(join(root, icon.src));
+    if (png.readUInt32BE(16) + "x" + png.readUInt32BE(20) !== icon.sizes) throw new Error(icon.src + " is the wrong size");
+  }
+
+  // a phone: the panel has to show the words on the wall, and a tap on it has to go on
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const small = await phone.newPage();
+  small.on("pageerror", (e) => errors.push(String(e)));
+  await small.goto(url, { waitUntil: "load" });
+  await small.waitForTimeout(2500);
+  const tapWall = async (x, y) => {
+    const box = await small.locator("#wall").boundingBox();
+    await small.touchscreen.tap(box.x + x / 121 * box.width, box.y + y / 81 * box.height);
+    await small.waitForTimeout(500);
+  };
+  await tapWall(60, 40);
+  await tapWall(60, 64);
+  await tapWall(60, 62);
+  const words = await small.locator("#panelBody").innerText();
+  if (words.length < 20) throw new Error("the phone panel stayed empty: " + words);
+  const box = await small.locator("#panelBody").boundingBox();
+  await small.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await small.waitForTimeout(500);
+  if (await small.locator("#panelBody").innerText() === words) throw new Error("a tap on the phone panel did nothing");
+  if (errors.length) throw new Error("page error on a phone: " + errors[0]);
+  await phone.close();
   console.log("smoke test passed");
 } catch (e) {
   console.error(String(e.message || e));

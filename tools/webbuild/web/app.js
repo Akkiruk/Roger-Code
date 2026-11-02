@@ -3,6 +3,16 @@
 // it did. See `step` in host.lua for the records.
 "use strict";
 
+/** An error as words: the message, then the stack. Safari's stack leaves the message out, so the stack alone hides what happened. */
+function describeError(e) {
+  if (!e || typeof e !== "object") return String(e);
+  const message = e.message || String(e);
+  const stack = e.stack || "";
+  return stack.includes(message) ? stack : (message + "\n" + stack).trim();
+}
+
+const DAMAGED = "The game files are damaged. Tap Restart to fetch them again. Your saved game is safe.";
+
 (async () => {
   const COLS = 121, ROWS = 81;
   const FS_PREFIX = "blightmare.web.fs/";
@@ -16,7 +26,14 @@
   const muteButton = document.getElementById("mute");
   const cursorEl = document.getElementById("cursor");
   const hintEl = document.getElementById("keys");
+  const panelEl = document.getElementById("panel");
+  const panelBody = document.getElementById("panelBody");
+  const installEl = document.getElementById("install");
+  const insetProbe = document.getElementById("insets");
+  const coarsePointer = window.matchMedia("(pointer: coarse)");
+  const PANEL_FREE_PX = 160, PANEL_CELL_PX = 7, PANEL_GAP = 4;
   let cursorBox = [0, 0, 0, 0];
+  let panelWanted = false, luaRunning = false;
   const synth = window.BlightSynth;
   const startedAt = performance.now();
   const decoder = new TextDecoder("utf-8");
@@ -31,8 +48,8 @@
     note.style.display = "none";
   }
   document.getElementById("crashReload").addEventListener("click", () => location.reload());
-  window.addEventListener("error", (e) => showCrash(String(e.message)));
-  window.addEventListener("unhandledrejection", (e) => showCrash(String(e.reason && e.reason.stack || e.reason)));
+  window.addEventListener("error", (e) => showCrash(e.error ? describeError(e.error) : String(e.message)));
+  window.addEventListener("unhandledrejection", (e) => showCrash(describeError(e.reason)));
 
   // ------------------------------------------------------------------ the picture
 
@@ -125,7 +142,60 @@
   function placeHint() {
     const box = wall.getBoundingClientRect();
     const side = box.left, below = window.innerHeight - box.bottom;
-    hintEl.className = side >= 170 ? "side" : below >= 26 ? "under" : "";
+    hintEl.className = panelWanted ? "" : side >= 170 ? "side" : below >= 26 ? "under" : "";
+  }
+
+  function setPanel(on) {
+    if (on === panelWanted) return;
+    panelWanted = on;
+    panelEl.style.display = on ? "flex" : "none";
+    if (luaRunning) inputs.push("panel " + (on ? 1 : 0));
+  }
+
+  function setCells(newW, newH) {
+    if (newW === cw && newH === ch && wall.width === newW * COLS) return;
+    cw = newW;
+    ch = newH;
+    wall.width = newW * COLS;
+    wall.height = newH * ROWS;
+    resetAtlas();
+    markAll();
+  }
+
+  /** On a phone the wall keeps a true 2:3 cell and clears the notch, and the room left over goes to the panel. */
+  function fitPhone(dpr, inset, across, down, panel) {
+    const cell = Math.min(across / COLS, down * 2 / 3 / ROWS);
+    const w = cell * COLS, h = cell * 1.5 * ROWS;
+    const stacked = down - h >= across - w;
+    wall.style.width = w + "px";
+    wall.style.height = h + "px";
+    let left = inset.left + (across - w) / 2, top = inset.top + (down - h) / 2;
+    if (panel && stacked) {
+      top = inset.top;
+      panelEl.style.left = inset.left + "px";
+      panelEl.style.top = top + h + PANEL_GAP + "px";
+      panelEl.style.width = across + "px";
+      panelEl.style.height = down - h - PANEL_GAP + "px";
+    } else if (panel) {
+      left = inset.left;
+      panelEl.style.left = left + w + PANEL_GAP + "px";
+      panelEl.style.top = inset.top + "px";
+      panelEl.style.width = across - w - PANEL_GAP + "px";
+      panelEl.style.height = down + "px";
+    }
+    wall.style.left = left + "px";
+    wall.style.top = top + "px";
+    if (panel) {
+      const box = panelEl.getBoundingClientRect();
+      muteButton.style.left = box.right - 40 + "px";
+      muteButton.style.top = box.top + 2 + "px";
+      muteButton.style.right = "auto";
+    }
+    // whole pixels can't always make 2:3, so the canvas holds the nearest even cell and the browser scales it the last little way
+    const wanted = cell * dpr;
+    const low = Math.max(2, Math.floor(wanted / 2) * 2);
+    const newW = wanted - low <= low + 2 - wanted ? low : low + 2;
+    setCells(newW, newW * 1.5);
   }
 
   function fit() {
@@ -134,18 +204,33 @@
     let newW = Math.max(2, Math.floor(Math.min(across / COLS, down * 2 / 3 / ROWS)));
     let newH = Math.round(newW * 1.5);
     if (newH * ROWS > down) newH = Math.max(3, Math.floor(down / ROWS));
-    const size = [newW * COLS, newH * ROWS];
-    wall.style.width = size[0] / dpr + "px";
-    wall.style.height = size[1] / dpr + "px";
+
+    const view = window.visualViewport;
+    const box = getComputedStyle(insetProbe);
+    const inset = {
+      top: parseFloat(box.paddingTop) || 0, right: parseFloat(box.paddingRight) || 0,
+      bottom: parseFloat(box.paddingBottom) || 0, left: parseFloat(box.paddingLeft) || 0,
+    };
+    const roomW = (view ? view.width : window.innerWidth) - inset.left - inset.right;
+    const roomH = (view ? view.height : window.innerHeight) - inset.top - inset.bottom;
+    const coarse = coarsePointer.matches;
+    const exact = Math.min(roomW / COLS, roomH * 2 / 3 / ROWS);
+    const free = Math.max(roomH - exact * 1.5 * ROWS, roomW - exact * COLS);
+    const panel = (coarse || newH / dpr < PANEL_CELL_PX) && free >= PANEL_FREE_PX;
+    const phone = coarse || panel;
+    document.documentElement.classList.toggle("phone", phone);
+    setPanel(panel);
+    if (phone) {
+      fitPhone(dpr, inset, roomW, roomH, panel);
+    } else {
+      wall.style.left = wall.style.top = "";
+      wall.style.width = newW * COLS / dpr + "px";
+      wall.style.height = newH * ROWS / dpr + "px";
+      setCells(newW, newH);
+    }
+    if (!panel) muteButton.style.left = muteButton.style.top = muteButton.style.right = "";
     placeCursor();
     placeHint();
-    if (newW === cw && newH === ch && wall.width === size[0]) return;
-    cw = newW;
-    ch = newH;
-    wall.width = size[0];
-    wall.height = size[1];
-    resetAtlas();
-    markAll();
   }
 
   function draw() {
@@ -234,7 +319,15 @@
 
   fit();
   window.addEventListener("resize", fit);
-  window.addEventListener("orientationchange", fit);
+  window.addEventListener("orientationchange", () => {
+    fit();
+    // iOS reports the new size a little after the turn
+    setTimeout(fit, 120);
+    setTimeout(fit, 400);
+  });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
+  coarsePointer.addEventListener("change", fit);
+  window.addEventListener("pageshow", fit);
 
   // ------------------------------------------------------------------ Lua
 
@@ -347,8 +440,32 @@
 
   // ------------------------------------------------------------------ files
 
-  const headerEnd = bundleBytes.indexOf(10);
-  const index = JSON.parse(decoder.decode(bundleBytes.subarray(0, headerEnd)));
+  // Everything is checked here, before Lua sees a byte: a damaged file must say so, and not look like a bug in the game.
+  async function readIndex() {
+    const named = "bundle.txt".match(/\.([0-9a-f]{10})\.txt$/);
+    if (named && window.crypto && crypto.subtle) { // no crypto.subtle on plain http, where the length still counts
+      const sum = new Uint8Array(await crypto.subtle.digest("SHA-256", bundleBytes));
+      const hex = Array.from(sum.subarray(0, 5), (b) => b.toString(16).padStart(2, "0")).join("");
+      if (hex !== named[1]) throw new Error("the bundle's hash is " + hex + ", not " + named[1]);
+    }
+    const end = bundleBytes.indexOf(10);
+    const list = JSON.parse(decoder.decode(bundleBytes.subarray(0, end)));
+    const length = list.reduce((sum, [, n]) => sum + n, end + 1);
+    if (length !== bundleBytes.length) throw new Error("the bundle is " + bundleBytes.length + " bytes, not " + length);
+    return [list, end];
+  }
+
+  let index, headerEnd;
+  try {
+    [index, headerEnd] = await readIndex();
+  } catch (e) {
+    console.error("damaged bundle: " + e.message);
+    // Its hashed name would bring the same bad copy back from the offline cache for ever, so that goes first.
+    try {
+      for (const name of await caches.keys()) if (name.startsWith("blightmare-")) await caches.delete(name);
+    } catch {}
+    throw Object.assign(new Error(DAMAGED), { damaged: true });
+  }
   let offset = headerEnd + 1;
   const bundle = new Map();
   for (const [path, length] of index) {
@@ -462,6 +579,12 @@
           break;
         }
         case 81: stopped = true; showCrash("The game has shut down."); break; // Q
+        case 74: { // J
+          const n = num(0);
+          showPanel(JSON.parse(latin1Of(h.subarray(at, at + n))));
+          at += n;
+          break;
+        }
         case 75: cursorBox = [num(0), num(1), num(2), num(3)]; placeCursor(); break; // K
         case 78: nextDue = num(0); break; // N
         default:
@@ -496,7 +619,7 @@
       step();
     } catch (e) {
       stopped = true;
-      showCrash(String(e && e.message || e));
+      showCrash(describeError(e));
     }
     if (!shownUp && anyDirty) {
       shownUp = true;
@@ -528,6 +651,125 @@
     if (x >= 1 && x <= COLS && y >= 1 && y <= ROWS) tap(x, y);
   });
   wall.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  // Pinching, double taps and the rubber band all belong to the page, and the page doesn't want them. The panel may still scroll.
+  for (const name of ["gesturestart", "gesturechange", "gestureend", "dblclick"]) {
+    document.addEventListener(name, (e) => e.preventDefault(), { passive: false });
+  }
+  document.addEventListener("touchmove", (e) => {
+    if (!(e.target.closest && e.target.closest("#panelBody")) || e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
+  // iOS opens its audio only inside a gesture it counts, and a call can shut it again, so every touch has another go
+  for (const name of ["touchend", "click"]) window.addEventListener(name, () => synth.wake(), { capture: true, passive: true });
+
+  // ------------------------------------------------------------------ the phone panel
+
+  const esc = (text) => String(text ?? "").replace(/[&<>"]/g, (c) => "&#" + c.charCodeAt(0) + ";");
+  const button = (id, label, kind = "", right = null) =>
+    `<button type="button" class="pb ${kind}" data-id="${esc(id)}"><span>${esc(label)}</span>${right == null ? "" : `<b>${esc(right)}</b>`}</button>`;
+  const bar = (now, top, kind) => {
+    const share = top > 0 ? Math.max(0, Math.min(1, now / top)) : 0;
+    const shade = kind || (share > 0.5 ? "" : share > 0.25 ? "low" : "bad");
+    return `<div class="bar ${shade}"><i style="width:${Math.round(share * 100)}%"></i></div>`;
+  };
+  const member = (m) => `<div class="who${m.active ? " on" : ""}"><div><span>${esc(m.name)}${m.lvl ? " LV " + m.lvl : ""}</span>`
+    + `<span>HP ${m.hp}/${m.maxHp}${m.maxMp ? ` MP ${m.mp}/${m.maxMp}` : ""}</span></div>${bar(m.hp, m.maxHp)}${m.maxMp ? bar(m.mp, m.maxMp, "mp") : ""}</div>`;
+  const rows = (list) => (list || []).map((r) => button(r.id, r.label, r.dim ? "dim" : "", r.right)).join("");
+
+  const PANEL_VIEWS = {
+    none: () => "",
+    talk: (d) => (d.name ? `<h2>${esc(d.name)}</h2>` : "") + (d.big ? `<p class="big">${esc(d.big)}</p>` : "") + (d.text ? `<p>${esc(d.text)}</p>` : "")
+      + rows(d.choices) + (d.tap ? `<p class="more">${d.more ? "Tap for more" : "Tap to continue"}</p>` : ""),
+    menu: (d) => `<h2>${esc(d.title)}</h2>` + (d.line ? `<p class="msg">${esc(d.line)}</p>` : "") + (d.note ? `<p>${esc(d.note)}</p>` : "") + rows(d.rows)
+      + `<div class="row2">${button("back", "BACK", "go")}${button("button:actQuit", d.quit, d.quit === "SURE?" ? "warn" : "")}</div>`
+      + `<p class="gold" style="margin-top:10px">GOLD ${d.gold}</p>`
+      + (d.facts ? `<div class="facts">${d.facts.map(([k, v]) => `<span>${esc(k)}</span><b>${esc(v)}</b>`).join("")}</div>` : "")
+      + (d.party || []).map(member).join("") + (d.bag && d.bag.length ? `<p>${esc(d.bag.join(", "))}</p>` : ""),
+    battle: (d) => `<p class="msg">${esc(d.msg)}</p>`
+      + (d.spoils ? `<p>${d.spoils.xp ?? 0} XP, <span class="gold">${d.spoils.gold ?? 0} gold</span></p>${d.spoils.ups.map((u) => `<p>${esc(u)}</p>`).join("")}<p class="more">Tap to continue</p>` : "")
+      + (d.cmds ? `<div class="grid">${d.cmds.map((c) => button(c.id, c.label, c.warn ? "warn" : "")).join("")}</div>` : "")
+      + rows(d.rows) + (d.back ? button("back", "BACK", "go") : "")
+      + `<div style="margin-top:10px">${d.allies.map(member).join("")}</div>`,
+    ground: (d) => (d.place ? `<h2>${esc(d.place)}</h2>` : "") + (d.goal ? `<p class="goal">${esc(d.goal)}</p>` : "") + (d.msg ? `<p class="msg">${esc(d.msg)}</p>` : "")
+      + button("menu", "MENU", "go") + `<p class="gold">GOLD ${d.gold}</p>` + d.party.map(member).join(""),
+    help: (d) => `<h2>How to play</h2>` + d.lines.filter(Boolean).map((l) => `<p>${esc(l)}</p>`).join("") + button("button:rulesDone", d.done, "go"),
+    ready: (d) => (d.line ? `<p>${esc(d.line)}</p>` : "") + `<div class="row2">`
+      + (d.line ? `<button type="button" class="pb" data-local="export"><span>COPY SAVE CODE</span></button>` : "")
+      + `<button type="button" class="pb" data-local="import"><span>PASTE SAVE CODE</span></button></div>`,
+  };
+
+  let shownPanel = { kind: "none" }, panelPlace = "";
+
+  function showPanel(data) {
+    shownPanel = data;
+    panelBody.innerHTML = (PANEL_VIEWS[data.kind] || PANEL_VIEWS.none)(data);
+    const place = [data.kind, data.title, data.phase, data.text].join("|");
+    if (place !== panelPlace) panelBody.scrollTop = 0;
+    panelPlace = place;
+  }
+
+  function pressPanel(id) {
+    inputs.push("press " + id);
+    safeStep();
+    draw();
+  }
+
+  // Save codes carry a game between Safari and the home screen app, whose storage iOS keeps apart.
+  const SAVE_KEY = /^blightmare\.web\.fs\/arcade_save_[^/]*\.dat$/;
+  async function exportSave() {
+    const saves = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (SAVE_KEY.test(key)) saves[key] = localStorage.getItem(key);
+    }
+    const code = btoa(JSON.stringify(saves));
+    try {
+      await navigator.clipboard.writeText(code);
+      window.alert("Save code copied. Paste it into the other copy of the game.");
+    } catch {
+      window.prompt("Copy this save code", code);
+    }
+  }
+  function importSave() {
+    const code = window.prompt("Paste a save code");
+    if (!code) return;
+    try {
+      const saves = JSON.parse(atob(code.trim()));
+      const keys = Object.keys(saves);
+      if (!keys.length || !keys.every((k) => SAVE_KEY.test(k) && typeof saves[k] === "string")) throw new Error("not a save");
+      if (!window.confirm("Replace the saved game here with this one?")) return;
+      for (const key of keys) localStorage.setItem(key, saves[key]);
+      location.reload();
+    } catch {
+      window.alert("That code isn't a saved game.");
+    }
+  }
+
+  panelBody.addEventListener("click", (e) => {
+    const local = e.target.closest("[data-local]");
+    if (local) {
+      if (local.dataset.local === "export") exportSave(); else importSave();
+      return;
+    }
+    const pressed = e.target.closest("[data-id]");
+    if (pressed) pressPanel(pressed.dataset.id);
+    else if (shownPanel.tap) pressPanel("tap");
+  });
+
+  const INSTALL_KEY = "blightmare.web.installHint";
+  (function installHint() {
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const safari = /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+    const installed = navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(INSTALL_KEY) === "1"; } catch {}
+    if (!ios || !safari || installed || dismissed) return;
+    installEl.style.display = "flex";
+    document.getElementById("installClose").addEventListener("click", () => {
+      installEl.style.display = "none";
+      try { localStorage.setItem(INSTALL_KEY, "1"); } catch {}
+    });
+  })();
 
   // Keys go to Lua by name. Only the ways repeat, and only from here, so every browser and keyboard repeats alike.
   const REPEAT_WAIT_MS = 230, REPEAT_MS = 150;
@@ -600,7 +842,12 @@
     safeStep();
   }
   window.addEventListener("pagehide", saveNow);
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") saveNow(); });
+  document.addEventListener("freeze", saveNow);
+  // nothing ticks while the page is hidden, and iOS may end it there without another word, so this is the last chance
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveNow();
+    else fit();
+  });
 
   function showMute() {
     const muted = synth.isMuted();
@@ -624,6 +871,7 @@
     palette: () => palette.slice(),
     cellSize: () => [cw, ch],
     cursor: () => cursorBox.slice(),
+    panel: () => shownPanel,
     eval(code) {
       webCall("eval", [code], 1);
       const text = luaText(-1);
@@ -634,13 +882,23 @@
 
   restoreFiles();
   webCall("start", [String(new Date().getTimezoneOffset() * -1)], 0);
+  luaRunning = true;
+  if (panelWanted) inputs.push("panel 1");
   api.settop(L, 0);
   safeStep();
   draw();
   requestAnimationFrame(frame);
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").then((worker) => {
+      // a home screen app is mostly resumed, not launched, so coming back counts as a launch for updates
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") worker.update().catch(() => {});
+      });
+    }).catch((e) => console.warn("no offline copy: " + e));
+  }
 })().catch((e) => {
   const box = document.getElementById("crash");
-  document.getElementById("crashText").textContent = String(e && e.stack || e);
+  document.getElementById("crashText").textContent = e && e.damaged ? e.message : describeError(e);
   document.getElementById("note").style.display = "none";
   box.style.display = "block";
 });

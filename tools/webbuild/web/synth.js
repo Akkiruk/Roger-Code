@@ -20,8 +20,13 @@ window.BlightSynth = (() => {
       noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const data = noiseBuffer.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      // iOS only opens the audio once something has played inside a touch
+      const silence = ctx.createBufferSource();
+      silence.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      silence.connect(ctx.destination);
+      silence.start(0);
     }
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state !== "running") ctx.resume();
   }
 
   function tone(type, from, to, at, length, volume) {

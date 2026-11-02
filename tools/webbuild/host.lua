@@ -1239,6 +1239,232 @@ local function keyboardStep()
   end
 end
 
+-- ------------------------------------------------------------------ the phone panel
+
+-- At 121 cells across a phone the game's small text can't be read, so the page shows the same words large beside the wall. This
+-- only reads the state and says what's on the wall. A panel button names the action, and pressing it looks for the cell of the wall
+-- that gives that action and taps there, so the two can't disagree, and a button left over from a moment ago does nothing.
+
+local panel = { on = false, sig = nil, json = nil }
+
+local function module(name) return package.loaded[name] or require(name) end
+
+local function partyLines(s)
+  local party = module("games.blightmare.party")
+  local out = {}
+  for i, m in ipairs(s.party) do
+    local stats = party.stats(m)
+    local char = party.CHARS[m.id]
+    out[i] = {
+      name = m.id == "hero" and s.heroName or (char and char.name or m.id), lvl = m.lvl,
+      hp = m.hp, maxHp = stats.maxHp, mp = stats.maxMp > 0 and m.mp or nil, maxMp = stats.maxMp > 0 and stats.maxMp or nil,
+    }
+  end
+  return out
+end
+
+local function pickId(i) return actionKey({ kind = "pick", i = i }) end
+
+local function talkPanel(app, s)
+  local talk = app.plugin.rules.talk(s)
+  if not talk then return { kind = "none" } end
+  local out = {
+    kind = "talk", name = talk.name, text = talk.lines and concat(talk.lines, " ") or nil, big = talk.big and concat(talk.big, " ") or nil,
+    more = talk.more or false, tap = not talk.choices and talk.wait ~= "fade",
+  }
+  if talk.choices then
+    out.choices = {}
+    for i, label in ipairs(talk.choices) do out.choices[i] = { id = pickId(i), label = label } end
+  end
+  return out
+end
+
+local function statusLines(s, member)
+  local party = module("games.blightmare.party")
+  local stats, char = party.stats(member), party.CHARS[member.id]
+  local gear = function(id)
+    local def = id and party.GEAR[id]
+    return def and def.name or "-"
+  end
+  return {
+    { "ROLE", (char.role or ""):upper() }, { "SPECIAL", char.special or "-" }, { "ATTACK", stats.atk }, { "DEFENCE", stats.def },
+    { "MAGIC", stats.mag }, { "SPEED", stats.spd }, { "WEAPON", gear(member.weapon) }, { "ARMOUR", gear(member.armour) },
+    { "ACCESSORY", gear(member.accessory) }, { "XP TO NEXT", math.max(0, party.xpFor(member.lvl + 1) - member.xp) },
+  }
+end
+
+local function quitLabel(app)
+  local a = app.S.action
+  return a.quitUntil and nowMs + tzMs < a.quitUntil and "SURE?" or "SAVE & QUIT"
+end
+
+local function menuPanel(app, s)
+  local rules = app.plugin.rules
+  local menu = s.menu
+  local titles = { useon = "USE ON", main = "MENU" }
+  local out = { kind = "menu", title = titles[menu.page] or menu.page:upper(), rows = {}, gold = s.gold, line = menu.line, quit = quitLabel(app) }
+  for i, row in ipairs(rules.menuRows(s)) do
+    out.rows[i] = { id = pickId(i), label = row.label, dim = (row.item and not row.field) or (row.swap and row.picked) or false }
+  end
+  local member = menu.who and s.party[menu.who]
+  if menu.page == "status" then
+    out.facts = statusLines(s, member or s.party[1])
+  elseif menu.page == "items" and #out.rows == 0 then
+    out.note = "Nothing in the bag."
+  elseif menu.page == "equip" and #out.rows == 0 then
+    out.note = "No spare gear to wear."
+  end
+  out.party = partyLines(s)
+  return out
+end
+
+local function shopPanel(app, s)
+  local rules = app.plugin.rules
+  local party = module("games.blightmare.party")
+  local out = { kind = "menu", title = "SHOP", rows = {}, gold = s.gold, line = s.shop.line, bag = {}, quit = quitLabel(app) }
+  for i, row in ipairs(rules.shopRows(s)) do
+    out.rows[i] = { id = pickId(i), label = row.label, right = row.price and tostring(row.price) or nil, dim = row.afford == false }
+  end
+  for _, id in ipairs(party.ITEM_ORDER) do
+    if s.bag[id] then out.bag[#out.bag + 1] = rules.itemName(id) .. " x" .. s.bag[id] end
+  end
+  return out
+end
+
+local function battlePanel(app, s)
+  local battle, party, enemies = module("games.blightmare.battle"), module("games.blightmare.party"), module("games.blightmare.enemies")
+  local b = s.battle
+  local lines = partyLines(s)
+  local out = { kind = "battle", phase = b.phase, msg = b.msg, allies = {}, tap = b.phase == "spoils" }
+  for i, u in ipairs(b.allies) do
+    local line = lines[u.m]
+    if line then
+      line.active = b.active == i
+      out.allies[#out.allies + 1] = line
+    end
+  end
+  if b.phase == "cmd" then
+    local u = b.allies[b.active]
+    local cmd = function(name, label) return { id = actionKey({ kind = "cmd", cmd = name }), label = label } end
+    out.cmds = { cmd("attack", "ATTACK"), cmd("special", party.CHARS[s.party[u.m].id].special), cmd("defend", "DEFEND"), cmd("item", "ITEM") }
+    out.cmds[3].warn = battle.blowIn(b) ~= nil
+  elseif b.phase == "list" then
+    out.rows, out.back = {}, true
+    for i, row in ipairs(battle.rows(s)) do
+      out.rows[i] = { id = pickId(i), label = row.name, right = row.note ~= "" and row.note or nil, dim = not row.ok }
+    end
+  elseif b.phase == "target" then
+    out.rows, out.back = {}, true
+    local side, list = battle.targets(s)
+    local seen = {}
+    for n, i in ipairs(list) do
+      local label
+      if side == "foe" then
+        local def = enemies.FOES[b.foes[i].id]
+        label = def.short or def.name
+        seen[label] = (seen[label] or 0) + 1
+        if seen[label] > 1 then label = label .. " " .. seen[label] end
+      else
+        local u = b.allies[i]
+        label = lines[u.m] and lines[u.m].name or "?"
+      end
+      out.rows[n] = { id = actionKey({ kind = "target", side = side, i = i }), label = label }
+    end
+  elseif b.phase == "spoils" then
+    out.spoils = { xp = b.spoils and b.spoils.xp, gold = b.spoils and b.spoils.gold, ups = {} }
+    for i, up in ipairs(b.spoils and b.spoils.ups or {}) do
+      out.spoils.ups[i] = (up.id == "hero" and s.heroName or party.CHARS[up.id].name) .. " reached level " .. up.lvl
+    end
+  end
+  return out
+end
+
+local function groundPanel(app, s)
+  local rules = app.plugin.rules
+  local goal = rules.goal(s)
+  local place
+  if s.mode == "world" then
+    local overworld = module("games.blightmare.overworld")
+    place = overworld.REGION_NAME[overworld.region(s.wx, s.wy, s) or ""] or "The road"
+  else
+    local map = module("games.blightmare.world").map(s.map)
+    place = map and map.name or nil
+  end
+  return { kind = "ground", mode = s.mode, place = place, goal = goal and goal.text or nil, msg = s.msg ~= "" and s.msg or nil, gold = s.gold, party = partyLines(s) }
+end
+
+local function shellPanel(app)
+  local S = app.S
+  if S.view == "rules" then return { kind = "help", lines = app.plugin.help, done = S.rulesThen and "GOT IT - START" or "GOT IT" } end
+  local a = S.action
+  if S.view == "action" and a and a.phase == "ready" then return { kind = "ready", line = a.saved and a.saved.line or nil } end
+  return { kind = "none" }
+end
+
+local function panelData(app)
+  local screen, s = screenOf(app)
+  if screen == "shell" then return shellPanel(app) end
+  local mode = s.mode
+  if mode == "talk" then return talkPanel(app, s) end
+  if mode == "menu" then return menuPanel(app, s) end
+  if mode == "shop" then return shopPanel(app, s) end
+  if mode == "battle" and s.battle then return battlePanel(app, s) end
+  if mode == "walk" or mode == "world" then return groundPanel(app, s) end
+  return { kind = "none" }
+end
+
+local function panelSignature(app)
+  local S = app.S
+  local a = S.action
+  local s = S.view == "action" and a and a.state
+  local quit = a and a.quitUntil and nowMs + tzMs < a.quitUntil
+  return concat({ S.view, tostring(a and a.phase), tostring(s and s.rev), tostring(quit), tostring(a and a.saved and a.saved.line) }, ",")
+end
+
+local function panelStep()
+  if not panel.on then return end
+  local app = shell_()
+  if not app then return end
+  local sig = panelSignature(app)
+  if sig == panel.sig then return end
+  panel.sig = sig
+  local json = textutils.serialiseJSON(panelData(app))
+  if json ~= panel.json then
+    panel.json = json
+    emit("J" .. #json .. "\n" .. json)
+  end
+end
+
+--- A panel button. Every press is checked against the wall as it is now.
+local function panelPress(id)
+  local app = shell_()
+  if not app then return end
+  wrapView(app)
+  pointerUsed()
+  local screen, s = screenOf(app)
+  local button = id:match("^button:(.+)$")
+  if button then
+    for _, b in ipairs(app.env.walls[1].buttons) do
+      if b.id == button and b.enabled then
+        touch(b.x + floor(b.w / 2), b.y + floor(b.h / 2))
+        return
+      end
+    end
+  elseif id == "tap" then
+    if screen == "tap" then send({ kind = "tap" }) end
+  elseif id == "menu" then
+    if screen == "walk" or screen == "world" then send({ kind = "menu" }) end
+  elseif id == "back" then
+    local b = s and s.battle
+    if s and (s.mode == "menu" or s.mode == "shop" or (s.mode == "battle" and b and (b.phase == "list" or b.phase == "target"))) then
+      send({ kind = "back" })
+    end
+  elseif screen == "choose" then
+    local t = findKey(scan(app, s), id)
+    if t then touch(t.px, t.py) end
+  end
+end
+
 -- ------------------------------------------------------------------ what the page calls
 
 local PROGRAM = "blightmare.lua"
@@ -1311,6 +1537,7 @@ end
 --   E n  text              the program has crashed
 --   Q                      the program asked to shut down
 --   K x,y,w,h              the keyboard cursor, in cells from 0; all zero hides it
+--   J n  text              what the phone panel shows, as JSON
 --   N ms                   when the next timer is due
 function __web.step(time, input)
   nowMs = tonumber(time) or nowMs
@@ -1321,6 +1548,11 @@ function __web.step(time, input)
       if kind == "touch" then
         pointerUsed()
         enqueue("monitor_touch", MONITOR, tonumber(a), tonumber(b))
+      elseif kind == "press" then
+        local ok, err = native.pcall(panelPress, a)
+        if not ok then logLine("panel: " .. tostring(err)) end
+      elseif kind == "panel" then
+        panel.on, panel.sig, panel.json = a == "1", nil, nil
       elseif kind == "key" then
         -- a slip in here is the keyboard's, and needn't take the game down with it
         local ok, err = native.pcall(keyEvent, a, b)
@@ -1351,6 +1583,10 @@ function __web.step(time, input)
   end
   local kept, why = native.pcall(keyboardStep)
   if not kept then logLine("keyboard: " .. tostring(why)) end
+  if panel.on then
+    local shown, problem = native.pcall(panelStep)
+    if not shown then logLine("panel: " .. tostring(problem)) end
+  end
   flushFiles()
   local nextAt
   for _, at in pairs(timers) do

@@ -5,6 +5,16 @@
 <title>BLIGHTMARE</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#14161c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BLIGHTMARE">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+<!-- splash -->
 <style>
   html, body { margin: 0; height: 100%; background: #0b0c10; color: #f2f4f8; overflow: hidden; overscroll-behavior: none; }
   body { display: flex; align-items: center; justify-content: center; font: 16px/1.4 system-ui, sans-serif;
@@ -27,6 +37,45 @@
     #keys.under span { margin: 0 8px; }
     #keys.side span { display: block; }
   }
+  html, body { height: 100dvh; }
+  html.phone, html.phone body { position: fixed; inset: 0; width: 100%; touch-action: none; -webkit-touch-callout: none; }
+  html.phone #wall { position: fixed; image-rendering: auto; }
+  #insets { position: fixed; visibility: hidden; pointer-events: none; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #panel { position: fixed; display: none; flex-direction: column; box-sizing: border-box; color: #f2f4f8; background: #14161c;
+    font: 17px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+  #panelBody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; padding: 10px 12px; }
+  #panelBody > :first-child { padding-right: 42px; }
+  #panelBody h2 { margin: 0 0 6px; font-size: 18px; color: #ffd257; font-weight: 700; }
+  #panelBody p { margin: 0 0 10px; }
+  #panelBody .more { margin-top: 12px; color: #b5bccb; font-size: 16px; }
+  #panelBody .big { font-size: 20px; font-weight: 700; color: #ffd257; }
+  #panelBody .goal { color: #c9b8ff; }
+  #panelBody .msg { color: #fff; font-weight: 600; }
+  #panelBody .gold { color: #ffd257; font-weight: 600; }
+  .pb { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 48px; margin: 0 0 6px; padding: 8px 12px; box-sizing: border-box;
+    font: inherit; font-weight: 600; text-align: left; color: #f2f4f8; background: #232733; border: 2px solid #4a4f60; border-radius: 8px;
+    touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .pb:active { background: #3a4152; }
+  .pb b { color: #ffd257; }
+  .pb.dim { color: #9aa2b4; border-color: #2e3340; }
+  .pb.go { border-color: #35d07f; justify-content: center; text-align: center; }
+  .pb.warn { border-color: #ff9f43; color: #ff9f43; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .grid .pb { margin: 0; justify-content: center; text-align: center; }
+  .row2 { display: flex; gap: 6px; margin-top: 4px; }
+  .row2 .pb { justify-content: center; text-align: center; }
+  .who { margin: 0 0 6px; }
+  .who.on span:first-child { color: #ffd257; }
+  .who div:first-child { display: flex; justify-content: space-between; gap: 8px; font-size: 16px; }
+  .bar { height: 7px; margin: 2px 0; background: #2e3340; border-radius: 3px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: #35d07f; }
+  .bar.low i { background: #ff9f43; }
+  .bar.bad i { background: #e5484d; }
+  .bar.mp i { background: #9b7bff; }
+  .facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 8px 0; font-size: 16px; color: #b5bccb; }
+  .facts b { color: #f2f4f8; font-weight: 600; }
+  #install { display: none; align-items: center; gap: 8px; padding: 4px 46px 4px 12px; font-size: 13px; line-height: 1.25; color: #14161c; background: #ffd257; }
+  #install button { flex: none; min-width: 30px; min-height: 30px; padding: 0; font: inherit; font-weight: 700; color: #14161c; background: none; border: 1px solid #14161c; border-radius: 6px; }
   #crash { position: fixed; inset: 0; z-index: 3; display: none; overflow: auto; padding: 24px; box-sizing: border-box; background: #14161cf2;
     -webkit-user-select: text; user-select: text; }
   #crash h1 { margin: 0 0 8px; font-size: 20px; color: #e5484d; }
@@ -39,6 +88,11 @@
 <div id="cursor"></div>
 <div id="keys"><span>Arrows or WASD move</span><span>Enter acts</span><span>M menu</span><span>Esc back</span></div>
 <div id="note">LOADING</div>
+<div id="insets"></div>
+<div id="panel">
+  <div id="install"><span>To install: Share, Add to Home Screen. App saves stay in the app.</span><button type="button" id="installClose" aria-label="Dismiss">X</button></div>
+  <div id="panelBody"></div>
+</div>
 <button id="mute" type="button" aria-label="Mute" aria-pressed="false">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4 9v6h4l6 5V4L8 9z" fill="currentColor"/>

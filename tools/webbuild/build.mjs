@@ -5,6 +5,7 @@
 // Static files only, all named relative to the page, so it works under any folder. Roger-Code is only read.
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { deflateSync } from "node:zlib";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -93,7 +94,105 @@ const html = readFileSync(join(here, "web", "index.html"), "utf8")
   .replace('src="synth.js"', `src="${synthName}"`)
   .replace('src="app.js"', `src="${appName}"`);
 
-const output = { "index.html": html, [glueName]: glue, [synthName]: synth, [appName]: app, [wasmName]: wasm, [bundleName]: bundle };
+// ------------------------------------------------------------------ the home screen app
+
+// PNG by hand, so the build needs nothing but node. Every picture is opaque RGB, as iOS rounds the corners itself.
+const crcTable = Array.from({ length: 256 }, (_, start) => {
+  let n = start;
+  for (let k = 0; k < 8; k++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1;
+  return n >>> 0;
+});
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (const b of bytes) c = crcTable[(c ^ b) & 255] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+function pngChunk(type, data) {
+  const typed = Buffer.concat([Buffer.from(type), data]);
+  const out = Buffer.alloc(typed.length + 8);
+  out.writeUInt32BE(data.length, 0);
+  typed.copy(out, 4);
+  out.writeUInt32BE(crc32(typed), typed.length + 4);
+  return out;
+}
+function png(width, height, colourAt) {
+  const raw = Buffer.alloc((width * 3 + 1) * height);
+  let at = 0;
+  for (let y = 0; y < height; y++) {
+    raw[at++] = 0;
+    for (let x = 0; x < width; x++) {
+      const rgb = colourAt(x, y);
+      raw[at++] = rgb >> 16;
+      raw[at++] = (rgb >> 8) & 255;
+      raw[at++] = rgb & 255;
+    }
+  }
+  const head = Buffer.alloc(13);
+  head.writeUInt32BE(width, 0);
+  head.writeUInt32BE(height, 4);
+  head[8] = 8; // bits
+  head[9] = 2; // RGB
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), pngChunk("IHDR", head), pngChunk("IDAT", deflateSync(raw, { level: 9 })), pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
+
+// The title screen's picture: the great wall at night with the crack in it, under a big red B. Drawn on a 64 square grid.
+const ICON_B = ["XXXXXX.", "XX..XXX", "XX...XX", "XX..XX.", "XXXXX..", "XX..XX.", "XX...XX", "XX..XXX", "XXXXXX."];
+const ICON_STARS = new Set(["6,8", "11,27", "4,34", "53,6", "58,20", "51,31", "57,38", "9,18"]);
+const NIGHT = 0x14161c, STONE = 0x232733, LIT = 0x4a4f60, RED = 0xe5484d, DEEP = 0x4a2328;
+function iconPixel(x, y) {
+  const wallTop = 46;
+  const crackX = 45 + (y % 7 < 3 ? 1 : -1);
+  if (y >= wallTop - 2) {
+    if (x === crackX || x === crackX + 1) return RED;
+    if (x === crackX + 2 || x === crackX - 1) return DEEP;
+  }
+  if (y >= wallTop - 3 && y < wallTop && x % 8 < 5) return y === wallTop - 3 ? LIT : STONE;
+  if (y >= wallTop) return (y - wallTop) % 5 === 4 ? NIGHT : y === wallTop ? LIT : STONE;
+  const col = Math.floor((x - 18) / 4), row = Math.floor((y - 5) / 4);
+  if (x >= 18 && row >= 0 && row < 9 && col < 7 && ICON_B[row][col] === "X") return RED;
+  return ICON_STARS.has(x + "," + y) ? LIT : NIGHT;
+}
+const icon = (size) => png(size, size, (x, y) => iconPixel(Math.floor(x * 64 / size), Math.floor(y * 64 / size)));
+
+// A launch screen in the page's own dark for each size of phone, or iOS opens the app on white.
+const SPLASHES = [
+  [320, 568, 2], [375, 667, 2], [414, 736, 3], [375, 812, 3], [414, 896, 2], [414, 896, 3], [360, 780, 3], [390, 844, 3],
+  [393, 852, 3], [428, 926, 3], [430, 932, 3], [402, 874, 3], [440, 956, 3],
+];
+const splashTags = [];
+const pictures = {};
+for (const size of [152, 167, 180, 192, 512]) pictures[`icon-${size}.png`] = icon(size);
+for (const [w, h, ratio] of SPLASHES) {
+  const name = `splash-${w * ratio}x${h * ratio}.png`;
+  pictures[name] ??= png(w * ratio, h * ratio, () => 0x0b0c10);
+  splashTags.push(`<link rel="apple-touch-startup-image" href="${name}" media="(device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${ratio}) and (orientation: portrait)">`);
+}
+
+const manifest = JSON.stringify({
+  id: "./", name: "BLIGHTMARE", short_name: "BLIGHTMARE", description: "A dark RPG: a wall, a plague, and a hero who has never dreamed.",
+  start_url: "./", scope: "./", display: "standalone", orientation: "any", background_color: "#0b0c10", theme_color: "#14161c",
+  icons: [
+    { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+  ],
+}, null, 2);
+
+const page = html.replace("<!-- splash -->", splashTags.join("\n"));
+const output = {
+  "index.html": page, [glueName]: glue, [synthName]: synth, [appName]: app, [wasmName]: wasm, [bundleName]: bundle,
+  "manifest.webmanifest": manifest, ...pictures,
+};
+
+// The service worker lists every file, and its version is all of them hashed, so any change at all makes a new cache.
+const everything = createHash("sha256");
+for (const [name, content] of Object.entries(output)) everything.update(name).update(content);
+output["sw.js"] = readFileSync(join(here, "web", "sw.js"), "utf8")
+  .replace("__VERSION__", everything.digest("hex").slice(0, 16))
+  .replace("__FILES__", JSON.stringify(Object.keys(output).map((name) => (name === "index.html" ? "./" : name))));
+
 let total = 0;
 for (const [name, content] of Object.entries(output)) {
   writeFileSync(join(outDir, name), content);
