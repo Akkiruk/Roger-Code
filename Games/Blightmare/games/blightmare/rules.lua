@@ -102,9 +102,71 @@ local function give(s, id, n)
   s.bag[id] = (s.bag[id] or 0) + (n or 1)
 end
 
-local function take(s, id)
-  local left = (s.bag[id] or 0) - 1
+local function take(s, id, n)
+  local left = (s.bag[id] or 0) - (n or 1)
   s.bag[id] = left > 0 and left or nil
+end
+
+local function findMember(s, id)
+  for i, member in ipairs(s.party) do
+    if member.id == id then return member, i end
+  end
+  return nil
+end
+
+local function heroOf(s)
+  local hero = findMember(s, "hero")
+  if hero then return hero end
+  for _, member in ipairs(s.stash or {}) do
+    if member.id == "hero" then return member end
+  end
+  return s.party[1]
+end
+
+--- The party's level, as far as who's joining can tell: the best of those here.
+local function partyLevel(s)
+  local best = 1
+  for _, member in ipairs(s.party) do best = max(best, member.lvl) end
+  return best
+end
+
+--- Someone joins, or comes back. Nobody comes back so far behind that they're no use: that's a chore, not a reunion.
+local function joinParty(s, id, lvl)
+  if findMember(s, id) then return end
+  local away = s.away and s.away[id]
+  local floorLevel = max(lvl or 1, partyLevel(s) - 1)
+  local partyData = part("party")
+  if away then
+    s.away[id] = nil
+    if away.lvl < floorLevel then partyData.gainXp(away, partyData.xpFor(floorLevel) - away.xp) end
+    partyData.restore(away)
+    s.party[#s.party + 1] = away
+  else
+    s.party[#s.party + 1] = partyData.new(id, floorLevel)
+  end
+end
+
+local function leaveParty(s, id)
+  local member, i = findMember(s, id)
+  if not member or id == "hero" then return end
+  table.remove(s.party, i)
+  s.away = s.away or {}
+  s.away[id] = member
+end
+
+--- The party is set aside for one person: a dream, or a road walked alone.
+local function goSolo(s, id)
+  local member, i = findMember(s, id)
+  if not member or s.stash then return end
+  table.remove(s.party, i)
+  s.stash = s.party
+  s.party = { member }
+end
+
+local function endSolo(s)
+  if not s.stash then return end
+  for _, member in ipairs(s.stash) do s.party[#s.party + 1] = member end
+  s.stash = nil
 end
 
 --- A display name for anything that can be in the bag.
@@ -309,6 +371,7 @@ local checkStep -- declared here because a script's end can land on a trigger, a
 local function finishRun(s)
   local run = s.run
   s.run = nil
+  s.dark = nil
   s.mode = run.back
   if run.once then s.opened[run.once] = true end
   changed(s)
@@ -328,16 +391,42 @@ local function startFight(s, enc, foeId, back, rng, events)
 end
 
 local function toWorld(s, x, y)
-  s.wx, s.wy, s.heading = x, y, nil
+  s.wx, s.wy, s.heading, s.route = x, y, nil, nil
   s.foes = {}
   s.hints.world = s.hints.world or HINT_TICKS
 end
 
+--- Is this step a fork, and if so which way? Returns nil for a step that isn't one.
+local function forkOf(s, step)
+  if not (step.steps or step.other) then return nil end
+  local yes
+  if step.when then
+    yes = s.flags[step.when]
+  elseif step.has then
+    yes = (s.bag[step.has] or 0) > 0
+  elseif step.paid then
+    yes = s.gold >= step.paid
+    if yes then s.gold = s.gold - step.paid end
+  elseif step.all then
+    yes = true
+    for _, flag in ipairs(step.all) do yes = yes and s.flags[flag] end
+  elseif step.count then
+    local n = 0
+    for _, flag in ipairs(step.count) do
+      if s.flags[flag] then n = n + 1 end
+    end
+    yes = n >= step.at
+  else
+    return nil
+  end
+  return yes and "steps" or "other"
+end
+
 local function doStep(s, step, rng, events)
   local run = s.run
-  if step.when and (step.steps or step.other) then
-    local k = s.flags[step.when] and "steps" or "other"
-    if step[k] then run.at[#run.at + 1] = { k = k, i = 1 } end
+  local fork = forkOf(s, step)
+  if fork then
+    if step[fork] then run.at[#run.at + 1] = { k = fork, i = 1 } end
   elseif step.choice then
     -- a choice can carry its own short question, so a list that comes back still has someone asking it
     if step.text then show(s, step.say, step.text, step.name) end
@@ -358,13 +447,33 @@ local function doStep(s, step, rng, events)
   elseif step.give then
     give(s, step.give, step.n)
     emit(events, "item")
+  elseif step.take then
+    take(s, step.take, step.n)
+  elseif step.leave then
+    leaveParty(s, step.leave)
+    changed(s)
+  elseif step.solo then
+    goSolo(s, step.solo)
+    changed(s)
+  elseif step.unsolo then
+    endSolo(s)
+    changed(s)
+  elseif step.dark ~= nil then
+    s.dark = step.dark or nil
+    changed(s)
+  elseif step.ending then
+    s.won, s.ended = true, step.ending
+    s.flags.cleared = true
+    run.say, run.name, run.text, run.page, run.wait = nil, nil, nil, 1, "tap"
+    run.big, run.leaveEnd = "THE END", true
+    s.dark = true
+    emit(events, "fin")
+    changed(s)
   elseif step.gold then
     s.gold = max(0, s.gold + step.gold)
     emit(events, "gold")
   elseif step.join then
-    local there = false
-    for _, member in ipairs(s.party) do there = there or member.id == step.join end
-    if not there then s.party[#s.party + 1] = part("party").new(step.join, step.lvl or 1) end
+    joinParty(s, step.join, step.lvl)
     emit(events, "join", { id = step.join })
   elseif step.heal then
     healAll(s)
@@ -376,6 +485,14 @@ local function doStep(s, step, rng, events)
     enterMap(s, w[1], w[2], w[3], w[4], events)
     run.back, run.arrived = "walk", true
     changed(s)
+  elseif step.site then -- straight in at a site's door, whoever's region it is
+    for _, site in ipairs(part("overworld").SITES or {}) do
+      if site.id == step.site then
+        enterMap(s, site.map, site.mx, site.my, site.dir, events)
+        run.back, run.arrived = "walk", true
+        changed(s)
+      end
+    end
   elseif step.world then
     toWorld(s, step.world[1], step.world[2])
     run.back, run.arrived = "world", nil
@@ -444,9 +561,23 @@ local function talkInput(s, action, events)
     emit(events, "page")
     return
   end
+  if run.leaveEnd then
+    M.afterEnd(s)
+    return
+  end
   run.wait, run.big = nil, nil
   emit(events, "page")
 end
+
+--- After the end: back to the last safe place, so the save lives on and the side stories can still be finished.
+local function afterEnd(s)
+  local spot = s.savepoint
+  s.run, s.dark = nil, nil
+  s.mode = "walk"
+  if spot then enterMap(s, spot.map, spot.x, spot.y, spot.dir, nil) end
+  changed(s)
+end
+M.afterEnd = afterEnd
 
 --- What the talk box shows now, for the view and the tests.
 function M.talk(s)
@@ -474,7 +605,8 @@ end
 -- ---------------------------------------------------------------- fights ending
 
 local function wipe(s, events)
-  s.run, s.back, s.battle, s.fight = nil, nil, nil, nil
+  s.run, s.back, s.battle, s.fight, s.dark = nil, nil, nil, nil, nil
+  endSolo(s) -- whatever they went into alone can be gone into again
   s.gold = floor(s.gold / 2)
   healAll(s)
   local at = s.savepoint
@@ -504,7 +636,7 @@ local function endFight(s, events)
     result = "won"
     healAll(s)
   end
-  s.level = s.party[1].lvl
+  s.level = heroOf(s).lvl
   if lost then
     wipe(s, events)
     return
@@ -668,25 +800,20 @@ end
 local function siteAt(s, x, y)
   local overworld = part("overworld")
   for _, site in ipairs(overworld.SITES or {}) do
-    if site.x == x and site.y == y and (not site.when or s.flags[site.when]) then return site end
+    if site.x == x and site.y == y and passes(s, site) and mapOf(site.map) then return site end -- a site with no map yet is just country
   end
   return nil
 end
 M.siteAt = siteAt
 
-local function gateAt(s, x, y)
-  for _, gate in ipairs(part("overworld").GATES or {}) do
-    if gate.x == x and gate.y == y and passes(s, gate) then return gate end
-  end
-  return nil
-end
+local function gateAt(s, x, y) return part("overworld").gateAt(x, y, s) end
 M.gateAt = gateAt
 
 --- Walking a road stops where the road bends, so a tap is all a corner costs.
 local function roadBends(s)
   local overworld = part("overworld")
   local function road(x, y)
-    local c = overworld.tileAt(x, y)
+    local c = overworld.tileAt(x, y, s)
     return c == "=" or c == "B" or c == "O"
   end
   if not road(s.wx, s.wy) then return false end
@@ -700,7 +827,7 @@ local function rollEncounter(s, rng, events)
     s.safeSteps = s.safeSteps - 1
     return
   end
-  local region = part("overworld").region(s.wx, s.wy)
+  local region = part("overworld").region(s.wx, s.wy, s)
   if not region then return end
   local table_ = part("enemies").FIELD[region]
   if not table_ or #table_ == 0 then return end
@@ -715,12 +842,12 @@ local function worldStep(s, rng, events)
   local x, y = s.wx + d[1], s.wy + d[2]
   local gate = gateAt(s, x, y)
   if gate then
-    s.heading = nil
+    s.heading, s.route = nil, nil
     startScript(s, gate.script)
     return
   end
-  if not overworld.walkable(x, y) then
-    s.heading = nil
+  if not overworld.walkable(x, y, s) then
+    s.heading, s.route = nil, nil
     emit(events, "bump")
     changed(s)
     return
@@ -730,18 +857,37 @@ local function worldStep(s, rng, events)
   changed(s)
   local site = siteAt(s, x, y)
   if site then
-    s.heading = nil
+    s.heading, s.route = nil, nil
     s.mode = "walk"
+    s.visited = s.visited or {}
+    s.visited[site.id] = true
     enterMap(s, site.map, site.mx, site.my, site.dir, events)
     emit(events, "door")
     checkStep(s)
     return
   end
   rollEncounter(s, rng, events)
-  if s.mode == "world" and roadBends(s) then s.heading = nil end
+  if s.mode == "world" and not s.route and roadBends(s) then s.heading = nil end
+end
+
+--- The next way along a route, or nil at the end of it. A route survives a fight, so the party carries on afterwards.
+local function routeWay(s)
+  local route = s.route
+  local way = route and tonumber(route.ways:sub(route.i, route.i))
+  if way then
+    route.i = route.i + 1
+  else
+    s.route = nil
+  end
+  return way
 end
 
 local function worldTick(s, rng, events)
+  if s.route and not s.heading then
+    s.heading = routeWay(s)
+    s.walkClock = WORLD_TICKS_A_TILE - 1
+    changed(s)
+  end
   if not s.heading then
     s.walkClock = 0
     return
@@ -750,17 +896,102 @@ local function worldTick(s, rng, events)
   if s.walkClock >= WORLD_TICKS_A_TILE then
     s.walkClock = 0
     worldStep(s, rng, events)
+    if s.mode == "world" and s.route then
+      s.heading = routeWay(s)
+      if not s.heading then changed(s) end
+    end
   end
 end
 
+--- Flood the overworld from the party: for each tile reached, the way the party came into it. Other sites count as walls unless
+-- throughSites, or a route past a town would stop at the town. The target can always be walked onto, so a tap on a gate rings it.
+local function floodWorld(s, tx, ty, throughSites)
+  local overworld = part("overworld")
+  local sites = {}
+  if not throughSites then
+    for _, site in ipairs(overworld.SITES or {}) do
+      if passes(s, site) then sites[site.y * 1000 + site.x] = true end
+    end
+  end
+  local start = s.wy * 1000 + s.wx
+  local from, order, head = { [start] = 0 }, { start }, 1
+  while order[head] do
+    local key = order[head]
+    head = head + 1
+    local x, y = key % 1000, floor(key / 1000)
+    if x == tx and y == ty then break end
+    for way, d in ipairs(DIRS) do
+      local nx, ny = x + d[1], y + d[2]
+      local nextKey = ny * 1000 + nx
+      if not from[nextKey] then
+        local isTarget = nx == tx and ny == ty
+        local open = (isTarget and gateAt(s, nx, ny) ~= nil)
+          or (overworld.walkable(nx, ny, s) and not gateAt(s, nx, ny) and (isTarget or not sites[nextKey]))
+        if open then
+          from[nextKey] = way
+          order[#order + 1] = nextKey
+        end
+      end
+    end
+  end
+  return from, order
+end
+
+--- The ways from the party to a tile the flood reached, as a string of facings.
+local function waysTo(s, from, tx, ty)
+  local out, x, y = {}, tx, ty
+  while x ~= s.wx or y ~= s.wy do
+    local way = from[y * 1000 + x]
+    table.insert(out, 1, tostring(way))
+    x, y = x - DIRS[way][1], y - DIRS[way][2]
+  end
+  return table.concat(out)
+end
+
+--- A tap on the map: walk there, round anything in the way, or as near as can be got if there is no way. A tap on the party stops it.
+local function planRoute(s, tx, ty, events)
+  s.heading = nil
+  if tx == s.wx and ty == s.wy then
+    s.route = nil
+    changed(s)
+    return
+  end
+  local from, order = floodWorld(s, tx, ty, false)
+  if not from[ty * 1000 + tx] then
+    local through, wider = floodWorld(s, tx, ty, true) -- the only way may be through a town
+    if through[ty * 1000 + tx] then from, order = through, wider end
+  end
+  local gx, gy = tx, ty
+  if not from[ty * 1000 + tx] then
+    local best
+    for _, key in ipairs(order) do
+      local x, y = key % 1000, floor(key / 1000)
+      local off = abs(x - tx) + abs(y - ty)
+      if not best or off < best then best, gx, gy = off, x, y end
+    end
+  end
+  local ways = waysTo(s, from, gx, gy)
+  if ways == "" then
+    s.route, s.msg = nil, "There's no way there from here."
+    emit(events, "bump")
+  else
+    s.route, s.msg = { ways = ways, i = 1, x = gx, y = gy }, ""
+    emit(events, "turn")
+  end
+  changed(s)
+end
+
 local function worldInput(s, action, events)
-  if action.kind == "turn" then
+  if action.kind == "goto" then
+    planRoute(s, action.x, action.y, events)
+  elseif action.kind == "turn" then
+    s.route = nil
     s.heading, s.lastWay = WAYS[action.dir], WAYS[action.dir]
     s.walkClock = WORLD_TICKS_A_TILE - 1 -- the first tile answers the tap
     emit(events, "turn")
   elseif action.kind == "act" then
     if s.heading then
-      s.heading = nil
+      s.heading, s.route = nil, nil
     elseif s.lastWay then -- stopped: on the way they were going
       s.heading = s.lastWay
       s.walkClock = WORLD_TICKS_A_TILE - 1
@@ -798,7 +1029,8 @@ local function bagRows(s)
   local rows = {}
   for _, id in ipairs(party.ITEM_ORDER) do
     if s.bag[id] then
-      rows[#rows + 1] = { label = itemName(id) .. " x" .. s.bag[id], item = id, field = party.ITEMS[id].field == true }
+      local def = party.ITEMS[id]
+      rows[#rows + 1] = { label = itemName(id) .. " x" .. s.bag[id], item = id, field = def.field == true, key = def.key == true }
     end
   end
   return rows
@@ -809,14 +1041,19 @@ local function slotOf(gearId)
   return def and def.slot
 end
 
---- The gear in the bag, weapons first. The sort matters: pairs has no order, and a tap must mean the same row twice.
+local SLOT_ORDER = { weapon = 1, armour = 2, accessory = 3 }
+
+--- The gear in the bag that this person can wear, weapons first. The sort matters: pairs has no order, and a tap must mean the
+-- same row twice.
 local function gearRows(s)
+  local partyData = part("party")
+  local member = s.menu and s.menu.who and s.party[s.menu.who]
   local ids = {}
   for id in pairs(s.bag) do
-    if slotOf(id) then ids[#ids + 1] = id end
+    if slotOf(id) and (not member or partyData.canWear(member, id)) then ids[#ids + 1] = id end
   end
   table.sort(ids, function(a, b)
-    if slotOf(a) ~= slotOf(b) then return slotOf(a) == "weapon" end
+    if slotOf(a) ~= slotOf(b) then return SLOT_ORDER[slotOf(a)] < SLOT_ORDER[slotOf(b)] end
     return a < b
   end)
   local rows = {}
@@ -826,25 +1063,64 @@ local function gearRows(s)
   return rows
 end
 
+--- Who fights and who waits. Tap one, then tap who they change places with.
+local function partyRows(s)
+  local rows = memberRows(s)
+  local fighting = part("party").IN_BATTLE
+  for i, row in ipairs(rows) do
+    row.label = (i <= fighting and "" or "(WAITS) ") .. row.label
+    row.swap = true
+    row.picked = s.menu.swap == i
+  end
+  return rows
+end
+
+--- Everywhere the party has been that's still there.
+local function travelRows(s)
+  local rows = {}
+  for _, site in ipairs(part("overworld").SITES or {}) do
+    if s.visited and s.visited[site.id] and passes(s, site) then
+      rows[#rows + 1] = { label = site.name, site = site.id, x = site.x, y = site.y }
+    end
+  end
+  return rows
+end
+
+--- The whole list a page shows, before it's cut into pages.
+local function listFor(s, page)
+  if page == "items" then return bagRows(s) end
+  if page == "equip" then return gearRows(s) end
+  if page == "travel" then return travelRows(s) end
+  return memberRows(s)
+end
+
 --- The rows of the menu page that's open. Each is a table with label and whatever a pick needs.
 function M.menuRows(s)
   local menu = s.menu
   if not menu then return {} end
   if menu.page == "main" then
-    return { { label = "ITEMS", go = "items" }, { label = "GEAR", go = "gear" }, { label = "STATUS", go = "status" }, { label = "CLOSE", close = true } }
+    local rows = { { label = "ITEMS", go = "items" }, { label = "GEAR", go = "gear" }, { label = "STATUS", go = "status" } }
+    if #s.party > 1 then rows[#rows + 1] = { label = "PARTY", go = "party" } end
+    if s.flags.can_travel and s.back == "world" then rows[#rows + 1] = { label = "TRAVEL", go = "travel" } end
+    rows[#rows + 1] = { label = "CLOSE", close = true }
+    return rows
   elseif menu.page == "items" then
     return pageOf(bagRows(s), menu.top)
   elseif menu.page == "useon" or menu.page == "gear" or menu.page == "status" then
-    return memberRows(s)
+    return pageOf(memberRows(s), menu.top)
+  elseif menu.page == "party" then
+    return partyRows(s)
   elseif menu.page == "equip" then
     return pageOf(gearRows(s), menu.top)
+  elseif menu.page == "travel" then
+    return pageOf(travelRows(s), menu.top)
   end
   return {}
 end
 
 --- Use one item on a member, if it would do anything. Returns a line for the wall.
 local function useItem(s, id, member)
-  local hp, mp = part("party").applyItem(member, id)
+  local hp, mp = part("party").useField(s.party, member, id)
   if hp == 0 and mp == 0 then return "It would do nothing." end
   take(s, id)
   return "Used " .. itemName(id) .. "."
@@ -874,13 +1150,27 @@ local function menuPick(s, i, events)
   if row.close then
     closeMenu(s)
   elseif row.more then
-    local list = menu.page == "items" and bagRows(s) or gearRows(s)
     menu.top = menu.top + MENU_ROWS - 1
-    if menu.top >= #list then menu.top = 0 end
+    if menu.top >= #listFor(s, menu.page) then menu.top = 0 end
   elseif row.go then
     menu.page, menu.top = row.go, 0
+  elseif row.swap then
+    if not menu.swap then
+      menu.swap = i
+      menu.line = "Tap who they change places with."
+    else
+      s.party[menu.swap], s.party[i] = s.party[i], s.party[menu.swap]
+      menu.swap, menu.line = nil, nil
+    end
+  elseif row.site then
+    closeMenu(s)
+    toWorld(s, row.x, row.y)
+    s.safeSteps = ENCOUNTER_GRACE
+    s.fx.fade = FADE_TICKS
   elseif row.item then
-    if row.field then
+    if row.key then
+      menu.line = "You'll know when it's needed."
+    elseif row.field then
       menu.item = row.item
       menu.page = "useon"
     else
@@ -906,7 +1196,7 @@ end
 
 local function menuBack(s)
   local menu = s.menu
-  menu.line = nil
+  menu.line, menu.swap = nil, nil
   if menu.page == "main" then
     closeMenu(s)
   elseif menu.page == "useon" then
@@ -1008,7 +1298,7 @@ end
 
 -- ---------------------------------------------------------------- the contract
 
-local VERSION = 2
+local VERSION = 3
 
 --- A save from before the script was last rewritten. A run in progress holds its place by step number, so it can't carry
 -- over: the conversation is dropped, and whatever started it can be had again. Anything in the world that moved is put right.
@@ -1026,6 +1316,9 @@ local function upgrade(s)
     s.queue = {}
   end
   if s.flags.foreman_down or s.opened["mine_3:step:10,7"] then s.flags.saw_shift = true end
+  -- the slice ended on TO BE CONTINUED, and now it does
+  s.fin = nil
+  s.away, s.visited = s.away or {}, s.visited or {}
   local spot = s.savepoint
   if s.mode == "walk" and spot and part("world").solid(s.map, s.x, s.y, s) then
     s.map, s.x, s.y, s.dir = spot.map, spot.x, spot.y, spot.dir
@@ -1043,7 +1336,7 @@ function M.new(opts)
     wx = 10, wy = 10, heading = nil, walkClock = 0, safeSteps = ENCOUNTER_GRACE,
     party = { part("party").new("hero", 1) },
     bag = { potion = 3 }, gold = 0,
-    flags = {}, opened = {}, beaten = {}, foes = {},
+    flags = {}, opened = {}, beaten = {}, foes = {}, away = {}, visited = {},
     run = nil, battle = nil, menu = nil, shop = nil, fight = nil,
     fx = { flash = 0, hurt = 0, fade = 0 },
     hints = {},
@@ -1066,7 +1359,7 @@ function M.input(s, action)
     return
   end
   if #s.queue >= QUEUE_LONGEST then return end
-  s.queue[#s.queue + 1] = { kind = action.kind, dir = action.dir, i = action.i }
+  s.queue[#s.queue + 1] = { kind = action.kind, dir = action.dir, i = action.i, x = action.x, y = action.y }
 end
 
 local function fxTick(s)
@@ -1122,6 +1415,7 @@ end
 local BOT_HEAL_BELOW = 0.5     -- a share of HP
 local BOT_POTIONS = 8          -- how many it wants to carry
 local BOT_FOR_BOSS = 5         -- the level it wants before it goes down for good
+local BOT_STALL = 1500         -- ticks with nothing new before it starts trying other answers
 
 local function botMem(s)
   local mem = s.botMem
@@ -1132,8 +1426,10 @@ local function botMem(s)
   local sig = #s.party
   for _ in pairs(s.flags) do sig = sig + 1 end
   if sig ~= mem.sig then
-    mem.sig, mem.tried = sig, {}
+    mem.sig, mem.tried, mem.changedAt = sig, {}, s.frame
   end
+  -- a door shut last time may be open now: nothing it tried stays tried for long
+  if s.frame - (mem.freshAt or 0) > BOT_STALL * 2 then mem.tried, mem.freshAt = {}, s.frame end
   return mem
 end
 
@@ -1176,7 +1472,13 @@ local function botTargets(s, mem)
   local function add(list, x, y, useAct, key)
     if not mem.tried[key] then list[#list + 1] = { x = x, y = y, act = useAct, key = key } end
   end
-  local steps, people, chests, foes, newExits, oldExits = {}, {}, {}, {}, {}, {}
+  local wanted, steps, people, chests, foes, newExits, oldExits = {}, {}, {}, {}, {}, {}, {}
+  -- the story guide first: what a player is told to do is what the bot does, so a guide that lies shows up as a bot that stalls
+  local goal = M.goal(s)
+  if goal and goal.x then
+    local talks = npcAt(s, goal.x, goal.y) or chestAt(s, goal.x, goal.y)
+    add(wanted, goal.x, goal.y, talks and true or false, "goal:" .. s.map .. ":" .. goal.x .. "," .. goal.y)
+  end
   for _, step in ipairs(map.steps or {}) do
     local key = s.map .. ":step:" .. step.x .. "," .. step.y
     if passes(s, step) and not (step.once and s.opened[key]) then add(steps, step.x, step.y, false, key) end
@@ -1187,8 +1489,11 @@ local function botTargets(s, mem)
   for _, chest in ipairs(map.chests or {}) do
     if chestAt(s, chest.x, chest.y) then add(chests, chest.x, chest.y, true, "chest:" .. s.map .. ":" .. chest.id) end
   end
-  if s.level < BOT_FOR_BOSS then
-    for _, f in ipairs(s.foes or {}) do add(foes, f.x, f.y, true, "foe:" .. s.map .. ":" .. f.id) end
+  local enemies = part("enemies")
+  for _, f in ipairs(s.foes or {}) do
+    local enc = enemies.ENCOUNTERS[foeDef(s.map, f.id).enc]
+    local def = enc and enemies.FOES[enc.foes[1]]
+    if s.level < max(def and def.tier and def.tier + 1 or 0, BOT_FOR_BOSS) then add(foes, f.x, f.y, true, "foe:" .. s.map .. ":" .. f.id) end
   end
   for _, e in ipairs(map.exits or {}) do
     if passes(s, e) then
@@ -1196,7 +1501,7 @@ local function botTargets(s, mem)
       add(mem.seen[to] and oldExits or newExits, e.x, e.y, false, "exit:" .. s.map .. ":" .. e.x .. "," .. e.y)
     end
   end
-  return { steps, people, chests, foes, newExits, oldExits }
+  return { foes, wanted, steps, people, chests, newExits, oldExits } -- anything it should fight comes first: it needs the levels
 end
 
 local function botOnFoot(s, mem)
@@ -1237,6 +1542,7 @@ end
 --- The way from here to a tile, as a string of facings, or nil. Long enough to be worth keeping between ticks.
 local function worldPath(s, tx, ty)
   local overworld = part("overworld")
+  local function passable(x, y) return overworld.walkable(x, y, s) and not gateAt(s, x, y) end
   local from = { [s.wy * 1000 + s.wx] = 0 }
   local order = { { s.wx, s.wy } }
   local head = 1
@@ -1254,7 +1560,7 @@ local function worldPath(s, tx, ty)
     end
     for way, d in ipairs(DIRS) do
       local x, y = at[1] + d[1], at[2] + d[2]
-      if not from[y * 1000 + x] and overworld.walkable(x, y) then
+      if not from[y * 1000 + x] and passable(x, y) then
         from[y * 1000 + x] = way
         order[#order + 1] = { x, y }
       end
@@ -1280,10 +1586,12 @@ local function botOnWorld(s, mem)
     mem.path, path = nil, nil
   end
   if not path then
+    local goal = M.goal(s)
     local sites = {}
     for _, site in ipairs(part("overworld").SITES or {}) do
       if siteAt(s, site.x, site.y) and not (site.x == s.wx and site.y == s.wy) then
         local rank = (mem.seen[site.map] and 2 or 0) + (mem.tried["site:" .. site.id] and 1 or 0)
+        if goal and goal.x == site.x and goal.y == site.y then rank = -1 end
         sites[#sites + 1] = { site = site, rank = rank }
       end
     end
@@ -1291,8 +1599,11 @@ local function botOnWorld(s, mem)
       if a.rank ~= b.rank then return a.rank < b.rank end
       return a.site.id < b.site.id
     end)
-    local pick = sites[1]
-    local ways = pick and worldPath(s, pick.site.x, pick.site.y)
+    local ways
+    for _, pick in ipairs(sites) do -- the Empire is walled off, so some sites can't be walked to from here
+      ways = worldPath(s, pick.site.x, pick.site.y)
+      if ways and ways ~= "" then break end
+    end
     if not ways or ways == "" then return nil end
     path = { ways = ways, i = 1, x = s.wx, y = s.wy }
     local way = tonumber(ways:sub(1, 1))
@@ -1315,10 +1626,6 @@ end
 --- A piece in the bag better than what someone wears: member index and gear id.
 local function betterGear(s)
   local party = part("party")
-  local function power(id)
-    local def = party.GEAR[id]
-    return def and ((def.atk or 0) + (def.def or 0)) or 0
-  end
   local ids = {}
   for id in pairs(s.bag) do
     if party.GEAR[id] then ids[#ids + 1] = id end
@@ -1326,8 +1633,8 @@ local function betterGear(s)
   table.sort(ids)
   for i, member in ipairs(s.party) do
     for _, id in ipairs(ids) do
-      local slot = party.GEAR[id].slot
-      if power(id) > power(member[slot]) then return i, id end
+      local worn = member[party.GEAR[id].slot]
+      if party.canWear(member, id) and (not worn or party.gearScore(member, id) > party.gearScore(member, worn)) then return i, id end
     end
   end
   return nil
@@ -1340,17 +1647,27 @@ local function rowWhere(rows, field, value)
   return nil
 end
 
+local BOT_HEALS = { "xpotion", "hipotion", "potion" } -- best first
+
+local function botHeal(s)
+  for _, id in ipairs(BOT_HEALS) do
+    if (s.bag[id] or 0) > 0 then return id end
+  end
+  return nil
+end
+
 local function botMenu(s)
   local menu = s.menu
-  local hurt = (s.bag.potion or 0) > 0 and hurtMember(s)
+  local heal = botHeal(s)
+  local hurt = heal and hurtMember(s)
   local who, gear = betterGear(s)
   local rows = M.menuRows(s)
   if menu.page == "main" then
     if hurt then return { kind = "pick", i = 1 } end
     if who then return { kind = "pick", i = 2 } end
-    return { kind = "pick", i = 4 }
+    return { kind = "pick", i = rowWhere(rows, "close", true) }
   elseif menu.page == "items" then
-    local i = hurt and (rowWhere(rows, "item", "potion") or rowWhere(rows, "more", true))
+    local i = hurt and (rowWhere(rows, "item", heal) or rowWhere(rows, "more", true))
     return i and { kind = "pick", i = i } or { kind = "back" }
   elseif menu.page == "useon" then
     return hurt and { kind = "pick", i = hurt } or { kind = "back" }
@@ -1369,11 +1686,15 @@ local function botShop(s)
     if row.afford then
       local def = party.GEAR[row.ware]
       if def and not s.bag[row.ware] then
-        local worn = party.GEAR[s.party[1][def.slot]]
-        if (def.atk or 0) + (def.def or 0) > (worn and (worn.atk or 0) + (worn.def or 0) or 0) then
-          return { kind = "pick", i = i }
+        for _, member in ipairs(s.party) do
+          local worn = member[def.slot]
+          if party.canWear(member, row.ware) and (not worn or party.gearScore(member, row.ware) > party.gearScore(member, worn)) then
+            return { kind = "pick", i = i }
+          end
         end
-      elseif row.ware == "potion" and (s.bag.potion or 0) < BOT_POTIONS then
+      elseif (row.ware == "potion" or row.ware == "hipotion" or row.ware == "xpotion") and (s.bag[row.ware] or 0) < BOT_POTIONS then
+        return { kind = "pick", i = i }
+      elseif row.ware == "feather" and (s.bag.feather or 0) < 3 then
         return { kind = "pick", i = i }
       end
     end
@@ -1396,6 +1717,14 @@ function M.bot(s, rng)
     if run.wait == "pick" then
       -- the first option that moves on: a topic comes back to the list, so it would never finish
       local step = choiceStep(run)
+      local mem = botMem(s)
+      if s.frame - (mem.changedAt or 0) > BOT_STALL and step and step.choice then
+        -- nothing has moved for a long time, so this may be a puzzle: try the answers in turn
+        mem.picks = mem.picks or {}
+        local key = tostring(run.id) .. ":" .. #run.at .. ":" .. run.at[#run.at].i
+        mem.picks[key] = (mem.picks[key] or 0) + 1
+        return { kind = "pick", i = (mem.picks[key] - 1) % #step.choice + 1 }
+      end
       for i, option in ipairs(step and step.choice or {}) do
         if not option.again then return { kind = "pick", i = i } end
       end
@@ -1407,9 +1736,8 @@ function M.bot(s, rng)
   elseif mode == "shop" then
     return botShop(s)
   end
-  if s.fin then return nil end
   local mem = botMem(s)
-  if hurtMember(s) and (s.bag.potion or 0) > 0 or betterGear(s) then
+  if hurtMember(s) and botHeal(s) or betterGear(s) then
     if mode == "world" or not M.target(s) then return { kind = "menu" } end
   end
   if mode == "world" then return botOnWorld(s, mem) end
@@ -1429,6 +1757,8 @@ local function currentGoal(s)
   return nil
 end
 
+M.currentGoal = currentGoal
+
 --- Which ground the player is on: a menu, a fight or speech is on top of one, and goes back to it.
 local function groundOf(s)
   local mode = s.mode
@@ -1437,18 +1767,62 @@ local function groundOf(s)
   return mode == "world" and "world" or "walk"
 end
 
+-- The way only changes with the flags, so what's worked out from the map is kept until they do.
+local guideCache = { owner = nil, flags = -1, hops = {}, hopCount = 0, land = {}, lands = 0 }
+local HOPS_KEPT = 400
+
+local function freshCache(s)
+  local flagCount = 0
+  for _ in pairs(s.flags) do flagCount = flagCount + 1 end
+  if guideCache.owner ~= s or guideCache.flags ~= flagCount or guideCache.hopCount > HOPS_KEPT then
+    guideCache.owner, guideCache.flags, guideCache.hops, guideCache.hopCount = s, flagCount, {}, 0
+    guideCache.land, guideCache.lands = {}, 0
+  end
+  return guideCache
+end
+
+--- Which piece of land a tile is on. The wall and closed gates cut the map into pieces, and a place across the wall can only be
+-- reached through whatever joins them, so to the guide each piece is a place of its own, named "world1", "world2" and so on.
+local function landOf(s, x, y)
+  local cache = freshCache(s)
+  local overworld = part("overworld")
+  local key = y * 1000 + x
+  if cache.land[key] then return "world" .. cache.land[key] end
+  cache.lands = cache.lands + 1
+  local id = cache.lands
+  cache.land[key] = id
+  local order, head = { key }, 1
+  while order[head] do
+    local at = order[head]
+    head = head + 1
+    local ax, ay = at % 1000, floor(at / 1000)
+    for _, d in ipairs(DIRS) do
+      local nx, ny = ax + d[1], ay + d[2]
+      local nextKey = ny * 1000 + nx
+      if not cache.land[nextKey] and overworld.walkable(nx, ny, s) and not gateAt(s, nx, ny) then
+        cache.land[nextKey] = id
+        order[#order + 1] = nextKey
+      end
+    end
+  end
+  return "world" .. id
+end
+M.landOf = landOf
+
 --- The ways out of a place, as { to, x, y }. Only ones open now: a closed exit or a site not yet known leads nowhere.
 local function linksFrom(s, place)
   local links = {}
-  if place == "world" then
+  if place:sub(1, 5) == "world" then
     for _, site in ipairs(part("overworld").SITES or {}) do
-      if siteAt(s, site.x, site.y) then links[#links + 1] = { to = site.map, x = site.x, y = site.y } end
+      if siteAt(s, site.x, site.y) and landOf(s, site.x, site.y) == place then
+        links[#links + 1] = { to = site.map, x = site.x, y = site.y }
+      end
     end
   else
     local map = mapOf(place)
     for _, e in ipairs(map and map.exits or {}) do
       if passes(s, e) and not e.script then
-        links[#links + 1] = { to = e.world and "world" or e.map, x = e.x, y = e.y }
+        links[#links + 1] = { to = e.world and landOf(s, e.world[1], e.world[2]) or e.map, x = e.x, y = e.y }
       end
     end
   end
@@ -1456,7 +1830,7 @@ local function linksFrom(s, place)
 end
 
 --- How many hops from one place to another, not going back through avoid, or nil if there's no way.
-local function hopsBetween(s, from, target, avoid)
+local function countHops(s, from, target, avoid)
   local hops = { [from] = 0 }
   if avoid then hops[avoid] = -1 end
   local order = { from }
@@ -1473,6 +1847,19 @@ local function hopsBetween(s, from, target, avoid)
     end
   end
   return nil
+end
+
+--- The whole game is a big graph, and the guide is asked on every step of the overworld.
+local function hopsBetween(s, from, target, avoid)
+  local cache = freshCache(s)
+  local key = from .. "|" .. target .. "|" .. tostring(avoid)
+  local known = cache.hops[key]
+  if known == nil then
+    known = countHops(s, from, target, avoid) or false
+    cache.hops[key] = known
+    cache.hopCount = cache.hopCount + 1
+  end
+  return known or nil
 end
 
 --- Steps to stand beside a square on this map, or on it, or nil if it can't be walked to.
@@ -1509,11 +1896,12 @@ function M.goal(s)
   if not goal then return nil end
   local out = { text = goal.text }
   local onWorld = groundOf(s) == "world"
+  local here = onWorld and landOf(s, s.wx, s.wy)
   local target, tx, ty = goal.map, goal.x, goal.y
   if goal.site then
     for _, site in ipairs(part("overworld").SITES or {}) do
       if site.id == goal.site then
-        if onWorld then
+        if onWorld and landOf(s, site.x, site.y) == here then
           out.x, out.y = site.x, site.y
           return out
         end
@@ -1528,7 +1916,7 @@ function M.goal(s)
   end
   local link
   if onWorld then
-    link = firstLink(s, "world", target, function(l) return abs(l.x - s.wx) + abs(l.y - s.wy) end)
+    link = firstLink(s, here, target, function(l) return abs(l.x - s.wx) + abs(l.y - s.wy) end)
   elseif mapOf(s.map) then
     local dist = botFlood(s)
     link = firstLink(s, s.map, target, function(l) return stepsTo(dist, l.x, l.y) end)

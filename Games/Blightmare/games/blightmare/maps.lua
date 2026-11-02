@@ -42,14 +42,14 @@ M.DATA.scythebreak = {
     -- morning
     { id = "nan", x = 5, y = 3, sprite = "villager", script = "talk_nan", unless = "horn" },
     { id = "wick", x = 7, y = 7, sprite = "villager", script = "talk_wick", unless = "horn" },
-    { id = "kid", x = 11, y = 3, sprite = "child", script = "talk_kid", unless = "lockdown" },
-    { id = "clerk", x = 12, y = 10, sprite = "villager", script = "talk_clerk", unless = "lockdown" },
+    { id = "kid", x = 11, y = 3, sprite = "child", script = "talk_kid", unless = "horn" },
+    { id = "clerk", x = 12, y = 10, sprite = "villager", script = "talk_clerk", unless = "horn" },
     { id = "widow", x = 4, y = 17, sprite = "villager", script = "talk_widow", unless = "tested" },
     { id = "watch", x = 4, y = 11, sprite = "soldier", script = "talk_watch", unless = "lockdown" },
-    { id = "doorman", x = 16, y = 9, sprite = "guard", script = "talk_doorman", unless = "lockdown" },
+    { id = "doorman", x = 16, y = 9, sprite = "guard", script = "talk_doorman", unless = "horn" },
     { id = "gateman", x = 22, y = 11, sprite = "orderly", script = "talk_gateman", unless = "gate_won" },
-    { id = "lioth", x = 10, y = 17, sprite = "villager", script = "talk_lioth", unless = "lockdown" },
-    { id = "satchel", x = 15, y = 12, sprite = "guard", script = "talk_satchel", unless = "lockdown" },
+    { id = "lioth", x = 10, y = 17, sprite = "villager", script = "talk_lioth", unless = "horn" },
+    { id = "satchel", x = 15, y = 12, sprite = "guard", script = "talk_satchel", unless = "horn" },
     -- what's left of Wick
     { id = "wick_changed", x = 9, y = 11, sprite = "blighted", script = "scene_wick", when = "breach", unless = "wick_down" },
     -- the queue for the draught
@@ -124,7 +124,7 @@ M.DATA.orrenshire = {
     { id = "pip", x = 4, y = 17, sprite = "child", script = "talk_pip" },
     { id = "hatter", x = 14, y = 10, sprite = "gnome", script = "talk_hatter" },
     { id = "silt", x = 12, y = 13, sprite = "frogman", script = "talk_silt" },
-    { id = "bascombe", x = 20, y = 11, sprite = "guard", script = "talk_bascombe" },
+    { id = "bascombe", x = 12, y = 17, sprite = "guard", script = "talk_bascombe" }, -- his own office: never in the Mayor's hall, where she says what she says
     { id = "dunnock_up", x = 12, y = 11, sprite = "miner", script = "talk_dunnock_up", when = "freed_dunnock" },
   },
   steps = {
@@ -295,5 +295,9 @@ M.DATA.mine_3 = {
     { x = 2, y = 2, map = "mine_2", mx = 19, my = 2, dir = 4 },
   },
 }
+
+for _, region in ipairs(require("games.blightmare.content").regions()) do
+  for id, map in pairs(region.maps or {}) do M.DATA[id] = map end
+end
 
 return M

@@ -30,7 +30,13 @@ local function drawGround(L, s, ground)
     if s.msg ~= "" then ui.small(" " .. s.msg .. " ", floor(L.W / 2), L.statusY, C.text, C.bg, "center", L.W - 4) end
     if ground == "walk" then base.drawMiddle(L, C.text) end
     local left = s.hints[ground]
-    if type(left) == "number" and left > 0 then base.drawSplit(L.W, L.H, ground == "walk" and "ACT" or "STOP") end
+    if type(left) == "number" and left > 0 then
+      if ground == "walk" then
+        base.drawSplit(L.W, L.H, "ACT")
+      else
+        ui.small(" Tap where you want to go ", floor(L.W / 2), 2, C.text, C.bg, "center", L.W - 4)
+      end
+    end
   end
 end
 
@@ -45,7 +51,7 @@ local function paint(L, s)
   else
     local run = s.run
     drawGround(L, s, mode == "talk" and run and run.back or mode)
-    if s.fx.fade > 0 then ui.fill(0, 0, L.W, L.H, C.bg) end
+    if s.fx.fade > 0 or s.dark then ui.fill(0, 0, L.W, L.H, C.bg) end
     if mode == "talk" then part("view_talk").draw(L, s) end
   end
 end
@@ -85,6 +91,10 @@ function view.actionAt(L, s, px, py)
   if mode == "menu" or mode == "shop" then return part("view_menu").actionAt(L, s, px, py) end
   if mode == "talk" then return part("view_talk").actionAt(L, s, px, py) end
   if py >= part("view_world").HUD_Y then return { kind = "menu" } end -- the info bar along the bottom
+  if mode == "world" then
+    local x, y = part("view_world").worldTile(L, s, px, py)
+    return { kind = "goto", x = x, y = y }
+  end
   if base.inMiddle(L, px, py) then return { kind = "act" } end
   return base.splitAction(L, px, py)
 end
@@ -102,6 +112,13 @@ local FAMILY = {
   doctor = "staff", blighted = "blighted", miner = "blighted", foreman = "boss",
 }
 
+--- A region's foe names its own family.
+local function familyOf(id)
+  if FAMILY[id] then return FAMILY[id] end
+  local def = id and part("enemies").FOES[id]
+  return def and def.family
+end
+
 -- What a script's { sfx = name } plays. A name not here plays the plain tap sound rather than nothing.
 local SCRIPTED = { hit = "sword_hit", door = "door_open", horn = "horn", thud = "crush", coin = "coin" }
 
@@ -114,11 +131,11 @@ local SFX = {
   focus = "powerup", cure = "heal", status = "curse", telegraph = "telegraph", phase = "telegraph",
   cavein = "cave_in", fled = "flee", levelup = "level_up", win = "win_big", lose = "lose",
   hit = function(ev, app)
-    app.audio.later(base.monster(FAMILY[ev.id], "hurt"), 90)
+    app.audio.later(base.monster(familyOf(ev.id), "hurt"), 90)
     return "sword_hit"
   end,
-  foeStrike = function(ev) return base.monster(FAMILY[ev.id], "attack") end,
-  kill = function(ev) return base.monster(FAMILY[ev.id], "die") end,
+  foeStrike = function(ev) return base.monster(familyOf(ev.id), "attack") end,
+  kill = function(ev) return base.monster(familyOf(ev.id), "die") end,
   sfx = function(ev) return SCRIPTED[ev.name] or "ui_tap" end, -- a script's { sfx = name }
 }
 
@@ -156,7 +173,7 @@ return base.fill({
     "",
     "The middle of the wall, between the four marks, is ACT. It talks, opens doors and chests, and starts a fight with what's ahead. With nothing ahead it walks forward. Tap the bar along the bottom for the menu: items, gear and how everyone is doing.",
     "",
-    "On the road, tap a side and the party walks that way until something stops them. The middle stops them, and sets them walking again. The bar along the bottom opens the menu here too.",
+    "On the map, tap anywhere and the party finds its own way there, round mountains and water. Tap the party to stop. Tap a town or dungeon to walk to it and go in. The bar along the bottom opens the menu here too.",
     "",
     "When someone is talking, tap anywhere to go on. A question waits for a tap on the answer.",
     "",

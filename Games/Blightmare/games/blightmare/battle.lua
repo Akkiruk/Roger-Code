@@ -18,7 +18,11 @@ M.SLEEP_TICKS = 45        -- about five seconds, or until something hits them
 M.POISON_EVERY = 25       -- a sting about every three seconds of running time
 M.POISON_SHARE = 16       -- each one takes this fraction of max HP, and never the last point
 M.NIGHTMARE_TURNS = 3
-M.FOCUS_TIMES = 3
+M.THRALL_TURNS = 5        -- thrall and tadpole wear off at last, so someone alone can't be stuck for good
+M.BLIND_TICKS = 100       -- about twelve seconds
+M.SILENCE_TICKS = 100
+M.DOOM_TICKS = 125        -- about fifteen seconds to cure it
+M.BREAK_SHARE = 15        -- a hit of this percent of max HP breaks a thrall or a tadpole
 M.GUARD_DIVIDE = 2
 
 local BEAT = 5            -- ticks an action stays on the wall before time moves on
@@ -27,12 +31,21 @@ local SPOILS_TICKS = 40   -- the end card goes by itself
 local SPOILS_MIN = 6      -- and a tap can't skip it before it has been seen
 local FLOAT_TICKS = 8
 local HIT_PERCENT = 95
+local BLIND_HIT_PERCENT = 35
 local CRIT_ONE_IN = 16
-local BLOOD_SHARE = 6     -- BLOOD costs this fraction of max HP
 local STEAL_PERCENT = 55
+local STEAL_BOSS_PERCENT = 35
+local OATH_PERCENT = 150  -- RED OATH's blows
+local MAX_STANDING = 4    -- no boss calls a helper past this many foes
 local BLINK_TICKS = 3     -- how often a blinking ring repaints
+local LIST_ROWS = 6       -- what the screen can show of a list at once
 
-local STATUS = { "poison", "sleep", "nightmare" } -- a fixed order, because pairs isn't one
+-- a fixed order, because pairs isn't one. Each lasts this long, in the unit's own count.
+local STATUS = { "poison", "sleep", "nightmare", "thrall", "tadpole", "blind", "silence", "doom" }
+local LASTS = {
+  sleep = M.SLEEP_TICKS, nightmare = M.NIGHTMARE_TURNS, thrall = M.THRALL_TURNS, tadpole = M.THRALL_TURNS, blind = M.BLIND_TICKS,
+  silence = M.SILENCE_TICKS, doom = M.DOOM_TICKS,
+}
 
 -- ---------------------------------------------------------------- units
 
@@ -55,16 +68,27 @@ end
 local function nameOf(s, u)
   if u.m then
     local id = member(s, u).id
-    return id == "hero" and s.heroName and s.heroName:upper() or party.CHARS[id].name
+    local char = party.CHARS[id]
+    return id == "hero" and s.heroName and s.heroName:upper() or char.short or char.name
   end
   local def = enemies.FOES[u.id]
   return def.short or def.name
 end
 
 local function immuneTo(s, u, status)
-  local list
-  if u.m then list = party.CHARS[member(s, u).id].immune else list = enemies.FOES[u.id].immune end
+  if u.m then return party.immune(member(s, u), status) end
+  local list = enemies.FOES[u.id].immune
   return list and list[status]
+end
+
+--- What an element does to this unit: a multiple of the damage.
+local function elementTimes(s, u, element)
+  if not element then return 1 end
+  if u.m then return party.resists(member(s, u), element) and 0.5 or 1 end
+  local def = enemies.FOES[u.id]
+  if def.weak and def.weak[element] then return 1.5 end
+  if def.resist and def.resist[element] then return 0.5 end
+  return 1
 end
 
 local function unitOf(b, side, i)
@@ -88,10 +112,16 @@ local function power(s, u)
 end
 
 local function say(b, msg) b.msg = msg end
+M.LABEL_LONGEST = 19
 
-local function float(b, u, text, color)
+local function float(b, u, text, color, small)
   if #b.floats >= 6 then table.remove(b.floats, 1) end
-  b.floats[#b.floats + 1] = { side = u.side, i = u.i, text = text, color = color, t = FLOAT_TICKS }
+  b.floats[#b.floats + 1] = { side = u.side, i = u.i, text = text, color = color, t = FLOAT_TICKS, small = small }
+end
+
+--- Tell the wall an element told.
+local function elementNote(b, u, times)
+  if times > 1 then float(b, u, "WEAK", "hi", true) elseif times < 1 then float(b, u, "RESIST", "line", true) end
 end
 
 local function emit(events, kind, u, n)
@@ -99,8 +129,23 @@ local function emit(events, kind, u, n)
 end
 
 local function statusClear(u)
-  u.poison, u.sleep, u.nightmare = 0, 0, 0
-  u.guard, u.focus = false, false
+  for _, status in ipairs(STATUS) do u[status] = 0 end
+  u.guard, u.focus, u.hidden = false, false, false
+  u.oath = 0
+end
+
+--- A battle saved before these statuses existed, or with an old menu open, plays on.
+local function upgrade(b)
+  if b.v == 2 then return end
+  b.v = 2
+  for _, list in ipairs({ b.allies, b.foes }) do
+    for _, u in ipairs(list) do
+      for _, status in ipairs(STATUS) do u[status] = u[status] or 0 end
+      u.hidden, u.oath = u.hidden or false, u.oath or 0
+    end
+  end
+  if b.pick == "steal" then b.pick, b.pickId = "spell", "steal" end
+  if b.pick == "blood" then b.pick, b.pickId = "spell", "bleed" end
 end
 
 local function newFoe(id, i, rng)
@@ -118,7 +163,7 @@ function M.begin(s, encounterId, rng)
   local enc = enemies.ENCOUNTERS[encounterId]
   local b = {
     enc = encounterId, bg = enc.bg, boss = enc.boss or false, flee = enc.flee or false, mustLose = enc.mustLose or false,
-    phase = "run", beat = BEAT, t = 0, msg = "", inbox = {}, allies = {}, foes = {}, floats = {},
+    phase = "run", beat = BEAT, t = 0, msg = "", inbox = {}, allies = {}, foes = {}, floats = {}, v = 2,
   }
   for i, m in ipairs(s.party) do
     if i > party.IN_BATTLE then break end
@@ -146,8 +191,9 @@ local function finish(s, b, outcome, events)
       end
     end
     local ups = {}
-    for _, m in ipairs(s.party) do
-      if party.gainXp(m, xp) > 0 then
+    for i, m in ipairs(s.party) do
+      local share = i <= party.IN_BATTLE and xp or floor(xp * party.BENCH_SHARE / 100)
+      if party.gainXp(m, share) > 0 then
         ups[#ups + 1] = { id = m.id, lvl = m.lvl }
         events[#events + 1] = { type = "levelup", id = m.id, lvl = m.lvl }
       end
@@ -200,7 +246,13 @@ local function hurt(s, b, u, n, events)
   u.flash, u.sleep = 2, 0
   float(b, u, tostring(n), "text")
   emit(events, u.m and "hurt" or "hit", u, n)
-  if not alive(s, u) then fall(s, b, u, events) end
+  if not alive(s, u) then
+    fall(s, b, u, events)
+  elseif (u.thrall > 0 or u.tadpole > 0) and n * 100 >= maxHpOf(s, u) * M.BREAK_SHARE then
+    u.thrall, u.tadpole = 0, 0
+    float(b, u, "FREE", "ok", true)
+    emit(events, "cure", u)
+  end
   return n
 end
 
@@ -221,10 +273,9 @@ local function afflict(s, b, u, status, events)
   end
   if status == "poison" then
     if u.poison == 0 then u.poison = M.POISON_EVERY end
-  elseif status == "sleep" then
-    u.sleep, u.guard = M.SLEEP_TICKS, false
   else
-    u.nightmare = M.NIGHTMARE_TURNS
+    u[status] = LASTS[status]
+    if status == "sleep" then u.guard = false end
   end
   float(b, u, status:upper(), "accent")
   emit(events, "status", u)
@@ -243,22 +294,36 @@ local function cure(b, u, list, events)
   return any
 end
 
---- A swing: armour takes half, a little luck either way. times multiplies the blow before armour.
-local function strike(s, b, from, to, percent, rng, events)
-  local sure = to.sleep > 0 or from.focus
-  if not sure and rng(100) > HIT_PERCENT then
+--- A swing: armour takes half, a little luck either way. times multiplies the blow before armour. element, if given, stands in
+-- for what the weapon carries.
+local function strike(s, b, from, to, percent, rng, events, element)
+  if to.hidden then
     float(b, to, "MISS", "line")
     emit(events, "miss", to)
     return nil
   end
-  local raw = power(s, from).atk * percent * (88 + rng(25)) / 10000
+  local sure = to.sleep > 0 or from.focus
+  if not sure and rng(100) > (from.blind > 0 and BLIND_HIT_PERCENT or HIT_PERCENT) then
+    float(b, to, "MISS", "line")
+    emit(events, "miss", to)
+    return nil
+  end
+  local mine = power(s, from)
+  local raw = mine.atk * percent * (88 + rng(25)) / 10000
   if from.focus then
-    raw = raw * M.FOCUS_TIMES
+    raw = raw * party.focusOf(member(s, from)).times
     from.focus = false
+  end
+  if from.oath > 0 then
+    raw = raw * OATH_PERCENT / 100
+    from.oath = from.oath - 1
   end
   if rng(CRIT_ONE_IN) == 1 then raw = raw * 3 / 2 end
   if not from.m then emit(events, "foeStrike", from) end
-  return hurt(s, b, to, floor(raw - power(s, to).def / 2), events)
+  local times = elementTimes(s, to, element or mine.element)
+  local dealt = hurt(s, b, to, floor((raw - power(s, to).def / 2) * times), events)
+  elementNote(b, to, times)
+  return dealt
 end
 
 local function maybeStatus(s, b, to, status, chance, rng, events)
@@ -269,15 +334,82 @@ end
 --- Spell damage against one foe: power plus magic, with little luck, and armour counts for a quarter.
 local function blast(s, b, caster, to, spell, rng, events)
   local raw = (spell.power + power(s, caster).mag) * (94 + rng(13)) / 100
-  return hurt(s, b, to, floor(raw - power(s, to).def / 4), events)
+  local armour = spell.pierce and 0 or power(s, to).def / 4
+  local times = elementTimes(s, to, spell.element)
+  local dealt = hurt(s, b, to, floor((raw - armour) * times), events)
+  elementNote(b, to, times)
+  if alive(s, to) and spell.status then maybeStatus(s, b, to, spell.status, spell.chance, rng, events) end
+  return dealt
 end
 
 -- ---------------------------------------------------------------- what the party can do
+
+--- Pay in blood: never the last point.
+local function payBlood(s, b, u, spell)
+  if not spell.blood then return 0 end
+  local m = member(s, u)
+  local cost = max(1, floor(party.stats(m).hp / spell.blood))
+  m.hp = max(1, m.hp - cost)
+  float(b, u, tostring(cost), "red")
+  return cost
+end
+
+--- A try at what a foe carries, once for each foe.
+local function trySteal(s, b, u, foe, rng, events)
+  local def = enemies.FOES[foe.id]
+  local odds = def.boss and STEAL_BOSS_PERCENT or STEAL_PERCENT
+  if foe.robbed or rng(100) > odds then
+    say(b, nameOf(s, u) .. " GOT NOTHING")
+    emit(events, "miss", foe)
+    return false
+  end
+  foe.robbed = true
+  local id = def.steal or "potion"
+  s.bag[id] = (s.bag[id] or 0) + 1
+  local got = party.ITEMS[id] or party.GEAR[id]
+  say(b, nameOf(s, u) .. " STOLE " .. got.name)
+  float(b, foe, got.name, "hi", true)
+  emit(events, "item", foe)
+  return true
+end
+
+--- One cut of a skill on one foe. Blind or sleeping foes can't see the open cut coming.
+local function skillBlow(s, b, u, spell, foe, rng, events)
+  local pct = spell.pct
+  if spell.open and (foe.blind > 0 or foe.sleep > 0) then pct = spell.open end
+  local dealt = strike(s, b, u, foe, pct, rng, events, spell.element)
+  if dealt and spell.drain then
+    local m = member(s, u)
+    local back = min(party.stats(m).hp - m.hp, floor(dealt * spell.drain / 100))
+    if back > 0 then
+      m.hp = m.hp + back
+      float(b, u, "+" .. back, "ok")
+    end
+  end
+end
 
 local function castOn(s, b, u, spell, target, rng, events)
   local st = power(s, u)
   if spell.kind == "damage" then
     blast(s, b, u, target, spell, rng, events)
+  elseif spell.kind == "strike" then
+    skillBlow(s, b, u, spell, target, rng, events)
+  elseif spell.kind == "steal" then
+    trySteal(s, b, u, target, rng, events)
+  elseif spell.kind == "mug" then
+    if strike(s, b, u, target, 100, rng, events) and alive(s, target) then trySteal(s, b, u, target, rng, events) end
+  elseif spell.kind == "gold" then
+    local cost = spell.cost * member(s, u).lvl
+    s.gold = max(0, s.gold - cost)
+    hurt(s, b, target, floor(st.atk * spell.pct * (94 + rng(13)) / 10000), events)
+  elseif spell.kind == "vanish" then
+    u.hidden = true
+    float(b, u, "GONE", "info")
+  elseif spell.kind == "oath" then
+    u.oath = spell.turns
+    float(b, u, "OATH", "red")
+  elseif spell.kind == "transfuse" then
+    mend(s, b, target, 2 * floor(party.stats(member(s, u)).hp / spell.blood), events)
   elseif spell.kind == "heal" then
     mend(s, b, target, spell.power + 2 * st.mag, events)
     if spell.cures then cure(b, target, spell.cures, events) end
@@ -305,14 +437,21 @@ local function doSpell(s, b, u, id, target, rng, events)
   local spell = party.SPELLS[id]
   local m = member(s, u)
   m.mp = m.mp - spell.mp
+  payBlood(s, b, u, spell)
   say(b, nameOf(s, u) .. ": " .. spell.name)
   emit(events, "spell", u)
-  if spell.target == "foes" then
+  if spell.hits then
+    -- so many cuts, each at whoever still stands
+    for _ = 1, spell.hits do
+      local list = standing(s, b.foes)
+      if #list > 0 then castOn(s, b, u, spell, list[rng(#list)], rng, events) end
+    end
+  elseif spell.target == "foes" then
     for _, f in ipairs(standing(s, b.foes)) do castOn(s, b, u, spell, f, rng, events) end
   elseif spell.target == "allies" then
     for _, a in ipairs(standing(s, b.allies)) do castOn(s, b, u, spell, a, rng, events) end
   else
-    castOn(s, b, u, spell, target, rng, events)
+    castOn(s, b, u, spell, target or u, rng, events)
   end
   endTurn(s, b, u, events)
 end
@@ -335,32 +474,14 @@ local function doItem(s, b, u, id, target, events)
 end
 
 local function doAttack(s, b, u, foe, rng, events)
+  local sweeping = u.focus and party.focusOf(member(s, u)).sweep
   local dealt = strike(s, b, u, foe, 100, rng, events)
   say(b, dealt and (nameOf(s, u) .. " HITS FOR " .. dealt) or (nameOf(s, u) .. " MISSES"))
-  endTurn(s, b, u, events)
-end
-
-local function doSteal(s, b, u, foe, rng, events)
-  if foe.robbed or rng(100) > STEAL_PERCENT then
-    say(b, nameOf(s, u) .. " GOT NOTHING")
-    emit(events, "miss", foe)
-  else
-    foe.robbed = true
-    s.bag.potion = (s.bag.potion or 0) + 1
-    say(b, nameOf(s, u) .. " STOLE A POTION")
-    emit(events, "item", foe)
+  if sweeping and dealt then
+    for _, f in ipairs(standing(s, b.foes)) do
+      if f ~= foe then strike(s, b, u, f, 50, rng, events) end
+    end
   end
-  endTurn(s, b, u, events)
-end
-
-local function doBlood(s, b, u, foe, rng, events)
-  local m = member(s, u)
-  local cost = max(1, floor(party.stats(m).hp / BLOOD_SHARE))
-  m.hp = max(1, m.hp - cost)
-  float(b, u, tostring(cost), "red")
-  local dealt = strike(s, b, u, foe, 240, rng, events)
-  say(b, nameOf(s, u) .. " BLEEDS FOR IT")
-  if not dealt then say(b, nameOf(s, u) .. " MISSES") end
   endTurn(s, b, u, events)
 end
 
@@ -388,26 +509,66 @@ local function fallen(s, b)
   return false
 end
 
---- The rows of the open list: { kind, id, name, note, ok }, tapped by position.
-function M.rows(s)
-  local b = s.battle
+--- Can this member use this spell now? The menu and the bot ask the same question.
+local function spellOk(s, b, u, id)
+  local spell, m = party.SPELLS[id], member(s, u)
+  if m.mp < spell.mp then return false end
+  if u.silence > 0 and party.CHARS[m.id].chants then return false end
+  if spell.target == "fallen" and not fallen(s, b) then return false end
+  if spell.kind == "gold" and s.gold < spell.cost * m.lvl then return false end
+  return true
+end
+
+--- A spell's price, for the row.
+local function costNote(s, m, spell)
+  if spell.blood then return floor(party.stats(m).hp / spell.blood) .. "HP" end
+  if spell.kind == "gold" then return spell.cost * m.lvl .. "G" end
+  if spell.mp > 0 then return spell.mp .. "MP" end
+  return ""
+end
+
+--- Every row of the open list, before paging.
+local function allRows(s, b)
   local out = {}
-  if not b or not b.active then return out end
-  local m = s.party[b.allies[b.active].m]
+  local u = b.allies[b.active]
+  local m = member(s, u)
   if b.list == "special" then
     for _, id in ipairs(party.known(m)) do
       local spell = party.SPELLS[id]
-      local ok = m.mp >= spell.mp and (spell.target ~= "fallen" or fallen(s, b))
-      out[#out + 1] = { kind = "spell", id = id, name = spell.name, note = spell.mp .. "MP", ok = ok }
+      out[#out + 1] = { kind = "spell", id = id, name = spell.name, note = costNote(s, m, spell), ok = spellOk(s, b, u, id) }
     end
   elseif b.list == "item" then
     for _, id in ipairs(party.ITEM_ORDER) do
-      local n = s.bag[id] or 0
-      if n > 0 then out[#out + 1] = { kind = "item", id = id, name = party.ITEMS[id].name, note = "x" .. n, ok = true } end
+      local n, item = s.bag[id] or 0, party.ITEMS[id]
+      if n > 0 and not item.key and not item.camp then
+        local ok = item.target ~= "fallen" or fallen(s, b)
+        out[#out + 1] = { kind = "item", id = id, name = item.name, note = "x" .. n, ok = ok }
+      end
     end
     if b.flee then out[#out + 1] = { kind = "flee", id = "flee", name = "FLEE", note = "", ok = true } end
   end
   return out
+end
+
+--- The rows on screen: { kind, id, name, note, ok }, tapped by position. A long list shows a page and a MORE row, which goes round.
+function M.rows(s)
+  local b = s.battle
+  if not b or not b.active then return {} end
+  local all = allRows(s, b)
+  if #all <= LIST_ROWS then return all end
+  local room = LIST_ROWS - 1
+  local top = min(b.top or 0, #all - 1)
+  local out = {}
+  for i = top + 1, min(#all, top + room) do out[#out + 1] = all[i] end
+  local page = floor(top / room) + 1
+  out[#out + 1] = { kind = "more", id = "more", name = "MORE", note = page .. "/" .. ceil(#all / room), ok = true }
+  return out
+end
+
+local function nextPage(s, b)
+  local room = LIST_ROWS - 1
+  b.top = (b.top or 0) + room
+  if b.top >= #allRows(s, b) then b.top = 0 end
 end
 
 --- Who may be tapped now: side, and a list of indexes.
@@ -443,24 +604,29 @@ end
 
 local function openMenu(s, b, i, events)
   local u = b.allies[i]
-  u.guard = false -- a guard lasts until your next turn
+  u.guard, u.hidden = false, false -- a guard lasts until your next turn, and so does a vanishing
   b.phase, b.active, b.list, b.pick, b.pickId = "cmd", i, nil, nil, nil
   say(b, nameOf(s, u) .. " IS READY")
   emit(events, "menu", u)
 end
 
 local function chooseSpecial(s, b, u, rng, events)
-  local special = party.CHARS[member(s, u).id].special
+  local m = member(s, u)
+  local special = party.CHARS[m.id].special
   if special == "FOCUS" then
     u.focus = true
+    if party.focusOf(m).brace then u.guard = true end
     say(b, "NEXT HIT IS STRONGER")
     float(b, u, "FOCUS", "hi")
     emit(events, "focus", u)
     endTurn(s, b, u, events)
-  elseif special == "STEAL" or special == "BLOOD" then
-    ask(b, special == "STEAL" and "steal" or "blood", nil, special)
+    return
+  end
+  local known = party.known(m)
+  if (special == "STEAL" or special == "BLOOD") and #known == 1 then
+    ask(b, "spell", known[1], special) -- one skill needs no list
   else
-    b.phase, b.list = "list", "special"
+    b.phase, b.list, b.top = "list", "special", 0
     say(b, special)
   end
 end
@@ -477,7 +643,7 @@ local function chooseCommand(s, b, u, cmd, rng, events)
     emit(events, "defend", u)
     endTurn(s, b, u, events)
   elseif cmd == "item" then
-    b.list = "item"
+    b.list, b.top = "item", 0
     if #M.rows(s) == 0 then
       b.list = nil
       say(b, "NOTHING IN THE BAG")
@@ -497,13 +663,15 @@ local function choosePick(s, b, u, i, rng, events)
     say(b, "CAN'T USE THAT NOW")
     return
   end
-  if row.kind == "flee" then
+  if row.kind == "more" then
+    nextPage(s, b)
+  elseif row.kind == "flee" then
     doFlee(s, b, u, rng, events)
   elseif row.kind == "item" then
     ask(b, "item", row.id, row.name .. " ON WHO?")
   else
     local want = party.SPELLS[row.id].target
-    if want == "foes" or want == "allies" then
+    if want == "foes" or want == "allies" or want == "self" then
       doSpell(s, b, u, row.id, nil, rng, events)
     else
       ask(b, "spell", row.id, row.name .. " ON WHO?")
@@ -520,10 +688,6 @@ local function chooseTarget(s, b, u, action, rng, events)
   local target = unitOf(b, side, action.i)
   if b.pick == "attack" then
     doAttack(s, b, u, target, rng, events)
-  elseif b.pick == "steal" then
-    doSteal(s, b, u, target, rng, events)
-  elseif b.pick == "blood" then
-    doBlood(s, b, u, target, rng, events)
   elseif b.pick == "spell" then
     doSpell(s, b, u, b.pickId, target, rng, events)
   else
@@ -570,17 +734,29 @@ end
 
 -- ---------------------------------------------------------------- foes acting
 
-local function foeLabel(s, u, ab) return nameOf(s, u) .. ": " .. ab.name end
+--- Who does what, across the top in big letters. A long pair loses the name: what's coming matters more.
+local function foeLabel(s, u, ab)
+  local label = nameOf(s, u) .. ": " .. ab.name
+  return #label <= M.LABEL_LONGEST and label or ab.name
+end
+M.foeLabel = foeLabel
 
+--- Whoever a foe's blow finds: never one of its own thralls, while anyone else stands.
 local function randomAlly(s, b, rng)
   local list = standing(s, b.allies)
+  local free = {}
+  for _, a in ipairs(list) do
+    if a.thrall == 0 and a.tadpole == 0 then free[#free + 1] = a end
+  end
+  if #free > 0 then list = free end
   return list[rng(#list)]
 end
 
+--- A helper takes a fallen helper's place, or a new one. Never a fallen boss's, whose XP is still owed.
 local function summon(s, b, u, id, rng, events)
   local slot
   for i, f in ipairs(b.foes) do
-    if not alive(s, f) and f ~= u then slot = slot or i end
+    if f.added and not alive(s, f) then slot = slot or i end
   end
   slot = slot or #b.foes + 1
   local added = newFoe(id, slot, rng)
@@ -595,22 +771,29 @@ local function useAbility(s, b, u, id, rng, events)
   u.mp = u.mp - (ab.mp or 0)
   if ab.target == "summon" then
     u.called = (u.called or 0) + 1
-    summon(s, b, u, ab.summon, rng, events)
+    summon(s, b, u, ab.summon or enemies.FOES[u.id].boss.phases[u.phase].summon, rng, events)
   elseif ab.target == "friend" then
     local worst, share
     for _, f in ipairs(standing(s, b.foes)) do
       local here = f.hp * 100 / f.mhp
       if not worst or here < share then worst, share = f, here end
     end
-    mend(s, b, worst, ab.power + floor(power(s, u).atk / 2), events)
+    mend(s, b, worst, ab.power + floor(power(s, u).atk / 2) + floor(worst.mhp * (ab.share or 0) / 100), events)
   else
     local list = ab.target == "all" and standing(s, b.allies) or { randomAlly(s, b, rng) }
     for _, to in ipairs(list) do
       local dealt
-      if ab.magic then
-        dealt = hurt(s, b, to, floor(power(s, u).atk * ab.power * (94 + rng(13)) / 10000), events)
-      elseif ab.power then
-        dealt = strike(s, b, u, to, ab.power, rng, events)
+      if not ab.power then
+        dealt = true -- nothing but the status
+      elseif to.hidden then
+        float(b, to, "MISS", "line")
+        emit(events, "miss", to)
+      elseif ab.magic then
+        local times = elementTimes(s, to, ab.element)
+        dealt = hurt(s, b, to, floor(power(s, u).atk * ab.power * (94 + rng(13)) / 10000 * times), events)
+        elementNote(b, to, times)
+      else
+        dealt = strike(s, b, u, to, ab.power, rng, events, ab.element)
       end
       if dealt then maybeStatus(s, b, to, ab.status, ab.chance or 0, rng, events) end
     end
@@ -627,11 +810,13 @@ function M.blowIn(b)
 end
 
 local function bossPhase(s, b, u, events)
-  local now = enemies.phaseOf(u.hp * 100 / u.mhp)
+  local def = enemies.FOES[u.id]
+  local now = enemies.phaseOf(def, u.hp * 100 / u.mhp)
   if now <= u.phase then return false end
   u.phase = now
-  u.spd = u.spd + 1
-  say(b, now == 2 and "THE SHIFT IS CALLED" or "HE STOPS FEELING IT")
+  local phase = def.boss.phases[now]
+  u.spd = u.spd + (phase.speedUp or 0)
+  if phase.say then say(b, phase.say) end
   emit(events, "phase", u)
   b.beat = TELEGRAPH_BEAT
   return true
@@ -642,12 +827,14 @@ local function foeTurn(s, b, u, rng, events)
   b.beat = BEAT
   if u.phase and bossPhase(s, b, u, events) then return end
   u.turns = u.turns + 1
-  local others, hurtFriend = 0, false
+  local others, adds, hurtFriend = 0, 0, false
   for _, f in ipairs(standing(s, b.foes)) do
     if f ~= u then others = others + 1 end
+    if f.added then adds = adds + 1 end
     if f.hp * 3 < f.mhp * 2 then hurtFriend = true end
   end
-  local id = enemies.choose(u, { others = others, hurt = hurtFriend }, rng)
+  local ctx = { others = others, adds = adds, hurt = hurtFriend, room = others + 1 < MAX_STANDING, silent = u.silence > 0 }
+  local id = enemies.choose(u, ctx, rng)
   local ab = enemies.ABILITIES[id]
   if ab.windup then
     u.charge, u.charging = ab.windup, id
@@ -678,6 +865,44 @@ local function nightmareTurn(s, b, u, rng, events)
   settled(s, b, events)
 end
 
+--- A thrall's or a tadpole's turn: they turn on their own side, with no menu. A tadpole lashes with the mind, past armour.
+local function traitorTurn(s, b, u, status, rng, events)
+  u.atb = 0
+  u[status] = u[status] - 1
+  b.beat = BEAT
+  local mates = {}
+  for _, other in ipairs(standing(s, u.m and b.allies or b.foes)) do
+    if other ~= u then mates[#mates + 1] = other end
+  end
+  if #mates == 0 then
+    say(b, nameOf(s, u) .. " STANDS LOST")
+    return
+  end
+  local to = mates[rng(#mates)]
+  say(b, nameOf(s, u) .. " TURNS ON " .. nameOf(s, to))
+  if status == "thrall" then
+    strike(s, b, u, to, 100, rng, events)
+  else
+    local mine = power(s, u)
+    hurt(s, b, to, floor(max(mine.mag, mine.atk) * (94 + rng(13)) / 100), events)
+  end
+  settled(s, b, events)
+end
+
+--- One taken-over turn, if this unit isn't its own. True if so.
+local function lostTurn(s, b, u, rng, events)
+  if u.thrall > 0 then
+    traitorTurn(s, b, u, "thrall", rng, events)
+  elseif u.tadpole > 0 then
+    traitorTurn(s, b, u, "tadpole", rng, events)
+  elseif u.nightmare > 0 then
+    nightmareTurn(s, b, u, rng, events)
+  else
+    return false
+  end
+  return true
+end
+
 -- ---------------------------------------------------------------- time
 
 local function poisonSting(s, b, u, events)
@@ -696,6 +921,17 @@ end
 --- One tick of running time for one unit.
 local function age(s, b, u, events)
   if u.poison > 0 then poisonSting(s, b, u, events) end
+  if u.blind > 0 then u.blind = u.blind - 1 end
+  if u.silence > 0 then u.silence = u.silence - 1 end
+  if u.doom > 0 then
+    u.doom = u.doom - 1
+    if u.doom == 0 then
+      setHp(s, u, 0)
+      float(b, u, "DOOM", "red")
+      fall(s, b, u, events)
+      return
+    end
+  end
   if u.sleep > 0 then
     u.sleep = u.sleep - 1
   elseif (u.charge or 0) == 0 then
@@ -710,6 +946,7 @@ local function advance(s, b, rng, events)
       if alive(s, u) then age(s, b, u, events) end
     end
   end
+  if settled(s, b, events) then return end -- doom can end a fight
   for _, f in ipairs(b.foes) do
     if alive(s, f) and f.charge > 0 then
       f.charge = f.charge - 1
@@ -728,13 +965,13 @@ local function advance(s, b, rng, events)
   end
   for _, f in ipairs(b.foes) do
     if alive(s, f) and f.atb >= M.GAUGE and f.sleep == 0 and f.charge == 0 then
-      if f.nightmare > 0 then nightmareTurn(s, b, f, rng, events) else foeTurn(s, b, f, rng, events) end
+      if not lostTurn(s, b, f, rng, events) then foeTurn(s, b, f, rng, events) end
       return
     end
   end
   for i, u in ipairs(b.allies) do
     if alive(s, u) and u.atb >= M.GAUGE and u.sleep == 0 then
-      if u.nightmare > 0 then nightmareTurn(s, b, u, rng, events) else openMenu(s, b, i, events) end
+      if not lostTurn(s, b, u, rng, events) then openMenu(s, b, i, events) end
       return
     end
   end
@@ -764,6 +1001,7 @@ function M.tick(s, rng)
   local events = {}
   local b = s.battle
   if not b or b.result then return events end
+  upgrade(b)
   b.t = b.t + 1
   local changed = fade(b)
   local inbox = b.inbox
@@ -794,41 +1032,120 @@ end
 
 -- ---------------------------------------------------------------- the bot
 
+local HEAL_ITEMS = { "potion", "hipotion", "xpotion" } -- smallest first
+local RAISE_ITEMS = { "feather", "tonic" }
+local CURE_ITEMS = { "eyewash", "echoherb", "wakeroot", "lastrites", "panacea" } -- a tonic is for raising, so it isn't here
+local CURE_ORDER = { "doom", "thrall", "tadpole", "sleep", "nightmare", "silence", "blind" } -- what matters most first
+
+--- Does this status on this ally need a turn spent on it? Silence means nothing to a fighter, nor blindness to a caster.
+local function worthCuring(s, u, status)
+  if u[status] == 0 then return false end
+  local ch = party.CHARS[member(s, u).id]
+  if status == "silence" then return ch.chants == true end
+  if status == "blind" then return not ch.chants end
+  return true
+end
+
+local function cures(list, status)
+  for _, id in ipairs(list or {}) do
+    if id == status then return true end
+  end
+  return false
+end
+
+--- Who needs what: the party seen from one member's menu. Takes no chance.
+local function survey(s, b)
+  local out = { lowShare = 101, lowCount = 0, healer = false }
+  for i, a in ipairs(b.allies) do
+    if alive(s, a) then
+      local share = hpOf(s, a) * 100 / maxHpOf(s, a)
+      if share < out.lowShare then out.lowest, out.lowShare = i, share end
+      if share < 50 then out.lowCount = out.lowCount + 1 end
+      if a.poison > 0 then out.sick = out.sick or i end
+      local mate = member(s, a)
+      for _, id in ipairs(party.known(mate)) do
+        local spell = party.SPELLS[id]
+        if spell.kind == "heal" and mate.mp >= spell.mp and a.sleep == 0 and spellOk(s, b, a, id) then out.healer = true end
+      end
+    else
+      out.down = out.down or i
+    end
+  end
+  for _, status in ipairs(CURE_ORDER) do
+    for i, a in ipairs(b.allies) do
+      if alive(s, a) and not out.troubled and worthCuring(s, a, status) then out.troubled, out.trouble = i, status end
+    end
+  end
+  return out
+end
+
+--- The foes as the bot sees them: the weakest first, so the fight shrinks.
+local function sizeUp(s, b)
+  local out = { count = 0 }
+  for i, f in ipairs(b.foes) do
+    if alive(s, f) then
+      out.count = out.count + 1
+      if not out.hp or f.hp < out.hp then out.hp, out.weakest = f.hp, i end
+    end
+  end
+  return out
+end
+
 --- A reasonable player's whole decision for the member on turn: { cmd, row, side, i }. It takes no chance, so asking again at the
 -- next menu gives the same answer, and the bot needs no memory.
 local function plan(s, b)
   local u = b.allies[b.active]
   local m = member(s, u)
-  local knows = {}
-  for _, id in ipairs(party.known(m)) do knows[id] = true end
-  local function can(id) return knows[id] and m.mp >= party.SPELLS[id].mp end
+  local st = party.stats(m)
+  local special = party.CHARS[m.id].special
+  local need = survey(s, b)
+  local usable, knows = {}, {}
+  for _, id in ipairs(party.known(m)) do
+    knows[id] = true
+    if spellOk(s, b, u, id) then usable[#usable + 1] = id end
+  end
+  local function can(id) return knows[id] and spellOk(s, b, u, id) end
   local function has(id) return (s.bag[id] or 0) > 0 end
   local function cast(id, side, i) return { cmd = "special", row = id, side = side, i = i } end
   local function use(id, i) return { cmd = "item", row = id, side = "ally", i = i } end
 
-  local lowest, lowShare, lowCount, down, troubled, sick, healer = nil, 101, 0, nil, nil, nil, false
-  for i, a in ipairs(b.allies) do
-    if alive(s, a) then
-      local share = hpOf(s, a) * 100 / maxHpOf(s, a)
-      if share < lowShare then lowest, lowShare = i, share end
-      if share < 50 then lowCount = lowCount + 1 end
-      if a.sleep > 0 or a.nightmare > 0 then troubled = troubled or i end
-      if a.poison > 0 then sick = sick or i end
-      local mate = party.known(member(s, a))
-      for _, id in ipairs(mate) do
-        if id == "mend" and member(s, a).mp >= party.SPELLS.mend.mp and a.sleep == 0 then healer = true end
-      end
-    else
-      down = down or i
+  local function strongest(kind, target)
+    local best
+    for _, id in ipairs(usable) do
+      local spell = party.SPELLS[id]
+      if spell.kind == kind and spell.target == target and (not best or spell.power > party.SPELLS[best].power) then best = id end
     end
+    return best
+  end
+
+  --- The cheapest heal of that reach that does the job, or the strongest there is.
+  local function heal(target, missing)
+    local fits
+    for _, id in ipairs(usable) do
+      local spell = party.SPELLS[id]
+      if spell.kind == "heal" and spell.target == target and spell.power + 2 * st.mag >= missing then
+        if not fits or spell.mp < party.SPELLS[fits].mp then fits = id end
+      end
+    end
+    return fits or strongest("heal", target)
   end
 
   local function healLowest()
-    if lowCount >= 2 and can("vigil") then return cast("vigil") end
-    if can("mend") then return cast("mend", "ally", lowest) end
-    if can("salve") then return cast("salve", "ally", lowest) end
-    if has("potion") then return use("potion", lowest) end
-    return nil
+    local a = b.allies[need.lowest]
+    local missing = maxHpOf(s, a) - hpOf(s, a)
+    if need.lowCount >= 2 then
+      local all = heal("allies", missing * 7 / 10)
+      if all then return cast(all) end
+    end
+    local one = heal("ally", missing)
+    if one then return cast(one, "ally", need.lowest) end
+    if can("transfuse") and need.lowest ~= b.active and m.hp * 100 >= st.hp * 60 then return cast("transfuse", "ally", need.lowest) end
+    local stock
+    for _, id in ipairs(HEAL_ITEMS) do
+      if has(id) and (not stock or party.ITEMS[stock].hp < missing) then stock = id end
+    end
+    if not stock and need.lowShare < 25 and has("elixir") then stock = "elixir" end
+    return stock and use(stock, need.lowest) or nil
   end
 
   -- a telegraphed blow: brace unless another turn will come first, or someone won't live through it even braced
@@ -838,59 +1155,169 @@ local function plan(s, b)
     for _, f in ipairs(b.foes) do
       if f.charging then
         local ab = enemies.ABILITIES[f.charging]
-        worst = max(worst, ceil(enemies.FOES[f.id].atk * ab.power * 106 / 10000 / M.GUARD_DIVIDE))
+        worst = max(worst, ceil(enemies.FOES[f.id].atk * (ab.power or 0) * 106 / 10000 / M.GUARD_DIVIDE))
       end
     end
-    if hpOf(s, b.allies[lowest]) <= worst and lowest ~= b.active then
+    if hpOf(s, b.allies[need.lowest]) <= worst and need.lowest ~= b.active then
       local help = healLowest()
       if help then return help end
     end
+    if can("vanish") then return cast("vanish") end
     return { cmd = "defend" }
   end
 
-  if down then
-    if can("rise") then return cast("rise", "ally", down) end
-    if has("tonic") then return use("tonic", down) end
+  if need.down then
+    local raise = strongest("raise", "fallen")
+    if raise then return cast(raise, "ally", need.down) end
+    for _, id in ipairs(RAISE_ITEMS) do
+      if has(id) then return use(id, need.down) end
+    end
   end
-  local urgent = lowShare < 28
-  if lowShare < 45 and (urgent or knows.mend or knows.salve or not healer) then
+
+  local cheapest
+  for _, id in ipairs(party.known(m)) do
+    local spell = party.SPELLS[id]
+    if spell.kind == "heal" and spell.target == "ally" and (not cheapest or spell.mp < cheapest) then cheapest = spell.mp end
+  end
+  local urgent = need.lowShare < 28
+  if need.lowShare < 45 and (urgent or cheapest or not need.healer) then
     local help = healLowest()
     if help then return help end
   end
-  if troubled and can("cleanse") then return cast("cleanse", "ally", troubled) end
-  if knows.mend and m.mp < party.SPELLS.mend.mp and has("ether") then return use("ether", b.active) end
-  if sick and can("cleanse") and m.mp * 5 > party.stats(m).mp * 2 then return cast("cleanse", "ally", sick) end
 
-  -- on the attack: the weakest first, so the fight shrinks
-  local foeHp, weakest, count = nil, nil, 0
-  for i, f in ipairs(b.foes) do
-    if alive(s, f) then
-      count = count + 1
-      if not foeHp or f.hp < foeHp then foeHp, weakest = f.hp, i end
+  if need.troubled then
+    for _, id in ipairs(usable) do
+      local spell = party.SPELLS[id]
+      if spell.kind == "cure" and spell.target == "ally" and cures(spell.cures, need.trouble) then
+        return cast(id, "ally", need.troubled)
+      end
+    end
+    for _, id in ipairs(CURE_ITEMS) do
+      if has(id) and cures(party.ITEMS[id].cures, need.trouble) then return use(id, need.troubled) end
     end
   end
-  if count >= 2 and can("caustic") then return cast("caustic") end
-  if count == 1 and foeHp > 60 and can("firepot") then return cast("firepot", "foe", weakest) end
-  local special = party.CHARS[m.id].special
-  if special == "FOCUS" and not u.focus and foeHp > 3 * power(s, u).atk then return { cmd = "special" } end
-  if special == "MAGIC" then
-    if can("bolt") then return cast("bolt", "foe", weakest) end
-    if can("ember") then return cast("ember", "foe", weakest) end
+
+  -- the healer out of MP is the fight lost; the mage out of MP only slows it
+  if special == "PRAY" and cheapest and m.mp < cheapest then
+    if has("hiether") then return use("hiether", b.active) end
+    if has("ether") then return use("ether", b.active) end
+    if b.boss and has("elixir") then return use("elixir", b.active) end
   end
-  return { cmd = "attack", side = "foe", i = weakest }
+  if special == "MAGIC" and b.boss and m.mp * 4 < st.mp then
+    if has("hiether") then return use("hiether", b.active) end
+    if has("ether") then return use("ether", b.active) end
+  end
+
+  if need.sick and m.mp * 5 > st.mp * 2 then
+    for _, id in ipairs(usable) do
+      local spell = party.SPELLS[id]
+      if spell.kind == "cure" and cures(spell.cures, "poison") then return cast(id, "ally", need.sick) end
+    end
+  end
+
+  -- on the attack
+  local foes = sizeUp(s, b)
+  local foe = b.foes[foes.weakest]
+  local atkNow = (st.atk - enemies.FOES[foe.id].def / 2) * elementTimes(s, foe, st.element)
+
+  local function worth(id, f)
+    local spell, def = party.SPELLS[id], enemies.FOES[f.id]
+    return (spell.power + st.mag - (spell.pierce and 0 or def.def / 4)) * elementTimes(s, f, spell.element)
+  end
+
+  local function spend(id)
+    local cost = party.SPELLS[id].mp
+    if special == "PRAY" and m.mp * 2 <= st.mp then return false end -- that MP is for healing
+    return b.boss or cost <= 6 or cost * 7 <= st.mp
+  end
+
+  if special == "STEAL" and b.boss then
+    for i, f in ipairs(b.foes) do
+      if alive(s, f) and not f.robbed and enemies.FOES[f.id].steal then
+        return cast(can("mug") and "mug" or "steal", "foe", i)
+      end
+    end
+  end
+
+  if special == "STEAL" and #usable > 1 then
+    if foes.count >= 2 and can("fourcuts") then return cast("fourcuts") end
+    if foes.count >= 2 and can("bladefan") then return cast("bladefan") end
+    if can("backstab") and (foe.blind > 0 or foe.sleep > 0) then return cast("backstab", "foe", foes.weakest) end
+    if can("grit") and foe.blind == 0 and foes.hp > 3 * atkNow and not immuneTo(s, foe, "blind") then return cast("grit", "foe", foes.weakest) end
+    if can("fourcuts") and foes.hp > 3 * atkNow then return cast("fourcuts") end
+  end
+
+  if special == "BLOOD" then
+    local share = m.hp * 100 / st.hp
+    if can("leech") and share < 50 then return cast("leech", "foe", foes.weakest) end
+    if b.boss and can("redoath") and u.oath == 0 and share > 75 then return cast("redoath") end
+    if can("bloodwave") and foes.count >= 2 and share >= 55 then return cast("bloodwave") end
+    if foes.hp > 3 * atkNow and share >= 55 then
+      if can("hemorrhage") and share >= 75 then return cast("hemorrhage", "foe", foes.weakest) end
+      return cast("bleed", "foe", foes.weakest)
+    end
+  end
+
+  -- flasks and storms for a crowd
+  if foes.count >= 2 then
+    local best, score
+    for _, id in ipairs(usable) do
+      local spell = party.SPELLS[id]
+      if spell.kind == "damage" and spell.target == "foes" and spend(id) then
+        local total = 0
+        for _, f in ipairs(standing(s, b.foes)) do total = total + min(f.hp, worth(id, f)) end
+        if not best or total > score then best, score = id, total end
+      end
+    end
+    if best then return cast(best) end
+  end
+
+  --- The cheapest spell that finishes the weakest, or the hardest hit that can be paid for.
+  local function bestSingle()
+    local best, finisher
+    for _, id in ipairs(usable) do
+      local spell = party.SPELLS[id]
+      if spell.kind == "damage" and spell.target == "foe" and spend(id) then
+        local hit = worth(id, foe)
+        if hit >= foes.hp and (not finisher or spell.mp < party.SPELLS[finisher].mp) then finisher = id end
+        if not best or hit > worth(best, foe) then best = id end
+      end
+    end
+    return finisher or best
+  end
+
+  if special ~= "FOCUS" and special ~= "MAGIC" and foes.count == 1 and foes.hp > 4 * atkNow then
+    local id = bestSingle()
+    if id then return cast(id, "foe", foes.weakest) end
+  end
+  if special == "FOCUS" and not u.focus and foes.hp > 3 * power(s, u).atk then return { cmd = "special" } end
+  if special == "MAGIC" then
+    local id = bestSingle()
+    if id then return cast(id, "foe", foes.weakest) end
+    -- a field budget that leaves nothing affordable still beats a mage's stick
+    for _, spellId in ipairs(usable) do
+      if party.SPELLS[spellId].kind == "damage" and party.SPELLS[spellId].target == "foe" then return cast(spellId, "foe", foes.weakest) end
+    end
+  end
+  return { cmd = "attack", side = "foe", i = foes.weakest }
 end
 
 --- A reasonable player: an action, or nil when there is nothing to tap.
 function M.bot(s)
   local b = s.battle
   if not b or b.result then return nil end
+  upgrade(b)
   if b.phase == "spoils" then return { kind = "tap" } end
   if b.phase == "run" then return nil end
   local want = plan(s, b)
   if b.phase == "cmd" then return { kind = "cmd", cmd = want.cmd } end
   if b.phase == "list" then
-    for i, row in ipairs(M.rows(s)) do
+    local rows = M.rows(s)
+    for i, row in ipairs(rows) do
       if row.id == want.row and row.ok then return { kind = "pick", i = i } end
+    end
+    for _, row in ipairs(allRows(s, b)) do
+      if row.id == want.row and row.ok and rows[#rows].kind == "more" then return { kind = "pick", i = #rows } end
     end
     return { kind = "back" }
   end

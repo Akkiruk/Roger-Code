@@ -82,7 +82,7 @@ local function drawStatus(s, member, y)
   local rows = {
     { "ROLE", (char.role or ""):upper() }, { "SPECIAL", char.special or "-" },
     { "ATTACK", stats.atk }, { "DEFENCE", stats.def }, { "MAGIC", stats.mag }, { "SPEED", stats.spd },
-    { "WEAPON", gearName(member.weapon) }, { "ARMOUR", gearName(member.armour) },
+    { "WEAPON", gearName(member.weapon) }, { "ARMOUR", gearName(member.armour) }, { "ACCESSORY", gearName(member.accessory) },
     { "XP TO NEXT", math.max(0, party().xpFor(member.lvl + 1) - member.xp) },
   }
   for i, row in ipairs(rows) do
@@ -91,13 +91,13 @@ local function drawStatus(s, member, y)
   end
 end
 
-local PAGE_TITLE = { main = "MENU", items = "ITEMS", useon = "USE ON", gear = "GEAR", equip = "EQUIP", status = "STATUS" }
+local PAGE_TITLE = { main = "MENU", items = "ITEMS", useon = "USE ON", gear = "GEAR", equip = "EQUIP", status = "STATUS", party = "PARTY", travel = "TRAVEL" }
 
 local function drawMenu(L, s)
   local menu = s.menu
   drawTop(L, PAGE_TITLE[menu.page] or "MENU")
   local rows = rules.menuRows(s)
-  for _, row in ipairs(rows) do row.dim = row.item and not row.field end
+  for _, row in ipairs(rows) do row.dim = (row.item and not row.field) or (row.swap and row.picked) end
   drawRows(rows)
   if menu.page == "items" and #rows == 0 then ui.small("Nothing in the bag.", ROWS_X, ROWS_Y, C.line, C.bg) end
   if menu.page == "equip" and #rows == 0 then ui.small("No spare gear to wear.", ROWS_X, ROWS_Y, C.line, C.bg) end
@@ -112,6 +112,7 @@ local function drawMenu(L, s)
     ui.small(memberName(s, member) .. " wears", SIDE_X, y, C.hi, C.bg, "left", 50)
     ui.small("WEAPON " .. gearName(member.weapon), SIDE_X, y + 1, C.text, C.bg)
     ui.small("ARMOUR " .. gearName(member.armour), SIDE_X, y + 2, C.text, C.bg)
+    ui.small("ACCESSORY " .. gearName(member.accessory), SIDE_X, y + 3, C.text, C.bg)
   end
   ui.small("GOLD " .. s.gold, ROWS_X, L.H - 5, C.hi, C.bg)
   if menu.line then ui.small(menu.line, ROWS_X, L.H - 3, C.text, C.bg, "left", 100) end

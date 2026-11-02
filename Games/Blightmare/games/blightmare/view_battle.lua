@@ -34,7 +34,7 @@ M.STRIP = { x = 72, y = 58, w = 35, rowH = 6 }
 local NAME_W, HP_RIGHT, MP_X, TAG_X = 8, 88, 89, 92
 local HP_BAR_W, ATB_X, ATB_W = 20, 93, 14
 
--- a list opens over the foes, and leaves the party in view. Six rows fit, which is more than any list has.
+-- a list opens over the foes, and leaves the party in view. Six rows fit: a longer list pages, with MORE as its last row.
 local ROW_X, ROW_Y, ROW_W, ROW_H = 2, 8, 73, 8
 
 -- where foes stand, by how many there are: { x, y }, and the size each takes. No two boxes meet, bars included.
@@ -45,17 +45,53 @@ local SLOTS = {
   { w = 30, h = 20, { 2, 8 }, { 36, 8 }, { 2, 31 }, { 36, 31 } },
   { w = 22, h = 18, { 2, 8 }, { 26, 8 }, { 50, 8 }, { 14, 31 }, { 38, 31 } },
 }
--- the Foreman fills the left of the field, and whoever he calls stands in front of him
-local BOSS = { x = 1, y = 8, w = 50, h = 45 }
-local ADDS = { { 53, 9 }, { 53, 30 } }
-local ADD_W, ADD_H = 21, 14
+-- a big foe fills the left of the field, and whoever it calls stands in front of it. Boxes by the size of the biggest: def.size 2
+-- or 3. The party never comes further left than x 78, so all of this is clear of them.
+local BIG = {
+  [2] = { rect = { x = 1, y = 8, w = 50, h = 45 }, adds = { { 53, 9 }, { 53, 30 } }, addW = 21, addH = 14 },
+  [3] = { rect = { x = 1, y = 8, w = 58, h = 45 }, adds = { { 60, 9 }, { 60, 30 } }, addW = 17, addH = 14 },
+}
+-- two big foes side by side, and helpers in the narrow column left over
+local PAIR = { { x = 1, y = 8, w = 29, h = 45 }, { x = 31, y = 8, w = 29, h = 45 } }
+local PAIR_ADDS = { adds = { { 61, 9 }, { 61, 30 } }, addW = 16, addH = 14 }
+
+--- How much of the field a foe takes. A lone boss's lead is big unless its def says, and a test's bare table has no id.
+local function sizeOf(b, i)
+  local f = b.foes[i]
+  local def = f and f.id and enemies.FOES[f.id]
+  if def and def.size then return def.size end
+  if not b.boss then return 1 end
+  local leads = 0
+  for _, other in ipairs(b.foes) do
+    if not other.added then leads = leads + 1 end
+  end
+  return i == 1 and leads <= 1 and 2 or 1
+end
+
+--- The nth box of a helper column.
+local function addRect(set, n)
+  local at = set.adds[(n - 1) % #set.adds + 1]
+  return { x = at[1], y = at[2], w = set.addW, h = set.addH }
+end
 
 --- The box a foe stands in. The bars go just under it.
 function M.foeRect(b, i)
-  if b.boss then
-    if i == 1 then return BOSS end
-    local at = ADDS[(i - 2) % #ADDS + 1]
-    return { x = at[1], y = at[2], w = ADD_W, h = ADD_H }
+  local bigs = {}
+  for k = 1, #b.foes do
+    if sizeOf(b, k) >= 2 then bigs[#bigs + 1] = k end
+  end
+  if #bigs == 1 or #bigs == 2 then
+    local set = #bigs == 1 and BIG[math.min(3, sizeOf(b, bigs[1]))] or PAIR_ADDS
+    local n = 0
+    for k = 1, i do
+      local big = k == bigs[1] or k == bigs[2]
+      if big and k == i then
+        if #bigs == 1 then return set.rect end
+        return PAIR[k == bigs[1] and 1 or 2]
+      end
+      if not big then n = n + 1 end
+    end
+    return addRect(set, n)
   end
   local slot = SLOTS[#b.foes] or SLOTS[#SLOTS]
   local at = slot[i] or slot[1]
@@ -132,6 +168,12 @@ local function statusText(u)
   if u.poison > 0 then out = out .. " PSN" end
   if u.sleep > 0 then out = out .. " ZZZ" end
   if u.nightmare > 0 then out = out .. " NMR" end
+  if (u.thrall or 0) > 0 then out = out .. " THR" end
+  if (u.tadpole or 0) > 0 then out = out .. " TAD" end
+  if (u.blind or 0) > 0 then out = out .. " BLD" end
+  if (u.silence or 0) > 0 then out = out .. " SIL" end
+  if (u.doom or 0) > 0 then out = out .. " DOM" end
+  if u.hidden then out = out .. " HID" end
   if u.guard then out = out .. " GRD" end
   if u.focus then out = out .. " FOC" end
   return out
@@ -139,11 +181,22 @@ end
 
 -- ---------------------------------------------------------------- the still part
 
+--- A sprite the artist hasn't drawn yet must never stop a fight: a foe stands in for it.
+local function spriteFor(name)
+  if name and art.SPRITES[name] then return name end
+  return art.SPRITES.blighted and "blighted" or "downed"
+end
+
+--- A ground the artist hasn't drawn yet does the same.
+local function drawGround(bg)
+  if not pcall(art.ground, bg, FX, FY, FW, FH) then art.ground("mine", FX, FY, FW, FH) end
+end
+
 local function drawUnits(s, b)
   for i, f in ipairs(b.foes) do
     if f.hp > 0 then
       local r = M.foeRect(b, i)
-      art.draw(enemies.FOES[f.id].sprite, r.x, r.y, r.w, r.h, f.flash > 0 and "flash" or f.sleep > 0 and "dim" or nil)
+      art.draw(spriteFor(enemies.FOES[f.id].sprite), r.x, r.y, r.w, r.h, f.flash > 0 and "flash" or f.sleep > 0 and "dim" or nil)
     end
   end
   for i, u in ipairs(b.allies) do
@@ -180,7 +233,7 @@ local function drawStill(L, s, b)
   if still.key ~= key then
     ui.setScreen(still.surf)
     ui.fill(0, 0, L.W, L.H, C.bg)
-    art.ground(b.bg, FX, FY, FW, FH)
+    drawGround(b.bg)
     ui.fill(0, LINE_Y, L.W, 1, C.line)
     drawUnits(s, b)
     ui.setScreen(screen)
@@ -211,7 +264,7 @@ end
 
 --- A member's name, the player's own for the hero, cut to fit.
 local function shortName(s, m)
-  local name = m.id == "hero" and s.heroName and s.heroName:upper() or party.CHARS[m.id].name
+  local name = m.id == "hero" and s.heroName and s.heroName:upper() or party.CHARS[m.id].short or party.CHARS[m.id].name
   return name:sub(1, NAME_W)
 end
 
@@ -238,7 +291,11 @@ local function drawFloats(b)
   for _, f in ipairs(b.floats) do
     local r = f.side == "foe" and M.foeRect(b, f.i) or M.allyRect(b, f.i)
     local y = max(TOP_Y, r.y + floor(r.h / 2) - 7 + floor(f.t / 2))
-    ui.text(f.text, r.x + floor(r.w / 2), y, C[f.color] or C.text, "center")
+    if f.small then
+      ui.small(f.text, r.x + floor(r.w / 2), y + ui.fontHeight() + 1, C[f.color] or C.text, C.bg, "center")
+    else
+      ui.text(f.text, r.x + floor(r.w / 2), y, C[f.color] or C.text, "center")
+    end
   end
 end
 

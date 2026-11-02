@@ -7,7 +7,8 @@ local M = {}
 M.DIRS = { { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } } -- 1 north, then clockwise
 
 -- The squares nobody walks through. A door is one of them until it's opened, and > is not: an exit is a square you step on.
-local SOLID = { ["#"] = true, h = true, W = true, ["+"] = true, L = true }
+-- ~ is a drop or deep water: nobody walks it, but the eye goes straight across.
+local SOLID = { ["#"] = true, h = true, W = true, ["+"] = true, L = true, ["~"] = true }
 
 local function maps() return require("games.blightmare.maps") end
 

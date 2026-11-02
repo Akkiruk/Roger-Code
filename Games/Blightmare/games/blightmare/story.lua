@@ -88,9 +88,8 @@ end
 
 S.start = {
   { warp = { "scythebreak", 3, 3, 2 } },
-  t("There is a place people go, just before they wake."),
-  t("You have heard all about it. Colours. Falling. All your teeth. A dead uncle asking after the horse."),
-  t("You open your eyes. It is morning. There was nothing before it. There never is."),
+  t("Everyone in Scythebreak goes somewhere at night. They tell you about it over breakfast: colours, falling, all their teeth, a dead uncle asking after the horse."),
+  t("You have never been. You shut your eyes, you open them, and it is morning. There is nothing in between. There never has been."),
   nan("Up, {hero}! The bell's gone and the porridge has started to set, and I'm not chiselling it off the pot a second time. Come on, out of there."),
   ask(nan("Well, then? What did you dream?"), {
     topic("Why do you ask me every morning?", {
@@ -113,7 +112,7 @@ S.talk_nan = {
     nan("That's my good one. Go on and play, or whatever it is you do now you're too big for it."),
   }, other = {
     { when = "signed", steps = {
-      nan("The loaf, {hero}. The wall-watch is at the far west end of the high street, and you can't miss it, because it's the wall."),
+      nan("The loaf, {hero}. Down through the square and west along the high street, right to the end. You can't miss the wall-watch, because it's the wall."),
     }, other = {
       nan("The Book first, love. A dream undeclared is a fine and a second one is a visit, and I'll not have a visit in this house."),
     } },
@@ -163,7 +162,7 @@ S.talk_wick = {
 
 S.talk_kid = {
   child("I'm the doctor and you're sick. Say ah. Now you're dead, and I'm very sorry, but it's for the good of the town. That's what you say. I've heard them."),
-  ask(child("{hero}? What's nothing like? Nan says that's what you dream. Is it black? Is it like when you shut your eyes?"), {
+  ask(child("{hero}? What's nothing like? Nan says you don't get dreams, you just get nothing. Is it black? Is it like when you shut your eyes?"), {
     topic("Who told you to ask me that?", {
       child("Nobody. I asked a soldier what nothing was like, and he wrote my name down. Then he asked how to spell it. I don't think I was meant to be pleased."),
     }),
@@ -190,7 +189,7 @@ S.talk_clerk = {
     clerk("Next. Name, and anything to declare from the night. Oh, it's you, {hero}. I don't know why I ask."),
     ask(clerk("'Nothing', I suppose? I can write it for you, if you like. I've a very good hand for it by now."), {
       topic("Does anyone actually read all this?", {
-        clerk("Somebody must. Every quarter a man comes with a satchel and counts the pages, and he has never once smiled. I've kept this Book twenty-two years, and I'd rather not know who it's for."),
+        clerk("Somebody must. Every quarter a man comes with a satchel and counts the pages. That's him across the square, and he has never once smiled. I've kept this Book twenty-two years, and I'd rather not know who it's for."),
       }),
       { "Nothing, thank you.", {
         clerk("Nothing it is. There. You're a pleasure to file."),
@@ -207,9 +206,14 @@ S.talk_clerk = {
 }
 
 S.talk_widow = {
-  villager("My Tobin put down a dream in that Book once. Only a small one. He said he'd been a fish, and that it was the happiest he'd ever been."),
-  villager("They sent someone round, ever so polite, and took him for one night of observation. That's nine years ago now. They write every spring to say he's doing well."),
-  { set = "heard_tobin" },
+  { when = "horn", steps = {
+    villager("I heard the horn, love. They'll want us all in a line, and I'll go when I've found my good shawl. Let them wait for me for once. I've had nine years of waiting for them."),
+  } },
+  { when = "heard_tobin", steps = {}, other = {
+    villager("My Tobin put down a dream in that Book once. Only a small one. He said he'd been a fish, and that it was the happiest he'd ever been."),
+    villager("They sent someone round, ever so polite, and took him for one night of observation. That's nine years ago now. They write every spring to say he's doing well."),
+    { set = "heard_tobin" },
+  } },
   ask(villager("I keep his boots by the door. You'll think that's foolish."), {
     topic("Have they ever let you see him?", {
       villager("You'd have to go to Adaphis, and you'd need a pass for that, and a reason for the pass. I've filled in the form four times. It's a very kind form. It thanks me for my patience."),
@@ -233,14 +237,22 @@ S.talk_doorman = {
 }
 
 S.talk_gateman = {
-  orderly("Good morning. The gate is for people with a pass, and passes are for people with a reason. We're very happy to hear your reason. Do you have one?"),
-  { choice = {
-    { "Not really. Just looking.", {
-      orderly("Looking is free. It's a lovely gate. Have a pleasant day."),
-    } },
-    { "What counts as a good reason?", {
-      orderly("Do you know, in six years nobody has asked me that. I'll have to think about it. Come back when you've got one, and we'll see how it does."),
-      { set = "asked_pass" },
+  { when = "horn", steps = {
+    orderly("I'm so sorry, the gate is shut for the present, pass or no pass. I'm afraid reasons have stopped working this morning. Everyone's being seen at the Clinic house, and I hear they're being very good about it."),
+  }, other = {
+    { when = "asked_pass", steps = {
+      orderly("Back already? I'm still thinking about what counts as a good reason, and it's turned out to be a very large question. Bring me yours when you've got one, and we'll see how it does."),
+    }, other = {
+      orderly("Good morning. The gate is for people with a pass, and passes are for people with a reason. We're very happy to hear your reason. Do you have one?"),
+      { choice = {
+        { "Not really. Just looking.", {
+          orderly("Looking is free. It's a lovely gate. Have a pleasant day."),
+        } },
+        { "What counts as a good reason?", {
+          orderly("Do you know, in six years nobody has asked me that. I'll have to think about it. Come back when you've got one, and we'll see how it does."),
+          { set = "asked_pass" },
+        } },
+      } },
     } },
   } },
 }
@@ -342,14 +354,17 @@ S.scene_wick = {
 }
 
 S.talk_q_nan = {
-  nan("There you are. Come and stand by me. Oh, you've blood on you. Whose is that? No, don't tell me, not here."),
-  { when = "snapped_nan", steps = {
-    nan("And before you say it, yes, I'm fussing. You can tell me to stop later. I'd like that. I'd like there to be a later for you to be rude in."),
+  { when = "nan_queued", steps = {}, other = {
+    nan("There you are. Come and stand by me. Oh, you've blood on you. Whose is that? No, don't tell me, not here."),
+    { when = "snapped_nan", steps = {
+      nan("And before you say it, yes, I'm fussing. You can tell me to stop later. I'd like that. I'd like there to be a later for you to be rude in."),
+    } },
+    { when = "joked_nan", steps = {
+      nan("I've been thinking about that dead uncle you made up, and his horse, and I'll say this: it's the best laugh I've had all week. It's a poor week."),
+    } },
+    { set = "nan_queued" },
   } },
-  { when = "joked_nan", steps = {
-    nan("I've been thinking about your dead uncle and his horse, and I'll say this: it's the best laugh I've had all week. It's a poor week."),
-  } },
-  ask(nan("It's only a test. We've had them before. You drink it, you sleep it off, and you complain."), {
+  ask(nan("It's only a test, they say. You drink it, you sleep it off, and you complain."), {
     topic("Are you frightened?", {
       nan("I've been frightened since before you were born, love, and I've still got the washing done. You don't stop for it. That's the whole of what I know."),
     }),
@@ -379,7 +394,7 @@ S.talk_q_kid = {
   { when = "kid_snub", steps = {
     child("I'm still not talking to you. But is Wick sick? I said hello to him, and he said hello back, only not from where he was."),
   }, other = {
-    child("Is Wick sick? I said hello to him and he said hello back, only not from where he was. The man in my room says it's nothing to worry about."),
+    child("Is Wick sick? I said hello to him and he said hello back, only not from where he was. The man in my room doesn't look worried."),
   } },
   { choice = {
     { "Stay close to Nan, all right?", {
@@ -393,15 +408,15 @@ S.talk_q_kid = {
 
 S.scene_test = {
   t("The hall smells of lavender and boiled linen. Someone has set out chairs. Someone has given thought to the chairs."),
-  doctor("Come in and sit down. You've had a frightening morning, and I'm sorry for that. Would you like some water?"),
+  doctor("Come in and sit down. Whoever was nearest the wall is seen first, so you've gone to the head of the queue. You've had a frightening morning, and I'm sorry for that. Would you like some water?"),
   doctor("I'm the doctor, and that's all you need to call me. This is a draught, and it will give you one night of very bad dreams. If there is anything in you, we'll see it by morning."),
   doctor("If there is nothing in you, you'll have lost a night's rest, and I shall apologise to you in person. Everyone takes it. Your neighbours have all been very good."),
   ask(doctor("Is there anything you'd like to ask first? I always encourage questions."), {
     topic("What's in it?", {
       doctor("A little of what you're afraid of, in a very safe amount. That's how most medicine works. I could give you the proper name, but people tend to find it doesn't help."),
     }),
-    topic("Where's Nan?", {
-      doctor("She went in just ahead of you. She was very good, and she told my orderly he was too thin. She's being looked after by people who are trained to do it."),
+    topic("Will Nan have to take it too?", {
+      doctor("She's next, just outside that door. She's being very good, and she's told my orderly he's too thin. She'll be looked after by people who are trained to do it."),
     }),
     topic("What happens if it finds something?", {
       doctor("Then you'll be cared for. Nobody here is being punished, {hero}. I want you to hold on to that, whatever else you hear tonight. The Clinic has never once been angry with a patient."),
@@ -416,7 +431,7 @@ S.scene_test = {
     } },
   }),
   { fade = true },
-  t("You sleep. You wake. There was nothing before it. There never is."),
+  t("You shut your eyes, you open them, and it is morning. There is nothing in between. There never has been."),
   t("The rest of Scythebreak does not wake so well."),
   t("It comes through the walls of the ward, from every bed at once. Nobody is screaming. It's much quieter than that."),
   { warp = { "scythebreak", 17, 3, 3 } },
@@ -432,7 +447,7 @@ S.scene_test = {
       { set = "challenged_doctor" },
     } },
   } },
-  captain("Every bed in that ward, doctor. My own men, and children. And this one's sitting here asking about breakfast."),
+  captain("Every bed in that ward, doctor. My own men, and children. And this one's sitting here as if it were any other breakfast."),
   doctor("Yes. Isn't it wonderful?"),
   doctor("Captain, this is a clean result. Do you understand me? In all the years of the wall, there has never been a clean result."),
   captain("What do you want done?"),
@@ -572,7 +587,7 @@ S.scene_night_street = {
 
 S.scene_gate = {
   t("Two orderlies stand at the gate, with a lantern. Neither of them has had the soup."),
-  orderly("Good evening, doctor. You're not on the sheet tonight, and I don't believe the patient is either."),
+  orderly("Good evening, doctor. You're not on the sheet tonight, and I don't believe the patient is either. Might I ask your reason?"),
   deserter("No. I've taken myself off it."),
   { when = "asked_pass", steps = {
     orderly("Ah, and it's you. Did you come up with a good reason? I've been looking forward to it. I did say to come back."),
@@ -617,11 +632,13 @@ S.scene_gate = {
 }
 
 S.turned_back = {
-  t("Clinic lamps at every corner, and chalk on every door. There's no one left here you can reach. Not yet."),
-  { when = "wanted_back", steps = {
-    deserter("I know, friend. Not like this. We'll come back when we've got something to come back with."),
+  { when = "wm_done", steps = { { warp = { "em_scythebreak", 23, 11, 4 } } }, other = { -- by then there is nobody left to turn anyone back
+    t("Clinic lamps at every corner, and chalk on every door. There's no one left here you can reach. Not yet."),
+    { when = "wanted_back", steps = {
+      deserter("I know, friend. Not like this. We'll come back when we've got something to come back with."),
+    } },
+    { world = { 62, 60 } },
   } },
-  { world = { 62, 60 } },
 }
 
 S.gate_greywater = {
@@ -658,10 +675,10 @@ S.talk_mayor = {
     t("The Mayor is asleep at her desk, on a motion of her own. Someone has put a coat over her. It's a very small coat."),
   }, other = {
     { when = "foreman_down", steps = {
-      mayor("They're coming up! Twenty-nine of them, on their own feet, and most of them know their own names! Oh, I shall want that in the minutes!"),
+      mayor("They're up! Twenty-nine of them, on their own feet, and most of them know their own names! Oh, I shall want that in the minutes!"),
       t("The doctor lays the paper on her desk. She reads it twice, standing on a box."),
       mayor("It's a form. I knew it. I wrote eleven letters to those people, and all along the answer was a form. Do you know, I think I'd have minded less if they'd been rude."),
-      ask(mayor("They'll come for us when they hear of this, won't they? You two look like you know how that goes."), {
+      ask(mayor("They'll come for us when they hear of this, won't they? You look like you know how that goes."), {
         topic("What will you do with the casks?", {
           mayor("Burn them, and then bury the ashes, and then hold a meeting about the burying. The second-level gnomes want to drop them down the shaft. I've told them it's been a hard month for the shaft."),
         }),
@@ -702,11 +719,11 @@ S.talk_mayor = {
       mayor("There's one further item. It's a motion to go to bed. All those in favour?"),
       t("It carries in about four seconds."),
       { fade = true },
-      t("All over Orrenshire the lamps go out, one street at a time, for the first time in twenty-one days."),
+      t("All over Orrenshire the lamps go out, one street at a time, for the first time in eleven days."),
       t("Somebody is snoring. Somebody shouts at them, kindly, and then forgets to go on."),
       deserter("Listen to that. It's the worst sound in the world, and I could listen to it all night."),
       { when = "hid_dream", steps = {
-        deserter("You told us you didn't know, down there at the wheel. That's all right. You needn't tell me anything until you're ready. I've just been noticing, that's all."),
+        deserter("You never did give us an answer, down there at the wheel. That's all right. You needn't tell me anything until you're ready. I've just been noticing, that's all."),
       } },
       ask(cleric("Go to sleep, both of you. I'll sit up with them. I generally do."),  {
         topic("What's it like when she takes someone?", {
@@ -731,25 +748,28 @@ S.talk_mayor = {
       t("Her hand moves to the book, the way a hand moves to an old wound."),
       { fade = true },
       { set = "finished" },
-      { fin = true },
+      { big = "THE ROAD EAST IS OPEN" },
     }, other = {
       { when = "mine_pass", steps = {
-        mayor("The bottom of the mine, tall ones. Take the road east out of town to the first big hole, and show the warden your chit. I'd come myself, but I've a speech to finish."),
-        mayor("And if you should happen not to meet anyone on the first level, because there's nobody there, you might tell her we're out of bandages."),
+        { when = "cleric_in", steps = {
+          mayor("Back already, tall ones? And I see you've brought nobody with you. Nobody at all, and she's looking tired. The bottom of the mine, if you please. I'd come myself, but I've a speech to finish."),
+        }, other = {
+          mayor("The bottom of the mine, tall ones. Take the road east out of town to the first big hole, and show the warden your chit. I'd come myself, but I've a speech to finish."),
+        } },
       }, other = {
         mayor("...and in CONCLUSION, which I have now reached twice... oh! Visitors! Tall ones! Ottilie Brasscap, Mayor, sixty years unopposed. You'll forgive the lamps. We've a small difficulty."),
         mayor("We have a mine, and we had a deep shift in it, forty gnomes. Twelve days ago they stopped sending up coal, and then the second-level men started coming up with a look on them."),
         mayor("They'd drop off, you see, and they'd wake up wrong. Or they wouldn't. And then whoever was sat next to them would have a bad night too. So we stopped. Sleeping, I mean, as a town. It went to a vote."),
-        ask(mayor("Carried, with one abstention, and he's in the ward. Now, you've the look of people with questions. Everyone's got questions. I've got a speech."), {
+        ask(mayor("Carried, with one abstention, and he never woke. Now, you've the look of people with questions. Everyone's got questions. I've got a speech."), {
           topic("Did you send to the Clinic?", {
-            deserter("That was going to be mine. Did you?"),
+            deserter("That was going to be mine. Speaking purely as a herbalist, did you?"),
             mayor("Eleven letters, doctor... herbalist, was it? They sent back a form asking how many of us there are. They're very interested in the number. They've sent no doctor."),
           }),
           topic("What was the deep shift doing?", {
             mayor("Opening the new seam, under the Foreman, a very sound gnome who has never been late in his life. He stopped reporting the same day the coal did. I'd sooner not think about that."),
           }),
           topic("Who's looking after the sick?", {
-            mayor("Nobody. Absolutely nobody. There is no cleric down there, I want that clearly understood. The Clinic hangs people for that, and nobody is treating anybody on the first level."),
+            mayor("Nobody. Absolutely nobody. There is no cleric down there, I want that clearly understood. The Clinic burns people for that, and nobody is treating anybody on the first level."),
             t("The Mayor winks. It takes her a moment to get the eye open again."),
           }),
           { "We'll go down and see.", {
@@ -770,6 +790,7 @@ S.talk_mayor = {
           } },
         } },
         mayor("Here's a chit for the warden at the pit. It says that you're authorised, and it also says that you're responsible. I'd read the second part carefully."),
+        mayor("And if you should happen not to meet anyone on the first level, because there's nobody there, you might tell her we're out of bandages."),
         { set = "mine_pass" },
       } },
     } },
@@ -780,8 +801,8 @@ S.talk_innkeeper = {
   { when = "finished", steps = {
     t("The innkeeper is asleep on the stairs, smiling, with a key in each hand."),
   }, other = {
-    innkeeper("Welcome to the Feather and Pick! Forty beds, the best in the Heart, and I've not had a soul in one of them for nine days. I still turn them all down at night. You've got to have something to do."),
     { when = "first_night", steps = {
+      innkeeper("Back again! Forty beds, and yours is the only one that's been slept in for nine days. I've left it just as it was. I go up and look at it sometimes."),
       ask(innkeeper("It's twenty gold a bed, and I look the other way, and you never saw me. What'll it be?"), {
         topic("Who hasn't been down to breakfast?", {
           innkeeper("I keep count. It's a habit, thirty years in this trade. There were nineteen regulars at my table a fortnight ago, and now there's seven. I still lay the nineteen places."),
@@ -796,13 +817,14 @@ S.talk_innkeeper = {
         { "Not now.", {} },
       }),
     }, other = {
+      innkeeper("Welcome to the Feather and Pick! Forty beds, the best in the Heart, and I've not had a soul in one of them for nine days. I still turn them all down at night. You've got to have something to do."),
       innkeeper("Ordinance Forty's for residents, mind, and you're visitors. So the first night's on the house, and I'll tell you honestly, it's just so that I can watch someone do it."),
       { choice = {
         { "That's very kind. Thank you.", {
           innkeeper("Kind nothing. I'll be on the landing, listening to you breathe. It's the nearest thing I've had to a holiday."),
         } },
         { "Is it safe to sleep here?", {
-          innkeeper("I couldn't tell you, my love. Safe's not what it was. But it's clean, and it's yours, and the doctor there can shake you if you start to mutter."),
+          innkeeper("I couldn't tell you, my love. Safe's not what it was. But it's clean, and it's yours, and your friend there can shake you if you start to mutter."),
         } },
       } },
       { fade = true },
@@ -837,8 +859,8 @@ S.talk_smith = {
   }, other = {
     smith("Forged in the mountain and tested on my brother-in-law. Nine days without sleep and I'm doing the best work of my life, so what do you need?"),
     ask(smith("Mind that one on the bench. It's a sword with two handles and no blade. It's art."), {
-      topic("Have you seen the Foreman?", {
-        smith("Not since he came in for hinges, a fortnight back. Very polite, very neat, and he paid in new coin. I remember thinking it was the first time I'd ever seen him without coal on him."),
+      topic("What was the Foreman like?", {
+        smith("Last I saw of him he came in for hinges, a fortnight back. Very polite, very neat, and he paid in new coin. I remember thinking it was the first time I'd ever seen him without coal on him."),
       }),
       topic("It's magnificent. What's it for?", {
         smith("For? Hah! Nobody's ever... you've got an eye, you have. It's for looking at, and then for feeling slightly worse. Tell you what, anything off this wall is cheaper for you. Don't tell my brother-in-law."),
@@ -858,7 +880,11 @@ S.talk_smith = {
 
 S.talk_chair = {
   { when = "foreman_down", steps = {
-    gnome("The Committee for Staying Awake is pleased to announce that it has met its goals and is dissolving itself. I may have a small lie down. On the mallet. It's how I've come to think of myself."),
+    { when = "finished", steps = {
+      t("The Chair is asleep at the Wakefulness Engine. Every ninety seconds the small mallet comes down on his head, and every time he smiles a little."),
+    }, other = {
+      gnome("The Committee for Staying Awake is pleased to announce that it has met its goals and is dissolving itself. I may have a small lie down. On the mallet. It's how I've come to think of myself."),
+    } },
   }, other = {
     gnome("Welcome to the Committee for Staying Awake! I am the Chair. I'd offer you a chair, but that's how it starts."),
     gnome("Behold the Wakefulness Engine! Every ninety seconds a small mallet strikes the operator upon the head. It has struck me eleven thousand times, and I've never felt more... there's a word. There's a word for how I am."),
@@ -925,7 +951,7 @@ S.talk_frog = {
         t("A frog folk, a large one, stands in the town stocks with his chin on the plank. He wears a very good hat that doesn't fit."),
         bogg("Psst. Tall one. Gentleman Bogg, of the Hayford Swamp, at your service. Don't let the stocks deceive you, I'm only here for the company."),
         bogg("They found me on the road with eleven sacks of barley, a duck, and the hat of the Mayor of Hayford. I want you to know that I can explain two of those."),
-        ask(bogg("Now, a frog must stay damp, and nobody in this town can lift a bucket any more. I'm going crisp. Fetch me one from the well, there's a tall fellow."), {
+        ask(bogg("Now, a frog must stay damp, and nobody in this town can lift a bucket any more. I'm going crisp. Fetch me one from the well, there's a good tall one."), {
           topic("What exactly are you?", {
             bogg("I am what you'd call a redistributor. There's a great deal of barley in Hayford and very little in the swamp, and I've made it my life's work to redistribute it to me."),
           }),
@@ -933,7 +959,7 @@ S.talk_frog = {
             bogg("The barley was a gift from the people of Hayford, in the sense that they failed to stop me. And the duck is a friend. I've no idea about the hat. I woke up in it, in a manner of speaking."),
           }),
           { "All right. One bucket.", {
-            bogg("A prince! A prince among the tall! I'll be right here. I want that clearly understood. I shall not move."),
+            bogg("A marvel! A marvel among the tall! I'll be right here. I want that clearly understood. I shall not move."),
           } },
           { "Dry up, you thief.", {
             bogg("Dry up! Oh, that's very good. That's cruel, and it's also funny, which is the worst kind. The well's still there if you've a change of heart."),
@@ -947,16 +973,23 @@ S.talk_frog = {
 }
 
 S.talk_stocks = {
-  gnome("He was right here. The stocks are still locked, I've checked them, I've checked them several times. And my hat's gone too, and so has the plank."),
-  { when = "frog_wet", steps = {
-    gnome("There was a note, addressed to 'the tall one with the bucket'. It says 'Owed: one favour. Do not tell the duck.' I've no idea what that means, and I've filed it."),
-  } },
-  { choice = {
-    { "How do you lose a plank?", {
-      gnome("Slowly! And with a great many witnesses, all of whom had been awake for twenty days! I've had statements! One of them's about a horse!"),
+  { when = "finished", steps = {
+    t("The gnome who minds the stocks is asleep across them, with his chin where the plank used to be."),
+    { when = "frog_wet", steps = {
+      t("A note is pinned to his coat, addressed to 'the tall one with the bucket'. It says 'Owed: one favour. Do not tell the duck.'"),
     } },
-    { "I'm sure he'll turn up.", {
-      gnome("That's what I'm afraid of."),
+  }, other = {
+    gnome("He was right here. The stocks are still locked, I've checked them, I've checked them several times. And my hat's gone too, and so has the plank."),
+    { when = "frog_wet", steps = {
+      gnome("There was a note, addressed to 'the tall one with the bucket'. It says 'Owed: one favour. Do not tell the duck.' I've no idea what that means, and I've filed it."),
+    } },
+    { choice = {
+      { "How do you lose a plank?", {
+        gnome("Slowly! And with a great many witnesses, all of whom had been awake for eleven days! I've had statements! One of them's about a horse!"),
+      } },
+      { "I'm sure he'll turn up.", {
+        gnome("That's what I'm afraid of."),
+      } },
     } },
   } },
 }
@@ -965,22 +998,26 @@ S.talk_well = {
   { when = "finished", steps = {
     t("Asleep, sitting up, with one arm around the well like an old friend."),
   }, other = {
-    { when = "frog_met", steps = {
-      { when = "frog_bucket", steps = {
-        gnome("I'd go easy with that water. It's got a newt in it. It had a newt in it. Has he got the newt? He owes me for a duck as it is."),
-      }, other = {
-        gnome("For the frog, is it? He owes me a duck. Go on, then, I can't lift it. I tried on Monday, and I was very brave, and it was not enough."),
-        t("You haul up a full bucket. It weighs about as much as the gnome."),
-        { set = "frog_bucket" },
-      } },
+    { when = "foreman_down", steps = {
+      gnome("They've come up, did you hear? I'm still shouting at myself, out of habit. If you're after a bucket, you've missed that frog. He's gone from the stocks, plank and all, and he still owes me a duck."),
     }, other = {
-      gnome("I dropped off on the windlass yesterday, just for one second, and shouted at myself. I was very firm about it. I felt quite let down."),
-      { choice = {
-        { "Sounds like you did the right thing.", {
-          gnome("That's what I told myself, but I wasn't really listening."),
+      { when = "frog_met", steps = {
+        { when = "frog_bucket", steps = {
+          gnome("I'd go easy with that water. It's got a newt in it. It had a newt in it. Has he got the newt? He owes me for a duck as it is."),
+        }, other = {
+          gnome("For the frog, is it? He owes me a duck. Go on, then, I can't lift it. I tried on Monday, and I was very brave, and it was not enough."),
+          t("You haul up a full bucket. It weighs about as much as the gnome."),
+          { set = "frog_bucket" },
         } },
-        { "How long can you keep this up?", {
-          gnome("As long as it takes! Which I'm told is not very long. There's a fellow in Pick Lane started talking to his boots on the eighth day. They've been very supportive."),
+      }, other = {
+        gnome("I dropped off on the windlass yesterday, just for one second, and shouted at myself. I was very firm about it. I felt quite let down."),
+        { choice = {
+          { "Sounds like you did the right thing.", {
+            gnome("That's what I told myself, but I wasn't really listening."),
+          } },
+          { "How long can you keep this up?", {
+            gnome("As long as it takes! Which I'm told is not very long. There's a fellow in Pick Lane started talking to his boots on the eighth day. They've been very supportive."),
+          } },
         } },
       } },
     } },
@@ -1008,11 +1045,16 @@ S.talk_pip = {
         } },
         { set = "pip_done" },
       }, other = {
-        pip("She came up! She came up on the lift! She keeps asking who's got her lamp, the one with the green stripe. I said the tall ones might know."),
+        pip("My mum came up! She was on the deep shift, and she came up on the lift! She left her lamp down there, the one with the green stripe, and she says it can stay there. That's all right. She's got me."),
       } },
     }, other = {
       { when = "lamp_ask", steps = {
-        pip("It's got a green stripe. She painted it herself, so that nobody would take it by accident. It's a bit crooked, but you're not allowed to say so."),
+        { when = "have_lamp", steps = {
+          t("The lamp is in your pack. You find you can't take it out, not until there's someone to give it back to."),
+          pip("You've been down. You've got the look. Don't tell me. Just keep looking."),
+        }, other = {
+          pip("It's got a green stripe. She painted it herself, so that nobody would take it by accident. It's a bit crooked, but you're not allowed to say so."),
+        } },
       }, other = {
         pip("My mum's on the deep shift. The Mayor says they've just gone on a long one. I'm six, I'm not stupid."),
         ask(pip("If you go down, her lamp has a green stripe. You don't have to bring her. Only if you see it."), {
@@ -1108,14 +1150,18 @@ S.talk_nurse = {
       gnome("Holding on's what we do. It's mostly what mining is, when you come down to it."),
     } },
     { "How are they doing?", {
-      gnome("They're the same. That's good news, these days. Nobody tell them it's not."),
+      { when = "foreman_down", steps = {
+        gnome("Most of them got up and walked out, complaining. Loveliest thing I ever heard. The ones who are left are the same, and that's good news, these days."),
+      }, other = {
+        gnome("They're the same. That's good news, these days. Nobody tell them it's not."),
+      } },
     } },
   } },
 }
 
 S.talk_sick = {
   { when = "foreman_down", steps = {
-    t("The sacking is empty. A black thread lies folded on it."),
+    t("Most of the sacking is empty now, with a black thread folded on each. This one holds someone from the deep shift who didn't wake. The eyes have stopped moving."),
   }, other = {
     t("Asleep, or something like it. The eyes move back and forth under the lids, all in the same direction, all together."),
   } },
@@ -1135,7 +1181,7 @@ S.talk_nib = {
       { "Not yet.", {} },
     } },
   }, other = {
-    nib("The lift's stuck. Nob's got the brake on at the bottom, and he won't take it off till I say it was my turn. Eleven days we've been at it, down this speaking tube. Nob! NOB! Tell them whose turn it was!"),
+    nib("The lift's stuck. Nob's got the brake on at the bottom, and he won't take it off till I say it was my turn. Twelve days we've been at it, down this speaking tube. Nob! NOB! Tell them whose turn it was!"),
     t("From a brass tube in the rock, very faint, a small voice says something rude."),
     ask(nib("You see what I have to work with? If you're going down there, tell him to take the brake off. Otherwise it's the stairs for you. So whose turn was it?"), {
       topic("Turn at what?", {
@@ -1157,8 +1203,12 @@ S.talk_nib = {
 S.talk_logkeeper = {
   ask(gnome("Sign the shift log? Whoever signs in gets counted out. That's the rule, and it's a very comforting rule."),  {
     topic("Is it safe ahead?", {
-      gnome("Not the long drift, east of here. Stay out of it if you can. It's full of sweetdamp, and a fortnight ago it wasn't. It smells of pears."),
-      gnome("We sent a canary down. The canary had a lovely nap, and when it woke up it was not what you would call a canary."),
+      { when = "gas_off", steps = {
+        gnome("Safer. The long drift's stopped smelling of pears, and I've you to thank for that, I'm told. I've written it down as a fan fault. You don't want to be in the book for a thing like that."),
+      }, other = {
+        gnome("Not the long drift, east of here. Stay out of it if you can. It's full of sweetdamp, and a fortnight ago it wasn't. It smells of pears."),
+        gnome("We sent a canary down. The canary had a lovely nap, and when it woke up it was not what you would call a canary."),
+      } },
     }),
     { "I'll sign.", {
       { save = true },
@@ -1214,7 +1264,7 @@ S.scene_valve = {
   { set = "gas_off" },
   deserter("How long was I... who turned that? Who's been... oh."),
   cleric("You walked through that. All that way, on your own, with your eyes open."),
-  deserter("Nobody walks through that. I've handled sopor in gloves. It doesn't put you to sleep so much as drag you down into whatever you dream."),
+  deserter("Nobody walks through that. I've handled sopor in gloves. It doesn't put a person to sleep so much as drag them down into whatever they dream."),
   cleric("So what happened to you?"),
   { choice = {
     { "I don't dream.", {
@@ -1277,7 +1327,7 @@ S.scene_deep_shift = {
   t("The great hall of the deep seam. Lamps still burn along the walls. Below them, the deep shift lies in rows, tools beside them, as neatly as if someone had counted them down."),
   cleric("They're alive. All of them, every one. Oh, you poor loves."),
   deserter("That isn't sleep, sister. It's a dosage. Somebody worked out how much it would take, and then wrote it down."),
-  t("Thirty-odd gnomes breathe in and out together. You have heard that sound before, through a wall."),
+  t("Forty gnomes breathe in and out together. You have heard that sound before, through a wall."),
   { set = "saw_shift" },
   { choice = {
     { "Can you help them?", {
@@ -1308,7 +1358,7 @@ S.talk_lampwoman = {
           { set = "have_lamp" },
         } },
         { "Leave it with her for now.", {
-          t("It's the only light she has. You leave it burning. You can always come back."),
+          t("It's the one thing down here that's hers. You leave it burning. You can always come back."),
         } },
       } },
     }, other = {
@@ -1397,6 +1447,7 @@ S.scene_foreman = {
   t("Behind you, down the long hall, somebody coughs. Then somebody else. Someone starts, very quietly, to cry. It's the most wonderful sound you've heard in days."),
   { fade = true },
   { warp = { "orrenshire", 12, 9, 2 } },
+  { set = "lift_free" }, -- whoever took the stairs: the brake is off now, or nobody could have come up in it
   t("It takes all that day to bring them up, in the lift, a few at a time. Nib and Nob work the cage without a word. Then they have a word."),
   t("The Mayor will want to see that paper."),
 }
@@ -1409,7 +1460,7 @@ S.talk_lioth = {
   }, other = {
     { when = "lockdown", steps = {
       { when = "heard_evrastin", steps = {
-        lioth("I told you I'd come through one gate on a list, {hero}, and I've been waiting ever since to find out about the second. Watch this doctor's hands. In Agoshull the ones who were lying always kept them so very still."),
+        lioth("I came through one gate on a list, {hero}, and I've been waiting ever since to find out about the second. Watch this doctor's hands. In Agoshull the ones who were lying always kept them so very still."),
       }, other = {
         lioth("I've stood in this queue before, at a different gate, with a different nice young man. You drink what you're given, and you remember your name for as long as they let you."),
       } },
@@ -1502,7 +1553,7 @@ S.talk_hatter = {
   { when = "finished", steps = {
     t("Tibble is asleep sitting up, in nine hats. There's a tenth on the way down."),
   }, other = {
-    tibble("Hats! Fine hats! Hats for all occasions, though there's only been the one occasion for a fortnight. That frog in the stocks is wearing the finest thing I ever made, and I want you to know I sold it to the Mayor of Hayford in good faith."),
+    tibble("Hats! Fine hats! Hats for all occasions, though there's only been the one occasion for a fortnight. That frog they put in the stocks is wearing the finest thing I ever made, and I want you to know I sold it to the Mayor of Hayford in good faith."),
     { when = "wore_hat", steps = {
       tibble("And look at you in that hat! It's terrible on you! It's the best thing I've seen all week. Wear it in good health."),
     }, other = {
@@ -1553,8 +1604,12 @@ S.talk_silt = {
       } },
     } },
     ask(silt("Everything on this tray fell off something. Potions and such, slightly damp. What'll it be, dear?"), {
-      topic("Are you with the frog in the stocks?", {
-        silt("I've never seen him before in my life, and he's my nephew. I've come to collect him when the town has stopped looking. These people haven't closed their eyes in nine days, so it's turning into a very long wait."),
+      topic("Are you with that frog?", {
+        { when = "foreman_down", steps = {
+          silt("I've never seen him before in my life, and he's my nephew. If he's slipped out of those stocks, dear, I was here at this tray the whole time, and I can show you a licence that says so."),
+        }, other = {
+          silt("I've never seen him before in my life, and he's my nephew. I've come to collect him when the town has stopped looking. These people haven't closed their eyes in nine days, so it's turning into a very long wait."),
+        } },
       }),
       topic("What's it like in the swamp?", {
         silt("Wet, dear, and honest about it. Hayford calls us thieves, and they worship Mammon. We've just cut out the middle man. The whole of Hayford's got its hand in someone's pocket, and we're the ones who get called slippery."),
@@ -1631,7 +1686,7 @@ S.talk_dunnock = {
       dunnock("Somebody walked into it. One of the lads, one who used to be a lad. He didn't stop, you know. He went into it and through it, and on down the drift, with his eyes shut."),
     }),
     { "Lift the beam.", {
-      t("It takes all of you, and it comes up slowly. He pulls himself out on his elbows, grey in the face, and gets his breath."),
+      t("It takes everything you've got, and it comes up slowly. He pulls himself out on his elbows, grey in the face, and gets his breath."),
       dunnock("That's the finest thing that's ever been done to me. Here, take this, I was saving it for the walk home. I'll see you up top, if there's a top."),
       { give = "ether", n = 1 },
       { set = "freed_dunnock" },
@@ -1727,5 +1782,32 @@ M.SHOPS.frog_markup = {
   { item = "antidote", price = 10 },
   { item = "ether", price = 46 },
 }
+
+-- ---------------------------------------------------------------- the road
+
+-- The closed places on the overworld. Each opens with a flag, in overworld.GATES, so these only ever say why not yet.
+S.gate_portal = { t("The Nevermore Portal stands shut, a gate the size of a hillside. The sentries won't look at you. There's more to do in the Heart first.") }
+S.gate_verdant = { t("The grass here is taller than the party, and it moves against the wind. Nobody goes in without a reason. You'll want to know what you're looking for.") }
+S.gate_crevice = { t("The pass is cracked from side to side, and the outpost above it has its lamps lit. Without a reason to be here, you'd be climbing it for nothing.") }
+S.gate_thuluan = { t("The road ends in black ice and reeds. Nobody sane goes further without being sent.") }
+S.gate_crack = { t("The wall has a crack in it here, and something breathes in it. Without something to guard your mind, you won't come out the same.") }
+S.gate_abyss = { t("The Violet Abyss. The light goes down a long way and doesn't come back. Not yet.") }
+
+-- ---------------------------------------------------------------- the rest of the game
+
+--- A shop written as a tier is that tier's standard stock, with any extras after it.
+local function shopFrom(def)
+  if not def.tier then return def end
+  local list = {}
+  for _, ware in ipairs(require("games.blightmare.party").SHOP_TIERS[def.tier] or {}) do list[#list + 1] = ware end
+  for _, ware in ipairs(def.extra or {}) do list[#list + 1] = ware end
+  return list
+end
+
+for _, region in ipairs(require("games.blightmare.content").regions()) do
+  for id, script in pairs(region.scripts or {}) do S[id] = script end
+  for id, shop in pairs(region.shops or {}) do M.SHOPS[id] = shopFrom(shop) end
+  for _, goal in ipairs(region.goals or {}) do M.GOALS[#M.GOALS + 1] = goal end
+end
 
 return M

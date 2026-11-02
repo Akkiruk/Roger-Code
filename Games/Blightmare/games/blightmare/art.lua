@@ -6,7 +6,35 @@
 --
 -- Skin is the story's language. The living are warm (orange and brown), and whoever the Clinic or the plague has touched is
 -- pale. Grey and lime is the Blightmare itself.
+--
+-- THE VOCABULARY, for regions/*.lua. R.looks.<id> is a table of the fields below, and all of them are optional but kind. Colours are
+-- names in quotes, as ui.C has them, because a region has no ui: "bg" black, "panel" dark slate, "tie" slate, "line" grey, "text"
+-- white, "red", "redTint" dark maroon, "warn" orange, "hi" yellow, "hiTint" dark olive, "ok" green, "soft" pale lime, "blue",
+-- "blueTint" navy, "info" cyan, "accent" purple. art.addLooks(R.looks, R.names) merges them; R.names is "SPOKEN NAME" -> look id.
+--   like     another look's id: start from that one and change a few fields. Use it for someone changed by the story.
+--   kind     human old child clinic half-elf gnome miner frog owlin vampire tiefling drow drider duergar deepgnome illithid gith hag
+--            harpyfolk tabaxi nothic. An unknown kind is drawn as a human.
+--   tall     share of the square, 0.4 to 1. build  thin normal stout broad hunched gaunt. lean  how far they tip. tilt  the head, sideways.
+--   skin coat trim legs back   colours. back is behind the portrait. cut  tunic coat dress robe rags.
+--   hair     short long bun plaits pigtails wild curls tufts crest; hairInk.
+--   beard    moustache whiskers chops goatee long belted forked bolster plaited stubble; beardInk, beardTrim.
+--   hat      cap tophat stovepipe wide straw pointy floppy nightcap mushroom helmet horned pot feather bowler earflap scarf visor hood
+--            veil peaked sallet beakhat bandage stack candles goggles crown circlet thorns tricorn mitre; hatInk, hatTrim, hatSmall, hatShift.
+--   eyes     normal wide narrow tired closed shifty specs lens red blank gold slit none.
+--   mouth    line smile frown open teeth stitched fangs none. nose  small big none; noseInk. mark  ink stripes scar.
+--   wear     a list of: apron belt chain epaulettes cape shawl waistcoat collar patches badge gown strap tags ribbon sash surgeon blood
+--            armour fur rags necklace. capeInk, shawlInk, apronInk, vestInk, beltInk, ribbonInk, sashInk.
+--   carry    lantern greenlamp pick basket laundry cane ledger mug ladle pole spear broom bucket hammer shovel board clipboard letter list
+--            scroll keys boots pillow doll stone tube cage wheel engine bowl pen pie goose book hen feather chalk tray drawer kettle bell
+--            knitting prop cards mask crutch sword rapier dagger staff scalpel saw tome goblet orb eye; carry = "none" clears it in a like.
+--   beak     length of a Clinic mask, 0.03 to 0.2; beakStyle hook snout brass; maskInk, beakInk. blight  true: the growths.
+--   horns    ram spike; hornInk. tail  devil cat; tailInk. wings  a colour. tendrils  true; tendrilInk. tentacles  true. bigeye  true.
+--   lower    spider. stand  box stocks. pose  lying (bed, thread, sackInk, size, flip, carryX, carryY, empty). oneShoe, flip.
+-- Most of those come with the kind: a drider needs nothing but kind to have eight legs. Don't draw a look for a crowd: every id is a person.
+-- Foes and props aren't looks. R.art.<sprite> = "a sentence" asks the artist for a sprite, in art_foes.lua, and it's good for a fight and a
+-- map alike. An npc whose sprite comes from there needs no look of its own.
 
+local artBattle = require("games.blightmare.art_battle")
 local ui = require("lib.arcade.ui")
 
 local C = ui.C
@@ -325,8 +353,12 @@ local SPRITES = {
 }
 M.SPRITES = SPRITES
 
---- A sprite that exists: a map can name someone new and only look like a villager until they're drawn.
-function M.spriteName(name) return SPRITES[name] and name or "villager" end
+--- A sprite that exists: a map can name someone new and only look like a villager until they're drawn. A foe nobody has drawn yet
+-- is a dark hooded shape, which is at least the right idea.
+function M.spriteName(name, foe)
+  if SPRITES[name] then return name end
+  return foe and "hooded" or "villager"
+end
 
 -- ---------------------------------------------------------------- looks
 -- A person is a plain description, and both their sprite and their portrait are drawn from it, from the same shapes: the
@@ -348,10 +380,25 @@ local LOOK_KIND = {
   miner = { 0.14, 0.12, tall = 0.68, skin = C.warn, back = C.panel, nose = "big", ears = "round" }, -- dwarf height
   frog = { 0.2, 0.11, tall = 0.86, skin = C.ok, back = C.panel, eyes = "none", mouth = "none", nose = "none" },
   owlin = { 0.155, 0.15, tall = 0.8, skin = C.tie, back = C.blueTint, eyes = "none", mouth = "none", nose = "none" },
+  vampire = { 0.115, 0.14, tall = 0.96, skin = C.text, back = C.redTint, eyes = "red", mouth = "fangs", ears = "long" },
+  tiefling = { 0.12, 0.135, tall = 0.93, skin = C.red, back = C.redTint, eyes = "gold", horns = "ram", tail = "devil" },
+  drow = { 0.115, 0.14, tall = 0.9, skin = C.blueTint, back = C.panel, eyes = "red", ears = "long", hair = "long", hairInk = C.text },
+  drider = { 0.115, 0.14, tall = 0.98, skin = C.blueTint, back = C.panel, eyes = "red", ears = "long", hair = "long", hairInk = C.text, lower = "spider", legs = C.tie, cut = "tunic" },
+  duergar = { 0.14, 0.12, tall = 0.66, skin = C.line, back = C.panel, eyes = "red", nose = "big", ears = "round", beard = "long", beardInk = C.tie },
+  deepgnome = { 0.15, 0.125, tall = 0.5, skin = C.tie, back = C.panel, eyes = "wide", nose = "big", ears = "long" },
+  illithid = { 0.14, 0.15, tall = 0.96, skin = C.accent, back = C.blueTint, eyes = "blank", mouth = "none", nose = "none", tentacles = true, cut = "robe" },
+  gith = { 0.105, 0.145, tall = 0.95, skin = C.soft, back = C.hiTint, eyes = "narrow", nose = "none", ears = "long", hair = "crest", hairInk = C.red, cut = "tunic" },
+  hag = { 0.13, 0.13, tall = 0.8, skin = C.ok, back = C.hiTint, eyes = "wide", mouth = "teeth", nose = "big", hair = "wild", hairInk = C.tie, cut = "rags" },
+  harpyfolk = { 0.12, 0.13, tall = 0.85, skin = C.line, back = C.blueTint, eyes = "gold", wings = C.blueTint, hair = "wild", hairInk = C.accent },
+  tabaxi = { 0.135, 0.125, tall = 0.9, skin = C.warn, back = C.panel, eyes = "slit", nose = "small", ears = "cat", tail = "cat", mark = "stripes" },
+  nothic = { 0.19, 0.17, tall = 0.62, skin = C.tie, back = C.panel, eyes = "none", mouth = "teeth", nose = "none", bigeye = true, build = "hunched", cut = "rags", ears = "long" },
 }
-local LOOK_BUILD = { thin = { 0.115, 0.1 }, normal = { 0.155, 0.14 }, stout = { 0.19, 0.26 }, broad = { 0.25, 0.17 }, hunched = { 0.15, 0.14 } }
-local LOOK_HEM = { tunic = 0.66, coat = 0.84, dress = 0.92, robe = 0.97 }
-local SKIN_SHADE = { [C.warn] = C.redTint, [C.text] = C.line, [C.line] = C.tie, [C.ok] = C.hiTint, [C.tie] = C.panel, [C.hi] = C.warn, [C.soft] = C.ok }
+-- what a kind brings with it, unless the look says otherwise
+local KIND_BRINGS = { "horns", "tail", "wings", "tendrils", "lower", "tentacles", "bigeye", "hair", "hairInk", "beard", "beardInk", "cut", "legs", "mark", "build" }
+local LOOK_BUILD = { thin = { 0.115, 0.1 }, normal = { 0.155, 0.14 }, stout = { 0.19, 0.26 }, broad = { 0.25, 0.17 }, hunched = { 0.15, 0.14 }, gaunt = { 0.1, 0.08 } }
+local LOOK_HEM = { tunic = 0.66, coat = 0.84, dress = 0.92, robe = 0.97, rags = 0.8 }
+local SKIN_SHADE = { [C.warn] = C.redTint, [C.text] = C.line, [C.line] = C.tie, [C.ok] = C.hiTint, [C.tie] = C.panel, [C.hi] = C.warn, [C.soft] = C.ok, [C.red] = C.redTint,
+  [C.accent] = C.blueTint, [C.blueTint] = C.panel, [C.panel] = C.bg, [C.info] = C.blueTint }
 
 --- Hats, on a head at hx, hy of rx by ry. Each is as much about the outline as the colour.
 local HAT = {}
@@ -508,6 +555,36 @@ function HAT.candles(a, hx, hy, rx, ry, ink, trim)
     a(E(x, top - 0.125 + math.abs(i) * 0.03, 0.022, 0.035, C.hi))
   end
 end
+--- A proper crown: points you can see from the far end of a throne room.
+function HAT.crown(a, hx, hy, rx, ry, ink, trim)
+  local top = hy - ry
+  a(P(ink, hx - rx, top + 0.06, hx + rx, top + 0.06, hx + rx * 1.1, top - 0.1, hx + rx * 0.5, top - 0.01, hx, top - 0.13, hx - rx * 0.5, top - 0.01, hx - rx * 1.1, top - 0.1))
+  a(E(hx, top + 0.015, 0.02, 0.02, trim))
+end
+function HAT.circlet(a, hx, hy, rx, ry, ink, trim)
+  a(R(hx - rx * 1.02, hy - ry * 0.68, rx * 2.04, 0.022, ink))
+  a(E(hx, hy - ry * 0.62, 0.024, 0.024, trim))
+end
+function HAT.thorns(a, hx, hy, rx, ry, ink, trim)
+  local top = hy - ry
+  a(R(hx - rx * 1.04, top + 0.03, rx * 2.08, 0.024, ink))
+  for i = -2, 2 do
+    local x = hx + i * rx * 0.46
+    a(P(ink, x - 0.018, top + 0.04, x + 0.018, top + 0.04, x + i * 0.02, top - 0.07))
+    a(E(x + 0.012, top + 0.05 + (i % 2) * 0.012, 0.012, 0.016, trim))
+  end
+end
+function HAT.tricorn(a, hx, hy, rx, ry, ink, trim)
+  local top = hy - ry
+  a(P(ink, hx - rx * 1.9, top + 0.06, hx + rx * 1.9, top + 0.06, hx + rx * 0.7, top - 0.07, hx, top - 0.1, hx - rx * 0.7, top - 0.07))
+  a(R(hx - rx * 1.5, top + 0.05, rx * 3, 0.015, trim))
+end
+function HAT.mitre(a, hx, hy, rx, ry, ink, trim)
+  local top = hy - ry
+  a(P(ink, hx - rx, top + 0.05, hx + rx, top + 0.05, hx + rx * 0.7, top - 0.15, hx, top - 0.25, hx - rx * 0.7, top - 0.15))
+  a(R(hx - 0.012, top - 0.2, 0.024, 0.25, trim))
+  a(R(hx - rx, top + 0.03, rx * 2, 0.02, trim))
+end
 function HAT.goggles(a, hx, hy, rx, ry, ink, trim)
   a(R(hx - rx, hy - ry * 0.75, rx * 2, 0.03, trim))
   a(E(hx - rx * 0.45, hy - ry * 0.72, 0.042, 0.038, ink))
@@ -622,6 +699,47 @@ function WEAR.strap(a, sh)
 end
 function WEAR.tags(a, sh)
   for i = 0, 2 do a(R(0.5 - sh + 0.02 + i * 0.09, 0.34, 0.05, 0.05, C.hi)) end
+end
+
+--- Sindal's colours, or Colette's seal on a gift: a band over the shoulder, and two tails down.
+function WEAR.ribbon(a, sh, hip, hem, look)
+  local ink = look.ribbonInk or C.red
+  a(P(ink, 0.5 - sh, 0.31, 0.5 - sh + 0.06, 0.31, 0.5 + sh, 0.58, 0.5 + sh - 0.06, 0.6))
+  a(P(ink, 0.5 + sh - 0.08, 0.58, 0.5 + sh, 0.58, 0.5 + sh + 0.04, 0.8, 0.5 + sh - 0.03, 0.74, 0.5 + sh - 0.09, 0.8))
+end
+function WEAR.sash(a, sh, hip, hem, look) a(R(0.5 - sh - 0.01, 0.5, sh * 2 + 0.02, 0.06, look.sashInk or C.hi)) end
+--- A surgeon's rubber apron, tied high, and never quite clean.
+function WEAR.surgeon(a, sh, hip, hem, look)
+  a(P(look.apronInk or C.line, 0.5 - sh * 0.8, 0.34, 0.5 + sh * 0.8, 0.34, 0.5 + hip * 0.95, hem, 0.5 - hip * 0.95, hem))
+  a(R(0.5 - sh * 0.8, 0.33, sh * 1.6, 0.02, C.tie))
+  a(E(0.5 - sh * 0.3, 0.56, 0.06, 0.08, C.red))
+  a(E(0.5 + sh * 0.35, 0.68, 0.05, 0.05, C.red))
+  a(P(C.red, 0.5 - 0.02, 0.6, 0.5 + 0.02, 0.6, 0.5 + 0.01, hem, 0.5 - 0.01, hem))
+end
+function WEAR.blood(a, sh, hip, hem)
+  a(E(0.5 + sh * 0.3, 0.42, 0.06, 0.05, C.red))
+  a(E(0.5 - sh * 0.4, 0.56, 0.05, 0.06, C.red))
+  a(R(0.5 - sh * 0.45, 0.56, 0.02, hem - 0.56, C.red))
+end
+function WEAR.armour(a, sh, hip, hem, look)
+  a(P(look.plateInk or C.line, 0.5 - sh * 0.9, 0.32, 0.5 + sh * 0.9, 0.32, 0.5 + sh * 0.8, 0.6, 0.5, 0.66, 0.5 - sh * 0.8, 0.6))
+  a(R(0.49, 0.32, 0.02, 0.33, look.trim))
+  a(R(0.5 - sh - 0.05, 0.3, 0.1, 0.04, look.plateInk or C.line))
+  a(R(0.5 + sh - 0.05, 0.3, 0.1, 0.04, look.plateInk or C.line))
+end
+function WEAR.fur(a, sh)
+  for i = -3, 3 do a(E(0.5 + i * sh * 0.32, 0.31 + (i % 2) * 0.015, 0.05, 0.04, C.text)) end
+  for i = -2, 2, 2 do a(E(0.5 + i * sh * 0.32, 0.325, 0.01, 0.014, C.bg)) end
+end
+function WEAR.rags(a, sh, hip, hem, look)
+  for i = -3, 3 do
+    local x = 0.5 + i * hip * 0.3
+    a(P(look.coat, x - 0.04, hem - 0.01, x + 0.04, hem - 0.01, x + 0.005, hem + 0.05 + (i % 3) * 0.035))
+  end
+end
+function WEAR.necklace(a, sh)
+  a(P(C.hi, 0.5 - sh * 0.6, 0.3, 0.5 + sh * 0.6, 0.3, 0.5, 0.38, 0.5, 0.36))
+  a(E(0.5, 0.385, 0.02, 0.022, C.red))
 end
 
 --- Things carried, at the hand at x, y. Behind ones are drawn before the body.
@@ -866,8 +984,60 @@ function CARRY.crutch(a, x, y)
   a(R(x - 0.02, y, 0.05, 0.016, C.redTint))
 end
 
+function CARRY.sword(a, x, y)
+  a(R(x - 0.05, y - 0.03, 0.1, 0.02, C.hi))
+  a(P(C.text, x - 0.016, y - 0.02, x + 0.016, y - 0.02, x + 0.016, y - 0.5, x, y - 0.56, x - 0.016, y - 0.5))
+  a(R(x - 0.01, y - 0.01, 0.02, 0.06, C.redTint))
+end
+function CARRY.rapier(a, x, y)
+  a(E(x, y - 0.01, 0.04, 0.025, C.hi))
+  a(R(x - 0.006, y - 0.56, 0.012, 0.55, C.text))
+end
+function CARRY.dagger(a, x, y)
+  a(R(x - 0.03, y - 0.02, 0.06, 0.015, C.hi))
+  a(P(C.text, x - 0.014, y - 0.01, x + 0.014, y - 0.01, x, y + 0.17))
+end
+function CARRY.staff(a, x)
+  a(R(x, 0.0, stick, 1, C.redTint))
+  a(E(x + stick / 2, -0.03, 0.05, 0.05, C.info))
+  a(E(x + stick / 2 - 0.012, -0.04, 0.015, 0.015, C.text))
+end
+function CARRY.scalpel(a, x, y)
+  a(R(x - 0.008, y - 0.09, 0.016, 0.1, C.line))
+  a(P(C.text, x - 0.008, y - 0.09, x + 0.014, y - 0.09, x + 0.004, y - 0.17))
+end
+function CARRY.saw(a, x, y)
+  a(R(x - 0.02, y - 0.03, 0.04, 0.05, C.redTint))
+  a(P(C.line, x - 0.03, y - 0.04, x + 0.03, y - 0.04, x + 0.02, y - 0.34, x - 0.03, y - 0.3))
+  for i = 1, 5 do a(R(x + 0.02, y - 0.04 - i * 0.05, 0.02, 0.018, C.text)) end
+  a(R(x - 0.03, y - 0.2, 0.05, 0.05, C.red))
+end
+--- The Tome of Blood Sedition, and it's heavier than it should be.
+function CARRY.tome(a, _, y)
+  a(R(0.4, y - 0.22, 0.22, 0.2, C.redTint))
+  a(R(0.4, y - 0.22, 0.03, 0.2, C.bg))
+  a(R(0.45, y - 0.19, 0.14, 0.14, C.red))
+  a(E(0.52, y - 0.12, 0.03, 0.03, C.text))
+end
+function CARRY.goblet(a, x, y)
+  a(P(C.hi, x - 0.05, y - 0.13, x + 0.05, y - 0.13, x + 0.015, y - 0.05, x - 0.015, y - 0.05))
+  a(R(x - 0.05, y - 0.135, 0.1, 0.02, C.red))
+  a(R(x - 0.01, y - 0.06, 0.02, 0.05, C.hi))
+  a(R(x - 0.035, y - 0.015, 0.07, 0.015, C.hi))
+end
+function CARRY.orb(a, x, y)
+  a(E(x, y - 0.03, 0.06, 0.06, C.accent))
+  a(E(x - 0.02, y - 0.05, 0.018, 0.018, C.text))
+end
+--- A nothic's eye in a hand, still looking.
+function CARRY.eye(a, x, y)
+  a(E(x, y - 0.03, 0.07, 0.065, C.text))
+  a(E(x, y - 0.03, 0.04, 0.045, C.soft))
+  a(E(x, y - 0.03, 0.018, 0.03, C.bg))
+end
+
 -- Carried across the body or above the head: drawn on top of the arms.
-local CARRY_FRONT = { ledger = true, board = true, clipboard = true, letter = true, tube = true, wheel = true, engine = true, pen = true, book = true, tray = true, drawer = true, knitting = true,
+local CARRY_FRONT = { tome = true, eye = true, ledger = true, board = true, clipboard = true, letter = true, tube = true, wheel = true, engine = true, pen = true, book = true, tray = true, drawer = true, knitting = true,
   feather = true, chalk = true, cards = true, mask = true }
 
 --- Stands someone on the floor: shrinks them to tall, leans the top of them, and lifts them onto a box if they need one.
@@ -897,6 +1067,9 @@ local function settle(look)
   local kind = LOOK_KIND[look.kind] or LOOK_KIND.human
   look.settled = true
   look.rx, look.ry = kind[1], kind[2]
+  for _, field in ipairs(KIND_BRINGS) do
+    if look[field] == nil then look[field] = kind[field] end
+  end
   look.tall = look.tall or kind.tall
   look.skin = look.skin or kind.skin
   look.back = look.back or kind.back
@@ -927,6 +1100,11 @@ local function headParts(look)
   elseif look.ears == "round" then
     addShape(E(hx - rx * 1.05, hy + 0.01, 0.03, 0.04, look.skin))
     addShape(E(hx + rx * 1.05, hy + 0.01, 0.03, 0.04, look.skin))
+  elseif look.ears == "cat" then
+    addShape(P(look.skin, hx - rx, hy - 0.03, hx - rx * 1.05, hy - ry * 1.75, hx - rx * 0.2, hy - ry * 0.9))
+    addShape(P(look.skin, hx + rx, hy - 0.03, hx + rx * 1.05, hy - ry * 1.75, hx + rx * 0.2, hy - ry * 0.9))
+    addShape(P(look.shade, hx - rx * 0.85, hy - ry * 0.75, hx - rx * 0.95, hy - ry * 1.4, hx - rx * 0.45, hy - ry * 0.9))
+    addShape(P(look.shade, hx + rx * 0.85, hy - ry * 0.75, hx + rx * 0.95, hy - ry * 1.4, hx + rx * 0.45, hy - ry * 0.9))
   end
   if look.kind == "owlin" then
     addShape(P(look.skin, hx - rx, hy - 0.05, hx - rx * 1.2, hy - ry * 1.7, hx - rx * 0.2, hy - ry * 0.9))
@@ -949,6 +1127,28 @@ local function headParts(look)
     b(E(hx + rx * 0.45, hy - 0.01, 0.03, 0.035, C.bg))
     b(P(C.hi, hx - 0.03, hy + 0.03, hx + 0.03, hy + 0.03, hx, hy + 0.1))
   end
+  if look.tentacles then
+    -- the mouth is what the tentacles are for, and it's better not to see it
+    b(E(hx, hy - ry * 0.55, rx * 1.12, ry * 0.8, look.skin))
+    b(E(hx, hy + ry * 0.62, rx * 0.86, ry * 0.5, C.bg))
+    for i = -3, 3, 2 do
+      local x = hx + i * rx * 0.3
+      b(P(look.skin, x - 0.026, hy + 0.05, x + 0.026, hy + 0.05, x + 0.012 + i * 0.012, hy + 0.17, x + i * 0.026, hy + 0.29, x - 0.012 + i * 0.012, hy + 0.17))
+    end
+  end
+  if look.bigeye then
+    b(E(hx, hy - 0.015, rx * 0.8, ry * 0.78, C.bg))
+    b(E(hx, hy - 0.015, rx * 0.68, ry * 0.66, C.text))
+    b(E(hx, hy - 0.015, rx * 0.38, ry * 0.5, C.soft))
+    b(E(hx, hy - 0.015, rx * 0.14, ry * 0.44, C.bg))
+  end
+  if look.mark == "stripes" then
+    b(R(hx - 0.015, hy - ry * 0.95, 0.03, 0.06, look.shade))
+    b(R(hx - rx * 0.95, hy + 0.01, 0.05, 0.016, look.shade))
+    b(R(hx + rx * 0.95 - 0.05, hy + 0.01, 0.05, 0.016, look.shade))
+    b(R(hx - rx * 0.9, hy + 0.05, 0.05, 0.016, look.shade))
+    b(R(hx + rx * 0.9 - 0.05, hy + 0.05, 0.05, 0.016, look.shade))
+  end
   if look.blight then
     b(E(hx + rx * 0.7, hy - ry * 0.6, 0.075, 0.065, C.soft))
     b(E(hx + rx * 0.95, hy + 0.03, 0.055, 0.075, C.ok))
@@ -957,10 +1157,34 @@ local function headParts(look)
   hairShapes(b, look, hx, hy, rx, ry)
   beardShapes(b, look, hx, hy, rx, ry)
   if look.beak then
-    -- the Clinic's mask, turned addShape little aside, so the beak breaks the outline of the head
+    -- the Clinic's mask, turned a little aside, so the beak breaks the outline of the head
     b(E(hx, hy, rx * 1.02, ry * 1.02, look.maskInk or C.line))
-    b(P(look.beakInk or C.text, hx - 0.03, hy - 0.01, hx + rx * 0.8, hy - 0.04, hx + rx + look.beak, hy + 0.1, hx + rx * 0.5, hy + 0.1))
-    b(P(C.tie, hx - 0.03, hy + 0.04, hx + rx * 0.5, hy + 0.1, hx + rx + look.beak, hy + 0.1))
+    local ink, tip = look.beakInk or C.text, hx + rx + look.beak
+    if look.beakStyle == "hook" then
+      -- the surgeons' beak, curved down like a raptor's
+      b(P(ink, hx - 0.03, hy - 0.01, hx + rx * 0.8, hy - 0.05, tip, hy + 0.04, tip - 0.01, hy + 0.17, tip - 0.05, hy + 0.09, hx + rx * 0.5, hy + 0.1))
+    elseif look.beakStyle == "snout" then
+      -- short and blunt, a filter for people who work with their hands
+      b(R(hx - 0.02, hy + 0.02, rx + look.beak + 0.02, 0.08, ink))
+      b(R(tip - 0.03, hy + 0.0, 0.04, 0.12, C.tie))
+      b(R(hx + rx * 0.3, hy + 0.02, 0.014, 0.08, C.tie))
+    else
+      b(P(ink, hx - 0.03, hy - 0.01, hx + rx * 0.8, hy - 0.04, tip, hy + 0.1, hx + rx * 0.5, hy + 0.1))
+      b(P(C.tie, hx - 0.03, hy + 0.04, hx + rx * 0.5, hy + 0.1, tip, hy + 0.1))
+      if look.beakStyle == "brass" then
+        b(R(hx + rx * 0.5, hy + 0.0, 0.02, 0.09, C.warn))
+        b(R(hx + rx * 0.95, hy + 0.03, 0.02, 0.065, C.warn))
+      end
+    end
+  end
+  if look.horns == "ram" then
+    local ink = look.hornInk or C.text
+    b(P(ink, hx - rx * 0.8, hy - ry * 0.7, hx - rx * 1.7, hy - ry * 1.3, hx - rx * 2.1, hy - ry * 0.6, hx - rx * 1.7, hy + 0.03, hx - rx * 1.55, hy - ry * 0.4, hx - rx * 1.5, hy - ry * 0.8, hx - rx * 0.7, hy - ry * 0.35))
+    b(P(ink, hx + rx * 0.8, hy - ry * 0.7, hx + rx * 1.7, hy - ry * 1.3, hx + rx * 2.1, hy - ry * 0.6, hx + rx * 1.7, hy + 0.03, hx + rx * 1.55, hy - ry * 0.4, hx + rx * 1.5, hy - ry * 0.8, hx + rx * 0.7, hy - ry * 0.35))
+  elseif look.horns == "spike" then
+    local ink = look.hornInk or C.line
+    b(P(ink, hx - rx * 0.7, hy - ry * 0.75, hx - rx * 1.1, hy - ry * 2.2, hx - rx * 0.25, hy - ry * 0.95))
+    b(P(ink, hx + rx * 0.7, hy - ry * 0.75, hx + rx * 1.1, hy - ry * 2.2, hx + rx * 0.25, hy - ry * 0.95))
   end
   local hat = HAT[look.hat]
   if hat then
@@ -976,9 +1200,10 @@ local function standingBody(look, bare)
   settle(look)
   local list = {}
   local addShape = function(s) list[#list + 1] = s end
-  local build = LOOK_BUILD[look.build]
+  local build = LOOK_BUILD[look.build] or LOOK_BUILD.normal
   local sh, hip = build[1], build[2]
   local hem = LOOK_HEM[look.cut] or 0.84
+  if look.lower == "spider" then hem = 0.54 end
   local handX, handY = 0.5 + sh + 0.075, 0.62
   local carry = CARRY[look.carry]
   local front = CARRY_FRONT[look.carry]
@@ -989,7 +1214,44 @@ local function standingBody(look, bare)
     end
   end
   if carry and not front then carry(addShape, handX, handY, sh) end
-  if look.cut ~= "robe" then
+  if look.wings then
+    for side = -1, 1, 2 do
+      local function wx(x) return 0.5 + side * x end
+      addShape(P(look.wings, wx(0.1), 0.32, wx(0.38), 0.08, wx(0.54), 0.14, wx(0.5), 0.5, wx(0.42), 0.42, wx(0.37), 0.62, wx(0.28), 0.5, wx(0.2), 0.68, wx(0.1), 0.56))
+      addShape(P(look.wingRib or C.tie, wx(0.38), 0.08, wx(0.4), 0.09, wx(0.12), 0.42, wx(0.1), 0.4))
+    end
+  end
+  if look.tendrils then
+    -- two long arms from the shoulders, the displacer beast's, with a barb on the end of each
+    local ink = look.tendrilInk or C.tie
+    for side = -1, 1, 2 do
+      local function tx(x) return 0.5 + side * x end
+      addShape(P(ink, tx(0.1), 0.34, tx(0.34), 0.2, tx(0.4), -0.02, tx(0.46), 0.0, tx(0.42), 0.26, tx(0.14), 0.42))
+      addShape(E(tx(0.43), -0.02, 0.05, 0.04, look.tendrilTip or C.hi))
+    end
+  end
+  if look.tail == "devil" then
+    local ink = look.tailInk or look.skin
+    addShape(P(ink, 0.56, 0.66, 0.82, 0.8, 0.9, 0.62, 0.87, 0.6, 0.8, 0.72, 0.58, 0.58))
+    addShape(P(ink, 0.83, 0.62, 0.94, 0.62, 0.9, 0.5))
+  elseif look.tail == "cat" then
+    local ink = look.tailInk or look.skin
+    addShape(P(ink, 0.56, 0.7, 0.78, 0.78, 0.86, 0.5, 0.82, 0.4, 0.78, 0.5, 0.74, 0.7, 0.56, 0.6))
+  end
+  if look.lower == "spider" then
+    -- Lolth's curse from the waist down: eight legs, and they don't need to be told where to go
+    local ink = look.legs
+    for side = -1, 1, 2 do
+      for i = 0, 3 do
+        local function lx(x) return 0.5 + side * x end
+        local knee, y = 0.34 + i * 0.045, 0.5 - i * 0.03
+        addShape(P(ink, lx(0.1), 0.6 + i * 0.025, lx(knee), y, lx(knee + 0.1 - i * 0.04), 1, lx(knee + 0.06 - i * 0.04), 1, lx(knee - 0.03), y + 0.07, lx(0.1), 0.66 + i * 0.025))
+      end
+    end
+    addShape(E(0.5, 0.76, 0.27, 0.17, ink))
+    addShape(E(0.5, 0.72, 0.17, 0.09, look.spiderInk or C.panel))
+    addShape(E(0.5, 0.58, 0.14, 0.08, ink))
+  elseif look.cut ~= "robe" then
     addShape(R(0.5 - hip * 0.8, hem - 0.02, hip * 0.7, 0.96 - hem + 0.02, look.legs))
     addShape(R(0.5 + hip * 0.1, hem - 0.02, hip * 0.7, 0.96 - hem + 0.02, look.legs))
     addShape(R(0.5 - hip * 0.85 - 0.02, 0.95, hip * 0.75 + 0.03, 0.05, look.oneShoe and look.skin or C.redTint))
@@ -999,7 +1261,7 @@ local function standingBody(look, bare)
   addShape(P(look.trim, 0.47, 0.3, 0.53, 0.3, 0.52, hem, 0.48, hem))
   if look.wear then
     for _, name in ipairs(look.wear) do
-      if name ~= "cape" then WEAR[name](addShape, sh, hip, hem, look) end
+      if name ~= "cape" and WEAR[name] then WEAR[name](addShape, sh, hip, hem, look) end
     end
   end
   for side = -1, 1, 2 do
@@ -1012,12 +1274,18 @@ local function standingBody(look, bare)
   if look.kind ~= "frog" and look.kind ~= "owlin" then
     local hx, hy, rx = 0.5 + (look.tilt or 0), 0.17, look.rx
     if look.nose == "big" then addShape(E(hx, hy + 0.035, 0.05, 0.05, look.noseInk or look.shade)) end
-    if not look.beak and not bare then
+    if not look.beak and not bare and look.eyes ~= "none" then
       local ink = look.eyes == "red" and C.red or look.eyes == "closed" and look.shade or C.bg
+      if look.eyes == "gold" or look.eyes == "slit" then ink = C.hi end
+      if look.eyes == "blank" then ink = C.text end
       local high = (look.eyes == "closed" or look.eyes == "narrow") and 0.022 or 0.055
       addShape(R(hx - rx * 0.62, hy - 0.04, 0.055, high, ink))
       addShape(R(hx + rx * 0.62 - 0.055, hy - 0.04, 0.055, high, ink))
-      if look.mouth ~= "none" then addShape(R(hx - 0.05, hy + 0.075, 0.1, 0.02, C.bg)) end
+      if look.mouth ~= "none" and not look.tentacles then addShape(R(hx - 0.05, hy + 0.075, 0.1, 0.02, C.bg)) end
+      if look.mouth == "fangs" then
+        addShape(R(hx - 0.04, hy + 0.09, 0.016, 0.03, C.text))
+        addShape(R(hx + 0.024, hy + 0.09, 0.016, 0.03, C.text))
+      end
     end
   end
   for _, s in ipairs(over) do addShape(s) end
@@ -1051,7 +1319,7 @@ local function standingLook(look)
   return out
 end
 
---- Someone lying down: sacking in the mine, addShape Clinic cot in the ward. Their hair and hat still say who it is.
+--- Someone lying down: sacking in the mine, a Clinic cot in the ward. Their hair and hat still say who it is.
 local function lyingLook(look)
   settle(look)
   local list = {}
@@ -1098,7 +1366,7 @@ local function lyingLook(look)
   return list
 end
 
---- The same shapes the other way round, so that one of addShape pair can face the other.
+--- The same shapes the other way round, so that one of a pair can face the other.
 local function mirrored(list)
   local out = {}
   for _, s in ipairs(list) do
@@ -1148,7 +1416,7 @@ local CLERK = { kind = "human", tall = 0.84, build = "hunched", coat = C.panel, 
 local GOSSIP = { kind = "human", tall = 0.78, build = "stout", cut = "dress", coat = C.hiTint, trim = C.hiTint, hair = "curls", hairInk = C.redTint, skin = C.warn, wear = { "shawl" },
   carry = "basket", mouth = "open", eyes = "wide", back = C.redTint }
 local SERGEANT = { kind = "human", tall = 0.9, build = "stout", coat = C.tie, trim = C.panel, hat = "sallet", hatInk = C.text, hatTrim = C.red, hair = "short", hairInk = C.line, beard = "whiskers", beardInk = C.text,
-  wear = { "collar", "belt", "badge" }, carry = "pie", eyes = "narrow", mouth = "smile", back = C.tie } -- nineteen years on the wall, boots polished, mask off: there's addShape pie
+  wear = { "collar", "belt", "badge" }, carry = "pie", eyes = "narrow", mouth = "smile", back = C.tie } -- nineteen years on the wall, boots polished, mask off: there's a pie
 local SEXTON = { kind = "old", tall = 0.92, build = "hunched", lean = 0.12, coat = C.bg, trim = C.panel, cut = "coat", hat = "wide", hatInk = C.bg, hatTrim = C.tie, hair = "short", hairInk = C.text, beard = "stubble",
   skin = C.line, carry = "shovel", mouth = "frown", eyes = "tired", back = C.hiTint }
 local HANLEY = { kind = "child", tall = 0.52, cut = "tunic", coat = C.red, trim = C.redTint, legs = C.blueTint, hair = "wild", hairInk = C.redTint, hat = "cap", hatInk = C.hi, hatTrim = C.warn, carry = "goose", mouth = "smile", back = C.blueTint }
@@ -1188,7 +1456,7 @@ local LOOKS = {
   doctor = { kind = "clinic", tall = 0.94, build = "thin", cut = "robe", coat = C.text, trim = C.line, hat = "beakhat", hatInk = C.bg, hatTrim = C.line, beak = 0.2, maskInk = C.text,
     carry = "clipboard", back = C.redTint },
 
-  -- the ward, that night. Every patient gets addShape bed.
+  -- the ward, that night. Every patient gets a bed.
   w_nan = asleep(NAN, { bed = true, coat = C.text, trim = C.line, carry = "none" }),
   w_kid = asleep(KID, { bed = true, coat = C.line, trim = C.text, carry = "doll", carryX = 0.62, carryY = 0.46, beak = false, size = 0.75 }),
   w_clerk = asleep(CLERK, { bed = true, coat = C.text, trim = C.tie, carry = "none", hat = false, eyes = "closed" }),
@@ -1266,12 +1534,50 @@ local LOOKS = {
   sleeper4 = { kind = "gnome", pose = "lying", coat = C.hiTint, trim = C.panel, hat = "earflap", hatInk = C.line, hatTrim = C.bg, beard = "moustache", beardInk = C.bg, carry = "hammer", carryX = 0.2, carryY = 0.8 },
   lampwoman = { kind = "gnome", pose = "lying", coat = C.tie, trim = C.panel, hair = "bun", hairInk = C.redTint, wear = { "patches" }, carry = "greenlamp", carryX = 0.06, carryY = 0.68 },
 
-  -- addShape people of their own, for whoever comes next
-  owlin = { kind = "owlin", tall = 0.8, cut = "robe", coat = C.blueTint, trim = C.tie, hair = "tufts", hairInk = C.line, wear = { "shawl" }, shawlInk = C.tie },
+  -- the party's own faces, and the cast of the whole game, by id
+  owlin = { kind = "owlin", tall = 0.8, cut = "robe", coat = C.blueTint, trim = C.tie, hair = "tufts", hairInk = C.line, wear = { "shawl" }, shawlInk = C.tie, hat = "circlet", hatInk = C.hi, hatTrim = C.info, carry = "book" },
+  jezzara = { kind = "tabaxi", build = "thin", cut = "tunic", coat = C.tie, trim = C.bg, legs = C.panel, hair = "long", hairInk = C.red, tendrils = true, tendrilInk = C.panel, tendrilTip = C.accent, wear = { "belt", "strap" },
+    carry = "dagger", mouth = "smile", back = C.blueTint },
+  asphodel = { kind = "tiefling", tall = 0.97, build = "broad", coat = C.panel, trim = C.hi, legs = C.redTint, hair = "long", hairInk = C.bg, mouth = "fangs", wear = { "cape", "armour", "necklace" }, capeInk = C.redTint, plateInk = C.tie,
+    carry = "sword", back = C.redTint },
+
+  -- Plexios. The head of the Clinic takes her mask off to talk to you, which isn't a kindness.
+  colette = { kind = "half-elf", tall = 0.98, build = "thin", cut = "robe", coat = C.text, trim = C.red, skin = C.text, hair = "bun", hairInk = C.tie, eyes = "tired", mouth = "line", wear = { "cape", "badge", "chain" }, capeInk = C.redTint, carry = "tome", back = C.redTint },
+  colette_changed = { kind = "half-elf", tall = 1, build = "gaunt", lean = 0.08, tilt = 0.04, cut = "rags", coat = C.line, trim = C.soft, skin = C.line, hair = "wild", hairInk = C.tie, eyes = "red", mouth = "stitched", blight = true,
+    tendrils = true, tendrilInk = C.tie, tendrilTip = C.soft, wear = { "rags", "blood" }, carry = "tome", back = C.bg },
+  fabian = { kind = "old", tall = 0.8, build = "hunched", lean = 0.14, cut = "robe", coat = C.accent, trim = C.bg, skin = C.line, hair = "tufts", hairInk = C.text, beard = "long", beardInk = C.text, hat = "crown", hatInk = C.hi, hatTrim = C.red,
+    wear = { "fur" }, carry = "cane", eyes = "tired", mouth = "open", back = C.blueTint },
+
+  -- Sindal. He looks wonderful. They all look wonderful.
+  sindal = { kind = "vampire", tall = 1, build = "broad", coat = C.bg, trim = C.hi, hair = "short", hairInk = C.bg, hat = "circlet", hatInk = C.hi, hatTrim = C.red, wear = { "cape", "collar", "ribbon" }, capeInk = C.red, carry = "goblet", mouth = "smile",
+    back = C.redTint },
+  barnabas = { kind = "vampire", tall = 0.94, build = "stout", coat = C.tie, trim = C.bg, legs = C.panel, hair = "short", hairInk = C.redTint, beard = "goatee", beardInk = C.redTint, wear = { "fur", "belt" }, carry = "dagger", eyes = "narrow", back = C.panel },
+  ceiridwen = { kind = "human", tall = 0.92, build = "stout", coat = C.blue, trim = C.hi, legs = C.blueTint, hair = "short", hairInk = C.red, hat = "tricorn", hatInk = C.blueTint, hatTrim = C.hi, wear = { "sash", "epaulettes" }, sashInk = C.hi, carry = "hammer",
+    mouth = "smile", back = C.blueTint },
+
+  -- the Heart, and what lives under everything
+  lucilda = { kind = "hag", tall = 0.84, build = "hunched", lean = 0.16, skin = C.line, coat = C.bg, trim = C.tie, hair = "wild", hairInk = C.text, wings = C.panel, wear = { "fur", "rags" }, nose = "big", noseInk = C.hi, eyes = "gold", mouth = "smile", carry = "eye",
+    back = C.hiTint },
+  -- two who were written with a stock sprite, in finished regions: a doctor unmasked and lost, and an orderly who isn't getting up
+  em_mask = { kind = "clinic", tall = 0.9, build = "hunched", lean = 0.16, cut = "robe", coat = C.line, trim = C.tie, skin = C.line, beak = false, hat = "beakhat", hatInk = C.tie, hatTrim = C.line, eyes = "tired", mouth = "open", nose = "small", carry = "mask", back = C.redTint },
+  vt_wounded = { kind = "clinic", pose = "lying", coat = C.text, trim = C.red, hat = "cap", hatInk = C.text, hatTrim = C.line, wear = { "patches" } },
+  vierrela = { kind = "drow", tall = 0.96, build = "thin", cut = "robe", coat = C.accent, trim = C.text, hat = "circlet", hatInk = C.soft, hatTrim = C.text, eyes = "blank", mouth = "line", wear = { "necklace" }, carry = "orb", back = C.tie },
+  halryna = { kind = "drider", coat = C.bg, trim = C.accent, hat = "crown", hatInk = C.line, hatTrim = C.red, mouth = "smile", carry = "spear" },
+  murgrum = { kind = "duergar", tall = 0.78, build = "thin", hat = "horned", hatInk = C.tie, hatTrim = C.warn, cut = "coat", coat = C.panel, trim = C.warn, beard = "plaited", beardInk = C.tie, beardTrim = C.hi, wear = { "armour" }, plateInk = C.tie, eyes = "wide", mouth = "smile", back = C.panel },
+  sevria = { kind = "deepgnome", tall = 0.62, build = "thin", cut = "robe", coat = C.redTint, trim = C.warn, hair = "plaits", hairInk = C.line, hat = "crown", hatInk = C.warn, hatTrim = C.info, eyes = "normal", mouth = "smile", carry = "lantern", back = C.blueTint },
+  -- the general, some time after the funeral he never had
+  father = { kind = "half-elf", tall = 1, build = "gaunt", lean = 0.12, tilt = 0.03, coat = C.tie, trim = C.bg, legs = C.bg, skin = C.tie, hair = "long", hairInk = C.line, eyes = "blank", mouth = "open", blight = true, wear = { "armour", "rags", "epaulettes" }, plateInk = C.panel,
+    carry = "sword", back = C.bg },
 }
+-- Orrenshire a year after the world ended. A region can say otherwise, and addLooks will take its word.
+LOOKS.rs_inn = derive(LOOKS.innkeeper, { hat = "scarf", hatInk = C.panel, hatTrim = C.tie, eyes = "tired", mouth = "line", carry = "none", coat = C.panel })
+LOOKS.rs_mayor = derive(LOOKS.mayor, { hat = false, stand = false, carry = "none", eyes = "tired", mouth = "line", coat = C.tie, wear = { "patches" } })
+LOOKS.rs_smith = derive(LOOKS.smith, { hat = false, eyes = "tired", mouth = "frown", beardInk = C.line, hairInk = C.line })
+LOOKS.rs_gate = { kind = "gnome", tall = 0.52, build = "stout", cut = "tunic", coat = C.tie, trim = C.panel, hat = "helmet", hatInk = C.tie, hatTrim = C.warn, carry = "spear", eyes = "tired", back = C.bg }
+
 M.LOOKS = LOOKS
 
--- A name over addShape talk box, for the people who borrow addShape portrait.
+-- A name over a talk box, for the people who borrow a portrait.
 M.NAMES = {
   NAN = "nan", WICK = "wick", CLERK = "clerk", PIP = "pip", NIB = "nib", NOB = "nob", TOBIN = "tobin", ALWIN = "dozer", ["GENTLEMAN BOGG"] = "frog", BOGG = "frog",
   ["OTTILIE BRASSCAP"] = "mayor", ["MAYOR BRASSCAP"] = "mayor", MAYOR = "mayor", CAPTAIN = "captain", DOCTOR = "doctor", INNKEEPER = "innkeeper", SMITH = "smith", FOREMAN = "foreman",
@@ -1279,26 +1585,49 @@ M.NAMES = {
   ["HEN WIFE"] = "henwife", CHALKER = "chalker", ["TIBBLE THE HATTER"] = "hatter", ["OLD MARROW"] = "marrow", TICK = "twin_tick", TACK = "twin_tack", ["MOTHER SILT"] = "silt",
   ["CLERK BASCOMBE"] = "bascombe", LAMPWRIGHT = "lampwright", BETTONY = "bettony", ["BELL-RINGER"] = "ringer", KNITTER = "knitter", ["PROP-SETTER"] = "propsetter", DUNNOCK = "dunnock_up",
   ["CASK HANDLER"] = "handler_small",
+  JEZZARA = "jezzara", ["JEZZARA DETH"] = "jezzara", ASPHODEL = "asphodel", ["ASPHODEL SYREN"] = "asphodel", COLETTE = "colette", ["COLETTE OSHLYN"] = "colette", FABIAN = "fabian", ["KING FABIAN"] = "fabian",
+  SINDAL = "sindal", ["SINDAL DEVEROUS"] = "sindal", BARNABAS = "barnabas", ["BARNABAS KNIFE TOOTH"] = "barnabas", CEIRIDWEN = "ceiridwen", ["CEIRIDWEN HEARTFORD"] = "ceiridwen", LUCILDA = "lucilda", ["LUCILDA THE VULTURE"] = "lucilda",
+  VIERRELA = "vierrela", ["VIERRELA YRIL'LYSINN"] = "vierrela", HALRYNA = "halryna", ["HALRYNA LHALITH"] = "halryna", MURGRUM = "murgrum", SEVRIA = "sevria", QARHUUL = "qarhuul",
 }
 
--- Who speaks in addShape borrowed voice: these say ids and names belong to whoever the player is facing, when that person has addShape look.
+-- Who speaks in a borrowed voice: these say ids and names belong to whoever the player is facing, when that person has a look.
 local BORROWED = { gnome = true, villager = true, child = true }
 local BORROWED_NAME = { SOLDIER = true, ORDERLY = true, ["CASK HANDLER"] = true }
 
---- The portrait for addShape line of speech. say is the script's portrait id, name the name over the box, and npcId whoever the player
--- is facing: addShape name that means someone wins, then addShape borrowed voice goes to the person in front of you, and otherwise it's say.
+--- The portrait for a line of speech. say is the script's portrait id, name the name over the box, and npcId whoever the player
+-- is facing: a name that means someone wins, then a borrowed voice goes to the person in front of you, and otherwise it's say.
 function M.faceFor(say, name, npcId)
+  -- a region's own look is that person at that time: NIB in the ruined world isn't NIB in the mine, whatever the name says
+  if say and say:match("^%a%a_") and LOOKS[say] then return say end
   local spoken = BORROWED[say] or BORROWED_NAME[name]
   if spoken and npcId and LOOKS[npcId] and (BORROWED_NAME[name] or not M.NAMES[name]) then return npcId end
   return M.NAMES[name] or say
 end
 
-for id, look in pairs(LOOKS) do
+local function lookSpriteFor(look)
   local lying = look.pose == "lying"
-  SPRITES["look:" .. id] = { build = function() return lookShapes(look) end, size = lying and 0.62 or 1, near = lying and 0.45 or 0.1 }
+  return { build = function() return lookShapes(look) end, size = lying and 0.62 or 1, near = lying and 0.45 or 0.1 }
 end
 
---- The sprite of an npc, if it has addShape look of its own.
+for id, look in pairs(LOOKS) do SPRITES["look:" .. id] = lookSpriteFor(look) end
+
+-- A foe drawn for battle can stand on a map as well, so each one is only drawn once. They're the same kind of shapes.
+local WHOLE = {}
+for name, build in pairs(artBattle.SPRITES) do
+  if not SPRITES[name] then
+    WHOLE[name] = true
+    local place = artBattle.PROPS[name]
+    SPRITES[name] = { build = build, size = place and place.size or artBattle.MAP_SIZE[name] or 1, near = place and place.near or 0.1 }
+  end
+end
+
+--- Was this drawn whole, as a creature or a thing? Then it brings its own picture, and whoever uses it needs no look.
+function M.drawnWhole(name) return WHOLE[name] == true end
+
+--- Is this sprite a thing, not somebody? A wheel needs no look of its own.
+function M.isProp(name) return artBattle.PROPS[name] ~= nil or name == "chest" or name == "openChest" or name == "shroud" end
+
+--- The sprite of an npc, if it has a look of its own.
 function M.lookSprite(id) return LOOKS[id] and ("look:" .. id) or nil end
 
 -- ---------------------------------------------------------------- baking
@@ -1397,7 +1726,7 @@ end
 
 local baked = {}
 
---- Runs { x, y, w, colour, ... } for addShape sprite w by h cells. remap swaps colours, for distance or addShape flash; its name goes in
+--- Runs { x, y, w, colour, ... } for a sprite w by h cells. remap swaps colours, for distance or a flash; its name goes in
 -- the key, so each look is baked once.
 function M.bake(name, w, h, remap, remapName)
   local look = name .. ":" .. w .. "x" .. h .. ":" .. (remapName or "")
@@ -1422,9 +1751,9 @@ local INK = {
 }
 
 -- The faces with no look: the party, drawn by hand, and the stock faces for anyone who just says "gnome" or "villager".
--- 20 by 15, one letter addShape cell, from the table above. A dot is the portrait's backdrop.
+-- 20 by 15, one letter a cell, from the table above. A dot is the portrait's backdrop.
 local PORTRAITS = {
-  hero = { back = C.blueTint, -- young, watchful, addShape chin of scabs from addShape town that doesn't like orphans
+  hero = { back = C.blueTint, -- young, watchful, a chin of scabs from a town that doesn't like orphans
     "....................",
     "......kkkkkkkk......",
     "....kkkkkkkkkkkk....",
@@ -1527,10 +1856,28 @@ local PORTRAITS = {
     ".bbbbbbbbbbbbbbbbbb.",
   },
 }
-M.PORTRAITS = PORTRAITS -- every face there is: anyone with addShape look has one too, so addShape say id can be checked here either way
+-- It doesn't have a face. This is what's there instead, and three of those are not its eyes.
+PORTRAITS.qarhuul = { back = C.bg,
+  "......gGGGGGGg......",
+  "....gGGGGlGGGGGg....",
+  "...gGGGGGGGGGGGGg...",
+  "..gGGskGGGGGGskGGg..",
+  "..gGGkkGGrrGGkkGGg..",
+  ".gGGGGGGGskGGGGGGGg.",
+  ".gGgGGgGGkkGGgGGgGg.",
+  "gGgkGgkGgGGgGkgGkgGg",
+  "GgkkGkkGkGGkGkkGkkgG",
+  "gk.sGk.Gk..kG.kGs.kg",
+  "Gk.sg.kGk..kGk.gs.kG",
+  "g..Gk.kGk..kGk.kG..g",
+  "k..gk..Gs..sG..kg..k",
+  "...Gk..gk..kg..kG...",
+  "...s....k..k....s...",
+}
+M.PORTRAITS = PORTRAITS -- every face there is: anyone with a look has one too, so a say id can be checked here either way
 for id, look in pairs(LOOKS) do PORTRAITS[id] = look end
 
--- The part of addShape body addShape portrait shows: wide enough for shoulders, tall enough for most hats. 20 cells by 15 is 40 by 45 on the
+-- The part of a body a portrait shows: wide enough for shoulders, tall enough for most hats. 20 cells by 15 is 40 by 45 on the
 -- wall, which is why the window is taller than it's wide.
 local FACE_X, FACE_Y, FACE_W, FACE_H = 0.22, -0.21, 0.56, 0.63
 
@@ -1552,7 +1899,7 @@ local function zoomed(list)
   return out
 end
 
---- Eyes, nose and mouth, addShape cell at addShape time. The eyes are on row 8, either side of the middle, and the mouth on row 11.
+--- Eyes, nose and mouth, a cell at a time. The eyes are on row 8, either side of the middle, and the mouth on row 11.
 local function paintFace(grid, look)
   local dx = floor((look.tilt or 0) / FACE_W * 20 + 0.5)
   local function put(x, y, ink) grid[y][x + dx] = ink end
@@ -1560,6 +1907,11 @@ local function paintFace(grid, look)
     for _, x in ipairs({ ... }) do put(x, y, ink) end
   end
   local shade, eyes, mouth = look.shade, look.eyes, look.mouth
+  if look.mark == "scar" then
+    row(7, C.red, 13)
+    row(8, C.red, 13)
+    row(9, C.red, 12)
+  end
   if eyes == "wide" then
     row(7, C.text, 7, 8, 11, 12)
     row(8, C.text, 7, 12)
@@ -1581,6 +1933,15 @@ local function paintFace(grid, look)
     row(8, C.hi, 6, 9, 10, 13)
     row(8, C.text, 7, 12)
     row(8, C.bg, 8, 11)
+  elseif eyes == "blank" then
+    row(8, C.text, 7, 8, 11, 12)
+  elseif eyes == "gold" then
+    row(8, C.hi, 7, 12)
+    row(8, C.bg, 8, 11)
+  elseif eyes == "slit" then
+    row(8, C.hi, 7, 8, 9, 11, 12, 13)
+    row(8, C.bg, 8, 12)
+    row(7, C.bg, 8, 12)
   elseif eyes ~= "lens" and eyes ~= "none" then
     row(8, C.text, 7, 12)
     row(8, C.bg, 8, 11)
@@ -1597,7 +1958,10 @@ local function paintFace(grid, look)
     row(9, C.blueTint, 13)
     row(10, C.blueTint, 12, 13)
   end
-  if mouth == "line" then
+  if look.tentacles or look.bigeye then
+    -- nothing to put in by hand: it's all in the shapes
+    if look.bigeye then row(12, C.text, 7, 9, 11) row(12, C.bg, 8, 10, 12) end
+  elseif mouth == "line" then
     row(11, C.bg, 9, 10)
   elseif mouth == "smile" then
     row(10, C.bg, 7, 12)
@@ -1611,6 +1975,10 @@ local function paintFace(grid, look)
   elseif mouth == "teeth" then
     row(11, C.text, 8, 10, 12)
     row(11, C.bg, 7, 9, 11)
+  elseif mouth == "fangs" then
+    row(11, C.bg, 8, 9, 10, 11)
+    row(11, C.text, 8, 11)
+    row(12, C.text, 8, 11)
   elseif mouth == "stitched" then
     row(11, C.bg, 6, 7, 8, 9, 10, 11, 12, 13)
     row(10, C.bg, 7, 9, 11)
@@ -1634,7 +2002,7 @@ end
 
 local portraitRuns = {}
 
---- Runs { x, y, w, colour, ... } for addShape portrait. Letters outside the table show as the backdrop, not as addShape crash.
+--- Runs { x, y, w, colour, ... } for a portrait. Letters outside the table show as the backdrop, not as a crash.
 local function bakePortrait(id)
   local runs = {}
   local face = PORTRAITS[id]
@@ -1652,7 +2020,7 @@ local function bakePortrait(id)
   return runs
 end
 
---- A face, 20 cells wide and 15 tall, with its top left corner at x, y. An unknown id gets addShape villager.
+--- A face, 20 cells wide and 15 tall, with its top left corner at x, y. An unknown id gets a villager.
 function M.portrait(id, x, y)
   id = (LOOKS[id] or PORTRAITS[id]) and id or "villager"
   local runs = portraitRuns[id]
@@ -1662,6 +2030,53 @@ function M.portrait(id, x, y)
   end
   local fill = ui.fill
   for i = 1, #runs, 4 do fill(x + runs[i], y + runs[i + 1], runs[i + 2], 1, runs[i + 3]) end
+end
+
+-- ---------------------------------------------------------------- looks from the regions
+
+-- A region can't reach ui.C, so these fields may name a colour, as "blueTint".
+local INK_FIELDS = { skin = true, coat = true, trim = true, legs = true, back = true, hairInk = true, beardInk = true, beardTrim = true, hatInk = true, hatTrim = true, carryInk = true, noseInk = true, capeInk = true,
+  shawlInk = true, apronInk = true, vestInk = true, beltInk = true, ribbonInk = true, sashInk = true, plateInk = true, maskInk = true, beakInk = true, sackInk = true, hornInk = true, tailInk = true,
+  wings = true, wingRib = true, tendrilInk = true, tendrilTip = true, spiderInk = true }
+
+--- A look ready for the tables, from what a region wrote. Their table is left alone, since content may keep it.
+local function fromRegion(raw)
+  local look = raw.like and LOOKS[raw.like] and derive(LOOKS[raw.like], {}) or {}
+  look.settled = nil
+  for k, v in pairs(raw) do
+    if k ~= "like" then look[k] = INK_FIELDS[k] and type(v) == "string" and C[v] or v end
+  end
+  if raw.carry == "none" then look.carry = nil end
+  look.kind = look.kind or "human"
+  return look
+end
+
+--- Region looks and spoken names into every table that has them: LOOKS, SPRITES, PORTRAITS, NAMES.
+function M.addLooks(looks, names)
+  looks = looks or {}
+  local done = {}
+  local function place(id, raw)
+    if done[id] then return end
+    done[id] = true
+    if raw.like and looks[raw.like] then place(raw.like, looks[raw.like]) end -- the one it's like may be later in the list
+    local look = fromRegion(raw)
+    LOOKS[id], PORTRAITS[id] = look, look
+    SPRITES["look:" .. id] = lookSpriteFor(look)
+    portraitRuns[id] = nil
+    local prefix = "look:" .. id .. ":"
+    for key in pairs(baked) do
+      if key:sub(1, #prefix) == prefix then baked[key] = nil end
+    end
+  end
+  for id, raw in pairs(looks) do place(id, raw) end
+  -- the first to use a name keeps it, so a later region's NIB can't change the face of the slice's
+  for name, id in pairs(names or {}) do M.NAMES[name] = M.NAMES[name] or id end
+end
+
+-- content.lua lists the regions, and they're plain data, so this is the one place art needs to look. It may not be there in a test.
+local haveContent, content = pcall(require, "games.blightmare.content")
+if haveContent and type(content) == "table" and content.regions then
+  for _, region in ipairs(content.regions()) do M.addLooks(region.looks, region.names) end
 end
 
 return M
