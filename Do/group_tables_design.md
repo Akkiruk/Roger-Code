@@ -24,6 +24,10 @@ The Arcade stays free. Nothing here goes in `Games/Arcade` or adds tokens to `Sh
 | Duel | Gin Rummy, stake per point | players | 2 |
 | Duel | Liar's Dice, stake per match | players | 2 |
 | Duel | Battleship, stake per match | players | 2 |
+| Duel | Backgammon, stake per game with the doubling cube | players | 2 |
+| Duel | Cribbage, stake per game to 121 | players | 2 |
+| Duel | Indian Poker, buy-in, fixed limit | players | 2 |
+| Duel | Farkle, stake per match to 5,000 | players | 2 |
 
 ## Big Table hardware
 

@@ -5,7 +5,7 @@
 
 local journal = require("lib.casino.journal")
 
-local GAMES = { "holdem", "gin", "liarsdice", "battleship" }
+local GAMES = { "holdem", "gin", "liarsdice", "battleship", "backgammon", "cribbage", "indianpoker", "farkle" }
 
 local M = { key = "duel", title = "DUEL", duel = true, list = {} }
 

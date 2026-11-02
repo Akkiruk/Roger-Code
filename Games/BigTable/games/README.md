@@ -10,7 +10,7 @@ This is the whole contract for a game on **Big Table** or **Duel**. `Shared/lib/
 Games/BigTable/games/<id>/plugin.lua     returns the table below
 Games/BigTable/games/<id>/<anything>.lua required as games.<id>.<anything>
 Games/BigTable/games/registry.lua        already lists draw holdem omaha stud blackjack roulette baccarat craps
-Games/Duel/games/<id>/plugin.lua         the same, listed for holdem gin liarsdice battleship
+Games/Duel/games/<id>/plugin.lua         the same, listed for holdem gin liarsdice battleship backgammon cribbage indianpoker farkle
 Tests/group_<id>_test.lua                picked up by Tests/run.lua
 ```
 

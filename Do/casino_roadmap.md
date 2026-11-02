@@ -22,7 +22,7 @@ Every wagering game was rebuilt on one engine, `Shared/lib/casino/`. Read the he
 | Casino Hub | `casino-hub` | Leaderboards, measured returns, shared jackpot | Scenario suite |
 | Casino cabinet | `casino` | All 10 single-player games on one computer, one at a time, from a menu | Emulator walk-through |
 | Big Table | `big-table` | 8 games on one dealer and up to 8 seats. Hold'em, Omaha, Stud and Five-Card Draw are players against each other, no rake. Blackjack, Roulette, Baccarat and Craps are against the house, each with a return its test holds to | Each game's `Tests/group_<id>_test.lua`, and `group.mjs` on real rednet across real seats, with a crash at each step of a move |
-| Duel | `duel` | Heads-Up Hold'em, Gin Rummy, Liar's Dice and Battleship for stakes, 1v1 on two walls of one computer, no rake | Each game's `Tests/group_<id>_test.lua`, and `group.mjs` |
+| Duel | `duel` | Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle for stakes, 1v1 on two walls of one computer, no rake | Each game's `Tests/group_<id>_test.lua`, and `group.mjs` |
 
 The cabinet bundles the game folders through `manifest-bundle` in `Games/Casino/startup.lua`. A game starts by reboot, and its `casino_*` files are stored as `cabinet_<game>_casino_*`, so each game keeps its own books. A round left open returns to its game on boot.
 

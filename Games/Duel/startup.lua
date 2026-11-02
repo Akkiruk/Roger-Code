@@ -1,7 +1,7 @@
 -- manifest-entrypoint: true
 -- manifest-key: duel
 -- manifest-name: Duel
--- manifest-description: One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice and Battleship.
+-- manifest-description: One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.
 -- manifest-category: Games
 -- manifest-bundle: Games/PokerTable
 
