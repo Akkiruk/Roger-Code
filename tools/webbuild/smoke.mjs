@@ -111,6 +111,17 @@ try {
     changed = await small.locator("#panelBody").innerText() !== words;
   }
   if (!changed) throw new Error("a tap on the phone panel did nothing: " + words.slice(0, 120));
+  // the opening's SKIP, from the panel, goes to the title
+  const skip = small.locator('#panelBody [data-id^="skip,"]');
+  if (await skip.count()) {
+    await skip.first().tap();
+    let titled = false;
+    for (let i = 0; i < 25 && !titled; i++) {
+      await small.waitForTimeout(200);
+      titled = (await small.locator("#panelBody").innerText()).includes("BLIGHTMARE");
+    }
+    if (!titled) throw new Error("SKIP on the phone panel didn't reach the title");
+  }
   if (errors.length) throw new Error("page error on a phone: " + errors[0]);
   await phone.close();
   console.log("smoke test passed");

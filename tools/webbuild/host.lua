@@ -1459,6 +1459,8 @@ local function panelPress(id)
     end
   elseif id == "tap" then
     if screen == "tap" then send({ kind = "tap" }) end
+  elseif id == actionKey({ kind = "skip" }) then
+    if s and app.plugin.rules.canSkip and app.plugin.rules.canSkip(s) then send({ kind = "skip" }) end
   elseif id == "menu" then
     if screen == "walk" or screen == "world" then send({ kind = "menu" }) end
   elseif id == "back" then
