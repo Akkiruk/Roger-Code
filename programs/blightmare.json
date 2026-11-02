@@ -7,12 +7,12 @@
     "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
     "source_root": "Games/Blightmare",
     "entrypoint": "startup.lua",
-    "version": "1.0.9"
+    "version": "1.0.10"
   },
   "build": {
-    "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
-    "generated_at": "2026-11-02T19:32:41Z",
-    "package_hash": "3beb33635012d4fbfa24e8f6d1b6e88552153b47eea5b96af39a1dc5b353734f"
+    "commit": "fed11304bc60bed6a11e3fbed9d72dcb452039a4",
+    "generated_at": "2026-11-02T20:29:46Z",
+    "package_hash": "f8672b036eafa86c29d4a4b5443d965c46f8c2c62410df2f55dcab09bec08c19"
   },
   "install": {
     "preserve": [],
@@ -100,7 +100,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/story.lua",
         "install_path": "games/blightmare/story.lua",
-        "sha256": "c5502e094d6e5f63976772afbf3cf9206ac99bd6be4f544a37e0129f04148e76"
+        "sha256": "57afff540c9b38b4c51833c3dad8f68d9b689ebc74e3b412c2f0239018274ee4"
       },
       {
         "repo_path": "Shared/lib/arcade/journal.lua",
@@ -295,32 +295,32 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/windmill.lua",
         "install_path": "games/blightmare/regions/windmill.lua",
-        "sha256": "32fd828bddf99ed858bca2b2c3e009b45d28b1a627d98407d0cf5c3cd1aaf4cb"
+        "sha256": "d9db81485a9e828c72a0dc99e836e61659fde7b9927c98f16104259c4950cab1"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/vault.lua",
         "install_path": "games/blightmare/regions/vault.lua",
-        "sha256": "3a2e9f9757cb8737a2da06078135297874188d8379a61855963d874cac10d500"
+        "sha256": "d5056f775c81dae7156e8377aa0457a7c75c051ebcf753d347a5242ab263384d"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/underdark.lua",
         "install_path": "games/blightmare/regions/underdark.lua",
-        "sha256": "796c7d9f73f63c8f719409dfa237b101494935f4cf028e230d7d809dc616a93c"
+        "sha256": "64156c0a9a5ea073961c05c38adf59bf48a8c1a7bfbbea52229ac217b99fe852"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/sindal.lua",
         "install_path": "games/blightmare/regions/sindal.lua",
-        "sha256": "a16eb86d1371af8a27d5c7343ccca77d4a5c0d11a565b4f5da70370652a378c1"
+        "sha256": "018b46fbd1c7e7bda43310d2699764231be444fead9d7df3e4191f4d01f4fa54"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/ruin_south.lua",
         "install_path": "games/blightmare/regions/ruin_south.lua",
-        "sha256": "4ea122357abf1237ef2f2660539a9ae0bd09ac7c98423cb2db1cb445a92e4266"
+        "sha256": "19941140d22a2469d3ae15d13a300b9daf5c429ae0480771444ec71c7629539f"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/ruin_north.lua",
         "install_path": "games/blightmare/regions/ruin_north.lua",
-        "sha256": "f5bf4a02de25c8c5145c221a8e440c01cf7d7c4ae2903cb4810138e58443e705"
+        "sha256": "a9dbe3cdef2b10ff0c944a5e9e41bbc890e7067e88d0082faae3165ab200ff9a"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/intro.lua",
@@ -330,22 +330,22 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/ruin_deep.lua",
         "install_path": "games/blightmare/regions/ruin_deep.lua",
-        "sha256": "1aff28ff52084eeea90ecb131c6e36a73ba8b0020250b2f92fdb9c9d3a534397"
+        "sha256": "4aa39abb0acd2279c89bf39e0a7536e25011d4509094d5dfd11d6ae898b0bde7"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/heart.lua",
         "install_path": "games/blightmare/regions/heart.lua",
-        "sha256": "17371c54ab5bec829152f6fc1668baafe29dd5db07c2791452d1501df54b3880"
+        "sha256": "b2e96c3d8c9bae611affe1edcb3462a551cb5c68b3ebbd2f1705fdb592ee7c4f"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/finale.lua",
         "install_path": "games/blightmare/regions/finale.lua",
-        "sha256": "7b6dac08e5ae5065d92a364d326ed6c8c53bfeae435423e1db9a6d19ce5910f1"
+        "sha256": "4e5997be37d8f0121cc8fdada879c5291da5c8db6c899adfdff58ccb85e161f8"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/empire.lua",
         "install_path": "games/blightmare/regions/empire.lua",
-        "sha256": "e70f5a111361a144df7c102b9114e6f5d04f3d9338fe095c73370908909e5148"
+        "sha256": "a9e0d6947b7492504505bf92e6b925b01061a0913faffd70aabd2453f6b2c63c"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/plugin.lua",
@@ -365,7 +365,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/plexios.lua",
         "install_path": "games/blightmare/regions/plexios.lua",
-        "sha256": "0190d2cf3ce335f8d6906978d1a7569ce00d576d723d1717e11fbd236e659e0e"
+        "sha256": "9e330778b3bac8122300caaede83c84c1bcce015f8921e31534efc59b1ea3a2a"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
