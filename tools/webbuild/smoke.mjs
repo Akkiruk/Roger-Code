@@ -104,8 +104,13 @@ try {
   if (words.length < 20) throw new Error("the phone panel stayed empty: " + words);
   const box = await small.locator("#panelBody").boundingBox();
   await small.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
-  await small.waitForTimeout(500);
-  if (await small.locator("#panelBody").innerText() === words) throw new Error("a tap on the phone panel did nothing");
+  // a slow machine takes a few ticks to show it: wait for the change rather than a fixed time
+  let changed = false;
+  for (let i = 0; i < 25 && !changed; i++) {
+    await small.waitForTimeout(200);
+    changed = await small.locator("#panelBody").innerText() !== words;
+  }
+  if (!changed) throw new Error("a tap on the phone panel did nothing: " + words.slice(0, 120));
   if (errors.length) throw new Error("page error on a phone: " + errors[0]);
   await phone.close();
   console.log("smoke test passed");
