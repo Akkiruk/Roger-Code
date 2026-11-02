@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-02T03:58:20Z",
+  "generated_at": "2026-11-02T05:39:32Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "fa447c77acf50d087193696ce3b790d3c701aaae",
+    "commit": "a84e903aeb9b95d0da6012a42db935f79d26731a",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -124,10 +124,10 @@
     "duel": {
       "name": "Duel",
       "category": "Games",
-      "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice and Battleship.",
-      "version": "1.0.1",
-      "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
-      "package_hash": "1c4feb573832902cd1b2708bea6eb40c699db1914e296e1e87180dba615065e5",
+      "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.",
+      "version": "1.0.2",
+      "commit": "a84e903aeb9b95d0da6012a42db935f79d26731a",
+      "package_hash": "1da4acbfd8286725052bb34b36420a344b42cbaa047181e559cc4e6c99d009aa",
       "spec_path": "programs/duel.json"
     },
     "hilo": {
