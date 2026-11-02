@@ -7,12 +7,12 @@
     "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
     "source_root": "Games/Blightmare",
     "entrypoint": "startup.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "8f71c72f6d484e2f46a461b72a8151de773d21ff",
-    "generated_at": "2026-11-02T05:39:32Z",
-    "package_hash": "68661c22f92dacac593da082c58468ecbb75abaca7e02a3362cec9436032e647"
+    "commit": "b3545d1089489124cffeaa7aabf6e7f2ee0bebc3",
+    "generated_at": "2026-11-02T17:01:21Z",
+    "package_hash": "e77977e99e9bf7a5266b813e1db73a681460463e6629a485806fcb260b54f586"
   },
   "install": {
     "preserve": [],
@@ -185,7 +185,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/story.lua",
         "install_path": "games/blightmare/story.lua",
-        "sha256": "5fd24dfb3a649fe885c4f271047fad532f3acdb30ae2ad1ff1f4795c6a6d0e30"
+        "sha256": "2c47cf77c7f3cc40765089b5295001d36c2a334b65522c8be3abffcc894b5016"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -325,7 +325,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/rules.lua",
         "install_path": "games/blightmare/rules.lua",
-        "sha256": "6d549e4dc056b82fdfae8f40c71161758d1d670b1fde2b90d5d34a6dd2ca0fbe"
+        "sha256": "2a00b6af6d087367d7cf5cff740666fce3e042babbccf2cc5e008f622035930c"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/say.lua",
@@ -340,7 +340,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/plugin.lua",
         "install_path": "games/blightmare/plugin.lua",
-        "sha256": "ca475178f04c6b961ab95a3d50070e3493f067ab67ddbeb433b5b0174832ca77"
+        "sha256": "c8aa589316fd522ba20cf49b1a80d861f1919b086d2ca7bace4ca0f9a9b042f0"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
