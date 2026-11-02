@@ -56,7 +56,8 @@ try {
   await page.waitForTimeout(2500);
   await check("the title");
   if (await colours() < 2) throw new Error("the title never drew");
-  for (const key of ["Enter", "Enter"]) {
+  // the idle screen is the opening: the first key takes it over, the next presses its SKIP, the third START
+  for (const key of ["Enter", "Enter", "Enter"]) {
     await page.keyboard.press(key);
     await page.waitForTimeout(700);
     await check("starting");
@@ -111,17 +112,15 @@ try {
     changed = await small.locator("#panelBody").innerText() !== words;
   }
   if (!changed) throw new Error("a tap on the phone panel did nothing: " + words.slice(0, 120));
-  // the opening's SKIP, from the panel, goes to the title
-  const skip = small.locator('#panelBody [data-id^="skip,"]');
-  if (await skip.count()) {
-    await skip.first().tap();
-    let titled = false;
-    for (let i = 0; i < 25 && !titled; i++) {
-      await small.waitForTimeout(200);
-      titled = (await small.locator("#panelBody").innerText()).includes("BLIGHTMARE");
-    }
-    if (!titled) throw new Error("SKIP on the phone panel didn't reach the title");
+  // the opening's SKIP, from the panel, goes to the ready screen
+  const skip = small.locator('#panelBody [data-id="button:actSkip"]');
+  if (await skip.count()) await skip.first().tap();
+  let ready = false;
+  for (let i = 0; i < 25 && !ready; i++) {
+    await small.waitForTimeout(200);
+    ready = (await small.locator("#panelBody").innerText()).includes("PASTE SAVE CODE");
   }
+  if (!ready) throw new Error("SKIP on the phone panel didn't reach the ready screen");
   if (errors.length) throw new Error("page error on a phone: " + errors[0]);
   await phone.close();
   console.log("smoke test passed");

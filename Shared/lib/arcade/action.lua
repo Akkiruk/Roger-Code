@@ -74,14 +74,31 @@ local function nearestName(who)
   return #list == 1 and list[1] or nil
 end
 
---- The ready screen for the current game.
-function M.open(who)
+--- The ready screen for the current game. A game whose idle screen is its opening (view.intro) carries on with it from
+-- the idle demo, heard now and with a SKIP, and the ready screen comes after it.
+function M.open(who, demo)
   who = nearestName(who)
-  S.action = { phase = "ready", player = who, scores = scores.open(app.plugin.id) }
-  if app.plugin.saves then offerSave(S.action, who or "Player") end
+  local hook = app.plugin.view.intro
+  local run = demo and hook and hook.from(demo, nowMs(), app) or nil
+  S.action = { phase = run and "intro" or "ready", player = who, scores = scores.open(app.plugin.id), intro = run }
+  if app.plugin.saves and not run then offerSave(S.action, who or "Player") end
   S.view = "action"
   S.lastTouch = nowMs()
   S.dirty = true
+end
+
+--- The opening is over, played out or skipped: on to the ready screen.
+local function introDone(a)
+  app.plugin.view.intro.stop(app)
+  a.phase, a.intro = "ready", nil
+  if app.plugin.saves then offerSave(a, a.player or "Player") end
+  S.lastTouch = nowMs()
+  S.dirty = true
+end
+
+function M.skipIntro()
+  local a = S.action
+  if a and a.phase == "intro" then introDone(a) end
 end
 
 --- Into play, on a new run or a saved one.
@@ -231,6 +248,12 @@ end
 --- A touch on the game itself.
 function M.touch(px, py, who)
   local a = S.action
+  if a and a.phase == "intro" then
+    -- a tap turns the page; the opening's last page turned leaves it
+    if app.plugin.view.intro.tap(a.intro, nowMs(), app) then introDone(a) end
+    S.dirty = true
+    return
+  end
   if a and a.phase == "ready" and app.plugin.saves then readyForOther(a, who) end
   if not a or a.phase ~= "play" or not M.mayPlay(who) then return end
   a.touchedAt = nowMs()
@@ -293,6 +316,11 @@ function M.tick(t)
   local a = S.action
   if not a then return end
   local plugin = app.plugin
+  if a.phase == "intro" then
+    local changed, done = plugin.view.intro.step(a.intro, t, app)
+    if done then introDone(a) elseif changed then S.dirty = true end
+    return
+  end
   if plugin.saves then clearLapsed(a, t) end
   if a.phase == "ready" and t - S.lastTouch > config.LOBBY_IDLE * 1000 then
     M.leave()
@@ -412,7 +440,11 @@ function M.draw()
   local a = S.action
   ui.screen():clear(C.bg, nil, " ")
   ui.clearButtons()
-  if a.phase == "ready" then
+  if a.phase == "intro" then
+    app.plugin.view.intro.draw(env.W, env.H, a.intro)
+    ui.button("actSkip", env.W - 18, 1, 16, 7, "SKIP", C.panel, { small = true })
+    app.drawToast()
+  elseif a.phase == "ready" then
     drawReady(a)
   elseif a.phase == "over" then
     if a.reviewed then drawOver(a) else drawFinalBoard(a) end

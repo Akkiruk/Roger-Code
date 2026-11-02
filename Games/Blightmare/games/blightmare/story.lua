@@ -86,9 +86,10 @@ end
 
 -- ---------------------------------------------------------------- the opening
 
--- Before the first morning: the gods, the land, the plague and the wall, and one night in Scythebreak. The pictures are in
--- intro.lua and its three files, and the sounds in lib/sound_picks.lua. SKIP goes to the mark: the title, the bell, the morning.
--- docs/embia/story/intro-design.md in craftos-agent has the design and the author's answers.
+-- The gods, the land, the plague and the wall, and one night in Scythebreak: the cabinet's idle screen, which a touch turns
+-- into the opening proper, heard, before the ready screen. intro_player.lua plays it page by page; the pictures are in
+-- intro.lua and its three files, and the sounds in lib/sound_picks.lua. docs/embia/story/intro-design.md in craftos-agent has
+-- the design and the author's answers.
 local INTRO = {
   { music = "intro_music_legend" },
   { pic = "oblivion" },
@@ -124,22 +125,14 @@ local INTRO = {
   t("Tonight, as every night, everyone in Scythebreak is dreaming."),
   { sfx = "intro_sting_one" },
   { big = "ALL BUT ONE" },
-  { mark = "skip" },
-  { pic = false },
-  { music = false },
-  { dark = true },
-  { sfx = "intro_title" },
-  { big = "BLIGHTMARE" },
-  { dark = false },
-  { sfx = "intro_bell" },
-  { warp = { "scythebreak", 3, 3, 2 } },
 }
+M.INTRO = INTRO
 
 -- ---------------------------------------------------------------- morning in Scythebreak
 
 S.start = {
-  -- the opening, in place of the warp it ends with, so a save in the morning still holds its place
-  { all = {}, steps = INTRO },
+  -- a branch that's only the warp: for a while the opening ran here, and a save from inside it carries on from the morning
+  { all = {}, steps = { { pic = false }, { warp = { "scythebreak", 3, 3, 2 } } } },
   t("Everyone in Scythebreak goes somewhere at night. They tell you about it over breakfast: colours, falling, all their teeth, a dead uncle asking after the horse."),
   t("You have never been. You shut your eyes, you open them, and it is morning. There is nothing in between. There never has been."),
   nan("Up, {hero}! The bell's gone and the porridge has started to set, and I'm not chiselling it off the pot a second time. Come on, out of there."),

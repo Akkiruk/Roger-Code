@@ -253,7 +253,8 @@ local function openLobby(who, wall)
 end
 
 --- Past the idle screen: the game menu when there is a choice, otherwise straight to the lobby.
-local function openFront(who, wall)
+--- demo: what the touched wall's idle screen was showing, for a game whose idle screen carries on into play.
+local function openFront(who, wall, demo)
   if #registry > 1 then
     -- the menu belongs to no game, so it wears the Arcade's own accent
     setAccent(config.PALETTE.yellow)
@@ -263,7 +264,7 @@ local function openFront(who, wall)
   elseif registry[1].versus then
     versus.open(who, wall)
   elseif registry[1].action then
-    actions.open(who)
+    actions.open(who, demo)
   else
     openLobby(who, wall)
   end
@@ -677,6 +678,7 @@ handlers.actStart = function(_, who)
 end
 handlers.actContinue = function(_, who) actions.continue(who) end
 handlers.actNew = function(_, who) actions.newGame(who) end
+handlers.actSkip = function() actions.skipIntro() end
 handlers.act = function(b, who)
   actions.press(b.data, who)
 end
@@ -1027,8 +1029,9 @@ local function onTouch(side, x, y, who)
   local wall = side
   local px, py = x - 1, y - 1
   if S.view == "idle" then
-    audio.play("select")
-    openFront(who, wall)
+    local slot = S.idle and (S.idle[index] or S.idle[1])
+    if not (slot and slot.plugin.view.intro) then audio.play("select") end -- an opening starts its own sound
+    openFront(who, wall, slot and slot.demo)
     return
   end
   if S.view == "versus" then

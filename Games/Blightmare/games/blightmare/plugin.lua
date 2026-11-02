@@ -153,11 +153,60 @@ function view.onEvents(app, _, events)
   base.sfx(app, events, SFX)
 end
 
---- No demo: the story isn't to be seen before it's played, so the idle screen never moves.
-function view.demoStep() return false end
+-- The idle screen is the opening, silent, on a loop (intro_player.lua). A touch carries it on from the same moment, heard.
+local function player() return part("intro_player") end
 
---- The title, over the one thing every player will see first: the great wall at night, with a crack in it.
-function view.drawAttract(W, H)
+function view.demoStep(demo, t)
+  if not demo.run then
+    demo.run = player().new(t)
+    return true
+  end
+  return player().loopStep(demo.run, t)
+end
+
+--- Sounds and music for the opening once someone is watching.
+local function heard(app)
+  return function(name) app.audio.play(name) end, function(name)
+    if app.audio.music then app.audio.music(name) end
+  end
+end
+
+view.intro = {
+  --- The idle run, taken over: the same page and moment, from now on heard.
+  from = function(demo, t, app)
+    if not demo.run then return nil end
+    local run = {}
+    for k, v in pairs(demo.run) do run[k] = v end
+    run.from = t - run.ticks * 120
+    local _, music = heard(app)
+    player().engage(run, music)
+    return run
+  end,
+  step = function(run, t, app)
+    local play, music = heard(app)
+    return player().step(run, t, play, music)
+  end,
+  --- A tap turns the page. True when that was the last.
+  tap = function(run, _, app)
+    if run.page >= #player().pages() then return true end
+    local play, music = heard(app)
+    player().turn(run, play, music)
+    return false
+  end,
+  draw = function(W, H, run) player().draw(W, H, run, true) end,
+  words = function(run) return player().words(run) end,
+  stop = function(app)
+    if app.audio.music then app.audio.music(nil) end
+    app.audio.play("intro_bell")
+  end,
+}
+
+--- The opening, silent, under TOUCH TO PLAY; before it has started, the title over the great wall at night.
+function view.drawAttract(W, H, demo)
+  if demo and demo.run then
+    player().draw(W, H, demo.run)
+    return H - 8
+  end
   ui.fill(0, 0, W, H, C.bg)
   local wallY = floor(H * 0.52)
   ui.fill(0, wallY, W, H - wallY - 12, C.panel)

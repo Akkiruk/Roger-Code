@@ -1405,6 +1405,10 @@ local function shellPanel(app)
   if S.view == "rules" then return { kind = "help", lines = app.plugin.help, done = S.rulesThen and "GOT IT - START" or "GOT IT" } end
   local a = S.action
   if S.view == "action" and a and a.phase == "ready" then return { kind = "ready", line = a.saved and a.saved.line or nil } end
+  if S.view == "action" and a and a.phase == "intro" and app.plugin.view.intro then
+    local text, big = app.plugin.view.intro.words(a.intro)
+    return { kind = "talk", text = text, big = big, tap = true, skip = "button:actSkip" }
+  end
   return { kind = "none" }
 end
 
@@ -1425,7 +1429,8 @@ local function panelSignature(app)
   local a = S.action
   local s = S.view == "action" and a and a.state
   local quit = a and a.quitUntil and nowMs + tzMs < a.quitUntil
-  return concat({ S.view, tostring(a and a.phase), tostring(s and s.rev), tostring(quit), tostring(a and a.saved and a.saved.line) }, ",")
+  return concat({ S.view, tostring(a and a.phase), tostring(s and s.rev), tostring(quit), tostring(a and a.saved and a.saved.line),
+    tostring(a and a.intro and a.intro.page) }, ",")
 end
 
 local function panelStep()
@@ -1458,7 +1463,11 @@ local function panelPress(id)
       end
     end
   elseif id == "tap" then
-    if screen == "tap" then send({ kind = "tap" }) end
+    if screen == "tap" then
+      send({ kind = "tap" })
+    elseif app.S.view == "action" and app.S.action and app.S.action.phase == "intro" then
+      touch(floor(W / 2), floor(H / 2)) -- the opening turns its page on a touch of the wall
+    end
   elseif id == actionKey({ kind = "skip" }) then
     if s and app.plugin.rules.canSkip and app.plugin.rules.canSkip(s) then send({ kind = "skip" }) end
   elseif id == "menu" then
