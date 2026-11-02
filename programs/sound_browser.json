@@ -7,12 +7,12 @@
     "description": "Browse the pack's generated sound catalog and save favorites.",
     "source_root": "Apps/SoundBrowser",
     "entrypoint": "startup.lua",
-    "version": "1.0.18"
+    "version": "1.0.19"
   },
   "build": {
-    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
-    "generated_at": "2026-11-02T17:33:41Z",
-    "package_hash": "7199ebe4034f48869d4b722194d0a5d67b8bc5a6fc459ced889e7ff6439f5261"
+    "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
+    "generated_at": "2026-11-02T19:08:03Z",
+    "package_hash": "0773d037d7664b2805be5418faeb0e5d56d57a5520992296f0ef55253f963449"
   },
   "install": {
     "preserve": [],
@@ -40,7 +40,7 @@
       {
         "repo_path": "Shared/lib/sound_picks.lua",
         "install_path": "lib/sound_picks.lua",
-        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
+        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
         "repo_path": "Shared/lib/sound_metadata.lua",
@@ -60,7 +60,7 @@
       {
         "repo_path": "Shared/lib/sound.lua",
         "install_path": "lib/sound.lua",
-        "sha256": "eca86e621b8d9241d354b4038704def7d07e800e4640a357e3b4876e6b967754"
+        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",

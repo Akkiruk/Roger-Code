@@ -7,12 +7,12 @@
     "description": "Eight casino games for up to eight players, each at their own screen. Install it on every computer: a 6x6 wall becomes the dealer and a smaller one a seat.",
     "source_root": "Games/BigTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
-    "generated_at": "2026-11-02T17:33:41Z",
-    "package_hash": "2f96cec0c9d8c4aab3ad5f00ecf9810ab203c47c3e3b0cd63b3650a25a75a30a"
+    "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
+    "generated_at": "2026-11-02T19:08:03Z",
+    "package_hash": "6325e63818e0fa29ef57e2e39e60ff8050cd8d39774a700888e923a27f353dac"
   },
   "install": {
     "preserve": [],
@@ -345,7 +345,7 @@
       {
         "repo_path": "Shared/lib/sound_picks.lua",
         "install_path": "lib/sound_picks.lua",
-        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
+        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
         "repo_path": "Games/BigTable/games/omaha/plugin.lua",

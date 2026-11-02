@@ -7,12 +7,12 @@
     "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.",
     "source_root": "Games/Duel",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "a84e903aeb9b95d0da6012a42db935f79d26731a",
-    "generated_at": "2026-11-02T17:33:41Z",
-    "package_hash": "1da4acbfd8286725052bb34b36420a344b42cbaa047181e559cc4e6c99d009aa"
+    "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
+    "generated_at": "2026-11-02T19:08:03Z",
+    "package_hash": "44f9e5823ef3115854f75b3ff2bb76b7e75fb5fc2016a2513e60d6a0133ef9d7"
   },
   "install": {
     "preserve": [],
@@ -190,7 +190,7 @@
       {
         "repo_path": "Shared/lib/sound_picks.lua",
         "install_path": "lib/sound_picks.lua",
-        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
+        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
         "repo_path": "Games/Duel/games/registry.lua",

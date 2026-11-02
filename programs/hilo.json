@@ -7,12 +7,12 @@
     "description": "Higher or lower through one deck, with every guess priced from the cards left.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.95"
+    "version": "1.0.96"
   },
   "build": {
-    "commit": "979cd724ece885f45ec9aaeda9399f319ca12670",
-    "generated_at": "2026-11-02T17:33:41Z",
-    "package_hash": "94555330e09f40353cc31a2eb498051d05d8eb113760b4896f23acb83b917b50"
+    "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
+    "generated_at": "2026-11-02T19:08:03Z",
+    "package_hash": "c75ae0fd05813b22b9f23e48d42b993a662237cafa7e6770e0942df61e4d5b8a"
   },
   "install": {
     "preserve": [],
@@ -210,7 +210,7 @@
       {
         "repo_path": "Shared/lib/sound_picks.lua",
         "install_path": "lib/sound_picks.lua",
-        "sha256": "e40167dc15ff1752eeb5ffd0373a1ecfa021f817ba46c2c50d325c8e677623e9"
+        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
