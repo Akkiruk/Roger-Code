@@ -1,0 +1,9 @@
+{
+  "name": "webbuild",
+  "private": true,
+  "description": "Builds the browser version of BLIGHTMARE.",
+  "type": "module",
+  "dependencies": {
+    "lua-wasm-bindings": "0.5.3"
+  }
+}

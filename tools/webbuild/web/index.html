@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BLIGHTMARE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14161c">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0c10; color: #f2f4f8; overflow: hidden; overscroll-behavior: none; }
+  body { display: flex; align-items: center; justify-content: center; font: 16px/1.4 system-ui, sans-serif;
+    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  #wall { display: block; touch-action: none; cursor: pointer; image-rendering: pixelated; }
+  #mute { position: fixed; top: max(6px, env(safe-area-inset-top)); right: max(6px, env(safe-area-inset-right)); z-index: 2;
+    width: 34px; height: 34px; padding: 6px; border: 1px solid #3a3f4d; border-radius: 6px; background: #14161ccc; color: #b5bccb; cursor: pointer; }
+  #mute svg { display: block; width: 100%; height: 100%; }
+  #mute .off { display: none; }
+  #mute[aria-pressed="true"] .on { display: none; }
+  #mute[aria-pressed="true"] .off { display: inline; }
+  #note { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; letter-spacing: .3em; color: #7c8496; pointer-events: none; }
+  #cursor { position: fixed; display: none; z-index: 1; box-sizing: content-box; border: 2px solid #ffe14d; outline: 1px solid #000; pointer-events: none;
+    animation: pulse 0.9s ease-in-out infinite alternate; }
+  @keyframes pulse { from { border-color: #ffe14d; } to { border-color: #ffffff; } }
+  #keys { position: fixed; display: none; color: #7c8496; font-size: 13px; line-height: 1.7; pointer-events: none; }
+  @media (pointer: fine) {
+    #keys.side { display: block; left: 14px; bottom: 14px; max-width: 150px; }
+    #keys.under { display: block; left: 0; right: 0; bottom: 4px; text-align: center; font-size: 12px; }
+    #keys.under span { margin: 0 8px; }
+    #keys.side span { display: block; }
+  }
+  #crash { position: fixed; inset: 0; z-index: 3; display: none; overflow: auto; padding: 24px; box-sizing: border-box; background: #14161cf2;
+    -webkit-user-select: text; user-select: text; }
+  #crash h1 { margin: 0 0 8px; font-size: 20px; color: #e5484d; }
+  #crash pre { white-space: pre-wrap; word-break: break-word; font: 13px/1.45 ui-monospace, Consolas, monospace; color: #f2f4f8; }
+  #crash button { margin-top: 8px; padding: 10px 18px; font: inherit; color: #14161c; background: #35d07f; border: 0; border-radius: 6px; cursor: pointer; }
+</style>
+</head>
+<body>
+<canvas id="wall" width="242" height="243"></canvas>
+<div id="cursor"></div>
+<div id="keys"><span>Arrows or WASD move</span><span>Enter acts</span><span>M menu</span><span>Esc back</span></div>
+<div id="note">LOADING</div>
+<button id="mute" type="button" aria-label="Mute" aria-pressed="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 9v6h4l6 5V4L8 9z" fill="currentColor"/>
+    <path class="on" d="M17 8.5a5 5 0 0 1 0 7M19.5 6a8.5 8.5 0 0 1 0 12"/>
+    <path class="off" d="M17 9l5 6M22 9l-5 6"/>
+  </svg>
+</button>
+<div id="crash" role="alert">
+  <h1>BLIGHTMARE has stopped</h1>
+  <p>Something went wrong in the game. Your last save is safe.</p>
+  <pre id="crashText"></pre>
+  <button id="crashReload" type="button">Restart</button>
+</div>
+<script src="lua-5.1.5.js"></script>
+<script src="synth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

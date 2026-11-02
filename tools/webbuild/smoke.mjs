@@ -1,0 +1,81 @@
+// Boots a built copy in a real browser and plays the opening by keyboard. A build that crashes must never reach the website.
+//   node tools/webbuild/smoke.mjs [dir]     needs playwright installed beside it, and exits non-zero on any failure
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { extname, join, resolve } from "node:path";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { chromium } from "playwright";
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = resolve(process.argv[2] || join(here, "out", "blightmare"));
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".wasm": "application/wasm", ".txt": "text/plain" };
+
+const server = createServer(async (req, res) => {
+  const name = new URL(req.url, "http://x").pathname.replace(/^\/+/, "") || "index.html";
+  try {
+    const body = await readFile(join(root, name));
+    res.writeHead(200, { "content-type": TYPES[extname(name)] || "application/octet-stream" });
+    res.end(body);
+  } catch {
+    res.writeHead(404);
+    res.end();
+  }
+});
+await new Promise((done) => server.listen(0, "127.0.0.1", done));
+const url = "http://127.0.0.1:" + server.address().port + "/";
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+
+async function check(where) {
+  const crash = await page.evaluate(() => {
+    const box = document.getElementById("crash");
+    return box && getComputedStyle(box).display !== "none" ? box.textContent : null;
+  });
+  if (crash) throw new Error("crashed at " + where + ": " + crash);
+  if (errors.length) throw new Error("page error at " + where + ": " + errors[0]);
+}
+
+/** How many colours are on the wall: a blank or dead picture has one. */
+const colours = () => page.evaluate(() => {
+  const canvas = document.querySelector("canvas");
+  const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+  const seen = new Set();
+  for (let i = 0; i < data.length; i += 4 * 97) seen.add(data[i] << 16 | data[i + 1] << 8 | data[i + 2]);
+  return seen.size;
+});
+
+try {
+  await page.goto(url, { waitUntil: "load" });
+  await page.waitForTimeout(2500);
+  await check("the title");
+  if (await colours() < 2) throw new Error("the title never drew");
+  for (const key of ["Enter", "Enter"]) {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(700);
+    await check("starting");
+  }
+  await page.keyboard.type("Ada");
+  await page.keyboard.press("Enter");
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(250);
+  }
+  await check("the opening");
+  for (const key of ["w", "d", "ArrowLeft", "m", "Escape"]) {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(300);
+  }
+  await check("walking");
+  if (await colours() < 4) throw new Error("the game stopped drawing");
+  console.log("smoke test passed");
+} catch (e) {
+  console.error(String(e.message || e));
+  process.exitCode = 1;
+} finally {
+  await browser.close();
+  server.close();
+}

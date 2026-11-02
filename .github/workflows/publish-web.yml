@@ -1,0 +1,72 @@
+name: Publish BLIGHTMARE to the website
+
+# Every push that touches the game rebuilds the browser version and hands it to the elawondra repo, whose own workflow deploys it.
+# The smoke test comes first: a build that doesn't boot stops here, and the website keeps the last good one.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Games/Blightmare/**"
+      - "Shared/lib/**"
+      - "tools/webbuild/**"
+      - ".github/workflows/publish-web.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-web
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the game
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build
+        run: |
+          npm ci --prefix tools/webbuild
+          node tools/webbuild/build.mjs --out tools/webbuild/out/blightmare
+
+      - name: Boot it in a real browser
+        run: |
+          npm install --no-save --prefix tools/webbuild playwright
+          npx --prefix tools/webbuild playwright install --with-deps chromium
+          node tools/webbuild/smoke.mjs tools/webbuild/out/blightmare
+
+      - name: Check out the website
+        uses: actions/checkout@v4
+        with:
+          repository: Akkiruk/elawondra
+          ssh-key: ${{ secrets.ELAWONDRA_DEPLOY_KEY }}
+          path: site
+
+      - name: Hand the build over
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          rm -rf site/public/blightmare
+          cp -r tools/webbuild/out/blightmare site/public/blightmare
+          cd site
+          git add -A public/blightmare
+          if git diff --cached --quiet; then
+            echo "The game on the website is already this build."
+            exit 0
+          fi
+          git config user.name "blightmare-build"
+          git config user.email "blightmare-build@users.noreply.github.com"
+          git commit -m "BLIGHTMARE: build of Roger-Code ${SHA::7}"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD && exit 0
+            sleep 5
+          done
+          exit 1
