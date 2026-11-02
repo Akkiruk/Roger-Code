@@ -616,17 +616,17 @@ local function tollFor(s)
 end
 M.tollFor = tollFor
 
---- A lost fight costs nothing it used up: every item comes back, and any gold it spent. Then a small toll, and the Raven Queen
+--- A lost fight is undone: the pack and purse are as they were going in. Then a small toll, and the Raven Queen
 --- sends everyone back to the last safe place, well. There's no telling how hard a fight is before it starts, so exploring
 --- mustn't be punished for it.
 local function wipe(s, events)
   local fight = s.fight or {}
   s.run, s.back, s.battle, s.fight, s.dark = nil, nil, nil, nil, nil
   endSolo(s) -- whatever they went into alone can be gone into again
-  for id, n in pairs(fight.bag or {}) do
-    if (s.bag[id] or 0) < n then s.bag[id] = n end
-  end
-  s.gold = max(s.gold, fight.gold or 0)
+  -- the pack and purse go back to exactly what they were, so nothing stolen in a lost fight is kept: losing on purpose must
+  -- never pay. A fight only gives XP and gold when it's won, so this undoes everything it did.
+  if fight.bag then s.bag = fight.bag end
+  if fight.gold then s.gold = fight.gold end
   local toll = min(s.gold, tollFor(s))
   s.gold = s.gold - toll
   s.toll = toll
