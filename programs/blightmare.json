@@ -7,12 +7,12 @@
     "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
     "source_root": "Games/Blightmare",
     "entrypoint": "startup.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "cee9afda848bbf8993a6438ca569fd25b9ab8a7a",
-    "generated_at": "2026-11-02T17:12:17Z",
-    "package_hash": "b84e5125ce98c00c4b0d10d0763394371515f836096f71104a4a1d5a4a77ae6d"
+    "commit": "d9ddaf66b4d5ccdfc12c8de79bc4c58867e67515",
+    "generated_at": "2026-11-02T17:33:41Z",
+    "package_hash": "4629e17b314ea22ae43f445d6e1b62982cb41afe1e4f7e7f10db65271bc60f38"
   },
   "install": {
     "preserve": [],
@@ -180,7 +180,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/view_battle.lua",
         "install_path": "games/blightmare/view_battle.lua",
-        "sha256": "a4488f92fa1e03ae9c645591ddeb741b006e0c445db26b25a7104ea3ac3341e3"
+        "sha256": "d18299b091a6bc6dbdaa05f5176b653389f9102c79e9964027fb41fad5ca3fca"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/story.lua",
@@ -235,7 +235,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/battle.lua",
         "install_path": "games/blightmare/battle.lua",
-        "sha256": "3323a06ac744306bcf08abf1248648e4726abbb992810dcac1597ba7a26d2e72"
+        "sha256": "7246fac69ea65468313fc8124861656008556fb8c959adf0e1a11e530c39300c"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/content.lua",
@@ -245,7 +245,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/enemies.lua",
         "install_path": "games/blightmare/enemies.lua",
-        "sha256": "ac18ac01a16f5e6e7a0f98a0f8c78096ba61cde4867c81399df539d4ca11eb26"
+        "sha256": "0b0d09932b9b838ed52b4e125f94625a4ee8d7b2ba8e4fca2d0947a8caf28e0c"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/maps.lua",
@@ -340,7 +340,7 @@
       {
         "repo_path": "Games/Blightmare/games/blightmare/plugin.lua",
         "install_path": "games/blightmare/plugin.lua",
-        "sha256": "c8aa589316fd522ba20cf49b1a80d861f1919b086d2ca7bace4ca0f9a9b042f0"
+        "sha256": "3b5d8f7cfa0f8b4d1bb52573a26c70f54af0cdccbfbc39a44e8fc0df15c63458"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",

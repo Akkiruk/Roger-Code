@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-02T17:12:17Z",
+  "generated_at": "2026-11-02T17:33:41Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "cee9afda848bbf8993a6438ca569fd25b9ab8a7a",
+    "commit": "d9ddaf66b4d5ccdfc12c8de79bc4c58867e67515",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -53,9 +53,9 @@
       "name": "BLIGHTMARE",
       "category": "Arcade",
       "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
-      "version": "1.0.6",
-      "commit": "cee9afda848bbf8993a6438ca569fd25b9ab8a7a",
-      "package_hash": "b84e5125ce98c00c4b0d10d0763394371515f836096f71104a4a1d5a4a77ae6d",
+      "version": "1.0.7",
+      "commit": "d9ddaf66b4d5ccdfc12c8de79bc4c58867e67515",
+      "package_hash": "4629e17b314ea22ae43f445d6e1b62982cb41afe1e4f7e7f10db65271bc60f38",
       "spec_path": "programs/blightmare.json"
     },
     "block_reader_vhcctweaks_probe": {
