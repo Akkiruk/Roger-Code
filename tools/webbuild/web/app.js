@@ -687,7 +687,7 @@ const DAMAGED = "The game files are damaged. Tap Restart to fetch them again. Yo
       + (d.party || []).map(member).join("") + (d.bag && d.bag.length ? `<p>${esc(d.bag.join(", "))}</p>` : ""),
     battle: (d) => `<p class="msg">${esc(d.msg)}</p>`
       + (d.spoils ? `<p>${d.spoils.xp ?? 0} XP, <span class="gold">${d.spoils.gold ?? 0} gold</span></p>${d.spoils.ups.map((u) => `<p>${esc(u)}</p>`).join("")}<p class="more">Tap to continue</p>` : "")
-      + (d.cmds ? `<div class="grid">${d.cmds.map((c) => button(c.id, c.label, c.warn ? "warn" : "")).join("")}</div>` : "")
+      + (d.cmds ? `<div class="grid">${d.cmds.map((c) => button(c.id, c.label, c.warn ? "warn" : c.dim ? "dim" : "")).join("")}</div>` : "")
       + rows(d.rows) + (d.back ? button("back", "BACK", "go") : "")
       + `<div style="margin-top:10px">${d.allies.map(member).join("")}</div>`,
     ground: (d) => (d.place ? `<h2>${esc(d.place)}</h2>` : "") + (d.goal ? `<p class="goal">${esc(d.goal)}</p>` : "") + (d.msg ? `<p class="msg">${esc(d.msg)}</p>` : "")

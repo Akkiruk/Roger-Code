@@ -56,6 +56,7 @@ local function member(s, u) return s.party[u.m] end
 local function hpOf(s, u) return u.m and member(s, u).hp or u.hp end
 local function alive(s, u) return hpOf(s, u) > 0 end
 
+
 local function setHp(s, u, n)
   if u.m then member(s, u).hp = n else u.hp = n end
 end
@@ -130,7 +131,7 @@ end
 
 local function statusClear(u)
   for _, status in ipairs(STATUS) do u[status] = 0 end
-  u.guard, u.focus, u.hidden = false, false, false
+  u.guard, u.focus, u.hidden, u.braced = false, false, false, nil
   u.oath = 0
 end
 
@@ -275,7 +276,7 @@ local function afflict(s, b, u, status, events)
     if u.poison == 0 then u.poison = M.POISON_EVERY end
   else
     u[status] = LASTS[status]
-    if status == "sleep" then u.guard = false end
+    if status == "sleep" then u.guard, u.braced = false, nil end
   end
   float(b, u, status:upper(), "accent")
   emit(events, "status", u)
@@ -604,7 +605,10 @@ end
 
 local function openMenu(s, b, i, events)
   local u = b.allies[i]
-  u.guard, u.hidden = false, false -- a guard lasts until your next turn, and so does a vanishing
+  -- a guard lasts until your next turn, and so does a vanishing. A guard raised against a wind-up holds until the blow lands,
+  -- so a DEFEND in time is never wasted however many turns come before it
+  if not u.braced then u.guard = false end
+  u.hidden = false
   b.phase, b.active, b.list, b.pick, b.pickId = "cmd", i, nil, nil, nil
   say(b, nameOf(s, u) .. " IS READY")
   emit(events, "menu", u)
@@ -614,8 +618,16 @@ local function chooseSpecial(s, b, u, rng, events)
   local m = member(s, u)
   local special = party.CHARS[m.id].special
   if special == "FOCUS" then
+    -- it doesn't stack, so a second one would only waste the turn: the menu stays open
+    if u.focus then
+      say(b, "ALREADY FOCUSED")
+      return
+    end
     u.focus = true
-    if party.focusOf(m).brace then u.guard = true end
+    if party.focusOf(m).brace then
+      u.guard = true
+      if M.blowIn(b) then u.braced = true end
+    end
     say(b, "NEXT HIT IS STRONGER")
     float(b, u, "FOCUS", "hi")
     emit(events, "focus", u)
@@ -637,7 +649,13 @@ local function chooseCommand(s, b, u, cmd, rng, events)
   elseif cmd == "special" then
     chooseSpecial(s, b, u, rng, events)
   elseif cmd == "defend" then
+    -- braced already, a second DEFEND would only waste the turn: the menu stays open
+    if u.braced then
+      say(b, "ALREADY GUARDING")
+      return
+    end
     u.guard = true
+    if M.blowIn(b) then u.braced = true end
     say(b, nameOf(s, u) .. " DEFENDS")
     float(b, u, "GUARD", "info")
     emit(events, "defend", u)
@@ -958,6 +976,10 @@ local function advance(s, b, rng, events)
         f.charging = nil
         f.atb = 0
         b.beat = TELEGRAPH_BEAT
+        -- a guard raised against it has done its job, and from here lasts until that ally's next turn as any other
+        if not M.blowIn(b) then
+          for _, a in ipairs(b.allies) do a.braced = nil end
+        end
         settled(s, b, events)
         return
       end
@@ -1148,9 +1170,8 @@ local function plan(s, b)
     return stock and use(stock, need.lowest) or nil
   end
 
-  -- a telegraphed blow: brace unless another turn will come first, or someone won't live through it even braced
-  local blow = M.blowIn(b)
-  if blow and blow <= ceil(M.GAUGE / M.gain(u.spd)) + BEAT then
+  -- a telegraphed blow: brace once, then get on with it, unless someone won't live through it even braced
+  if M.blowIn(b) and not u.braced then
     local worst = 0
     for _, f in ipairs(b.foes) do
       if f.charging then

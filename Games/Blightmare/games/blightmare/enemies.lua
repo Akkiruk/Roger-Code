@@ -14,7 +14,8 @@
 -- ABILITIES, in R.abilities or ABILITIES below. power is a percent of atk, against armour; magic = true ignores armour, and a
 -- silenced foe can't use it. target: one (default) | all | friend (mends a hurt foe; share = percent of its max HP on top of
 -- power) | summon. element, status and chance are optional, and with no power it is the status alone. mp is optional.
--- windup = ticks of warning, with warn = the line on the wall: use about 34, so everyone gets a turn in.
+-- windup = ticks of warning, with warn = the line on the wall: use about 34, so everyone gets a turn in. A DEFEND in that time
+-- holds until the blow lands.
 -- Statuses: poison sleep nightmare blind silence thrall tadpole doom.
 --   thrall  fights for the foes, until cured, hit hard, or 5 of their turns pass
 --   tadpole the same, by psionic lash; circlets stop it
@@ -139,7 +140,7 @@ M.FOES = {
     abilities = { { "swing", 4 }, { "stare", 1 } },
   },
   foreman = {
-    name = "THE FOREMAN", short = "FOREMAN", hp = 880, mp = 99, atk = 28, def = 6, spd = 6, xp = 120, gold = 150,
+    name = "THE FOREMAN", short = "FOREMAN", hp = 920, mp = 99, atk = 28, def = 6, spd = 6, xp = 120, gold = 150,
     sprite = "foreman", abilities = { { "shaft", 1 } }, immune = { sleep = true, nightmare = true },
     steal = "ether",
     boss = { phases = {

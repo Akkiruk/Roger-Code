@@ -1347,7 +1347,9 @@ local function battlePanel(app, s)
     local u = b.allies[b.active]
     local cmd = function(name, label) return { id = actionKey({ kind = "cmd", cmd = name }), label = label } end
     out.cmds = { cmd("attack", "ATTACK"), cmd("special", party.CHARS[s.party[u.m].id].special), cmd("defend", "DEFEND"), cmd("item", "ITEM") }
-    out.cmds[3].warn = battle.blowIn(b) ~= nil
+    out.cmds[3].warn = battle.blowIn(b) ~= nil and not u.braced
+    if u.braced then out.cmds[3].label, out.cmds[3].dim = "GUARDING", true end
+    if out.cmds[2].label == "FOCUS" and u.focus then out.cmds[2].label, out.cmds[2].dim = "FOCUSED", true end
   elseif b.phase == "list" then
     out.rows, out.back = {}, true
     for i, row in ipairs(battle.rows(s)) do

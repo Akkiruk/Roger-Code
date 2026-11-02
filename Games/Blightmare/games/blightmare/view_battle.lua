@@ -244,7 +244,7 @@ end
 
 -- ---------------------------------------------------------------- the moving part
 
-local function drawFoeBars(b)
+local function drawFoeBars(s, b)
   for i, f in ipairs(b.foes) do
     if f.hp > 0 then
       local r = M.foeRect(b, i)
@@ -307,11 +307,20 @@ end
 
 local function drawCommands(s, b)
   local u = b.allies[b.active]
-  local warned = battle.blowIn(b) ~= nil
+  local warned = battle.blowIn(b) ~= nil and not u.braced
   local defend = warned and (blink(b) and C.warn or C.hi) or C.line
   button(0, BTN_Y1, "ATTACK", C.line, C.text)
-  button(BTN_X2, BTN_Y1, party.CHARS[s.party[u.m].id].special, C.hi, C.hi)
-  button(0, BTN_Y2, "DEFEND", defend, warned and defend or C.text)
+  local special = party.CHARS[s.party[u.m].id].special
+  if special == "FOCUS" and u.focus then
+    button(BTN_X2, BTN_Y1, "FOCUSED", C.line, C.line) -- it doesn't stack
+  else
+    button(BTN_X2, BTN_Y1, special, C.hi, C.hi)
+  end
+  if u.braced then
+    button(0, BTN_Y2, "GUARDING", C.line, C.line) -- it holds until the blow lands
+  else
+    button(0, BTN_Y2, "DEFEND", defend, warned and defend or C.text)
+  end
   button(BTN_X2, BTN_Y2, "ITEM", C.line, C.text)
   ring(M.allyRect(b, b.active), C.hi)
 end
@@ -393,7 +402,7 @@ end
 local function paint(L, s)
   local b = s.battle
   drawStill(L, s, b)
-  drawFoeBars(b)
+  drawFoeBars(s, b)
   drawStrip(s, b)
   if b.phase ~= "spoils" then ui.text(b.msg, 60, 0, C.text, "center", 119) end
   if b.phase == "cmd" then drawCommands(s, b) end
