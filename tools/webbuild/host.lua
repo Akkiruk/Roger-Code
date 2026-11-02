@@ -239,9 +239,13 @@ local function pickName(id)
       local names = {}
       for name in pairs(picks) do names[#names + 1] = name end
       table.sort(names)
-      for _, name in ipairs(names) do
-        local id2 = picks[name][1]
-        if id2 and not pickOf[id2] then pickOf[id2] = name end
+      -- the opening's names first: its music has to be known by name, and where it shares a sound the synth's kind for
+      -- the opening suits the other use as well
+      for _, intro in ipairs({ true, false }) do
+        for _, name in ipairs(names) do
+          local id2 = picks[name][1]
+          if id2 and not pickOf[id2] and (name:sub(1, 6) == "intro_") == intro then pickOf[id2] = name end
+        end
       end
     end
   end
@@ -258,7 +262,7 @@ function speaker.playNote(_, volume, pitch)
   return true
 end
 function speaker.playAudio() return true end
-function speaker.stop() end
+function speaker.stop() emit("S1.00,1.00,__stop\n") end -- the page's synth ends its music
 
 -- ------------------------------------------------------------------ peripheral
 
@@ -1276,6 +1280,7 @@ local function talkPanel(app, s)
     out.choices = {}
     for i, label in ipairs(talk.choices) do out.choices[i] = { id = pickId(i), label = label } end
   end
+  if app.plugin.rules.canSkip and app.plugin.rules.canSkip(s) then out.skip = actionKey({ kind = "skip" }) end
   return out
 end
 

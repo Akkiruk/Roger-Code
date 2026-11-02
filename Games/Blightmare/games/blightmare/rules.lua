@@ -374,7 +374,7 @@ local checkStep -- declared here because a script's end can land on a trigger, a
 local function finishRun(s)
   local run = s.run
   s.run = nil
-  s.dark = nil
+  s.dark, s.pic = nil, nil
   s.mode = run.back
   if run.once then s.opened[run.once] = true end
   changed(s)
@@ -529,6 +529,14 @@ local function doStep(s, step, rng, events)
     changed(s)
   elseif step.sfx then
     emit(events, "sfx", { name = step.sfx })
+  elseif step.pic ~= nil then
+    -- a cutscene picture in place of the ground, with its own clock: intro.lua draws it and says when it makes a sound
+    s.pic = step.pic and { id = step.pic, t = 0 } or nil
+    changed(s)
+  elseif step.music ~= nil then
+    emit(events, "music", { name = step.music or nil })
+  elseif step.mark then
+    -- only a place to jump to
   elseif step.fin then
     s.fin = true
     run.say, run.name, run.text, run.page, run.wait = nil, nil, nil, 1, "tap"
@@ -548,9 +556,38 @@ local function advance(s, rng, events)
   end
 end
 
+--- SKIP in a cutscene: on to its { mark = "skip" }, with the picture, the dark and the music gone.
+local function skipScene(s, events)
+  local run = s.run
+  for depth = #run.at, 1, -1 do
+    local list = listAt(run, depth)
+    for i, step in ipairs(list or {}) do
+      if step.mark == "skip" then
+        for d = #run.at, depth + 1, -1 do run.at[d] = nil end
+        run.at[depth].i = i + 1
+        run.say, run.name, run.text, run.big, run.page, run.wait = nil, nil, nil, nil, 1, nil
+        s.pic, s.dark = nil, nil
+        emit(events, "music", {})
+        changed(s)
+        return
+      end
+    end
+  end
+end
+
+--- Is there a SKIP to go to?
+function M.canSkip(s)
+  return s.pic ~= nil and s.mode == "talk"
+end
+
 local function talkInput(s, action, events)
   local run = s.run
-  if not run or run.wait == "fade" then return end
+  if not run then return end
+  if action.kind == "skip" then
+    if M.canSkip(s) then skipScene(s, events) end
+    return
+  end
+  if run.wait == "fade" then return end
   if run.wait == "pick" then
     local step = choiceStep(run)
     local option = action.kind == "pick" and step and step.choice and step.choice[action.i]
@@ -1413,6 +1450,21 @@ local function hintTick(s)
   end
 end
 
+--- A cutscene picture's clock. One that moves for a while stops on its last frame; one that keeps moving redraws every
+-- other tick, which is all a monitor wall wants. Its sounds come at the ticks intro.lua gives.
+local function picTick(s, events)
+  local pic = s.pic
+  if not pic then return end
+  local intro = part("intro")
+  local length = intro.length(pic.id)
+  if not length or (length ~= true and pic.t >= length) then return end
+  pic.t = pic.t + 1
+  for _, cue in ipairs(intro.cues(pic.id)) do
+    if cue[1] == pic.t then emit(events, "sfx", { name = cue[2] }) end
+  end
+  if length ~= true or pic.t % 2 == 0 then changed(s) end
+end
+
 function M.tick(s, rng)
   local events = {}
   if s.over then return events end
@@ -1421,6 +1473,7 @@ function M.tick(s, rng)
   s.frame = s.frame + 1
   fxTick(s)
   hintTick(s)
+  if s.mode == "talk" then picTick(s, events) end
   if s.mode == "battle" then
     for _, ev in ipairs(part("battle").tick(s, rng) or {}) do events[#events + 1] = ev end
     if s.battle and s.battle.result then endFight(s, events) end

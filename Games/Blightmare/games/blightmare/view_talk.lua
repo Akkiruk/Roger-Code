@@ -71,16 +71,30 @@ local function drawChoices(L, talk)
   end
 end
 
+-- SKIP, top right in a cutscene: the shell keeps the bottom right for SAVE & QUIT.
+local SKIP_W, SKIP_H = 16, 7
+local function skipBox(L) return L.W - SKIP_W - 1, 1 end
+
 function M.draw(L, s)
   local talk = rules.talk(s)
   if not talk then return end
   if talk.big then drawBig(L, talk) end
   if talk.lines then drawBox(L, s, talk) end
   if talk.choices then drawChoices(L, talk) end
+  if rules.canSkip(s) then
+    local x, y = skipBox(L)
+    ui.fill(x, y, SKIP_W, SKIP_H, C.bg)
+    ui.frame(x, y, SKIP_W, SKIP_H, C.line)
+    ui.small("SKIP", x + floor(SKIP_W / 2), y + 3, C.line, C.bg, "center")
+  end
 end
 
 --- A tap anywhere pages on. A choice takes a tap on one of its rows and nothing else, so a stray tap can't answer it.
 function M.actionAt(L, s, px, py)
+  if rules.canSkip(s) then
+    local x, y = skipBox(L)
+    if px >= x and px < x + SKIP_W and py >= y and py < y + SKIP_H then return { kind = "skip" } end
+  end
   local talk = rules.talk(s)
   if not talk or talk.wait == "fade" then return nil end
   if talk.choices then

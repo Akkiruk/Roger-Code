@@ -84,10 +84,62 @@ local function topic(label, steps)
   return { label, steps, again = true }
 end
 
+-- ---------------------------------------------------------------- the opening
+
+-- Before the first morning: the gods, the land, the plague and the wall, and one night in Scythebreak. The pictures are in
+-- intro.lua and its three files, and the sounds in lib/sound_picks.lua. SKIP goes to the mark: the title, the bell, the morning.
+-- docs/embia/story/intro-design.md in craftos-agent has the design and the author's answers.
+local INTRO = {
+  { music = "intro_music_legend" },
+  { pic = "oblivion" },
+  t("Before anything, there was the Chained Oblivion. It makes, and unmakes, and makes again. In one turn it made the gods, and the gods made Elawondra."),
+  { pic = "binding" },
+  { big = "THE GREAT BINDING" },
+  t("When the Oblivion woke and began to unmake everything, the gods forged a chain out of their own bodies to hold it. Only the Raven Queen was left, holding the end."),
+  { music = "intro_music_map" },
+  { pic = "embia" },
+  t("Embia. Four kingdoms, with the Empyreal Mountains down the middle."),
+  { pic = "empire" },
+  t("In the south-west stood the Qyrrissian Empire, the greatest seat of magic in Embia."),
+  { music = "intro_music_dread" },
+  { pic = "ward" },
+  t("Then came a sickness that lives in nightmares. It passes from sleeper to sleeper, eats the mind, and turns people into monsters."),
+  { pic = "plague" },
+  { sfx = "intro_sting_blightmare" },
+  { big = "THE CEREBRAL BLIGHTMARE" },
+  { pic = "wall" },
+  t("The Empire fell. Its survivors fled east into the Heart, and the Heart and the Clinic walled the rest off and left it to the dark."),
+  { music = "intro_music_town" },
+  { pic = "dusk" },
+  t("Scythebreak, a town in the Heart built hard against the wall. The Clinic watches it more closely than anywhere."),
+  { pic = "book" },
+  t("The Blightmare travels through dreams, so here a dream is a symptom. Every morning, everyone writes theirs in the Dream Book."),
+  t("The Book is kept by the Caged Clerics of Dispater, god of archives, and their candle leans when someone lies."),
+  { pic = "night" },
+  t("A nightmare never stays in one house. It spreads to whoever sleeps nearest."),
+  { pic = "knock" },
+  t("So when one is written down, the Clinic's plague doctors come round, very politely, for one night of observation."),
+  { music = false },
+  { pic = "one" },
+  t("Tonight, as every night, everyone in Scythebreak is dreaming."),
+  { sfx = "intro_sting_one" },
+  { big = "ALL BUT ONE" },
+  { mark = "skip" },
+  { pic = false },
+  { music = false },
+  { dark = true },
+  { sfx = "intro_title" },
+  { big = "BLIGHTMARE" },
+  { dark = false },
+  { sfx = "intro_bell" },
+  { warp = { "scythebreak", 3, 3, 2 } },
+}
+
 -- ---------------------------------------------------------------- morning in Scythebreak
 
 S.start = {
-  { warp = { "scythebreak", 3, 3, 2 } },
+  -- the opening, in place of the warp it ends with, so a save in the morning still holds its place
+  { all = {}, steps = INTRO },
   t("Everyone in Scythebreak goes somewhere at night. They tell you about it over breakfast: colours, falling, all their teeth, a dead uncle asking after the horse."),
   t("You have never been. You shut your eyes, you open them, and it is morning. There is nothing in between. There never has been."),
   nan("Up, {hero}! The bell's gone and the porridge has started to set, and I'm not chiselling it off the pot a second time. Come on, out of there."),
@@ -181,11 +233,13 @@ S.talk_clerk = {
   { when = "signed", steps = {
     ask(clerk("You've signed, so don't loiter by the Book. People will think you've remembered something."), {
       topic("What happens if someone lies in it?", {
-        clerk("Then it's a lie in very good handwriting. I don't catch liars, {hero}. I just keep the pages, and now and then someone comes and takes a page away. I've learned not to wonder."),
+        t("The clerk glances at the candle on the ledge, the way you'd glance at a dog that has never once bitten anyone."),
+        clerk("Then the flame leans, and I write that down too. Dispater keeps every record, {hero}, even the ones people would rather he didn't. Now and then someone comes and takes a page away. I've learned not to wonder."),
       }),
       { "I'll be off, then.", {} },
     }),
   }, other = {
+    t("The clerk sits behind an iron grille, as the Caged Clerics of Dispater do, with the Book and one candle on the ledge between you."),
     clerk("Next. Name, and anything to declare from the night. Oh, it's you, {hero}. I don't know why I ask."),
     ask(clerk("'Nothing', I suppose? I can write it for you, if you like. I've a very good hand for it by now."), {
       topic("Does anyone actually read all this?", {
@@ -195,12 +249,13 @@ S.talk_clerk = {
         clerk("Nothing it is. There. You're a pleasure to file."),
       } },
       { "Put me down for a dragon. A big one.", {
+        t("The candle flame leans, slowly, away from you."),
         clerk("Very droll. I shall write 'nothing', and add a small note about your attitude. You'd be amazed how long a small note can follow a person."),
         { set = "sass_clerk" },
       } },
     }),
     t("You sign. The page above is yours, and the page above that. Nothing, nothing, nothing, in your own writing, back and back."),
-    clerk("You know, in all my years with this Book, you're the one person who has never lied to me. Either that, or you're the only one who always has. Off you go."),
+    clerk("All these years of 'nothing', and that flame has never once moved for you. Everyone dreams, {hero}. I've stopped knowing what to make of it. Off you go."),
     { set = "signed" },
   } },
 }

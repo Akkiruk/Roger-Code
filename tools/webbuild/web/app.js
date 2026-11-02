@@ -679,7 +679,8 @@ const DAMAGED = "The game files are damaged. Tap Restart to fetch them again. Yo
   const PANEL_VIEWS = {
     none: () => "",
     talk: (d) => (d.name ? `<h2>${esc(d.name)}</h2>` : "") + (d.big ? `<p class="big">${esc(d.big)}</p>` : "") + (d.text ? `<p>${esc(d.text)}</p>` : "")
-      + rows(d.choices) + (d.tap ? `<p class="more">${d.more ? "Tap for more" : "Tap to continue"}</p>` : ""),
+      + rows(d.choices) + (d.tap ? `<p class="more">${d.more ? "Tap for more" : "Tap to continue"}</p>` : "")
+      + (d.skip ? button(d.skip, "SKIP", "dim") : ""),
     menu: (d) => `<h2>${esc(d.title)}</h2>` + (d.line ? `<p class="msg">${esc(d.line)}</p>` : "") + (d.note ? `<p>${esc(d.note)}</p>` : "") + rows(d.rows)
       + `<div class="row2">${button("back", "BACK", "go")}${button("button:actQuit", d.quit, d.quit === "SURE?" ? "warn" : "")}</div>`
       + `<p class="gold" style="margin-top:10px">GOLD ${d.gold}</p>`

@@ -50,7 +50,11 @@ local function paint(L, s)
     part("view_menu").draw(L, s)
   else
     local run = s.run
-    drawGround(L, s, mode == "talk" and run and run.back or mode)
+    if s.pic and mode == "talk" then
+      part("intro").draw(L, s.pic.id, s.pic.t)
+    else
+      drawGround(L, s, mode == "talk" and run and run.back or mode)
+    end
     if s.fx.fade > 0 or s.dark then ui.fill(0, 0, L.W, L.H, C.bg) end
     if mode == "talk" then part("view_talk").draw(L, s) end
   end
@@ -136,7 +140,13 @@ local SFX = {
   end,
   foeStrike = function(ev) return base.monster(familyOf(ev.id), "attack") end,
   kill = function(ev) return base.monster(familyOf(ev.id), "die") end,
-  sfx = function(ev) return SCRIPTED[ev.name] or "ui_tap" end, -- a script's { sfx = name }
+  -- a script's { sfx = name }: a short name from SCRIPTED, or any name in lib/sound_picks.lua as it is
+  sfx = function(ev) return SCRIPTED[ev.name] or (base.SOUNDS[ev.name] and ev.name) or "ui_tap" end,
+  -- a script's { music = name }, and { music = false } or SKIP to stop it
+  music = function(ev, app)
+    if app.audio.music then app.audio.music(ev.name) end
+    return nil
+  end,
 }
 
 function view.onEvents(app, _, events)

@@ -81,9 +81,93 @@ window.BlightSynth = (() => {
     alarm: (p, v, t) => notes("sawtooth", [220, 233], 0.16, 0.16, 0.25 * v, p, t),
     error: (p, v, t) => notes("square", [160, 130], 0.08, 0.09, 0.25 * v, p, t),
     note: (p, v, t) => tone("triangle", 440 * p, 440 * p, t, 0.2, 0.4 * v),
+    // the opening's own
+    chain: (p, v, t) => { noise(t, 0.5, 0.35 * v, 900); notes("square", [196, 185, 175], 0.12, 0.1, 0.12 * v, p, t); },
+    chime: (p, v, t) => { tone("sine", 880 * p, 880 * p, t, 1.2, 0.3 * v); tone("sine", 1320 * p, 1320 * p, t, 0.8, 0.12 * v); },
+    wings: (p, v, t) => { for (let i = 0; i < 4; i++) noise(t + i * 0.18, 0.14, 0.45 * v, 600); },
+    glow: (p, v, t) => notes("sine", [523, 784, 1047, 1568], 0.1, 0.6, 0.25 * v, p, t),
+    eerie: (p, v, t) => { tone("sine", 220 * p, 180 * p, t, 1.4, 0.3 * v); tone("sine", 233 * p, 190 * p, t, 1.4, 0.2 * v); noise(t, 1.2, 0.15 * v, 500); },
+    snuff: (p, v, t) => noise(t, 0.3, 0.3 * v, 3000),
+    sting: (p, v, t) => { tone("sawtooth", 110, 55, t, 1.8, 0.35 * v); tone("sine", 82, 41, t, 2.2, 0.6 * v); noise(t, 1.5, 0.3 * v, 300); },
+    flame: (p, v, t) => { noise(t, 0.25, 0.4 * v, 1600); tone("sine", 300 * p, 500 * p, t, 0.15, 0.15 * v); },
+    whistle: (p, v, t) => tone("sine", 196 * p, 196 * p, t, 2.5, 0.35 * v),
+    bell: (p, v, t) => { tone("sine", 523 * p, 523 * p, t, 2.2, 0.4 * v); tone("sine", 1046 * p, 1046 * p, t, 1.4, 0.15 * v); tone("sine", 1567 * p, 1567 * p, t, 0.8, 0.08 * v); },
+    quiet: (p, v, t) => noise(t, 1.5, 0.08 * v, 1500),
   };
 
+  // Music under the opening: a slow chord or figure on a loop, until the next piece or a stop.
+  const BEDS = {
+    intro_music_legend: { every: 5, type: "sine", parts: [[110, 165, 220, 262], [98, 147, 196, 247], [87, 131, 175, 220], [98, 147, 196, 233]] },
+    intro_music_map: { every: 2.4, type: "triangle", parts: [[262, 330, 392, 523], [294, 349, 440, 587], [247, 330, 392, 494], [262, 330, 392, 523]], arpeggio: 0.3 },
+    intro_music_dread: { every: 4, type: "sawtooth", parts: [[55, 58], [52, 55], [55, 62], [49, 52]], noise: true },
+    intro_music_town: { every: 2.4, type: "triangle", parts: [[659, 523, 392, 523], [587, 494, 392, 494], [523, 440, 330, 440], [587, 494, 392, 330]], arpeggio: 0.6 },
+  };
+  let bed = null;
+
+  function stopMusic() {
+    if (!bed) return;
+    clearInterval(bed.timer);
+    bed.gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.5);
+    bed = null;
+  }
+
+  function startMusic(name, v) {
+    stopMusic();
+    const def = BEDS[name];
+    if (!def) return;
+    const gain = ctx.createGain();
+    gain.gain.value = 0.5 * v;
+    gain.connect(master);
+    let i = 0;
+    const play = () => {
+      const at = ctx.currentTime + 0.05, chord = def.parts[i++ % def.parts.length];
+      chord.forEach((f, n) => {
+        const start = at + (def.arpeggio ? n * def.arpeggio : 0), length = def.arpeggio ? def.arpeggio * 2.5 : def.every * 1.2;
+        const osc = ctx.createOscillator(), g = ctx.createGain();
+        osc.type = def.type;
+        osc.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(def.arpeggio ? 0.3 : 0.18, start + (def.arpeggio ? 0.02 : 1));
+        g.gain.exponentialRampToValueAtTime(0.0001, start + length);
+        osc.connect(g).connect(gain);
+        osc.start(start);
+        osc.stop(start + length + 0.05);
+      });
+      if (def.noise) {
+        const source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), g = ctx.createGain();
+        source.buffer = noiseBuffer;
+        source.loop = true;
+        filter.type = "lowpass";
+        filter.frequency.value = 260;
+        g.gain.setValueAtTime(0.0001, at);
+        g.gain.exponentialRampToValueAtTime(0.25, at + 1.5);
+        g.gain.exponentialRampToValueAtTime(0.0001, at + def.every * 1.2);
+        source.connect(filter).connect(g).connect(gain);
+        source.start(at);
+        source.stop(at + def.every * 1.2 + 0.05);
+      }
+    };
+    play();
+    bed = { gain, timer: setInterval(play, def.every * 1000) };
+  }
+
   const RULES = [
+    [/^intro_chain/, "chain"],
+    [/^intro_god_fade/, "chime"],
+    [/^intro_raven/, "wings"],
+    [/^intro_(empire_glow|dream_rise)/, "glow"],
+    [/^intro_(nightmare|grey)/, "eerie"],
+    [/^intro_candle_out/, "snuff"],
+    [/^intro_(sting_blightmare|title|wall_done)/, "sting"],
+    [/^intro_wall_course/, "wall"],
+    [/^intro_refugees/, "step"],
+    [/^intro_lamp/, "flame"],
+    [/^intro_(map_open|book)/, "page"],
+    [/^intro_label/, "tap"],
+    [/^intro_(window|knock|door)/, "door"],
+    [/^intro_sting_one/, "whistle"],
+    [/^intro_bell/, "bell"],
+    [/^intro_dusk/, "quiet"],
     [/^mon_.*_die$|monster_die|death|^resign|robot_death/, "die"],
     [/^mon_.*_hurt$|monster_hurt|player_hurt|hurt|damage/, "hurt"],
     [/^mon_.*_attack$|^sword|^hit|attack|^smash|^thrust|^clang/, "hit"],
@@ -122,7 +206,10 @@ window.BlightSynth = (() => {
     wake,
     kindOf,
     play(name, volume, pitch) {
-      if (muted || !ctx || ctx.state !== "running") return;
+      if (!ctx || ctx.state !== "running") return;
+      if (name === "__stop") return stopMusic();
+      if (BEDS[name]) return startMusic(name, Math.min(1, volume || 0.7));
+      if (muted) return;
       KINDS[kindOf(name)](pitch || 1, Math.min(1, volume || 0.7), ctx.currentTime + 0.001);
     },
     isMuted: () => muted,

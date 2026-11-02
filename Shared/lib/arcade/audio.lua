@@ -81,6 +81,19 @@ end
 
 function M.clear() pending = {} end
 
+--- A piece of music under a scene: whatever was playing stops first, and nil only stops it. A speaker's stop silences
+-- everything it's playing, so a game starts music where nothing short is due.
+local playingMusic = nil
+function M.music(name)
+  if playingMusic then sound.stop() end
+  playingMusic = nil
+  if name and enabled and sounds[name] then
+    playingMusic = name
+    lastAny = -1e9 -- the stop has cleared the speaker, so the music needn't wait its turn
+    M.play(name)
+  end
+end
+
 --- Named cues made of several events.
 function M.cue(name)
   if name == "win" then

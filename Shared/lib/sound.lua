@@ -86,9 +86,15 @@ local function isAvailable()
   return speaker ~= nil
 end
 
+--- Stop whatever the speaker is playing, a long piece of music most of all.
+local function stop()
+  if speaker and speaker.stop then pcall(speaker.stop) end
+end
+
 return {
   init        = init,
   play        = play,
+  stop        = stop,
   addSounds   = addSounds,
   isAvailable = isAvailable,
   SOUNDS      = SOUNDS,
