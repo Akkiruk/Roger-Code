@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-02T19:12:40Z",
+  "generated_at": "2026-11-02T19:32:41Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "a683852a7a35edc3f5b610e4c23372b91b45afe6",
+    "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -17,9 +17,9 @@
       "name": "Arcade",
       "category": "Arcade",
       "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
-      "version": "1.0.11",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "c5e4965ecffd3fb33633891bfb31ddf8a8152756e793a5547b75d0e278745ed4",
+      "version": "1.0.12",
+      "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
+      "package_hash": "9e670b257a5e30e3422c49537a12f524683aee8968d2cc33b0997547ac09f074",
       "spec_path": "programs/arcade.json"
     },
     "baccarat": {
@@ -53,9 +53,9 @@
       "name": "BLIGHTMARE",
       "category": "Arcade",
       "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
-      "version": "1.0.8",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "81719f8b0591bad9593e2063491578742c344892119930333df7ebeff530d40c",
+      "version": "1.0.9",
+      "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
+      "package_hash": "3beb33635012d4fbfa24e8f6d1b6e88552153b47eea5b96af39a1dc5b353734f",
       "spec_path": "programs/blightmare.json"
     },
     "block_reader_vhcctweaks_probe": {
@@ -89,18 +89,18 @@
       "name": "Classics",
       "category": "Arcade",
       "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
-      "version": "1.0.7",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "1bc81749c4cfbb4c9615ec39ddfeccc5d82d6f17fd0206a2e6477a792197438b",
+      "version": "1.0.8",
+      "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
+      "package_hash": "55d39b28df9bce279cf38bac5cb9df390c55b932452a61abdb075f404e0bccde",
       "spec_path": "programs/classics.json"
     },
     "classics2": {
       "name": "Classics 2",
       "category": "Arcade",
       "description": "Dig Dug, Flappy Bird, Minesweeper, Tapper, Mappy and more, played by touch for the high score.",
-      "version": "1.0.7",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "bdd3add4f2fa1531ace77d99c576f3b6a688bf81a76a5495b824b28b19202e10",
+      "version": "1.0.8",
+      "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
+      "package_hash": "278e7aef58b38171391e550f4c16e7c2332b15cba12a0cf43d46d3b20fe30c75",
       "spec_path": "programs/classics2.json"
     },
     "conformance_probe": {
@@ -152,9 +152,9 @@
       "name": "Long Games",
       "category": "Arcade",
       "description": "Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.",
-      "version": "1.0.5",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "26083d63987784f8adb11929d621303591444c10c1526a68bfc4ef6c6297831b",
+      "version": "1.0.6",
+      "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
+      "package_hash": "9756b48bb6ccba6caab5d755c61def2ade2d9d11cb7496434d55e9114ba6807d",
       "spec_path": "programs/longgames.json"
     },
     "phone_os": {
@@ -269,9 +269,9 @@
       "name": "Versus",
       "category": "Arcade",
       "description": "MOAG, Pong, Bomberman and Tron light cycles: two players, one wall each, in real time.",
-      "version": "1.0.5",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "e62bcddb42e854393496e221c1792ce79c215e28829548c3220665833ad3c536",
+      "version": "1.0.6",
+      "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
+      "package_hash": "be312b83cb170b0fc4fe2a7c1e7dda1a5bcb68de8f9cb9d1eaecae09d7195f2f",
       "spec_path": "programs/versus.json"
     },
     "vhcctweaks_smoke_test": {
