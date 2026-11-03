@@ -7,12 +7,12 @@
     "description": "Eight casino games for up to eight players, each at their own screen. Install it on every computer: a 6x6 wall becomes the dealer and a smaller one a seat.",
     "source_root": "Games/BigTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-    "generated_at": "2026-11-02T20:29:46Z",
-    "package_hash": "6325e63818e0fa29ef57e2e39e60ff8050cd8d39774a700888e923a27f353dac"
+    "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+    "generated_at": "2026-11-03T06:15:54Z",
+    "package_hash": "68f64d4540929325e3a9c5c828d2c586650680d33f8b063a58ab77e53ff3c9e2"
   },
   "install": {
     "preserve": [],
@@ -23,9 +23,9 @@
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
       },
       {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+        "repo_path": "Shared/lib/casino/economy.lua",
+        "install_path": "lib/casino/economy.lua",
+        "sha256": "a13791cf91fb531dd452fe8c5f6cbdddb8544a28897e84be0978412808485918"
       },
       {
         "repo_path": "Shared/lib/casino/demo.lua",
@@ -98,14 +98,14 @@
         "sha256": "63304ed6ef90bade06f63ad3971fc0c4e8a42343bc49a421dc56bc44aa9813f6"
       },
       {
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
         "repo_path": "Shared/lib/casino/group/community.lua",
         "install_path": "lib/casino/group/community.lua",
         "sha256": "ee98621419042667aeaa500ac3d908d96ed4a96f08119ed3911615abc60d0b85"
-      },
-      {
-        "repo_path": "Games/BigTable/games/stud/seatView.lua",
-        "install_path": "games/stud/seatView.lua",
-        "sha256": "69f33ce06101359828f75de8b2ca16547ee030d8fe7bf817046b68312be7cfb1"
       },
       {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
@@ -113,9 +113,9 @@
         "sha256": "01123b18a0abb0a2f7b56f3d79ac5c7384a7b3c94257611d55d06ffb8ed8ca9c"
       },
       {
-        "repo_path": "Shared/lib/casino/group/rounding.lua",
-        "install_path": "lib/casino/group/rounding.lua",
-        "sha256": "1e08f614fc14377218cbd5f3afad69ff4c308136976e62cfe71a3608f3df2055"
+        "repo_path": "Shared/lib/casino/group/link.lua",
+        "install_path": "lib/casino/group/link.lua",
+        "sha256": "2e4c532af443f54ae4740f8893ab4d0599e38ebab2fb79324e488fa27c796316"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
@@ -125,7 +125,7 @@
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
         "install_path": "lib/casino/wallet.lua",
-        "sha256": "e563912b8e46b97511b59b50cee77757a4abb100456c6f03db7dd31f4db1bb25"
+        "sha256": "b401acf6462e70f56484cbeaa718c216cea1278cf1c32f32a73dc926a9b724e9"
       },
       {
         "repo_path": "Shared/lib/casino/ui.lua",
@@ -153,14 +153,14 @@
         "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
+        "repo_path": "Games/BigTable/games/stud/seatView.lua",
+        "install_path": "games/stud/seatView.lua",
+        "sha256": "69f33ce06101359828f75de8b2ca16547ee030d8fe7bf817046b68312be7cfb1"
+      },
+      {
         "repo_path": "Shared/lib/casino/poker.lua",
         "install_path": "lib/casino/poker.lua",
         "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
-      },
-      {
-        "repo_path": "Shared/lib/casino/net.lua",
-        "install_path": "lib/casino/net.lua",
-        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
       },
       {
         "repo_path": "Shared/lib/casino/limits.lua",
@@ -193,19 +193,24 @@
         "sha256": "18398c63ed8d44774dd4d7790ff813afc3caa2084640fa2293a0a6e2ee343f5a"
       },
       {
-        "repo_path": "Shared/lib/casino/group/link.lua",
-        "install_path": "lib/casino/group/link.lua",
-        "sha256": "2e4c532af443f54ae4740f8893ab4d0599e38ebab2fb79324e488fa27c796316"
+        "repo_path": "Shared/lib/casino/group/rounding.lua",
+        "install_path": "lib/casino/group/rounding.lua",
+        "sha256": "1e08f614fc14377218cbd5f3afad69ff4c308136976e62cfe71a3608f3df2055"
+      },
+      {
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
         "repo_path": "Games/BigTable/games/stud/rules.lua",
         "install_path": "games/stud/rules.lua",
         "sha256": "b7aa405b04826fde83c9ebe9cbafce4618f58f83c6027770694de5299148e883"
-      },
-      {
-        "repo_path": "Games/BigTable/games/stud/plugin.lua",
-        "install_path": "games/stud/plugin.lua",
-        "sha256": "ed79f528127e8f2b949ece84911463b414f51b0af19e5b1d9cb714d1136bb3eb"
       },
       {
         "repo_path": "Games/BigTable/games/stud/cards.lua",
@@ -343,9 +348,9 @@
         "sha256": "10dc99dea4cf07386d59429390f3cd9f9991e4af078cd11a117809aeb874530a"
       },
       {
-        "repo_path": "Shared/lib/sound_picks.lua",
-        "install_path": "lib/sound_picks.lua",
-        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
+        "repo_path": "Games/BigTable/games/stud/plugin.lua",
+        "install_path": "games/stud/plugin.lua",
+        "sha256": "ed79f528127e8f2b949ece84911463b414f51b0af19e5b1d9cb714d1136bb3eb"
       },
       {
         "repo_path": "Games/BigTable/games/omaha/plugin.lua",
@@ -415,6 +420,7 @@
       "lib.casino.chat",
       "lib.casino.deck",
       "lib.casino.demo",
+      "lib.casino.economy",
       "lib.casino.font",
       "lib.casino.group.community",
       "lib.casino.group.dealer",

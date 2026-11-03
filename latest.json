@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-02T20:29:46Z",
+  "generated_at": "2026-11-03T06:15:54Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "fed11304bc60bed6a11e3fbed9d72dcb452039a4",
+    "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -26,27 +26,27 @@
       "name": "Baccarat",
       "category": "Games",
       "description": "Eight-deck baccarat with Player, Banker and Tie bets.",
-      "version": "1.2.86",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "1d40764d6caa583c285afabec784a3de46eb1408fc14ef9cd57d9f411b85d995",
+      "version": "1.2.87",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "08711ed524935a8f47cb2a38fd5fa6b985ab8784c6616d2820540f8f79e643b8",
       "spec_path": "programs/baccarat.json"
     },
     "big-table": {
       "name": "Big Table",
       "category": "Games",
       "description": "Eight casino games for up to eight players, each at their own screen. Install it on every computer: a 6x6 wall becomes the dealer and a smaller one a seat.",
-      "version": "1.0.2",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "6325e63818e0fa29ef57e2e39e60ff8050cd8d39774a700888e923a27f353dac",
+      "version": "1.0.3",
+      "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+      "package_hash": "68f64d4540929325e3a9c5c828d2c586650680d33f8b063a58ab77e53ff3c9e2",
       "spec_path": "programs/big-table.json"
     },
     "blackjack": {
       "name": "Blackjack",
       "category": "Games",
       "description": "Six-deck blackjack with a lasting shoe, doubles on 11 and one split.",
-      "version": "1.2.94",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "f335c82e653a8a13ea88a364444480d9c7a4101baf06c73c61cf41fc65b5cbd4",
+      "version": "1.2.95",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "e2d31d869c8606ceb83f92888313ff85f6f6525e9512ebfe2bafc333535777b8",
       "spec_path": "programs/blackjack.json"
     },
     "blightmare": {
@@ -71,18 +71,18 @@
       "name": "Casino",
       "category": "Games",
       "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
-      "version": "1.0.5",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "3f83c5c78afa3c8d68740d677354d90c4d4f5374ef6325c9a1a7a428878636ce",
+      "version": "1.0.6",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "05af04756b11a2c67585490d20e8fe2529f4f11ab7818153b1c08dcc840f9ad2",
       "spec_path": "programs/casino.json"
     },
     "casino-hub": {
       "name": "Casino Hub",
       "category": "Games",
       "description": "The casino's central board: shared jackpot, leaderboards, each game's measured return, and the tables on the floor.",
-      "version": "1.0.5",
-      "commit": "be97d9a3881fea4827954dd2b431c5614a16a509",
-      "package_hash": "6d7b7637849147831118b9d2b56f904303f2f14f9376cf3ef9a690226b3897e1",
+      "version": "1.0.6",
+      "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+      "package_hash": "b8eafa0211c914efede90c9efe5602e1e543675ca7f4d6c831b5e3304f7403ca",
       "spec_path": "programs/casino-hub.json"
     },
     "classics": {
@@ -116,36 +116,36 @@
       "name": "CrazyEights",
       "category": "Games",
       "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
-      "version": "1.0.43",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "337b1d5f93835a918ed34b4ac9575c1afdc3c14faebe2372bb56bf72e5ce67f5",
+      "version": "1.0.44",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "e65b5ba2b35ca6a3701892e0cdda5d16159a147e6d924578fb542ac9022c17d6",
       "spec_path": "programs/crazyeights.json"
     },
     "duel": {
       "name": "Duel",
       "category": "Games",
       "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.",
-      "version": "1.0.3",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "44f9e5823ef3115854f75b3ff2bb76b7e75fb5fc2016a2513e60d6a0133ef9d7",
+      "version": "1.0.4",
+      "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+      "package_hash": "25c8aa6228985ae16efd82cef9756118535e087c74eebeba1eeb5425fc745d2a",
       "spec_path": "programs/duel.json"
     },
     "hilo": {
       "name": "Hi-Lo",
       "category": "Games",
       "description": "Higher or lower through one deck, with every guess priced from the cards left.",
-      "version": "1.0.96",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "c75ae0fd05813b22b9f23e48d42b993a662237cafa7e6770e0942df61e4d5b8a",
+      "version": "1.0.97",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "0650f934897485caf395f3b06daba95bd74c64009a5758566f3424eb0256b96b",
       "spec_path": "programs/hilo.json"
     },
     "horse-racing": {
       "name": "Horse Racing",
       "category": "Games",
       "description": "Six horses, fresh odds each race, with win, place, show and exacta bets.",
-      "version": "1.0.7",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "4be1fb2b3a961e8f621449031ba0249e8236fe9ab89f2695fdf189e941338a5e",
+      "version": "1.0.8",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "738a6df81cffab87cdc5bb5acde5c290301bf99d45626ff951204f584b4e4dbc",
       "spec_path": "programs/horse-racing.json"
     },
     "longgames": {
@@ -161,36 +161,36 @@
       "name": "Pocket Casino OS",
       "category": "Apps",
       "description": "Pocket casino shell for ComputerCraft pocket computers.",
-      "version": "1.0.24",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "9afd19849af636aaaaa7178911fd1895e11a207512feb9cbbe9bcdd83b2dfc8a",
+      "version": "1.0.25",
+      "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+      "package_hash": "2b5ffdd124998d38b989f03da87fc324fe5ec177f8f7e49c4edb86393ecaa230",
       "spec_path": "programs/phone_os.json"
     },
     "pokertable": {
       "name": "PokerTable",
       "category": "Games",
       "description": "Five-card draw for 2 to 6 players on one wall, player against player, with side pots and no rake.",
-      "version": "1.0.40",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "3a84fce82f2312bc583f4a3c666e22ecd7d61f8c9ff4ec5e838dfb2ef0fa7e96",
+      "version": "1.0.41",
+      "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+      "package_hash": "063217b53ba10fa6da30b80a2393131923d5cf93bf1aae94ec0a8fe07afd357b",
       "spec_path": "programs/pokertable.json"
     },
     "roulette": {
       "name": "Roulette",
       "category": "Games",
       "description": "Single-zero European roulette with inside and outside bets.",
-      "version": "1.0.111",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "11abf2aeaf65e5fc6496e00416f207130c1cef054222ec66e0de997ceeef1e92",
+      "version": "1.0.112",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "9232584f345a17a183fbaea736fe5becc5022447fc86c6800d21342bee5c0bbf",
       "spec_path": "programs/roulette.json"
     },
     "slots": {
       "name": "Slots",
       "category": "Games",
       "description": "Three-reel slot machine with weighted symbols and pair payouts.",
-      "version": "1.0.92",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "6a74b5a1c8f21514f77529a6b2ab36161624ae6336d810baf6c72dc8e8dffcd9",
+      "version": "1.0.93",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "b77599323cc288cabca94e4fdd355c2f03e084a5f434f1d62d6dec0d0f4581ba",
       "spec_path": "programs/slots.json"
     },
     "sound_browser": {
@@ -224,18 +224,18 @@
       "name": "3 Card Poker",
       "category": "Games",
       "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
-      "version": "1.0.7",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "9e3f745ddea8f38b17abaa2de899ac9a09864cd581f2432c8d9d9f3c3ce3913b",
+      "version": "1.0.8",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "e543e19a8967a8457153a2813db0dc42ef1c7c8bd717bce5b7ff746b281e943e",
       "spec_path": "programs/three-card-poker.json"
     },
     "ultimate-holdem": {
       "name": "Ultimate Texas Hold'em",
       "category": "Games",
       "description": "Ante and Blind against the dealer, with one raise from 4x down to 1x and a Trips side bet.",
-      "version": "1.0.7",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "ce3d253273aadc15544ae2243476805149a3812f1032fdceef7f8e535e1ef19a",
+      "version": "1.0.8",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "5c187f1bfb2fcd89869987153e4b5c3f3f4c061ee6d2f3f793531ea8af980fd4",
       "spec_path": "programs/ultimate-holdem.json"
     },
     "ultimate-tic-tac-toe": {
@@ -260,9 +260,9 @@
       "name": "VaultGear",
       "category": "Apps",
       "description": "Vault Storage Manager startup entry point.",
-      "version": "1.0.64",
-      "commit": "8e747fae1d12f16ca711edb23227da51c50332b7",
-      "package_hash": "1732f92575570e24be2bd9d57b59f3b33dd0cdaa381c7ae4146760278672f210",
+      "version": "1.0.65",
+      "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+      "package_hash": "a839a386a4402844f23038cb0b482a216a34c4b30a04bb8914b496f7252d68fc",
       "spec_path": "programs/vaultgear.json"
     },
     "versus": {
@@ -287,9 +287,9 @@
       "name": "VideoPoker",
       "category": "Games",
       "description": "Jacks or Better draw poker with payout and tutorial screens.",
-      "version": "1.0.91",
-      "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-      "package_hash": "2faca688ec41d28514c09244e75f36217d12ca2974dcd7b724f74abeb2508c34",
+      "version": "1.0.92",
+      "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
+      "package_hash": "7d83036cb8e8656f13b834647dd19afb51149d44b3201a97c719c4e953ede4d4",
       "spec_path": "programs/videopoker.json"
     }
   }

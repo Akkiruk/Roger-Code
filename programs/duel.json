@@ -7,12 +7,12 @@
     "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.",
     "source_root": "Games/Duel",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "7e99bc14dcbb157367934d74b7f56ebe1eb112b4",
-    "generated_at": "2026-11-02T20:29:46Z",
-    "package_hash": "44f9e5823ef3115854f75b3ff2bb76b7e75fb5fc2016a2513e60d6a0133ef9d7"
+    "commit": "c138c045f4daf85ca9664e85b1b2eb93574c0d0c",
+    "generated_at": "2026-11-03T06:15:54Z",
+    "package_hash": "25c8aa6228985ae16efd82cef9756118535e087c74eebeba1eeb5425fc745d2a"
   },
   "install": {
     "preserve": [],
@@ -33,6 +33,11 @@
         "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
+        "repo_path": "Shared/lib/casino/economy.lua",
+        "install_path": "lib/casino/economy.lua",
+        "sha256": "a13791cf91fb531dd452fe8c5f6cbdddb8544a28897e84be0978412808485918"
+      },
+      {
         "repo_path": "Shared/lib/casino/demo.lua",
         "install_path": "lib/casino/demo.lua",
         "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
@@ -48,19 +53,19 @@
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
-        "repo_path": "Shared/lib/casino/canvas.lua",
-        "install_path": "lib/casino/canvas.lua",
-        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
-      },
-      {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
         "install_path": "lib/casino/group/dealer.lua",
         "sha256": "01123b18a0abb0a2f7b56f3d79ac5c7384a7b3c94257611d55d06ffb8ed8ca9c"
       },
       {
-        "repo_path": "Shared/lib/casino/books.lua",
-        "install_path": "lib/casino/books.lua",
-        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
+      },
+      {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
       },
       {
         "repo_path": "Shared/lib/casino/bit32_shim.lua",
@@ -88,19 +93,14 @@
         "sha256": "cadc0b24e036e94ab6e88d2b17dc12962081b366aae0f2ad71c93d901ac96cdf"
       },
       {
+        "repo_path": "Shared/lib/casino/books.lua",
+        "install_path": "lib/casino/books.lua",
+        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+      },
+      {
         "repo_path": "Games/Duel/vhcc_lockdown.txt",
         "install_path": "vhcc_lockdown.txt",
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
-      },
-      {
-        "repo_path": "Shared/lib/casino/board.lua",
-        "install_path": "lib/casino/board.lua",
-        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
-      },
-      {
-        "repo_path": "Games/Duel/startup.lua",
-        "install_path": "duel_startup.lua",
-        "sha256": "b04aa65e79a9566ebe270e37b974b2c3f8992384d57d4dd166d0c29241d3f0b9"
       },
       {
         "repo_path": "Shared/lib/casino/group/link.lua",
@@ -120,7 +120,7 @@
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
         "install_path": "lib/casino/wallet.lua",
-        "sha256": "e563912b8e46b97511b59b50cee77757a4abb100456c6f03db7dd31f4db1bb25"
+        "sha256": "b401acf6462e70f56484cbeaa718c216cea1278cf1c32f32a73dc926a9b724e9"
       },
       {
         "repo_path": "Shared/lib/casino/ui.lua",
@@ -188,9 +188,9 @@
         "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
       },
       {
-        "repo_path": "Shared/lib/sound_picks.lua",
-        "install_path": "lib/sound_picks.lua",
-        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
+        "repo_path": "Games/Duel/startup.lua",
+        "install_path": "duel_startup.lua",
+        "sha256": "b04aa65e79a9566ebe270e37b974b2c3f8992384d57d4dd166d0c29241d3f0b9"
       },
       {
         "repo_path": "Games/Duel/games/registry.lua",
@@ -198,9 +198,9 @@
         "sha256": "d2f271643acc495d072512c95ce4cd5926dd2c2dc6338d9ff87a63d1b716f719"
       },
       {
-        "repo_path": "Games/Duel/games/liarsdice/seatView.lua",
-        "install_path": "games/liarsdice/seatView.lua",
-        "sha256": "8202e0c985fddc0293b77dd497357d7962ff9ade32ec9e3f82cd1ec47b9231e3"
+        "repo_path": "Games/Duel/games/liarsdice/tableView.lua",
+        "install_path": "games/liarsdice/tableView.lua",
+        "sha256": "eea9acab334bc3de3e16ad9f28b9b5bbfdceb1c660adced332fc2023c18f9c12"
       },
       {
         "repo_path": "Games/Duel/games/cribbage/plugin.lua",
@@ -278,19 +278,24 @@
         "sha256": "a85b9d1a66813bb6e759f5ab4f1514b1576e78198539bc44a8b39407df565229"
       },
       {
-        "repo_path": "Games/Duel/games/liarsdice/tableView.lua",
-        "install_path": "games/liarsdice/tableView.lua",
-        "sha256": "eea9acab334bc3de3e16ad9f28b9b5bbfdceb1c660adced332fc2023c18f9c12"
-      },
-      {
         "repo_path": "Games/Duel/games/cribbage/scoring.lua",
         "install_path": "games/cribbage/scoring.lua",
         "sha256": "0c4c67e5a923153b59431d41d38c4d69adc6edb9925317107cc83e0e37e3ac80"
       },
       {
+        "repo_path": "Games/Duel/games/cribbage/seatView.lua",
+        "install_path": "games/cribbage/seatView.lua",
+        "sha256": "12188e5fe1a3e4a3d5f247091b4f20f9b354511be3e1fa39561ab09c85e059c5"
+      },
+      {
         "repo_path": "Games/Duel/games/farkle/plugin.lua",
         "install_path": "games/farkle/plugin.lua",
         "sha256": "695e2037d2d65a28c9294376bd6caf06160dd717e14c0dfc78bd7605c82c210c"
+      },
+      {
+        "repo_path": "Games/Duel/games/liarsdice/seatView.lua",
+        "install_path": "games/liarsdice/seatView.lua",
+        "sha256": "8202e0c985fddc0293b77dd497357d7962ff9ade32ec9e3f82cd1ec47b9231e3"
       },
       {
         "repo_path": "Games/Duel/games/liarsdice/rules.lua",
@@ -323,14 +328,14 @@
         "sha256": "2d178c4894d717ad2f37a944af202b6fefc0948896e15ccaa86a34dd0b9fc711"
       },
       {
-        "repo_path": "Games/Duel/games/cribbage/seatView.lua",
-        "install_path": "games/cribbage/seatView.lua",
-        "sha256": "12188e5fe1a3e4a3d5f247091b4f20f9b354511be3e1fa39561ab09c85e059c5"
-      },
-      {
         "repo_path": "Games/Duel/games/gin/tableView.lua",
         "install_path": "games/gin/tableView.lua",
         "sha256": "f39deff1e62b9bc79e2e5a08df8688b084c216d4fac28c4adbc74be177107a87"
+      },
+      {
+        "repo_path": "Games/Duel/games/gin/seatView.lua",
+        "install_path": "games/gin/seatView.lua",
+        "sha256": "8c821ec9fda3a7915ba8942d47f2484d4fb937c00b437c91d92df5e5fa9a762a"
       },
       {
         "repo_path": "Games/Duel/games/gin/rules.lua",
@@ -363,9 +368,9 @@
         "sha256": "2c92def0d009c41449c70cc852dd8b901e8f1c1efda02f3e2d83ed9a3b6a722c"
       },
       {
-        "repo_path": "Games/Duel/games/gin/seatView.lua",
-        "install_path": "games/gin/seatView.lua",
-        "sha256": "8c821ec9fda3a7915ba8942d47f2484d4fb937c00b437c91d92df5e5fa9a762a"
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -390,6 +395,7 @@
       "lib.casino.chat",
       "lib.casino.deck",
       "lib.casino.demo",
+      "lib.casino.economy",
       "lib.casino.font",
       "lib.casino.group.community",
       "lib.casino.group.dealer",
