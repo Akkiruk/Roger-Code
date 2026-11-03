@@ -7,12 +7,12 @@
     "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
     "source_root": "Games/Arcade",
     "entrypoint": "startup.lua",
-    "version": "1.0.15"
+    "version": "1.0.16"
   },
   "build": {
-    "commit": "e42e44688c4d0a68d49428337840d6241413292b",
-    "generated_at": "2026-11-03T15:43:17Z",
-    "package_hash": "8e2bdc3fadc46661a22edde882b3a5eecd664d0dccf54b2c84c011cb4e146dd6"
+    "commit": "780af25f9562fe3936469de82928cc7e00bdbe49",
+    "generated_at": "2026-11-03T16:09:16Z",
+    "package_hash": "558e17ae8c7a2b30abc60bb75f65dbe425342440463787d6338b27ce1c8c3e34"
   },
   "install": {
     "preserve": [],
@@ -21,11 +21,6 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
-      },
-      {
-        "repo_path": "Games/Arcade/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
         "repo_path": "Games/Arcade/surface",
@@ -40,7 +35,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "f015d8037bc80f7bf8686c431ce2ff17fdc7cf51ea70870c793b108a374b29f8"
+        "sha256": "f7c8fa79f559476a7e8a17307ec6944c581328a962829415d930e8fa5378520c"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -50,7 +45,7 @@
       {
         "repo_path": "Shared/lib/arcade/base.lua",
         "install_path": "lib/arcade/base.lua",
-        "sha256": "d72e32d5d03a2e675776e6ea4c2ea4b3210d5be0d2e64263c9e3de4d653dc792"
+        "sha256": "8f5bd414e9a0a3f79e7a44ead346c6e1144f780f5481ecbe096ee9f8ce6fc6ea"
       },
       {
         "repo_path": "Shared/lib/arcade/constants.lua",
@@ -70,7 +65,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "f39252bfc024b0da08548cb09f45bfb0c7911da946196708a23b3ddb5add49d4"
+        "sha256": "0e28d84cc46776d6da024c604588925a5c6072391b2d33ca9d2b1cf504be34a1"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -78,9 +73,14 @@
         "sha256": "d932fa53b3ed61164abb8c6df0ff0a0f44df28096317e2cfe9d31611b7aeed40"
       },
       {
+        "repo_path": "Shared/lib/arcade/merge.lua",
+        "install_path": "lib/arcade/merge.lua",
+        "sha256": "607aa750d6e7128f04301e29e1209073cd258133f94c5c92424339ae9de6b199"
+      },
+      {
         "repo_path": "Shared/lib/arcade/net.lua",
         "install_path": "lib/arcade/net.lua",
-        "sha256": "eb23741b7f355a659e2b3da159c89a88eff75c1efe9692e5398d06d1f93625fb"
+        "sha256": "d5c08326bd618c41fb4281eaaa848334dc1165dc247057fbb45b46894aaa94ba"
       },
       {
         "repo_path": "Shared/lib/arcade/play.lua",
@@ -88,24 +88,24 @@
         "sha256": "eddbb81d6a6c02d5249dee74ae19a66621312c8b0c5bcf4151889855266a088c"
       },
       {
-        "repo_path": "Games/Arcade/startup.lua",
-        "install_path": "arcade_startup.lua",
-        "sha256": "91f571bda3c1d9e7b76357b8a7a66abff22eeab2cff84818f069d0940a4cdf63"
-      },
-      {
         "repo_path": "Shared/lib/arcade/records.lua",
         "install_path": "lib/arcade/records.lua",
-        "sha256": "61ca9bfd75b01016e302afe95b0019134501c92dc3b4e56ee833b11758047f6d"
+        "sha256": "c3540ce2cb5da1199718f650c728c56ae90c3ea2c43a21041af5eae68a9da217"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/replay.lua",
+        "install_path": "lib/arcade/replay.lua",
+        "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
       },
       {
         "repo_path": "Shared/lib/arcade/saves.lua",
         "install_path": "lib/arcade/saves.lua",
-        "sha256": "c5d3c908a8b32fca7b343cce6bf0561c23792d3e02b8abb98fcec3bbb3c988e0"
+        "sha256": "da2e3320340bebc18cb873a393872d5dc1f8874d7b80a3d4f568b6c8f0f465e4"
       },
       {
         "repo_path": "Shared/lib/arcade/scores.lua",
         "install_path": "lib/arcade/scores.lua",
-        "sha256": "bf64c3fe361a3968977dfcf8f6807004e0a68f789807a57976ba7f09758f2fa4"
+        "sha256": "3bb8b065c6e104a7887fa9b9ee584cfea344a4bd797b216bb14f17ce236e552e"
       },
       {
         "repo_path": "Shared/lib/arcade/screens.lua",
@@ -116,6 +116,11 @@
         "repo_path": "Shared/lib/arcade/seats.lua",
         "install_path": "lib/arcade/seats.lua",
         "sha256": "8a660f8e0bde9461956517fffb2525c6862b4b8a0c1b85baa0c58a5f75e85dad"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/share.lua",
+        "install_path": "lib/arcade/share.lua",
+        "sha256": "5e8528d8c1e569d4f65b9bd5362431f51f717a094e99a4319497d637e01178aa"
       },
       {
         "repo_path": "Shared/lib/arcade/tournament.lua",
@@ -135,7 +140,7 @@
       {
         "repo_path": "Shared/lib/arcade/versus.lua",
         "install_path": "lib/arcade/versus.lua",
-        "sha256": "b21ca80446631f9c8fe3cf740afb05628d2dc839dab55710fead4540d35e6f98"
+        "sha256": "5a8426bbefdbd02ddc3796f7dbbf79ded81a755f30ecfe7ba0a57637c2c9790c"
       },
       {
         "repo_path": "Shared/lib/casino/bit32_shim.lua",
@@ -163,9 +168,9 @@
         "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
-        "repo_path": "Shared/lib/arcade/replay.lua",
-        "install_path": "lib/arcade/replay.lua",
-        "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
+        "repo_path": "Games/Arcade/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
         "repo_path": "Shared/lib/sound.lua",
@@ -173,14 +178,14 @@
         "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
       },
       {
-        "repo_path": "Games/Arcade/games/uttt/view.lua",
-        "install_path": "games/uttt/view.lua",
-        "sha256": "93bcd46da27bcbd65a252b2e5416ebb0c752367069c1947e627c2f408013196e"
+        "repo_path": "Games/Arcade/startup.lua",
+        "install_path": "arcade_startup.lua",
+        "sha256": "91f571bda3c1d9e7b76357b8a7a66abff22eeab2cff84818f069d0940a4cdf63"
       },
       {
-        "repo_path": "Games/Arcade/games/uttt/store.lua",
-        "install_path": "games/uttt/store.lua",
-        "sha256": "c0c632e96befb7a2eda55d0e23e23c4c9657a6f851ee1cdd7cefe472e000e64d"
+        "repo_path": "Games/Arcade/games/uttt/uttt_constants.lua",
+        "install_path": "games/uttt/uttt_constants.lua",
+        "sha256": "3d463bccc29e751d60e5950ecf7f61e9a25215953b8e7434c8c0f85c1a5411a7"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -248,14 +253,14 @@
         "sha256": "273442c18b55e2da88f61d805cc21b9f3ce8760cea6091feae1ff41bb71ce58d"
       },
       {
-        "repo_path": "Games/Arcade/games/uttt/uttt_constants.lua",
-        "install_path": "games/uttt/uttt_constants.lua",
-        "sha256": "3d463bccc29e751d60e5950ecf7f61e9a25215953b8e7434c8c0f85c1a5411a7"
-      },
-      {
         "repo_path": "Games/Arcade/games/dots/ai.lua",
         "install_path": "games/dots/ai.lua",
         "sha256": "d1fee3cd3bb81371fc8a9d79c906143b477afe104bfb36a4303b91a2569b4682"
+      },
+      {
+        "repo_path": "Games/Arcade/games/dots/plugin.lua",
+        "install_path": "games/dots/plugin.lua",
+        "sha256": "aa52a947c2837ab12ab3545d0d1ba568253516289d470217d25e79d0bfa43b03"
       },
       {
         "repo_path": "Games/Arcade/games/dots/rules.lua",
@@ -323,9 +328,14 @@
         "sha256": "cc24ca1701f6f05cdf8b29a121d4a349ddf844a082e3734efa547c402ea4343b"
       },
       {
-        "repo_path": "Games/Arcade/games/dots/plugin.lua",
-        "install_path": "games/dots/plugin.lua",
-        "sha256": "aa52a947c2837ab12ab3545d0d1ba568253516289d470217d25e79d0bfa43b03"
+        "repo_path": "Games/Arcade/games/uttt/store.lua",
+        "install_path": "games/uttt/store.lua",
+        "sha256": "c0c632e96befb7a2eda55d0e23e23c4c9657a6f851ee1cdd7cefe472e000e64d"
+      },
+      {
+        "repo_path": "Games/Arcade/games/uttt/view.lua",
+        "install_path": "games/uttt/view.lua",
+        "sha256": "93bcd46da27bcbd65a252b2e5416ebb0c752367069c1947e627c2f408013196e"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -350,6 +360,7 @@
       "lib.arcade.journal",
       "lib.arcade.main",
       "lib.arcade.match",
+      "lib.arcade.merge",
       "lib.arcade.net",
       "lib.arcade.play",
       "lib.arcade.records",
@@ -358,6 +369,7 @@
       "lib.arcade.scores",
       "lib.arcade.screens",
       "lib.arcade.seats",
+      "lib.arcade.share",
       "lib.arcade.tournament",
       "lib.arcade.track",
       "lib.arcade.ui",

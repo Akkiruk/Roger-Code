@@ -7,12 +7,12 @@
     "description": "Who has been playing what: every Arcade cabinet and casino table on the network, time played, progress and results.",
     "source_root": "Games/Tracker",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "9b2ced19a094e6d52d982699dbdd1d32a068a10d",
-    "generated_at": "2026-11-03T15:43:17Z",
-    "package_hash": "520498f143a2b3151238c6411593c011a42703e0c9976cf2c50ceb772fbe3222"
+    "commit": "780af25f9562fe3936469de82928cc7e00bdbe49",
+    "generated_at": "2026-11-03T16:09:16Z",
+    "package_hash": "1342a52cb096ded3f9393d766eea7529885a214e08a9811f7f6daacd59d113f3"
   },
   "install": {
     "preserve": [],
@@ -58,6 +58,11 @@
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
+        "repo_path": "Shared/lib/arcade/merge.lua",
+        "install_path": "lib/arcade/merge.lua",
+        "sha256": "607aa750d6e7128f04301e29e1209073cd258133f94c5c92424339ae9de6b199"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
@@ -65,12 +70,17 @@
       {
         "repo_path": "Shared/lib/tracker/app.lua",
         "install_path": "lib/tracker/app.lua",
-        "sha256": "47113208619b2609700807ae739a6bdce6642096f3bc5883f33f8bd2a00eb822"
+        "sha256": "b9eccc550d705c154c7e086a43da1187e7431ecd31955839efcfad21c82a9a5a"
       },
       {
         "repo_path": "Shared/lib/tracker/rules.lua",
         "install_path": "lib/tracker/rules.lua",
         "sha256": "9e31f111636d826d10b36cda197eaf07dde7ecdf84696fcc76eecddc4a0b7eab"
+      },
+      {
+        "repo_path": "Shared/lib/tracker/shared.lua",
+        "install_path": "lib/tracker/shared.lua",
+        "sha256": "793996dc4df754351da22702a25e68cdeed8b6b7a978fff1252298c85f0a2583"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -87,11 +97,13 @@
     "update_interval": 300,
     "requires_updater": true,
     "lib_modules": [
+      "lib.arcade.merge",
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
       "lib.tracker.app",
       "lib.tracker.rules",
+      "lib.tracker.shared",
       "lib.update_screen",
       "lib.updater"
     ]
