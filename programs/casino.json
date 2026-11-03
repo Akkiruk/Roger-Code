@@ -7,12 +7,12 @@
     "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
     "source_root": "Games/Casino",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
-    "commit": "acd4bb8a08b9780d14042efec9ce60f1ff5c3605",
-    "generated_at": "2026-11-03T07:30:29Z",
-    "package_hash": "05af04756b11a2c67585490d20e8fe2529f4f11ab7818153b1c08dcc840f9ad2"
+    "commit": "e42e44688c4d0a68d49428337840d6241413292b",
+    "generated_at": "2026-11-03T08:01:28Z",
+    "package_hash": "2bbf132ecac1f99b1ec213e2807072c5cc101ded84c32688c099b1dddc22e424"
   },
   "install": {
     "preserve": [],
@@ -140,12 +140,12 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "85607849253a1ef61fc6074d0ffb79de592797e27e486e3f21026c85596875f2"
+        "sha256": "072c0090168fe93bbe1f983a56452114e8a3f8aa2bbb6dfa5f5f3b9f872f129a"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
         "install_path": "lib/casino/stats.lua",
-        "sha256": "c5853e9cea48d1daf1b296d1b924e8ea8135e6a29717a34c518c594a5ac0651f"
+        "sha256": "39f1ec7e85cc28f12deb8dc608779e64380bc43248844600767bc483979c1b00"
       },
       {
         "repo_path": "Shared/lib/casino/session.lua",
@@ -180,7 +180,7 @@
       {
         "repo_path": "Shared/lib/casino/net.lua",
         "install_path": "lib/casino/net.lua",
-        "sha256": "32b264ef24c21559327e9e7862b9aef6637593719237802e216439ad68b5a7ef"
+        "sha256": "7bd86ddd1a5ab7436160f623482734e3fab31fae442332fbbe757d813f802338"
       },
       {
         "repo_path": "Shared/lib/casino/limits.lua",

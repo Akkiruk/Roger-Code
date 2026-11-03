@@ -7,12 +7,12 @@
     "description": "Who has been playing what: every Arcade cabinet and casino table on the network, time played, progress and results.",
     "source_root": "Games/Tracker",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
-    "generated_at": "2026-11-03T07:30:29Z",
-    "package_hash": "cab35a39696f270023e327a79931cfa62e5c6049936e4df94687394f0141cf60"
+    "commit": "e42e44688c4d0a68d49428337840d6241413292b",
+    "generated_at": "2026-11-03T08:01:28Z",
+    "package_hash": "8e44bb45489bcbed07ec6fcf24c8b6b979f546b7abd505219657fa4141e69527"
   },
   "install": {
     "preserve": [],
@@ -65,12 +65,12 @@
       {
         "repo_path": "Shared/lib/tracker/app.lua",
         "install_path": "lib/tracker/app.lua",
-        "sha256": "6b6afcde2ba1afe82724d27f4b1b106e56b4a8883cb4e805db64813a81ceb677"
+        "sha256": "47113208619b2609700807ae739a6bdce6642096f3bc5883f33f8bd2a00eb822"
       },
       {
         "repo_path": "Shared/lib/tracker/rules.lua",
         "install_path": "lib/tracker/rules.lua",
-        "sha256": "aa65d5949c4a1abc4443972502e191bcfcc098ec8af70038fe3a427e6119033d"
+        "sha256": "9e31f111636d826d10b36cda197eaf07dde7ecdf84696fcc76eecddc4a0b7eab"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
