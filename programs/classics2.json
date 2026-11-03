@@ -7,12 +7,12 @@
     "description": "Dig Dug, Flappy Bird, Minesweeper, Tapper, Mappy and more, played by touch for the high score.",
     "source_root": "Games/Classics2",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
-    "commit": "c10b8a8eac868f89e3ab79e5ad727d28097fb944",
-    "generated_at": "2026-11-03T06:19:42Z",
-    "package_hash": "278e7aef58b38171391e550f4c16e7c2332b15cba12a0cf43d46d3b20fe30c75"
+    "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
+    "generated_at": "2026-11-03T07:14:58Z",
+    "package_hash": "5b1638aaa9a0a74a76aa61280fa1f7261626552d69fceec31d970f07d422d9c4"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "3bb75461aa3fdfae7daf434ad8de30f2ff5e0d8f59b43d2ba4f726c7b056d1b3"
+        "sha256": "f8dbc01edd6fb70e12268e4723d55d08f1ec11e006f0a6c6707f693b52c6f064"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "27a613c828574f155a42862d323aadfe75c24ea04ef529e0009c6be72b919de6"
+        "sha256": "5c118c87241b4014e19779ebffdd45346d7975b714332dc0019155fc337ac8c6"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -85,7 +85,7 @@
       {
         "repo_path": "Shared/lib/arcade/saves.lua",
         "install_path": "lib/arcade/saves.lua",
-        "sha256": "9e35e045d084f571aa4c6bcb804da68d88f04a22a78dade95e9c4549f7e1848e"
+        "sha256": "c5d3c908a8b32fca7b343cce6bf0561c23792d3e02b8abb98fcec3bbb3c988e0"
       },
       {
         "repo_path": "Shared/lib/arcade/scores.lua",
