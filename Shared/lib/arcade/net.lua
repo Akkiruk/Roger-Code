@@ -20,6 +20,14 @@ function M.open()
   return opened
 end
 
+--- Someone playing, for the tracker (track.lua says what's in it). The cabinet's label says which cabinet it was.
+function M.play(msg)
+  if not opened then return end
+  msg.kind = "play"
+  msg.cabinet = os.getComputerLabel and os.getComputerLabel() or nil
+  pcall(rednet.broadcast, msg, M.PROTOCOL)
+end
+
 --- A finished match, for leaderboards on another screen.
 function M.result(game, title, red, blue, winner, moves, ranked)
   if not opened then return end

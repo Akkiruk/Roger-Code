@@ -7,6 +7,7 @@ local config = require("lib.arcade.constants")
 local hw = require("lib.arcade.hw")
 local journal = require("lib.arcade.journal")
 local net = require("lib.arcade.net")
+local track = require("lib.arcade.track")
 local replay = require("lib.arcade.replay")
 local seats = require("lib.arcade.seats")
 local tournament = require("lib.arcade.tournament")
@@ -147,6 +148,7 @@ function M.start(red, blue, opts)
   end
   followPlayers(g)
   audio.cue("start")
+  g.track = track.start(plugin.id, plugin.title, { red.name, blue.name })
   armTurn(g)
   log(string.format("match %s start: %s red=%s(%s) blue=%s(%s) first=%d timer=%d", g.id, plugin.id, red.name, tostring(red.cpu),
     blue.name, tostring(blue.cpu), g.first, g.timer))
@@ -196,6 +198,7 @@ local function settle(g, reason)
     })
   end
   net.result(app.plugin.id, app.plugin.title, g.red.name, g.blue.name, winner, #g.actions, summary.ranked)
+  track.stop(g.track, { winner = winner == 1 and g.red.name or winner == 2 and g.blue.name or "draw", moves = #g.actions })
   -- in a knockout a result moves the bracket. A draw moves nothing, so the same pair play again
   if S.tour and tournament.next(S.tour) and winner ~= 3 then
     local name = (winner == 1 and g.red or g.blue).name
@@ -329,6 +332,7 @@ end
 --- End the match with no result.
 function M.abandon(g, why)
   log("match abandoned: " .. tostring(why))
+  track.stop(g.track, { abandoned = true })
   hw.allOff()
   hw.watch({})
   S.match = nil
@@ -423,6 +427,7 @@ end
 
 --- The clock for the match in progress.
 function M.tick(g, t)
+  track.beat(g.track)
   if app.plugin.view.tick(g, t) then S.dirty = true end
   if app.plugin.private then
     if waitForWall(g, t) then return end

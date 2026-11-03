@@ -11,6 +11,7 @@ local hw = require("lib.arcade.hw")
 local journal = require("lib.arcade.journal")
 local saves = require("lib.arcade.saves")
 local scores = require("lib.arcade.scores")
+local track = require("lib.arcade.track")
 local ui = require("lib.arcade.ui")
 
 local M = {}
@@ -131,6 +132,18 @@ function M.skipIntro()
   if a and a.phase == "intro" then introDone(a) end
 end
 
+--- What the tracker is told about a run: its score and level, and how far a story has got.
+local function trackInfo(a)
+  local s = a.state
+  local info = { score = s and s.score, level = s and s.level }
+  local view = app.plugin.view
+  if s and view.progress then
+    local ok, p = pcall(view.progress, s)
+    if ok and type(p) == "table" then info.percent, info.goal = p.percent, p.goal end
+  end
+  return info
+end
+
 --- Into play, on a new run or a saved one.
 local function begin(a)
   a.phase, a.place, a.awaySince, a.reviewed, a.quitUntil = "play", nil, nil, false, nil
@@ -138,6 +151,7 @@ local function begin(a)
   a.startedAt = nowMs()
   a.touchedAt, a.saveAt = a.startedAt, a.startedAt + saves.AUTOSAVE_MS
   app.audio.cue("start")
+  a.track = track.start(app.plugin.id, app.plugin.title, { a.player or "Player" }, trackInfo(a))
   S.dirty = true
 end
 
@@ -198,6 +212,9 @@ local function finish()
   if a.phase == "over" then return end
   a.phase = "over"
   a.overAt = nowMs()
+  local info = trackInfo(a)
+  info.over = true
+  track.stop(a.track, info)
   if app.plugin.saves then saves.delete(app.plugin.id, a.player) end
   a.place = a.scores:add(a.player, s.score, s.level)
   app.audio.cue(a.place == 1 and "win" or "lose")
@@ -244,6 +261,8 @@ function M.seen()
 end
 
 function M.leave()
+  local a = S.action
+  if a and a.track and a.state then track.stop(a.track, trackInfo(a)) end
   S.action, S.view = nil, "idle"
   S.dirty = true
 end
@@ -364,6 +383,7 @@ function M.tick(t)
     steps = steps + 1
     a.nextAt = a.nextAt + step
     local events = plugin.rules.tick(a.state, a.rng)
+    track.beat(a.track, a.track and a.track.sent and os.epoch("utc") - a.track.sent >= track.BEAT_MS and trackInfo(a) or nil)
     plugin.view.onEvents(app, a.state, events or {})
     if a.state.over then finish() end
   end

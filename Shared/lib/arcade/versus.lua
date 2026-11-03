@@ -9,6 +9,7 @@ local config = require("lib.arcade.constants")
 local hw = require("lib.arcade.hw")
 local journal = require("lib.arcade.journal")
 local screens = require("lib.arcade.screens")
+local track = require("lib.arcade.track")
 local ui = require("lib.arcade.ui")
 
 local M = {}
@@ -177,6 +178,9 @@ local function startPlay(a)
   local t = nowMs()
   a.phase, a.startedAt, a.nextAt = "play", t, t + app.plugin.tickMs
   app.audio.cue("start")
+  local names = {}
+  for p = 1, 2 do names[p] = a.seats[p] and a.seats[p].name or (a.vsCpu and "Computer" or "?") end
+  a.track = track.start(app.plugin.id, app.plugin.title, names)
   S.dirty = true
 end
 
@@ -189,6 +193,7 @@ local function finish(a, forfeit)
   end
   a.phase, a.overAt = "over", nowMs()
   local w = s.winner
+  track.stop(a.track, { winner = (w == 1 or w == 2) and a.seats[w] and a.seats[w].name or "draw", score = s.score })
   if w == 1 or w == 2 then
     if not a.vsCpu then a.wins:record(a.seats[w].name, a.seats[3 - w].name) end
     app.audio.cue(forfeit and "lose" or "win")
@@ -200,6 +205,7 @@ local function finish(a, forfeit)
 end
 
 function M.leave()
+  if S.versus then track.stop(S.versus.track, { abandoned = true }) end
   S.versus, S.view = nil, "idle"
   S.dirty = true
 end
@@ -384,6 +390,7 @@ end
 function M.tick(t)
   local a = S.versus
   if not a then return end
+  track.beat(a.track)
   if a.phase == "ready" or (a.phase == "over" and next(a.seen)) then
     if t - S.lastTouch > config.LOBBY_IDLE * 1000 then
       M.leave()
