@@ -3,16 +3,16 @@
   "program": {
     "key": "tracker",
     "name": "Play Tracker",
-    "category": "Games",
+    "category": "Utilities",
     "description": "Who has been playing what: every Arcade cabinet and casino table on the network, time played, progress and results.",
     "source_root": "Games/Tracker",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "e42e44688c4d0a68d49428337840d6241413292b",
-    "generated_at": "2026-11-03T08:01:28Z",
-    "package_hash": "8e44bb45489bcbed07ec6fcf24c8b6b979f546b7abd505219657fa4141e69527"
+    "commit": "9b2ced19a094e6d52d982699dbdd1d32a068a10d",
+    "generated_at": "2026-11-03T15:43:17Z",
+    "package_hash": "520498f143a2b3151238c6411593c011a42703e0c9976cf2c50ceb772fbe3222"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Games/Tracker/startup.lua",
         "install_path": "tracker_startup.lua",
-        "sha256": "943536551abd96364ae9b437034e2e130eb69d2df243b00d733e7cc8d6dac1f2"
+        "sha256": "7968ce095f5ee7bee01bd20eafe0116c59d3a2c9f63baf3c5c0a139e95e629b6"
       },
       {
         "repo_path": "Games/Tracker/vhcc_lockdown.txt",
