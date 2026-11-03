@@ -17,6 +17,10 @@ local play = require("lib.arcade.play")
 local replay = require("lib.arcade.replay")
 local net = require("lib.arcade.net")
 local track = require("lib.arcade.track")
+local share = require("lib.arcade.share")
+local merge = require("lib.arcade.merge")
+local saves = require("lib.arcade.saves")
+local scores = require("lib.arcade.scores")
 local screens = require("lib.arcade.screens")
 local seats = require("lib.arcade.seats")
 local tournament = require("lib.arcade.tournament")
@@ -1091,6 +1095,7 @@ end
 local function onTick()
   local t = nowMs()
   audio.pump()
+  share.tick()
   if S.view ~= "idle" then S.idleDressed = false end
   -- an update waits for a quiet moment: nobody mid-match, and nobody who has touched the wall in the last while
   if t - (S.busyAt or 0) > BUSY_REPORT_MS then
@@ -1183,6 +1188,51 @@ local function main()
   audio.play("boot")
   hw.allOff()
   net.open()
+  -- one floor, one set of saves: what the play tracker has for these games is merged into this cabinet's own (share.lua)
+  local ids = {}
+  for _, plugin in ipairs(registry) do ids[#ids + 1] = plugin.id end
+  share.setGames(ids)
+  share.on("save", function(game, player, data, at, deleted)
+    if type(player) ~= "string" then return end
+    local have = saves.read(game, player)
+    if deleted then
+      if have and (have.at or 0) <= (at or 0) then saves.delete(game, player) end
+    elseif type(data) == "table" and (not have or (have.at or 0) < (data.at or 0)) then
+      saves.put(game, player, data)
+    end
+    actions.refresh(game)
+  end)
+  share.on("scores", function(game, _, data)
+    local table_ = scores.open(game)
+    local merged = merge.scores(table_.rows, data)
+    if not merge.same(merged, table_.rows) then
+      table_.rows = merged
+      table_:save()
+    end
+    actions.refresh(game)
+  end)
+  share.on("versus", function(game, _, data)
+    local open = S.versus and S.versus.wins
+    local wins = (open and open.id == game) and open or versus.wins(game)
+    local merged = merge.versus(wins.rows, data)
+    if not merge.same(merged, wins.rows) then
+      wins.rows = merged
+      wins:save()
+      S.dirty = true
+    end
+  end)
+  share.on("records", function(game, _, data)
+    local plugin = app.pluginById(game)
+    if not plugin or type(data) ~= "table" then return end
+    local store = storeFor(plugin)
+    local merged = merge.records(store.data, data)
+    if not merge.same(merged, store.data) then
+      store.data = merged
+      store:save()
+      S.dirty = true
+    end
+  end)
+  share.ask(true)
   S.debug = fs.exists(config.DEBUG_FLAG)
   S.tour = tournament.load()
   if S.tour then
@@ -1231,6 +1281,7 @@ local function main()
       actions.saveNow() -- the supervisor's installer key: this same event ends the game
     elseif ev == "rednet_message" then
       pcall(track.hear, a, b, c) -- a tracker asking for the record of who played what here
+      pcall(share.hear, a, b, c) -- the floor's saves, scores and records, from the tracker
     elseif ev == "vhcc_touch" then
       toucher = a
       hw.noteToucher(a)

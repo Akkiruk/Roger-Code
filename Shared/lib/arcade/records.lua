@@ -148,6 +148,11 @@ function M:save()
   if self.io.exists(self.path) then self.io.move(self.path, self.path .. ".bak") end
   self.io.move(tmp, self.path)
   self.dirty = false
+  -- the play tracker keeps the floor's records, from every cabinet's (share.lua); shareAs is the game's id
+  if self.shareAs then
+    local data = self.data
+    pcall(function() require("lib.arcade.share").push("records", self.shareAs, nil, data) end)
+  end
   return true
 end
 

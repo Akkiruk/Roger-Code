@@ -327,10 +327,12 @@ local function fill(plugin)
   if not plugin.achievements then defaultBadges(plugin) end
   plugin.newStore = plugin.newStore or function(opts)
     opts = opts or {}
-    return Records.new({
+    local store = Records.new({
       path = "arcade_" .. plugin.id .. ".dat", log = opts.log,
       settings = plugin.settings, achievements = plugin.achievements, award = plugin.award,
     })
+    store.shareAs = plugin.id -- shared with the floor through the play tracker (share.lua)
+    return store
   end
   plugin.summarize = plugin.summarize or function(match) return { moves = #match.actions } end
   plugin.settingsRows = plugin.settingsRows or function(store)

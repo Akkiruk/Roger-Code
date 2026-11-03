@@ -16,7 +16,7 @@ local function read(path)
 end
 
 function M.open(id)
-  local self = setmetatable({ path = "arcade_scores_" .. id .. ".dat" }, Scores)
+  local self = setmetatable({ id = id, path = "arcade_scores_" .. id .. ".dat" }, Scores)
   self.rows = read(self.path) or read(self.path .. ".tmp") or read(self.path .. ".bak") or {}
   return self
 end
@@ -30,6 +30,8 @@ function Scores:save()
   if fs.exists(bak) then fs.delete(bak) end
   if fs.exists(self.path) then fs.move(self.path, bak) end
   fs.move(tmp, self.path)
+  -- the play tracker keeps the floor's table, from every cabinet's (share.lua)
+  pcall(function() require("lib.arcade.share").push("scores", self.id, nil, self.rows) end)
 end
 
 --- Add a finished run. Returns its place on the table, or nil if it didn't make it.

@@ -46,7 +46,7 @@ end
 
 --- The wins table for one game, kept on disk with a good copy through every save.
 function M.wins(id)
-  local self = setmetatable({ path = "arcade_versus_" .. id .. ".dat" }, Wins)
+  local self = setmetatable({ id = id, path = "arcade_versus_" .. id .. ".dat" }, Wins)
   self.rows = read(self.path) or read(self.path .. ".tmp") or read(self.path .. ".bak") or {}
   return self
 end
@@ -60,6 +60,8 @@ function Wins:save()
   if fs.exists(bak) then fs.delete(bak) end
   if fs.exists(self.path) then fs.move(self.path, bak) end
   fs.move(tmp, self.path)
+  -- the play tracker keeps the floor's table, from every cabinet's (share.lua)
+  pcall(function() require("lib.arcade.share").push("versus", self.id, nil, self.rows) end)
 end
 
 function Wins:row(name)

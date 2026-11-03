@@ -28,6 +28,12 @@ function M.play(msg)
   pcall(rednet.broadcast, msg, M.PROTOCOL)
 end
 
+--- Saved data for the tracker's master copy, or a request for what's new there (share.lua).
+function M.share(msg)
+  if not opened then return end
+  pcall(rednet.broadcast, msg, M.PROTOCOL)
+end
+
 --- An answer to one computer that asked, such as a tracker asking for this cabinet's book.
 function M.reply(to, msg)
   if not opened then return end

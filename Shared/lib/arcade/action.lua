@@ -79,12 +79,23 @@ end
 -- the idle demo, heard now and with a SKIP, and the ready screen comes after it.
 function M.open(who, demo)
   who = nearestName(who)
+  -- anything newer on the floor's copy, for this player's save and the scores, arrives while they look
+  pcall(function() require("lib.arcade.share").ask() end)
   local hook = app.plugin.view.intro
   local run = demo and hook and hook.from(demo, nowMs(), app) or nil
   S.action = { phase = run and "intro" or "ready", player = who, scores = scores.open(app.plugin.id), intro = run }
   if app.plugin.saves and not run then offerSave(S.action, who or "Player") end
   S.view = "action"
   S.lastTouch = nowMs()
+  S.dirty = true
+end
+
+--- Something new for this game came from the floor's copy (share.lua): the ready screen shows it.
+function M.refresh(game)
+  local a = S.action
+  if not a or not app.plugin or app.plugin.id ~= game then return end
+  a.scores = scores.open(game)
+  if a.phase == "ready" and app.plugin.saves then offerSave(a, a.saveOwner or a.player or "Player") end
   S.dirty = true
 end
 

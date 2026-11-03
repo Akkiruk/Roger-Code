@@ -6,10 +6,13 @@
 -- It sends nothing and moves nothing: a cabinet never waits for it, and a tracker that's off just misses the time.
 
 local rules = require("lib.tracker.rules")
+local shared = require("lib.tracker.shared")
 
 local M = {}
 
 local SAVE_FILE = "tracker_data.dat"
+local SHARED_FILE = "tracker_shared.dat" -- the floor's master copy of every cabinet's saves, scores and records
+local SHARED_SAVE_MS = 5000
 local SAVE_MS = 30000
 local REDRAW_MS = 5000
 local CYCLE_MS = 20000     -- left alone, the next page this often
@@ -21,6 +24,20 @@ local PROTOCOLS = { "arcade.v1", "casino.v2" }
 local function now() return os.epoch("utc") end
 
 -- ---------------------------------------------------------------- the books on disk
+
+local function loadShared()
+  for _, path in ipairs({ SHARED_FILE, SHARED_FILE .. ".bak" }) do
+    if fs.exists(path) then
+      local h = fs.open(path, "r")
+      if h then
+        local ok, sh = pcall(textutils.unserialise, h.readAll() or "")
+        h.close()
+        if ok and type(sh) == "table" and sh.v == 1 and type(sh.entries) == "table" then return sh end
+      end
+    end
+  end
+  return shared.new()
+end
 
 local function load()
   for _, path in ipairs({ SAVE_FILE, SAVE_FILE .. ".bak" }) do
@@ -39,19 +56,21 @@ local function load()
   return rules.new()
 end
 
-local function save(d)
-  local ok, text = pcall(textutils.serialise, d, { compact = true })
+local function writeFile(path, value)
+  local ok, text = pcall(textutils.serialise, value, { compact = true })
   if not ok then return false end
-  local tmp = SAVE_FILE .. ".tmp"
+  local tmp = path .. ".tmp"
   local h = fs.open(tmp, "w")
   if not h then return false end
   h.write(text)
   h.close()
-  if fs.exists(SAVE_FILE .. ".bak") then fs.delete(SAVE_FILE .. ".bak") end
-  if fs.exists(SAVE_FILE) then fs.move(SAVE_FILE, SAVE_FILE .. ".bak") end
-  fs.move(tmp, SAVE_FILE)
+  if fs.exists(path .. ".bak") then fs.delete(path .. ".bak") end
+  if fs.exists(path) then fs.move(path, path .. ".bak") end
+  fs.move(tmp, path)
   return true
 end
+
+local function save(d) return writeFile(SAVE_FILE, d) end
 
 -- ---------------------------------------------------------------- the screen
 
@@ -104,6 +123,12 @@ end
 local function drawTabs(out, ui)
   fill(out, 1, colors.gray)
   put(out, 2, 1, "PLAY TRACKER", colors.yellow, colors.gray)
+  if ui.held then
+    local w = out.getSize()
+    local c = ui.held
+    local line = "holding " .. c.save .. " saved games, " .. (c.scores + c.versus) .. " score tables, " .. c.records .. " records "
+    put(out, w - #line + 1, 1, line, colors.lightGray, colors.gray)
+  end
   local x = 16
   ui.tabs = {}
   for i, name in ipairs(PAGES) do
@@ -259,7 +284,9 @@ end
 
 function M.run()
   local d = load()
-  local ui = { page = "NOW", touchedAt = 0 }
+  local sh = loadShared()
+  local sharedDirty, sharedSavedAt = false, 0
+  local ui = { page = "NOW", touchedAt = 0, held = shared.counts(sh) }
   local mon = biggestMonitor()
   local out = mon and mon.obj or term.current()
   ui.heard = openModems()
@@ -275,7 +302,15 @@ function M.run()
     local ev = { os.pullEvent() }
     local kind, t = ev[1], now()
     if kind == "rednet_message" then
-      if rules.hear(d, ev[2], ev[4], ev[3], t) then changedAt, dirty = t, true end
+      local sender, msg, protocol = ev[2], ev[3], ev[4]
+      if rules.hear(d, sender, protocol, msg, t) then changedAt, dirty = t, true end
+      if protocol == "arcade.v1" and type(msg) == "table" then
+        if msg.kind == "share" and shared.put(sh, msg, t) then
+          sharedDirty, ui.held, dirty = true, shared.counts(sh), true
+        elseif msg.kind == "shareask" then
+          pcall(rednet.send, sender, shared.since(sh, msg.after, msg.games), "arcade.v1")
+        end
+      end
     elseif kind == "monitor_touch" and mon and ev[2] == mon.name then
       touch(out, ui, ev[3], ev[4])
       dirty = true
@@ -290,6 +325,10 @@ function M.run()
     elseif kind == "timer" and ev[2] == timer then
       timer = os.startTimer(REDRAW_MS / 1000)
       if rules.expire(d, t) then changedAt = t end
+      if sharedDirty and t - sharedSavedAt >= SHARED_SAVE_MS then
+        writeFile(SHARED_FILE, sh)
+        sharedDirty, sharedSavedAt = false, t
+      end
       -- a computer with news is asked at once, but no one more than every 30 seconds: a busy table plays a round a minute
       local who = {}
       for _, id in ipairs(rules.wanted(d)) do
@@ -318,6 +357,7 @@ function M.run()
       dirty = true
     elseif kind == "terminate" then
       save(d)
+      if sharedDirty then writeFile(SHARED_FILE, sh) end
       return
     end
   end

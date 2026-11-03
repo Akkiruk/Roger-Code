@@ -56,12 +56,16 @@ function M.read(game, player)
   return nil
 end
 
+--- The play tracker keeps the floor's copy of every save (share.lua): a cabinet's own changes go to it.
+local function share(game, player, save, deleted)
+  pcall(function() require("lib.arcade.share").push("save", game, player, save, deleted) end)
+end
+
 --- Write beside the file and swap. Returns true, or false and why: nothing here can raise an error, and a failure leaves
--- the last good save in place. rng is the generator's position, from journal.trackedRng.
-function M.write(game, player, state, rng)
+-- the last good save in place.
+local function writeSave(game, player, save)
   local path = M.path(game, player)
   local tmp, bak = path .. ".tmp", path .. ".bak"
-  local save = { version = VERSION, game = game, player = player, rng = rng, state = state, at = os.epoch("utc") }
   local made, text = pcall(textutils.serialise, save, SERIALISE)
   if not made then return false, text end
   local ok, err = pcall(function()
@@ -77,6 +81,20 @@ function M.write(game, player, state, rng)
   if ok then return true end
   pcall(fs.delete, tmp)
   return false, err
+end
+
+--- A player's save. Returns true, or false and why. rng is the generator's position, from journal.trackedRng.
+function M.write(game, player, state, rng)
+  local save = { version = VERSION, game = game, player = player, rng = rng, state = state, at = os.epoch("utc") }
+  local ok, err = writeSave(game, player, save)
+  if ok then share(game, player, save) end
+  return ok, err
+end
+
+--- A save as it came from the floor's copy, written as it is: its own time, nothing sent back.
+function M.put(game, player, save)
+  if not sound(save, game, player) then return false, "not a save for " .. tostring(game) .. " and " .. tostring(player) end
+  return writeSave(game, player, save)
 end
 
 --- Every player's save for a game on this computer, newest first: { save, ... } as read gives them.
@@ -100,9 +118,11 @@ function M.list(game)
 end
 
 --- Every copy goes: a .bak left behind would bring a finished run back.
+--- The floor's copy hears of it too, so no other cabinet offers the run that ended.
 function M.delete(game, player)
   local path = M.path(game, player)
   for _, suffix in ipairs(SUFFIXES) do pcall(fs.delete, path .. suffix) end
+  share(game, player, nil, true)
 end
 
 return M
