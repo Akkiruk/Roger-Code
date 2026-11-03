@@ -1,6 +1,7 @@
 -- tracker/app.lua
--- The tracker computer: listens on every modem for the Arcade cabinets and the casino tables, keeps the books on disk
--- (rules.lua), and shows them on the biggest monitor it has. Four pages, NOW, PLAYERS, GAMES and RECENT, along the top;
+-- The tracker computer: collects every Arcade cabinet's and casino table's own record of who played what (rules.lua says
+-- how), keeps the sum on disk, and shows it on the biggest monitor it has. It asks every computer for anything new when it
+-- starts, every couple of minutes, and at once when a game finishes; anything it misses while off, it catches up on. Four pages, NOW, PLAYERS, GAMES and RECENT, along the top;
 -- tap a player for their games. Left alone it turns the pages by itself. With no monitor it shows them on its own screen.
 -- It sends nothing and moves nothing: a cabinet never waits for it, and a tracker that's off just misses the time.
 
@@ -14,6 +15,8 @@ local REDRAW_MS = 5000
 local CYCLE_MS = 20000     -- left alone, the next page this often
 local HANDS_OFF_MS = 60000 -- and only after nobody has touched it for this long
 local PAGES = { "NOW", "PLAYERS", "GAMES", "RECENT" }
+local ASK_MS = 120000      -- everyone is asked for anything new this often
+local PROTOCOLS = { "arcade.v1", "casino.v2" }
 
 local function now() return os.epoch("utc") end
 
@@ -26,11 +29,8 @@ local function load()
       if h then
         local ok, d = pcall(textutils.unserialise, h.readAll() or "")
         h.close()
-        if ok and type(d) == "table" and d.v == 1 and type(d.players) == "table" then
-          d.live = d.live or {}
-          d.recent = d.recent or {}
-          d.sittings = d.sittings or {}
-          d.games = d.games or {}
+        if ok and type(d) == "table" and d.v == 2 and type(d.cabinets) == "table" then
+          for _, key in ipairs({ "tables", "players", "games", "live", "recent", "want" }) do d[key] = d[key] or {} end
           return d
         end
       end
@@ -129,7 +129,7 @@ local function drawNow(out, d, t, w, h)
     if y > h - 1 then break end
     put(out, 2, y, players(live.players), colors.white)
     put(out, 30, y, live.title or live.game, colors.yellow)
-    put(out, 56, y, rules.duration(live.counted), colors.lime)
+    put(out, 56, y, rules.duration(live.ms), colors.lime)
     local extra = live.goal or (live.percent and (live.percent .. "%")) or (live.score and ("score " .. live.score))
       or (live.rounds and (live.rounds .. " rounds")) or ""
     put(out, 66, y, extra, colors.lightGray)
@@ -200,8 +200,8 @@ local function drawPlayer(out, d, t, w, h, name)
     if e.goal then bits[#bits + 1] = e.goal end
     if e.level and not e.percent then bits[#bits + 1] = "level " .. e.level end
     if e.best then bits[#bits + 1] = "best " .. e.best end
-    if e.wins + e.losses > 0 then bits[#bits + 1] = e.wins .. " won, " .. e.losses .. " lost" end
-    if e.rounds > 0 then
+    if (e.wins or 0) + (e.losses or 0) > 0 then bits[#bits + 1] = e.wins .. " won, " .. e.losses .. " lost" end
+    if (e.rounds or 0) > 0 then
       bits[#bits + 1] = e.rounds .. " rounds, " .. (e.net >= 0 and "+" or "") .. e.net .. " tokens"
     end
     put(out, 34, y, table.concat(bits, ", "), colors.lightGray)
@@ -245,14 +245,28 @@ local function touch(out, ui, x, y)
 end
 M.touch = touch
 
+--- Ask for anything new: everyone, or just the computers given.
+local function ask(d, who)
+  local msg = rules.ask(d)
+  for _, protocol in ipairs(PROTOCOLS) do
+    if who then
+      for _, id in ipairs(who) do pcall(rednet.send, id, msg, protocol) end
+    else
+      pcall(rednet.broadcast, msg, protocol)
+    end
+  end
+end
+
 function M.run()
   local d = load()
   local ui = { page = "NOW", touchedAt = 0 }
   local mon = biggestMonitor()
   local out = mon and mon.obj or term.current()
   ui.heard = openModems()
-  local dirty, changedAt, savedAt, pagedAt = true, 0, now(), now()
+  local dirty, changedAt, savedAt, pagedAt, askedAt = true, 0, now(), now(), now()
   local timer = os.startTimer(1)
+  local asked = {}
+  ask(d)
   while true do
     if dirty then
       draw(out, d, ui)
@@ -261,7 +275,7 @@ function M.run()
     local ev = { os.pullEvent() }
     local kind, t = ev[1], now()
     if kind == "rednet_message" then
-      if rules.hear(d, ev[4], ev[3], t) then changedAt, dirty = t, true end
+      if rules.hear(d, ev[2], ev[4], ev[3], t) then changedAt, dirty = t, true end
     elseif kind == "monitor_touch" and mon and ev[2] == mon.name then
       touch(out, ui, ev[3], ev[4])
       dirty = true
@@ -276,6 +290,20 @@ function M.run()
     elseif kind == "timer" and ev[2] == timer then
       timer = os.startTimer(REDRAW_MS / 1000)
       if rules.expire(d, t) then changedAt = t end
+      -- a computer with news is asked at once, but no one more than every 30 seconds: a busy table plays a round a minute
+      local who = {}
+      for _, id in ipairs(rules.wanted(d)) do
+        if t - (asked[id] or 0) >= 30000 then
+          who[#who + 1], asked[id] = id, t
+        else
+          d.want[tostring(id)] = true
+        end
+      end
+      if #who > 0 then ask(d, who) end
+      if t - askedAt >= ASK_MS then
+        ask(d)
+        askedAt = t
+      end
       if changedAt > savedAt and t - savedAt >= SAVE_MS then
         save(d)
         savedAt = t

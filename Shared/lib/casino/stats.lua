@@ -10,6 +10,8 @@ local M = {}
 local FILE = "casino_stats.dat"
 local DAMAGED_FILE = "casino_stats_damaged.dat"
 local SEEN_KEPT = 24   -- rounds remembered, so one replayed after a reboot is not counted twice
+local SITTING_GAP_MS = 5 * 60000 -- a player's rounds closer than this are one sitting, timed from round to round
+local FIRST_ROUND_MS = 60000     -- and a sitting's first round counts as this long
 
 local function load()
   local value = journal.load(FILE)
@@ -43,12 +45,27 @@ function M.record(name, wagered, net, tag)
   player.wagered = player.wagered + wagered
   player.net = player.net + net
   player.best = math.max(player.best, net)
+  -- time at the table, for the play tracker: a round adds the gap since the last, or a minute to start a new sitting
+  local at = os.epoch("utc")
+  local gap = player.last and at - player.last
+  if not gap or gap < 0 or gap > SITTING_GAP_MS then
+    player.sessions = (player.sessions or 0) + 1
+    player.ms = (player.ms or 0) + FIRST_ROUND_MS
+  else
+    player.ms = (player.ms or 0) + gap
+  end
+  player.last = at
   data.players[name] = player
   data.total.rounds = data.total.rounds + 1
   data.total.wagered = data.total.wagered + wagered
   data.total.net = data.total.net + net
   save(data)
   return player
+end
+
+--- Every player's record at this table, for a play tracker.
+function M.all()
+  return load().players
 end
 
 function M.player(name)

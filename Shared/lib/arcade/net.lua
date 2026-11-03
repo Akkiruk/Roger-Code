@@ -28,6 +28,13 @@ function M.play(msg)
   pcall(rednet.broadcast, msg, M.PROTOCOL)
 end
 
+--- An answer to one computer that asked, such as a tracker asking for this cabinet's book.
+function M.reply(to, msg)
+  if not opened then return end
+  msg.cabinet = os.getComputerLabel and os.getComputerLabel() or nil
+  pcall(rednet.send, to, msg, M.PROTOCOL)
+end
+
 --- A finished match, for leaderboards on another screen.
 function M.result(game, title, red, blue, winner, moves, ranked)
   if not opened then return end

@@ -38,8 +38,13 @@ local function now()
   return os.epoch("utc")
 end
 
---- Open every modem there is. Safe to call again whenever the peripherals change.
-function M.open()
+-- Which game this table runs, for a tracker that asks (see answerSync).
+local me = {}
+
+--- Open every modem there is. Safe to call again whenever the peripherals change. game and title, given once at the start,
+--- say what this table is when a tracker asks.
+function M.open(game, title)
+  if type(game) == "string" then me.game, me.title = game, title end
   opened = false
   for _, name in ipairs(peripheral.getNames()) do
     if peripheral.hasType(name, "modem") then
@@ -179,6 +184,22 @@ function M.granted(id)
   return grants[id]
 end
 
+--- A play tracker (Games/Tracker) asks every table for its own record of its players, and this answers with it: the
+--- same record the table keeps for its leaderboards (stats.lua), the 200 most frequent players at most. It moves nothing.
+local SYNC_PLAYERS = 200
+local function answerSync(sender)
+  if not me.game then return end
+  local ok, players = pcall(function() return require("lib.casino.stats").all() end)
+  if not ok or type(players) ~= "table" then return end
+  local list = {}
+  for name, p in pairs(players) do list[#list + 1] = { name = name, p = p } end
+  table.sort(list, function(a, b) return (a.p.rounds or 0) > (b.p.rounds or 0) end)
+  local out = {}
+  for i = 1, math.min(#list, SYNC_PLAYERS) do out[list[i].name] = list[i].p end
+  pcall(rednet.send, sender, { kind = "stats", computer = os.getComputerID(), game = me.game, title = me.title, players = out,
+    cabinet = os.getComputerLabel and os.getComputerLabel() or nil }, M.PROTOCOL)
+end
+
 --- Rednet runs beside the game in its own coroutine.
 function M.worker()
   while true do
@@ -193,6 +214,8 @@ function M.worker()
       elseif message.kind == "contest" and M.validContest(message) then
         contest = { id = message.id, game = message.game, chips = message.chips, open = message.open,
           ends = now() + message.remaining, board = message.board, at = now() }
+      elseif message.kind == "sync" then
+        answerSync(sender)
       end
     end
   end

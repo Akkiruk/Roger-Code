@@ -16,6 +16,7 @@ local matches = require("lib.arcade.match")
 local play = require("lib.arcade.play")
 local replay = require("lib.arcade.replay")
 local net = require("lib.arcade.net")
+local track = require("lib.arcade.track")
 local screens = require("lib.arcade.screens")
 local seats = require("lib.arcade.seats")
 local tournament = require("lib.arcade.tournament")
@@ -1228,6 +1229,8 @@ local function main()
       if a == tickA or a == tickB then runTick(a == tickA and "timer" or "spare timer") end
     elseif ev == "char" and (a == "i" or a == "I") then
       actions.saveNow() -- the supervisor's installer key: this same event ends the game
+    elseif ev == "rednet_message" then
+      pcall(track.hear, a, b, c) -- a tracker asking for the record of who played what here
     elseif ev == "vhcc_touch" then
       toucher = a
       hw.noteToucher(a)
