@@ -11,8 +11,17 @@
 local DEBUG = settings.get("casino.debug") or false
 local AUTH_POLL_INTERVAL = 0.2
 local authWaitScreen = require("lib.auth_wait_screen")
+local economy = require("lib.casino.economy")
 local function dbg(msg)
   if DEBUG then print(os.epoch("local"), "[currency] " .. msg) end
+end
+
+--- A money call that may wait on the economy thread (vhcctweaks 2.2.36). It raises and returns as the call itself does, but no
+-- event that arrives during the wait is lost, and a terminate lands only after the call has answered.
+local function vault(method, ...)
+  local result = table.pack(economy.call(ccvault[method], ...))
+  if not result[1] then error(result[2], 0) end
+  return table.unpack(result, 2, result.n)
 end
 
 -- Player identity for the currently authenticated session.
@@ -305,7 +314,7 @@ local function getPlayerBalance()
     dbg("getPlayerBalance failed: " .. (err or "unknown"))
     return 0
   end
-  local bal, balErr = ccvault.getBalance("player")
+  local bal, balErr = vault("getBalance", "player")
   if bal then return bal end
   dbg("getBalance(player) error: " .. (balErr or "unknown"))
   return 0
@@ -319,7 +328,7 @@ local function getHostBalance()
     dbg("getHostBalance failed: " .. (err or "unknown"))
     return 0
   end
-  local bal, balErr = ccvault.getBalance("host")
+  local bal, balErr = vault("getBalance", "host")
   if bal then return bal end
   dbg("getBalance(host) error: " .. (balErr or "unknown"))
   return 0
@@ -398,7 +407,7 @@ local function charge(amount, reason)
     return false, nil
   end
   dbg("Charging player " .. amount .. " tokens: " .. reason)
-  local result, txErr = ccvault.transfer("player", "host", amount, reason)
+  local result, txErr = vault("transfer", "player", "host", amount, reason)
   if result then
     dbg("Charge OK, TX: " .. (result.txId or "?"))
     writeTransactionAudit({
@@ -418,7 +427,7 @@ local function charge(amount, reason)
   -- Self-play: transfer() blocks same-account transfers, use transferSelf()
   if isSelfPlay() and ccvault.transferSelf then
     dbg("Self-play fallback for charge")
-    local selfResult, selfErr = ccvault.transferSelf(amount, reason)
+    local selfResult, selfErr = vault("transferSelf", amount, reason)
     if selfResult then
       dbg("Charge (self) OK, TX: " .. (selfResult.txId or "?"))
       writeTransactionAudit({
@@ -491,7 +500,7 @@ local function payout(amount, reason)
     return false, nil
   end
   dbg("Paying player " .. amount .. " tokens: " .. reason)
-  local result, txErr = ccvault.transfer("host", "player", amount, reason)
+  local result, txErr = vault("transfer", "host", "player", amount, reason)
   if result then
     dbg("Payout OK, TX: " .. (result.txId or "?"))
     writeTransactionAudit({
@@ -511,7 +520,7 @@ local function payout(amount, reason)
   -- Self-play: transfer() blocks same-account transfers, use transferSelf()
   if isSelfPlay() and ccvault.transferSelf then
     dbg("Self-play fallback for payout")
-    local selfResult, selfErr = ccvault.transferSelf(amount, reason)
+    local selfResult, selfErr = vault("transferSelf", amount, reason)
     if selfResult then
       dbg("Payout (self) OK, TX: " .. (selfResult.txId or "?"))
       writeTransactionAudit({

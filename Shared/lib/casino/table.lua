@@ -196,26 +196,28 @@ function Table:writeDebug(scene)
   for _, b in ipairs(scene.buttons or {}) do
     buttons[#buttons + 1] = { id = b.id, value = b.value, x = b.x, y = b.y, w = b.w, h = b.h, label = b.label }
   end
+  -- Everything is read before the file is opened: hostBalance waits on the economy thread, and an open file is empty meanwhile
+  local text = textutils.serializeJSON({
+    scene = scene.name or "?",
+    buttons = buttons,
+    seat = self.ctx.seat or false,
+    hint = scene.hint and { ids = scene.hint.ids, text = scene.hint.text } or false,
+    balance = self.ctx.balance or false,
+    playing = scene.playing ~= nil or (scene.queue ~= nil and #scene.queue > 0),
+    w = self.c.w,
+    h = self.c.h,
+    toast = self.toastText or false,
+    host = wallet.hostName() or false,
+    hostBalance = wallet.hostBalance() or false,
+    locked = wallet.terminalLocked() == true,
+    state = scene.debugState and scene.debugState() or false,
+    board = self.boardName or false,
+    pretend = self.pretend and self.pretend.kind or false,
+    label = self.pretend and self.pretend:label(now()) or false,
+  })
   local handle = fs.open("casino_ui.dat", "w")
   if handle then
-    handle.write(textutils.serializeJSON({
-      scene = scene.name or "?",
-      buttons = buttons,
-      seat = self.ctx.seat or false,
-      hint = scene.hint and { ids = scene.hint.ids, text = scene.hint.text } or false,
-      balance = self.ctx.balance or false,
-      playing = scene.playing ~= nil or (scene.queue ~= nil and #scene.queue > 0),
-      w = self.c.w,
-      h = self.c.h,
-      toast = self.toastText or false,
-      host = wallet.hostName() or false,
-      hostBalance = wallet.hostBalance() or false,
-      locked = wallet.terminalLocked() == true,
-      state = scene.debugState and scene.debugState() or false,
-      board = self.boardName or false,
-      pretend = self.pretend and self.pretend.kind or false,
-      label = self.pretend and self.pretend:label(now()) or false,
-    }))
+    handle.write(text)
     handle.close()
   end
 end

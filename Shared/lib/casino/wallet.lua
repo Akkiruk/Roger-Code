@@ -3,6 +3,7 @@
 -- Stakes are never taken up front. A round moves money once, when its result is known (see books.lua, the only caller of send).
 -- Transfers name the seated player, so someone else tapping the monitor cannot get in the way.
 
+local economy = require("lib.casino.economy")
 local journal = require("lib.casino.journal")
 
 local M = {}
@@ -17,9 +18,10 @@ local function vault()
   return ccvault
 end
 
+-- Through economy.call, so a call that waits on the economy thread loses no event and cannot be cut short by a terminate
 local function guarded(fn, ...)
   if type(fn) ~= "function" then return nil, "ccvault function missing" end
-  local result = table.pack(pcall(fn, ...))
+  local result = table.pack(economy.call(fn, ...))
   if not result[1] then return nil, tostring(result[2]) end
   return table.unpack(result, 2, result.n)
 end

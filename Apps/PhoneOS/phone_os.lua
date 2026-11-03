@@ -21,6 +21,7 @@ end
 local ui       = require("phoneos.ui")
 local storage  = require("phoneos.storage")
 local currency = require("lib.currency")
+local economy = require("lib.casino.economy")
 local sound    = require("lib.sound")
 local alert    = require("lib.alert")
 local updater  = require("lib.updater")
@@ -293,7 +294,8 @@ local function ccvaultCall(method, ...)
     return nil, "ccvault unavailable"
   end
 
-  local results = { pcall(ccvault[method], ...) }
+  -- economy.call: a call that waits on the economy thread (2.2.36) loses no event and is not cut short by a terminate
+  local results = { economy.call(ccvault[method], ...) }
   if not results[1] then
     return nil, tostring(results[2])
   end
