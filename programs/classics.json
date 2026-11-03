@@ -7,12 +7,12 @@
     "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
     "source_root": "Games/Classics",
     "entrypoint": "startup.lua",
-    "version": "1.0.9"
+    "version": "1.0.10"
   },
   "build": {
-    "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-    "generated_at": "2026-11-03T07:14:58Z",
-    "package_hash": "4f769b71f60dd5a1e9ad0661ec822d8854bc493aa6ed9e8444627e4d15a5c9dd"
+    "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+    "generated_at": "2026-11-03T07:30:29Z",
+    "package_hash": "e87cb0641117d5fb4a2a4d125b61dff9601e750445a4a816a977af3538df70ea"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "f8dbc01edd6fb70e12268e4723d55d08f1ec11e006f0a6c6707f693b52c6f064"
+        "sha256": "f015d8037bc80f7bf8686c431ce2ff17fdc7cf51ea70870c793b108a374b29f8"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -60,12 +60,12 @@
       {
         "repo_path": "Shared/lib/arcade/match.lua",
         "install_path": "lib/arcade/match.lua",
-        "sha256": "88bd87e375928369531fd1c3791c36654545f1fa2d611a74fc95576389ca161b"
+        "sha256": "d932fa53b3ed61164abb8c6df0ff0a0f44df28096317e2cfe9d31611b7aeed40"
       },
       {
         "repo_path": "Shared/lib/arcade/net.lua",
         "install_path": "lib/arcade/net.lua",
-        "sha256": "1975a30cfaf6215cb7cccaa920f25853d5329fccc283873549ee0ceb12aad7e2"
+        "sha256": "0789742a27b6c9a5f3cfb55edbdb73377fb1592f5cad78644f18e0b872ed85cc"
       },
       {
         "repo_path": "Shared/lib/arcade/play.lua",
@@ -73,14 +73,14 @@
         "sha256": "eddbb81d6a6c02d5249dee74ae19a66621312c8b0c5bcf4151889855266a088c"
       },
       {
-        "repo_path": "Games/Classics/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
-      },
-      {
         "repo_path": "Shared/lib/arcade/records.lua",
         "install_path": "lib/arcade/records.lua",
         "sha256": "61ca9bfd75b01016e302afe95b0019134501c92dc3b4e56ee833b11758047f6d"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/replay.lua",
+        "install_path": "lib/arcade/replay.lua",
+        "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
       },
       {
         "repo_path": "Shared/lib/arcade/saves.lua",
@@ -108,6 +108,11 @@
         "sha256": "399669963e5282f901f9b0ce0a48d7c44992f6d70cd93be0d8ce6fb4c7941a48"
       },
       {
+        "repo_path": "Shared/lib/arcade/track.lua",
+        "install_path": "lib/arcade/track.lua",
+        "sha256": "60baa77370a84375661929525378de75f7af7894b1c04420eb53e3b9ab3f835e"
+      },
+      {
         "repo_path": "Shared/lib/arcade/ui.lua",
         "install_path": "lib/arcade/ui.lua",
         "sha256": "3c420274e74dcce98d7faa27e3a0d33efd9abda89d91d2f80a21d99282b187ad"
@@ -115,7 +120,7 @@
       {
         "repo_path": "Shared/lib/arcade/versus.lua",
         "install_path": "lib/arcade/versus.lua",
-        "sha256": "8668f379d690e16fbe124437b00a99400242f6058baf547a813054dc1a897d65"
+        "sha256": "b21ca80446631f9c8fe3cf740afb05628d2dc839dab55710fead4540d35e6f98"
       },
       {
         "repo_path": "Shared/lib/peripherals.lua",
@@ -133,19 +138,19 @@
         "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
       },
       {
-        "repo_path": "Shared/lib/arcade/replay.lua",
-        "install_path": "lib/arcade/replay.lua",
-        "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
+        "repo_path": "Games/Classics/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "Shared/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
       },
       {
         "repo_path": "Games/Classics/surface",
         "install_path": "surface",
         "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
-      },
-      {
-        "repo_path": "Games/Classics/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
         "repo_path": "Games/Classics/startup.lua",
@@ -268,9 +273,9 @@
         "sha256": "657e715a9235c73d9ad970d9ecfeaddc2f6a27aacf3e23848b1a16af38676152"
       },
       {
-        "repo_path": "Shared/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
+        "repo_path": "Games/Classics/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -304,6 +309,7 @@
       "lib.arcade.screens",
       "lib.arcade.seats",
       "lib.arcade.tournament",
+      "lib.arcade.track",
       "lib.arcade.ui",
       "lib.arcade.versus",
       "lib.peripherals",

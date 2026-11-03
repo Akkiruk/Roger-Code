@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-03T07:14:58Z",
+  "generated_at": "2026-11-03T07:30:29Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
+    "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -17,9 +17,9 @@
       "name": "Arcade",
       "category": "Arcade",
       "description": "One computer, every free game: pick a game on the wall and play a friend or the computer, with ratings and leaderboards.",
-      "version": "1.0.13",
-      "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-      "package_hash": "31e972930dd47f4f5d125b2855796ab7ef0db779a8e4c9ba686b66bdb18b324f",
+      "version": "1.0.14",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "37908d9321e1a6df79d410a3b88a6e2686d701e4c706cf13f230a2503935f9af",
       "spec_path": "programs/arcade.json"
     },
     "baccarat": {
@@ -53,9 +53,9 @@
       "name": "BLIGHTMARE",
       "category": "Arcade",
       "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
-      "version": "1.0.11",
-      "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-      "package_hash": "37ec65f92ae087f2b4509e31f1f8d191587addb3e9ca5c8ab025a566d2068267",
+      "version": "1.0.12",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "707ea9141519596e4354fc16aa69167a12484edc06b3c425739545d185b44e02",
       "spec_path": "programs/blightmare.json"
     },
     "block_reader_vhcctweaks_probe": {
@@ -89,18 +89,18 @@
       "name": "Classics",
       "category": "Arcade",
       "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
-      "version": "1.0.9",
-      "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-      "package_hash": "4f769b71f60dd5a1e9ad0661ec822d8854bc493aa6ed9e8444627e4d15a5c9dd",
+      "version": "1.0.10",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "e87cb0641117d5fb4a2a4d125b61dff9601e750445a4a816a977af3538df70ea",
       "spec_path": "programs/classics.json"
     },
     "classics2": {
       "name": "Classics 2",
       "category": "Arcade",
       "description": "Dig Dug, Flappy Bird, Minesweeper, Tapper, Mappy and more, played by touch for the high score.",
-      "version": "1.0.9",
-      "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-      "package_hash": "5b1638aaa9a0a74a76aa61280fa1f7261626552d69fceec31d970f07d422d9c4",
+      "version": "1.0.10",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "77c69ec1afc5db689aa05f02a58a40aebafd00cb95142a759e4386204bc6bb38",
       "spec_path": "programs/classics2.json"
     },
     "conformance_probe": {
@@ -152,9 +152,9 @@
       "name": "Long Games",
       "category": "Arcade",
       "description": "Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.",
-      "version": "1.0.7",
-      "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-      "package_hash": "3c3f2cafa4d186a8b833effdc88a9a5041657b3785c2c8cc00c6e0a387029ecb",
+      "version": "1.0.8",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "bd5a9b3f5af75e3d372eadf53911229ccf36051cc8d38e8a306f71dc4a2813f9",
       "spec_path": "programs/longgames.json"
     },
     "phone_os": {
@@ -229,6 +229,15 @@
       "package_hash": "e543e19a8967a8457153a2813db0dc42ef1c7c8bd717bce5b7ff746b281e943e",
       "spec_path": "programs/three-card-poker.json"
     },
+    "tracker": {
+      "name": "Play Tracker",
+      "category": "Games",
+      "description": "Who has been playing what: every Arcade cabinet and casino table on the network, time played, progress and results.",
+      "version": "1.0.0",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "cab35a39696f270023e327a79931cfa62e5c6049936e4df94687394f0141cf60",
+      "spec_path": "programs/tracker.json"
+    },
     "ultimate-holdem": {
       "name": "Ultimate Texas Hold'em",
       "category": "Games",
@@ -269,9 +278,9 @@
       "name": "Versus",
       "category": "Arcade",
       "description": "MOAG, Pong, Bomberman and Tron light cycles: two players, one wall each, in real time.",
-      "version": "1.0.7",
-      "commit": "0a0b7d7ba5a77ba970f49d7ae735a76e3c7738bf",
-      "package_hash": "65e4402da87d747de17230431438db31d06df6d57b316be173ef32babf8eed25",
+      "version": "1.0.8",
+      "commit": "354c358630606e1c44b32cb69bdcc342ec5f5247",
+      "package_hash": "118408832e76539254413db7077f89ee65bb0bd203ee3e3932a1c8021e454c11",
       "spec_path": "programs/versus.json"
     },
     "vhcctweaks_smoke_test": {
