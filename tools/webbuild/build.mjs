@@ -184,6 +184,7 @@ const page = html.replace("<!-- splash -->", splashTags.join("\n"));
 const output = {
   "index.html": page, [glueName]: glue, [synthName]: synth, [appName]: app, [wasmName]: wasm, [bundleName]: bundle,
   "manifest.webmanifest": manifest, ...pictures,
+  "players.html": readFileSync(join(here, "web", "players.html"), "utf8"),
 };
 
 // The service worker lists every file, and its version is all of them hashed, so any change at all makes a new cache.

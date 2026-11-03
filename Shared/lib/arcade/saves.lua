@@ -79,6 +79,26 @@ function M.write(game, player, state, rng)
   return false, err
 end
 
+--- Every player's save for a game on this computer, newest first: { save, ... } as read gives them.
+function M.list(game)
+  local prefix = "arcade_save_" .. safe(game) .. "_"
+  local out = {}
+  for _, name in ipairs(fs.list("")) do
+    if name:sub(1, #prefix) == prefix and name:sub(-4) == ".dat" then
+      local ok, value = pcall(function()
+        local h = fs.open(name, "r")
+        if not h then return nil end
+        local text = h.readAll()
+        h.close()
+        return textutils.unserialise(text or "")
+      end)
+      if ok and type(value) == "table" and sound(value, game, value.player) then out[#out + 1] = value end
+    end
+  end
+  table.sort(out, function(a, b) return (a.at or 0) > (b.at or 0) end)
+  return out
+end
+
 --- Every copy goes: a .bak left behind would bring a finished run back.
 function M.delete(game, player)
   local path = M.path(game, player)

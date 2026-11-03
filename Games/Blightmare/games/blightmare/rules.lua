@@ -1842,6 +1842,22 @@ end
 
 M.currentGoal = currentGoal
 
+--- How far a save has got, for the list of players: the story goals passed out of all of them, the goal now, and the
+-- time played. The goals are in story order, so the place of the current one is the share of the story done.
+function M.progress(s)
+  local goals = story().GOALS or {}
+  local goal = currentGoal(s)
+  local at = #goals + 1
+  for i, g in ipairs(goals) do
+    if g == goal then at = i end
+  end
+  local share = s.ended and 100 or floor((at - 1) * 100 / max(1, #goals))
+  return {
+    level = s.level or 1, percent = share, goal = goal and goal.text or (s.ended and "The end" or nil),
+    minutes = floor((s.frame or 0) * 0.12 / 60), hero = s.heroName, ended = s.ended and true or false,
+  }
+end
+
 --- Which ground the player is on: a menu, a fight or speech is on top of one, and goes back to it.
 local function groundOf(s)
   local mode = s.mode

@@ -96,6 +96,36 @@ local function introDone(a)
   S.dirty = true
 end
 
+--- Everyone's saved games on this cabinet, and how far each has got: a game with view.progress offers it from the ready
+-- screen. Only for looking at; BACK returns to the ready screen.
+function M.showPlayers()
+  local a = S.action
+  if not a or a.phase ~= "ready" then return end
+  local rows = {}
+  for _, save in ipairs(saves.list(app.plugin.id)) do
+    local ok, p = pcall(app.plugin.view.progress, save.state)
+    if ok and p then
+      p.player, p.at = save.player, save.at
+      rows[#rows + 1] = p
+    end
+  end
+  table.sort(rows, function(x, y)
+    if x.percent ~= y.percent then return x.percent > y.percent end
+    return (x.at or 0) > (y.at or 0)
+  end)
+  a.phase, a.players = "players", rows
+  S.lastTouch = nowMs()
+  S.dirty = true
+end
+
+function M.hidePlayers()
+  local a = S.action
+  if a and a.phase == "players" then
+    a.phase, a.players = "ready", nil
+    S.dirty = true
+  end
+end
+
 function M.skipIntro()
   local a = S.action
   if a and a.phase == "intro" then introDone(a) end
@@ -322,7 +352,7 @@ function M.tick(t)
     return
   end
   if plugin.saves then clearLapsed(a, t) end
-  if a.phase == "ready" and t - S.lastTouch > config.LOBBY_IDLE * 1000 then
+  if (a.phase == "ready" or a.phase == "players") and t - S.lastTouch > config.LOBBY_IDLE * 1000 then
     M.leave()
     return
   end
@@ -401,7 +431,62 @@ local function drawReady(a)
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
   ui.button("rules", W - 18, 1, 16, 7, "HOW TO PLAY", C.panel, { small = true })
   if not app.oneGame then ui.button("actBoards", 2, H - 9, 24, 7, "OTHER GAMES", C.panel, { small = true }) end
+  if app.plugin.saves and app.plugin.view.progress then
+    ui.button("actPlayers", W - 18, H - 9, 16, 7, "PLAYERS", C.panel, { small = true })
+  end
   app.drawToast()
+end
+
+--- "3 days ago", from a save's time.
+local function ago(at)
+  if not at then return "" end
+  local mins = floor((os.epoch("utc") - at) / 60000)
+  if mins < 2 then return "just now" end
+  if mins < 60 then return mins .. " min ago" end
+  local hours = floor(mins / 60)
+  if hours < 24 then return hours .. (hours == 1 and " hour ago" or " hours ago") end
+  local days = floor(hours / 24)
+  return days .. (days == 1 and " day ago" or " days ago")
+end
+
+local function played(minutes)
+  if minutes < 60 then return minutes .. " min" end
+  return floor(minutes / 60) .. "h " .. (minutes % 60) .. "m"
+end
+
+local PLAYER_ROW_H = 6
+
+local function drawPlayers(a)
+  local W, H = env.W, env.H
+  ui.text("PLAYERS", floor(W / 2), 2, C[app.plugin.color] or C.hi, "center")
+  ui.small("Everyone's saved game on this cabinet", floor(W / 2), 10, C.line, C.bg, "center", W - 4)
+  ui.button("actPlayersBack", 2, 1, 16, 7, "BACK", C.panel, { small = true })
+  local rows = a.players or {}
+  if #rows == 0 then
+    ui.small("Nobody has a saved game here yet.", floor(W / 2), 20, C.text, C.bg, "center", W - 4)
+    return
+  end
+  local fits = floor((H - 16) / PLAYER_ROW_H)
+  for i, p in ipairs(rows) do
+    if i > fits then
+      ui.small("and " .. (#rows - fits) .. " more", floor(W / 2), H - 3, C.line, C.bg, "center")
+      break
+    end
+    local y = 14 + (i - 1) * PLAYER_ROW_H
+    ui.fill(2, y, W - 4, PLAYER_ROW_H - 1, C.panel)
+    local name = p.player .. ((p.hero and p.hero ~= p.player) and (" (" .. p.hero .. ")") or "")
+    ui.small(name, 4, y + 1, C.text, C.panel, "left", 46)
+    ui.small("LV " .. p.level, 52, y + 1, C.hi, C.panel, "left")
+    ui.small(p.percent .. "%", 62, y + 1, p.ended and C.ok or C.hi, C.panel, "left")
+    ui.small(played(p.minutes or 0) .. " played", 70, y + 1, C.line, C.panel, "left")
+    ui.small(ago(p.at), W - 4, y + 1, C.line, C.panel, "right")
+    -- the share of the story as a bar, and where they are
+    local barW = W - 8
+    ui.fill(4, y + 3, barW, 1, C.bg)
+    ui.fill(4, y + 3, floor(barW * p.percent / 100), 1, p.ended and C.ok or C.hi)
+    local where = p.goal and (p.goal .. (p.place and (" - " .. p.place) or "")) or (p.place or "")
+    ui.small(where, 4, y + 4, C.line, C.panel, "left", W - 8)
+  end
 end
 
 --- What the end of a run says. A game that can be won sets s.won.
@@ -446,6 +531,9 @@ function M.draw()
     app.drawToast()
   elseif a.phase == "ready" then
     drawReady(a)
+  elseif a.phase == "players" then
+    drawPlayers(a)
+    app.drawToast()
   elseif a.phase == "over" then
     if a.reviewed then drawOver(a) else drawFinalBoard(a) end
   else

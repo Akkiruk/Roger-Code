@@ -679,6 +679,8 @@ end
 handlers.actContinue = function(_, who) actions.continue(who) end
 handlers.actNew = function(_, who) actions.newGame(who) end
 handlers.actSkip = function() actions.skipIntro() end
+handlers.actPlayers = function() actions.showPlayers() end
+handlers.actPlayersBack = function() actions.hidePlayers() end
 handlers.act = function(b, who)
   actions.press(b.data, who)
 end

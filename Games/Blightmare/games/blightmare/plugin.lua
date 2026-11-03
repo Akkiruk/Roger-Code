@@ -103,11 +103,21 @@ function view.actionAt(L, s, px, py)
   return base.splitAction(L, px, py)
 end
 
+local function placeOf(s)
+  local map = part("maps").DATA[s.map]
+  return s.mode == "world" and "the road" or (map and map.name or s.map)
+end
+
 --- For the saved game list.
 function view.saveSummary(s)
-  local map = part("maps").DATA[s.map]
-  local place = s.mode == "world" and "the road" or (map and map.name or s.map)
-  return "Level " .. s.level .. ", " .. place .. ", " .. s.gold .. " gold"
+  return "Level " .. s.level .. ", " .. placeOf(s) .. ", " .. s.gold .. " gold"
+end
+
+--- For the list of everyone's games: { level, percent, goal, minutes, hero, ended, place }.
+function view.progress(s)
+  local out = rules.progress(s)
+  out.place = placeOf(s)
+  return out
 end
 
 -- Which sounds each foe makes.

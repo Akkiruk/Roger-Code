@@ -50,6 +50,7 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
+  if (url.pathname.startsWith("/api/")) return; // live data, never from the cache
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, "./"));
   } else if (/\.[0-9a-f]{10}\.[a-z]+$/.test(url.pathname)) {

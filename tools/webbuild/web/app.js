@@ -493,6 +493,32 @@ const DAMAGED = "The game files are damaged. Tap Restart to fetch them again. Yo
     }
   }
 
+  // How far this browser's game has got, for the players page. Only from the real site, at most once a minute, and a
+  // failure is no matter: the next save tries again.
+  const DEVICE_KEY = "blightmare.web.device", REPORT_MS = 60000;
+  let lastReport = 0;
+  function reportProgress(text) {
+    if (!/(^|\.)elawondra\.com$/.test(location.hostname)) return;
+    const t = Date.now();
+    if (t - lastReport < REPORT_MS) return;
+    lastReport = t;
+    let device = null;
+    try {
+      device = localStorage.getItem(DEVICE_KEY);
+      if (!device) {
+        device = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, "0")).join("");
+        localStorage.setItem(DEVICE_KEY, device);
+      }
+    } catch { return; }
+    let p;
+    try { p = JSON.parse(text); } catch { return; }
+    const app = navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+    fetch("/api/blightmare/progress", {
+      method: "POST", headers: { "content-type": "application/json" }, keepalive: true,
+      body: JSON.stringify({ ...p, device, app }),
+    }).catch(() => {});
+  }
+
   function saveFile(path, text) {
     try {
       localStorage.setItem(FS_PREFIX + path, text);
@@ -582,6 +608,12 @@ const DAMAGED = "The game files are damaged. Tap Restart to fetch them again. Yo
         case 74: { // J
           const n = num(0);
           showPanel(JSON.parse(latin1Of(h.subarray(at, at + n))));
+          at += n;
+          break;
+        }
+        case 71: { // G
+          const n = num(0);
+          reportProgress(latin1Of(h.subarray(at, at + n)));
           at += n;
           break;
         }
@@ -696,7 +728,8 @@ const DAMAGED = "The game files are damaged. Tap Restart to fetch them again. Yo
     help: (d) => `<h2>How to play</h2>` + d.lines.filter(Boolean).map((l) => `<p>${esc(l)}</p>`).join("") + button("button:rulesDone", d.done, "go"),
     ready: (d) => (d.line ? `<p>${esc(d.line)}</p>` : "") + `<div class="row2">`
       + (d.line ? `<button type="button" class="pb" data-local="export"><span>COPY SAVE CODE</span></button>` : "")
-      + `<button type="button" class="pb" data-local="import"><span>PASTE SAVE CODE</span></button></div>`,
+      + `<button type="button" class="pb" data-local="import"><span>PASTE SAVE CODE</span></button></div>`
+      + `<p><a class="players-link" href="players.html">Who else is playing?</a></p>`,
   };
 
   let shownPanel = { kind: "none" }, panelPlace = "";

@@ -1530,16 +1530,32 @@ local function deliver(ev)
   end
 end
 
+--- After a save is written, how far this game has got, for the list of players on the website.
+local function emitProgress()
+  local app = shell_()
+  local a = app and app.S.action
+  local view = app and app.plugin and app.plugin.view
+  if not (a and a.phase == "play" and a.state and view and view.progress) then return end
+  local ok, p = native.pcall(view.progress, a.state)
+  if not ok or type(p) ~= "table" then return end
+  p.player = a.player
+  local json = textutils.serialiseJSON(p)
+  emit("G" .. #json .. "\n" .. json)
+end
+
 local function flushFiles()
+  local saved = false
   for path in pairs(dirty) do
     local text = written[path]
     if text == DELETED or text == nil then
       emit("D" .. #path .. "\n" .. path)
     else
       emit("W" .. #path .. "," .. #text .. "\n" .. path .. text)
+      if path:find("^arcade_save_") then saved = true end
     end
   end
   dirty = {}
+  if saved then emitProgress() end
 end
 
 --- One go round. input is the page's events, one to a line: "touch x y", "char i", "terminate".
@@ -1556,6 +1572,7 @@ end
 --   Q                      the program asked to shut down
 --   K x,y,w,h              the keyboard cursor, in cells from 0; all zero hides it
 --   J n  text              what the phone panel shows, as JSON
+--   G n  text              how far the saved game has got, as JSON, after each save
 --   N ms                   when the next timer is due
 function __web.step(time, input)
   nowMs = tonumber(time) or nowMs

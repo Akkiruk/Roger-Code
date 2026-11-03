@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161c">
+<title>BLIGHTMARE - who's playing</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #14161c; color: #f2f4f8; font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { margin: 0; font-size: 28px; color: #e5484d; letter-spacing: .04em; }
+  .sub { color: #9aa2b4; margin: 4px 0 18px; }
+  .sub a { color: #c9b8ff; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .stat { background: #232733; border-radius: 8px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 24px; color: #ffd257; }
+  .stat span { color: #9aa2b4; font-size: 14px; }
+  .row { background: #232733; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+  .top { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .name { font-weight: 700; font-size: 18px; }
+  .lv { color: #ffd257; font-weight: 600; }
+  .when { margin-left: auto; color: #9aa2b4; font-size: 14px; }
+  .bar { height: 8px; background: #14161c; border-radius: 4px; margin: 8px 0 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: #ffd257; }
+  .bar i.done { background: #35d07f; }
+  .where { color: #b5bccb; font-size: 15px; }
+  .tag { color: #9aa2b4; font-size: 13px; border: 1px solid #3a3f4d; border-radius: 4px; padding: 0 5px; }
+  .empty, .err { color: #9aa2b4; padding: 20px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>BLIGHTMARE</h1>
+  <p class="sub">Everyone playing in a browser, newest first. Games on the Minecraft Arcade cabinets are listed there, under PLAYERS on the start screen. <a href="./">Play</a></p>
+  <div class="stats" id="stats"></div>
+  <div id="list"><p class="empty">Loading...</p></div>
+</main>
+<script>
+"use strict";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function ago(ms) {
+  const mins = Math.floor((Date.now() - ms) / 60000);
+  if (mins < 2) return "playing now";
+  if (mins < 60) return mins + " min ago";
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + (hours === 1 ? " hour ago" : " hours ago");
+  const days = Math.floor(hours / 24);
+  return days + (days === 1 ? " day ago" : " days ago");
+}
+const played = (m) => (m < 60 ? m + " min" : Math.floor(m / 60) + "h " + (m % 60) + "m");
+async function load() {
+  try {
+    const r = await fetch("/api/blightmare/players", { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const { players } = await r.json();
+    const week = Date.now() - 7 * 86400000;
+    const total = players.reduce((n, p) => n + (p.minutes || 0), 0);
+    document.getElementById("stats").innerHTML =
+      `<div class="stat"><b>${players.length}</b><span>games started</span></div>`
+      + `<div class="stat"><b>${players.filter((p) => p.at > week).length}</b><span>played this week</span></div>`
+      + `<div class="stat"><b>${played(total)}</b><span>played in all</span></div>`;
+    document.getElementById("list").innerHTML = players.length ? players.map((p) => `<div class="row">
+      <div class="top"><span class="name">${esc(p.hero || "Someone")}</span><span class="lv">LV ${esc(p.level)}</span>
+        <span class="tag">${p.app ? "home screen app" : "browser"}</span><span class="when">${esc(ago(p.at))}</span></div>
+      <div class="bar"><i class="${p.ended ? "done" : ""}" style="width:${Math.max(0, Math.min(100, p.percent | 0))}%"></i></div>
+      <div class="where">${esc(p.percent | 0)}% of the story. ${esc(p.goal || "")}${p.place ? " - " + esc(p.place) : ""}. ${esc(played(p.minutes || 0))} played.</div>
+    </div>`).join("") : `<p class="empty">Nobody has a saved game in a browser yet.</p>`;
+  } catch (e) {
+    document.getElementById("list").innerHTML = `<p class="err">Couldn't load the list just now.</p>`;
+  }
+}
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
