@@ -196,7 +196,12 @@ function Table:writeDebug(scene)
   for _, b in ipairs(scene.buttons or {}) do
     buttons[#buttons + 1] = { id = b.id, value = b.value, x = b.x, y = b.y, w = b.w, h = b.h, label = b.label }
   end
-  -- Everything is read before the file is opened: hostBalance waits on the economy thread, and an open file is empty meanwhile
+  -- The host's balance waits on the economy thread, so this file reads it only every few seconds, never every frame
+  local time = now()
+  if not self.debugHostAt or time - self.debugHostAt > 5000 then
+    self.debugHostAt = time
+    self.debugHost = wallet.hostBalance() or false
+  end
   local text = textutils.serializeJSON({
     scene = scene.name or "?",
     buttons = buttons,
@@ -208,7 +213,7 @@ function Table:writeDebug(scene)
     h = self.c.h,
     toast = self.toastText or false,
     host = wallet.hostName() or false,
-    hostBalance = wallet.hostBalance() or false,
+    hostBalance = self.debugHost,
     locked = wallet.terminalLocked() == true,
     state = scene.debugState and scene.debugState() or false,
     board = self.boardName or false,
