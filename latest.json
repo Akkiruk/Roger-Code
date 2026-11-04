@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-04T04:46:03Z",
+  "generated_at": "2026-11-04T05:14:25Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "abfca21176de5d4e2f699b2b6c98ce1ab36f9250",
+    "commit": "d1edf2e39c44cb9e993ca524008e934d679668f0",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -278,9 +278,9 @@
       "name": "Versus",
       "category": "Arcade",
       "description": "MOAG, Pong, Bomberman and Tron light cycles: two players, one wall each, in real time.",
-      "version": "1.0.15",
-      "commit": "abfca21176de5d4e2f699b2b6c98ce1ab36f9250",
-      "package_hash": "70ed8630da39c270ad8a042d6011e8cca7f21b83e004bf4c797f168942ba44fe",
+      "version": "1.0.16",
+      "commit": "d1edf2e39c44cb9e993ca524008e934d679668f0",
+      "package_hash": "115ee67e4f2890e0002b571a4d1a82329bb1b6c7e56ca98e5cc059a9f2dd9a30",
       "spec_path": "programs/versus.json"
     },
     "vhcctweaks_smoke_test": {
