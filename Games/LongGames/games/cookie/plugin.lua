@@ -182,9 +182,6 @@ local function onCookie(L, px, py)
   return dx * dx + dy * dy <= 1
 end
 
--- The game's last host, for the one sound that can't wait for the next tick: the cookie's own crunch.
-local host
-
 --- What a tap at (px, py) does.
 function view.actionAt(L, s, px, py)
   if not s then return nil end
@@ -204,7 +201,7 @@ function view.actionAt(L, s, px, py)
     end
   end
   if px < L.split and onCookie(L, px, py) then
-    if host then pcall(host.audio.play, "pop", 0.6, 0.9 + (px % 5) * 0.05) end
+    -- silent: a sound on every one of hundreds of taps wears thin fast. The squash and the +N are the feedback.
     return { kind = "tap", dx = px - L.cookie.cx, dy = py - L.cookie.cy }
   end
   return nil
@@ -549,7 +546,6 @@ local SFX = {
 
 --- After every tick: the real time goes to the rules, and what happened is heard.
 function view.onEvents(app, s, events)
-  host = app
   local all = {}
   for _, ev in ipairs(events) do all[#all + 1] = ev end
   for _, ev in ipairs(rules.wake(s, os.epoch("utc"))) do all[#all + 1] = ev end
