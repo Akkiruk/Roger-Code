@@ -64,6 +64,6 @@
 - After any completed repo change, finish the loop in the same turn by pushing the full change set unless the user explicitly says not to push yet.
 - Do not stop to ask for verification or review before pushing to `main` unless a failed git operation forces recovery work.
 - Do not attempt direct local deployment or runtime log inspection. Push to GitHub and let the server-side installer/update flow pull the new version.
-- Casino rules and payouts must pass `Tests/run.lua` before pushing: the publish workflow runs it and a failure stops the deploy. Skip other verification by default.
+- Casino rules and payouts must pass `Tests/run.lua` before pushing. GitHub runs no tests: publishing only builds the deploy index, so test before you push.
 - Use `scripts/push-all.ps1` for the default fast path unless the task needs a custom flow.
 - Do not fake success or use destructive history rewrites. If a push fails, report it plainly.

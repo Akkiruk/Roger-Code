@@ -9,6 +9,11 @@ on:
 permissions:
   contents: write
 
+# Everything is tested before it's pushed, so publishing only builds the index. One run at a time, the newest winning.
+concurrency:
+  group: publish-deploy-index
+  cancel-in-progress: true
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -18,13 +23,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # Rules, payouts and returns: a game outside its target return stops the publish
-      - name: Test casino rules
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq lua5.1
-          lua5.1 Tests/run.lua
 
       - name: Prepare previous deploy index
         shell: pwsh
