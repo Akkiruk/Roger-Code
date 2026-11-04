@@ -135,7 +135,7 @@ function M.bar(c, ctx, info)
   if ctx.seat then
     -- A long reveal sets heldBalance, so the wall does not give away a result the money already reflects
     local shown = ctx.heldBalance or ctx.balance
-    local balance = shown and group(shown) or "?"
+    local balance = ctx.balanceText or (shown and group(shown) or "?")
     local x = c.w - c:bigWidth(balance, 1) - 2
     c:big(x, 2, balance, C.gold, 1)
     -- A long name beside a long title gives way, so neither runs into the money

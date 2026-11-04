@@ -135,6 +135,7 @@ local function bar(c, screen)
     title = fits and title or "",
     seat = screen.name and M.short(screen.name, 16) or nil,
     balance = money,
+    balanceText = type(screen.badge) == "string" and screen.badge or nil,
   })
   if not fits then c:text(4, 4, title, C.gold, C.panel) end
 end

@@ -188,7 +188,7 @@ function Front:draw()
     shown.note, shown.warn = self.overlay, true
   elseif self.lockNote and not screen.name and not shown.note then
     shown.note = self.lockNote
-  elseif screen.kind == "game" and screen.name and not shown.note and time - (self.touchedAt or time) > NUDGE_MS then
+  elseif screen.kind == "game" and screen.name and not shown.note and not self.cabinet.free and time - (self.touchedAt or time) > NUDGE_MS then
     shown.note, shown.warn = "Tap the screen now and then: the bank needs a recent touch", true
   end
   local anim = self.playing and { ev = self.playing.ev, t = math.min(1, self.playing.t) } or nil
@@ -223,9 +223,11 @@ function Front:press(x, y, who)
     self.queue, self.playing = {}, nil
     self.dirty = true
   end
-  local approved = wallet.isApproved() == true
+  -- A free table never asks for approval: there is nothing for a wallet to do
+  local free = self.cabinet.free == true
+  local approved = not free and wallet.isApproved() == true
   local theirs = screen and (screen.name == who or screen.only == who or (hit and hit.id == "sit"))
-  if theirs then self:ask(who) end
+  if theirs and not free then self:ask(who) end
   local holder = screen and (screen.only or screen.name)
   if hit and holder and holder ~= who then
     self:toast(seatui.short(holder) .. "'s seat")
@@ -491,6 +493,9 @@ function Seat:handle(message)
       self.found[from] = { title = message.title, game = message.game, seated = message.seated, free = message.free, at = now() }
     end
   elseif from ~= self.dealer then
+    return
+  elseif self.cabinet.free and (kind == "order" or kind == "trace" or kind == "ask") then
+    -- A free seat moves no tokens and asks nobody to approve anything, whoever says so
     return
   elseif kind == "welcome" then
     self.number = message.number

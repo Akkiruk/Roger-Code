@@ -26,6 +26,11 @@
 --
 -- On Duel the walls are on this computer, so there is no seat book: a move is books.move, as on a Poker Table.
 --
+-- A free cabinet (cabinet.free, Game Night) has no money at all: nobody buys in or approves, nothing goes in the book, no order is
+-- ever sent, and the stats, the session notes and the hub hear nothing. A seat is a name and a count of wins. Every money step
+-- below checks self.free first, and lib/casino/group/free.lua swaps the wallet and the books for stand-ins that refuse to move a
+-- token, so a call missed here fails instead of reaching ccvault.
+--
 -- A reboot resumes the hand from the journal, seats show WAITING FOR THE DEALER until then, and open orders simply go again. The
 -- journal keeps a hand until its result has been up, so a reboot during the reveal still shows it, and the money does not move again.
 -- Everything the dealer hears comes through the link's checks. It runs in one loop with no scenes inside scenes, because any seat
@@ -352,6 +357,10 @@ end
 --- Send again what has not been answered, and order what the book says can move now. self.moving says whether any of that is
 -- still going on, which is what the final reveal waits for.
 function Dealer:settleTick(time)
+  if self.free then
+    self.moving = false
+    return
+  end
   if time - (self.settledAt or 0) < SETTLE_EVERY_MS then return end
   self.settledAt = time
   local moves = journal.moves()
@@ -414,6 +423,7 @@ function Dealer:touched(number, who, approved)
   local time = now()
   self.lastTouch[who] = { number = number, at = time, approved = approved }
   if self.viewers then self.viewers[number] = { name = who, at = time } end
+  if self.free then return end
   local st = self.stations[number]
   if st and not st.remote and approved then books.resolve(who) end
   local debt, credit = self:sides(who)
@@ -434,6 +444,13 @@ function Dealer:closeHand(round)
     names[entry.name] = (names[entry.name] or 0) + (nets[entry.seat] or 0)
   end
   round.nets = names
+  if self.free then
+    -- Nothing to book: a free game's nets are all nought, and nothing ever goes in the owed book
+    round.phase = "booked"
+    journal.saveRound(round)
+    self:finishBooks(round)
+    return
+  end
   round.phase = "settling"
   journal.saveRound(round)
   self:book(round)
@@ -474,9 +491,17 @@ function Dealer:finishBooks(round)
         if not ok then log("finish failed: " .. tostring(err)) end
       end
     end
+    if self.free then self:countWins(round, plugin) end
     -- The seats and the note that they are done land in one write of keep
     self.keep.closed = round.id
     self:save()
+  end
+
+  if self.free then
+    for _, name in ipairs(dropped) do self:leaving(name) end
+    round.phase = "closed"
+    journal.saveRound(round)
+    return
   end
 
   for name in pairs(round.nets) do self:want(name) end
@@ -511,6 +536,20 @@ function Dealer:finishBooks(round)
   journal.saveRound(round)
 end
 
+--- A free table keeps only who played and who won, in its own keep. It lands in the same write that closes the round.
+function Dealer:countWins(round, plugin)
+  self.keep.wins = self.keep.wins or {}
+  self.keep.played = self.keep.played or {}
+  for _, entry in ipairs(round.entries) do
+    local name = entry.name
+    self.keep.played[name] = (self.keep.played[name] or 0) + 1
+    local ok, result = false, nil
+    if plugin then ok, result = pcall(plugin.rules.result, round.state, entry.seat) end
+    if ok and type(result) == "table" and result.kind == "win" then self.keep.wins[name] = (self.keep.wins[name] or 0) + 1 end
+  end
+  log("game " .. round.id .. " " .. round.game .. " over")
+end
+
 --- What this player really had at stake, for the stats and the hub.
 function Dealer:wagered(round, entry)
   local plugin = self.cabinet.find(round.game)
@@ -524,6 +563,7 @@ end
 
 --- The end of a visit.
 function Dealer:leaving(name)
+  if self.free then return end
   session.noteOwed(name, self.cabinet.title)
   local entry = session.close(name)
   if not entry then return end
@@ -532,6 +572,7 @@ end
 
 --- A reboot can lose a visit its ending. If nobody is sitting in it, it is closed here.
 function Dealer:closeStale(time)
+  if self.free then return end
   for name, at in pairs(session.open()) do
     if time - at > SESSION_STALE_MS and not self:seatOf(name) then self:leaving(name) end
   end
@@ -578,6 +619,7 @@ function Dealer:covers(name)
 end
 
 function Dealer:canPlay(seat)
+  if self.free then return true end
   if self.plugin.stakes then return self.keep.stake ~= nil and seat.stack >= self.keep.stake * (self.plugin.stakeCover or 1) end
   return seat.stack >= self.plugin.ante
 end
@@ -588,6 +630,7 @@ function Dealer:seatRefused(number, who)
   if self:seatOf(who) then return "You already have a seat" end
   if self:seat(number) then return "This seat is taken" end
   if #self:seatedNames() >= self.plugin.maxSeats then return "This table is full" end
+  if self.free then return nil end
   local debt = self:sides(who)
   if debt > 0 then return short(who) .. " owes " .. ui.group(debt) .. " from a past hand" end
   return nil
@@ -607,6 +650,18 @@ function Dealer:sitDown(number, who, approved)
   local st = self.stations[number]
   st.sub = nil
   local refused = self:seatRefused(number, who)
+  if self.free then
+    -- Free play: a seat is a name. No wallet, no approval, no buy-in
+    if refused then
+      self:toast(number, refused)
+    else
+      self:seats()[number] = { name = who, stack = 0, away = 0 }
+      self:save()
+      log("sit " .. who .. " seat " .. number)
+    end
+    self:mark()
+    return
+  end
   if not wallet.available() then
     self:toast(number, "The economy is offline")
   elseif refused then
@@ -863,7 +918,7 @@ function Dealer:entries()
   for number = 1, M.MAX_SEATS do
     local seat = self:seat(number)
     if seat then
-      local cover = self:covers(seat.name)
+      local cover = not self.free and self:covers(seat.name)
       if cover then
         seat.stack = plugin.stakes and math.min(plugin.maxStack, math.max(0, cover)) or math.min(seat.stack, math.max(0, cover))
       end
@@ -993,6 +1048,17 @@ function Dealer:queueEvents(events)
   self.showUntil = math.max(self.showUntil or 0, now() + math.floor(seconds * 1000))
 end
 
+--- How long this seat has from now. A game can give each wait its own clock with rules.turnMs(state, seat), such as a short one
+-- for answering a trade and a long one for a whole turn. Without it, the game's turnMs.
+function Dealer:turnMs(seat)
+  local rules = self.plugin.rules
+  if rules.turnMs then
+    local ok, ms = pcall(rules.turnMs, self.round.state, seat)
+    if ok and type(ms) == "number" and ms > 0 then return math.floor(ms) end
+  end
+  return self.plugin.turnMs
+end
+
 --- The clock follows whoever the game is waiting on.
 function Dealer:syncTurns()
   local waiting = {}
@@ -1004,7 +1070,12 @@ function Dealer:syncTurns()
   local start = math.max(now(), self.showUntil or 0)
   for _, seat in ipairs(list) do
     waiting[seat] = true
-    self.deadlines[seat] = self.deadlines[seat] or (start + self.plugin.turnMs)
+    if not self.deadlines[seat] then
+      local ms = self:turnMs(seat)
+      self.deadlines[seat] = start + ms
+      self.clockTotal = self.clockTotal or {}
+      self.clockTotal[seat] = ms
+    end
   end
   for seat in pairs(self.deadlines) do
     if not waiting[seat] then self.deadlines[seat] = nil end
@@ -1065,7 +1136,7 @@ end
 
 --- Whether this seat can cover what a button costs.
 function Dealer:canCover(seat, cost)
-  if not cost or cost <= 0 then return true end
+  if self.free or not cost or cost <= 0 then return true end
   local round = self.round
   local name
   for _, entry in ipairs(round.entries) do
@@ -1200,12 +1271,13 @@ function Dealer:emptyScreen(screen)
   local full = #self:seatedNames() >= plugin.maxSeats
   screen.tiles = { { id = "sit", label = full and "FULL" or "SIT DOWN", color = "win", textColor = "ink", disabled = full } }
   screen.buttons = { { id = "rules", label = "RULES", color = "blue" } }
-  if not wallet.available() then screen.note, screen.warn = "Economy offline", true end
+  if not self.free and not wallet.available() then screen.note, screen.warn = "Economy offline", true end
   return screen
 end
 
 --- The line on a seat about what the book holds for this player. Either side alone is worth a word.
 function Dealer:owedNote(screen, name, book, debtOnly)
+  if self.free then return end
   local debt, credit = self:sides(name, book)
   if debt > 0 then
     screen.note, screen.warn = "You owe " .. ui.group(debt) .. ". Tap to settle", true
@@ -1214,8 +1286,28 @@ function Dealer:owedNote(screen, name, book, debtOnly)
   end
 end
 
+--- A seated player between games at a free table: no money on it anywhere, and START for whoever does not want to wait.
+function Dealer:freeLobbyScreen(seat, screen)
+  local plugin = self.plugin
+  screen.badge = "FREE"
+  local seated = #self:seatedNames()
+  local wins = (self.keep.wins or {})[seat.name] or 0
+  screen.lines = { { plugin.title, "gold", 2 }, { plugin.tagline or "", "text" },
+    { "Free to play. " .. (wins == 1 and "1 win" or (ui.group(wins) .. " wins")) .. " here so far.", "mute" } }
+  if self.dealAt then
+    screen.countdownText = "The game starts in %ds. More can sit until then"
+    screen.countdown = math.max(0, self.dealAt - now())
+  elseif seated < plugin.minSeats then
+    screen.note = "Waiting for another player"
+  end
+  screen.buttons = { { id = "leave", label = "LEAVE", color = "red" }, { id = "rules", label = "RULES", color = "blue" },
+    { id = "deal", label = "START", color = "win", textColor = "ink", disabled = seated < plugin.minSeats } }
+  return screen
+end
+
 function Dealer:lobbyScreen(number, seat, screen, book)
   local plugin = self.plugin
+  if self.free then return self:freeLobbyScreen(seat, screen) end
   screen.owed = self:owedTo(seat.name, book)
   self:owedNote(screen, seat.name, book)
   if plugin.kind == "players" then
@@ -1299,7 +1391,11 @@ function Dealer:handScreen(number, seat, screen, book)
   screen.view = self:viewFor(private and number or nil)
   screen.hash = round.commit:sub(1, HASH_SHOWN)
   -- A house game has no stack, so the bar says what is riding on this round, as it does while they bet
-  if seat then screen.money = self.plugin.kind == "house" and (round.spent[number] or 0) or seat.stack end
+  if seat and self.free then
+    screen.badge = "FREE"
+  elseif seat then
+    screen.money = self.plugin.kind == "house" and (round.spent[number] or 0) or seat.stack
+  end
   local rules = self.plugin.rules
   if private and self.waiting[number] then
     screen.tap = true
@@ -1316,7 +1412,7 @@ function Dealer:handScreen(number, seat, screen, book)
     screen.buttons = buttons
     local deadline = self.deadlines[number]
     if deadline then
-      screen.left, screen.total = math.max(0, deadline - now()), self.plugin.turnMs
+      screen.left, screen.total = math.max(0, deadline - now()), (self.clockTotal and self.clockTotal[number]) or self.plugin.turnMs
     end
   elseif playing then
     self:owedNote(screen, seat.name, book, true)
@@ -1338,7 +1434,11 @@ function Dealer:resultScreen(number, seat, screen, book)
     -- While the last cards turn the player's money stays as it stood, because the new figure is the result
     local last = self.stations[number].last
     local revealing = self.mode == "reveal" and last and last.kind == "game"
-    screen.money = revealing and last.money or (plugin.kind == "house" and (round.spent[number] or 0) or seat.stack)
+    if self.free then
+      screen.badge = "FREE"
+    else
+      screen.money = revealing and last.money or (plugin.kind == "house" and (round.spent[number] or 0) or seat.stack)
+    end
     if self.mode == "result" then
       if playing then
         local good, result = pcall(plugin.rules.result, round.state, private and number or nil)
@@ -1738,6 +1838,8 @@ function Dealer:attachCanvas()
 end
 
 function Dealer:attachBoard()
+  -- The scoreboard is the casino's leaders and jackpot, which a free table has no part in
+  if self.free then return end
   self.board = board.attach(self.monitorName, self.plugin and self.plugin.felt or "green")
   self.boardName = self.board and self.board.name or nil
 end
@@ -1760,9 +1862,12 @@ function Dealer:stripSeats(book)
       local line = "Empty"
       local color = "mute"
       if seat then
-        local owed = self:owedTo(seat.name, book)
+        local owed = self.free and 0 or self:owedTo(seat.name, book)
+        local wins = self.free and (self.keep.wins or {})[seat.name] or 0
         if st and st:quiet(now()) then
           line, color = "No signal", "orange"
+        elseif self.free then
+          line, color = wins == 1 and "1 win" or (ui.group(wins) .. " wins"), wins > 0 and "gold" or "text"
         elseif owed < 0 then
           line, color = "Owes " .. ui.group(-owed), "red"
         elseif owed > 0 then
@@ -1794,12 +1899,35 @@ function Dealer:ownerLine(book)
   return table.concat(parts, "   ") .. "   (touch your seat)"
 end
 
+--- A free table's own record: who has won the most games here.
+function Dealer:drawWins(c, cx, y)
+  local list = {}
+  for name, played in pairs(self.keep.played or {}) do
+    list[#list + 1] = { name = name, wins = (self.keep.wins or {})[name] or 0, played = played }
+  end
+  table.sort(list, function(a, b)
+    if a.wins ~= b.wins then return a.wins > b.wins end
+    if a.played ~= b.played then return a.played > b.played end
+    return a.name < b.name
+  end)
+  c:textCenter(cx, y, "WINS AT THIS TABLE", C.gold)
+  if #list == 0 then
+    c:textCenter(cx, y + 2, "No games finished yet", C.mute)
+    return
+  end
+  for i = 1, math.min(#list, 8) do
+    local entry = list[i]
+    local line = ("%d. %-16s %3d won of %d"):format(i, short(entry.name), entry.wins, entry.played)
+    c:textCenter(cx, y + 1 + i, line, i == 1 and C.gold or C.text)
+  end
+end
+
 function Dealer:drawLobby(book)
   local c = self.c
   c:clear(C.felt)
   c:frame(1, 1, c.w, c.h, C.feltDark)
   ui.bar(c, { title = self.cabinet.title })
-  local hands = "Hand " .. ui.group(self.keep.hands or 0)
+  local hands = (self.free and "Game " or "Hand ") .. ui.group(self.keep.hands or 0)
   c:text(c.w - #hands - 2, 3, hands, C.text)
   self.buttons = ui.newButtons()
   local cx = math.floor(c.w / 2) + 1
@@ -1807,17 +1935,21 @@ function Dealer:drawLobby(book)
   local tiles = {}
   for _, plugin in ipairs(self.cabinet.list) do
     local here = self.plugin and plugin.id == self.plugin.id
+    local sub = plugin.kind == "house" and "Against the house" or "Player against player"
+    if self.free then sub = plugin.tagline or "Free to play" end
     tiles[#tiles + 1] = { id = "pick", value = plugin.id, label = plugin.title, color = here and "gold" or "panel2",
-      textColor = here and "ink" or "text", sub = plugin.kind == "house" and "Against the house" or "Player against player" }
+      textColor = here and "ink" or "text", sub = sub }
   end
-  seatui.tiles(c, self.buttons, tiles, ui.TOP + 3, 54)
+  local tilesBottom = self.free and 32 or 54
+  seatui.tiles(c, self.buttons, tiles, ui.TOP + 3, tilesBottom)
   if #tiles == 0 then c:textCenter(cx, 30, "No games are installed yet", C.orange) end
+  if self.free then self:drawWins(c, cx, tilesBottom + 3) end
   local y = 57
   if self.vote then
     local plugin = self.cabinet.find(self.vote.game)
     c:textCenter(cx, y, "Change to " .. tostring(plugin and plugin.title) .. "? Everyone seated must agree on their screens.", C.gold)
   elseif self.dealAt then
-    local words = self.plugin.kind == "house" and "Betting closes in " or "Next hand in "
+    local words = self.plugin.kind == "house" and "Betting closes in " or (self.free and "The game starts in " or "Next hand in ")
     c:textCenter(cx, y, words .. math.max(0, math.ceil((self.dealAt - now()) / 1000)) .. "s", C.text)
   elseif #self:seatedNames() == 0 then
     c:textCenter(cx, y, "Tap a game, then sit down at any seat", C.text)
@@ -1825,7 +1957,9 @@ function Dealer:drawLobby(book)
     c:textCenter(cx, y, "Waiting for players", C.text)
   end
   local line = self:ownerLine(book)
-  if not wallet.available() then
+  if self.free and self.host and self.modem then
+    c:textCenter(cx, y + 2, "Free to play: no tokens, ever. Wins are kept on this table.", C.mute)
+  elseif not self.free and not wallet.available() then
     c:textCenter(cx, y + 2, "Economy offline", C.orange)
   elseif not self.host then
     c:textCenter(cx, y + 2, "Owner: right-click this computer and claim it in chat", C.orange)
@@ -1848,14 +1982,20 @@ function Dealer:drawTable(book)
   local plugin = self.cabinet.find(round.game)
   local anim = self.playing and { ev = self.playing.ev, t = math.min(1, self.playing.t) } or nil
   if self.publicView then
-    local ok, err = pcall(plugin.tableView.draw, c, self.publicView, anim, { waiting = self.waiting or {}, seats = self:stripSeats(book) })
+    -- What is left on each clock, for a game that shows it on the wall (plugin.wallClock)
+    local clocks, time = {}, now()
+    for seat, deadline in pairs(self.mode == "hand" and self.deadlines or {}) do
+      clocks[seat] = { left = math.max(0, deadline - time), total = (self.clockTotal and self.clockTotal[seat]) or plugin.turnMs }
+    end
+    local ok, err = pcall(plugin.tableView.draw, c, self.publicView, anim, { waiting = self.waiting or {}, seats = self:stripSeats(book),
+      clocks = clocks })
     if not ok then
       c:textCenter(math.floor(c.w / 2), 30, "This table could not be drawn", C.orange)
       log("table view failed: " .. tostring(err))
     end
   end
   ui.bar(c, { title = plugin.title })
-  local hands = "Hand " .. ui.group(self.keep.hands or 0)
+  local hands = (self.free and "Game " or "Hand ") .. ui.group(self.keep.hands or 0)
   c:text(c.w - #hands - 2, 3, hands, C.text)
   seatui.strip(c, self:stripSeats(book))
   if self.mode == "result" and self.tableResult then
@@ -1870,8 +2010,10 @@ end
 function Dealer:drawWall()
   if self.localMode or not self.c then return end
   local c = self.c
-  if not (self.wallDirty or self.playing or #(self.queue or {}) > 0 or self.dealAt or self.stale) then return end
+  local ticking = self.plugin and self.plugin.wallClock and self.mode == "hand" and now() - (self.wallDrawnAt or 0) >= 1000
+  if not (self.wallDirty or self.playing or #(self.queue or {}) > 0 or self.dealAt or self.stale or ticking) then return end
   self.wallDirty = false
+  self.wallDrawnAt = now()
   local book = self.lastBook or journal.owed()
   if self.mode == "lobby" then self:drawLobby(book) else self:drawTable(book) end
   if self.toastText then
@@ -1937,7 +2079,7 @@ function Dealer:lobbyTick(time)
     return
   end
   local plugin = self.plugin
-  local count, wait = 0, LOBBY_MS
+  local count, wait = 0, plugin.lobbyMs or LOBBY_MS
   if plugin.kind == "players" then
     count = self:readyCount()
   else
@@ -2201,6 +2343,7 @@ local function open(cabinet, localMode)
     cabinet = cabinet, localMode = localMode, keep = keep, wire = link.new(), stations = {}, byId = {}, touches = {}, wanted = {},
     lastTouch = {}, sentAt = {}, traces = {}, nexted = {}, bets = {}, deadlines = {}, queue = {}, waiting = {}, mode = "lobby",
     viewCount = now(), modem = modem, host = wallet.hostName(), debug = fs.exists("casino_debug.flag"), wallDirty = true, stale = true,
+    free = cabinet.free == true,
   }, Dealer)
   keep.role = "dealer"
   local id = keep.game or (cabinet.list[1] and cabinet.list[1].id)

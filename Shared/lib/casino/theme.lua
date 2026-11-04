@@ -37,6 +37,9 @@ local FELTS = {
   purple = { felt = 0x3A1C66, feltDark = 0x281248, feltLight = 0x54308C, accent = 0xC79BFF },
   teal = { felt = 0x0E5560, feltDark = 0x093B43, feltLight = 0x1B7884, accent = 0x5FE3D2 },
   ember = { felt = 0x5A3210, feltDark = 0x3F230B, feltLight = 0x7D4A1C, accent = 0xFFAE5C },
+  -- An island in the sea, for board games with land on them (Game Night's Catan): the felt is the sea, feltLight a forest, accent
+  -- sand, and card turns brick red. A felt may set any slot, so a game that needs other colours names them here
+  island = { felt = 0x2B6EA6, feltDark = 0x173F66, feltLight = 0x2F6B2F, accent = 0xE2CC8E, card = 0xA4472A },
 }
 
 --- Set a monitor's 16 colours for a felt. Colours belong to the monitor, so this comes before the first draw.
