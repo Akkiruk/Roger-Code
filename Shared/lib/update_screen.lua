@@ -91,10 +91,28 @@ local function finish(target, title, line, colour)
   centre(target, top + 2, line, MUTED)
 end
 
+-- A sound of its own as an update starts and ends, so anyone near a cabinet knows what's going on. The picks live in
+-- lib/sound_picks.lua where a program has it; these stand in where it doesn't.
+local SOUNDS = {
+  update_start = { "minecraft:block.conduit.activate", 1.0, 1 },
+  update_done = { "minecraft:ui.toast.challenge_complete", 0.8, 1 },
+  update_fail = { "minecraft:block.beacon.deactivate", 0.8, 1 },
+}
+
+local function sound(name)
+  local ok, picks = pcall(require, "lib.sound_picks")
+  local def = (ok and type(picks) == "table" and picks[name]) or SOUNDS[name]
+  if not def then return end
+  pcall(function()
+    for _, speaker in ipairs({ peripheral.find("speaker") }) do speaker.playSound(def[1], def[2], def[3]) end
+  end)
+end
+
 --- Run an update on screen. work(progress) does it, calling progress(done, total) as files arrive, and returns a status.
 -- @return whatever work returned
 function M.run(name, work)
   local screens = allScreens()
+  sound("update_start")
   local state = { name = tostring(name or "Program"), text = "Back in a moment" }
 
   local function animate()
@@ -115,6 +133,7 @@ function M.run(name, work)
   end, animate)
 
   local good = result == "updated"
+  sound(good and "update_done" or "update_fail")
   for _, screen in ipairs(screens) do
     pcall(finish, screen, good and "UPDATED" or "UPDATE DIDN'T FINISH", good and "Restarting..." or "Trying again later", good and GOOD or BAD)
   end

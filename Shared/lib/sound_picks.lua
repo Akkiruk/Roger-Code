@@ -174,6 +174,11 @@ return {
   mon_boss_hurt = { "minecraft:entity.wither.hurt", 0.5, 1 },
   mon_boss_die = { "minecraft:entity.wither.death", 0.5, 1 },
 
+  -- a cabinet updating itself (lib/update_screen.lua)
+  update_start = { "minecraft:block.conduit.activate", 1.0, 1 },
+  update_done = { "minecraft:ui.toast.challenge_complete", 0.8, 1 },
+  update_fail = { "minecraft:block.beacon.deactivate", 0.8, 1 },
+
   -- BLIGHTMARE's opening: music under each movement, then the moments in it
   intro_music_legend = { "minecraft:music.nether.crimson_forest", 0.7, 1 },
   intro_music_map = { "minecraft:music.overworld.lush_caves", 0.7, 1 },

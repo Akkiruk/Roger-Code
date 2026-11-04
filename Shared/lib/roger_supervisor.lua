@@ -464,7 +464,25 @@ function M.run(...)
     end
   end
 
-  local immediate, failures = true, 0
+  -- A computer that has just been switched on or restarted asks first, before the game starts, and puts in anything new
+  -- straight away: so restarting a cabinet is the way to update it now. The watcher below then waits its usual interval.
+  local immediate, failures = false, 0
+  local bootStatus = updater.checkForUpdates({
+    stopWhenReady = true,
+    callback = function(status, message)
+      logMessage("Boot update check [" .. tostring(status) .. "] " .. tostring(message or ""))
+    end,
+  })
+  if bootStatus == "ready" then
+    if applyOnScreen(installed, false) == "updated" then os.reboot() end
+    term.redirect(homeTerm)
+    term.setBackgroundColor(colors.black)
+    term.clear()
+    term.setCursorPos(1, 1)
+  elseif bootStatus == "error" then
+    immediate = true -- GitHub didn't answer: try again soon, as before
+  end
+
   local runners = {
     appLoop,
     function()
