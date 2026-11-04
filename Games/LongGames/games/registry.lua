@@ -5,4 +5,6 @@ return {
   require("games.oregon.plugin"),
   require("games.druaga.plugin"),
   require("games.dungeon.plugin"),
+  require("games.craftworld.plugin"),
+  require("games.cookie.plugin"),
 }

@@ -1,7 +1,7 @@
 -- manifest-entrypoint: true
 -- manifest-key: longgames
 -- manifest-name: Long Games
--- manifest-description: Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.
+-- manifest-description: Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.
 -- manifest-category: Arcade
 
 -- Restarts Long Games after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.
