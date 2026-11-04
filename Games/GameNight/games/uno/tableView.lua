@@ -86,14 +86,10 @@ local function playerPanel(c, view, p, at, info)
   if view.phase == "goal" then count, countInk = "-", C.mute end
   if view.phase ~= "goal" then c:big(x + 2, y + 2, count, countInk, 1) end
   if view.phase ~= "goal" then c:text(x + 2, y + 8, player.count == 1 and "card" or "cards", C.mute, bg) end
-  local px, py = x + 13, y + 2
-  local shown = math.min(player.count, 18)
-  for i = 1, shown do
-    local col = (i - 1) % 6
-    local row = math.floor((i - 1) / 6)
-    draw.pip(c, px + col * 3, py + row * 3)
+  if view.phase ~= "goal" then
+    local more = draw.fan(c, x + 12, y + 2, player.count, SIDE_W - 13)
+    if more > 0 then c:text(x + SIDE_W - 1 - #("+" .. more), y + 10, "+" .. more, C.mute, bg) end
   end
-  if player.count > 18 then c:text(px + 18, py + 7, "+" .. (player.count - 18), C.mute, bg) end
   -- What they are doing
   local line, ink, back = nil, C.mute, bg
   if caught then
@@ -132,9 +128,9 @@ end
 --- Arrows between the panels, pointing the way play goes.
 local function arrows(c, view, at, left, right)
   local clockwise = (view.dir or 1) == 1
+  -- The font's own triangles, \30 up and \31 down
   local function mark(x, y, up)
-    c:text(x, y, up and "^" or "v", C.gold)
-    c:text(x + 2, y, up and "^" or "v", C.gold)
+    c:text(x - 2, y, up and "\30 \30 \30" or "\31 \31 \31", C.gold)
   end
   for i = 1, left - 1 do
     local a = at[i]
@@ -174,17 +170,21 @@ local function center(c, view, info)
   local goal = view.goal == 0 and "ONE HAND WINS" or ("FIRST TO " .. tostring(view.goal))
   c:textCenter(CX + 1, 19, "HAND " .. tostring(view.handNo) .. "   " .. goal, C.mute)
 
-  -- The draw pile
-  local dx, dy = MID_X + 1, 24
-  draw.back(c, dx, dy, 16, 14)
-  c:textCenter(dx + 8, dy + 15, tostring(view.deck) .. " to draw", C.mute)
-  -- The discard on a block of the colour in play
+  -- The draw pile, its stack deeper the more is left
+  local dx, dy = MID_X + 1, 23
+  local deck = view.deck or 0
+  draw.pile(c, dx, dy, 16, 15, deck > 40 and 3 or deck > 15 and 2 or deck > 0 and 1 or 0)
+  c:textCenter(dx + 8, dy + 19, tostring(deck) .. " to draw", C.mute)
+  -- The discard on a block of the colour in play, lying on the card played before it
   local color = view.color
   local box = color and draw.INK[color] or C.panel2
   local bx, by, bw, bh = MID_X + 21, 21, 30, 22
   c:rect(bx, by, bw, bh, box)
+  local recent = view.recent or {}
+  local under = #recent >= 2 and recent[#recent].card == view.top and recent[#recent - 1]
+  if under then draw.card(c, bx + 8, by + 3, 20, 18, under.card, { color = under.color }) end
   if view.top then
-    draw.card(c, bx + 5, by + 2, 20, 18, view.top, { color = color })
+    draw.card(c, under and bx + 3 or bx + 5, under and by + 1 or by + 2, 20, 18, view.top, { color = color })
   end
   local word = color and cards.COLOR_WORD[color] or "PICK A COLOUR"
   if color then
@@ -196,26 +196,26 @@ local function center(c, view, info)
   -- Which way, and who is next
   local nextP = ((view.turn - 1 + (view.dir or 1)) % #view.players) + 1
   local nextName = view.players[nextP] and view.players[nextP].name or "?"
-  c:textCenter(dx + 8, dy + 17, (view.dir or 1) == 1 and "clockwise" or "anticlockwise", C.gold)
-  c:textCenter(dx + 8, dy + 18, "next: " .. short(nextName, 10), C.text)
+  local clockwise = (view.dir or 1) == 1
+  c:textCenter(dx + 8, dy + 21, clockwise and "\16 clockwise \16" or "\17 anticlockwise \17", C.gold)
+  c:textCenter(dx + 8, dy + 22, "next: " .. short(nextName, 10), C.text)
 
-  -- The last few cards played
-  local ry = 51
+  -- The last few cards played, oldest on the left
+  local ry = 49
   c:text(MID_X + 1, ry, "LAST PLAYS", C.mute)
-  local recent = view.recent or {}
-  local first = math.max(1, #recent - 6)
-  local x = MID_X + 1
+  local first = math.max(1, #recent - 4)
+  local x = MID_X + 2
   for i = first, #recent do
     local item = recent[i]
-    draw.mini(c, x, ry + 1, item.card, item.color)
+    draw.card(c, x, ry + 2, 8, 7, item.card, { color = item.color, lit = i == #recent })
     local by_ = item.p and view.players[item.p]
-    c:text(x, ry + 5, short(by_ and by_.name or "start", 6), i == #recent and C.text or C.mute)
-    x = x + 7
+    c:textCenter(x + 4, ry + 10, short(by_ and by_.name or "start", 8), i == #recent and C.text or C.mute)
+    x = x + 10
   end
 end
 
 local function logBox(c, view)
-  local y = 59
+  local y = 62
   c:rect(MID_X, y - 1, MID_W, 9, C.feltDark)
   local lines = view.log or {}
   local from = math.max(1, #lines - 6)

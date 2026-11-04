@@ -1,7 +1,7 @@
 -- games/uno/seatView.lua
 -- A player's own screen, 78 wide. Along the top the card to match on a block of the colour in play, that colour's name in big
 -- letters, who is next, and everyone's card count. Below, their hand as big cards, fourteen at a time (< and > for more). On their
--- turn the cards they may play are framed in gold and the rest are dimmed: a tap on a lit card plays it. A wild asks for its colour
+-- turn the cards they may play sit a row higher, framed in gold: a tap on a lit card plays it. A wild asks for its colour
 -- with four big colour tiles. The buttons along the bottom are DRAW, UNO! (lit gold while they hold two cards: tap it, then play),
 -- CATCH! when someone else has gone down to one card without saying it, and KEEP or PLAY IT after drawing a card that can be played.
 
@@ -18,7 +18,7 @@ local W = seatui.W              -- 78
 local CARD_W, CARD_H, GAP = 10, 7, 1
 local PER_ROW = 7
 local ROW_Y = { 22, 30 }
-local TALL_H = 14         -- seven cards or fewer: one row, twice as tall
+local TALL_Y, TALL_H = 23, 15   -- seven cards or fewer: one row, twice as tall, and a card that can be played sits a row higher
 local PAGE = 14
 local TILE_Y, TILE_H, TILE_W = 23, 14, 18
 
@@ -57,6 +57,7 @@ local function layout(view)
   local first = (page - 1) * PAGE + 1
   local last = math.min(#hand, first + PAGE - 1)
   local count = last - first + 1
+  local live = myTurn(view)
   local out = {}
   for i = first, last do
     local k = i - first
@@ -66,7 +67,12 @@ local function layout(view)
     -- A short row sits in the middle
     local rowW = inRow * (CARD_W + GAP) - GAP
     local x0 = math.floor((W - rowW) / 2) + 1
-    out[#out + 1] = { card = hand[i], x = x0 + col * (CARD_W + GAP), y = ROW_Y[row + 1], h = count <= PER_ROW and TALL_H or CARD_H }
+    local at = { card = hand[i], x = x0 + col * (CARD_W + GAP), y = ROW_Y[row + 1], h = CARD_H }
+    if count <= PER_ROW then
+      at.y, at.h = TALL_Y, TALL_H
+      if live and contains(view.playable, hand[i]) then at.y = TALL_Y - 1 end
+    end
+    out[#out + 1] = at
   end
   return out, page
 end
@@ -135,9 +141,9 @@ local function handCards(c, view, live)
   local places, page = layout(view)
   local playable = view.playable or {}
   for _, at in ipairs(places) do
+    -- A card that cannot be played keeps its colour, so a hand can still be counted by colour before naming a wild
     local can = live and contains(playable, at.card)
-    local dim = live and not can
-    draw.card(c, at.x, at.y, CARD_W, at.h, at.card, { dim = dim, lit = can })
+    draw.card(c, at.x, at.y, CARD_W, at.h, at.card, { lit = can })
   end
   local pages = math.max(1, math.ceil(#(view.hand or {}) / PAGE))
   if pages > 1 then
