@@ -7,12 +7,12 @@
     "description": "Free games for up to eight players, each at their own screen: Catan and UNO. Install it on every computer: a 6x6 wall becomes the table and a smaller one a seat. No tokens, ever.",
     "source_root": "Games/GameNight",
     "entrypoint": "startup.lua",
-    "version": "1.0.2"
+    "version": "1.0.3"
   },
   "build": {
-    "commit": "d2c4f21234a5719f6f55b5414c7c980bb3b298f5",
-    "generated_at": "2026-11-04T20:53:46Z",
-    "package_hash": "be9bd028e81c9469889620a38d61749b92efe10528833c990ab4b5c560432721"
+    "commit": "9dd4551f70050333f509af73ba9c10c14350659e",
+    "generated_at": "2026-11-04T22:37:16Z",
+    "package_hash": "0cf052ad6d3a9ef41f291ed24f6ba5a63bda8eedbdf7ab6ec0abc1675c12c4e3"
   },
   "install": {
     "preserve": [],
@@ -195,7 +195,7 @@
       {
         "repo_path": "Games/GameNight/games/catan/draw.lua",
         "install_path": "games/catan/draw.lua",
-        "sha256": "9665e57916547dcaeecffd4dd7b6fcab31585a731f4b2b88a6ab41ecd96dd631"
+        "sha256": "28c04de74f448d34a621c7fb5552c28e1f64cfebe80cb8b1246a256c2ffe6834"
       },
       {
         "repo_path": "Games/GameNight/games/catan/plugin.lua",
@@ -210,12 +210,12 @@
       {
         "repo_path": "Games/GameNight/games/catan/seatView.lua",
         "install_path": "games/catan/seatView.lua",
-        "sha256": "04e249223f45186b4d2b06d0287b948e5203f32ec9e162e2b2d0bce7681bc8bb"
+        "sha256": "4c85d96e297642183d8f5b2f9f35a8177d73d50c2cda0367ba5f8dff7c531646"
       },
       {
         "repo_path": "Games/GameNight/games/catan/tableView.lua",
         "install_path": "games/catan/tableView.lua",
-        "sha256": "a141bb17b8ad946afa040a859d5a71a21eb5d97f366e9047951700b942de600c"
+        "sha256": "d210a3638d0497ee3826492ece5b7325e6565515bbedc1202dff14e4731ea043"
       },
       {
         "repo_path": "Games/GameNight/games/registry.lua",

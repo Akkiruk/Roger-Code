@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-04T20:53:46Z",
+  "generated_at": "2026-11-04T22:37:16Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "d2c4f21234a5719f6f55b5414c7c980bb3b298f5",
+    "commit": "9dd4551f70050333f509af73ba9c10c14350659e",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -134,9 +134,9 @@
       "name": "Game Night",
       "category": "Arcade",
       "description": "Free games for up to eight players, each at their own screen: Catan and UNO. Install it on every computer: a 6x6 wall becomes the table and a smaller one a seat. No tokens, ever.",
-      "version": "1.0.2",
-      "commit": "d2c4f21234a5719f6f55b5414c7c980bb3b298f5",
-      "package_hash": "be9bd028e81c9469889620a38d61749b92efe10528833c990ab4b5c560432721",
+      "version": "1.0.3",
+      "commit": "9dd4551f70050333f509af73ba9c10c14350659e",
+      "package_hash": "0cf052ad6d3a9ef41f291ed24f6ba5a63bda8eedbdf7ab6ec0abc1675c12c4e3",
       "spec_path": "programs/game-night.json"
     },
     "hilo": {
