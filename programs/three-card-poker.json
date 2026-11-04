@@ -7,12 +7,12 @@
     "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
     "source_root": "Games/ThreeCardPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "e42e44688c4d0a68d49428337840d6241413292b",
-    "generated_at": "2026-11-04T01:27:54Z",
-    "package_hash": "3c5ce91d5b17fb32afa69c2c197fc565ab2ee051fb461e81b55704919472b391"
+    "commit": "c055ff319dc5dd3bf5c680bba854415ed07b89a4",
+    "generated_at": "2026-11-04T01:37:24Z",
+    "package_hash": "1114ff66298bc0b24eb46f45cb32f374dc74f97a1768b091891c3fb351eee59c"
   },
   "install": {
     "preserve": [],
@@ -140,7 +140,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -170,7 +170,7 @@
       {
         "repo_path": "Shared/lib/sound_picks.lua",
         "install_path": "lib/sound_picks.lua",
-        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
         "repo_path": "Games/ThreeCardPoker/threecard_view.lua",
@@ -225,7 +225,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
+        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
       }
     ]
   },

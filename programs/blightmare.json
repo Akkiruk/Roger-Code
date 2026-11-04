@@ -7,12 +7,12 @@
     "description": "A dark first-person RPG for one wall: a continent, a plague, and a hero who has never dreamed.",
     "source_root": "Games/Blightmare",
     "entrypoint": "startup.lua",
-    "version": "1.0.15"
+    "version": "1.0.16"
   },
   "build": {
-    "commit": "eb5d4cddf009fdca24152f7ce86bf61f03c82655",
-    "generated_at": "2026-11-04T01:27:54Z",
-    "package_hash": "6ded24f05af284936694f72a47f38605273b04d5c89c2d6a77e18f1ce4aa3e65"
+    "commit": "c055ff319dc5dd3bf5c680bba854415ed07b89a4",
+    "generated_at": "2026-11-04T01:37:24Z",
+    "package_hash": "9f544d203dc121611e8f093079cd91e12ed818e2024a402eb07c62847e1c929b"
   },
   "install": {
     "preserve": [],
@@ -115,7 +115,7 @@
       {
         "repo_path": "Shared/lib/sound_picks.lua",
         "install_path": "lib/sound_picks.lua",
-        "sha256": "94f4443c119629cbcb98f4c774ba842ccfa70acd27638e1e507cfd28daf4803e"
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
@@ -270,7 +270,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "835fe1a04a033e9e48d5f4935ad01cd1bf94f227c679294f63375eefa0fe2f7c"
+        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -385,7 +385,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "7845fce814e10e4465eed535f5a9fb1729d057ac1e76e3c653dbdb1fa4db3803"
+        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
       }
     ]
   },
