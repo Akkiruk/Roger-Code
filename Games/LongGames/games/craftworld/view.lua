@@ -131,9 +131,30 @@ local function drawWorld(L, s)
       end
     end
   end
+  -- anyone else in the world, with their name over them; off the wall, a pointer at its edge
+  local mine = "player"
+  local everyone = rules.players(s)
+  for _, e in ipairs(everyone) do
+    if e.p == p then
+      mine = e.seat and "friend" or "player"
+    elseif #everyone > 1 then
+      local sx, sy = L.px + (e.p.x - p.x) * TW, L.py + (e.p.y - p.y) * TH
+      local name = (e.name or "PLAYER"):upper()
+      if sx > -TW and sx < L.W and sy > 0 and sy < L.hudY - TH then
+        art.sprite(e.seat and "friend" or "player", sx, sy, e.p.facing or 1)
+        local tagY = sy - 3
+        if tagY >= 0 then ui.small(name, sx + 3, tagY, C.text, C.bg, "center", 14) end
+      else
+        local left = e.p.x < p.x
+        local tagY = max(3, min(L.hudY - 2, sy))
+        local text = left and ("< " .. name) or (name .. " >")
+        ui.small(text, left and 0 or L.W, tagY, C.hi, C.bg, left and "left" or "right", 18)
+      end
+    end
+  end
   -- the player, and what they hold
   local held = rules.held(s)
-  art.sprite("player", L.px, L.py, p.facing or 1)
+  art.sprite(mine, L.px, L.py, p.facing or 1)
   art.inHand(L.px, L.py, p.facing or 1, p.pick, held)
   local arrow = s.fx.arrow
   if arrow then

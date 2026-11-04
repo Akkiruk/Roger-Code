@@ -96,6 +96,9 @@ end
 local SPRITES = {
   player = { { 2, -1, 2, 1, "redTint" }, { 2, 0, 2, 1, "warn" }, { 3, 0, 1, 1, "blueTint" }, { 1, 1, 4, 1, "info" },
     { 0, 1, 1, 1, "warn" }, { 5, 1, 1, 1, "warn" }, { 2, 2, 2, 2, "blue" } },
+  -- a friend from the other wall: the same, in a red shirt and dark trousers, so the two never mix up
+  friend = { { 2, -1, 2, 1, "warn" }, { 2, 0, 2, 1, "warn" }, { 3, 0, 1, 1, "blueTint" }, { 1, 1, 4, 1, "red" },
+    { 0, 1, 1, 1, "warn" }, { 5, 1, 1, 1, "warn" }, { 2, 2, 2, 2, "tie" } },
   zombie = { { 2, -1, 2, 1, "ok" }, { 2, 0, 2, 1, "ok" }, { 3, 0, 1, 1, "bg" }, { 1, 1, 3, 1, "info" }, { 4, 1, 2, 1, "ok" },
     { 2, 2, 2, 2, "blueTint" } },
   skeleton = { { 2, -1, 2, 1, "text" }, { 2, 0, 2, 1, "line" }, { 3, 0, 1, 1, "bg" }, { 2, 1, 2, 1, "text" }, { 1, 1, 1, 1, "line" },

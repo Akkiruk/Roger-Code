@@ -1,7 +1,8 @@
 -- games/craftworld/bot.lua
 -- A player for the idle screen and the tests. It chops a tree, makes a table and a pickaxe, then digs a staircase down,
 -- taking any ore it passes, lighting the way, making better tools as it goes, and fighting what comes at it. It plays
--- through the same actions a tap gives. What it remembers between moves is kept beside the state, not in it.
+-- through the same actions a tap gives. What it remembers between moves is kept beside the state, not in it, one memory
+-- for each player in the world.
 
 local M = {}
 
@@ -9,11 +10,12 @@ local abs, max = math.abs, math.max
 
 local memory = setmetatable({}, { __mode = "k" })
 
+-- by player, so two bots in one world each keep their own
 local function mem(s)
-  local m = memory[s]
+  local m = memory[s.p]
   if not m then
     m = { dir = 1, lastX = s.p.x, lastY = s.p.y, still = 0, torchAt = s.p.y, wander = 0 }
-    memory[s] = m
+    memory[s.p] = m
   end
   return m
 end

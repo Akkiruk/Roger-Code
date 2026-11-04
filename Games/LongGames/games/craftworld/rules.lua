@@ -1,8 +1,9 @@
 -- games/craftworld/rules.lua
--- CRAFT WORLD: a side-on world of blocks, endless left and right and deep, for one player and a long time.
--- It works in steps, as Dungeon does: nothing in the world moves until the player does, and then everything takes one step
+-- CRAFT WORLD: a side-on world of blocks, endless left and right and deep, for one player and a long time, and a friend
+-- from the other wall now and then.
+-- It works in steps, as Dungeon does: nothing in the world moves until a player does, and then everything takes one step
 -- (mobs, hunger, the clock of the day). The one thing the clock does by itself is let a falling player fall, a block a tick.
--- The state is plain data, so it can be saved: the world is the seed and the player's changes to it (world.lua).
+-- The state is plain data, so it can be saved: the world is the seed and the players' changes to it (world.lua).
 
 local world = require("games.craftworld.world")
 
@@ -148,6 +149,87 @@ local function say(s, text)
   s.msg, s.msgAge = text, 0
 end
 
+-- ---------------------------------------------------------------- two players in one world
+-- The world's owner is the player at the top of the state (s.p, s.bed and the rest), as it always was. A friend who joins
+-- from the other wall is a seat in s.guests, under their name, and stays there when they go, so their things are waiting
+-- next time. Everything the rules do, they do for "the player", s.p: for a friend, the friend's fields are swapped into
+-- the top of the state for the while, and swapped back after. The world, the mobs, the clock and the goals are shared.
+
+local PERSONAL = { "p", "bed", "mode", "tab", "page", "msg", "msgAge", "dig", "queue", "hint", "fx" }
+local swapped = setmetatable({}, { __mode = "k" }) -- the friend whose fields are at the top of a state just now
+
+local function swap(s, seat)
+  for _, k in ipairs(PERSONAL) do s[k], seat[k] = seat[k], s[k] end
+end
+
+--- Run fn with seat (a friend's seat, or nil for the owner) as the player, and put everything back after.
+local function as(s, seat, fn, ...)
+  local cur = swapped[s]
+  if cur == seat then return fn(...) end
+  if cur then swap(s, cur) end
+  if seat then swap(s, seat) end
+  swapped[s] = seat
+  local ok, a, b = pcall(fn, ...)
+  if seat then swap(s, seat) end
+  if cur then swap(s, cur) end
+  swapped[s] = cur
+  if not ok then error(a, 0) end
+  return a, b
+end
+
+--- A friend's player, wherever their fields are just now.
+local function pOf(s, seat)
+  local cur = swapped[s]
+  if seat == cur then return s.p end
+  if seat == nil then return cur.p end
+  return seat.p
+end
+
+--- Everyone in the world just now, the owner first, then the friends by name: { seat, p, name }.
+local function players(s)
+  local list = { { p = pOf(s, nil), name = s.host } }
+  if s.guests then
+    local names = {}
+    for name, g in pairs(s.guests) do
+      if g.here then names[#names + 1] = name end
+    end
+    table.sort(names)
+    for _, name in ipairs(names) do
+      local g = s.guests[name]
+      list[#list + 1] = { seat = g, p = pOf(s, g), name = name }
+    end
+  end
+  return list
+end
+M.players = players
+
+--- Is anybody standing in this cell?
+local function playerAt(s, x, y)
+  local p = s.p
+  if p.x == x and p.y == y then return true end
+  if not s.guests then return false end
+  for _, e in ipairs(players(s)) do
+    if e.p.x == x and e.p.y == y then return true end
+  end
+  return false
+end
+
+--- Do fn for each player in the world in turn, as them.
+local function forEach(s, fn)
+  for _, e in ipairs(players(s)) do as(s, e.seat, fn) end
+end
+
+--- The seat for a name: a friend who is here, or nil for the owner (and for anyone else).
+local function seatOf(s, who)
+  local g = who ~= nil and s.guests and s.guests[who]
+  return (g and g.here) and g or nil
+end
+
+--- Run fn(...) as the named player: the owner for nil, or for a name that isn't here.
+function M.as(s, who, fn, ...)
+  return as(s, seatOf(s, who), fn, ...)
+end
+
 local function sign(n) return n > 0 and 1 or (n < 0 and -1 or 0) end
 
 function M.timeOfDay(s) return s.time % DAY end
@@ -183,7 +265,7 @@ end
 local function freeForMob(s, x, y)
   local c = tileAt(s, x, y)
   if BLOCKS[c].solid or c == "D" then return false end
-  if s.p.x == x and s.p.y == y then return false end
+  if playerAt(s, x, y) then return false end
   return not mobAt(s, x, y)
 end
 
@@ -402,7 +484,7 @@ local function settle(s, x, y)
     local to = y
     while true do
       local below = tileAt(s, x, to + 1)
-      if (below ~= AIR and below ~= WATER) or (s.p.x == x and s.p.y == to + 1) or mobAt(s, x, to + 1) then break end
+      if (below ~= AIR and below ~= WATER) or playerAt(s, x, to + 1) or mobAt(s, x, to + 1) then break end
       to = to + 1
     end
     if to == y then return end
@@ -591,29 +673,52 @@ local function spawnMobs(s, rng)
   end
 end
 
+--- The player a mob goes for: the nearest, the owner first on a tie. Returns their entry and how far.
+local function nearest(list, m)
+  local best, bestD
+  for _, e in ipairs(list) do
+    local d = max(abs(e.p.x - m.x), abs(e.p.y - m.y))
+    if not bestD or d < bestD then best, bestD = e, d end
+  end
+  return best, bestD
+end
+
 local function mobsAct(s, rng, events)
-  local p = s.p
+  local list = players(s)
   local i = 1
   while i <= #s.mobs do
     local m = s.mobs[i]
-    local gone = abs(m.x - p.x) > FAR_AWAY or abs(m.y - p.y) > FAR_AWAY
-    if not gone then gone = mobAct(s, m, rng, events) == "gone" end
+    local e = nearest(list, m)
+    local gone = abs(m.x - e.p.x) > FAR_AWAY or abs(m.y - e.p.y) > FAR_AWAY
+    if gone and #list > 1 then
+      gone = true
+      for _, other in ipairs(list) do
+        if abs(m.x - other.p.x) <= FAR_AWAY and abs(m.y - other.p.y) <= FAR_AWAY then gone = false end
+      end
+    end
+    if not gone then gone = as(s, e.seat, mobAct, s, m, rng, events) == "gone" end
     if gone then table.remove(s.mobs, i) else i = i + 1 end
-    if p.hp <= 0 then return end
+    for _, other in ipairs(list) do
+      if other.p.hp <= 0 then return end
+    end
   end
   spawnMobs(s, rng)
 end
 
 -- ---------------------------------------------------------------- one step of the world
 
+--- One step of the world, for whichever player moved (s.p). The clock, the mobs and everybody's messages move on for all;
+--- hunger and healing go with the player's own steps, so a friend busy at the other wall never starves anyone.
 local function worldStep(s, rng, events)
   local p = s.p
   local before = phase(s)
   s.time = s.time + 1
   s.steps = s.steps + 1
-  s.msgAge = s.msgAge + 1
-  if s.msgAge > MSG_STEPS then s.msg = "" end
-  if s.hint > 0 then s.hint = s.hint - 1 end
+  forEach(s, function()
+    s.msgAge = s.msgAge + 1
+    if s.msgAge > MSG_STEPS then s.msg = "" end
+    if s.hint > 0 then s.hint = s.hint - 1 end
+  end)
   p.hungerT = p.hungerT + 1
   if p.hungerT >= HUNGER_EVERY then
     p.hungerT = 0
@@ -637,10 +742,10 @@ local function worldStep(s, rng, events)
   local now = phase(s)
   if now ~= before then
     if now == "dusk" then
-      say(s, "The sun is going down. Find shelter, or light!")
+      forEach(s, function() say(s, "The sun is going down. Find shelter, or light!") end)
       events[#events + 1] = { type = "dusk" }
     elseif now == "day" then
-      say(s, "Morning of day " .. M.dayNumber(s) .. ". Monsters burn in the sun.")
+      forEach(s, function() say(s, "Morning of day " .. M.dayNumber(s) .. ". Monsters burn in the sun.") end)
       events[#events + 1] = { type = "dawn" }
       grant(s, "night", events)
     end
@@ -655,7 +760,7 @@ local function worldStep(s, rng, events)
   end
   if tileAt(s, p.x, p.y + 1) == "B" then grant(s, "bedrock", events) end
   s.stats.days = M.dayNumber(s)
-  checkDeath(s, events)
+  forEach(s, function() checkDeath(s, events) end)
 end
 
 -- ---------------------------------------------------------------- what the player does
@@ -765,7 +870,7 @@ end
 local function place(s, x, y, item, events)
   local p = s.p
   local c = tileAt(s, x, y)
-  if (c ~= AIR and c ~= WATER) or mobAt(s, x, y) or (x == p.x and y == p.y) then return false end
+  if (c ~= AIR and c ~= WATER) or mobAt(s, x, y) or playerAt(s, x, y) then return false end
   local tile = ITEM[item].place
   setTile(s, x, y, tile)
   take(s, item, 1)
@@ -1060,8 +1165,17 @@ end
 
 --- A tap. A menu tap happens at once (no time passes in the menu); a tap in the world waits for the clock, and a second
 --- one waits behind it. More than that are dropped.
-function M.input(s, action)
+local input
+
+--- who: the friend whose tap it is, by name; nil for the world's owner. A name that isn't in the world does nothing.
+function M.input(s, action, who)
   if s.over or type(action) ~= "table" then return end
+  if who == nil then return input(s, action) end
+  local seat = seatOf(s, who)
+  if seat then as(s, seat, input, s, action) end
+end
+
+function input(s, action)
   if MENU_KINDS[action.kind] then
     local events = {}
     s.pending = events
@@ -1085,30 +1199,95 @@ function M.tick(s, rng)
   end
   s.frame = s.frame + 1
   s.pending = events
-  local fx = s.fx
-  if fx.hurt > 0 then
-    fx.hurt = fx.hurt - 1
-    if fx.hurt == 0 then changed(s) end
-  end
-  if fx.arrow then
-    fx.arrow[5] = fx.arrow[5] - 1
-    if fx.arrow[5] <= 0 then fx.arrow = nil end
-    changed(s)
-  end
-  if s.mode == "play" then
-    if not supported(s) then
-      fallStep(s, rng, events)
+  -- each player in turn: the owner, then the friends
+  forEach(s, function()
+    local fx = s.fx
+    if fx.hurt > 0 then
+      fx.hurt = fx.hurt - 1
+      if fx.hurt == 0 then changed(s) end
+    end
+    if fx.arrow then
+      fx.arrow[5] = fx.arrow[5] - 1
+      if fx.arrow[5] <= 0 then fx.arrow = nil end
       changed(s)
-    else
-      local action = table.remove(s.queue, 1)
-      if action then
-        apply(s, action, rng, events)
+    end
+    if s.mode == "play" then
+      if not supported(s) then
+        fallStep(s, rng, events)
         changed(s)
+      else
+        local action = table.remove(s.queue, 1)
+        if action then
+          apply(s, action, rng, events)
+          changed(s)
+        end
       end
     end
-  end
+  end)
   s.pending = nil
   return events
+end
+
+-- ---------------------------------------------------------------- friends joining and leaving
+
+local function newPlayer(x, y)
+  return {
+    x = x, y = y, hp = MAX_HP, food = MAX_FOOD, sel = 0, bar = {}, inv = {}, pick = 0, sword = 0, armour = 0,
+    heat = 0, hang = false, fall = 0, hungerT = 0, regenT = 0, facing = 1,
+  }
+end
+
+--- A friend comes into the world: the one they had here before, with their things, where they left it; or a new player
+--- beside the owner. host is the owner's name, for the tags over their heads. Returns true, or false and why.
+function M.join(s, who, host)
+  if type(who) ~= "string" or who == "" then return false, "who?" end
+  if host and who == host then return false, "That's your own world" end
+  s.host = host or s.host
+  s.guests = s.guests or {}
+  local g = s.guests[who]
+  local owner = pOf(s, nil)
+  if g and g.here then return true end
+  if g then
+    g.here, g.queue, g.mode, g.page, g.dig = true, {}, "play", 1, nil
+    g.fx = { hurt = 0 }
+    if not freeForPlayer(s, g.p.x, g.p.y) then g.p.x, g.p.y = standingPlace(s, g.p.x, g.p.y) end
+    g.p.fall, g.p.hang = 0, false
+    g.msg, g.msgAge = "Welcome back, " .. who .. "! Your things are just as you left them.", 0
+  else
+    local x, y = standingPlace(s, owner.x - 2, owner.y) -- two blocks off, so the two are told apart
+    g = {
+      name = who, here = true, p = newPlayer(x, y), mode = "play", tab = "craft", page = 1, queue = {}, hint = 0,
+      fx = { hurt = 0 }, msg = "Welcome to " .. (s.host or "this") .. "'s world, " .. who .. "! Chop a tree to begin.", msgAge = 0,
+    }
+    g.p.facing = owner.x >= x and 1 or -1
+    s.guests[who] = g
+  end
+  as(s, nil, say, s, who .. " has come to play in your world!")
+  changed(s)
+  return true
+end
+
+--- A friend goes, and their things stay in the world for next time. With no name, every friend goes (a saved world comes
+--- back with nobody but its owner in it).
+function M.part(s, who)
+  if not s.guests then return end
+  for name, g in pairs(s.guests) do
+    if g.here and (who == nil or name == who) then
+      g.here, g.queue, g.mode, g.dig = false, {}, "play", nil
+      g.fx = { hurt = 0 }
+      if who then as(s, nil, say, s, name .. " has gone. Their things are kept in this world.") end
+    end
+  end
+  changed(s)
+end
+
+--- The friends in the world just now, by name.
+function M.guests(s)
+  local out = {}
+  for i, e in ipairs(players(s)) do
+    if i > 1 then out[#out + 1] = e.name end
+  end
+  return out
 end
 
 --- For the list of everyone's games: { level, percent, goal, minutes, place }.
@@ -1121,8 +1300,9 @@ function M.progress(s)
   }
 end
 
-function M.bot(s, rng)
-  return require("games.craftworld.bot").choose(M, s, rng)
+--- who: a friend, by name, for the bot to play as; nil for the owner.
+function M.bot(s, rng, who)
+  return M.as(s, who, require("games.craftworld.bot").choose, M, s, rng)
 end
 
 return M

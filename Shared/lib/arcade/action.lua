@@ -4,6 +4,8 @@
 -- Runs are not journaled: a reboot ends one, and nothing is at stake but a score.
 -- A plugin with saves = true is a long game: its run is kept in a file for its player (saves.lua). Walking away or SAVE &
 -- QUIT pauses the run and frees the wall, and only `over` ends it. A plugin without saves takes none of those paths.
+-- A plugin with coop = true takes a friend into the run from the other wall of a cabinet with two (see "a friend at the
+-- other wall" below). On one wall, or for any other plugin, nothing of that happens.
 
 local base = require("lib.arcade.base")
 local config = require("lib.arcade.constants")
@@ -76,6 +78,106 @@ local function nearestName(who)
   if who then return who end
   local list = hw.nearby()
   return #list == 1 and list[1] or nil
+end
+
+-- ---------------------------------------------------------------- a friend at the other wall
+-- A coop plugin's rules have join(s, name, host) -> ok, why; part(s, name), where no name means everybody; and
+-- input(s, action, who). Its view.draw(L, s, who), view.actionAt(L, s, px, py, who) and view.controls(L, s, who) take the
+-- friend's name too. who is nil for the run's own player. The run stays theirs: their save, their score, and the friend's
+-- player is kept inside it. Each wall is drawn for its own player, and a wall's taps play for that wall's player only.
+
+--- Is this run one a friend can share, here and now?
+local function coop(a)
+  return a ~= nil and a.phase == "play" and app.plugin.coop == true and #(env.walls or {}) >= 2
+end
+
+--- The wall the run's own player started from.
+local function ownWall(a) return a.wall or env.walls[1].name end
+
+local function wallAttached(side)
+  for _, wall in ipairs(env.walls or {}) do
+    if wall.name == side then return true end
+  end
+  return false
+end
+
+--- A toast for one wall only, so the other player's game isn't covered.
+local function toastAt(side, text, color, ms)
+  app.setToast(text, color, ms)
+  if S.toast then S.toast.wall = side end
+end
+
+local function drawToast(side)
+  if not (S.toast and S.toast.wall and side and S.toast.wall ~= side) then app.drawToast() end
+end
+
+--- Who tapped JOIN: the name the tap came with, or the closest player who isn't playing already.
+local function friendName(a, who)
+  if who then return who end
+  local closest = hw.closest and hw.closest()
+  if closest and closest ~= a.player then return closest end
+  for _, name in ipairs(hw.nearby()) do
+    if name ~= a.player then return name end
+  end
+  return nil
+end
+
+--- JOIN, on the wall the run's player isn't using.
+function M.join(who, side)
+  local a = S.action
+  if not coop(a) or a.guest then return end
+  side = side or (env.walls[1].name == ownWall(a) and env.walls[2].name or env.walls[1].name)
+  if side == ownWall(a) then return end
+  local name = friendName(a, who)
+  if name ~= nil and name == a.player then
+    app.audio.play("error")
+    toastAt(side, "You're playing already, on the other wall", C.warn, 2000)
+    return
+  end
+  a.midRules = true
+  local ok, why = app.plugin.rules.join(a.state, name or "Player 2", a.player)
+  a.midRules = nil
+  if not ok then
+    app.audio.play("error")
+    toastAt(side, tostring(why or "Can't join just now"), C.warn, 2000)
+    return
+  end
+  local t = nowMs()
+  a.guest = { name = name or "Player 2", anon = name == nil, wall = side, touchedAt = t }
+  a.touchedAt = t
+  app.audio.play("select")
+  app.setToast(a.guest.name .. " joined " .. tostring(a.player) .. "'s world", C.ok, 2500)
+  S.dirty = true
+end
+
+--- The friend goes, and their player stays in the run, kept in its save. why, if given, is told on both walls.
+local function partFriend(a, why)
+  local g = a.guest
+  if not g then return end
+  a.guest = nil
+  a.midRules = true
+  app.plugin.rules.part(a.state, g.name)
+  a.midRules = nil
+  if why then app.setToast(why, C.info, 2500) end
+  S.dirty = true
+end
+
+--- May this tap play, and for whom? Returns false if nobody (the wall has been told why), or true and the friend's name
+--- (nil for the run's own player).
+local function tapper(a, side, who)
+  local g = coop(a) and side and a.guest or nil
+  if g and side == g.wall then
+    if g.anon or who == nil or who == g.name then return true, g.name end
+    app.audio.play("error")
+    toastAt(side, g.name .. " is playing on this side", C.warn, 1500)
+    return false
+  end
+  local player = a.player
+  if coop(a) and side and not g and side ~= ownWall(a) and who ~= nil and player ~= "Player" and who ~= player then
+    toastAt(side, player .. " is playing. Tap JOIN to play too", C.info, 2000)
+    return false
+  end
+  return M.mayPlay(who), nil
 end
 
 --- The ready screen for the current game. A game whose idle screen is its opening (view.intro) carries on with it from
@@ -169,7 +271,8 @@ local function begin(a)
   S.dirty = true
 end
 
-function M.start(who)
+--- side: the wall the tap came from, which is this player's wall for the run.
+function M.start(who, side)
   local a = S.action
   local plugin = app.plugin
   if plugin.saves then
@@ -182,6 +285,7 @@ function M.start(who)
     saves.delete(plugin.id, owner)
   end
   a.player = nearestName(who) or a.player or "Player"
+  a.wall, a.guest = side, nil
   a.seed = math.random(1, 2147483646)
   a.rng, a.rngAt = journal.trackedRng(a.seed)
   a.state = plugin.rules.new({ rng = a.rng, player = a.player })
@@ -198,23 +302,26 @@ local function readyForOther(a, who)
 end
 
 --- CONTINUE: the save carries on from where its numbers left off.
-function M.continue(who)
+function M.continue(who, side)
   local a = S.action
   if not a or a.phase ~= "ready" or not a.saved or readyForOther(a, who) then return end
   local save = a.saved
   a.player, a.state, a.saved = save.player, save.state, nil
+  a.wall, a.guest = side, nil
+  -- a friend who was in the world when it was saved isn't here now: their player waits in it for them
+  if app.plugin.coop then app.plugin.rules.part(a.state) end
   a.rng, a.rngAt = journal.trackedRng(save.rng - 1)
   begin(a)
 end
 
 --- NEW GAME takes two taps: the second one loses the save.
-function M.newGame(who)
+function M.newGame(who, side)
   local a = S.action
   if not a or a.phase ~= "ready" or not a.saved or readyForOther(a, who) then return end
   if a.newUntil and nowMs() < a.newUntil then
     saves.delete(app.plugin.id, a.saved.player)
     a.saved, a.newUntil = nil, nil
-    M.start(who)
+    M.start(who, side)
   else
     a.newUntil = nowMs() + QUIT_WINDOW_MS
     app.audio.play("tap")
@@ -237,8 +344,9 @@ local function finish()
   S.dirty = true
 end
 
---- A long game stops without ending: save it and free the wall.
+--- A long game stops without ending: save it and free the wall. A friend in it goes too, their player kept in the save.
 local function pause(a)
+  partFriend(a)
   saveRun(a)
   app.audio.play("back")
   M.leave()
@@ -246,6 +354,7 @@ end
 
 --- A player told their save failed can still go, but they get told first.
 local function saveAndQuit(a)
+  partFriend(a)
   if saveRun(a) or a.leaveUnsaved then
     app.audio.play("back")
     M.leave()
@@ -255,10 +364,29 @@ local function saveAndQuit(a)
   app.setToast("Not saved! SAVE & QUIT again to leave anyway", C.warn, 4000)
 end
 
---- QUIT sits close to the game, so it takes two taps: a stray one can't end a run.
-function M.askToQuit()
+--- The friend's LEAVE, said twice: they go, and the run is saved with their player in it, so it's there next time.
+local function friendLeaves(a, why)
+  local g = a.guest
+  if not g then return end
+  partFriend(a, why or (g.name .. " left. Their things stay in this world"))
+  if app.plugin.saves then saveRun(a) end
+  app.audio.play("back")
+end
+
+--- QUIT sits close to the game, so it takes two taps: a stray one can't end a run. On a friend's wall it's their LEAVE.
+function M.askToQuit(side)
   local a = S.action
   if not a or a.phase ~= "play" then return end
+  local g = a.guest
+  if g and side ~= nil and side == g.wall then
+    if g.quitUntil and nowMs() < g.quitUntil then
+      friendLeaves(a)
+    else
+      g.quitUntil = nowMs() + QUIT_WINDOW_MS
+      app.audio.play("tap")
+    end
+    return
+  end
   if a.quitUntil and nowMs() < a.quitUntil then
     if app.plugin.saves then saveAndQuit(a) else finish() end
   else
@@ -296,21 +424,29 @@ end
 
 --- Hand an action to the rules. A long game's clock may be slow or stopped, so nothing else is coming to show the result
 -- of a tap, or to notice that it ended the game.
-local function applyInput(a, action)
+--- seat: the friend's name, in a coop run; nil for the run's own player.
+local function applyInput(a, action, seat)
   local plugin = app.plugin
   if not plugin.saves then
-    plugin.rules.input(a.state, action)
+    plugin.rules.input(a.state, action, seat)
     return
   end
   a.midRules = true
-  plugin.rules.input(a.state, action)
+  plugin.rules.input(a.state, action, seat)
   a.midRules = nil
   if a.state.over then finish() end
   S.dirty = true
 end
 
---- A touch on the game itself.
-function M.touch(px, py, who)
+--- Note a tap that plays, for the idle clocks: the run's, and the friend's own.
+local function played(a, seat)
+  local t = nowMs()
+  a.touchedAt = t
+  if seat and a.guest then a.guest.touchedAt = t end
+end
+
+--- A touch on the game itself. side: the wall it came from, which only a coop run asks about.
+function M.touch(px, py, who, side)
   local a = S.action
   if a and a.phase == "intro" then
     -- a tap turns the page; the opening's last page turned leaves it
@@ -319,19 +455,30 @@ function M.touch(px, py, who)
     return
   end
   if a and a.phase == "ready" and app.plugin.saves then readyForOther(a, who) end
-  if not a or a.phase ~= "play" or not M.mayPlay(who) then return end
-  a.touchedAt = nowMs()
-  local action = app.plugin.view.actionAt(env.L, a.state, px, py)
+  if not a or a.phase ~= "play" then return end
+  local ok, seat = tapper(a, side, who)
+  if not ok then return end
+  played(a, seat)
+  local action = app.plugin.view.actionAt(env.L, a.state, px, py, seat)
   a.lastAction = action
-  if action then applyInput(a, action) end
+  if action then applyInput(a, action, seat) end
 end
 
-function M.press(index, who)
+function M.press(index, who, side)
   local a = S.action
-  if not a or a.phase ~= "play" or not M.mayPlay(who) then return end
-  a.touchedAt = nowMs()
-  local control = app.plugin.view.controls(env.L, a.state)[index]
-  if control then applyInput(a, control.action) end
+  if not a or a.phase ~= "play" then return end
+  local ok, seat = tapper(a, side, who)
+  if not ok then return end
+  played(a, seat)
+  local control = app.plugin.view.controls(env.L, a.state, seat)[index]
+  if control then applyInput(a, control.action, seat) end
+end
+
+--- May this tap reach SAVE & QUIT, or a friend's LEAVE, on this wall?
+function M.mayQuit(who, side)
+  local a = S.action
+  if not a or a.phase ~= "play" then return false end
+  return (tapper(a, side, who))
 end
 
 local function checkPresence(a, t)
@@ -346,11 +493,33 @@ local function checkPresence(a, t)
   end
 end
 
+--- The friend has gone from the detector, stopped tapping, or lost their wall: they leave, and the run goes on.
+local function keepFriend(a, t)
+  local g = a.guest
+  if not g then return end
+  if not coop(a) or not wallAttached(g.wall) then
+    friendLeaves(a)
+    return
+  end
+  if t - g.touchedAt > config.GAME_IDLE * 1000 then
+    friendLeaves(a, g.name .. " stopped playing. Their things stay in this world")
+    return
+  end
+  if g.anon or hw.isNear(g.name) then
+    g.awaySince = nil
+  else
+    g.awaySince = g.awaySince or t
+    if t - g.awaySince > LEFT_LIMIT_MS then friendLeaves(a, g.name .. " walked away. Their things stay in this world") end
+  end
+end
+
 --- A question on the wall has to clear itself: in a long game, nothing else may redraw it.
 local function clearLapsed(a, t)
   if a.newUntil and t >= a.newUntil then a.newUntil, S.dirty = nil, true end
   if a.phase ~= "play" then return end
   if a.quitUntil and t >= a.quitUntil then a.quitUntil, S.dirty = nil, true end
+  local g = a.guest
+  if g and g.quitUntil and t >= g.quitUntil then g.quitUntil, S.dirty = nil, true end
   if app.plugin.split and not a.hintDone and t - a.startedAt >= SPLIT_HINT_MS then a.hintDone, S.dirty = true, true end
 end
 
@@ -406,6 +575,7 @@ function M.tick(t)
   if t >= a.nextAt then a.nextAt = t + step end -- too far behind to catch up: carry on from now
   if steps > 0 then S.dirty = true end
   if plugin.saves and (a.phase ~= "play" or not keepRun(a, t)) then return end
+  keepFriend(a, t)
   checkPresence(a, t)
 end
 
@@ -421,8 +591,8 @@ local function drawHeader(a)
   end
 end
 
-local function drawControls(a)
-  local controls = app.plugin.view.controls(env.L, a.state)
+local function drawControls(a, seat)
+  local controls = app.plugin.view.controls(env.L, a.state, seat)
   -- one size for the whole set, or some labels shout and the rest whisper
   local small = false
   for _, control in ipairs(controls) do
@@ -555,9 +725,41 @@ local function drawFinalBoard(a)
   ui.region("actSeen", 0, 0, W, env.H)
 end
 
---- Draw whatever phase the run is in.
-function M.draw()
+--- Is each wall drawn for its own player just now? Only a coop run on two walls is.
+function M.perWall()
+  return coop(S.action)
+end
+
+--- The run on one wall of a coop run: the friend's wall for them, with LEAVE; the other for the run's own player, and
+--- JOIN on the wall nobody has taken.
+local function drawCoop(a, side)
+  local W, H = env.W, env.H
+  local g = a.guest
+  local seat = g and side == g.wall and g.name or nil
+  if not app.plugin.story then drawHeader(a) end
+  app.plugin.view.draw(env.L, a.state, seat)
+  drawControls(a, seat)
+  if app.plugin.split and nowMs() - a.startedAt < SPLIT_HINT_MS then base.drawSplit(W, H, app.plugin.splitMiddle) end
+  if seat then
+    local asking = g.quitUntil and nowMs() < g.quitUntil
+    ui.button("actQuit", W - 14, H - 8, 12, 7, asking and "SURE?" or "LEAVE", asking and C.warn or C.panel, { small = true })
+  else
+    local asking = a.quitUntil and nowMs() < a.quitUntil
+    ui.button("actQuit", W - 14, H - 8, 12, 7, asking and "SURE?" or "SAVE & QUIT", asking and C.warn or C.panel, { small = true })
+    if not g and side ~= ownWall(a) then ui.button("actJoin", W - 18, 1, 16, 7, "JOIN", C.ok, { small = true }) end
+  end
+  drawToast(side)
+end
+
+--- Draw whatever phase the run is in. side: the wall being drawn, when each wall is drawn for its own player.
+function M.draw(side)
   local a = S.action
+  if side and coop(a) then
+    ui.screen():clear(C.bg, nil, " ")
+    ui.clearButtons()
+    drawCoop(a, side)
+    return
+  end
   ui.screen():clear(C.bg, nil, " ")
   ui.clearButtons()
   if a.phase == "intro" then
@@ -593,6 +795,8 @@ function M.debug()
     phase = a.phase, reviewed = a.reviewed, player = a.player, place = a.place, best = a.scores:best(), table = #a.scores.rows,
     score = s and s.score, lives = s and s.lives, level = s and s.level, over = s and s.over,
     lastAction = a.lastAction, saveFor = a.saveOwner, saveLine = a.saved and a.saved.line,
+    wall = a.wall, guest = a.guest and a.guest.name, guestWall = a.guest and a.guest.wall,
+    guests = s and app.plugin.coop and app.plugin.rules.guests and app.plugin.rules.guests(s) or nil,
   }
 end
 

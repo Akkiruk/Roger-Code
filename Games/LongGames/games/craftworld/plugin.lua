@@ -2,6 +2,8 @@
 -- CRAFT WORLD: a side-on world of blocks to dig, build and live in, for one player over many visits. The whole wall is the
 -- world: a tap beside the player digs or builds, a tap further off walks or jumps, and the bar along the bottom holds the
 -- hotbar and opens the menu. Nothing moves until the player does, so a slow tap never costs anything.
+-- coop: on a cabinet with two walls a friend can JOIN from the other wall and play in the same world, each wall following
+-- its own player (see "coop" in action.lua).
 
 local base = require("lib.arcade.base")
 local rules = require("games.craftworld.rules")
@@ -22,34 +24,37 @@ function view.layout(W, H)
   return paintView().layout(W, H)
 end
 
--- A state's picture stands until its rev moves on. Two, in case a save is being shown while another run's on the wall.
+-- A state's picture, for one player in it, stands until its rev moves on. Three: one for each wall's player, and a save
+-- being shown while another run's on the wall.
+local KEEP = 3
 local pictures = {}
 
-local function pictureFor(L, s)
+local function pictureFor(L, s, who)
   for _, picture in ipairs(pictures) do
-    if picture.state == s and picture.rev == s.rev and picture.L == L then return picture end
+    if picture.state == s and picture.rev == s.rev and picture.L == L and picture.who == who then return picture end
   end
-  local picture = pictures[2] or {}
-  pictures[2], pictures[1] = pictures[1], picture
+  local picture = table.remove(pictures, KEEP) or {}
+  table.insert(pictures, 1, picture)
   local screen = ui.screen()
   if not picture.surf or picture.surf.width ~= screen.width or picture.surf.height ~= screen.height then
     picture.surf = screen:copy()
   end
   ui.setScreen(picture.surf)
-  local ok, err = pcall(paintView().paint, L, s)
+  local ok, err = pcall(rules.as, s, who, paintView().paint, L, s)
   ui.setScreen(screen)
   if not ok then error(err, 0) end -- the screen goes back first, or the shell's own drawing lands on a hidden surface
-  picture.state, picture.rev, picture.L = s, s.rev, L
+  picture.state, picture.rev, picture.L, picture.who = s, s.rev, L, who
   return picture
 end
 
-function view.draw(L, s)
-  local picture = pictureFor(L, s)
+--- who: the friend this wall belongs to, by name; nil for the world's owner.
+function view.draw(L, s, who)
+  local picture = pictureFor(L, s, who)
   ui.screen():drawSurface(picture.surf, 0, 0, L.W, L.H, 0, 0, L.W, L.H)
 end
 
-function view.actionAt(L, s, px, py)
-  return paintView().actionAt(L, s, px, py)
+function view.actionAt(L, s, px, py, who)
+  return rules.as(s, who, paintView().actionAt, L, s, px, py)
 end
 
 function view.controls() return {} end
@@ -132,7 +137,7 @@ end
 return base.fill({
   id = "craftworld", title = "CRAFT WORLD", short = "CRAFT", blurb = "Dig, build and survive in a world of blocks",
   color = "ok", accent = 0xEED78F,
-  action = true, story = true, saves = true, tickMs = 120, minSize = { w = 120, h = 78 },
+  action = true, story = true, saves = true, coop = true, tickMs = 120, minSize = { w = 120, h = 78 },
   rules = rules, view = view, sounds = base.SOUNDS,
   help = {
     "A world of blocks, side on, that goes on for ever left and right and a long way down. Your world is saved as you go: SAVE & QUIT keeps it, and so does walking away.",
@@ -152,5 +157,7 @@ return base.fill({
     "Monsters come out at night, and in dark caves: torches keep the dark away. Make a bed from wool and planks, and sleep through the night. Leaves drop apples; animals give meat to cook.",
     "",
     "If you faint you wake at your bed, or where you began, with all your things.",
+    "",
+    "On a cabinet with two walls, a friend can tap JOIN on the other wall to play in your world with you. Each wall follows its own player, and either of you moving moves the world. Your friend's things are kept in your world for the next time they join it.",
   },
 })

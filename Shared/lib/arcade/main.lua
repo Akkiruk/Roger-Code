@@ -522,8 +522,8 @@ local function writeDebug()
   end
 end
 
---- Draw the current view onto every wall. Most views are one picture shown twice; a game with hidden pieces is drawn
--- once per wall, for the seat that wall belongs to.
+--- Draw the current view onto every wall. Most views are one picture shown twice; a game with hidden pieces, and a coop
+-- long game, are drawn once per wall, for the player that wall belongs to.
 local function drawWalls()
   local g = S.view == "game" and S.match
   if g and app.plugin.private then
@@ -537,6 +537,16 @@ local function drawWalls()
   end
   if S.view == "versus" then
     versus.drawWalls()
+    return
+  end
+  -- a long game with a friend in it from the other wall: each wall follows its own player
+  if S.view == "action" and actions.perWall() then
+    for _, wall in ipairs(env.walls) do
+      ui.setScreen(wall.surf)
+      actions.draw(wall.name)
+      wall.buttons = ui.buttons()
+      wall.surf:output(wall.out, 0, 0)
+    end
     return
   end
   if S.view == "idle" then
@@ -682,20 +692,22 @@ handlers.game = function(b, who, wall)
 end
 
 -- classics: one player, on the clock
-handlers.actStart = function(_, who)
-  actions.start(who)
+-- the wall a run starts from is its player's; a coop game takes a friend from the other (action.lua)
+handlers.actStart = function(_, who, wall)
+  actions.start(who, wall)
 end
-handlers.actContinue = function(_, who) actions.continue(who) end
-handlers.actNew = function(_, who) actions.newGame(who) end
+handlers.actContinue = function(_, who, wall) actions.continue(who, wall) end
+handlers.actNew = function(_, who, wall) actions.newGame(who, wall) end
 handlers.actSkip = function() actions.skipIntro() end
 handlers.actPlayers = function() actions.showPlayers() end
 handlers.actPlayersBack = function() actions.hidePlayers() end
-handlers.act = function(b, who)
-  actions.press(b.data, who)
+handlers.act = function(b, who, wall)
+  actions.press(b.data, who, wall)
 end
-handlers.actQuit = function(_, who)
-  if actions.mayPlay(who) then actions.askToQuit() end
+handlers.actQuit = function(_, who, wall)
+  if actions.mayQuit(who, wall) then actions.askToQuit(wall) end
 end
+handlers.actJoin = function(_, who, wall) actions.join(who, wall) end
 handlers.actDone = function() actions.leave() end
 handlers.actBoards = function(_, who, wall)
   actions.leave()
@@ -1067,7 +1079,7 @@ local function onTouch(side, x, y, who)
     return
   end
   if S.view == "game" then handleBoardTouch(px, py, who, wall) end
-  if S.view == "action" then actions.touch(px, py, who) end
+  if S.view == "action" then actions.touch(px, py, who, wall) end
 end
 
 -- ------------------------------------------------------------------ periodic work
