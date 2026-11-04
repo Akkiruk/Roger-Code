@@ -7,12 +7,12 @@
     "description": "Higher or lower through one deck, with every guess priced from the cards left.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.101"
+    "version": "1.0.102"
   },
   "build": {
-    "commit": "c055ff319dc5dd3bf5c680bba854415ed07b89a4",
-    "generated_at": "2026-11-04T05:14:25Z",
-    "package_hash": "2808f9c3e48b1a269e00aaf05f5f215daf159b198f675ae45bcc5b1203c95ed6"
+    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
+    "generated_at": "2026-11-04T06:18:46Z",
+    "package_hash": "e2c6a44afac752b6e0de30af71dc1512e4a5442d9e801d10d9a6e22d2a1fefb3"
   },
   "install": {
     "preserve": [],
@@ -85,7 +85,7 @@
       {
         "repo_path": "Shared/lib/casino/theme.lua",
         "install_path": "lib/casino/theme.lua",
-        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
+        "sha256": "8a8b2a315e53e5467e0277c7a229f89966b73d489adf7297478d299a156a1de7"
       },
       {
         "repo_path": "Shared/lib/casino/tournament.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
+        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",

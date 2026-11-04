@@ -7,12 +7,12 @@
     "description": "Six-deck blackjack with a lasting shoe, doubles on 11 and one split.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.99"
+    "version": "1.2.100"
   },
   "build": {
-    "commit": "c055ff319dc5dd3bf5c680bba854415ed07b89a4",
-    "generated_at": "2026-11-04T05:14:25Z",
-    "package_hash": "356232bd458839dfe6823234975118372b5593c5aa8b61081ef37e78cc92ac27"
+    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
+    "generated_at": "2026-11-04T06:18:46Z",
+    "package_hash": "be52a5acb97e8f5d19db46eabda9f9f52c388ab3fd3ef82b5dda7b40f6c034ef"
   },
   "install": {
     "preserve": [],
@@ -85,7 +85,7 @@
       {
         "repo_path": "Shared/lib/casino/theme.lua",
         "install_path": "lib/casino/theme.lua",
-        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
+        "sha256": "8a8b2a315e53e5467e0277c7a229f89966b73d489adf7297478d299a156a1de7"
       },
       {
         "repo_path": "Shared/lib/casino/tournament.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
+        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",

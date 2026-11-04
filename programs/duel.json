@@ -7,12 +7,12 @@
     "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.",
     "source_root": "Games/Duel",
     "entrypoint": "startup.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "c055ff319dc5dd3bf5c680bba854415ed07b89a4",
-    "generated_at": "2026-11-04T05:14:25Z",
-    "package_hash": "642b9bbcf1f561cf1c5e46faef3dcd4f22444a7da1a2f921378a5a8459e58191"
+    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
+    "generated_at": "2026-11-04T06:18:46Z",
+    "package_hash": "8caba8e9f8f70b70e6920987f3cbbbe717c82242e204f692ffa957572e0348be"
   },
   "install": {
     "preserve": [],
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
         "install_path": "lib/casino/group/dealer.lua",
-        "sha256": "01123b18a0abb0a2f7b56f3d79ac5c7384a7b3c94257611d55d06ffb8ed8ca9c"
+        "sha256": "4f3f7247c12eda461b7f1dce3600fb040d10e1016b50e8440fbf87e4097e6132"
       },
       {
         "repo_path": "Shared/lib/casino/canvas.lua",
@@ -110,7 +110,7 @@
       {
         "repo_path": "Shared/lib/casino/group/seat.lua",
         "install_path": "lib/casino/group/seat.lua",
-        "sha256": "18398c63ed8d44774dd4d7790ff813afc3caa2084640fa2293a0a6e2ee343f5a"
+        "sha256": "c37a0431849d826d92061c095553dce0d075109f5244fabe235880ca5ca536a8"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
@@ -125,12 +125,12 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "67795365e72308438ce38a89af636cc29704283857f6be7666f6f6e8f423d6e1"
+        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
         "install_path": "lib/casino/theme.lua",
-        "sha256": "7ab1102c132a145e671b555cbc9e26d2f4939904648af07ca9e474c8cacb5ce1"
+        "sha256": "8a8b2a315e53e5467e0277c7a229f89966b73d489adf7297478d299a156a1de7"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
@@ -180,7 +180,7 @@
       {
         "repo_path": "Shared/lib/casino/group/seatui.lua",
         "install_path": "lib/casino/group/seatui.lua",
-        "sha256": "a5b9ab02e70d04da7bb787eeeeccca9d27531c4acd7c75ebec5dc9563721c058"
+        "sha256": "e558789f226bf31dff0fc93f20c9249644b5a71f99f0eb9c6f4f61e812c68193"
       },
       {
         "repo_path": "Shared/lib/casino/poker.lua",

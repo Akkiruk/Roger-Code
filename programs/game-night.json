@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "program": {
+    "key": "game-night",
+    "name": "Game Night",
+    "category": "Arcade",
+    "description": "Free board games for up to eight players, each at their own screen, starting with Catan. Install it on every computer: a 6x6 wall becomes the table and a smaller one a seat. No tokens, ever.",
+    "source_root": "Games/GameNight",
+    "entrypoint": "startup.lua",
+    "version": "1.0.0"
+  },
+  "build": {
+    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
+    "generated_at": "2026-11-04T06:18:46Z",
+    "package_hash": "c6d24c4f1af2ed68d6a7965534b9b9112527c8a5f3d0715f77650e2cbb5d7a8c"
+  },
+  "install": {
+    "preserve": [],
+    "files": [
+      {
+        "repo_path": "System/runtime_startup.lua",
+        "install_path": "startup.lua",
+        "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/casino/economy.lua",
+        "install_path": "lib/casino/economy.lua",
+        "sha256": "a13791cf91fb531dd452fe8c5f6cbdddb8544a28897e84be0978412808485918"
+      },
+      {
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
+        "repo_path": "Shared/lib/casino/group/dealer.lua",
+        "install_path": "lib/casino/group/dealer.lua",
+        "sha256": "4f3f7247c12eda461b7f1dce3600fb040d10e1016b50e8440fbf87e4097e6132"
+      },
+      {
+        "repo_path": "Shared/lib/casino/group/free.lua",
+        "install_path": "lib/casino/group/free.lua",
+        "sha256": "141b286a20af06244c8be7697fc3b26c096753d99cead30662da142542c85c74"
+      },
+      {
+        "repo_path": "Shared/lib/casino/group/link.lua",
+        "install_path": "lib/casino/group/link.lua",
+        "sha256": "2e4c532af443f54ae4740f8893ab4d0599e38ebab2fb79324e488fa27c796316"
+      },
+      {
+        "repo_path": "Shared/lib/casino/group/seat.lua",
+        "install_path": "lib/casino/group/seat.lua",
+        "sha256": "c37a0431849d826d92061c095553dce0d075109f5244fabe235880ca5ca536a8"
+      },
+      {
+        "repo_path": "Shared/lib/casino/group/seatui.lua",
+        "install_path": "lib/casino/group/seatui.lua",
+        "sha256": "e558789f226bf31dff0fc93f20c9249644b5a71f99f0eb9c6f4f61e812c68193"
+      },
+      {
+        "repo_path": "Shared/lib/casino/group/station.lua",
+        "install_path": "lib/casino/group/station.lua",
+        "sha256": "8a58ee62a47cd0196fc548846d570db74d065188eda652e8007954c39e962b4f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/journal.lua",
+        "install_path": "lib/casino/journal.lua",
+        "sha256": "477c1f9b9dca49e1ddd33c6dadea92ab06696f6e399b93d6641adec2564bfc6b"
+      },
+      {
+        "repo_path": "Shared/lib/casino/lamps.lua",
+        "install_path": "lib/casino/lamps.lua",
+        "sha256": "c482ccb64c64a072b8ff3d1b5d6d386af9715e7f4d287d50d8c96b32adb1eb00"
+      },
+      {
+        "repo_path": "Shared/lib/casino/limits.lua",
+        "install_path": "lib/casino/limits.lua",
+        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+      },
+      {
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "7bd86ddd1a5ab7436160f623482734e3fab31fae442332fbbe757d813f802338"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+      },
+      {
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/casino/stats.lua",
+        "install_path": "lib/casino/stats.lua",
+        "sha256": "39f1ec7e85cc28f12deb8dc608779e64380bc43248844600767bc483979c1b00"
+      },
+      {
+        "repo_path": "Shared/lib/casino/theme.lua",
+        "install_path": "lib/casino/theme.lua",
+        "sha256": "8a8b2a315e53e5467e0277c7a229f89966b73d489adf7297478d299a156a1de7"
+      },
+      {
+        "repo_path": "Shared/lib/casino/ui.lua",
+        "install_path": "lib/casino/ui.lua",
+        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
+      },
+      {
+        "repo_path": "Shared/lib/casino/wallet.lua",
+        "install_path": "lib/casino/wallet.lua",
+        "sha256": "b401acf6462e70f56484cbeaa718c216cea1278cf1c32f32a73dc926a9b724e9"
+      },
+      {
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/casino/deck.lua",
+        "install_path": "lib/casino/deck.lua",
+        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
+      },
+      {
+        "repo_path": "Shared/lib/casino/chat.lua",
+        "install_path": "lib/casino/chat.lua",
+        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/books.lua",
+        "install_path": "lib/casino/books.lua",
+        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+      },
+      {
+        "repo_path": "System/roger_logs.lua",
+        "install_path": "rogerlogs.lua",
+        "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
+      },
+      {
+        "repo_path": "System/roger_update.lua",
+        "install_path": "rogerupdate.lua",
+        "sha256": "d5b69aa035dc58d3882cb43094bf85f40f7d8f7e1d1542dd68f31dcf513047ed"
+      },
+      {
+        "repo_path": "Shared/lib/roger_supervisor.lua",
+        "install_path": "lib/roger_supervisor.lua",
+        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
+      },
+      {
+        "repo_path": "Shared/lib/roger_logging.lua",
+        "install_path": "lib/roger_logging.lua",
+        "sha256": "a73913a74cad2ce561025c4007b5330f2e7f6ded93c9b572c34938a2f4aca8b6"
+      },
+      {
+        "repo_path": "Shared/lib/updater.lua",
+        "install_path": "lib/updater.lua",
+        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/board.lua",
+        "install_path": "games/catan/board.lua",
+        "sha256": "d2b5e138d77f83e1855c84c1cd7929789c399d66108a27caef90c6d423058e52"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/bot.lua",
+        "install_path": "games/catan/bot.lua",
+        "sha256": "f272f03d15a1a8df5d520275cfd388c86c986cb505246ef7df405a5a65e29d92"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/core.lua",
+        "install_path": "games/catan/core.lua",
+        "sha256": "a663197e45bffad84b783b9689f672fdc4ea246dabd9427a059b526742e8bd96"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/draw.lua",
+        "install_path": "games/catan/draw.lua",
+        "sha256": "9665e57916547dcaeecffd4dd7b6fcab31585a731f4b2b88a6ab41ecd96dd631"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/plugin.lua",
+        "install_path": "games/catan/plugin.lua",
+        "sha256": "df4f659a80b24643dada04a80e637cfcfb74780430d58aa6194ef342a21d4977"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/rules.lua",
+        "install_path": "games/catan/rules.lua",
+        "sha256": "ca4f20ac171fe59d40926feb7ed602a8c3b17e48f8e32e2e2ce9665de853886c"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/seatView.lua",
+        "install_path": "games/catan/seatView.lua",
+        "sha256": "04e249223f45186b4d2b06d0287b948e5203f32ec9e162e2b2d0bce7681bc8bb"
+      },
+      {
+        "repo_path": "Games/GameNight/games/catan/tableView.lua",
+        "install_path": "games/catan/tableView.lua",
+        "sha256": "a141bb17b8ad946afa040a859d5a71a21eb5d97f366e9047951700b942de600c"
+      },
+      {
+        "repo_path": "Games/GameNight/games/registry.lua",
+        "install_path": "games/registry.lua",
+        "sha256": "17d358d7b22ee8eba85441dbd69c81d019dc9104452b1f92ef565ff92c2d34a9"
+      },
+      {
+        "repo_path": "Games/GameNight/startup.lua",
+        "install_path": "game-night_startup.lua",
+        "sha256": "b5c0429e239b585206b75d0b5a89a264fe889a773fff7f478425f45b1e27b211"
+      },
+      {
+        "repo_path": "Games/GameNight/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "Shared/lib/casino/audio.lua",
+        "install_path": "lib/casino/audio.lua",
+        "sha256": "a9be08da7bd9b514ee1671092c9297d7883b79aab9b58fe9237a46b385f94b3c"
+      },
+      {
+        "repo_path": "Shared/lib/casino/bit32_shim.lua",
+        "install_path": "lib/casino/bit32_shim.lua",
+        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
+      },
+      {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
+      },
+      {
+        "repo_path": "Shared/lib/casino/canvas.lua",
+        "install_path": "lib/casino/canvas.lua",
+        "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
+      },
+      {
+        "repo_path": "Shared/lib/update_screen.lua",
+        "install_path": "lib/update_screen.lua",
+        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+      }
+    ]
+  },
+  "runtime": {
+    "boot_mode": "supervisor",
+    "system_entrypoint": "startup.lua",
+    "app_entrypoint": "game-night_startup.lua",
+    "auto_restart": true,
+    "update_interval": 300,
+    "requires_updater": true,
+    "lib_modules": [
+      "lib.casino.audio",
+      "lib.casino.bit32_shim",
+      "lib.casino.board",
+      "lib.casino.books",
+      "lib.casino.canvas",
+      "lib.casino.chat",
+      "lib.casino.deck",
+      "lib.casino.economy",
+      "lib.casino.font",
+      "lib.casino.group.dealer",
+      "lib.casino.group.free",
+      "lib.casino.group.link",
+      "lib.casino.group.seat",
+      "lib.casino.group.seatui",
+      "lib.casino.group.station",
+      "lib.casino.journal",
+      "lib.casino.lamps",
+      "lib.casino.limits",
+      "lib.casino.net",
+      "lib.casino.rng",
+      "lib.casino.session",
+      "lib.casino.stats",
+      "lib.casino.theme",
+      "lib.casino.ui",
+      "lib.casino.wallet",
+      "lib.roger_logging",
+      "lib.roger_supervisor",
+      "lib.runtime_exit",
+      "lib.sound_picks",
+      "lib.update_screen",
+      "lib.updater"
+    ]
+  }
+}
