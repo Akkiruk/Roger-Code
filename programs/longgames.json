@@ -7,12 +7,12 @@
     "description": "Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.",
     "source_root": "Games/LongGames",
     "entrypoint": "startup.lua",
-    "version": "1.0.15"
+    "version": "1.0.16"
   },
   "build": {
-    "commit": "d9c6339fb3f0363bc227d94fab113b1d067d7750",
-    "generated_at": "2026-11-04T04:10:36Z",
-    "package_hash": "c7ba9573bbc86d4c228a62934e4492e2732d928f424aef6cb2bb386cc6935124"
+    "commit": "a21d198ad5176795c7742dcecb72a20b8df0ecfa",
+    "generated_at": "2026-11-04T04:41:24Z",
+    "package_hash": "07ce365cffe698185f3696f7181acfc4b84ad56a52cf0ebe2a727e6eea33ca9e"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "92a05a031220558d5a3e4df484ea0a88678819e5fc1bc38a03885f3839b898a9"
+        "sha256": "67016ef9b3aff84f0614b370cf7fd4a86aac71c16b22262feecb868e99ae3bf3"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "ce905a00623f5a298a31e75ec7774cebc4f385c7c23a5f128772f65f99c44f3e"
+        "sha256": "5479b95b6e8553cbe6c85540020589aedcc5beb74d4a68ace66079d65526294f"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -215,17 +215,17 @@
       {
         "repo_path": "Games/LongGames/games/craftworld/art.lua",
         "install_path": "games/craftworld/art.lua",
-        "sha256": "f89531cec2c59bc1bf36f3f368c9ff443bc765cb12ef51674c80ef44dcff5092"
+        "sha256": "dbeae17256f68bb47f17f0ff8d6e0c06937eebb31eb8a62a9f72f758042772e2"
       },
       {
         "repo_path": "Games/LongGames/games/craftworld/bot.lua",
         "install_path": "games/craftworld/bot.lua",
-        "sha256": "c727c8113af982c98f06f3b32b52a3701315d481725b3472a0a83ebfe40a834f"
+        "sha256": "24648eaaf21a391c3e202ff84d25e842046af9409887208cd7b3d77cdce6b07c"
       },
       {
         "repo_path": "Games/LongGames/games/craftworld/plugin.lua",
         "install_path": "games/craftworld/plugin.lua",
-        "sha256": "a49f90d07fdd7676542c153049f4da153614b16560fe7968ccb4666f097d2e27"
+        "sha256": "6406c6694e6e5033e5a8e258d51555721c3224534bc098a20bfd2bb09ea0eed6"
       },
       {
         "repo_path": "Shared/lib/sound.lua",
@@ -235,7 +235,7 @@
       {
         "repo_path": "Games/LongGames/games/craftworld/rules.lua",
         "install_path": "games/craftworld/rules.lua",
-        "sha256": "5ef511de1acc0d1756eb880c650cb15ec0baa1cf9887fa3a57bf410c34bf50a4"
+        "sha256": "b4db3e77ebda66c17765d2fa8c077d626c0edb069e4d6eb837548286d800489f"
       },
       {
         "repo_path": "Games/LongGames/games/craftworld/world.lua",
@@ -300,7 +300,7 @@
       {
         "repo_path": "Games/LongGames/games/craftworld/view.lua",
         "install_path": "games/craftworld/view.lua",
-        "sha256": "31ea3431ae1d66770c21f98b2a4ffaef4356be6b47d5c4d06d31bf861ff1fa45"
+        "sha256": "e8f83e4688721d98531a17825cb00989cb187af5330125a0678db9db96b04bca"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
