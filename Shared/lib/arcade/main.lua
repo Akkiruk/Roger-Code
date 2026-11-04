@@ -301,13 +301,15 @@ end
 
 --- Give each seat its wall: the one its player tapped from, and the other for whoever did not tap. False if two named
 -- players are both at the same wall, because then one of them would be reading the other's hidden pieces.
+--- On a cabinet with two walls every game gives each player a wall of their own, so nobody can take the other's turn by
+--- tapping on the wrong side; only a game with hidden pieces refuses two named players who picked from the same wall.
 local function chooseWalls(l)
-  if not app.plugin.private then
+  if #env.walls < 2 then
     l.red.wall, l.blue.wall = nil, nil
     return true
   end
   if l.red.wall and l.red.wall == l.blue.wall then
-    if seats.isHuman(l.red) and seats.isHuman(l.blue) then return false end
+    if app.plugin.private and seats.isHuman(l.red) and seats.isHuman(l.blue) then return false end
     if seats.isHuman(l.red) then l.blue.wall = nil else l.red.wall = nil end
   end
   local redWall = l.red.wall or (l.blue.wall and otherWall(l.blue.wall)) or env.walls[1].name
@@ -617,8 +619,10 @@ local function handleBoardTouch(px, py, who, wall)
   if not g or g.paused or g.state.winner ~= 0 then return end
   local mover = matches.moverSlot(g)
   local viewer = app.plugin.private and seats.wallSeat(g, wall) or nil
-  if app.plugin.private and viewer ~= g.state.turn then
-    if not mover.cpu then refuse("It is " .. mover.name .. "'s turn", 1500) end
+  -- two walls, a wall each: a move only comes from the wall of the player whose turn it is
+  local ownWalls = #env.walls >= 2 and g.red.wall and g.blue.wall
+  if (app.plugin.private or ownWalls) and seats.wallSeat(g, wall) ~= g.state.turn then
+    if not mover.cpu then refuse("It is " .. mover.name .. "'s turn, on the other side", 1500) end
     return
   end
   if mover.cpu then
