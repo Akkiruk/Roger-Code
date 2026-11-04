@@ -138,7 +138,7 @@ local SCRIPTED = { hit = "sword_hit", door = "door_open", horn = "horn", thud = 
 
 -- What each event sounds like. Names are in lib/sound_picks.lua.
 local SFX = {
-  step = "step", turn = "ui_page", page = "ui_page", pick = "ui_tap", bump = "wall", door = "door_open",
+  step = "step", turn = "step", page = "ui_page", pick = "ui_tap", bump = "wall", door = "door_open",
   unlock = "unlock", chest = "chest", gold = "coin", buy = "coin", item = "pickup", heal = "heal",
   join = "save", save = "save", fin = "level_clear", battle = "battle", wipe = "death", sting = "sting",
   hurt = "player_hurt", fall = "death", miss = "miss", defend = "block", menu = "ui_tap", spell = "spell",
