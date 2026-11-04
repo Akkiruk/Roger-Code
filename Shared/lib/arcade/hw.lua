@@ -132,6 +132,32 @@ function M.pollDetector()
     end
   end
   table.sort(detected, byName)
+  -- the closest of them: the smallest range anyone is in, found by halving, so a save goes to who is standing at the wall
+  local closest = nil
+  if #detected == 1 then
+    closest = detected[1]
+  elseif #detected > 1 then
+    local lo, hi, inner = 1, config.DETECT_RANGE, detected
+    while lo < hi do
+      local mid = math.floor((lo + hi) / 2)
+      local near = safe(state.detector.getPlayersInRange, mid)
+      if type(near) == "table" and #near > 0 then
+        hi, inner = mid, near
+      else
+        lo = mid + 1
+      end
+    end
+    if #inner == 1 then
+      closest = inner[1]
+    else
+      -- level pegging: whoever was closest before, if they still are, else the first of them
+      for _, n in ipairs(inner) do
+        if n == state.closest then closest = n end
+      end
+      closest = closest or inner[1]
+    end
+  end
+  state.closest = closest
   state.nearbyDetected, state.nearbyOk, state.nearbyAt = detected, ok, nowMs()
   for name in pairs(state.watched or {}) do
     local pos = state.detector and safe(state.detector.getPlayerPos, name)
@@ -155,6 +181,9 @@ function M.follow(name)
   state.watched = state.watched or {}
   state.watched[name] = true
 end
+
+--- The player standing closest to the detector at the last poll, or nil with nobody there or no detector.
+function M.closest() return state.closest end
 
 --- Where a followed player stood at the last poll: { x, y, z }, or nil.
 function M.position(name) return state.positions[name] end

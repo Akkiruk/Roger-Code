@@ -68,8 +68,11 @@ local function saveRun(a)
   return ok
 end
 
---- A tap that came with no name: if one person is here, it's them.
+--- Who is at the wall: the player standing closest to the detector, so a save and a score go to them even with others
+--- about. With no detector, the name the tap came with, or the one person here.
 local function nearestName(who)
+  local closest = hw.closest and hw.closest()
+  if closest then return closest end
   if who then return who end
   local list = hw.nearby()
   return #list == 1 and list[1] or nil
@@ -188,6 +191,7 @@ end
 
 --- If this tap is someone else's, the ready screen turns to them and the tap has done its job.
 local function readyForOther(a, who)
+  who = nearestName(who)
   if not who or who == a.saveOwner then return false end
   offerSave(a, who)
   return true
