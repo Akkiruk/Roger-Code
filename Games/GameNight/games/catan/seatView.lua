@@ -19,7 +19,7 @@ local M = {}
 local TOP = seatui.TOP          -- 10
 local BOTTOM = 38               -- the last row of ours: the engine's note goes on 39
 local W = seatui.W              -- 78
-local MINI_W, MINI_CX, MINI_CY, MINI_LAND = 8, 27, 24, 0.78
+local MINI_W, MINI_CX, MINI_CY, MINI_LAND = 8, 27, 24, 0.88
 local SIDE_X = 55
 local TILE_W, TILE_GAP = 14, 1
 

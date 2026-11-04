@@ -86,7 +86,8 @@ function M.layout(w, cx, cy, land)
       local q, r, s = round(qf), round(rf), round(sf)
       local dq, dr, ds = math.abs(q - qf), math.abs(r - rf), math.abs(s - sf)
       if dq > dr and dq > ds then q = -r - s elseif dr > ds then r = -q - s end
-      local h = byAxial[q .. "," .. r]
+      -- Adding nought turns a negative zero into zero, which would otherwise print as "-0" and miss the middle hex
+      local h = byAxial[(q + 0) .. "," .. (r + 0)]
       local kind = nil
       if h then
         kind = hexNorm(fx2, fy2, q, r) <= land and h or 0
@@ -177,22 +178,18 @@ local function roads(c, geo, view)
   end
 end
 
+-- The wall's pieces, k the rim and c the player's colour
+local TOWN = { ".kck.", "kccck", "kccck" }
+local CITY = { ".kck...", "kccckkk", "kcccccc", "kcccccc" }
+
 --- A settlement or a city at a corner. big is the wall's size.
 local function building(c, geo, v, color, city, big)
   local x, y = M.vertexCell(geo, v)
   if big then
-    -- An ink rim, so a white or orange piece reads on any land
-    if city then
-      c:rect(x - 3, y - 2, 5, 1, C.ink)
-      c:rect(x - 3, y - 1, 7, 3, C.ink)
-      c:rect(x - 2, y - 1, 3, 1, color)
-      c:rect(x - 2, y, 5, 1, color)
-    else
-      c:rect(x - 1, y - 2, 3, 1, C.ink)
-      c:rect(x - 2, y - 1, 5, 2, C.ink)
-      c:rect(x, y - 1, 1, 1, color)
-      c:rect(x - 1, y, 3, 1, color)
-    end
+    -- A house with a pointed roof, or a city's house with a hall beside it, in an ink rim so a white or orange piece reads on any
+    -- land
+    local rows = city and CITY or TOWN
+    c:sprite(x - math.floor(#rows[1] / 2), y - 1, rows, { k = C.ink, c = color })
   else
     if city then
       c:rect(x - 1, y, 3, 1, color)
@@ -209,31 +206,43 @@ local function dots(n)
   return string.rep("\7", pips)
 end
 
---- A hex's number on the wall: big, with a shadow so it reads on any land, red for 6 and 8, its odds as dots. The number just
--- rolled gets a gold ring. The robber covers it.
+--- A token just big enough for its number and the dots under it, its corners rounded off, the number's top row at y - 2.
+local function disc(c, x, y, w, bg)
+  local left = x + 1 - math.floor(w / 2)
+  c:rect(left + 1, y - 3, w - 2, 1, bg)
+  c:rect(left, y - 2, w, 5, bg)
+  c:rect(left + 1, y + 3, w - 2, 1, bg)
+end
+
+-- The robber: a hooded piece
+local ROBBER = { ".###.", "#####", ".###.", "..#..", ".###.", "#####" }
+
+--- A hex's number on the wall: on a cream token the way the board game prints them, red for 6 and 8, its odds as dots under it,
+-- inside the token where no settlement can cover them. The robber stands on its token, black, with the number it is blocking
+-- beside it.
 local function bigToken(c, geo, view, h, rolled)
   local x, y = M.hexCell(geo, h)
   local t, n = view.terrain[h], view.number[h]
   local name = t == 0 and "DESERT" or board.RES_NAME[t]
   local labelInk = (t == 1 or t == 2) and C.text or C.ink
+  c:textCenter(x + 1, y - 4, name, labelInk)
   if view.robber == h then
-    c:rect(x - 4, y - 2, 9, 5, C.ink)
-    c:textCenter(x + 1, y - 1, "ROBBER", C.red, C.ink)
-    c:textCenter(x + 1, y + 1, n > 0 and tostring(n) or "", C.mute, C.ink)
-    c:textCenter(x, y - 4, name, labelInk)
+    disc(c, x, y, 10, C.ink)
+    c:sprite(x - 3, y - 3, ROBBER, { ["#"] = C.mute })
+    if n > 0 then c:text(x + 3, y - 1, tostring(n), C.mute, C.ink) end
+    c:text(x - 2, y + 3, "ROBBER", C.red, C.ink)
     return
   end
-  c:textCenter(x, y - 4, name, labelInk)
   if n == 0 then return end
   local text = tostring(n)
   local red = n == 6 or n == 8
-  if rolled == n then
-    local w = c:bigWidth(text, 1) + 4
-    c:frame(x - math.floor(w / 2) - 1, y - 3, w + 1, 8, C.gold)
-  end
-  c:bigCenter(x + 1, y - 1, text, red and C.text or C.ink, 1)
-  c:bigCenter(x, y - 2, text, red and C.red or C.text, 1)
-  c:textCenter(x, y + 4, dots(n), red and C.red or C.text)
+  -- Just rolled, the token turns black with a gold number: gold on cream would vanish on a grain field
+  local hit = rolled == n
+  local bg = hit and C.ink or C.text
+  local ink = hit and C.gold or (red and C.red or C.ink)
+  disc(c, x, y, math.max(c:bigWidth(text, 1), board.PIPS[n] or 0) + 2, bg)
+  c:bigCenter(x + 1, y - 2, text, ink, 1)
+  c:textCenter(x + 1, y + 3, dots(n), ink, bg)
 end
 
 local function smallToken(c, geo, view, h)
@@ -251,25 +260,63 @@ local function smallToken(c, geo, view, h)
   c:text(x - (#text == 2 and 1 or 0), y, text, red and C.red or C.ink, C.text)
 end
 
+--- A harbour on the wall: a ship with its sail in the colour of what it takes, white for anything, and its rate on the hull, moored
+-- by two sand piers to the two corners that use it.
+local function ship(c, geo, harbor, x, y)
+  local edge = board.edges[harbor.edge]
+  -- The piers first, over sea only, so they never cross land, a channel or the ship
+  for _, v in ipairs({ edge.a, edge.b }) do
+    local vx, vy = M.vertexCell(geo, v)
+    local tx, ty = x, y + 1
+    local steps = math.max(math.abs(vx - tx), math.abs(vy - ty))
+    for i = 1, steps - 1 do
+      local px, py = round(tx + (vx - tx) * i / steps), round(ty + (vy - ty) * i / steps)
+      local row = geo[py]
+      local sea = not row or row[px] == nil
+      local onShip = math.abs(px - x) <= 3 and py >= y - 1 and py <= y + 2
+      if sea and not onShip then c:rect(px, py, 1, 1, C.accent) end
+    end
+  end
+  local sail, ink, name
+  if harbor.res == 0 then
+    sail, ink, name = C.text, C.ink, "ANY"
+  else
+    sail, ink, name = M.RES[harbor.res], M.RES_INK[harbor.res], board.RES_NAME[harbor.res]
+  end
+  -- Seven wide at the hull, five at the sail: the longest name, BRICK or GRAIN, just fills it
+  c:rect(x - 2, y - 1, 5, 1, sail)
+  c:textCenter(x, y - 1, name, ink, sail)
+  c:rect(x, y, 1, 1, C.ink)
+  c:rect(x - 3, y + 1, 7, 1, C.ink)
+  c:rect(x - 2, y + 2, 5, 1, C.ink)
+  c:textCenter(x, y + 1, harbor.res == 0 and "3:1" or "2:1", C.gold, C.ink)
+end
+
 --- Harbours just off the coast: what they trade, in the resource's colour, white for any.
 local function harbors(c, geo, view, big)
   for _, harbor in ipairs(view.harbors) do
     local at = geo.edgeAt[harbor.edge]
     local dx, dy = (at.x - geo.cx) * 2, (at.y - geo.cy) * 3
     local len = math.sqrt(dx * dx + dy * dy)
-    local push = big and 9 or 5
-    local x = round(at.x + dx / len * push / 2)
+    local push = big and 10 or 5
+    -- A ship goes further out to the side than up or down, clear of the corner numbers along the coast
+    local x = round(at.x + dx / len * (big and 16 or push) / 2)
     local y = round(at.y + dy / len * push / 3)
-    local label, bg, fg
-    if harbor.res == 0 then
-      label, bg, fg = big and "3:1 ANY" or "3:1", C.text, C.ink
+    if big then
+      -- Kept on the screen, inside the board's own half of the wall
+      ship(c, geo, harbor, math.max(4, math.min(2 * geo.cx - 4, x)), y - 1)
     else
-      label = big and ("2:1 " .. board.RES_NAME[harbor.res]) or ("2:1" .. board.RES_SHORT[harbor.res])
-      bg, fg = M.RES[harbor.res], M.RES_INK[harbor.res]
+      local label, bg, fg
+      if harbor.res == 0 then
+        label, bg, fg = "3:1", C.text, C.ink
+      else
+        label = "2:1" .. board.RES_SHORT[harbor.res]
+        bg, fg = M.RES[harbor.res], M.RES_INK[harbor.res]
+      end
+      local w = #label + 2
+      c:rect(x - floor(w / 2), y, w, 1, bg)
+      c:text(x - floor(w / 2) + 1, y, label, fg, bg)
     end
-    local w = #label + 2
-    c:rect(x - floor(w / 2), y, w, 1, bg)
-    c:text(x - floor(w / 2) + 1, y, label, fg, bg)
   end
 end
 

@@ -11,7 +11,7 @@ local theme = require("lib.casino.theme")
 local C = theme.C
 local M = {}
 
-local BOARD_W, BOARD_CX, BOARD_CY, LAND = 14, 43, 36, 0.84
+local BOARD_W, BOARD_CX, BOARD_CY, LAND = 14, 43, 36, 0.93
 local PANEL_X, PANEL_W = 87, 34
 local BLOCK_Y, BLOCK_H = 15, 8
 local LOG_Y = 63
@@ -150,7 +150,20 @@ local function logLines(c, view)
   local lines = view.log or {}
   for i, line in ipairs(lines) do
     local fresh = i == #lines
-    c:text(3, LOG_Y + i - 1, short(line, 81), fresh and C.text or C.mute, C.feltDark)
+    local text = short(line, 81)
+    local y = LOG_Y + i - 1
+    c:text(3, y, text, fresh and C.text or C.mute, C.feltDark)
+    -- Each player's name in their own colour, so who did what can be read at a glance
+    for _, player in ipairs(view.players) do
+      local name = tostring(player.name or "")
+      local from = name ~= "" and 1 or nil
+      while from do
+        local s, e = text:find(name, from, true)
+        if not s then break end
+        c:text(2 + s, y, name, draw.playerColor(player), C.feltDark)
+        from = e + 1
+      end
+    end
   end
 end
 
@@ -186,18 +199,36 @@ local function offerBox(c, view)
   end
 end
 
+-- What each thing costs, as resource numbers in order, and what it is worth
+local COSTS = {
+  { "ROAD", { 1, 2 }, "" }, { "TOWN", { 1, 2, 3, 4 }, "1 PT" }, { "CITY", { 4, 4, 5, 5, 5 }, "2 PTS" },
+  { "CARD", { 3, 4, 5 }, "DEV" },
+}
+
+--- The bank's cards and a card of what things cost, each resource a chip in its own colour.
 local function bankBox(c, view)
-  local y = 58
+  local y = 57
   c:text(PANEL_X, y, "BANK", C.mute)
+  local deck = "DEV CARDS " .. tostring(view.deck)
+  c:text(PANEL_X + PANEL_W - #deck, y, deck, C.mute)
   local x = PANEL_X
   for i = 1, 5 do
-    local text = board.RES_SHORT[i] .. tostring(view.bank[i])
-    c:text(x, y + 1, " " .. text, draw.RES_INK[i], draw.RES[i])
-    x = x + #text + 2
+    local text = " " .. board.RES_SHORT[i] .. tostring(view.bank[i]) .. " "
+    c:text(x, y + 1, text, draw.RES_INK[i], draw.RES[i])
+    x = x + #text + 1
   end
-  c:text(PANEL_X, y + 3, "Development cards left: " .. tostring(view.deck), C.mute)
-  c:text(PANEL_X, y + 5, "Road BR WD    Town BR WD WL GR", C.mute)
-  c:text(PANEL_X, y + 6, "City 2GR 3OR  Card WL GR OR", C.mute)
+  c:rect(PANEL_X - 1, y + 3, PANEL_W + 2, 10, C.panel)
+  c:text(PANEL_X, y + 3, "BUILD COSTS", C.mute, C.panel)
+  for row, item in ipairs(COSTS) do
+    local ry = y + 3 + row * 2
+    c:text(PANEL_X, ry, item[1], C.text, C.panel)
+    local cx = PANEL_X + 6
+    for _, r in ipairs(item[2]) do
+      c:text(cx, ry, board.RES_SHORT[r], draw.RES_INK[r], draw.RES[r])
+      cx = cx + 3
+    end
+    c:text(PANEL_X + PANEL_W - #item[3], ry, item[3], C.gold, C.panel)
+  end
 end
 
 --- A word across the island for a big moment.
