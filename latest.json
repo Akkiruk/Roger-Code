@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-04T02:39:30Z",
+  "generated_at": "2026-11-04T03:48:10Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "81ecc350cc7087b5f81443ea0e9d7e860b1a75d9",
+    "commit": "ddf376e77285e3fb529c0cd82231cd211fdaf0c7",
     "path": "System/installer.lua",
     "sha256": "3b97f9cd097641489f475bd33df4afa8fcf5b6a7fdcd5bd15b881e0c5d0a0fe6"
   },
@@ -151,10 +151,10 @@
     "longgames": {
       "name": "Long Games",
       "category": "Arcade",
-      "description": "Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.",
-      "version": "1.0.13",
-      "commit": "81ecc350cc7087b5f81443ea0e9d7e860b1a75d9",
-      "package_hash": "9ae8e8a8272da006d859eb78b38327ef0c4e68f602de7096cdcc7749609a9308",
+      "description": "Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.",
+      "version": "1.0.14",
+      "commit": "ddf376e77285e3fb529c0cd82231cd211fdaf0c7",
+      "package_hash": "f001d2fdb8c6d7c1ffaf8be42ceb57896b0496190b2f39b84c45c4b45a72f29f",
       "spec_path": "programs/longgames.json"
     },
     "phone_os": {

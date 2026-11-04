@@ -4,15 +4,15 @@
     "key": "longgames",
     "name": "Long Games",
     "category": "Arcade",
-    "description": "Oregon Trail, Tower of Druaga and a first-person dungeon crawl, with your progress saved between visits.",
+    "description": "Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.",
     "source_root": "Games/LongGames",
     "entrypoint": "startup.lua",
-    "version": "1.0.13"
+    "version": "1.0.14"
   },
   "build": {
-    "commit": "81ecc350cc7087b5f81443ea0e9d7e860b1a75d9",
-    "generated_at": "2026-11-04T02:39:30Z",
-    "package_hash": "9ae8e8a8272da006d859eb78b38327ef0c4e68f602de7096cdcc7749609a9308"
+    "commit": "ddf376e77285e3fb529c0cd82231cd211fdaf0c7",
+    "generated_at": "2026-11-04T03:48:10Z",
+    "package_hash": "f001d2fdb8c6d7c1ffaf8be42ceb57896b0496190b2f39b84c45c4b45a72f29f"
   },
   "install": {
     "preserve": [],
@@ -21,6 +21,31 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/action.lua",
+        "install_path": "lib/arcade/action.lua",
+        "sha256": "92a05a031220558d5a3e4df484ea0a88678819e5fc1bc38a03885f3839b898a9"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/audio.lua",
+        "install_path": "lib/arcade/audio.lua",
+        "sha256": "04c8c527d54abfa433fabb584ebe1433eb24fc5d7d9c738cd8e9d62802a971dd"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/base.lua",
+        "install_path": "lib/arcade/base.lua",
+        "sha256": "8f5bd414e9a0a3f79e7a44ead346c6e1144f780f5481ecbe096ee9f8ce6fc6ea"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/constants.lua",
+        "install_path": "lib/arcade/constants.lua",
+        "sha256": "61f2f1a7763297008750d35fc1d0a4dd1d6e563cd422ab81838c1407b360293f"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/hw.lua",
+        "install_path": "lib/arcade/hw.lua",
+        "sha256": "73c89d6b163bfb04d44ee6229ca168934decd2321fc9519657ed17d06cc143cf"
       },
       {
         "repo_path": "Shared/lib/arcade/journal.lua",
@@ -68,14 +93,14 @@
         "sha256": "da2e3320340bebc18cb873a393872d5dc1f8874d7b80a3d4f568b6c8f0f465e4"
       },
       {
-        "repo_path": "Shared/lib/arcade/hw.lua",
-        "install_path": "lib/arcade/hw.lua",
-        "sha256": "73c89d6b163bfb04d44ee6229ca168934decd2321fc9519657ed17d06cc143cf"
-      },
-      {
         "repo_path": "Shared/lib/arcade/scores.lua",
         "install_path": "lib/arcade/scores.lua",
         "sha256": "3bb8b065c6e104a7887fa9b9ee584cfea344a4bd797b216bb14f17ce236e552e"
+      },
+      {
+        "repo_path": "Shared/lib/arcade/screens.lua",
+        "install_path": "lib/arcade/screens.lua",
+        "sha256": "34c52b9174062880707958be80d19cf33ff9ab6db67921b2c0eaf725a9564296"
       },
       {
         "repo_path": "Shared/lib/arcade/seats.lua",
@@ -123,24 +148,24 @@
         "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
-        "repo_path": "Shared/lib/arcade/screens.lua",
-        "install_path": "lib/arcade/screens.lua",
-        "sha256": "34c52b9174062880707958be80d19cf33ff9ab6db67921b2c0eaf725a9564296"
+        "repo_path": "Games/LongGames/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
-        "repo_path": "Shared/lib/arcade/constants.lua",
-        "install_path": "lib/arcade/constants.lua",
-        "sha256": "61f2f1a7763297008750d35fc1d0a4dd1d6e563cd422ab81838c1407b360293f"
+        "repo_path": "Games/LongGames/surface",
+        "install_path": "surface",
+        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
       },
       {
-        "repo_path": "Shared/lib/arcade/base.lua",
-        "install_path": "lib/arcade/base.lua",
-        "sha256": "8f5bd414e9a0a3f79e7a44ead346c6e1144f780f5481ecbe096ee9f8ce6fc6ea"
+        "repo_path": "Games/LongGames/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
-        "repo_path": "Shared/lib/arcade/audio.lua",
-        "install_path": "lib/arcade/audio.lua",
-        "sha256": "04c8c527d54abfa433fabb584ebe1433eb24fc5d7d9c738cd8e9d62802a971dd"
+        "repo_path": "Games/LongGames/startup.lua",
+        "install_path": "longgames_startup.lua",
+        "sha256": "74e015b5147ba29a38c624fa4126a539ce1d9bc6404f70b3f13fb44416fa067a"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -166,6 +191,56 @@
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
         "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+      },
+      {
+        "repo_path": "Games/LongGames/games/cookie/art.lua",
+        "install_path": "games/cookie/art.lua",
+        "sha256": "84b18048e8a7d23bb63188837fde6000b52abfb5561f1c1da1e466024b020f7f"
+      },
+      {
+        "repo_path": "Games/LongGames/games/cookie/data.lua",
+        "install_path": "games/cookie/data.lua",
+        "sha256": "900ec9c3adf44609124b4bfdd527681a3618475aace099058c0d4700018661f7"
+      },
+      {
+        "repo_path": "Games/LongGames/games/cookie/plugin.lua",
+        "install_path": "games/cookie/plugin.lua",
+        "sha256": "0aba48683c59ddb0a8b9faa709118c38c481037684d2b129180d623ec4954ef2"
+      },
+      {
+        "repo_path": "Games/LongGames/games/cookie/rules.lua",
+        "install_path": "games/cookie/rules.lua",
+        "sha256": "1df43c8b2e8cba98a37c43c8c9dca773971ca1a5fa39ac4170c6de39abcb4a89"
+      },
+      {
+        "repo_path": "Games/LongGames/games/craftworld/art.lua",
+        "install_path": "games/craftworld/art.lua",
+        "sha256": "f89531cec2c59bc1bf36f3f368c9ff443bc765cb12ef51674c80ef44dcff5092"
+      },
+      {
+        "repo_path": "Games/LongGames/games/craftworld/bot.lua",
+        "install_path": "games/craftworld/bot.lua",
+        "sha256": "c727c8113af982c98f06f3b32b52a3701315d481725b3472a0a83ebfe40a834f"
+      },
+      {
+        "repo_path": "Games/LongGames/games/craftworld/plugin.lua",
+        "install_path": "games/craftworld/plugin.lua",
+        "sha256": "a49f90d07fdd7676542c153049f4da153614b16560fe7968ccb4666f097d2e27"
+      },
+      {
+        "repo_path": "Shared/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
+      },
+      {
+        "repo_path": "Games/LongGames/games/craftworld/rules.lua",
+        "install_path": "games/craftworld/rules.lua",
+        "sha256": "5ef511de1acc0d1756eb880c650cb15ec0baa1cf9887fa3a57bf410c34bf50a4"
+      },
+      {
+        "repo_path": "Games/LongGames/games/craftworld/world.lua",
+        "install_path": "games/craftworld/world.lua",
+        "sha256": "96aa02c9dd92f2c7690a8d1ce2d9ca453072ed6f2ac0dd538defcd56ae2690cd"
       },
       {
         "repo_path": "Games/LongGames/games/druaga/plugin.lua",
@@ -215,7 +290,7 @@
       {
         "repo_path": "Games/LongGames/games/registry.lua",
         "install_path": "games/registry.lua",
-        "sha256": "ec01b55c2b433849a76210a3c413b0db9af6eb0e021da0102433466ad1cc6f74"
+        "sha256": "28cd327b89c8ed1760446c2f9a4ceff198c5f3bd65c6d463c6f59858edbfa90e"
       },
       {
         "repo_path": "Games/LongGames/longgames.lua",
@@ -223,34 +298,9 @@
         "sha256": "cf9a2a8e9b7e97f78c9849a28ed0f86ee8d363bfa88d0070eb023973f9dbfb34"
       },
       {
-        "repo_path": "Games/LongGames/startup.lua",
-        "install_path": "longgames_startup.lua",
-        "sha256": "ff09d815182c41d5c8c3837298e4b170b6c16d0b0a3aac54e7ee6813d21f5692"
-      },
-      {
-        "repo_path": "Games/LongGames/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
-      },
-      {
-        "repo_path": "Games/LongGames/surface",
-        "install_path": "surface",
-        "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
-      },
-      {
-        "repo_path": "Games/LongGames/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
-      },
-      {
-        "repo_path": "Shared/lib/arcade/action.lua",
-        "install_path": "lib/arcade/action.lua",
-        "sha256": "92a05a031220558d5a3e4df484ea0a88678819e5fc1bc38a03885f3839b898a9"
-      },
-      {
-        "repo_path": "Shared/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
+        "repo_path": "Games/LongGames/games/craftworld/view.lua",
+        "install_path": "games/craftworld/view.lua",
+        "sha256": "31ea3431ae1d66770c21f98b2a4ffaef4356be6b47d5c4d06d31bf861ff1fa45"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
