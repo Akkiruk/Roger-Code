@@ -1,97 +1,110 @@
 -- games/moag/rules.lua
--- MOAG: two tanks shelling each other across ground that doesn't stay put. Pure: no screen, sound or files.
--- See "Classics" in games/README.md for the idea; a versus game has a player on every call.
+-- MOAG: two tanks taking turns to shell each other across ground that doesn't stay put. Pure: no screen, sound or files.
+-- See "Versus" in games/README.md; a versus game has a player on every call.
+-- A turn: drive a little on the fuel the turn gives, set the barrel's angle and the power, pick a weapon, FIRE. The shot
+-- plays out to the end, dirt and all, before the other tank's turn. The wind changes every turn and is shown before you aim.
 -- Everything lives in world units, the same size across and down. A monitor cell is 2 units wide and 3 tall, and y grows
 -- downward. The ground is a height for each column of cells. A hole cut under a column leaves what was above it as a slab,
 -- which falls and lands, so an overhang can't last and a tank can be sheltered or buried by what comes down.
--- Player 1's tank starts on the left of the world and player 2's on the right. Only the plugin knows about mirrors.
+-- Player 1's tank starts on the left of the world and player 2's on the right, and each faces the other: an angle is
+-- measured from straight ahead, towards the other tank, so 0 is flat forward, 90 is straight up and 180 is flat back.
+-- Only the plugin knows about mirrors.
 
 local M = {
-  WIDTH = 240, HEIGHT = 198, CELL_W = 2, CELL_H = 3, COLS = 120,
-  ROUNDS_TO_WIN = 5, HP = 100,
-  GRAVITY = 0.35,
-  WIND_MOST = 0.07,
-  FLIGHT_BASE = 12, FLIGHT_PACE = 8, FLIGHT_MOST = 40, -- ticks in the air: the base, then one more for each so many units
-  RELOAD = 20,
-  PREVIEW = 12,               -- ticks the arc stays up after a tap
+  WIDTH = 240, HEIGHT = 171, CELL_W = 2, CELL_H = 3, COLS = 120,
+  ROUNDS_TO_WIN = 3, HP = 100,
+  GRAVITY = 0.5,
+  POWER_SPEED = 0.12,         -- launch speed for each point of power, so 100 is 12 units a tick
+  WIND_STEP = 0.012,          -- the push of one point of wind, in units a tick per tick
+  WIND_MOST = 10,             -- the strongest wind, in points
+  TURN_TICKS = 450,           -- a turn's time: 45 seconds at 100 ms a tick
+  HURRY = 100,                -- ticks left when the clock warns
+  FUEL = 40,                  -- units of driving a turn gives
+  DRIVE_TICKS = 6, DRIVE_MOST = 24, SPEED = 1.5,
+  AIM_REACH = 100,            -- a tap this far from the barrel's root is full power
+  ANGLE = 45, POWER = 60,     -- where a barrel starts
   TANK_HALF = 7, TANK_H = 9,  -- from the centre to the side, and from the tracks to the roof
-  TURRET_H = 7, BARREL = 6,
-  DRIVE_TICKS = 8, DRIVE_MOST = 24, SPEED = 1.5,
+  TURRET_H = 7, BARREL = 8,
   MAX_RISE = 1.3,             -- the steepest step a tank climbs from one column to the next
   REPOSE = 1.1,               -- the steepest loose dirt lies: gentle enough to drive out of a crater
-  DRIVE_REACH = 26,           -- how far either side of a tank a tap means drive, not aim
   BURY = 9,                   -- this much dirt over the tracks and the tank can't shake it off
   REACH = 1.5,                -- a blast hurts out to this many times the size of its crater
-  BEDROCK = 192,              -- nothing digs below this
-  SUDDEN = 600,               -- ticks into a round when both tanks start to fail
-  SUDDEN_EVERY = 3,           -- ticks for each hit point lost after that
+  BEDROCK = 165,              -- nothing digs below this
+  SUDDEN_TURNS = 16,          -- turns into a round when both tanks start to fail
+  SUDDEN_HP = 15,             -- what each turn after that costs both
   DIG_MOST = 70, DIG_SPEED = 4, DIG_BORE = 5,
-  CRATE_MOST = 2,
+  CRATE_MOST = 2, CRATE_CHANCE = 0.4, CRATE_REACH = 10,
   DRAWS_MOST = 3,             -- this many level rounds in a row and the match stops
+  PREVIEW_TICKS = 12,         -- how much of the flight the dotted start of the arc shows
 }
 
 -- What each weapon does. radius is the crater, damage is what a direct hit costs, ammo is how many shots a crate holds.
 M.WEAPONS = {
-  shell = { name = "SHELL", radius = 11, damage = 34, reload = 20 },
-  big = { name = "BIG SHELL", radius = 18, damage = 48, reload = 26, ammo = 2 },
-  cluster = { name = "CLUSTER", radius = 8, damage = 18, reload = 24, ammo = 2, count = 5, spread = 1.1 },
-  dirt = { name = "DIRT BOMB", radius = 22, damage = 0, reload = 20, ammo = 2 },
-  tunneller = { name = "TUNNELLER", radius = 10, damage = 36, reload = 24, ammo = 2 },
-  nuke = { name = "NUKE", radius = 36, damage = 85, reload = 40, ammo = 1 },
+  shell = { name = "SHELL", short = "SHELL", radius = 11, damage = 30 },
+  big = { name = "BIG SHELL", short = "BIG", radius = 16, damage = 45, ammo = 2 },
+  cluster = { name = "CLUSTER", short = "CLUSTER", radius = 7, damage = 16, ammo = 2, count = 5, spread = 1.1 },
+  dirt = { name = "DIRT BOMB", short = "DIRT", radius = 20, damage = 0, ammo = 2 },
+  tunneller = { name = "TUNNELLER", short = "TUNNEL", radius = 10, damage = 34, ammo = 2 },
+  nuke = { name = "NUKE", short = "NUKE", radius = 32, damage = 80, ammo = 1 },
 }
+-- The order the weapon button goes through them.
+M.ORDER = { "shell", "big", "cluster", "dirt", "tunneller", "nuke" }
 -- What a crate can hold. The nuke is rarer than the rest.
 M.LOOT = { "big", "cluster", "dirt", "tunneller", "big", "cluster", "dirt", "tunneller", "nuke" }
 
 local WIDTH, HEIGHT, CELL_W, COLS = M.WIDTH, M.HEIGHT, M.CELL_W, M.COLS
 local GRAVITY, BEDROCK, WEAPONS = M.GRAVITY, M.BEDROCK, M.WEAPONS
 local TANK_HALF, TANK_H, SPEED = M.TANK_HALF, M.TANK_H, M.SPEED
-local abs, ceil, floor, max, min, pi, sin, sqrt = math.abs, math.ceil, math.floor, math.max, math.min, math.pi, math.sin, math.sqrt
+local abs, ceil, floor, max, min, pi, sin, cos, sqrt = math.abs, math.ceil, math.floor, math.max, math.min, math.pi, math.sin,
+  math.cos, math.sqrt
 
 local HOLD = 15             -- ticks a new round waits, for a look at the ground
 local PAUSE = 30            -- ticks the result of a round stays up
+local AFTER = 8             -- ticks a turn's end waits once all is still, to see what the shot did
+local FLY_MOST = 300        -- a shot still going after this long is given up on
 local STRIDE = 1.5          -- the furthest a shell goes between looks at what it's hitting
 local ARM = 4               -- ticks before a shell can hit the tank that fired it
 local OUT = 60              -- how far past the sides a shell can go and still come back
-local PATH_MOST = 90        -- the most ticks of flight a preview follows
-local PATH_DOT = 2          -- ticks between the dots of a preview
+local PATH_MOST = 120       -- the most ticks of flight a path follows
+local PATH_DOT = 2          -- ticks between the dots of a path
 local FOOT = 2              -- columns either side of the centre that a tank rests on
 local TOP_MOST = 6          -- dirt piles no higher than this
 local TANK_FALL, SLAB_FALL = 3, 5
 local SHAKE = 1             -- how fast a tank climbs out of dirt it can shake off
-local CRATE_FALL, CRATE_DROP = 1.2, 3
-local CRATE_REACH = 10
-local CRATE_MIN, CRATE_MAX = 50, 110
-local WIND_MIN, WIND_MAX = 60, 120
-local WIND_SHIFT = 0.03
+local CRATE_FALL, CRATE_DROP = 2.5, 3
 local SLIDE_TICKS, SLIDE_PASSES, SLIDE_MARGIN = 30, 4, 8
 local DIG_OUT = 12          -- the size of the hole a buried tank blows above itself
 local BLAST_TICKS = 4
+local POP_TICKS = 20        -- how long a hit's number floats over the tank
 -- the ground
-local HILL_LEVEL, HILL_RANGE = 128, 22
-local HILL_MIDDLE = 44      -- how much higher the middle of the field stands than the ends
-local HILL_TOP, HILL_LOW = 62, 180
-local JAG = 11              -- the most a stretch of ground strays from the smooth hills
+local HILL_LEVEL, HILL_RANGE = 108, 18
+local HILL_MIDDLE = 40      -- how much higher the middle of the field stands than the ends
+local HILL_TOP, HILL_LOW = 50, 152
+local JAG = 10              -- the most a stretch of ground strays from the smooth hills
 local SPAWN_NEAR, SPAWN_RANGE = 22, 32
 local PAD = 6               -- columns either side of a tank that start out level
--- the bot
-local BOT_EVERY = 3         -- least ticks between its taps, and it adds a few more: about what a person can do
-local BOT_LOBS, BOT_LOB_STEP = 5, 26 -- how many ever higher arcs it tries, and how much higher each one is
-local BOT_TRIES = 4         -- how many times it corrects an arc
-local BOT_SCATTER = 26      -- how far it can miss on a first shot
-local BOT_LEARN = 0.62      -- what each shot at a target that stayed put leaves of that
-local BOT_SETTLED = 3       -- the steadiest it gets, however long a target sits still
-local BOT_WIND_READ = 0.35  -- how far out its reading of the wind can be, as a share
+-- the computer
+local BOT_ANGLES = { 15, 80, 5 } -- the angles it tries, from, to and step: one a tick, so the barrel sweeps as it thinks
+local BOT_HALVES = 9        -- how many times it halves the power it's looking for at each angle
 local BOT_MOVED = 12        -- a target that shifts this far has to be found again
-local BOT_DODGE = 0.55      -- the chance it spots a shell coming and moves
-local BOT_DANGER = 24       -- how near a landing has to be to worry it
-local BOT_CRATE_RANGE = 110 -- how far it will go for a crate
-local BOT_FAR, BOT_NEAR = 130, 56 -- it closes in past the first and backs off inside the second
-local BOT_WANDER = 0.25     -- the chance it shifts anyway, to be harder to hit
-local BOT_GIVE_UP = 40      -- ticks it won't drive for after meeting a slope it can't climb
+local BOT_LEARN = 0.7       -- what each shot at a target that stayed put leaves of its error
+local BOT_STEADIEST = 0.4   -- the least of its error it ever gets down to
+-- How good the computer is: how far its angle and power stray, how well it reads the wind, and how long it looks first.
+M.SKILL = {
+  easy = { angle = 5, power = 7, wind = 0.6, think = 16 },
+  normal = { angle = 2.5, power = 3.5, wind = 0.3, think = 12 },
+  hard = { angle = 1, power = 1.2, wind = 0.08, think = 8 },
+}
 
 local function clamp(v, low, high)
   return min(high, max(low, v))
 end
+
+local function round(v) return floor(v + 0.5) end
+
+--- Which way a player's tank faces in the world: player 1 looks right, player 2 left.
+local function facing(player) return player == 2 and -1 or 1 end
+M.facing = facing
 
 --- The column a world x falls in, or nil off the field.
 local function columnAt(x)
@@ -156,7 +169,7 @@ local function hills(rng, x1, x2)
   for c = 1, COLS do
     local at = c / COLS
     local rise = sin(at * pi)
-    local y = level + sin(at * 2 * pi * countA + waveA) * 16 + sin(at * 2 * pi * countB + waveB) * 8 - rise * rise * middle
+    local y = level + sin(at * 2 * pi * countA + waveA) * 14 + sin(at * 2 * pi * countB + waveB) * 7 - rise * rise * middle
     ground[c] = clamp(y + jag[c], HILL_TOP, HILL_LOW)
   end
   levelPad(ground, x1)
@@ -267,27 +280,31 @@ end
 
 -- ---------------------------------------------------------------- ballistics
 
---- Ticks in the air for a shot this long: a longer shot hangs longer, up to a limit, in whole ticks.
-function M.flightTicks(dist)
-  return min(M.FLIGHT_MOST, M.FLIGHT_BASE + floor(dist / M.FLIGHT_PACE))
+--- The barrel's way in the world for an angle: a unit step across and down.
+function M.direction(player, angle)
+  local a = angle * pi / 180
+  return cos(a) * facing(player), -sin(a)
 end
 
---- The speed that takes a shell from one point to another in this many ticks, with no wind.
-local function solve(x, y, tx, ty, ticks)
-  return (tx - x) / ticks, (ty - y) / ticks - GRAVITY * (ticks + 1) / 2
+--- A shell leaving a tank's barrel at this angle and power: where it starts and how fast it's going.
+function M.launch(t, player, angle, power)
+  local ux, uy = M.direction(player, angle or t.angle)
+  local speed = (power or t.power) * M.POWER_SPEED
+  local x, y = t.x + ux * M.BARREL, t.y - M.TURRET_H + uy * M.BARREL
+  return { x = x, y = y, vx = ux * speed, vy = uy * speed }
 end
 
---- The shot a tank makes at a spot. The barrel lies along the launch, and the shell leaves from its end.
-function M.aimFrom(t, tx, ty)
-  local px, py = t.x, t.y - M.TURRET_H
-  local ticks = M.flightTicks(sqrt((tx - px) ^ 2 + (ty - py) ^ 2))
-  local vx, vy = solve(px, py, tx, ty, ticks)
-  local speed = sqrt(vx * vx + vy * vy)
-  local ux, uy = 0, -1
-  if speed > 0 then ux, uy = vx / speed, vy / speed end
-  local x, y = px + ux * M.BARREL, py + uy * M.BARREL
-  vx, vy = solve(x, y, tx, ty, ticks)
-  return { x = x, y = y, vx = vx, vy = vy, ticks = ticks, ux = ux, uy = uy }
+--- The angle and power a tap at a world spot means: the barrel points at it, and the further off it is the harder it fires.
+function M.aimAt(t, player, x, y)
+  local dx, dy = (x - t.x) * facing(player), (t.y - M.TURRET_H) - y
+  local angle
+  if dy <= 0 then
+    angle = dx >= 0 and 0 or 180
+  else
+    angle = math.atan2(dy, dx) * 180 / pi
+  end
+  local power = sqrt(dx * dx + dy * dy) / M.AIM_REACH * 100
+  return clamp(round(angle), 0, 180), clamp(round(power), 1, 100)
 end
 
 --- One tick of flight: wind and gravity change the speed, then it moves in strides, stopping if meets(s, b) says to.
@@ -310,19 +327,6 @@ local function inGround(s, b)
   return b.y >= M.groundAt(s, b.x) or gone(b)
 end
 
---- Where a shot goes, as the wind stands: dots along the way, and the spot it meets the ground.
-function M.path(s, x, y, vx, vy, wind)
-  local b = { x = x, y = y, vx = vx, vy = vy }
-  local dots = {}
-  for tick = 1, PATH_MOST do
-    if fly(s, b, wind, inGround) then break end
-    if tick % PATH_DOT == 0 then dots[#dots + 1] = { x = b.x, y = b.y } end
-  end
-  return dots, b.x, b.y
-end
-
--- ---------------------------------------------------------------- blasts
-
 --- How far a point is from a tank's hull. Inside it, that's nothing.
 local function hullGap(t, x, y)
   local dx = max(abs(x - t.x) - TANK_HALF, 0)
@@ -330,6 +334,45 @@ local function hullGap(t, x, y)
   return sqrt(dx * dx + dy * dy)
 end
 M.hullGap = hullGap
+
+--- The tank a shell has hit, if any. Its own tank is safe from it for the first moments of the flight.
+local function tankAt(s, b)
+  for i, t in ipairs(s.tanks) do
+    if t.hp > 0 and (i ~= b.owner or b.age > ARM) and hullGap(t, b.x, b.y) == 0 then return t, i end
+  end
+  return nil
+end
+
+local function meetsAnything(s, b)
+  return tankAt(s, b) ~= nil or inGround(s, b)
+end
+
+--- Where a shot goes, as the wind stands: dots along the way, where it ends, and the tank it hits if it hits one.
+--- most is how many ticks to follow it; it stops sooner if it lands.
+function M.path(s, shot, wind, owner, most)
+  local b = { x = shot.x, y = shot.y, vx = shot.vx, vy = shot.vy, owner = owner or 0, age = 0 }
+  local dots = {}
+  local landed = false
+  for tick = 1, most or PATH_MOST do
+    b.age = b.age + 1
+    if fly(s, b, wind, meetsAnything) then
+      landed = true
+      break
+    end
+    if tick % PATH_DOT == 0 then dots[#dots + 1] = { x = b.x, y = b.y } end
+  end
+  local _, hit = tankAt(s, b)
+  return dots, b.x, b.y, landed and hit or nil, landed
+end
+
+--- The dotted start of a player's arc, as their barrel stands now.
+function M.preview(s, player)
+  local t = s.tanks[player]
+  local dots = M.path(s, M.launch(t, player), s.wind, player, M.PREVIEW_TICKS)
+  return dots
+end
+
+-- ---------------------------------------------------------------- blasts
 
 --- What a blast costs at this distance from it: all of it on a direct hit, and less the further out, down to nothing.
 function M.damageAt(kind, gap)
@@ -347,8 +390,9 @@ function M.blast(s, x, y, kind, owner, events)
   events[#events + 1] = { type = "blast", kind = kind, x = x, y = y }
   for i, t in ipairs(s.tanks) do
     local cost = M.damageAt(kind, hullGap(t, x, y))
-    if cost > 0 then
+    if cost > 0 and t.hp > 0 then
       t.hp = max(0, t.hp - cost)
+      s.pops[#s.pops + 1] = { player = i, text = "-" .. cost, left = POP_TICKS }
       events[#events + 1] = { type = "hit", player = i, damage = cost, by = owner }
     end
   end
@@ -364,8 +408,7 @@ function M.blast(s, x, y, kind, owner, events)
 end
 
 local function dirtLands(s, b, events)
-  local w = WEAPONS.dirt
-  M.pile(s, b.x, w.radius)
+  M.pile(s, b.x, WEAPONS.dirt.radius)
   s.blasts[#s.blasts + 1] = { x = b.x, y = b.y, r = 5, left = 2 }
   events[#events + 1] = { type = "pile", x = b.x, y = b.y }
 end
@@ -378,19 +421,7 @@ local function goOff(s, b, events)
   end
 end
 
---- The tank a shell has hit, if any. Its own tank is safe from it for the first moments of the flight.
-local function tankAt(s, b)
-  for i, t in ipairs(s.tanks) do
-    if (i ~= b.owner or b.age > ARM) and hullGap(t, b.x, b.y) == 0 then return t end
-  end
-  return nil
-end
-
-local function meetsAnything(s, b)
-  return tankAt(s, b) ~= nil or inGround(s, b)
-end
-
---- A cluster comes apart halfway, into a fan of small bombs.
+--- A cluster comes apart at the top of its flight, into a fan of small bombs.
 local function splitShell(b, out)
   local w = WEAPONS.cluster
   for i = 1, w.count do
@@ -423,7 +454,7 @@ local function stepShell(s, b, out, events)
   b.age = b.age + 1
   if b.boring then
     bore(s, b, out, events)
-  elseif b.splitAt and b.age >= b.splitAt then
+  elseif b.splits and b.vy >= 0 then
     splitShell(b, out)
   elseif not fly(s, b, s.wind, meetsAnything) then
     out[#out + 1] = b
@@ -445,55 +476,52 @@ end
 
 -- ---------------------------------------------------------------- tanks
 
---- Fire what's loaded. The last round of a crate falls back to plain shells.
-local function fire(s, t, a, player, events)
+--- The next weapon a tank carries after this one, going round: plain shells are always there.
+local function nextWeapon(t, from, step)
+  local at = 1
+  for i, kind in ipairs(M.ORDER) do
+    if kind == from then at = i end
+  end
+  for n = 1, #M.ORDER do
+    local kind = M.ORDER[(at - 1 + n * step) % #M.ORDER + 1]
+    if kind == "shell" or (t.ammo[kind] or 0) > 0 then return kind end
+  end
+  return "shell"
+end
+
+--- Fire what's loaded. When a weapon's last round goes, plain shells are loaded again.
+local function fire(s, t, player, events)
   local kind = t.weapon
-  local w = WEAPONS[kind]
+  if kind ~= "shell" and (t.ammo[kind] or 0) <= 0 then kind = "shell" end
+  local shot = M.launch(t, player)
   s.shells[#s.shells + 1] = {
-    kind = kind, owner = player, x = a.x, y = a.y, vx = a.vx, vy = a.vy, age = 0,
-    splitAt = w.count and floor(a.ticks / 2) or nil,
+    kind = kind, owner = player, x = shot.x, y = shot.y, vx = shot.vx, vy = shot.vy, age = 0,
+    splits = WEAPONS[kind].count and true or nil,
   }
-  t.reload, t.reloadFull = w.reload, w.reload
   if kind ~= "shell" then
-    t.ammo = t.ammo - 1
-    if t.ammo <= 0 then t.weapon, t.ammo = "shell", 0 end
+    t.ammo[kind] = t.ammo[kind] - 1
+    if t.ammo[kind] <= 0 then t.weapon = "shell" end
   end
   events[#events + 1] = { type = "fire", player = player, kind = kind }
 end
 
---- A buried tank can't shoot out: it blows the dirt off itself instead, and that takes the same reload.
+--- A buried tank can't shoot out: it blows the dirt off itself instead, and that's its turn.
 local function digOut(s, t, player, events)
   M.carve(s, t.x, t.y - DIG_OUT, DIG_OUT)
-  t.reload, t.reloadFull = M.RELOAD, M.RELOAD
   events[#events + 1] = { type = "dig", player = player }
 end
 
---- Act on the latest tap at the sky. A tap while reloading is only a sighting: it shows the arc and fires nothing.
-local function takeAim(s, t, player, events)
-  local tap = t.tap
-  if not tap then return end
-  t.tap = nil
-  if t.buried then
-    if t.reload == 0 then digOut(s, t, player, events) end
+--- One tick of driving, paid for in fuel. A slope too steep or the other tank stops it dead, and a drop it goes over.
+local function drive(s, t, other, player, events)
+  if t.drive == 0 then return end
+  if t.buried or t.fuel <= 0 then
+    if t.fuel <= 0 then events[#events + 1] = { type = "noFuel", player = player } end
+    t.drive = 0
     return
   end
-  local a = M.aimFrom(t, tap.x, tap.y)
-  local dots, landX, landY = M.path(s, a.x, a.y, a.vx, a.vy, s.wind)
-  t.ux, t.uy = a.ux, a.uy
-  t.aim = { x = tap.x, y = tap.y, dots = dots, landX = landX, landY = landY, left = M.PREVIEW, fired = t.reload == 0 }
-  if t.reload > 0 then
-    events[#events + 1] = { type = "sight", player = player }
-  else
-    fire(s, t, a, player, events)
-  end
-end
-
---- One tick of driving. A slope too steep or the other tank stops it dead, and a drop it simply goes over.
-local function drive(s, t, other, events)
-  if t.drive == 0 or t.buried then return end
   local dir = t.drive > 0 and 1 or -1
   t.drive = t.drive - dir
-  local x = clamp(t.x + dir * SPEED, TANK_HALF, WIDTH - TANK_HALF)
+  local x = clamp(t.x + dir * min(SPEED, t.fuel), TANK_HALF, WIDTH - TANK_HALF)
   if abs(x - other.x) < TANK_HALF * 2 + 2 then
     t.drive = 0
     return
@@ -501,9 +529,10 @@ local function drive(s, t, other, events)
   local rest = M.restY(s, x)
   if t.y - rest > M.MAX_RISE then
     t.drive, t.blocked = 0, true
-    events[#events + 1] = { type = "stuck", player = t.seat }
+    events[#events + 1] = { type = "stuck", player = player }
     return
   end
+  t.fuel = max(0, t.fuel - abs(x - t.x))
   t.x, t.blocked = x, false
   if rest < t.y then t.y = rest end
 end
@@ -520,16 +549,24 @@ local function settle(s, t)
   end
 end
 
-local function pickUp(s, t, player, events)
+local function settled(s, t)
+  return t.buried or t.hp <= 0 or abs(t.y - M.restY(s, t.x)) < 0.01
+end
+
+--- A tank on a landed crate takes what's in it, on top of what it has.
+local function pickUp(s, events)
   local kept = {}
   for _, crate in ipairs(s.crates) do
-    if crate.landed and abs(crate.x - t.x) <= CRATE_REACH and abs(crate.y - t.y) <= CRATE_REACH then
-      if t.weapon == crate.kind then
-        t.ammo = t.ammo + WEAPONS[crate.kind].ammo
-      else
-        t.weapon, t.ammo = crate.kind, WEAPONS[crate.kind].ammo
+    local taker
+    for i, t in ipairs(s.tanks) do
+      if not taker and t.hp > 0 and crate.landed and abs(crate.x - t.x) <= M.CRATE_REACH and abs(crate.y - t.y) <= M.CRATE_REACH then
+        taker = i
       end
-      events[#events + 1] = { type = "pickup", player = player, kind = crate.kind }
+    end
+    if taker then
+      local t = s.tanks[taker]
+      t.ammo[crate.kind] = (t.ammo[crate.kind] or 0) + WEAPONS[crate.kind].ammo
+      events[#events + 1] = { type = "pickup", player = taker, kind = crate.kind }
     else
       kept[#kept + 1] = crate
     end
@@ -537,16 +574,7 @@ local function pickUp(s, t, player, events)
   s.crates = kept
 end
 
-local function stepCrates(s, rng, events)
-  s.crateIn = s.crateIn - 1
-  if s.crateIn <= 0 then
-    s.crateIn = CRATE_MIN + rng(CRATE_MAX - CRATE_MIN)
-    if #s.crates < M.CRATE_MOST then
-      local kind = M.LOOT[rng(#M.LOOT)]
-      s.crates[#s.crates + 1] = { x = 30 + rng() * (WIDTH - 60), y = 0, kind = kind, landed = false }
-      events[#events + 1] = { type = "crate" }
-    end
-  end
+local function stepCrates(s, events)
   for _, crate in ipairs(s.crates) do
     local ground = M.groundAt(s, crate.x)
     if crate.y < ground then
@@ -559,34 +587,61 @@ local function stepCrates(s, rng, events)
       crate.y = ground
     end
   end
+  pickUp(s, events)
 end
 
-local function stepWind(s, rng)
-  s.windIn = s.windIn - 1
-  if s.windIn > 0 then return end
-  s.windIn = WIND_MIN + rng(WIND_MAX - WIND_MIN)
-  s.wind = clamp(s.wind + (rng() - 0.5) * 2 * WIND_SHIFT, -M.WIND_MOST, M.WIND_MOST)
+--- Sometimes, between turns, a crate comes down on a parachute, never right on a tank.
+local function dropCrate(s, rng, events)
+  if s.turns < 2 or #s.crates >= M.CRATE_MOST or rng() >= M.CRATE_CHANCE then return end
+  local x = 20 + rng() * (WIDTH - 40)
+  for _, t in ipairs(s.tanks) do
+    if abs(t.x - x) < 24 then return end
+  end
+  s.crates[#s.crates + 1] = { x = x, y = -6, kind = M.LOOT[rng(#M.LOOT)], landed = false }
+  events[#events + 1] = { type = "crate" }
 end
 
---- A round that drags on wears both tanks down, so it always ends.
-local function stepSudden(s, events)
-  s.roundClock = s.roundClock + 1
-  if s.roundClock < M.SUDDEN then return end
-  if s.roundClock == M.SUDDEN then
-    s.sudden = true
-    events[#events + 1] = { type = "sudden" }
+-- ---------------------------------------------------------------- turns
+
+--- The wind for a turn, in whole points, mostly light and now and then strong.
+local function newWind(s, rng)
+  s.windLevel = clamp(round((rng() + rng() - 1) * M.WIND_MOST * 1.3), -M.WIND_MOST, M.WIND_MOST)
+  s.wind = s.windLevel * M.WIND_STEP
+end
+
+--- The tank whose turn it is gets its fuel and the clock, under a new wind.
+local function beginTurn(s, rng, events)
+  s.turns, s.turnNo = s.turns + 1, s.turnNo + 1
+  newWind(s, rng)
+  local t = s.tanks[s.turn]
+  t.fuel, t.drive, t.aimed, t.wantFire, t.blocked = M.FUEL, 0, false, false, false
+  s.phase, s.timer, s.turnClock = "aim", M.TURN_TICKS, 0
+  dropCrate(s, rng, events)
+  events[#events + 1] = { type = "turn", player = s.turn, wind = s.windLevel }
+end
+
+--- The shot goes, or the buried tank digs: either way the turn now plays out.
+local function shoot(s, t, player, events)
+  t.wantFire, t.drive = false, 0
+  if t.buried then digOut(s, t, player, events) else fire(s, t, player, events) end
+  s.phase, s.flyClock, s.after = "fly", 0, AFTER
+end
+
+--- Nothing in the air, no dirt on its way down, and the tanks at rest.
+local function still(s)
+  if #s.shells > 0 or #s.slabs > 0 or #s.slides > 0 then return false end
+  for _, t in ipairs(s.tanks) do
+    if not settled(s, t) then return false end
   end
-  if s.roundClock % M.SUDDEN_EVERY == 0 then
-    for _, t in ipairs(s.tanks) do t.hp = max(0, t.hp - 1) end
-  end
+  return true
 end
 
 -- ---------------------------------------------------------------- rounds
 
-local function newTank(s, x, seat)
+local function newTank(s, x)
   return {
-    seat = seat, x = x, y = M.restY(s, x), hp = M.HP, weapon = "shell", ammo = 0, reload = 0, reloadFull = M.RELOAD, drive = 0,
-    ux = seat == 1 and 0.7 or -0.7, uy = -0.7, buried = false, blocked = false,
+    x = x, y = M.restY(s, x), hp = M.HP, weapon = "shell", ammo = {}, angle = M.ANGLE, power = M.POWER,
+    fuel = M.FUEL, drive = 0, buried = false, blocked = false, aimed = false, wantFire = false,
   }
 end
 
@@ -595,18 +650,20 @@ local function newRound(s, rng)
   s.round = s.round + 1
   s.ground, s.bare = hills(rng, x1, x2), {}
   s.rev = s.rev + 1
-  s.shells, s.slabs, s.slides, s.crates, s.blasts = {}, {}, {}, {}, {}
-  s.tanks = { newTank(s, x1, 1), newTank(s, x2, 2) }
-  s.wind = (rng() - 0.5) * 2 * M.WIND_MOST
-  s.windIn = WIND_MIN + rng(WIND_MAX - WIND_MIN)
-  s.crateIn = CRATE_MIN + rng(CRATE_MAX - CRATE_MIN)
-  s.hold, s.pause, s.roundClock, s.sudden, s.result = HOLD, 0, 0, false, nil
+  s.shells, s.slabs, s.slides, s.crates, s.blasts, s.pops = {}, {}, {}, {}, {}, {}
+  s.tanks = { newTank(s, x1), newTank(s, x2) }
+  -- who goes first takes turns round by round
+  s.first = s.first and 3 - s.first or rng(2)
+  s.turn = s.first
+  s.windLevel, s.wind = 0, 0
+  s.phase, s.hold, s.pause, s.timer, s.turns, s.sudden, s.result = "hold", HOLD, 0, M.TURN_TICKS, 0, false, nil
 end
 
 --- A tank with nothing left goes up, and the round goes to whoever's still there. Both at once and nobody scores.
+--- Returns true when the round is over.
 local function checkRound(s, events)
   local a, b = s.tanks[1], s.tanks[2]
-  if a.hp > 0 and b.hp > 0 then return end
+  if a.hp > 0 and b.hp > 0 then return false end
   local winner = 0
   if b.hp > 0 then winner = 2 elseif a.hp > 0 then winner = 1 end
   for i, t in ipairs(s.tanks) do
@@ -617,8 +674,26 @@ local function checkRound(s, events)
   end
   s.drawn = winner == 0 and s.drawn + 1 or 0
   if winner > 0 then s.score[winner] = s.score[winner] + 1 end
-  s.shells, s.pause, s.result = {}, PAUSE, { winner = winner }
+  s.shells, s.phase, s.pause, s.result = {}, "pause", PAUSE, { winner = winner }
   events[#events + 1] = { type = "round", winner = winner, round = s.round }
+  return true
+end
+
+--- A turn is over: a long round costs both tanks, then either the round is decided or the other tank goes.
+local function endTurn(s, rng, events)
+  if s.turns >= M.SUDDEN_TURNS then
+    if not s.sudden then
+      s.sudden = true
+      events[#events + 1] = { type = "sudden" }
+    end
+    for i, t in ipairs(s.tanks) do
+      t.hp = max(0, t.hp - M.SUDDEN_HP)
+      s.pops[#s.pops + 1] = { player = i, text = "-" .. M.SUDDEN_HP, left = POP_TICKS }
+    end
+  end
+  if checkRound(s, events) then return end
+  s.turn = 3 - s.turn
+  beginTurn(s, rng, events)
 end
 
 --- The match is over once someone has their rounds, or the level rounds have gone on too long.
@@ -648,54 +723,102 @@ local function ageMarks(s)
     if blast.left > 0 then kept[#kept + 1] = blast end
   end
   s.blasts = kept
-  for _, t in ipairs(s.tanks) do
-    if t.aim then
-      t.aim.left = t.aim.left - 1
-      if t.aim.left <= 0 then t.aim = nil end
-    end
+  kept = {}
+  for _, pop in ipairs(s.pops) do
+    pop.left = pop.left - 1
+    if pop.left > 0 then kept[#kept + 1] = pop end
   end
+  s.pops = kept
 end
 
---- Nothing can be done between rounds, but the dirt still comes down.
-local function wait(s)
-  for _, t in ipairs(s.tanks) do t.tap, t.drive = nil, 0 end
+--- The ground and the tanks on it come to rest, whatever else is going on.
+local function settleAll(s, events)
   settleDirt(s)
   for _, t in ipairs(s.tanks) do settle(s, t) end
+  stepCrates(s, events)
 end
 
 --- A fresh match. opts.rng is the only source of chance.
 function M.new(opts)
   local s = {
-    over = false, winner = nil, score = { 0, 0 }, round = 0, rev = 0, clock = 0, drawn = 0, tanks = {},
+    over = false, winner = nil, score = { 0, 0 }, round = 0, rev = 0, clock = 0, drawn = 0, turnNo = 0, tanks = {},
   }
   newRound(s, opts.rng)
   return s
 end
 
---- A player's action: { kind = "aim", x, y } in world units, or { kind = "drive", dir = 1 or -1 }, which is across the
---- world and not across the wall. Aim takes effect on the next step; the latest one wins.
+--- A player's action, which only counts on their own turn while they aim:
+---   { kind = "aim", x, y }        point the barrel at a world spot, harder the further off it is
+---   { kind = "angle", by }        { kind = "power", by }     nudge either
+---   { kind = "set", angle, power } both at once (the computer's way)
+---   { kind = "weapon", step = 1 or -1 } or { kind = "weapon", id }   the next weapon carried, or that one
+---   { kind = "drive", dir = 1 or -1 }   across the world, not across the wall, for as long as the fuel lasts
+---   { kind = "fire" }
 function M.input(s, player, action)
+  if s.over or s.phase ~= "aim" or player ~= s.turn or type(action) ~= "table" then return end
   local t = s.tanks[player]
-  if s.over or not t then return end
-  if action.kind == "aim" and action.x and action.y then
-    t.tap = { x = action.x, y = action.y }
-  elseif action.kind == "drive" and (action.dir == 1 or action.dir == -1) then
+  local kind = action.kind
+  local num = function(v) return type(v) == "number" and v == v and abs(v) < 1e6 end
+  if kind == "aim" and num(action.x) and num(action.y) then
+    t.angle, t.power = M.aimAt(t, player, action.x, action.y)
+    t.aimed = true
+  elseif kind == "angle" and num(action.by) then
+    t.angle, t.aimed = clamp(round(t.angle + action.by), 0, 180), true
+  elseif kind == "power" and num(action.by) then
+    t.power, t.aimed = clamp(round(t.power + action.by), 1, 100), true
+  elseif kind == "set" and num(action.angle) and num(action.power) then
+    t.angle, t.power, t.aimed = clamp(round(action.angle), 0, 180), clamp(round(action.power), 1, 100), true
+  elseif kind == "weapon" then
+    if WEAPONS[action.id] and (action.id == "shell" or (t.ammo[action.id] or 0) > 0) then
+      t.weapon = action.id
+    elseif action.step == 1 or action.step == -1 then
+      t.weapon = nextWeapon(t, t.weapon, action.step)
+    end
+  elseif kind == "drive" and (action.dir == 1 or action.dir == -1) then
     if t.drive ~= 0 and (t.drive > 0) ~= (action.dir > 0) then
       t.drive = 0 -- a tap the other way stops it
     else
       t.drive = clamp(t.drive + action.dir * M.DRIVE_TICKS, -M.DRIVE_MOST, M.DRIVE_MOST)
     end
+  elseif kind == "fire" then
+    t.wantFire = true
   end
 end
 
---- What a tap at a world spot means: drive if it's beside this player's own tank or below it, otherwise aim.
-function M.tapAction(s, player, x, y)
-  local t = s.tanks[player]
-  local gap = x - t.x
-  if abs(gap) <= M.DRIVE_REACH and y >= t.y - TANK_H - 6 then
-    return { kind = "drive", dir = gap < 0 and -1 or 1 }
+--- One tick of a turn being aimed: the tank drives, the clock runs, and FIRE or the end of the clock sends the shot.
+local function aiming(s, events)
+  local p = s.turn
+  local t = s.tanks[p]
+  s.turnClock = s.turnClock + 1
+  drive(s, t, s.tanks[3 - p], p, events)
+  settleAll(s, events)
+  if t.wantFire then
+    shoot(s, t, p, events)
+    return
   end
-  return { kind = "aim", x = x, y = max(0, y) }
+  s.timer = s.timer - 1
+  if s.timer == M.HURRY then events[#events + 1] = { type = "hurry", player = p } end
+  if s.timer > 0 then return end
+  -- time's up: a shot that was lined up goes, and a turn nobody touched goes by
+  events[#events + 1] = { type = "timeout", player = p }
+  if t.aimed then
+    shoot(s, t, p, events)
+  else
+    t.drive = 0
+    events[#events + 1] = { type = "pass", player = p }
+    s.phase, s.flyClock, s.after = "fly", 0, AFTER
+  end
+end
+
+--- One tick of a shot playing out. Once everything is still, a moment to see it, then the turn ends.
+local function flying(s, rng, events)
+  stepShells(s, events)
+  settleAll(s, events)
+  s.flyClock = s.flyClock + 1
+  if s.flyClock > FLY_MOST then s.shells = {} end
+  if not still(s) then return end
+  s.after = s.after - 1
+  if s.after <= 0 then endTurn(s, rng, events) end
 end
 
 --- One step of the clock. Returns what happened, for sound.
@@ -704,32 +827,19 @@ function M.tick(s, rng)
   local events = {}
   s.clock = s.clock + 1
   ageMarks(s)
-  if s.pause > 0 then
-    wait(s)
+  if s.phase == "pause" then
+    settleAll(s, events)
     s.pause = s.pause - 1
-    if s.pause == 0 then endPause(s, rng, events) end
-    return events
-  end
-  if s.hold > 0 then
-    wait(s)
+    if s.pause <= 0 then endPause(s, rng, events) end
+  elseif s.phase == "hold" then
+    settleAll(s, events)
     s.hold = s.hold - 1
-    return events
+    if s.hold <= 0 then beginTurn(s, rng, events) end
+  elseif s.phase == "aim" then
+    aiming(s, events)
+  elseif s.phase == "fly" then
+    flying(s, rng, events)
   end
-  for i, t in ipairs(s.tanks) do
-    if t.reload > 0 then t.reload = t.reload - 1 end
-    takeAim(s, t, i, events)
-    drive(s, t, s.tanks[3 - i], events)
-  end
-  stepShells(s, events)
-  settleDirt(s)
-  for i, t in ipairs(s.tanks) do
-    settle(s, t)
-    pickUp(s, t, i, events)
-  end
-  stepCrates(s, rng, events)
-  stepWind(s, rng)
-  stepSudden(s, events)
-  checkRound(s, events)
   return events
 end
 
@@ -737,119 +847,147 @@ end
 function M.snapshot(s)
   local tanks = {}
   for i, t in ipairs(s.tanks) do
-    tanks[i] = { x = t.x, y = t.y, hp = t.hp, reload = t.reload, weapon = t.weapon, drive = t.drive, buried = t.buried }
+    local ammo = {}
+    for k, v in pairs(t.ammo) do ammo[k] = v end
+    tanks[i] = {
+      x = t.x, y = t.y, hp = t.hp, angle = t.angle, power = t.power, weapon = t.weapon, ammo = ammo, fuel = t.fuel,
+      drive = t.drive, buried = t.buried,
+    }
   end
-  return { round = s.round, hold = s.hold, pause = s.pause, wind = s.wind, shells = #s.shells, crates = #s.crates, tanks = tanks }
+  return {
+    round = s.round, phase = s.phase, turn = s.turn, turns = s.turns, turnNo = s.turnNo, timer = s.timer, wind = s.windLevel,
+    shells = #s.shells, crates = #s.crates, tanks = tanks,
+  }
 end
 
--- ---------------------------------------------------------------- the bot
+-- ---------------------------------------------------------------- the computer
 
---- Where a tap at this spot would come down, in the wind as the bot reads it.
-local function landingOf(s, me, x, y, wind)
-  local a = M.aimFrom(me, x, y)
-  local _, landX, landY = M.path(s, a.x, a.y, a.vx, a.vy, wind)
-  return landX, landY
+--- Where a shot at this angle and power comes down, in the wind as the computer reads it, and how far it is from a tank.
+local function trial(s, me, player, angle, power, wind, target)
+  local _, x, y, hit = M.path(s, M.launch(me, player, angle, power), wind, player)
+  local gap = hit == 3 - player and 0 or hullGap(target, x, y)
+  return x, y, gap
 end
 
---- The tap that comes down nearest a spot: it shoots the sum, flatter first, then higher to get over what's in the way.
-local function solveTap(s, me, goalX, goalY, wind)
-  local best, bestMiss
-  for lob = 0, BOT_LOBS - 1 do
-    local x, y = goalX, max(0, goalY - lob * BOT_LOB_STEP)
-    for _ = 1, BOT_TRIES do
-      local landX, landY = landingOf(s, me, x, y, wind)
-      local miss = abs(landX - goalX) + max(0, abs(landY - goalY) - 12)
-      if not best or miss < bestMiss then
-        best, bestMiss = { x = x, y = y, landX = landX }, miss
-      end
-      x = x - (landX - goalX)
-    end
-    if bestMiss < 3 then break end
+--- The power at this angle that brings a shot down nearest the other tank: short means more, long means less.
+local function solvePower(s, me, player, foe, angle, wind)
+  local face = facing(player)
+  local goal = (foe.x - me.x) * face
+  local lo, hi = 1, 100
+  local best
+  for _ = 1, BOT_HALVES do
+    local power = (lo + hi) / 2
+    local x, y, gap = trial(s, me, player, angle, power, wind, foe)
+    if not best or gap < best.gap then best = { angle = angle, power = power, gap = gap, x = x, y = y } end
+    if gap == 0 then break end
+    if (x - me.x) * face < goal then lo = power else hi = power end
   end
   return best
 end
 
---- A shot at the other tank, with the error a person makes: wide at first, closing in while the target stays put.
-local function botShot(s, me, foe, rng, mem)
-  local read = s.wind * (1 + (rng() - 0.5) * 2 * BOT_WIND_READ)
-  local goalX = foe.x
-  if foe.drive ~= 0 then
-    goalX = goalX + clamp(foe.drive, -M.DRIVE_MOST, M.DRIVE_MOST) * SPEED
-  end
-  if not mem.seenX or abs(mem.seenX - foe.x) > BOT_MOVED then
-    mem.seenX, mem.scatter = foe.x, BOT_SCATTER
-  end
-  local tap = solveTap(s, me, goalX, foe.y - TANK_H / 2, read)
-  -- it won't drop anything on itself, unless all it can do is bury the two of them
-  local w = WEAPONS[me.weapon]
-  if w.damage > 0 and abs(tap.landX - me.x) < w.radius * M.REACH + TANK_HALF then return nil end
-  local err = (rng() + rng() - 1) * mem.scatter
-  mem.scatter = max(BOT_SETTLED, mem.scatter * BOT_LEARN)
-  return { kind = "aim", x = tap.x + err, y = tap.y }
+--- Which weapon it fires: the biggest it has that won't hurt itself, and dirt now and then to bury the other tank.
+local function chooseWeapon(me, foe, rng)
+  local gap = abs(foe.x - me.x)
+  local has = function(kind) return (me.ammo[kind] or 0) > 0 end
+  if has("nuke") and gap > WEAPONS.nuke.radius * M.REACH + TANK_HALF * 2 + 8 then return "nuke" end
+  if has("big") then return "big" end
+  if has("dirt") and not foe.buried and rng() < 0.5 then return "dirt" end
+  if has("cluster") then return "cluster" end
+  if has("tunneller") then return "tunneller" end
+  return "shell"
 end
 
---- A shell coming down near this tank, if it has seen one: the way to go to get clear of it.
-local function dodgeFrom(s, me, rng)
-  for _, b in ipairs(s.shells) do
-    if b.owner ~= me.seat and not b.boring then
-      local _, landX = M.path(s, b.x, b.y, b.vx, b.vy, s.wind)
-      if abs(landX - me.x) < BOT_DANGER and rng() < BOT_DODGE then
-        return landX > me.x and -1 or 1
-      end
-    end
-  end
-  return nil
-end
-
---- Which way a crate lies, if one is on the ground and near enough to be worth it.
-local function crateDir(s, me)
+--- A landed crate the fuel can reach, short of the other tank: the x to drive to.
+local function crateInReach(s, me, foe)
   local best
   for _, crate in ipairs(s.crates) do
     local gap = crate.x - me.x
-    if crate.landed and abs(gap) <= BOT_CRATE_RANGE and (not best or abs(gap) < abs(best)) then best = gap end
+    local between = (crate.x - me.x) * (foe.x - me.x) > 0 and abs(crate.x - me.x) > abs(foe.x - me.x) - TANK_HALF * 3
+    if crate.landed and not between and abs(gap) <= me.fuel - 2 and (not best or abs(gap) < abs(best - me.x)) then
+      best = crate.x
+    end
   end
-  if not best then return nil end
-  return best < 0 and -1 or 1
+  return best
 end
 
---- Which way to go next: out of trouble, then to a crate, then to a good range for a fight.
-local function botMove(s, me, foe, rng, mem)
-  if me.blocked then
-    me.blocked = false
-    mem.stayUntil = s.clock + BOT_GIVE_UP
+local function scatter(rng) return rng() + rng() - 1 end
+
+local stages = {}
+
+function stages.start(s, me, foe, player, rng, mem)
+  if me.buried then return { kind = "fire" } end
+  local goal = crateInReach(s, me, foe)
+  if goal then
+    mem.stage, mem.goal, mem.tries = "drive", goal, 0
+  else
+    mem.stage = "weapon"
   end
-  local dodge = dodgeFrom(s, me, rng)
-  if dodge then return dodge end
-  if s.clock < (mem.stayUntil or 0) or me.drive ~= 0 then return nil end
-  local crate = crateDir(s, me)
-  if crate then return crate end
-  local toward = foe.x > me.x and 1 or -1
-  local gap = abs(foe.x - me.x)
-  if gap > BOT_FAR then return toward end
-  if gap < BOT_NEAR then return -toward end
-  if rng() < BOT_WANDER then return rng() < 0.5 and 1 or -1 end
   return nil
 end
 
---- A computer player. It sees what a player sees, and taps at a person's pace.
-function M.bot(s, rng, player)
-  if s.over or s.hold > 0 or s.pause > 0 then return nil end
+function stages.drive(s, me, _, _, _, mem)
+  if me.drive ~= 0 then return nil end
+  if abs(me.x - mem.goal) <= M.CRATE_REACH - 3 or me.fuel <= 0 or me.blocked or mem.tries >= 8 then
+    mem.stage = "weapon"
+    return nil
+  end
+  mem.tries = mem.tries + 1
+  return { kind = "drive", dir = mem.goal > me.x and 1 or -1 }
+end
+
+function stages.weapon(s, me, foe, _, rng, mem, skill)
+  local kind = chooseWeapon(me, foe, rng)
+  mem.stage, mem.angle, mem.best = "search", BOT_ANGLES[1], nil
+  mem.read = s.wind * (1 + scatter(rng) * skill.wind)
+  if kind ~= me.weapon then return { kind = "weapon", id = kind } end
+  return nil
+end
+
+--- One angle a tick: the barrel sweeps while it looks for the best shot, and it won't pick one that lands on itself.
+function stages.search(s, me, foe, player, rng, mem, skill)
+  local angle = mem.angle
+  local try = solvePower(s, me, player, foe, angle, mem.read)
+  local w = WEAPONS[me.weapon]
+  if w.damage > 0 and hullGap(me, try.x, try.y) < w.radius * M.REACH + 2 then try.gap = try.gap + 1000 end
+  if not mem.best or try.gap < mem.best.gap then mem.best = try end
+  mem.angle = angle + BOT_ANGLES[3]
+  if mem.angle > BOT_ANGLES[2] then
+    -- a person's error: wide at first, closing in while the target stays put
+    local learn = me.learn
+    if not learn or abs(learn.x - foe.x) > BOT_MOVED then
+      learn = { x = foe.x, shots = 0 }
+      me.learn = learn
+    end
+    local err = max(BOT_STEADIEST, BOT_LEARN ^ learn.shots)
+    learn.shots = learn.shots + 1
+    local best = mem.best
+    mem.stage, mem.at = "fire", s.clock + 4 + rng(4)
+    return {
+      kind = "set",
+      angle = clamp(best.angle + scatter(rng) * skill.angle * err * 2, 0, 180),
+      power = clamp(best.power + scatter(rng) * skill.power * err * 2, 1, 100),
+    }
+  end
+  return { kind = "set", angle = angle, power = try.power }
+end
+
+function stages.fire()
+  return { kind = "fire" }
+end
+
+--- A computer player. On its turn it waits a moment, maybe drives for a crate, picks a weapon, tries shots at every angle in
+--- the wind as it reads it, and fires the best with some error, less on higher levels.
+function M.bot(s, rng, player, level)
+  if s.over or s.phase ~= "aim" or s.turn ~= player then return nil end
   local me, foe = s.tanks[player], s.tanks[3 - player]
+  local skill = M.SKILL[level] or M.SKILL.normal
   local mem = me.bot
-  if not mem then
-    mem = { nextAt = 0 }
+  if not mem or mem.turn ~= s.turnNo then
+    mem = { turn = s.turnNo, stage = "start", at = s.clock + skill.think + rng(6) }
     me.bot = mem
   end
-  if s.clock < mem.nextAt then return nil end
-  mem.nextAt = s.clock + BOT_EVERY + rng(4)
-  if me.reload == 0 then
-    if me.buried then return { kind = "aim", x = me.x, y = 0 } end
-    local shot = botShot(s, me, foe, rng, mem)
-    if shot then return shot end
-  end
-  local dir = botMove(s, me, foe, rng, mem)
-  if dir then return { kind = "drive", dir = dir } end
-  return nil
+  if s.clock < mem.at then return nil end
+  return stages[mem.stage](s, me, foe, player, rng, mem, skill)
 end
 
 return M
