@@ -132,6 +132,27 @@ local function storeFor(plugin)
   return store
 end
 
+--- Everything this cabinet holds goes to the play tracker, old and new: every saved game, high score table, Versus wins and
+--- board game record, including what was here before the tracker. Sent when the cabinet starts and every hour after, so a
+--- tracker that was off or put in later still gets it all; the tracker merges, so sending what it has changes nothing.
+local PUSH_ALL_MS = 3600000
+local pushedAt = 0
+
+local function pushEverything()
+  pushedAt = nowMs()
+  for _, plugin in ipairs(registry) do
+    local id = plugin.id
+    pcall(function()
+      if plugin.saves then
+        for _, save in ipairs(saves.list(id)) do share.push("save", id, save.player, save) end
+      end
+      if fs.exists("arcade_scores_" .. id .. ".dat") then share.push("scores", id, nil, scores.open(id).rows) end
+      if fs.exists("arcade_versus_" .. id .. ".dat") then share.push("versus", id, nil, versus.wins(id).rows) end
+      if fs.exists("arcade_" .. id .. ".dat") then share.push("records", id, nil, storeFor(plugin).data) end
+    end)
+  end
+end
+
 --- Everything one player has done across every game here, for their player card.
 function app.profile(name)
   local all = { wins = 0, games = 0, badges = 0, hard = 0, total = #registry }
@@ -1112,6 +1133,7 @@ local function onTick()
   local t = nowMs()
   audio.pump()
   share.tick()
+  if t - pushedAt >= PUSH_ALL_MS then pushEverything() end
   if S.view ~= "idle" then S.idleDressed = false end
   -- an update waits for a quiet moment: nobody mid-match, and nobody who has touched the wall in the last while
   if t - (S.busyAt or 0) > BUSY_REPORT_MS then
@@ -1248,6 +1270,7 @@ local function main()
       S.dirty = true
     end
   end)
+  pushEverything()
   share.ask(true)
   S.debug = fs.exists(config.DEBUG_FLAG)
   S.tour = tournament.load()
