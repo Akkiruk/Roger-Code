@@ -524,6 +524,11 @@ function view.saveSummary(s)
   return rules.summary(s)
 end
 
+--- How far a bakery has got, for keeping the furthest copy of a save between cabinets: every cookie it has ever baked.
+function view.saveRank(s)
+  return tonumber(s.allTime) or 0
+end
+
 --- For the PLAYERS list and the play tracker: how far the bakery has come.
 function view.progress(s)
   local owned = rules.totalOwned(s)

@@ -31,11 +31,75 @@ local function same(a, b)
 end
 M.same = same
 
---- A saved game: the newer copy wins. Each is { at, ... } or { at, deleted = true } for one that ended.
-function M.save(a, b)
+M.ENDED_KEPT = 30
+
+--- Does x know that y's playthrough is over (ended, or replaced by NEW GAME)?
+local function knowsEnded(x, y)
+  if type(y.run) ~= "string" or type(x.ended) ~= "table" then return false end
+  for _, run in ipairs(x.ended) do
+    if run == y.run then return true end
+  end
+  return false
+end
+
+--- Every playthrough either copy knows is over, newest last, kept short.
+local function endedOf(a, b)
+  local seen, out = {}, {}
+  for _, list in ipairs({ a.ended or {}, b.ended or {} }) do
+    for _, run in ipairs(list) do
+      if type(run) == "string" and not seen[run] then seen[run] = true; out[#out + 1] = run end
+    end
+  end
+  while #out > M.ENDED_KEPT do table.remove(out, 1) end
+  return out
+end
+
+--- Of two copies of one player's save, the one to keep, before the ended lists are pooled.
+local function pick(a, b, rankOf)
+  -- a playthrough one copy knows has ended never comes back, however far it got
+  local aKnows, bKnows = knowsEnded(a, b), knowsEnded(b, a)
+  if aKnows and not bKnows then return a end
+  if bKnows and not aKnows then return b end
+  local newer = (b.at or 0) > (a.at or 0) and b or a
+  local sameRun = type(a.run) == "string" and a.run == b.run
+  if sameRun and (a.deleted or b.deleted) then
+    -- the run ended: the ending stands
+    if a.deleted and b.deleted then return newer end
+    return a.deleted and a or b
+  end
+  if a.deleted or b.deleted then
+    -- the end of some other playthrough says nothing about this one; with no way to tell them apart, the newer stands
+    if type(a.run) == "string" or type(b.run) == "string" then return a.deleted and b or a end
+    return newer
+  end
+  -- two saves: the one furthest along, whichever is newer. A copy whose progress can't be told loses only to one whose can
+  local ra, rb = rankOf(a), rankOf(b)
+  if ra and rb and ra ~= rb then return ra > rb and a or b end
+  return newer
+end
+
+--- A saved game: the copy with the most progress wins, not the newest (the owner's choice), except that a playthrough that
+--- has ended, by finishing or by NEW GAME, stays ended. Each is a save { at, run, rank, ended, ... } or a marker
+--- { at, deleted = true, run, ended } for a run that ended. rank is the game's own measure of progress, written with the save
+--- (saves.rank); rankOf may work it out where the game is at hand. Saves from before ranks and runs go by time, as they did.
+function M.save(a, b, rankOf)
   if not a then return copy(b) end
   if not b then return copy(a) end
-  return copy((b.at or 0) > (a.at or 0) and b or a)
+  rankOf = rankOf or function(s) return type(s.rank) == "number" and s.rank or nil end
+  local out = copy(pick(a, b, rankOf))
+  local ended = endedOf(a, b)
+  if #ended > 0 then out.ended = ended end
+  return out
+end
+
+--- Of two copies, the one pick left out, if it is a live playthrough nobody has ended: the hub keeps it aside, so a save is never
+--- lost to a choice made without the game at hand.
+function M.saveLeftOut(a, b, kept)
+  if not (a and b and kept) then return nil end
+  local out = (kept.run == a.run and kept.at == a.at) and b or a
+  if out.deleted or knowsEnded(kept, out) then return nil end
+  if type(out.run) == "string" and out.run == kept.run then return nil end -- the same run, further along: nothing lost
+  return out
 end
 
 --- A high score table: every run from both, once each, best first, the top ten.

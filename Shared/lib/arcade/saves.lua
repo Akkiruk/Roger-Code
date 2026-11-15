@@ -83,9 +83,72 @@ local function writeSave(game, player, save)
   return false, err
 end
 
---- A player's save. Returns true, or false and why. rng is the generator's position, from journal.trackedRng.
-function M.write(game, player, state, rng)
-  local save = { version = VERSION, game = game, player = player, rng = rng, state = state, at = os.epoch("utc") }
+--- How far a save has got, as one number, for keeping the furthest copy when cabinets disagree (merge.save). A game says it
+--- with view.saveRank(state); a game with view.progress gets story share first, then level, then minutes played; any other
+--- game has no measure (nil), and its copies go by time.
+function M.rank(plugin, state)
+  local view = plugin and plugin.view
+  if type(state) ~= "table" or not view then return nil end
+  if view.saveRank then
+    local ok, r = pcall(view.saveRank, state)
+    return ok and type(r) == "number" and r or nil
+  end
+  if view.progress then
+    local ok, p = pcall(view.progress, state)
+    if not ok or type(p) ~= "table" then return nil end
+    local percent = p.ended and 100 or (tonumber(p.percent) or 0)
+    return percent * 1e10 + math.min(tonumber(p.level) or 0, 9999) * 1e6 + math.min(tonumber(p.minutes) or 0, 999999)
+  end
+  return nil
+end
+
+-- Playthroughs that ended on this computer (finished, or given up for NEW GAME), by game and player: a later save carries
+-- them, so a copy of an ended run elsewhere never comes back (merge.save).
+local ENDED_FILE = "arcade_ended.dat"
+
+local function readEnded()
+  local h = fs.exists(ENDED_FILE) and fs.open(ENDED_FILE, "r")
+  if not h then return {} end
+  local ok, value = pcall(textutils.unserialise, h.readAll() or "")
+  h.close()
+  return ok and type(value) == "table" and value or {}
+end
+
+--- The playthroughs this computer knows have ended for a player at a game.
+function M.ended(game, player)
+  local list = readEnded()[tostring(game) .. "|" .. tostring(player)]
+  return type(list) == "table" and list or {}
+end
+
+local function noteEnded(game, player, run)
+  if type(run) ~= "string" then return end
+  local all = readEnded()
+  local key = tostring(game) .. "|" .. tostring(player)
+  local list = type(all[key]) == "table" and all[key] or {}
+  for _, r in ipairs(list) do
+    if r == run then return end
+  end
+  list[#list + 1] = run
+  while #list > 30 do table.remove(list, 1) end
+  all[key] = list
+  pcall(function()
+    local h = fs.open(ENDED_FILE, "w")
+    if h then h.write(textutils.serialise(all, { compact = true })); h.close() end
+  end)
+end
+
+--- A new playthrough's name, different on every computer and every time.
+function M.newRun()
+  return tostring(os.getComputerID()) .. ":" .. tostring(os.epoch("utc")) .. ":" .. tostring(math.random(1, 999999))
+end
+
+--- A player's save. Returns true, or false and why. rng is the generator's position, from journal.trackedRng. meta, from
+--- action.lua: { run, rank } for the furthest copy to win between cabinets.
+function M.write(game, player, state, rng, meta)
+  meta = meta or {}
+  local ended = M.ended(game, player)
+  local save = { version = VERSION, game = game, player = player, rng = rng, state = state, at = os.epoch("utc"),
+    run = meta.run, rank = meta.rank, ended = #ended > 0 and ended or nil }
   local ok, err = writeSave(game, player, save)
   if ok then share(game, player, save) end
   return ok, err
@@ -120,9 +183,23 @@ end
 --- Every copy goes: a .bak left behind would bring a finished run back.
 --- The floor's copy hears of it too, so no other cabinet offers the run that ended.
 function M.delete(game, player)
+  local was = M.read(game, player)
+  if was and was.run then noteEnded(game, player, was.run) end
   local path = M.path(game, player)
   for _, suffix in ipairs(SUFFIXES) do pcall(fs.delete, path .. suffix) end
-  share(game, player, nil, true)
+  -- Only a save that was here can end: telling the floor a run ended when this computer never had it would wipe that player's
+  -- save everywhere (START on a new computer used to do exactly that, before its copy from the tracker had arrived).
+  if not was then return end
+  local ended = M.ended(game, player)
+  share(game, player, { run = was.run, ended = #ended > 0 and ended or nil }, true)
+end
+
+--- A copy from the floor said this run is over: remember it here too, and drop the save if it is that run.
+function M.endedElsewhere(game, player, marker)
+  for _, run in ipairs(type(marker) == "table" and type(marker.ended) == "table" and marker.ended or {}) do
+    noteEnded(game, player, run)
+  end
+  if type(marker) == "table" and marker.deleted and marker.run then noteEnded(game, player, marker.run) end
 end
 
 return M

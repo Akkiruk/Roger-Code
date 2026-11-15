@@ -17,19 +17,20 @@ M.WHATS = { save = true, scores = true, versus = true, records = true }
 
 local STATE_FILE = "arcade_share.dat"
 
+local appliers = {}   -- what -> function(game, player, data, at, deleted, alts)
+local games = {}      -- the game ids this cabinet runs
+local state = nil     -- { seq = the tracker's last update number taken }
+local applying = false
+local askedAt = -1e15
+local heardAt = nil   -- when the tracker last answered, for the ready screen's line about saves
+local later = {}      -- pushes held until an answer is applied (pushLater)
+
 --- Where the last update number taken is kept. A Game Browser computer runs several cabinets, each with its own games, so each
 --- needs its own number: one number for all would skip what one cabinet missed while another was running.
 function M.useStateFile(path)
   STATE_FILE = path
   state = nil
 end
-
-local appliers = {}   -- what -> function(game, player, data, at, deleted)
-local games = {}      -- the game ids this cabinet runs
-local state = nil     -- { seq = the tracker's last update number taken }
-local applying = false
-local askedAt = -1e15
-local heardAt = nil   -- when the tracker last answered, for the ready screen's line about saves
 
 local function now() return os.epoch("utc") end
 
@@ -106,14 +107,25 @@ function M.hear(_, msg, protocol)
   for _, e in ipairs(msg.entries) do
     if type(e) == "table" and type(e.seq) == "number" then
       local fn = appliers[e.what]
-      if fn and type(e.game) == "string" and mine(e.game) then pcall(fn, e.game, e.player, e.data, e.at, e.deleted) end
+      if fn and type(e.game) == "string" and mine(e.game) then
+        pcall(fn, e.game, e.player, e.data, e.at, e.deleted, type(e.alts) == "table" and e.alts or nil)
+      end
       if e.seq > st.seq then st.seq = e.seq end
     end
   end
   applying = false
   saveState()
+  -- copies this cabinet holds that beat the tracker's go back to it now, once nothing is being applied
+  local queued = later
+  later = {}
+  for _, p in ipairs(queued) do M.push(p.what, p.game, p.player, p.data, p.deleted) end
   if msg.more then M.ask(true) end
   return true
+end
+
+--- Send this once the tracker's answer is applied: for a cabinet's own copy that turned out better than the tracker's.
+function M.pushLater(what, game, player, data)
+  later[#later + 1] = { what = what, game = game, player = player, data = data }
 end
 
 -- for tests

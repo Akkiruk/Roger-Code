@@ -82,7 +82,8 @@ end
 --- Keep this run's place on disk. Returns false if it couldn't, which never stops the run.
 local function saveRun(a)
   if a.phase ~= "play" or a.midRules or a.state.over then return false end
-  local ok, why = saves.write(app.plugin.id, a.player, a.state, a.rngAt())
+  a.run = a.run or saves.newRun()
+  local ok, why = saves.write(app.plugin.id, a.player, a.state, a.rngAt(), { run = a.run, rank = saves.rank(app.plugin, a.state) })
   if not ok then
     app.log("could not save " .. app.plugin.id .. " for " .. tostring(a.player) .. ": " .. tostring(why))
     app.setToast("Could not save your game", C.warn, 2500)
@@ -309,6 +310,7 @@ function M.start(who, side)
   a.seed = math.random(1, 2147483646)
   a.rng, a.rngAt = journal.trackedRng(a.seed)
   a.state = plugin.rules.new({ rng = a.rng, player = a.player })
+  a.run = plugin.saves and saves.newRun() or nil -- a playthrough of its own, so its copies on other cabinets can be told apart
   begin(a)
   if plugin.saves then saveRun(a) end
 end
@@ -327,6 +329,7 @@ function M.continue(who, side)
   if not a or a.phase ~= "ready" or not a.saved or readyForOther(a, who) then return end
   local save = a.saved
   a.player, a.state, a.saved = save.player, save.state, nil
+  a.run = save.run or saves.newRun() -- the same playthrough carries on; a save from before runs starts one
   a.wall, a.guest = side, nil
   -- a friend who was in the world when it was saved isn't here now: their player waits in it for them
   if app.plugin.coop then app.plugin.rules.part(a.state) end

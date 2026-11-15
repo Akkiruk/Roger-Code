@@ -144,7 +144,10 @@ local function pushEverything()
     local id = plugin.id
     pcall(function()
       if plugin.saves then
-        for _, save in ipairs(saves.list(id)) do share.push("save", id, save.player, save) end
+        for _, save in ipairs(saves.list(id)) do
+          save.rank = save.rank or saves.rank(plugin, save.state) -- saves from before ranks go with one, worked out here
+          share.push("save", id, save.player, save)
+        end
       end
       if fs.exists("arcade_scores_" .. id .. ".dat") then share.push("scores", id, nil, scores.open(id).rows) end
       if fs.exists("arcade_versus_" .. id .. ".dat") then share.push("versus", id, nil, versus.wins(id).rows) end
@@ -1376,13 +1379,38 @@ local function main()
   local ids = {}
   for _, plugin in ipairs(registry) do ids[#ids + 1] = plugin.id end
   share.setGames(ids)
-  share.on("save", function(game, player, data, at, deleted)
+  -- A save from the tracker: this cabinet's copy, the tracker's and any it set aside are weighed with the game at hand, and the
+  -- one furthest along is kept (merge.save). If this cabinet's own copy wins, the tracker is sent it.
+  share.on("save", function(game, player, data, at, deleted, alts)
     if type(player) ~= "string" then return end
+    local plugin = app.pluginById(game)
+    local function rankOf(s)
+      if s.deleted then return nil end
+      return tonumber(s.rank) or saves.rank(plugin, s.state)
+    end
     local have = saves.read(game, player)
+    local theirs = data
     if deleted then
-      if have and (have.at or 0) <= (at or 0) then saves.delete(game, player) end
-    elseif type(data) == "table" and (not have or (have.at or 0) < (data.at or 0)) then
-      saves.put(game, player, data)
+      theirs = merge.copy(type(data) == "table" and data or {})
+      theirs.deleted, theirs.at = true, theirs.at or at
+    end
+    local best = have
+    for _, c in ipairs({ theirs, unpack(alts or {}) }) do
+      if type(c) == "table" then best = merge.save(best, c, rankOf) end
+    end
+    if not best then return end
+    saves.endedElsewhere(game, player, best)
+    local function same(x, y) return x and y and x.run == y.run and x.at == y.at end
+    if best.deleted then
+      if have then saves.delete(game, player) end
+    elseif not same(best, have) then
+      best.rank = rankOf(best)
+      saves.put(game, player, best)
+    end
+    if not best.deleted and not same(best, theirs) then
+      local out = merge.copy(best)
+      out.rank = rankOf(out)
+      share.pushLater("save", game, player, out)
     end
     actions.refresh(game)
   end)
