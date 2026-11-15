@@ -7,12 +7,12 @@
     "description": "Eight-deck baccarat with Player, Banker and Tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.92"
+    "version": "1.2.93"
   },
   "build": {
-    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
-    "generated_at": "2026-11-15T16:05:17Z",
-    "package_hash": "fb1010107a6fca08696aa9999cda41c6d21a46c57550d3404e18dabf5611a999"
+    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
+    "generated_at": "2026-11-15T16:22:32Z",
+    "package_hash": "ffd8e3bff841263aa03300d0576462e009f833ed1e41db0b0ab271a249a1853a"
   },
   "install": {
     "preserve": [],
@@ -150,7 +150,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
       },
       {
         "repo_path": "Games/Baccarat/baccarat_game.lua",
@@ -220,7 +220,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
       }
     ]
   },

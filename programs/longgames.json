@@ -7,12 +7,12 @@
     "description": "Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.",
     "source_root": "Games/LongGames",
     "entrypoint": "startup.lua",
-    "version": "1.0.19"
+    "version": "1.0.20"
   },
   "build": {
-    "commit": "d378ec0c651d945ad864fd7d0a433f94feb5a128",
-    "generated_at": "2026-11-15T16:05:17Z",
-    "package_hash": "5b85eb59efbab018d0a2b1542a6caae2ef160c55d83d980612b655ef287fe883"
+    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
+    "generated_at": "2026-11-15T16:22:32Z",
+    "package_hash": "21ab45a3a70c4b15f4ba59e3186a8ab72541b798bcee181a090375d0ffefc7f9"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "957d2e01b755b4264e7d3d55d4ebf3a0ae1d83ac6c397541eb327efe36eb1f2f"
+        "sha256": "9fd8e7f72231a16e939ed9b01eaa18ea1585de2aa13707e11b6be3a89088417b"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "8fb59a2d7f9052bb1836c06b174cb7e37154740ffece3c2061b48b2616fb5b38"
+        "sha256": "1b2a2cf0232869b595706db4c55ee5ffddaf7bf54dfe61d66c899035a6661974"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -190,7 +190,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
       },
       {
         "repo_path": "Games/LongGames/games/cookie/art.lua",
@@ -305,7 +305,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
       }
     ]
   },

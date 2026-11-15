@@ -7,12 +7,12 @@
     "description": "Five-card draw for 2 to 6 players on one wall, player against player, with side pots and no rake.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.44"
+    "version": "1.0.45"
   },
   "build": {
-    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
-    "generated_at": "2026-11-15T16:05:17Z",
-    "package_hash": "8026051ebe7296640d5122b797d162d69a6e98fbb348e76e720c51f5d773cb49"
+    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
+    "generated_at": "2026-11-15T16:22:32Z",
+    "package_hash": "4193529f296e4780e8e1d7e9b0020e30abf04bc6a9e3e9c2906f7212e4d1d9ab"
   },
   "install": {
     "preserve": [],
@@ -130,7 +130,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
       },
       {
         "repo_path": "Games/PokerTable/pokertable_app.lua",
@@ -185,7 +185,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
       }
     ]
   },

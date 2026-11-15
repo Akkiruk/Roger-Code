@@ -7,12 +7,12 @@
     "description": "Every free cabinet on one computer: Arcade, Classics, Classics 2, Long Games, Versus and BLIGHTMARE. Pick one on the wall, and CABINETS on its menu swaps to another. No tokens, ever.",
     "source_root": "Games/Browser",
     "entrypoint": "startup.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "d378ec0c651d945ad864fd7d0a433f94feb5a128",
-    "generated_at": "2026-11-15T16:05:17Z",
-    "package_hash": "452e4a1ffde5b300742e1d53aee5ab136eb72b1b11c97003dcb70880dae2d036"
+    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
+    "generated_at": "2026-11-15T16:22:32Z",
+    "package_hash": "c8cd8666b6d3df96df86e5aabae11c449b8a8c4b9a4d714b85b8722e317f745f"
   },
   "install": {
     "preserve": [],
@@ -335,7 +335,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "8fb59a2d7f9052bb1836c06b174cb7e37154740ffece3c2061b48b2616fb5b38"
+        "sha256": "1b2a2cf0232869b595706db4c55ee5ffddaf7bf54dfe61d66c899035a6661974"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/vault.lua",
@@ -400,7 +400,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "957d2e01b755b4264e7d3d55d4ebf3a0ae1d83ac6c397541eb327efe36eb1f2f"
+        "sha256": "9fd8e7f72231a16e939ed9b01eaa18ea1585de2aa13707e11b6be3a89088417b"
       },
       {
         "repo_path": "Shared/lib/arcade/audio.lua",
@@ -575,12 +575,12 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
       },
       {
         "repo_path": "Games/Browser/browser.lua",
         "install_path": "browser.lua",
-        "sha256": "ed5a25d9ba674ec3cd54d594e22156e2a24e4d11303d3912dab1263e9662f5a7"
+        "sha256": "0f88497bd1783501a2871e73dbc367a27d252037b8db69cb7f3bbe32077dc093"
       },
       {
         "repo_path": "Games/Browser/startup.lua",
@@ -865,7 +865,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
       }
     ]
   },

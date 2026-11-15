@@ -7,12 +7,12 @@
     "description": "Six-deck blackjack with a lasting shoe, doubles on 11 and one split.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.100"
+    "version": "1.2.101"
   },
   "build": {
-    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
-    "generated_at": "2026-11-15T16:05:17Z",
-    "package_hash": "be52a5acb97e8f5d19db46eabda9f9f52c388ab3fd3ef82b5dda7b40f6c034ef"
+    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
+    "generated_at": "2026-11-15T16:22:32Z",
+    "package_hash": "22c34c32e88297ba771b697d84fcbf9a5f87bd9555d986d1b0a8db54881cf039"
   },
   "install": {
     "preserve": [],
@@ -150,7 +150,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
       },
       {
         "repo_path": "Games/Blackjack/blackjack_game.lua",
@@ -220,7 +220,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
       }
     ]
   },

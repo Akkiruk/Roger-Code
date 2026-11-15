@@ -7,12 +7,12 @@
     "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.49"
+    "version": "1.0.50"
   },
   "build": {
-    "commit": "512afc7f6116a30569b0f9c608cc7dd20728e7cb",
-    "generated_at": "2026-11-15T16:05:17Z",
-    "package_hash": "f3cad30d10b31e3cb9b6d1a2409a77d3037d3dec521c13df2def616396abbf03"
+    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
+    "generated_at": "2026-11-15T16:22:32Z",
+    "package_hash": "1a919d2ff55abdc234489f47d5ae9130b61e4988ad6aeaab4e276f69b407d7bf"
   },
   "install": {
     "preserve": [],
@@ -150,7 +150,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "effbbcf35c01e79bce854f6d6d362cc04f0b5c6fb11eaa3a434d152c6d66388c"
+        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
       },
       {
         "repo_path": "Games/CrazyEights/crazyeights_game.lua",
@@ -220,7 +220,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "d616177b9afab501cf8700e9d3ad5490b95417fc6d8f8d7c258e26a228265c59"
+        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
       }
     ]
   },
