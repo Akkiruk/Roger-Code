@@ -7,12 +7,12 @@
     "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
     "source_root": "Games/Classics",
     "entrypoint": "startup.lua",
-    "version": "1.0.22"
+    "version": "1.0.23"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-15T16:58:11Z",
-    "package_hash": "0cf67482c93358c0c479a7734b0ce600777adb1df6c88f46184be666d3add81d"
+    "commit": "32b4fa48dbdf923b846ea58d90e037603e2a04ec",
+    "generated_at": "2026-11-15T17:19:21Z",
+    "package_hash": "19172f77fb6aa2d30aaaeed96394d390ab64aa5579a53a6adc71f4a046eabc49"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "1b2a2cf0232869b595706db4c55ee5ffddaf7bf54dfe61d66c899035a6661974"
+        "sha256": "010647a75653bc0a2fb1276060e6996a2c22f5b14025021f77acb917c02c7654"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
@@ -60,7 +60,7 @@
       {
         "repo_path": "Shared/lib/arcade/merge.lua",
         "install_path": "lib/arcade/merge.lua",
-        "sha256": "607aa750d6e7128f04301e29e1209073cd258133f94c5c92424339ae9de6b199"
+        "sha256": "26dbe959707f9f3773d42e3aa422ff24ce4955b3bed159d9d3335dd2c747646f"
       },
       {
         "repo_path": "Shared/lib/arcade/net.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "ef39dfc4c22001c1e22c2cafb3ca03618f21c0bf3959843b292febc152c4d58f"
+        "sha256": "13727bec3548ccd57ba706aff95a4cc165dc8428d484fbdfa6e7f4aa32374416"
       },
       {
         "repo_path": "Shared/lib/arcade/replay.lua",
@@ -105,7 +105,7 @@
       {
         "repo_path": "Shared/lib/arcade/share.lua",
         "install_path": "lib/arcade/share.lua",
-        "sha256": "5ca3df855b6e75404a657c697db5ab37633c55e75b3570445ece16ff1b2168f0"
+        "sha256": "609cec7dbb090aea02d0aca6664ef9da7218994c3131c283d794e3479146ae0a"
       },
       {
         "repo_path": "Shared/lib/arcade/tournament.lua",
@@ -145,7 +145,7 @@
       {
         "repo_path": "Shared/lib/arcade/saves.lua",
         "install_path": "lib/arcade/saves.lua",
-        "sha256": "da2e3320340bebc18cb873a393872d5dc1f8874d7b80a3d4f568b6c8f0f465e4"
+        "sha256": "7862be44d1208427c35196cede5aee92e7ba0f1f7609eaec27e451da7f650aac"
       },
       {
         "repo_path": "Shared/lib/sound.lua",
