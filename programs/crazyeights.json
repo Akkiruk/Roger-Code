@@ -7,12 +7,12 @@
     "description": "Fast single-hand Crazy Eights duel with wild 8s and draw 2s.",
     "source_root": "Games/CrazyEights",
     "entrypoint": "startup.lua",
-    "version": "1.0.51"
+    "version": "1.0.52"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-15T17:19:21Z",
-    "package_hash": "106491df6dfbec81cf3a2c89f6d2cdf8d1dce97c0dbc071fbd09a94d30967c7f"
+    "commit": "86c4d95429af65c111532182648d8e508c9be3ee",
+    "generated_at": "2026-11-15T20:10:07Z",
+    "package_hash": "5228524e6390fa47df41e9636192a815bde1c46934963c59f8cecc4dbefe6bf3"
   },
   "install": {
     "preserve": [],
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "072c0090168fe93bbe1f983a56452114e8a3f8aa2bbb6dfa5f5f3b9f872f129a"
+        "sha256": "b83b054bdb944f448c46b0911073ffa8ef63d22e482d69b0a9f47252792e4e2b"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",

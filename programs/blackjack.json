@@ -7,12 +7,12 @@
     "description": "Six-deck blackjack with a lasting shoe, doubles on 11 and one split.",
     "source_root": "Games/Blackjack",
     "entrypoint": "startup.lua",
-    "version": "1.2.102"
+    "version": "1.2.103"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-15T17:19:21Z",
-    "package_hash": "dd6d8e05c7ed5bc1e3d2843054b5ba5da7aa4ae0335bca40a99b6368955f4071"
+    "commit": "86c4d95429af65c111532182648d8e508c9be3ee",
+    "generated_at": "2026-11-15T20:10:07Z",
+    "package_hash": "e1ce3031615cb46a1d46bbad6a7d38b38b1db6646f9ce0c7bcd92b87f9133b8f"
   },
   "install": {
     "preserve": [],
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "072c0090168fe93bbe1f983a56452114e8a3f8aa2bbb6dfa5f5f3b9f872f129a"
+        "sha256": "b83b054bdb944f448c46b0911073ffa8ef63d22e482d69b0a9f47252792e4e2b"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",

@@ -7,12 +7,12 @@
     "description": "Ante and Blind against the dealer, with one raise from 4x down to 1x and a Trips side bet.",
     "source_root": "Games/UltimateHoldem",
     "entrypoint": "startup.lua",
-    "version": "1.0.15"
+    "version": "1.0.16"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-15T17:19:21Z",
-    "package_hash": "1b86f54626d345cde365f3d91df04b204b7d30fadecce21f2a341c7bd1b1d3a2"
+    "commit": "86c4d95429af65c111532182648d8e508c9be3ee",
+    "generated_at": "2026-11-15T20:10:07Z",
+    "package_hash": "7980cc994b292c937dc71f62bc5b6a34eabd229fca5bcd9293632d51ce17157f"
   },
   "install": {
     "preserve": [],
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "072c0090168fe93bbe1f983a56452114e8a3f8aa2bbb6dfa5f5f3b9f872f129a"
+        "sha256": "b83b054bdb944f448c46b0911073ffa8ef63d22e482d69b0a9f47252792e4e2b"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
