@@ -7,12 +7,12 @@
     "description": "Who has been playing what: every Arcade cabinet and casino table on the network, time played, progress and results.",
     "source_root": "Games/Tracker",
     "entrypoint": "startup.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-15T16:37:41Z",
-    "package_hash": "636307d7d923fc4604a79a4bdc09cf3be82e6776d376064c757a0a43918200a6"
+    "commit": "97db5e7237b7001eb2b3ac934c8e3b81ea8059e4",
+    "generated_at": "2026-11-15T16:58:11Z",
+    "package_hash": "192cdf669d7ff5f10e522f1d2c18323501b0a6dc6d94fcb2f2157c09c93b8ddb"
   },
   "install": {
     "preserve": [],
@@ -70,7 +70,7 @@
       {
         "repo_path": "Shared/lib/tracker/app.lua",
         "install_path": "lib/tracker/app.lua",
-        "sha256": "b9eccc550d705c154c7e086a43da1187e7431ecd31955839efcfad21c82a9a5a"
+        "sha256": "3e3d3dd5ec21700f6d5ba3f535a78bf383386cffd39854c5a5eb82b36469ff5b"
       },
       {
         "repo_path": "Shared/lib/tracker/rules.lua",

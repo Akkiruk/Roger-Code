@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-15T16:37:41Z",
+  "generated_at": "2026-11-15T16:58:11Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
+    "commit": "97db5e7237b7001eb2b3ac934c8e3b81ea8059e4",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -251,9 +251,9 @@
       "name": "Play Tracker",
       "category": "Utilities",
       "description": "Who has been playing what: every Arcade cabinet and casino table on the network, time played, progress and results.",
-      "version": "1.0.6",
-      "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-      "package_hash": "636307d7d923fc4604a79a4bdc09cf3be82e6776d376064c757a0a43918200a6",
+      "version": "1.0.7",
+      "commit": "97db5e7237b7001eb2b3ac934c8e3b81ea8059e4",
+      "package_hash": "192cdf669d7ff5f10e522f1d2c18323501b0a6dc6d94fcb2f2157c09c93b8ddb",
       "spec_path": "programs/tracker.json"
     },
     "ultimate-holdem": {
