@@ -7,12 +7,12 @@
     "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
     "source_root": "Games/Classics",
     "entrypoint": "startup.lua",
-    "version": "1.0.20"
+    "version": "1.0.21"
   },
   "build": {
-    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
-    "generated_at": "2026-11-15T16:22:32Z",
-    "package_hash": "6714907d4e61cc81e0b6e52dce1777fc1b86ec5ee5738f1af2f46bbb9f00f00f"
+    "commit": "d169b81eecd63afa58905c2a108d56bc1f93840c",
+    "generated_at": "2026-11-15T16:29:37Z",
+    "package_hash": "54f15091f1e8286f9d9c7b4352452d38f51655189038ae5ed5586290be61805d"
   },
   "install": {
     "preserve": [],
@@ -65,7 +65,7 @@
       {
         "repo_path": "Shared/lib/arcade/net.lua",
         "install_path": "lib/arcade/net.lua",
-        "sha256": "d5c08326bd618c41fb4281eaaa848334dc1165dc247057fbb45b46894aaa94ba"
+        "sha256": "e14c2a0648919a1ca0d35144ebac109f98ccf7d4e9c18a3aa5adf12cbb3085a9"
       },
       {
         "repo_path": "Shared/lib/arcade/play.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/arcade/action.lua",
         "install_path": "lib/arcade/action.lua",
-        "sha256": "9fd8e7f72231a16e939ed9b01eaa18ea1585de2aa13707e11b6be3a89088417b"
+        "sha256": "ef39dfc4c22001c1e22c2cafb3ca03618f21c0bf3959843b292febc152c4d58f"
       },
       {
         "repo_path": "Shared/lib/arcade/replay.lua",
@@ -105,7 +105,7 @@
       {
         "repo_path": "Shared/lib/arcade/share.lua",
         "install_path": "lib/arcade/share.lua",
-        "sha256": "90d0a1f306968199758fee2ef7ff5c24f2a304cbef9a0911c2f8a5b90e554ba4"
+        "sha256": "5ca3df855b6e75404a657c697db5ab37633c55e75b3570445ece16ff1b2168f0"
       },
       {
         "repo_path": "Shared/lib/arcade/tournament.lua",
