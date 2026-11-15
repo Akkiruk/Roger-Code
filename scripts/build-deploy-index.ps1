@@ -577,19 +577,26 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
 
     $libClosure = Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $dir.FullName -LuaRelativePaths $discovered.lua_files
 
-    # "-- manifest-bundle: Games/HiLo Games/Slots" in startup.lua carries those packages' files too, for a cabinet of several games
+    # "-- manifest-bundle: Games/HiLo Games/Slots" in startup.lua carries those packages' files too, for a cabinet of several games.
+    # "Games/Arcade>arcade" puts that package's files under arcade/ instead, for packages whose files share names (each Arcade-shell
+    # package has its own games/registry.lua). A prefixed bundle leaves out font and surface: the cabinet brings its own at the root.
     $bundled = New-Object System.Collections.Generic.List[object]
     $startupPath = Join-Path $dir.FullName "startup.lua"
     if (Test-Path -LiteralPath $startupPath) {
         foreach ($line in Get-Content -LiteralPath $startupPath) {
             if ($line -notmatch '^\s*--\s*manifest-bundle:\s*(.+)$') { continue }
-            foreach ($bundleRoot in ($Matches[1].Trim() -split '\s+')) {
+            foreach ($bundleSpec in ($Matches[1].Trim() -split '\s+')) {
+                $bundleParts = $bundleSpec -split '>', 2
+                $bundleRoot = $bundleParts[0]
+                $prefix = if ($bundleParts.Count -gt 1) { $bundleParts[1].Trim('/') + "/" } else { "" }
                 $bundleDir = Join-Path $RepoRoot ($bundleRoot.Replace('/', '\'))
+                if (-not (Test-Path -LiteralPath $bundleDir)) { throw "Bundle '$bundleRoot' in '$sourceRoot' does not exist" }
                 $bundleFiles = Get-ProgramFiles -Dir $bundleDir
                 $libClosure = @(@($libClosure) + @(Get-LibDependencyClosure -RepoRootPath $RepoRoot -PackageRoot $bundleDir -LuaRelativePaths $bundleFiles.lua_files) | Sort-Object -Unique)
                 foreach ($file in @($bundleFiles.files)) {
                     if ($file -ieq "startup.lua" -or $file -ieq "vhcc_lockdown.txt") { continue }
-                    $bundled.Add([pscustomobject]@{ repo_path = "$bundleRoot/$file"; install_path = $file; full_path = (Join-Path $bundleDir ($file.Replace('/', '\'))) })
+                    if ($prefix -and ($file -ieq "font" -or $file -ieq "surface")) { continue }
+                    $bundled.Add([pscustomobject]@{ repo_path = "$bundleRoot/$file"; install_path = "$prefix$file"; full_path = (Join-Path $bundleDir ($file.Replace('/', '\'))) })
                 }
             }
         }

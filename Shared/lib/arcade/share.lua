@@ -17,6 +17,13 @@ M.WHATS = { save = true, scores = true, versus = true, records = true }
 
 local STATE_FILE = "arcade_share.dat"
 
+--- Where the last update number taken is kept. A Game Browser computer runs several cabinets, each with its own games, so each
+--- needs its own number: one number for all would skip what one cabinet missed while another was running.
+function M.useStateFile(path)
+  STATE_FILE = path
+  state = nil
+end
+
 local appliers = {}   -- what -> function(game, player, data, at, deleted)
 local games = {}      -- the game ids this cabinet runs
 local state = nil     -- { seq = the tracker's last update number taken }

@@ -437,6 +437,12 @@ local function drawIdle(slot, wallNumber)
   ui.region("play", 0, 0, W, H)
 end
 
+--- CABINETS: on a Game Browser, back to its list; on a cabinet of its own, two taps turn it into a Game Browser.
+function app.cabinetsButton(x, y, w)
+  local asking = not app.cabinets and S.confirm and S.confirm.id == "cabinets" and nowMs() < S.confirm.untilAt
+  ui.button("cabinets", x, y, w, 7, asking and "SURE?" or "CABINETS", asking and C.warn or C.panel, { small = true })
+end
+
 local function drawMenu()
   screen:clear(C.bg, nil, " ")
   ui.clearButtons()
@@ -444,6 +450,7 @@ local function drawMenu()
   ui.text(config.NAME, floor(W / 2), 2, C.hi, "center")
   ui.small("Free to play - pick a game", floor(W / 2), 10, C.line, C.bg, "center", W - 2)
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
+  app.cabinetsButton(W - 22, 1, 20)
   local list = registry
   local rows = math.ceil(#list / 2)
   local rowH = max(7, min(18, floor((H - 15) / max(rows, 4)) - 2))
@@ -733,6 +740,26 @@ handlers.actDone = function() actions.leave() end
 handlers.actBoards = function(_, who, wall)
   actions.leave()
   openFront(who, wall)
+end
+-- On a Game Browser computer: back to its list of cabinets. On a cabinet of its own: two taps make this computer a Game Browser,
+-- with every cabinet on it. Saves, scores and records are not the installer's files, so they stay.
+handlers.cabinets = function()
+  if app.cabinets then
+    audio.play("back")
+    app.toCabinets()
+    return
+  end
+  if S.confirm and S.confirm.id == "cabinets" and nowMs() < S.confirm.untilAt then
+    S.confirm = nil
+    audio.play("select")
+    setToast("Turning this cabinet into the Game Browser...", C.hi, 60000)
+    S.dirty = true
+    app.toBrowser()
+    return
+  end
+  audio.play("tap")
+  S.confirm = { id = "cabinets", untilAt = nowMs() + 5000 }
+  setToast("Tap again: every cabinet on this computer. Saves stay.", C.hi, 5000)
 end
 handlers.actSeen = function()
   if actions.seen() then audio.play("tap") end
@@ -1200,6 +1227,24 @@ local function shutdown()
   savePrefs()
 end
 
+--- Leave for the Game Browser's list, saving everything first. Only reached from the menu or a ready screen, so no match is open.
+function app.toCabinets()
+  pcall(shutdown)
+  app.cabinets()
+end
+
+--- Install the Game Browser over this cabinet, then reboot into it. If the install fails, the reboot comes back to this cabinet.
+function app.toBrowser()
+  pcall(render)
+  log("installing the Game Browser")
+  pcall(shutdown)
+  local ok, err = pcall(function()
+    if shell then shell.run("installer.lua", "game-browser") else os.run({}, "installer.lua", "game-browser") end
+  end)
+  if not ok then log("Game Browser install failed: " .. tostring(err)) end
+  os.reboot()
+end
+
 local function main()
   screens.bind(app)
   matches.bind(app)
@@ -1358,9 +1403,11 @@ end
 
 local M = {}
 
---- Run the shell for ever. opts.name is what the menu is called.
+--- Run the shell for ever. opts.name is what the menu is called. opts.cabinets, on a Game Browser computer, goes back to its
+--- list of cabinets: the menu (or a one-game cabinet's ready screen) then has a CABINETS button. It never returns.
 function M.run(opts)
   config.NAME = opts and opts.name or config.NAME
+  app.cabinets = opts and opts.cabinets or nil
   local ok, err = pcall(main)
   if not ok then
     log("fatal: " .. tostring(err))
