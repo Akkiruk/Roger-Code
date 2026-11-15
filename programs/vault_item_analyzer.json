@@ -7,12 +7,12 @@
     "description": "Vault Item Analyzer: Scans all peripheral inventories and displays vault item data on a monitor",
     "source_root": "Utilities",
     "entrypoint": "vault_item_analyzer.lua",
-    "version": "1.0.34"
+    "version": "1.0.35"
   },
   "build": {
-    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
-    "generated_at": "2026-11-15T16:29:37Z",
-    "package_hash": "f0d86719cd7e1094d12fb3904e8a765ecc477ea3a81fdb3cca164dee194cece2"
+    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
+    "generated_at": "2026-11-15T16:37:41Z",
+    "package_hash": "99d9d8b2d0d43d038add92afb7ebac2d26431563b72b396e66c0927939c974c6"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
+        "sha256": "a8ae816c04982cd384b069ab0d20b3dfcce9d8f1e103b81d7dcadac7e24484c2"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
+        "sha256": "121b4421748095bbe145825cb9d031ba1d49b8a04743c942971bbf3f71f4b24a"
       },
       {
         "repo_path": "Utilities/vault_item_analyzer.lua",
@@ -60,7 +60,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
+        "sha256": "038f80939630f19d2e418554cbd371055c2b5950d3079cd24e4a87331e820817"
       }
     ]
   },

@@ -7,12 +7,12 @@
     "description": "MOAG, Pong, Bomberman and Tron light cycles: two players, one wall each, in real time.",
     "source_root": "Games/Versus",
     "entrypoint": "startup.lua",
-    "version": "1.0.20"
+    "version": "1.0.21"
   },
   "build": {
-    "commit": "d169b81eecd63afa58905c2a108d56bc1f93840c",
-    "generated_at": "2026-11-15T16:29:37Z",
-    "package_hash": "3090cb88614c5d9cbcec498ec053272d7129ea19b00173a2e849b2e8a87b5011"
+    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
+    "generated_at": "2026-11-15T16:37:41Z",
+    "package_hash": "0f4f48c02d8c154b5d0227495ed793c6c147d1033418501f1ce10a3b6b7a8a19"
   },
   "install": {
     "preserve": [],
@@ -155,7 +155,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
+        "sha256": "a8ae816c04982cd384b069ab0d20b3dfcce9d8f1e103b81d7dcadac7e24484c2"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -165,7 +165,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
+        "sha256": "121b4421748095bbe145825cb9d031ba1d49b8a04743c942971bbf3f71f4b24a"
       },
       {
         "repo_path": "Games/Versus/games/bomberman/plugin.lua",
@@ -250,7 +250,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
+        "sha256": "038f80939630f19d2e418554cbd371055c2b5950d3079cd24e4a87331e820817"
       }
     ]
   },

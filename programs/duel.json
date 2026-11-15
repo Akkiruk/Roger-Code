@@ -7,12 +7,12 @@
     "description": "One on one for tokens on two equal 6x6 walls back to back: Heads-Up Hold'em, Gin Rummy, Liar's Dice, Battleship, Backgammon, Cribbage, Indian Poker and Farkle.",
     "source_root": "Games/Duel",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
-    "commit": "ddec6f4372eb2464ff195e917abef036b33dead3",
-    "generated_at": "2026-11-15T16:29:37Z",
-    "package_hash": "4687e60b1668de1f31fe07a987f0866a807e48ef6cf70dfd51d6b2f135ae4674"
+    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
+    "generated_at": "2026-11-15T16:37:41Z",
+    "package_hash": "4bb22596003d352ea1d72e063906c6165e51034c54230d3cd88052ab3bddc7ac"
   },
   "install": {
     "preserve": [],
@@ -250,7 +250,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
+        "sha256": "121b4421748095bbe145825cb9d031ba1d49b8a04743c942971bbf3f71f4b24a"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -260,7 +260,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
+        "sha256": "a8ae816c04982cd384b069ab0d20b3dfcce9d8f1e103b81d7dcadac7e24484c2"
       },
       {
         "repo_path": "System/roger_update.lua",
@@ -375,7 +375,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
+        "sha256": "038f80939630f19d2e418554cbd371055c2b5950d3079cd24e4a87331e820817"
       }
     ]
   },

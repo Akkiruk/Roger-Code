@@ -7,12 +7,12 @@
     "description": "Every free cabinet on one computer: Arcade, Classics, Classics 2, Long Games, Versus and BLIGHTMARE. Pick one on the wall, and CABINETS on its menu swaps to another. No tokens, ever.",
     "source_root": "Games/Browser",
     "entrypoint": "startup.lua",
-    "version": "1.0.3"
+    "version": "1.0.4"
   },
   "build": {
-    "commit": "d169b81eecd63afa58905c2a108d56bc1f93840c",
-    "generated_at": "2026-11-15T16:29:37Z",
-    "package_hash": "c6c7d660efddbf2800f563b8632d6d28df4b7b11576f770e1359d00dcf6c29cb"
+    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
+    "generated_at": "2026-11-15T16:37:41Z",
+    "package_hash": "7bf31827198815a24b996945c403791798d521551a4ae6136b538c30c687bf38"
   },
   "install": {
     "preserve": [],
@@ -565,7 +565,7 @@
       {
         "repo_path": "Shared/lib/roger_supervisor.lua",
         "install_path": "lib/roger_supervisor.lua",
-        "sha256": "2bc1634acb9d7d0d894e6c7326039183f43461a2bfb5d50f3901dc4d368752b5"
+        "sha256": "a8ae816c04982cd384b069ab0d20b3dfcce9d8f1e103b81d7dcadac7e24484c2"
       },
       {
         "repo_path": "Shared/lib/roger_logging.lua",
@@ -575,7 +575,7 @@
       {
         "repo_path": "Shared/lib/updater.lua",
         "install_path": "lib/updater.lua",
-        "sha256": "6c4688b3ad34062401760271f0e1c47bace01c7779310d6111891af2cf4bdeca"
+        "sha256": "121b4421748095bbe145825cb9d031ba1d49b8a04743c942971bbf3f71f4b24a"
       },
       {
         "repo_path": "Games/Browser/browser.lua",
@@ -865,7 +865,7 @@
       {
         "repo_path": "Shared/lib/update_screen.lua",
         "install_path": "lib/update_screen.lua",
-        "sha256": "4cc04d0a316dc84a9c7d2fd8293818b0b09a19bbbd7aea20b2a75a67545c5ddb"
+        "sha256": "038f80939630f19d2e418554cbd371055c2b5950d3079cd24e4a87331e820817"
       }
     ]
   },
