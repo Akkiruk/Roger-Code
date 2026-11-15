@@ -7,12 +7,12 @@
     "description": "Every free cabinet on one computer: Arcade, Classics, Classics 2, Long Games, Versus and BLIGHTMARE. Pick one on the wall, and CABINETS on its menu swaps to another. No tokens, ever.",
     "source_root": "Games/Browser",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "3ece377af5c3552fe726437181f7cd27cc6549cc",
-    "generated_at": "2026-11-15T15:58:30Z",
-    "package_hash": "2edcc409b7e6f2216d2ac4f04adb86f3dc2de5fa813c25d707b389e613d8cafd"
+    "commit": "d378ec0c651d945ad864fd7d0a433f94feb5a128",
+    "generated_at": "2026-11-15T16:05:17Z",
+    "package_hash": "452e4a1ffde5b300742e1d53aee5ab136eb72b1b11c97003dcb70880dae2d036"
   },
   "install": {
     "preserve": [],
@@ -335,7 +335,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "4b62a055676b932291451efc33436d2f1e2e4f9f1676ca36c900b5ee1191bcc8"
+        "sha256": "8fb59a2d7f9052bb1836c06b174cb7e37154740ffece3c2061b48b2616fb5b38"
       },
       {
         "repo_path": "Games/Blightmare/games/blightmare/regions/vault.lua",

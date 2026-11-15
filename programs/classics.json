@@ -7,12 +7,12 @@
     "description": "Pac-Man, Asteroids, Space Invaders and more early arcade games, played by touch for the high score.",
     "source_root": "Games/Classics",
     "entrypoint": "startup.lua",
-    "version": "1.0.18"
+    "version": "1.0.19"
   },
   "build": {
-    "commit": "3ece377af5c3552fe726437181f7cd27cc6549cc",
-    "generated_at": "2026-11-15T15:58:30Z",
-    "package_hash": "f3a3c0ec930a486d9e31f7467b8f16a43e1c729a872f804a124d6d99df877677"
+    "commit": "d378ec0c651d945ad864fd7d0a433f94feb5a128",
+    "generated_at": "2026-11-15T16:05:17Z",
+    "package_hash": "e895c8e2592b431b4748b3d7bd3288d08b8edc65fa6a4f55409325ca6351837a"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/arcade/main.lua",
         "install_path": "lib/arcade/main.lua",
-        "sha256": "4b62a055676b932291451efc33436d2f1e2e4f9f1676ca36c900b5ee1191bcc8"
+        "sha256": "8fb59a2d7f9052bb1836c06b174cb7e37154740ffece3c2061b48b2616fb5b38"
       },
       {
         "repo_path": "Shared/lib/arcade/match.lua",
