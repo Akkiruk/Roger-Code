@@ -138,6 +138,10 @@ local function drawTabs(out, ui)
     ui.tabs[#ui.tabs + 1] = { x1 = x, x2 = x + #label - 1, page = name }
     x = x + #label + 1
   end
+  -- not in the pages that turn by themselves: it's for whoever is looking for lost saves
+  local on = ui.page == "RECOVER"
+  put(out, x, 1, " RECOVER ", on and colors.black or colors.orange, on and colors.orange or colors.gray)
+  ui.tabs[#ui.tabs + 1] = { x1 = x, x2 = x + 8, page = "RECOVER" }
 end
 
 local function players(list)
@@ -233,6 +237,58 @@ local function drawPlayer(out, d, t, w, h, name)
   end
 end
 
+--- Getting saves back. What this hub holds comes back by itself on any cabinet with an ender modem. A computer that was broken
+--- keeps its files on the server under its number: an operator can give themselves a computer with that number, and once it
+--- has an ender modem it sends everything it held here.
+local function drawRecover(out, d, t, w, h, ui)
+  local y = 3
+  put(out, 2, y, "SAVES HELD HERE: they come back on any cabinet with an ender modem", colors.yellow)
+  y = y + 1
+  local saves = {}
+  for _, e in pairs(ui.shared and ui.shared.entries or {}) do
+    if e.what == "save" and type(e.data) == "table" and not e.data.deleted then saves[#saves + 1] = e end
+  end
+  table.sort(saves, function(a, b) return (a.data.at or 0) > (b.data.at or 0) end)
+  if #saves == 0 then put(out, 4, y, "None yet.", colors.lightGray); y = y + 1 end
+  for i, e in ipairs(saves) do
+    if i > 8 or y > h - 8 then put(out, 4, y, "and " .. (#saves - i + 1) .. " more", colors.gray); y = y + 1; break end
+    put(out, 4, y, tostring(e.player), colors.white)
+    put(out, 22, y, tostring(e.game), colors.lime)
+    put(out, 38, y, "saved " .. rules.ago(e.data.at, t), colors.lightGray)
+    y = y + 1
+  end
+  y = y + 1
+  put(out, 2, y, "OLD COMPUTERS: a broken computer's files stay on the server under its number.", colors.yellow)
+  y = y + 1
+  put(out, 2, y, "As an operator, give yourself one, place it with an ender modem, and it sends its saves here:", colors.lightGray)
+  y = y + 1
+  put(out, 4, y, "/give @p computercraft:computer_advanced{ComputerId:N}", colors.orange)
+  y = y + 2
+  local ids = {}
+  for id, cab in pairs(d.cabinets or {}) do ids[#ids + 1] = { id = tonumber(id) or id, label = cab.label, kind = "cabinet" } end
+  for id, tab in pairs(d.tables or {}) do ids[#ids + 1] = { id = tonumber(id) or id, label = tab.cabinet, kind = tab.title or "table" } end
+  table.sort(ids, function(a, b)
+    if type(a.id) == "number" and type(b.id) == "number" then return a.id < b.id end
+    return tostring(a.id) < tostring(b.id)
+  end)
+  put(out, 2, y, #ids == 0 and "No computers heard from yet." or "Every computer this tracker has heard from, by number:", colors.lightGray)
+  y = y + 1
+  for _, c in ipairs(ids) do
+    if y > h - 1 then break end
+    put(out, 4, y, "N = " .. tostring(c.id), colors.white)
+    local games = {}
+    if c.label then
+      local seen = {}
+      for _, r in ipairs(d.recent or {}) do
+        if r.cabinet == c.label and r.title and not seen[r.title] then seen[r.title] = true; games[#games + 1] = r.title end
+      end
+    end
+    local what = (c.label and (c.label .. ": ") or "") .. (#games > 0 and table.concat(games, ", ") or c.kind)
+    put(out, 14, y, what, colors.lightGray)
+    y = y + 1
+  end
+end
+
 local function draw(out, d, ui)
   local t = now()
   local w, h = out.getSize()
@@ -247,6 +303,8 @@ local function draw(out, d, ui)
     drawPlayers(out, d, t, w, h, ui)
   elseif ui.page == "GAMES" then
     drawGames(out, d, t, w, h)
+  elseif ui.page == "RECOVER" then
+    drawRecover(out, d, t, w, h, ui)
   else
     drawRecent(out, d, t, w, h)
   end
@@ -286,7 +344,7 @@ function M.run()
   local d = load()
   local sh = loadShared()
   local sharedDirty, sharedSavedAt = false, 0
-  local ui = { page = "NOW", touchedAt = 0, held = shared.counts(sh) }
+  local ui = { page = "NOW", touchedAt = 0, held = shared.counts(sh), shared = sh }
   local mon = biggestMonitor()
   local out = mon and mon.obj or term.current()
   ui.heard = openModems()
