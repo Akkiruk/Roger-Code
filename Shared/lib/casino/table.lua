@@ -340,7 +340,9 @@ function Table:badgeNews()
   local ok, err = pcall(function()
     local hub = net.hub()
     if hub then badges.hear(hub.champions) end
-    if not (self.scene and self.scene.name == "play") then badges.sayAll(self.game) end
+    local s = self.scene
+    local revealing = s and (s.name == "play" or (s.name == "result" and not s.drawn))
+    if not revealing then badges.sayAll(self.game) end
   end)
   if not ok then log("badge news failed: " .. tostring(err)) end
 end
@@ -1218,13 +1220,18 @@ function Table:showResult(round, model)
 
   local scene = { name = "result", deadline = now() + IDLE_RESULT_MS, left = round.left or 0 }
   scene.debugState = function() return { net = round.net, left = scene.left, title = result.title, badges = earned } end
-  self:badgeNews()
 
   function scene.tick(s)
+    -- Badge news waits until the result has been drawn and shown, so no whisper beats the wall
+    if s.drawn and not s.told then
+      s.told = true
+      self:badgeNews()
+    end
     if now() > s.deadline then s.finished, s.choice = true, "leave" end
   end
 
   function scene.draw(s)
+    s.drawn = true
     view.draw(c, model, round.state, nil)
     ui.bar(c, ctx, ui.group(stake))
     local detail = result.detail or ""
