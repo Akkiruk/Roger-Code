@@ -60,7 +60,9 @@ local LOG_FILE = "updater.log"
 local UPDATE_LOCK = ".update_lock"
 local INSTALLER_HASH_FILE = ".installer_hash"
 local REPAIR_MARK = ".crash_repair"
-local DOWNLOAD_ATTEMPTS = 4
+local HASHES_FILE = ".roger_managed_hashes" -- install path -> sha256 of what was last written there
+local DOWNLOAD_WAITS = { 2, 4, 8, 15, 30 } -- seconds between tries: long enough to ride out GitHub throttling a busy server
+local STORAGE_MARGIN = 4096                -- bytes kept free after an update, for logs and saves
 local LOCKDOWN_FILE = "vhcc_lockdown.txt"
 local UNLOCK_FILE = ".vhcc_unlock"
 local DEFAULT_WATCH_INTERVAL = 300
@@ -91,6 +93,7 @@ local RESERVED_LOCAL_PATHS = {
   [INSTALLER_HASH_FILE] = true,
   [REPAIR_MARK] = true,
   [UNLOCK_FILE] = true,
+  [HASHES_FILE] = true,
 }
 local logger = openLogger(LOG_FILE, "Updater")
 -----------------------------------------------------
@@ -163,22 +166,26 @@ local function validateFetchedSpec(programEntry, spec)
   return true
 end
 
+--- @return data, or nil, an error, and the HTTP code when there was one
 local function download(url, headers)
   local ok, response, reason, failedResponse = pcall(function()
     return http.get(url, headers, true)
   end)
   if not ok or not response then
+    local failedCode = nil
     if failedResponse then
-      reason = tostring(reason) .. " " .. tostring(failedResponse.getResponseCode())
-      failedResponse.close()
+      local codeOk, value = pcall(failedResponse.getResponseCode)
+      failedCode = codeOk and tonumber(value) or nil
+      reason = tostring(reason) .. " " .. tostring(failedCode)
+      pcall(failedResponse.close)
     end
-    return nil, "HTTP request failed: " .. tostring(url) .. " (" .. tostring(ok and reason or response) .. ")"
+    return nil, "HTTP request failed: " .. tostring(url) .. " (" .. tostring(ok and reason or response) .. ")", failedCode
   end
   local data = response.readAll()
   local code = response.getResponseCode()
   response.close()
   if code ~= 200 then
-    return nil, "HTTP " .. tostring(code) .. ": " .. tostring(url)
+    return nil, "HTTP " .. tostring(code) .. ": " .. tostring(url), tonumber(code)
   end
   if not data or #data == 0 then
     return nil, "Empty response: " .. tostring(url)
@@ -186,19 +193,79 @@ local function download(url, headers)
   return data
 end
 
+local QUICK_WAITS = { 1, 2, 3 } -- no answer at all (no HTTP code): a few quick tries, as before
+
+--- How long to wait before the next try after this answer, or nil to stop. Throttling and GitHub's bad moments get the long
+--- waits; a 404 will stay a 404.
+local function waitAfter(code, attempt)
+  if code == nil then return QUICK_WAITS[attempt] end
+  if code == 408 or code == 429 or code >= 500 then return DOWNLOAD_WAITS[attempt] end
+  return nil
+end
+
+--- @return data, or nil, the last error and the last HTTP code
 local function downloadPackageFile(url)
-  local data, err
-  for attempt = 1, DOWNLOAD_ATTEMPTS do
-    data, err = download(url)
+  local data, err, code
+  local attempt = 0
+  while true do
+    attempt = attempt + 1
+    data, err, code = download(url)
     if data then
       return data
     end
     logMsg("Attempt " .. attempt .. ": " .. tostring(err))
-    if attempt < DOWNLOAD_ATTEMPTS then
-      os.sleep(attempt)
-    end
+    local wait = waitAfter(code, attempt)
+    if not wait then break end
+    os.sleep(wait)
   end
-  return nil, err
+  logMsg("Giving up on " .. tostring(url) .. ": " .. tostring(err))
+  return nil, err, code
+end
+
+--- "120 KB" or "21.4 MB", counting as the server's disk limit does (25,000,000 bytes is 25.0 MB).
+local function formatBytes(bytes)
+  bytes = tonumber(bytes) or 0
+  if bytes < 1000000 then return tostring(math.max(0, math.ceil(bytes / 1000))) .. " KB" end
+  return string.format("%.1f MB", bytes / 1000000)
+end
+
+--- Bytes free on this computer's own disk, or nil where the drive can't say.
+local function freeSpace()
+  local ok, free = pcall(fs.getFreeSpace, "/")
+  if ok and type(free) == "number" then return free end
+  return nil
+end
+
+--- What a failed download says on screen, in one short line.
+local function downloadReason(path, code)
+  if code == 429 then return "GitHub is busy (HTTP 429), trying again later" end
+  if code and code >= 500 then return "GitHub didn't answer (HTTP " .. code .. ")" end
+  if code then return "Couldn't download " .. tostring(path) .. " (HTTP " .. code .. ")" end
+  return "Couldn't download " .. tostring(path)
+end
+
+--- What was last written where: install path -> sha256. A file that is still what the record says needs no download.
+local function loadHashes()
+  if not fs.exists(HASHES_FILE) then return {} end
+  local f = fs.open(HASHES_FILE, "r")
+  if not f then return {} end
+  local raw = f.readAll()
+  f.close()
+  local ok, value = pcall(textutils.unserialise, raw or "")
+  if ok and type(value) == "table" then return value end
+  return {}
+end
+
+local function saveHashes(files)
+  local record = {}
+  for _, entry in ipairs(files or {}) do
+    if type(entry.sha256) == "string" and entry.sha256 ~= "" then record[entry.install_path] = entry.sha256 end
+  end
+  local f = fs.open(HASHES_FILE, "w")
+  if f then
+    f.write(textutils.serialise(record))
+    f.close()
+  end
 end
 
 local function parseJson(data, label)
@@ -782,20 +849,29 @@ end
 -- Update logic
 -----------------------------------------------------
 
+local function sizeOf(path)
+  if not fs.exists(path) or fs.isDir(path) then return 0 end
+  local ok, size = pcall(fs.getSize, path)
+  return ok and tonumber(size) or 0
+end
+
+--- @return done, files ok, files failed, and when it didn't finish a short reason for the screen
 local function performUpdate(spec, installed, repairOf, progress)
   local unlockOk, unlockResult = beginWriteWindow("auto-update")
   if not unlockOk then
     logMsg("Update unlock failed: " .. tostring(unlockResult))
-    return false, 0, 0
+    return false, 0, 0, "Couldn't unlock the files to update them"
   end
   local createdUnlock = unlockResult == true
 
   local build = spec.build or {}
-  local program = spec.program or {}
   local managedPaths = {}
   local success = 0
   local failed = 0
+  local reason = nil
   local previouslyManaged = readManagedFiles()
+  -- A repair replaces every file, in case one was damaged; otherwise a file still as last written is left alone.
+  local hashes = repairOf and {} or loadHashes()
   cleanupStaleRuntimeArtifacts()
 
   for _, entry in ipairs(spec.install.files or {}) do
@@ -804,29 +880,52 @@ local function performUpdate(spec, installed, repairOf, progress)
 
   -- Everything is fetched before anything is touched, so a failed download leaves the old version whole.
   local fetched = {}
+  local unchanged = 0
   local total = #(spec.install.files or {})
   for index, entry in ipairs(spec.install.files or {}) do
     if progress then progress(index - 1, total) end
     if entry.preserve_existing and fs.exists(entry.install_path) then
       success = success + 1
+    elseif hasValue(entry.sha256) and hashes[entry.install_path] == entry.sha256 and fs.exists(entry.install_path) then
+      success = success + 1
+      unchanged = unchanged + 1
     else
-      local data, err = downloadPackageFile(buildCommitUrl(build.commit, entry.repo_path))
+      local data, err, code = downloadPackageFile(buildCommitUrl(build.commit, entry.repo_path))
       if data and verifyHash(data, entry.sha256) then
         fetched[#fetched + 1] = { path = entry.install_path, data = data }
       else
         failed = failed + 1
+        reason = data and ("Download of " .. tostring(entry.install_path) .. " was damaged") or downloadReason(entry.install_path, code)
         logMsg("Download failed: " .. tostring(entry.install_path) .. " - " .. tostring(err or "hash mismatch"))
         break -- one missing file sinks the whole update, so there's no use fetching the rest
       end
     end
     os.sleep(0)
   end
+  if unchanged > 0 then logMsg(unchanged .. " files already up to date, not downloaded") end
 
   if progress then progress(total, total) end
   if failed > 0 then
     logMsg("Update abandoned, nothing changed: " .. tostring(failed) .. " files could not be fetched")
     endWriteWindow(createdUnlock)
-    return false, success, failed
+    return false, success, failed, reason
+  end
+
+  -- Room for it all? What is written, less what it replaces and what goes. Short of room, nothing is touched.
+  local free = freeSpace()
+  if free then
+    local need = 0
+    for _, item in ipairs(fetched) do need = need + #item.data - sizeOf(item.path) end
+    local wanted = {}
+    for _, path in ipairs(managedPaths) do wanted[path] = true end
+    for _, path in ipairs(previouslyManaged) do
+      if not wanted[path] and path ~= VERSION_FILE and path ~= MANAGED_FILES then need = need - sizeOf(path) end
+    end
+    if need > 0 and need > free - STORAGE_MARGIN then
+      logMsg("Not enough storage: need " .. need .. " bytes, " .. free .. " free")
+      endWriteWindow(createdUnlock)
+      return false, success, 1, "Out of storage: " .. formatBytes(free) .. " free, needs " .. formatBytes(need + STORAGE_MARGIN)
+    end
   end
 
   removeStaleFiles(previouslyManaged, managedPaths)
@@ -838,12 +937,14 @@ local function performUpdate(spec, installed, repairOf, progress)
       success = success + 1
     else
       failed = failed + 1
+      reason = reason or ("Couldn't save " .. tostring(item.path) .. ": " .. tostring(saveErr))
       logMsg("Save failed: " .. tostring(item.path) .. " - " .. tostring(saveErr))
     end
   end
 
   if failed == 0 then
     saveManagedFiles(managedPaths)
+    saveHashes(spec.install.files)
     saveInstalled(buildInstalledRecord(spec, installed))
     if repairOf then
       saveFile(REPAIR_MARK, tostring(repairOf))
@@ -851,7 +952,7 @@ local function performUpdate(spec, installed, repairOf, progress)
   end
 
   endWriteWindow(createdUnlock)
-  return failed == 0, success, failed
+  return failed == 0, success, failed, reason
 end
 
 -----------------------------------------------------
@@ -876,6 +977,7 @@ local function checkForUpdates(opts)
   local rebootOnUpdate = opts.rebootOnUpdate == true
   local rebootDelay = tonumber(opts.rebootDelay) or 1
   local status = "skipped"
+  local why = nil -- when it didn't finish, a short line for the screen
 
   local ok, err = pcall(function()
     if not acquireLock() then
@@ -908,6 +1010,7 @@ local function checkForUpdates(opts)
       logMsg("Deploy index fetch failed: " .. tostring(fetchErr))
       releaseLock()
       status = "error"
+      why = "GitHub didn't answer: couldn't get the list of updates"
       callback("error", "Deploy index fetch failed: " .. tostring(fetchErr))
       return
     end
@@ -926,6 +1029,7 @@ local function checkForUpdates(opts)
       logMsg("Program '" .. progKey .. "' not found in deploy index")
       releaseLock()
       status = "error"
+      why = "This program is no longer in the list of updates"
       callback("error", "Program not in deploy index")
       return
     end
@@ -976,6 +1080,7 @@ local function checkForUpdates(opts)
       logMsg("Spec fetch failed for " .. progKey .. ": " .. tostring(specErr))
       releaseLock()
       status = "error"
+      why = "GitHub didn't answer: couldn't get the file list"
       callback("error", "Spec fetch failed: " .. tostring(specErr))
       return
     end
@@ -986,6 +1091,7 @@ local function checkForUpdates(opts)
       logMsg("Spec validation failed for " .. progKey .. ": " .. tostring(specValidationErr))
       releaseLock()
       status = "error"
+      why = "The update is still being published"
       callback("error", tostring(specValidationErr))
       return
     end
@@ -993,7 +1099,7 @@ local function checkForUpdates(opts)
     logMsg("Updating " .. progKey .. ": " .. reason)
     callback("updating", "Updating " .. progKey .. ": " .. reason)
 
-    local updated, filesOk, filesFailed = performUpdate(spec, installed, repairOf, opts.progress)
+    local updated, filesOk, filesFailed, failReason = performUpdate(spec, installed, repairOf, opts.progress)
     if updated and filesFailed == 0 then
       logMsg("Update complete: " .. filesOk .. " files updated")
       status = "updated"
@@ -1004,7 +1110,8 @@ local function checkForUpdates(opts)
       callback("updated", filesOk .. " files updated, " .. filesFailed .. " failed")
     else
       status = "error"
-      callback("error", "Update failed")
+      why = failReason or "Update failed"
+      callback("error", "Update failed: " .. tostring(why))
     end
 
     if status == "updated" and rebootOnUpdate then
@@ -1029,10 +1136,11 @@ local function checkForUpdates(opts)
     logMsg("Update check crashed: " .. tostring(err))
     pcall(releaseLock)
     status = "error"
+    why = "The updater crashed: " .. tostring(err)
     callback("error", "Crashed: " .. tostring(err))
   end
 
-  return status
+  return status, why
 end
 
 local function getInstallInfo()

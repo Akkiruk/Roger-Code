@@ -638,7 +638,7 @@ local function drawReady(a)
   if not app.oneGame then
     ui.button("actBoards", 2, H - 9, 24, 7, "OTHER GAMES", C.panel, { small = true })
   else
-    app.cabinetsButton(2, H - 9, 24)
+    app.moreButton(2, H - 9, 24)
   end
   if app.plugin.saves and app.plugin.view.progress then
     ui.button("actPlayers", W - 18, H - 9, 16, 7, "PLAYERS", C.panel, { small = true })

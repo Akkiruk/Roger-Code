@@ -1,6 +1,6 @@
 -- browser.lua
 -- The Game Browser: every free cabinet on one computer. The wall lists the cabinets; picking one saves the choice and reboots
--- into it, so a cabinet always starts clean, exactly as it does on its own computer. CABINETS on its menu (or on a one-game
+-- into it, so a cabinet always starts clean, exactly as it does on its own computer. MORE GAMES on its menu (or on a one-game
 -- cabinet's ready screen) clears the choice and reboots back to this list. A reboot or a crash goes back to the cabinet that
 -- was picked.
 -- Each cabinet's files are installed under its own folder (see manifest-bundle in startup.lua), because every one of them has
@@ -165,7 +165,7 @@ function M.draw()
       ty = ty + 1
     end
   end
-  ui.small("CABINETS on any cabinet's menu comes back here", cx, H - 2, C.line, C.bg, "center", W - 2)
+  ui.small("MORE GAMES on any cabinet's menu comes back here", cx, H - 2, C.line, C.bg, "center", W - 2)
   for _, wall in ipairs(walls) do screen:output(wall.out, 0, 0) end
 end
 

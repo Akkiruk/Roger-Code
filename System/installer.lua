@@ -1127,6 +1127,51 @@ local function runFullWipe(interactive)
   return true
 end
 
+---------------------------------------------------------------------------
+-- Storage
+---------------------------------------------------------------------------
+local HASHES_FILE = ".roger_managed_hashes" -- install path -> sha256 of what was written: the updater skips what still matches
+local LOW_STORAGE = 200000                  -- under this many bytes free, the storage figure shows in red
+
+--- "120 KB" or "21.4 MB", counting as the server's disk limit does (25,000,000 bytes is 25.0 MB).
+local function formatBytes(bytes)
+  bytes = tonumber(bytes) or 0
+  if bytes < 1000000 then return tostring(math.max(0, math.ceil(bytes / 1000))) .. " KB" end
+  return string.format("%.1f MB", bytes / 1000000)
+end
+
+--- Bytes free and the disk's size on this computer, or nil where the drive can't say.
+local function storage()
+  local okFree, free = pcall(fs.getFreeSpace, "/")
+  local okCap, capacity = false, nil
+  if fs.getCapacity then okCap, capacity = pcall(fs.getCapacity, "/") end
+  free = okFree and type(free) == "number" and free or nil
+  capacity = okCap and type(capacity) == "number" and capacity or nil
+  return free, capacity
+end
+
+--- "21.4 MB free of 25.0 MB", the colour to show it in, and whether storage is running low. nil where it can't be read.
+local function storageLine(short)
+  local free, capacity = storage()
+  if not free then return nil end
+  local low = free < LOW_STORAGE
+  local text = formatBytes(free) .. " free"
+  if capacity and not short then text = text .. " of " .. formatBytes(capacity) end
+  return text, low and colors.red or colors.lightGray, low
+end
+
+local function saveHashRecord(files)
+  local record = {}
+  for _, entry in ipairs(files or {}) do
+    if type(entry.sha256) == "string" and entry.sha256 ~= "" then record[entry.install_path] = entry.sha256 end
+  end
+  local f = fs.open(HASHES_FILE, "w")
+  if f then
+    f.write(textutils.serialise(record))
+    f.close()
+  end
+end
+
 local function installFromSpec(spec, forceConfig, installedBefore)
   local unlockOk, unlockResult = beginWriteWindow("install")
   if not unlockOk then
@@ -1135,6 +1180,8 @@ local function installFromSpec(spec, forceConfig, installedBefore)
     return false
   end
   local createdUnlock = unlockResult == true
+  -- Until this install finishes nothing on disk is known to match, so the updater must not skip anything
+  if fs.exists(HASHES_FILE) then pcall(fs.delete, HASHES_FILE) end
 
   local program = spec.program or {}
   local build = spec.build or {}
@@ -1205,6 +1252,7 @@ local function installFromSpec(spec, forceConfig, installedBefore)
   local installedOk = false
   if #failed == 0 then
     saveManagedFiles(managedPaths)
+    saveHashRecord(spec.install.files)
     saveInstalled(buildInstalledRecord(spec, installedBefore))
     installedOk = true
   end
@@ -1226,8 +1274,14 @@ local function installFromSpec(spec, forceConfig, installedBefore)
   else
     cprint(colors.yellow, "  Installed " .. success .. "/" .. total .. " files.")
     cprint(colors.red, "  Failed: " .. table.concat(failed, ", "))
+    local free = storage()
+    if free and free < 8000 then
+      cprint(colors.red, "  Out of storage: only " .. formatBytes(free) .. " left on this computer.")
+    end
     cprint(colors.gray, "  See " .. LOG_FILE .. " for details.")
   end
+  local storageText, storageColour = storageLine()
+  if storageText then cprint(storageColour, "  Storage: " .. storageText) end
 
   if phoneHostResult then
     local hostName = phoneHostResult.hostName or "Unknown"
@@ -1817,6 +1871,19 @@ local function runDesktop(index, notice)
     local status = entry.state == "update" and "Update available" or (entry.state == "installed" and "Installed here" or "Not installed")
     if g.detailH >= 6 then
       put(x + 1, y + 1, fit(status, w - 2), T.mute, bg)
+      -- storage on the right of the status line, as long a form as fits
+      local roomFrom = x + 1 + #status + 2
+      local right = x + w - 2
+      local _, _, low = storageLine()
+      for _, form in ipairs({ { false, "Storage: " }, { true, "Storage: " }, { true, "" } }) do
+        local text = storageLine(form[1])
+        if not text then break end
+        local label = form[2] .. text
+        if right - #label + 1 >= roomFrom then
+          put(right - #label + 1, y + 1, label, low and colors.red or T.mute, bg)
+          break
+        end
+      end
       local lines = wrapText(entry.desc, w - 2)
       if lines[1] then put(x + 1, y + 2, fit(lines[1], w - 2), colors.black, bg) end
       if lines[2] then put(x + 1, y + 3, fit(lines[2], w - 2), colors.black, bg) end
@@ -1873,6 +1940,12 @@ local function runDesktop(index, notice)
     term.clear()
     put(1, 1, fit(" Roger Installer", W), T.barText, T.bar)
     put(W - 12, 1, "v" .. INSTALLER_VERSION, colors.lightGray, T.bar)
+    -- how much room is left, always on show: an update that can't fit fails, so this is the first thing to look at
+    local storageText, storageColour = storageLine(true)
+    local room = (W - 13) - 18
+    if storageText and #storageText <= room then
+      put(W - 13 - #storageText, 1, storageText, storageColour, T.bar)
+    end
     put(W - 2, 1, " X ", colors.white, T.bad)
     s.regions[#s.regions + 1] = { x = W - 2, y = 1, w = 3, h = 1, id = "exit" }
     drawSidebar(g)

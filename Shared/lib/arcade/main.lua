@@ -437,11 +437,37 @@ local function drawIdle(slot, wallNumber)
   ui.region("play", 0, 0, W, H)
 end
 
---- CABINETS: on a Game Browser, back to its list; on a cabinet of its own, two taps turn it into a Game Browser.
-function app.cabinetsButton(x, y, w)
-  local asking = not app.cabinets and S.confirm and S.confirm.id == "cabinets" and nowMs() < S.confirm.untilAt
-  ui.button("cabinets", x, y, w, 7, asking and "SURE?" or "CABINETS", asking and C.warn or C.panel, { small = true })
+-- Every free cabinet, as the Game Browser lists them. MORE GAMES names the ones that aren't this one.
+local CABINET_NAMES = { "Arcade", "Versus", "Classics", "Classics 2", "Long Games", "BLIGHTMARE" }
+
+local function otherCabinets()
+  local others = {}
+  for _, name in ipairs(CABINET_NAMES) do
+    if name:upper() ~= tostring(config.NAME):upper() then others[#others + 1] = name end
+  end
+  return table.concat(others, ", ")
 end
+
+--- MORE GAMES, as a small button (a one-game cabinet's ready screen).
+function app.moreButton(x, y, w)
+  ui.button("more", x, y, w, 7, "MORE GAMES", C.panel, { small = true, frame = C.hi })
+end
+
+--- MORE GAMES, as a bar across the foot of the menu: what it is, plainly, with the other cabinets named.
+local function drawMoreBar(x, y, w, h)
+  ui.button("more", x, y, w, h, "", C.panel, { frame = C.hi })
+  local title = "MORE GAMES"
+  local tw = ui.textWidth(title)
+  local cx = x + floor(w / 2)
+  if h >= font.height + 5 and tw <= w - 6 then
+    ui.text(title, cx, y + 1, C.hi, "center")
+    ui.small(otherCabinets(), cx, y + h - 2, C.line, C.panel, "center", w - 4)
+  else
+    ui.small("MORE GAMES: " .. otherCabinets(), cx, y + floor(h / 2), C.hi, C.panel, "center", w - 4)
+  end
+end
+
+local MORE_BAR_H = 11
 
 local function drawMenu()
   screen:clear(C.bg, nil, " ")
@@ -450,10 +476,11 @@ local function drawMenu()
   ui.text(config.NAME, floor(W / 2), 2, C.hi, "center")
   ui.small("Free to play - pick a game", floor(W / 2), 10, C.line, C.bg, "center", W - 2)
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
-  app.cabinetsButton(W - 22, 1, 20)
+  local barH = H >= 60 and MORE_BAR_H or 5
+  drawMoreBar(4, H - barH - 1, W - 8, barH)
   local list = registry
   local rows = math.ceil(#list / 2)
-  local rowH = max(7, min(18, floor((H - 15) / max(rows, 4)) - 2))
+  local rowH = max(7, min(18, floor((H - 15 - barH - 2) / max(rows, 4)) - 2))
   local tileW = floor((W - 10) / 2)
   for i, plugin in ipairs(list) do
     local x = 4 + ((i - 1) % 2) * (tileW + 2)
@@ -472,6 +499,35 @@ local function drawMenu()
     end
     ui.small(fits and (plugin.blurb or "") or why, cx, y + rowH - 3, C.line, C.panel, "center", tileW - 2)
   end
+  app.drawToast()
+end
+
+--- MORE GAMES on a cabinet of its own: what the Game Browser is, and one big button to get it.
+local function drawMore()
+  screen:clear(C.bg, nil, " ")
+  ui.clearButtons()
+  local W, H = env.W, env.H
+  local cx = floor(W / 2)
+  ui.text("MORE GAMES", cx, 2, C.hi, "center")
+  ui.button("moreBack", 2, 1, 16, 7, "BACK", C.panel, { small = true })
+  local y = 13
+  local lines = {
+    { "This computer can hold every free cabinet:", C.text },
+    { otherCabinets() .. ", as well as this one.", C.hi },
+    { "", C.text },
+    { "Once they are on, MORE GAMES on any menu switches between them.", C.text },
+    { "Saves, high scores and records all stay.", C.ok },
+    { "It takes about a minute, then restarts by itself.", C.line },
+  }
+  for _, line in ipairs(lines) do
+    for _, part in ipairs(ui.wrap(line[1], W - 10)) do
+      ui.small(part, cx, y, line[2], C.bg, "center", W - 4)
+      y = y + 2
+    end
+  end
+  local bw = min(W - 8, 64)
+  ui.button("moreYes", cx - floor(bw / 2), max(y + 2, H - 30), bw, 13, "GET EVERY CABINET", C.ok)
+  ui.button("moreBack", cx - 15, H - 12, 30, 9, "NOT NOW", C.panel, { small = true })
   app.drawToast()
 end
 
@@ -590,6 +646,7 @@ local function drawWalls()
   end
   ui.setScreen(screen)
   if S.view == "menu" then drawMenu()
+  elseif S.view == "more" then drawMore()
   elseif S.view == "lobby" then screens.drawLobby()
   elseif S.view == "game" then play.draw(S.match)
   elseif S.view == "final" then play.draw(S.finalMatch, true)
@@ -743,23 +800,24 @@ handlers.actBoards = function(_, who, wall)
 end
 -- On a Game Browser computer: back to its list of cabinets. On a cabinet of its own: two taps make this computer a Game Browser,
 -- with every cabinet on it. Saves, scores and records are not the installer's files, so they stay.
-handlers.cabinets = function()
+handlers.more = function()
   if app.cabinets then
-    audio.play("back")
+    audio.play("select")
     app.toCabinets()
     return
   end
-  if S.confirm and S.confirm.id == "cabinets" and nowMs() < S.confirm.untilAt then
-    S.confirm = nil
-    audio.play("select")
-    setToast("Turning this cabinet into the Game Browser...", C.hi, 60000)
-    S.dirty = true
-    app.toBrowser()
-    return
-  end
-  audio.play("tap")
-  S.confirm = { id = "cabinets", untilAt = nowMs() + 5000 }
-  setToast("Tap again: every cabinet on this computer. Saves stay.", C.hi, 5000)
+  audio.play("select")
+  if S.view == "action" then actions.leave() end
+  S.view = "more"
+  S.lastTouch = nowMs()
+end
+handlers.moreBack = function(_, who, wall)
+  audio.play("back")
+  if app.oneGame then openFront(who, wall) else S.view = "menu" end
+end
+handlers.moreYes = function()
+  audio.play("select")
+  app.toBrowser()
 end
 handlers.actSeen = function()
   if actions.seen() then audio.play("tap") end
@@ -1182,7 +1240,7 @@ local function onTick()
 
   if S.view == "idle" then
     attractStep(t)
-  elseif S.view == "menu" then
+  elseif S.view == "menu" or S.view == "more" then
     if t - S.lastTouch > config.LOBBY_IDLE * 1000 then
       S.view = "idle"; S.dirty = true
     end
@@ -1256,7 +1314,7 @@ end
 
 --- Leave for the Game Browser's list, saving everything first. Only reached from the menu or a ready screen, so no match is open.
 function app.toCabinets()
-  leaveWith("CABINETS", { "Loading the list of cabinets...", "Just a moment." })
+  leaveWith("MORE GAMES", { "Loading the list of cabinets...", "Just a moment." })
   app.cabinets()
 end
 
@@ -1447,7 +1505,7 @@ end
 local M = {}
 
 --- Run the shell for ever. opts.name is what the menu is called. opts.cabinets, on a Game Browser computer, goes back to its
---- list of cabinets: the menu (or a one-game cabinet's ready screen) then has a CABINETS button. It never returns.
+--- list of cabinets: the menu (or a one-game cabinet's ready screen) then has a MORE GAMES bar. It never returns.
 function M.run(opts)
   config.NAME = opts and opts.name or config.NAME
   app.cabinets = opts and opts.cabinets or nil

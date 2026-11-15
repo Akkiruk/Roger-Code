@@ -82,13 +82,37 @@ local function draw(target, state, tick)
   centre(target, top + 5, state.text, MUTED)
 end
 
-local function finish(target, title, line, colour)
+--- Split text into lines no wider than width, at spaces where it can.
+local function wrap(text, width)
+  local lines, line = {}, ""
+  for word in tostring(text):gmatch("%S+") do
+    while #word > width do
+      if line ~= "" then lines[#lines + 1] = line; line = "" end
+      lines[#lines + 1] = word:sub(1, width)
+      word = word:sub(width + 1)
+    end
+    if line == "" then line = word
+    elseif #line + 1 + #word <= width then line = line .. " " .. word
+    else lines[#lines + 1] = line; line = word end
+  end
+  if line ~= "" then lines[#lines + 1] = line end
+  return lines
+end
+
+--- The last screen. why, when an update didn't finish, says what went wrong in a line or two.
+local function finish(target, title, line, colour, why)
   target.setBackgroundColor(INK)
   target.clear()
-  local _, h = target.getSize()
+  local w, h = target.getSize()
   local top = math.max(1, math.floor(h / 2) - 1)
   centre(target, top, title, colour)
   centre(target, top + 2, line, MUTED)
+  if why and why ~= "" then
+    for i, part in ipairs(wrap(why, math.max(8, w - 2))) do
+      if i > 2 or top + 3 + i > h then break end
+      centre(target, top + 3 + i, part, TEXT)
+    end
+  end
 end
 
 -- A sound of its own as an update starts and ends, so anyone near a cabinet knows what's going on. The picks live in
@@ -108,7 +132,8 @@ local function sound(name)
   end)
 end
 
---- Run an update on screen. work(progress) does it, calling progress(done, total) as files arrive, and returns a status.
+--- Run an update on screen. work(progress) does it, calling progress(done, total) as files arrive, and returns a status,
+-- and with it, when it didn't finish, a short reason for the screen.
 -- @return whatever work returned
 function M.run(name, work)
   local screens = allScreens()
@@ -124,9 +149,9 @@ function M.run(name, work)
     end
   end
 
-  local result
+  local result, why
   parallel.waitForAny(function()
-    result = work(function(done, total)
+    result, why = work(function(done, total)
       state.share = total > 0 and done / total or nil
       state.text = done .. " of " .. total .. " files"
     end)
@@ -134,11 +159,13 @@ function M.run(name, work)
 
   local good = result == "updated"
   sound(good and "update_done" or "update_fail")
+  if good then why = nil end
   for _, screen in ipairs(screens) do
-    pcall(finish, screen, good and "UPDATED" or "UPDATE DIDN'T FINISH", good and "Restarting..." or "Trying again later", good and GOOD or BAD)
+    pcall(finish, screen, good and "UPDATED" or "UPDATE DIDN'T FINISH", good and "Restarting..." or "Trying again later",
+      good and GOOD or BAD, why)
   end
-  sleep(1.5)
-  return result
+  sleep(good and 1.5 or 4) -- long enough to read why
+  return result, why
 end
 
 return M
