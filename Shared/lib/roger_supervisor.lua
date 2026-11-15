@@ -479,7 +479,7 @@ function M.run(...)
     term.setBackgroundColor(colors.black)
     term.clear()
     term.setCursorPos(1, 1)
-  elseif bootStatus == "error" then
+  elseif bootStatus == "error" or bootStatus == "pending" then
     immediate = true -- GitHub didn't answer: try again soon, as before
   end
 

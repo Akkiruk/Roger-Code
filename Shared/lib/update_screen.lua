@@ -158,13 +158,19 @@ function M.run(name, work)
   end, animate)
 
   local good = result == "updated"
-  sound(good and "update_done" or "update_fail")
-  if good then why = nil end
+  -- GitHub still publishing isn't a failure: no fail sound, no red, and the game comes straight back
+  local pending = result == "pending"
+  if not pending then sound(good and "update_done" or "update_fail") end
+  if good or pending then why = nil end
   for _, screen in ipairs(screens) do
-    pcall(finish, screen, good and "UPDATED" or "UPDATE DIDN'T FINISH", good and "Restarting..." or "Trying again later",
-      good and GOOD or BAD, why)
+    if pending then
+      pcall(finish, screen, "ALMOST READY", "Back to the game: the update comes in a minute", GOOD, nil)
+    else
+      pcall(finish, screen, good and "UPDATED" or "UPDATE DIDN'T FINISH", good and "Restarting..." or "Trying again later",
+        good and GOOD or BAD, why)
+    end
   end
-  sleep(good and 1.5 or 4) -- long enough to read why
+  sleep((good or pending) and 1.5 or 4) -- long enough to read why
   return result, why
 end
 

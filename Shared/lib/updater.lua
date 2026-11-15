@@ -71,6 +71,8 @@ local BOOT_SPREAD_SECONDS = 30      -- computers that start together do not ask 
 local MAX_BACKOFF_SECONDS = 1800    -- the longest wait after failed checks
 local BUSY_POLL_SECONDS = 5         -- how often a waiting update looks for a quiet moment
 local MAX_UPDATE_WAIT_SECONDS = 1800 -- a game that never goes quiet still gets its update
+local PENDING_RETRY_SECONDS = 60     -- an update GitHub is still publishing is asked for again this often
+local PENDING_TRIES = 20
 local API_URL = "https://api.github.com/repos/" .. REPO_OWNER .. "/" .. REPO_NAME
 local CONTENTS_API_ROOT = API_URL .. "/contents/"
 local CONTENTS_API_HEADERS = {
@@ -1065,16 +1067,10 @@ local function checkForUpdates(opts)
       return
     end
 
-    if opts.stopWhenReady then
-      -- whoever asked will stop the game and put an update on screen first
-      logMsg("Update ready: " .. reason)
-      releaseLock()
-      status = "ready"
-      callback("ready", reason)
-      return
-    end
-
-    callback("updating", "Fetching package spec...")
+    -- The file list is fetched before anyone is told an update is ready. Just after a release GitHub's cache can hand out the new
+    -- list of versions with the old file list for a few minutes: that is not a failure, so it puts nothing on screen ("pending")
+    -- and the watcher simply asks again in a minute.
+    callback("checking", "Fetching package spec...")
     local spec, specErr = fetchProgramSpec(programEntry.spec_path)
     if not spec then
       logMsg("Spec fetch failed for " .. progKey .. ": " .. tostring(specErr))
@@ -1088,11 +1084,20 @@ local function checkForUpdates(opts)
 
     local specValid, specValidationErr = validateFetchedSpec(programEntry, spec)
     if not specValid then
-      logMsg("Spec validation failed for " .. progKey .. ": " .. tostring(specValidationErr))
+      logMsg("Update not published everywhere yet for " .. progKey .. ": " .. tostring(specValidationErr))
       releaseLock()
-      status = "error"
-      why = "The update is still being published"
-      callback("error", tostring(specValidationErr))
+      status = "pending"
+      why = "The update is still being published: trying again in a minute"
+      callback("pending", tostring(specValidationErr))
+      return
+    end
+
+    if opts.stopWhenReady then
+      -- whoever asked will stop the game and put an update on screen first
+      logMsg("Update ready: " .. reason)
+      releaseLock()
+      status = "ready"
+      callback("ready", reason)
       return
     end
 
@@ -1195,6 +1200,17 @@ local function watchForUpdates(opts)
     local status = checkForUpdates({ callback = notify, holdUntilQuiet = holdUntilQuiet, stopWhenReady = opts.stopWhenReady })
     if status == "terminated" then
       return false
+    end
+
+    -- still being published: ask again every minute, quietly, for up to 20 minutes
+    local tries = 0
+    while status == "pending" and tries < PENDING_TRIES do
+      tries = tries + 1
+      os.sleep(PENDING_RETRY_SECONDS)
+      status = checkForUpdates({ callback = notify, holdUntilQuiet = holdUntilQuiet, stopWhenReady = opts.stopWhenReady })
+      if status == "terminated" then
+        return false
+      end
     end
 
     failures = status == "error" and failures + 1 or 0
