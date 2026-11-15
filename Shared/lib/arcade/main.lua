@@ -1227,21 +1227,64 @@ local function shutdown()
   savePrefs()
 end
 
+--- Save everything as shutdown does, but leave a message on every wall instead of a black screen. A monitor keeps what it shows
+--- through a reboot, so the message stays up until the next program draws.
+local function leaveWith(title, lines)
+  pcall(actions.saveNow)
+  pcall(hw.allOff)
+  pcall(hw.flushOutputs)
+  pcall(function() app.store:save() end)
+  pcall(savePrefs)
+  S.toast = nil
+  local W, H = env.W, env.H
+  screen:clear(C.bg, nil, " ")
+  ui.clearButtons()
+  local y = floor(H / 2) - 10
+  ui.text(title, floor(W / 2), y, C.hi, "center", W - 2)
+  y = y + font.height + 3
+  for _, line in ipairs(lines) do
+    for _, part in ipairs(ui.wrap(line, W - 8)) do
+      ui.small(part, floor(W / 2), y, C.text, C.bg, "center", W - 2)
+      y = y + 2
+    end
+  end
+  for _, wall in ipairs(env.walls or {}) do
+    pcall(function() screen:output(ui.changedRows(wall.mon), 0, 0) end)
+  end
+  return y
+end
+
 --- Leave for the Game Browser's list, saving everything first. Only reached from the menu or a ready screen, so no match is open.
 function app.toCabinets()
-  pcall(shutdown)
+  leaveWith("CABINETS", { "Loading the list of cabinets...", "Just a moment." })
   app.cabinets()
 end
 
 --- Install the Game Browser over this cabinet, then reboot into it. If the install fails, the reboot comes back to this cabinet.
+--- The installer's own lines show at the foot of the wall, so it is plain that something is happening.
 function app.toBrowser()
-  pcall(render)
   log("installing the Game Browser")
-  pcall(shutdown)
+  local y = leaveWith("GAME BROWSER", { "Installing every cabinet on this computer.",
+    "This takes about a minute and restarts by itself. Saves and scores stay." })
+  local mon = env.walls and env.walls[1] and env.walls[1].mon
+  local previous = term.current()
   local ok, err = pcall(function()
+    if mon and window then
+      local top = y + 2
+      local out = window.create(mon, 3, top, max(10, env.W - 4), max(3, env.H - top - 1))
+      out.setBackgroundColor(colors.black)
+      out.setTextColor(colors.lightGray)
+      out.clear()
+      term.redirect(out)
+    end
     if shell then shell.run("installer.lua", "game-browser") else os.run({}, "installer.lua", "game-browser") end
   end)
+  term.redirect(previous)
   if not ok then log("Game Browser install failed: " .. tostring(err)) end
+  if mon then
+    leaveWith("GAME BROWSER", { ok and "Installed. Restarting..." or "That didn't work. Restarting this cabinet..." })
+  end
+  os.sleep(1)
   os.reboot()
 end
 
