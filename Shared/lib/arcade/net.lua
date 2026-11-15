@@ -20,6 +20,8 @@ function M.open()
   return opened
 end
 
+function M.isOpen() return opened end
+
 --- Someone playing, for the tracker (track.lua says what's in it). The cabinet's label says which cabinet it was.
 function M.play(msg)
   if not opened then return end

@@ -29,6 +29,7 @@ local games = {}      -- the game ids this cabinet runs
 local state = nil     -- { seq = the tracker's last update number taken }
 local applying = false
 local askedAt = -1e15
+local heardAt = nil   -- when the tracker last answered, for the ready screen's line about saves
 
 local function now() return os.epoch("utc") end
 
@@ -92,6 +93,7 @@ end
 --- The tracker's answer: each update is merged in through its applier, and the place is kept.
 function M.hear(_, msg, protocol)
   if protocol ~= net.PROTOCOL or type(msg) ~= "table" or msg.kind ~= "shared" or type(msg.entries) ~= "table" then return false end
+  heardAt = now()
   local st = loadState()
   -- a tracker that has started again from nothing counts from 1 again: take everything it has, merging changes nothing old
   if type(msg.top) == "number" and msg.top < st.seq then
@@ -115,7 +117,16 @@ function M.hear(_, msg, protocol)
 end
 
 -- for tests
-function M.reset() state, applying, askedAt, appliers, games = nil, false, -1e15, {}, {} end
+function M.reset() state, applying, askedAt, appliers, games, heardAt = nil, false, -1e15, {}, {}, nil end
+
+--- Can saves from other cabinets reach this one? "nomodem", "waiting" (asked, no answer yet), "silent" (asked a while ago,
+--- nobody answered: no tracker on the network) or "linked" (the tracker answered).
+function M.status()
+  if not net.isOpen() then return "nomodem" end
+  if heardAt then return "linked" end
+  if now() - askedAt < 8000 then return "waiting" end
+  return "silent"
+end
 function M.isApplying() return applying end
 
 return M

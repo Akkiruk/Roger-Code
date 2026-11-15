@@ -54,6 +54,26 @@ local function readSave(owner)
 end
 
 --- The ready screen speaks to whoever tapped it last, and shows them their own save and nobody else's.
+--- Whether saves from other cabinets can reach this one (share.status).
+function M.hubStatus()
+  local ok, status = pcall(function() return require("lib.arcade.share").status() end)
+  return ok and status or "nomodem"
+end
+
+--- With no save to offer, a line that says why, so a missing save from another cabinet can be told apart from no save at all.
+function M.saveHubLine(owner)
+  local status = M.hubStatus()
+  local who = owner and owner ~= "Player" and owner or "you"
+  if status == "nomodem" then
+    return "No ender modem here: saves from other cabinets can't reach this computer", C.warn
+  elseif status == "waiting" then
+    return "Looking for a save for " .. who .. " on the Play Tracker...", C.line
+  elseif status == "silent" then
+    return "The Play Tracker didn't answer: saves from other cabinets can't reach this one", C.warn
+  end
+  return "No save for " .. who .. " on the Play Tracker or here", C.line
+end
+
 local function offerSave(a, owner)
   a.saveOwner, a.saved, a.newUntil = owner, readSave(owner), nil
   S.dirty = true
@@ -554,7 +574,14 @@ function M.tick(t)
     if done then introDone(a) elseif changed then S.dirty = true end
     return
   end
-  if plugin.saves then clearLapsed(a, t) end
+  if plugin.saves then
+    clearLapsed(a, t)
+    -- the line about the save hub changes by itself while the tracker is being asked
+    if a.phase == "ready" and not a.saved then
+      local status = M.hubStatus()
+      if status ~= a.hubShown then a.hubShown = status; S.dirty = true end
+    end
+  end
   if (a.phase == "ready" or a.phase == "players") and t - S.lastTouch > config.LOBBY_IDLE * 1000 then
     M.leave()
     return
@@ -631,6 +658,10 @@ local function drawReady(a)
     ui.button("actContinue", floor(W / 2) - 44, y, 50, 11, "CONTINUE", C.ok)
     ui.button("actNew", floor(W / 2) + 8, y, 36, 11, asking and "SURE?" or "NEW GAME", asking and C.warn or C.panel)
   else
+    if app.plugin.saves then
+      local line, color = M.saveHubLine(a.saveOwner or a.player)
+      ui.small(line, floor(W / 2), y - 3, color, C.bg, "center", W - 4)
+    end
     ui.button("actStart", floor(W / 2) - 25, y, 50, 11, "START", C.ok)
   end
   ui.button("back", 2, 1, 16, 7, "BACK", C.panel, { small = true })
