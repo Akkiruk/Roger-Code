@@ -1,0 +1,11 @@
+# vhcctweaks filesystem lockdown
+# Code, config, and art stay read-only unless the updater/installer opens
+# the temporary unlock file below.
+unlock-file=.vhcc_unlock
+allow-exact=.vhcc_unlock
+allow-exact=.update_lock
+allow-prefix=phone_data
+allow-suffix=.dat
+allow-suffix=.log
+allow-suffix=.tmp
+allow-suffix=.bak

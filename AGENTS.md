@@ -47,6 +47,16 @@
 - Idle screens play a real round through `demo.lua`. A demo must never touch `keep`, the journal, the wallet, the stats or the hub. A game steers its demo with `game.demo`; `view.attract` is the fallback.
 - Practice and hub tournaments are one thing: a pretend seat, with chips and no tokens. `table.lua` reaches money only through `door.lua`, and with a pretend seat sitting every door leads to the stand-ins in `pretend.lua`. A new module that holds money or player records goes behind a door, never a direct `require` in `table.lua`; a new door call needs a stand-in, or `Tests/practice_test.lua` fails. Tournaments never move tokens, and `tournament.lua` is their only file on a table.
 
+## Gear Shop
+
+- `Apps/GearShop` on `Shared/lib/gearshop`: the owner's walk-in gear shop. One shop computer runs everything; every other computer is a node that only lends its chests, monitors and detectors through its ender modem (vhcctweaks 2.2.36 links). Only CC:Tweaked, Advanced Peripherals and vhcctweaks: no Mekanism.
+- `rules.lua` is the maths and holds every limit's default (prices, what is bought, credit, the owner's floor); it touches no peripheral and `Tests/gearshop_test.lua` runs it and the vault index (`stock.lua`) against pretend chests.
+- `shop.lua` is the only code that changes anything, and it only runs in the worker coroutine (`app.lua`): inventory, detector and money calls lose events while they wait. The screen coroutine draws and turns events into jobs, and never makes such a call.
+- The chests are the truth about items. Each display chest's phase (`filling`, `open`, `sweeping`) is written before items move, so a reboot at any step can be finished; read the header of `shop.lua` before changing a step. Tokens go through the casino's `journal.lua` and `books.lua`, never straight to `ccvault`.
+- Display chests are never left stocked: filled while their shopper is checked in, emptied after. Payment is the tab, paid by one tap on PAY; the spending allowance is never used. Store credit is spent first and never paid out. The owner's floor only stops token payouts to sellers.
+- A player lookup can fail at any moment (offline, or on another server of the network): it returns nil and a reason, never throws, and what could not be done waits.
+- The whole shop is tested in the emulator from craftos-agent: `node tools/geartest/all.mjs` (visits, selling, unloads and other servers, a crash at every money and item step, setup at the terminal, 15,000 pieces). Money or item code is not done until `crash.mjs` passes.
+
 ## Lua And ComputerCraft Rules
 
 - Target Lua 5.1 and CC:Tweaked-compatible APIs.
