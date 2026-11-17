@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-17T21:45:55Z",
+  "generated_at": "2026-11-17T22:03:05Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "c69b0fbc944b96c1c112c273c5a8ef8ea35f72b9",
+    "commit": "e23c405fad8d5f4bd6c865d3ad929812e6e2641c",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -242,9 +242,9 @@
       "name": "TaskMaster",
       "category": "Apps",
       "description": "A stateless, anonymous item exchange kiosk for ComputerCraft",
-      "version": "1.0.33",
-      "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-      "package_hash": "b8f110e2ee31ca14eb4c43ddaa167d14c0d4bd30be86fb6cc103ffa5ea44bc59",
+      "version": "1.0.34",
+      "commit": "378fd48a75a246e7943787875fe0b265f8a12497",
+      "package_hash": "4a9dc7fcdf33885d3375271690b710c497a5446c1572f3d9d26b3bcbb1ee31c8",
       "spec_path": "programs/taskmaster.json"
     },
     "three-card-poker": {
@@ -296,9 +296,9 @@
       "name": "VaultGear",
       "category": "Apps",
       "description": "Vault Storage Manager startup entry point.",
-      "version": "1.0.68",
-      "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-      "package_hash": "5cd8ddecadb66b9611eb18e5a629f594d2772f123a24447885e31e8fd8f61892",
+      "version": "1.0.69",
+      "commit": "378fd48a75a246e7943787875fe0b265f8a12497",
+      "package_hash": "e4cc65e89e02795db96207de637101eaa431d7a00d241b980de92d2e79364342",
       "spec_path": "programs/vaultgear.json"
     },
     "versus": {
