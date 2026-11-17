@@ -1,6 +1,6 @@
 # Casino Roadmap
 
-Last updated: 2026-11-01
+Last updated: 2026-11-17
 
 ## What Is Shipped
 
@@ -70,7 +70,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 - With a player detector (`presence.lua`, range 12) someone at the table gets 5 minutes, and someone gone for 5 seconds has the round finished and settled at once. After 25 seconds with no touch they are asked to tap, which keeps the money able to move. With no detector the round finishes after 60 seconds. What could not move is owed until that player next touches the table.
 - Measured returns on the hub divide by everything wagered, raises, doubles and splits included. A game's `rules.risk` gives that at the end of a round. Three Card Poker and Hold'em state their hub targets on that basis, which is why they differ from the per-Ante figures above.
 - Paytables are total return on the bet, in every game.
-- `Tests/run.lua` runs in the publish workflow. A game outside its target return stops the deploy.
+- `Tests/run.lua` is run by hand before pushing. GitHub runs no tests: since 2026-11-04 the publish workflow only builds the deploy index, so a game outside its target return is caught locally, not by the deploy.
 - Anti-cheat stays light: make abuse awkward, don't build around it.
 - Detector, chat box and integrator calls wait a tick and swallow events, so they only run in a worker coroutine, never in the main loop.
 - Chat is only ever whispered to a named player, never public, and nothing a table sends to chat may reveal another player's cards.
@@ -90,5 +90,7 @@ A table has at most 4 peripherals and 2 monitors: player detector, speaker, wire
 
 ## Later
 
-- PhoneOS still has its old blackjack and slots. They are deprecated and were left alone.
-- Texas Hold'em on PokerTable, once five-card draw has proved itself on a live server.
+- PhoneOS still has its old blackjack and slots. They are deprecated and are left alone on purpose.
+- ~~Texas Hold'em on PokerTable~~ Done another way: Big Table has fixed-limit Hold'em (and Omaha and Stud), and Duel has Heads-Up Hold'em. `Games/PokerTable` stays five-card draw only.
+
+Nothing else is open here.

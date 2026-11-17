@@ -1,5 +1,7 @@
 # Vault Gear Sorter
 
+Status: the sorter is built as `Apps/VaultGear` (see its `ARCHITECTURE.md`, which is newer than this note). The Future Extensions at the end are not built; waiting on the owner's decision.
+
 ## Research Findings
 
 - `Roger-Code` is the canonical ComputerCraft source repo. Existing patterns worth reusing were the flat `Games/<Program>/` installer layout, `Games/lib/` shared modules, `inventory.list()` before `getItemDetail()`, and file-backed error logging.

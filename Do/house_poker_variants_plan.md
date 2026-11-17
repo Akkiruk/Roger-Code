@@ -1,6 +1,8 @@
 # House Poker Variants Plan
 
-Last updated: 2026-04-13
+Last updated: 2026-11-17
+
+Status: both games are built and live, as `Games/ThreeCardPoker` (package `three-card-poker`) and `Games/UltimateHoldem` (package `ultimate-holdem`), on the shared casino engine rather than the cabinet structure described below. The paytables and rules below match the code (Pair Plus 40/30/6/3/1, Ante Bonus 5/4/1, UTH Blind and Trips tables). Returns and how they are proved are in `casino_roadmap.md`. Nothing in this plan is open; folder names differ from the layout section (`UltimateHoldem`, not `UltimateTexasHoldem`).
 
 This document covers the next two house-vs-dealer poker cabinets:
 

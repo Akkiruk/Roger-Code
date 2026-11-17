@@ -1,5 +1,7 @@
 # Sound Browser Feature Plan
 
+Status: partly built, the rest waiting on the owner's decision. `Apps/SoundBrowser` has review buckets, per-role verdicts and notes, recommendations and a report export (features 1 to 5 and the notes in 11). Features 6 to 10 and 12 are not built.
+
 This document turns the strongest ideas from existing SFX tools into a concrete roadmap for `Roger-Code`.
 
 ## Goal

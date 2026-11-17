@@ -1,5 +1,7 @@
 # Multiplayer Poker Plan
 
+Status: Phase 2 is built. `Games/PokerTable` plays five-card draw with betting, side pots, private cards, showdown and net settlement (`pokertable_rules.lua`). Hold'em, Omaha and Stud for several players are in Big Table (`Games/BigTable/games/`), built on the group engine described in `group_tables_design.md`, not on PokerTable's own network. Where the text below says "not implemented yet", "later" or "ships now", read it as the history of the original plan. Still open: nothing from this plan.
+
 ## Audit Fixes
 
 The original brainstorm was directionally right, but it missed several operational risks that matter with the current CCVault model.

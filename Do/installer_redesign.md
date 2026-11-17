@@ -1,5 +1,7 @@
 # Installer And Auto-Updater Redesign
 
+Status: done and live (all five migration phases). The deploy index is built by `scripts/build-deploy-index.ps1`, published to the `deploy-index` branch on every push to `main` by `.github/workflows/publish-deploy-index.yml`, and consumed by `System/installer.lua` and `Shared/lib/updater.lua`. `Games/manifest.json` no longer exists. `AGENTS.md` describes the flow as it runs today. This document is kept as the design record; the Open Questions at the end are settled.
+
 ## Goals
 
 - Keep `main` as the live deployment branch.
@@ -541,9 +543,9 @@ Then validate against:
 - No floating-branch file downloads during actual install/update execution.
 - No partial live-file overwrite before payload verification completes.
 
-## Open Questions
+## Open Questions (settled)
 
-- Whether the deploy metadata should live on a dedicated branch or a GitHub Pages path.
-- Whether installer self-update should stay tied to every push or use a separate compatibility gate.
-- Whether package specs should expose display `version` fields at all, or only commit plus package hash.
-- Whether the updater should keep automatic reboot-on-update as the default for every program.
+- Dedicated branch or GitHub Pages path: a dedicated branch. Metadata is published to `deploy-index` and read from `raw.githubusercontent.com/Akkiruk/Roger-Code/deploy-index/...`. Payload files come from commit-pinned raw URLs under `main`.
+- Installer self-update tied to every push, or a compatibility gate: neither exactly. The index carries the installer's `INSTALLER_VERSION` and file hash, and a computer replaces its installer when the index version is newer or the hash differs. In practice that means an installer change goes out on the push that changes the file. There is no separate compatibility gate.
+- Display `version` fields: kept. Each program spec carries a display version that the index builder bumps by a patch number whenever the package hash changes, next to the commit and package hash, which are what update decisions actually use.
+- Automatic reboot on update: the updater library only reboots when its caller passes `rebootOnUpdate = true`. The `rogerupdate` command does, with a 1 second delay, and the installer's update path reboots into a new package. A program that polls on its own chooses for itself.

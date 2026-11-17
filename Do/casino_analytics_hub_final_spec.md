@@ -1,5 +1,7 @@
 # Casino Analytics Hub Final Spec
 
+Status: not built as written; waiting on the owner's decision. What exists instead is each table's own record plus `Games/Tracker` (a central PC that collects them) and the Casino Hub's leaderboards.
+
 ## Goal
 
 Replace the old per-machine statistics model with a dedicated ComputerCraft analytics computer that receives gameplay events from every casino machine, stores the canonical casino-wide history, and exposes a polished operator-facing statistics menu.

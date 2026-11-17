@@ -1,5 +1,7 @@
 # Group Tables: Big Table and Duel
 
+Status: built and live. Both cabinets, the engine in `Shared/lib/casino/group/` and all 16 games below exist, each with a `Tests/group_<id>_test.lua` (Big Table's Hold'em and Omaha share `group_community_test.lua`). Nothing in this document is open.
+
 Two new casino cabinets on one new engine, `Shared/lib/casino/group/`. Decided by the owner on 2026-11-01:
 
 - **Big Table** (`Games/BigTable`, package `big-table`, category Games): 8 games for several players, each at their own screen.
@@ -58,7 +60,7 @@ The owner said on 2026-11-01 that no game may need a person dealing or running i
 
 The owner's flow, on 2026-11-01: when a game resolves, money goes from the losers to the computer's owner, and from the owner out to the winners. That is the `players` order below. The owner is the go-between and keeps only the rounding: when a split pot cannot divide evenly, the odd chips go to the owner, not to a player. That is the only cut in a `players` game, and there is no rake. The lead adds this after the review fixes, so nobody else changes it yet.
 
-The rules in `casino_roadmap.md` hold, all of them: stakes never up front, one settle before the final reveal, a reboot resumes, every transfer through `books.lua`, chips declared not taken, `transfer` needs a touch within 30 seconds on that computer. vhcctweaks stays on 2.2.35.
+The rules in `casino_roadmap.md` hold, all of them: stakes never up front, one settle before the final reveal, a reboot resumes, every transfer through `books.lua`, chips declared not taken, `transfer` needs a touch within 30 seconds on that computer. The server runs vhcctweaks 2.2.36 (2.2.35 never went live).
 
 ccvault sessions are per player per computer, so **only the seat's computer can move that player's tokens**. The dealer owns the truth; the seat is the hands.
 
@@ -115,7 +117,7 @@ Views are pure functions of a serialized view: `tableView.draw(c, view, anim)` o
 
 ## Tests
 
-- Pure tests go in `Tests/group_<id>_test.lua` and are picked up by `Tests/run.lua`, so a game outside its return target stops the deploy.
+- Pure tests go in `Tests/group_<id>_test.lua` and are picked up by `Tests/run.lua`. Run it by hand before pushing: GitHub runs no tests (removed 2026-11-04), so a game outside its return target is caught locally.
 - `craftos-agent/tools/casinotest/group.mjs` runs a dealer and real seats with `SessionManager.createNetwork`, ender modems and real rednet. Each emulated computer has its own world and ledger, so the harness must keep balances in step or prove conservation across the ledgers. Log that in `docs/conformance/emulator-vs-real-deviations.md`.
 - Crash tests take the dealer and a seat down at each step of a move. Each step of `settle` must be exactly once.
 - Junk and repeated messages must not crash a table or move tokens twice.
