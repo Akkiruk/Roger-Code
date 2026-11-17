@@ -184,7 +184,9 @@ local function pieceRows(s, list, top, bottom, withPrice)
       s:write(1, y, "+" .. (more + 1) .. " more in the chest", "8")
     else
       local entry = list[i]
-      local tail = "L" .. entry.level .. (withPrice and (" " .. entry.price .. "t") or "")
+      -- every piece of a type has the same name, so the rarity is spelt out beside the colour
+      local grade = entry.grade ~= "?" and (entry.grade:sub(1, 1) .. entry.grade:sub(2):lower() .. " ") or ""
+      local tail = grade .. "L" .. entry.level .. (withPrice and (" " .. entry.price .. "t") or "")
       s:write(1, y, entry.label:sub(1, math.max(1, s.w - #tail - 1)), GRADE_COLOR[entry.grade] or "0")
       s:right(y, tail, "8")
     end
@@ -304,7 +306,7 @@ function M.station(s, shop, d, view)
     { "types", nil, "TYPE", "0", "b" },
     { "level", -1, wide and "LV -" or "-", "0", "7" },
     { "level", 1, wide and "LV +" or "+", "0", "7" },
-    { "next", nil, wide and "NEXT PAGE" or "NEXT", "f", "5" },
+    { "next", nil, s.w >= 49 and "NEXT PAGE" or "NEXT", "f", "5" },   -- five buttons share the width
     { "done", nil, "DONE", "0", "e" },
   })
   s:finish()
@@ -464,7 +466,9 @@ function M.sell(s, shop)
       y = y + 1
       for _, entry in ipairs(view.rejected) do
         if y < buttonsTop - 4 then
-          s:write(2, y, (entry.label .. ": " .. tostring(entry.why)):sub(1, s.w - 1), "8")
+          -- every piece of a type has the same name, so its level and rarity say which one is meant
+          local what = entry.grade and ("L" .. tostring(entry.level) .. " " .. entry.grade:sub(1, 1) .. entry.grade:sub(2):lower()) or entry.label
+          s:write(2, y, (what .. ": " .. tostring(entry.why)):sub(1, s.w - 1), "8")
           y = y + 1
         end
       end

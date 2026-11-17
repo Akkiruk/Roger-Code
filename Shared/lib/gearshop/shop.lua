@@ -34,6 +34,11 @@ local NOTE_MS = 8000
 
 local function now() return os.epoch("utc") end
 
+--- "1 token", "5 tokens".
+local function tokensText(n)
+  return n .. (n == 1 and " token" or " tokens")
+end
+
 --- @param io table      { call(name, method, ...) -> ok, result ; names() -> list ; hasType(name, type) ; types(name) }
 function M.new(io, cfg, setup, state)
   local self = setmetatable({
@@ -611,7 +616,13 @@ function Shop:mend(d)
   elseif ds.phase == "sweeping" then
     if shopperHere then self:fill(d) else self:release(d) end
   elseif ds.phase == "open" then
-    if shopperHere then self:reconcile(d) else self:release(d) end
+    if shopperHere then
+      -- after a restart the pieces on show have not been read yet: without this the monitor names them all level 0
+      self.stock:listKnown(d.chest)
+      self:reconcile(d)
+    else
+      self:release(d)
+    end
   elseif shopperHere then
     -- stopped between emptying the chest and filling it again
     self:fill(d)
@@ -711,12 +722,19 @@ end
 
 -- ---------------------------------------------------------------- money
 
+--- Something new went into the book for a player while a count for them was still waiting: it is not part of what moved.
+local function shiftCounts(st, name, delta)
+  if st.collecting and st.collecting.name == name then st.collecting.owed = st.collecting.owed + delta end
+  if st.paying and st.paying.name == name then st.paying.owed = st.paying.owed + delta end
+end
+
 --- A payment or a payout that was written down goes into the owed book, once.
 function Shop:bookPending()
   local st = self.state
   local fine = true
   if st.payment then
     if journal.book(st.payment.name, -st.payment.tokens, "gs-pay-" .. st.payment.id) then
+      shiftCounts(st, st.payment.name, -st.payment.tokens)
       st.payment = nil
       self:save("pay-booked")
     else
@@ -725,6 +743,7 @@ function Shop:bookPending()
   end
   if st.payout then
     if journal.book(st.payout.name, st.payout.tokens, "gs-sale-" .. st.payout.id) then
+      shiftCounts(st, st.payout.name, st.payout.tokens)
       st.payout = nil
       self:save("payout-booked")
     else
@@ -734,12 +753,42 @@ function Shop:bookPending()
   return fine
 end
 
+--- Count what a transfer moved, once, whatever happened on the way. Before tokens move, what the book said the player
+-- owed (or was owed) is written down (`collecting`, `paying`); the difference from what it says once nothing is in doubt for
+-- them is what moved. So a crash between the tokens moving and the count, at any point, is counted on the next start and
+-- never twice. Returns true if something was counted or cleared.
+function Shop:countMoved()
+  local st, changed = self.state, false
+  local doubt = {}
+  for _, move in pairs(journal.moves()) do doubt[move.name] = true end
+  local c = st.collecting
+  if c and not doubt[c.name] then
+    local went = journal.owedTo(c.name) - c.owed
+    if went > 0 then st.stats.takings = st.stats.takings + went end
+    st.collecting, changed = nil, true
+  end
+  local p = st.paying
+  if p and not doubt[p.name] then
+    local went = p.owed - journal.owedTo(p.name)
+    if went > 0 then st.stats.paidOut = st.stats.paidOut + went end
+    st.paying, changed = nil, true
+  end
+  return changed
+end
+
+--- Ask the server's ledger about transfers a crash cut short (for one player, or everyone), and count the ones that turn
+-- out to have gone through. Returns true when nothing is left in doubt.
+function Shop:resolve(name)
+  local ok, clear = pcall(books.resolve, name)
+  if self:countMoved() then self:save("counted") end
+  return ok and clear == true
+end
+
 --- A transfer a crash cut short is answered before anything else moves for that player: until it is, the book cannot say
 -- what they owe or are owed. Returns true when nothing is in doubt for them. Answering needs the server's ledger, and so
 -- the player approved and at the shop; when it cannot be answered yet they are asked to approve.
 function Shop:answered(name)
-  local ok, clear = pcall(books.resolve, name)
-  if ok and clear then return true end
+  if self:resolve(name) then return true end
   self:askApproval(name)
   return false
 end
@@ -756,12 +805,10 @@ function Shop:settle(name)
     if pay <= 0 then return 0, "floor" end
   end
   local id = self:nextId()
+  self.state.paying = { name = name, owed = owed }
   self:save("payout-begin")
   local moved, _, err = books.move(name, pay, "gs-out-" .. id)
-  if moved ~= 0 then
-    self.state.stats.paidOut = self.state.stats.paidOut + moved
-    self:save("payout-end")
-  end
+  if self:countMoved() then self:save("payout-end") end
   if needsApproval(err) then self:askApproval(name) end
   return moved, err
 end
@@ -773,12 +820,10 @@ function Shop:collect(name)
   local owed = journal.owedTo(name)
   if owed >= 0 then return 0, 0 end
   local id = self:nextId()
+  self.state.collecting = { name = name, owed = owed }
   self:save("collect-begin")
   local moved, left, err = books.move(name, owed, "gs-in-" .. id)
-  if moved ~= 0 then
-    self.state.stats.takings = self.state.stats.takings - moved
-    self:save("collect-end")
-  end
+  if self:countMoved() then self:save("collect-end") end
   return -moved, -left, err
 end
 
@@ -820,12 +865,12 @@ function Shop:pay(name, monitor)
   if journal.owedTo(name) > 0 then paidOut = self:settle(name) end
   local parts = {}
   if credit > 0 then parts[#parts + 1] = credit .. " from store credit" end
-  if moved > 0 then parts[#parts + 1] = moved .. " tokens" end
+  if moved > 0 then parts[#parts + 1] = tokensText(moved) end
   local text
   if #parts > 0 then
     text = name .. " paid " .. table.concat(parts, " and ") .. "."
   elseif paidOut > 0 then
-    text = name .. " was paid " .. paidOut .. " tokens."
+    text = name .. " was paid " .. tokensText(paidOut) .. "."
   elseif left == 0 then
     text = name .. ": nothing to pay."
   else
@@ -968,7 +1013,8 @@ function Shop:sellScan()
       if yes then
         view.accepted[#view.accepted + 1] = { slot = slot, key = key, label = piece.label }
       else
-        view.rejected[#view.rejected + 1] = { slot = slot, key = key, label = piece.label, why = why }
+        view.rejected[#view.rejected + 1] = { slot = slot, key = key, label = piece.label, why = why,
+          level = piece.level, grade = piece.kind and rules.grade(piece) or nil }
       end
     end
   end
@@ -1010,7 +1056,7 @@ function Shop:sell(name, mode, monitor)
   end
   local count = #view.accepted
   if count == 0 and #view.returns == 0 then
-    self:note(monitor, paidOld > 0 and (name .. " was paid " .. paidOld .. " tokens from before.") or "Nothing in the chest that the shop buys.")
+    self:note(monitor, paidOld > 0 and (name .. " was paid " .. tokensText(paidOld) .. " from before.") or "Nothing in the chest that the shop buys.")
     return
   end
   if mode == "tokens" and count > 0 then
@@ -1088,7 +1134,7 @@ function Shop:finishSale(movedKeys, monitor)
     local tokens, carry = rules.settleSale(st.carry[sale.seller], count, self.cfg)
     st.carry[sale.seller] = carry > 0 and carry or nil
     if tokens > 0 then st.payout = { id = sale.id, name = sale.seller, tokens = tokens } end
-    text = sale.seller .. " sold " .. count .. " for " .. tokens .. " tokens"
+    text = sale.seller .. " sold " .. count .. " for " .. tokensText(tokens)
       .. (carry > 0 and (" (" .. rules.showMilli(carry) .. " carried over)") or "") .. "."
   end
   if back > 0 then text = text .. " " .. back .. " put back off the tab." end
@@ -1149,7 +1195,7 @@ function Shop:boot(progress)
   self:watchAll()
   self.status = "Recovering"
   self:bookPending()
-  pcall(books.resolve)
+  self:resolve()
   if self.state.sale then self:finishSale() end
   for _, d in ipairs(self.all) do self:mend(d) end
   self:sellScan()
@@ -1178,20 +1224,36 @@ function Shop:approvals()
       self.awaiting[name] = nil
     elseif wallet.livePlayer() == name and wallet.isApproved() then
       self.awaiting[name] = nil
-      pcall(books.resolve, name)
+      self:resolve(name)
       local owed = journal.owedTo(name)
       local door = self.setup.door and self.setup.door.monitor
       if owed > 0 then
         local moved = self:settle(name)
-        if moved > 0 then self:note(self.setup.sell and self.setup.sell.monitor, name .. " was paid " .. moved .. " tokens.") end
+        if moved > 0 then self:note(self.setup.sell and self.setup.sell.monitor, name .. " was paid " .. tokensText(moved) .. ".") end
       elseif owed < 0 then
         local moved, left = self:collect(name)
         if moved > 0 then
-          self:note(door, name .. " paid " .. moved .. " tokens." .. (left > 0 and (" Still owes " .. left .. ".") or ""))
+          self:note(door, name .. " paid " .. tokensText(moved) .. "." .. (left > 0 and (" Still owes " .. left .. ".") or ""))
         end
       end
     end
   end
+end
+
+--- Whether a chest holds something else than at the last look here. A chest that cannot be read has not changed.
+function Shop:differs(name)
+  local ok, list = self.io.call(name, "list")
+  if not ok or type(list) ~= "table" then return false end
+  local parts = {}
+  for slot, item in pairs(list) do parts[#parts + 1] = slot .. ":" .. rules.key(item) .. "x" .. tostring(item.count) end
+  table.sort(parts)
+  local print_ = table.concat(parts, ",")
+  self.prints = self.prints or {}
+  local was = self.prints[name]
+  self.prints[name] = print_
+  -- the first look only counts when there is something in the chest
+  if was == nil then return print_ ~= "" end
+  return was ~= print_
 end
 
 --- The slow jobs, a little at a time.
@@ -1202,10 +1264,12 @@ function Shop:upkeep()
     for _, d in ipairs(self.all) do
       if self:ds(d).phase == "open" then self:reconcile(d) end
     end
-    -- the sell and intake chests are looked at as well when they could not be watched
+    -- The sell and intake chests are looked at as well, watched or not: a watch on a double chest only tells of the half
+    -- that touches the computer, so gear put in the other half would sit there unseen. A plain list is cheap, and the
+    -- chest is only read in detail when it is not what it was.
     local sell, intake = self.setup.sell, self.setup.intake
-    if sell and sell.chest and not self.watched[sell.chest] then self:sellScan() end
-    if intake and intake.chest and not self.watched[intake.chest] then self:intake() end
+    if sell and sell.chest and self:differs(sell.chest) then self:sellScan() end
+    if intake and intake.chest and self:differs(intake.chest) then self:intake() end
   end
   if due(self, "rescan", self.cfg.rescanSeconds) then
     local name = self.stock:nextTurn(self.watched)

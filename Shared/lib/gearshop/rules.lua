@@ -143,13 +143,13 @@ function M.accepts(piece, cfg)
   if not piece or not M.forSale(piece, cfg) then return false, "not gear" end
   local level = piece.level or 0
   if piece.legendary then return true end
-  if level >= cfg.topLevel then return false, "level " .. cfg.topLevel .. ": legendary only" end
+  if level >= cfg.topLevel then return false, "legendary only at " .. cfg.topLevel end
   if level > cfg.highLevel then
     if has(cfg.highRarities, piece.rarity) then return true end
-    return false, "above level " .. cfg.highLevel .. ": omega or legendary only"
+    return false, "omega or better above " .. cfg.highLevel
   end
   if has(cfg.acceptRarities, piece.rarity) then return true end
-  return false, "epic, omega or legendary only"
+  return false, "epic or better only"
 end
 
 --- What one accepted piece is worth, in thousandths of a token.

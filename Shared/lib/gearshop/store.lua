@@ -87,6 +87,8 @@ function M.newState()
     sale = nil,       -- a sale under way: { id, seller, mode, keys, returns, phase }
     payout = nil,     -- a sale's tokens on their way into the owed book: { id, name, tokens }
     payment = nil,    -- a tab's tokens on their way into the owed book: { id, name, tokens }
+    collecting = nil, -- tokens being taken from a player: { name, owed }, what the book said before, so what moved is counted once
+    paying = nil,     -- tokens being paid to a player: { name, owed }, the same the other way
     stats = { sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0 },
   }
 end

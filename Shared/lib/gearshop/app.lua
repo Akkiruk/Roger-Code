@@ -286,7 +286,8 @@ local function runShop()
       elseif step.kind == "stand" then
         line("Stand at " .. w.what .. (step.detector and ", nearer its" or "."))
         if step.detector then line("detector than any other.") end
-        line("Then press Enter.")
+        line("Then tap any shop monitor there, or press")
+        line("Enter here.")
       end
       line("")
       line("T type its name   " .. (step.optional and "S skip   " or "") .. "Q cancel", colors.lightGray)
@@ -295,7 +296,7 @@ local function runShop()
       if shop.linkTrouble then line("Link: " .. shop.linkTrouble, colors.orange) end
       local summary = shop.ready and shop.stock:summary() or { total = 0, forSale = 0, chests = 0, used = 0, slots = 0, unread = 0 }
       line(("Stock: %d pieces (%d for sale) in %d chests"):format(summary.total, summary.forSale, summary.chests))
-      line(("Room: %d of %d slots used, %d chests unread, %d watched"):format(summary.used, summary.slots, summary.unread, shop.watches))
+      line(("Room: %d/%d slots, %d unread, %d watched"):format(summary.used, summary.slots, summary.unread, shop.watches))
       line("Owner balance: " .. tostring(admin.hostBalance or "?") .. "   floor " .. cfg.ownerFloor)
       local stats = state.stats
       line(("Sold %d pieces: %d tokens, %d store credit"):format(stats.sold, stats.takings, stats.creditSpent))
@@ -367,7 +368,17 @@ local function runShop()
       local d = admin.draft
       local ids = {}
       for _, id in ipairs(d.nodes) do ids[#ids + 1] = tostring(id) .. (shop.linked[id] and "" or "?") end
-      line("Nodes: " .. (#ids > 0 and table.concat(ids, ", ") or "none") .. "   F find  N add  X drop last")
+      -- as many as fit on the line, then how many more
+      local nodes, shown = "Nodes (" .. #ids .. "):", 0
+      for i, id in ipairs(ids) do
+        local more = #ids - i
+        local tail = more > 0 and (" +" .. more) or ""
+        if #nodes + 1 + #id + #tail > tw then break end
+        nodes, shown = nodes .. " " .. id, i
+      end
+      if shown < #ids then nodes = nodes .. " +" .. (#ids - shown) end
+      line(#ids > 0 and nodes or "Nodes: none")
+      line("F find nodes   N add one   X drop the last", colors.lightGray)
       line(("Seen: %d inventories, %d monitors, %d detectors"):format(count("inventory"), count("monitor"), count("playerDetector")), colors.lightGray)
       line("D door    " .. describe(d.door, { "monitor" }))
       line("S sell    " .. describe(d.sell, { "monitor", "chest" }))
@@ -454,9 +465,9 @@ local function runShop()
   end
 
   --- Which detector the owner is standing at, and where that is.
-  local function stand(w, step)
+  local function stand(w, step, toucher)
     post(nil, function()
-      local who = wallet.livePlayer() or wallet.hostName()
+      local who = toucher or wallet.livePlayer() or wallet.hostName()
       local detectors = {}
       for _, name in ipairs(io.names()) do
         if io.hasType(name, "playerDetector") then detectors[#detectors + 1] = name end
@@ -541,7 +552,7 @@ local function runShop()
       end
       pcall(rednet.open, modem)
       pcall(rednet.broadcast, { kind = "who" }, M.PROTOCOL)
-      say("Asked every node to answer. They are added as they do.")
+      say("Asked the nodes. They are added as they answer.")
     elseif ch == "n" then
       ask("Node computer id: ", function(text)
         local id = tonumber(text)
@@ -716,6 +727,9 @@ local function runShop()
           w.result.monitor = monitor
           wizardNext(w)
         end
+      elseif step and step.kind == "stand" then
+        -- the owner is standing at the chest, out of reach of this terminal: a tap on a monitor is their Enter
+        stand(w, step, who)
       end
       return
     end

@@ -116,8 +116,8 @@ test("gearshop: the shop buys epic, omega and legendary; above 70 omega and lege
   local ok, why = rules.accepts(rules.piece({ name = "minecraft:dirt", count = 1 }), cfg)
   eq(ok, false)
   eq(why, "not gear")
-  eq(select(2, rules.accepts(rules.piece(detail(80, "EPIC")), cfg)), "above level 70: omega or legendary only")
-  eq(select(2, rules.accepts(rules.piece(detail(100, "OMEGA")), cfg)), "level 100: legendary only")
+  eq(select(2, rules.accepts(rules.piece(detail(80, "EPIC")), cfg)), "omega or better above 70")
+  eq(select(2, rules.accepts(rules.piece(detail(100, "OMEGA")), cfg)), "legendary only at 100")
 end)
 
 test("gearshop: ten pieces make a token, and the fraction carries to the next sale", function()
