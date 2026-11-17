@@ -84,6 +84,7 @@ end
 -- UI State
 local currentPage = 1
 local itemsPerPage = 0
+local screenWidth, screenHeight
 local selectedCategory = nil
 local totalPages = 1
 local calculateOptimalTextScale = nil
@@ -594,7 +595,6 @@ local function getRewardStockStatus(slot)
 end
 
 -- Drawing Functions
-local screenWidth, screenHeight
 local categoryButtonRegions = {}
 local scrollUpRegion, scrollDownRegion, taskClickRegions, turnInTasksRegion
 

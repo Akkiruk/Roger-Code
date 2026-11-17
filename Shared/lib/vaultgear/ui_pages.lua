@@ -312,6 +312,8 @@ local function buildHomeRows(app, actions)
   local storage = shared.selectedStorage(app)
   local rule = storage and storage.rule or nil
   local quickConfig = quickSetup.fromStorage(storage)
+  local rarityOptions = shared.rarityOptions()
+  local identifiedOptions = shared.identifiedOptions()
 
   addSection(rows, "Quick Setup")
   addRow(rows, 1, function(ctx, rect)
