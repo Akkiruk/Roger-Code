@@ -303,7 +303,7 @@ function S:knockPlayer(kind)
   self:setHp(0)
   self.ctx.player.knocked = true
   self.lock = nil
-  self:say("Knocked down! Back up in a moment", M.PLAYER_DOWN)
+  self:say("Knocked down! Getting up...", M.PLAYER_DOWN)
   self.ctx.bus:emit("player_down", { kind = kind or "ko" })
 end
 

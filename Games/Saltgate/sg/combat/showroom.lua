@@ -25,6 +25,29 @@ local function along(ctx)
   end
 end
 
+--- The point with the most open water round it, and how far that goes (stepping out in eight directions).
+function M.openWater(stream, size)
+  local best, bx, bz = 0, nil, nil
+  for gz = 12, size - 12, 14 do
+    for gx = 12, size - 12, 14 do
+      if physics.waterOK(stream, gx, gz) then
+        local r = 60
+        for a = 0, 7 do
+          local dx, dz = cos(a * math.pi / 4), sin(a * math.pi / 4)
+          for d = 6, 60, 6 do
+            if not physics.waterOK(stream, gx + dx * d, gz + dz * d) then
+              if d < r then r = d end
+              break
+            end
+          end
+        end
+        if r > best then best, bx, bz = r, gx, gz end
+      end
+    end
+  end
+  return bx, bz, best
+end
+
 function M.vehicles(ctx, fleet)
   local place = along(ctx)
   if not place then return end
@@ -41,28 +64,14 @@ function M.vehicles(ctx, fleet)
     local car = fleet:spawn(def.id, x, z, h)
     if car then n = n + 1 end
   end
-  -- boats on the water off the shore (away from the middle of the island)
-  local sp = testbed.spawn
-  local cx, cz = testbed.N * 88 / 2, testbed.N * 88 / 2
-  local dx, dz = sp.x - cx, sp.z - cz
-  local len = math.sqrt(dx * dx + dz * dz)
-  dx, dz = dx / len, dz / len
-  local found
-  for d = 4, 140, 3 do
-    local x, z = sp.x + dx * d, sp.z + dz * d
-    if physics.waterOK(ctx.stream, x, z) and physics.waterOK(ctx.stream, x + dx * 14, z + dz * 14)
-      and physics.waterOK(ctx.stream, x + dx * 14 - dz * 22, z + dz * 14 + dx * 22) then
-      found = { x + dx * 8, z + dz * 8 }
-      break
-    end
-  end
-  if found then
-    local px, pz = -dz, dx
-    local h = atan2(-dz, -dx)
+  -- boats on the open water: the widest stretch the island has
+  local x, z, room = M.openWater(ctx.stream, testbed.N * 88)
+  if x then
+    local h = math.pi * 0.5
     for i, def in ipairs(ctx.vehicles.list("boat")) do
-      fleet:spawn(def.id, found[1] + px * (i - 3) * 8 + dx * (i % 2) * 6, found[2] + pz * (i - 3) * 8 + dz * (i % 2) * 6, h)
+      fleet:spawn(def.id, x + (i - 3) * 7.5, z + (i % 2) * 5 - 4, h)
     end
-    ctx.log("showroom: boats at " .. floor(found[1]) .. "," .. floor(found[2]))
+    ctx.log("showroom: boats at " .. floor(x) .. "," .. floor(z) .. " (" .. floor(room) .. " units of water round)")
   else
     ctx.log("showroom: no water found for boats")
   end
