@@ -49,16 +49,47 @@ local function litNumbers(me)
   return lit
 end
 
---- The lines under the layout while bets can still go down.
-local function betting(c, y, me)
-  local line = ("BET %s  LEFT %s  CHIP %s"):format(ui.group(me.placed), ui.group(me.left), ui.group(me.chip))
-  c:text(3, y, line, C.gold)
-  if me.lit then
-    local spot = wheel.spot(me.lit)
-    c:text(3, y + 1, ("%s  %d to 1  on it %s"):format(wheel.describe(me.lit), spot.pay, ui.group(me.spots[me.lit] or 0)), C.text)
-  else
-    c:text(3, y + 1, board.hint(me.mode) .. ", or any outside bet", C.text)
+--- The three steps, the one to do next lit gold and the ones done green, so a first-timer always knows what comes next.
+local function steps(c, y, me)
+  local list = {
+    { "1 PICK A CHIP", me.chip ~= nil },
+    { "2 TAP WHERE TO BET", me.placed > 0 },
+    { "3 PRESS DONE", false },
+  }
+  local current = 3
+  for i, step in ipairs(list) do
+    if not step[2] then
+      current = i
+      break
+    end
   end
+  local x = 3
+  for i, step in ipairs(list) do
+    local text = " " .. step[1] .. " "
+    local bg = i == current and C.gold or (step[2] and C.win or C.panel)
+    c:text(x, y, text, (i == current or step[2]) and C.ink or C.text, bg)
+    x = x + #text
+    if i < #list then
+      c:text(x, y, ">", C.text)
+      x = x + 2
+    end
+  end
+end
+
+--- The lines under the layout while bets can still go down: the total and what may still go down, the last tap, and the steps.
+local function betting(c, y, me)
+  local chip = me.chip == "max" and "MAX" or ui.group(me.chip or 0)
+  local line = ("TOTAL BET %s   You can bet up to %s"):format(ui.group(me.placed), ui.group(me.budget))
+  c:text(3, y, line, C.gold)
+  if me.left < 1 then
+    c:text(3, y + 1, "That is all of it: the amount you chose for this spin", C.orange)
+  elseif me.lit then
+    local spot = wheel.spot(me.lit)
+    c:text(3, y + 1, ("%s  pays %d:1  on it %s"):format(wheel.describe(me.lit), spot.pay, ui.group(me.spots[me.lit] or 0)), C.text)
+  else
+    c:text(3, y + 1, ("Chip %s. %s, or any outside bet"):format(chip, board.hint(me.mode)), C.text)
+  end
+  steps(c, y + 2, me)
 end
 
 local function lastRow(c, y, recent)
@@ -93,7 +124,7 @@ function M.draw(c, view, anim)
     runningNumbers(c, top + BAND_OFFSET, view.number, anim.t)
   elseif open then
     betting(c, statusY, me)
-    lastRow(c, statusY + 2, view.recent or {})
+    lastRow(c, statusY + 3, view.recent or {})
   elseif me and not view.over then
     c:text(3, statusY, ("YOUR BET IS IN: %s"):format(ui.group(me.placed)), C.gold)
     c:text(3, statusY + 1, "The wheel spins when betting closes", C.text)

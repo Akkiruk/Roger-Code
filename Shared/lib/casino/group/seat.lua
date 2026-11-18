@@ -232,6 +232,10 @@ function Front:press(x, y, who)
   if hit and holder and holder ~= who then
     self:toast(seatui.short(holder) .. "'s seat")
     hit = nil
+  elseif hit and hit.id == "refused" then
+    -- A greyed button says why it is greyed, here, and the touch still counts as a touch
+    self:toast(hit.why or "Not now")
+    hit = nil
   end
   if hit then audio.play("tap") end
   return { who = who, id = hit and hit.id or nil, value = hit and hit.value or nil, approved = approved,

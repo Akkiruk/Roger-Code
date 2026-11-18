@@ -82,6 +82,17 @@ function M.maxBet(hostBalance, otherExposure, maxWin, capTokens, host)
   return math.max(0, bet)
 end
 
+--- What a player may bet now: the smaller of their balance and the table's own limit (the house's cover and any cap of the game's),
+-- and which of the two it is, as a bet screen says it. A balance not read yet gives nil, so a screen says so instead of guessing.
+-- @return max (nil while the balance is unknown), reason: "your balance" or "table limit"
+function M.allowed(balance, tableMax)
+  tableMax = math.max(0, math.floor(tableMax or 0))
+  if balance == nil then return nil, "checking" end
+  balance = math.max(0, math.floor(balance))
+  if balance <= tableMax then return balance, "your balance" end
+  return tableMax, "table limit"
+end
+
 --- Whether the host can cover a net win right now.
 function M.covers(hostBalance, otherExposure, amount, host)
   return amount <= M.protected(hostBalance, otherExposure, host)

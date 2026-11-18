@@ -18,7 +18,7 @@ local PITCH_Y = 8                    -- row spacing; each cell has a gap row aft
 local COLUMN_X, COLUMN_W = 110, 8    -- the 2:1 bets
 local BOARD_H = PITCH_Y * 3          -- the numbers, down to the rail under the bottom row
 local OUT_TOP = BOARD_H + 1          -- the first row of outside bets, two clear rows under the numbers
-local OUT_H = 7                      -- outside row spacing; each row has two gap rows after it
+local OUT_H = 8                      -- outside row spacing; each row has two gap rows after it
 local CHIP_W = 4
 
 -- The rows inside a number cell. A stake sits apart from the number, and stakes that share a row never meet
@@ -89,11 +89,11 @@ local function chipSpot(id)
   elseif kind == "column" then
     return COLUMN_X + 2, cellY(rowOf(a)) + STAKE_ROW
   elseif kind == "dozen" then
-    return cellX(columnOf(a)) + 13, OUT_TOP + 3
+    return cellX(columnOf(a)) + 13, OUT_TOP + 4
   end
   local x = cellX(1)
   for _, part in ipairs(EVEN_ROW) do
-    if part.id == kind then return x + 5, OUT_TOP + OUT_H + 3 end
+    if part.id == kind then return x + 5, OUT_TOP + OUT_H + 4 end
     x = x + EVEN_W
   end
   error("no place for " .. id)
@@ -232,9 +232,12 @@ local function drawNumber(c, top, n, look)
   end
 end
 
-local function drawOutside(c, x, y, w, label, bg, lit)
+--- An outside bet: its name, what it pays, and a row under those for the stake, so a first-timer can read every box.
+local function drawOutside(c, x, y, w, label, pay, bg, lit)
   c:rect(x, y, w - 1, OUT_H - 2, lit and C.gold or bg)
-  c:textCenter(x + math.floor((w - 1) / 2), y + 1, label, lit and C.ink or C.text)
+  local cx = x + math.floor((w - 1) / 2)
+  c:textCenter(cx, y + 1, label, lit and C.ink or C.text)
+  c:textCenter(cx, y + 2, "pays " .. pay .. ":1", lit and C.ink or C.gold)
 end
 
 --- Dots that show where each target of the chosen mode lies.
@@ -267,18 +270,20 @@ function M.drawBoard(c, top, opts)
     local bg = on and C.gold or C.panel
     if opts.litSpot == "column:" .. row then bg = C.gold end
     c:rect(COLUMN_X, top + cellY(row), COLUMN_W, PITCH_Y - 1, bg)
-    c:textCenter(COLUMN_X + 4, top + cellY(row) + NUMBER_ROW, "2:1", bg == C.gold and C.ink or C.text)
+    c:textCenter(COLUMN_X + 4, top + cellY(row) + NUMBER_ROW, "pays", bg == C.gold and C.ink or C.gold)
+    c:textCenter(COLUMN_X + 4, top + cellY(row) + NUMBER_ROW + 1, "2:1", bg == C.gold and C.ink or C.text)
   end
 
   for d = 1, 3 do
     local id = "dozen:" .. d
     local on = (number ~= nil and rules.covers(id, number)) or opts.litSpot == id
-    drawOutside(c, cellX(1) + (d - 1) * DOZEN_W, top + OUT_TOP, DOZEN_W, ({ "1ST 12", "2ND 12", "3RD 12" })[d], C.panel, on)
+    drawOutside(c, cellX(1) + (d - 1) * DOZEN_W, top + OUT_TOP, DOZEN_W, ({ "1ST 12  (1-12)", "2ND 12  (13-24)", "3RD 12  (25-36)" })[d],
+      2, C.panel, on)
   end
   local x = cellX(1)
   for _, part in ipairs(EVEN_ROW) do
     local on = (number ~= nil and rules.covers(part.id, number)) or opts.litSpot == part.id
-    drawOutside(c, x, top + OUT_TOP + OUT_H, EVEN_W, part.label, part.bg and C[part.bg] or C.panel, on)
+    drawOutside(c, x, top + OUT_TOP + OUT_H, EVEN_W, part.label, 1, part.bg and C[part.bg] or C.panel, on)
     x = x + EVEN_W
   end
 
@@ -299,7 +304,7 @@ function M.modeRow(c, buttons, y, active, x, w, h)
     local on = mode == active
     ui.button(c, buttons, {
       id = "mode", value = mode, x = x + (i - 1) * (w + 3), y = y, w = w, h = h,
-      label = kind.label:upper(), sub = kind.pay .. " to 1", small = true,
+      label = kind.label:upper(), sub = "pays " .. kind.pay .. ":1", small = true,
       color = on and C.gold or C.panel2, textColor = on and C.ink or C.text,
     })
   end

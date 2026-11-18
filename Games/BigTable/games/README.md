@@ -71,6 +71,7 @@ Rules are pure: no screen, no sound, no money, no `os.*`, no `math.random`. The 
 | `maxWin(entry)` | House games: the most this entry can win, net, whatever happens, doubles and splits included. The host must cover the sum of these before a round starts, and bets are cut to fit. |
 | `risk(state, seat)` | Optional: all that seat really staked. For the stats and the hub's measured return. Without it the engine uses the bet plus each `cost`, or the size of the net. |
 | `present(state, seat)` | Optional: true if this seat, its clock just run out, has still played, so it is not counted as away. For a game where the clock closing is normal, such as bets left down in Roulette. |
+| `why(state, seat, id, value)` | Optional: when a seat's press changed nothing, a short line saying why ("All of your 100 is down"), shown on that seat. nil says nothing. A greyed action can carry its own `why` instead: a tap on it shows that, on the seat, and goes no further. |
 | `finish(state, keep)` | Optional: runs once at the end of a round, for what lasts, such as a road or what is left of a shoe. |
 
 **Nobody deals.** A round starts by itself once enough seats are ready, and a seat that does not act is handled by `auto`. When the game has work of its own, such as a house drawing, a wheel spinning or a roll with no shooter, make `waitingOn` return `{}`. A second later the engine calls `auto(state, nil)` and passes what it returns to `act(state, nil, id, value, rng)`. A seat's press may just as well do it all inside `act`.

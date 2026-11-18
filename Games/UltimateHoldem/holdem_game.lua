@@ -28,22 +28,41 @@ local function chooseBet(ctx, tableObject, lastWager)
   local c = ctx.c
   local cx = math.floor(c.w / 2)
   local scene = { name = "bet", ante = 0, side = false, deadline = now() + IDLE_BET_MS }
-  local maxAnte = math.min(tableObject:maxBet(), rules.MAX_ANTE)
+  local function readLimit()
+    return math.min(tableObject:maxBet(), rules.MAX_ANTE)
+  end
+  local maxAnte = readLimit()
   local chips = limits.chips(maxAnte)
 
   local function wager(s)
     return { ante = s.ante, side = s.side and s.ante or 0 }
   end
 
+  --- The most the Ante may be now: the table limit, and the balance shared by everything this hand can ask for.
+  local function allowed(s)
+    return tableObject:allowance(maxAnte, s.side and 3 or 2)
+  end
+
   local function clamp(s)
-    local balance = ctx.balance or 0
-    s.ante = math.min(s.ante, maxAnte, math.floor(balance / (s.side and 3 or 2)))
+    s.ante = math.max(0, math.min(s.ante, allowed(s) or 0))
+  end
+
+  scene.debugState = function()
+    local most, reason = allowed(scene)
+    return { ante = scene.ante, side = scene.side, max = most or false, reason = reason, tableMax = maxAnte }
   end
 
   function scene.tick(s)
     local left = s.deadline - now()
     if left <= 0 then s.finished = true end
     if left < WARN_MS then s.dirty = true end
+    -- The limit and the balance follow the host and the other tables while the player chooses
+    if now() - (s.limitAt or 0) >= 5000 then
+      s.limitAt = now()
+      maxAnte = readLimit()
+      clamp(s)
+      s.dirty = true
+    end
   end
 
   function scene.draw(s)
@@ -52,11 +71,13 @@ local function chooseBet(ctx, tableObject, lastWager)
     ui.bar(c, ctx)
     c:bigCenter(cx, ui.TOP, "ANTE AND BLIND", C.text, 1)
     c:bigCenter(cx, 17, ui.group(s.ante) .. " + " .. ui.group(s.ante), C.gold, 2)
-    c:textCenter(cx, 29, "Table limit " .. ui.group(maxAnte) .. " each   Raises cost up to 4 Antes more", C.text)
+    local most, reason = allowed(s)
+    local lines = ui.allowance(most, reason, s.ante, "ante")
+    c:textCenter(cx, 29, lines[1][1] .. (most and most >= 1 and "   The Blind matches it. Raises cost up to 4 Antes more" or ""), C[lines[1][2]])
+    if lines[2] then c:textCenter(cx, 39, lines[2][1], C[lines[2][2]]) end
     s.buttons = ui.newButtons()
-    if maxAnte < 1 then
-      c:textCenter(cx, 46, "The house cannot cover a bet right now.", C.orange)
-    else
+    if maxAnte >= 1 then
+      local over = ui.overNote(most, reason)
       ui.button(c, s.buttons, {
         id = "side", x = cx - 30, y = 31, w = 60, h = 7,
         label = s.side and "TRIPS ON" or "TRIPS OFF",
@@ -64,14 +85,17 @@ local function chooseBet(ctx, tableObject, lastWager)
       })
       local specs = {}
       for _, value in ipairs(chips) do
-        specs[#specs + 1] = { id = "chip", value = value, label = tostring(value), color = C.accent, textColor = C.ink }
+        specs[#specs + 1] = { id = "chip", value = value, label = tostring(value), color = C.accent, textColor = C.ink,
+          disabled = not most or s.ante + value > most, why = over }
       end
       ui.actionRow(c, s.buttons, specs, 43, 11)
       ui.actionRow(c, s.buttons, {
-        { id = "clear", label = "CLEAR", color = C.panel2 },
-        { id = "double", label = "X2", color = C.panel2, disabled = s.ante == 0 },
-        { id = "max", label = "MAX", color = C.panel2 },
-        { id = "repeat", label = "SAME", color = C.panel2, disabled = not lastWager },
+        { id = "clear", label = "CLEAR", color = C.panel2, disabled = s.ante == 0 },
+        { id = "double", label = "X2", color = C.panel2, disabled = s.ante == 0 or not most or s.ante >= most,
+          why = s.ante > 0 and over or nil },
+        { id = "max", label = "MAX", color = C.panel2, disabled = not most or most < 1 or s.ante == most,
+          why = most and most >= 1 and "That is already the most" or over },
+        { id = "repeat", label = "SAME", color = C.panel2, disabled = not lastWager or not most or most < 1 },
       }, 57, 9)
     end
     if ctx.owedNotice then c:textCenter(cx, 41, ctx.owedNotice, C.orange) end
@@ -84,7 +108,8 @@ local function chooseBet(ctx, tableObject, lastWager)
       { id = "rules", label = "RULES", color = C.blue, small = true },
       { id = "stats", label = "STATS", color = C.blue, small = true },
       { id = "card", label = "CARD", color = C.blue, small = true },
-      { id = "deal", label = "DEAL", color = C.win, textColor = C.ink, disabled = s.ante < 1 },
+      { id = "deal", label = "DEAL", color = C.win, textColor = C.ink, disabled = s.ante < 1,
+        why = "Pick a chip first" },
     })
   end
 
@@ -92,7 +117,9 @@ local function chooseBet(ctx, tableObject, lastWager)
     s.deadline = now() + IDLE_BET_MS
     local hit = ui.hit(s.buttons or {}, x, y)
     if not hit then return end
-    if hit.id == "chip" then
+    if hit.id == "refused" then
+      tableObject:toast(hit.why)
+    elseif hit.id == "chip" then
       s.ante = s.ante + hit.value
       audio.play(hit.value >= 100 and "chipBig" or "chip")
     elseif hit.id == "side" then
@@ -105,7 +132,7 @@ local function chooseBet(ctx, tableObject, lastWager)
       s.ante = s.ante * 2
       audio.play("chip")
     elseif hit.id == "max" then
-      s.ante = maxAnte
+      s.ante = allowed(s) or 0
       audio.play("chipBig")
     elseif hit.id == "repeat" then
       s.ante = lastWager.ante

@@ -39,7 +39,7 @@ M.DEALER_W, M.DEALER_H = 120, 80   -- the least that is a dealer's wall. A 6x6 w
 M.STRIP_H = 7               -- the row of seats along the bottom of the dealer's wall
 M.RESULT_H = 10             -- a seat's result banner, at the bottom of the game's area
 
-local MAX_BUTTONS = 10
+local MAX_BUTTONS = 12          -- two rows of six: six chips, MAX and the four a bet screen needs
 local TILE_GAP = 2
 local RESULT_COLOR = { win = "win", lose = "red", loss = "red", push = "gold", tie = "gold" }
 
@@ -92,7 +92,7 @@ local function spec(button)
   return out
 end
 
---- The bottom of the screen: one row of up to five big buttons, or two rows of up to five small ones.
+--- The bottom of the screen: one row of up to five big buttons, or two rows of up to six small ones.
 function M.actions(c, list, buttons)
   local specs = {}
   for i = 1, math.min(#buttons, MAX_BUTTONS) do specs[i] = spec(buttons[i]) end

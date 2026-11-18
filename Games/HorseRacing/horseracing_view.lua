@@ -3,6 +3,7 @@
 -- comes from rules.position, so the last frame is that order exactly.
 
 local audio = require("lib.casino.audio")
+local limits = require("lib.casino.limits")
 local rng = require("lib.casino.rng")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
@@ -197,24 +198,48 @@ function M.bet(ctx, tbl, lastWager)
   local race = rules.newRace(rng.new(rng.freshSeed(ctx.seat)))
   local prices = rules.prices(race.strengths)
   local scene = { name = "bet", race = race, chips = {}, chip = nil, tab = "card",
-    deadline = clock() + IDLE_BET_MS }
+    deadline = clock() + IDLE_BET_MS, limitAt = clock() }
   local cx = math.floor(c.w / 2)
-  local room = tbl:liabilityRoom()    -- asks the vault, so only after a touch, not every frame
+  local room = tbl:liabilityRoom()    -- asks the vault, so only after a touch or every few seconds, not every frame
 
-  scene.debugState = function() return { race = race, stake = rules.stake(wagerOf(scene)), bets = wagerOf(scene).bets } end
+  --- What may go on the card in all: the balance, and the house's room. A bet that pays more is checked as it goes down.
+  local function allowance()
+    return limits.allowed(ctx.balance, room)
+  end
 
-  local function chipChoices()
-    local list = {}
-    for _, value in ipairs(CHIPS) do
-      if value <= math.max(ctx.balance or 0, 0) then list[#list + 1] = value end
+  scene.debugState = function()
+    local most, reason = allowance()
+    return { race = race, stake = rules.stake(wagerOf(scene)), bets = wagerOf(scene).bets, max = most or false, reason = reason }
+  end
+
+  --- The most one cell can take now, and what stops it there.
+  local function mostOn(s, key)
+    local left = math.max(0, (ctx.balance or 0) - rules.stake(wagerOf(s)))
+    local function fits(amount)
+      local before = s.chips[key]
+      s.chips[key] = (before or 0) + amount
+      local ok = rules.maxWin(wagerOf(s)) <= room
+      s.chips[key] = before
+      return ok
     end
-    return list
+    if fits(left) then return left, "your balance" end
+    local low, high = 0, left
+    while low < high do
+      local mid = math.floor((low + high + 1) / 2)
+      if fits(mid) then low = mid else high = mid - 1 end
+    end
+    return low, "table limit"
   end
 
   function scene.tick(s)
     local left = s.deadline - clock()
     if left <= 0 then s.finished = true end
     if left < WARN_MS then s.dirty = true end
+    if clock() - s.limitAt >= 5000 then
+      s.limitAt = clock()
+      room = tbl:liabilityRoom()
+      s.dirty = true
+    end
   end
 
   function scene.draw(s)
@@ -239,32 +264,47 @@ function M.bet(ctx, tbl, lastWager)
 
     if s.tab == "card" then drawWinCard(c, s, prices) else drawExactaCard(c, s, prices) end
 
-    -- What a tap puts down
-    local specs = {}
-    local choices = chipChoices()
-    if not s.chip or s.chip > (ctx.balance or 0) then s.chip = choices[math.min(2, #choices)] end
-    for _, value in ipairs(choices) do
-      local label = value >= 1000 and (value / 1000 .. "K") or tostring(value)
-      local chosen = value == s.chip
-      specs[#specs + 1] = { id = "chip", value = value, label = label, color = chosen and C.gold or C.panel2,
-        textColor = chosen and C.ink or C.text }
-    end
-    specs[#specs + 1] = { id = "clear", label = "CLEAR", color = C.panel2, small = true }
-    if #choices > 0 then ui.actionRow(c, s.buttons, specs, CHIPS_Y, CHIPS_H) end
-
+    -- What a tap puts down. A chip over what is left to bet is greyed, and says why when tapped. MAX lays all that may go on a cell
     local wager = wagerOf(s)
     local stake = rules.stake(wager)
     local maxWin = rules.maxWin(wager)
+    local most, reason = allowance()
+    local rest = most and math.max(0, most - stake)
+    local over = most and ("Only " .. ui.group(rest) .. " left to bet: " .. reason) or "Checking your balance..."
+    local affordable = most and most >= rules.MIN_BET
+    if s.chip ~= "max" and (not s.chip or s.chip > (most or 0)) then
+      -- The chip in hand is the second smallest that can go down, as before, or the biggest if fewer can
+      local fit = {}
+      for _, value in ipairs(CHIPS) do
+        if value <= (most or 0) then fit[#fit + 1] = value end
+      end
+      s.chip = fit[math.min(2, #fit)]
+    end
+    local specs = {}
+    for _, value in ipairs(CHIPS) do
+      local label = value >= 1000 and (value / 1000 .. "K") or tostring(value)
+      local chosen = value == s.chip
+      specs[#specs + 1] = { id = "chip", value = value, label = chosen and ("[" .. label .. "]") or label,
+        color = chosen and C.gold or C.panel2, textColor = chosen and C.ink or C.text, disabled = not rest or value > rest, why = over }
+    end
+    local maxOn = s.chip == "max"
+    specs[#specs + 1] = { id = "chip", value = "max", label = maxOn and "[MAX]" or "MAX", color = maxOn and C.gold or C.panel2,
+      textColor = maxOn and C.ink or C.text, disabled = not rest or rest < 1, why = over }
+    specs[#specs + 1] = { id = "clear", label = "CLEAR", color = C.panel2, small = true, disabled = stake == 0 }
+    if affordable then ui.actionRow(c, s.buttons, specs, CHIPS_Y, CHIPS_H) end
+
     local left = s.deadline - clock()
-    if #choices == 0 then
-      c:textCenter(cx, CHIPS_Y + math.floor(CHIPS_H / 2), ("It takes %d tokens to bet here."):format(rules.MIN_BET), C.orange)
+    local lines = ui.allowance(most, reason, stake)
+    local line = lines[2] or lines[1]
+    if not affordable then
+      c:textCenter(cx, CHIPS_Y + math.floor(CHIPS_H / 2), most and ("It takes %d tokens to bet here."):format(rules.MIN_BET)
+        or lines[1][1], C.orange)
     elseif maxWin > room then
-      c:textCenter(cx, NOTE_Y, "The house cannot cover that card. Take something off.", C.orange)
+      c:textCenter(cx, NOTE_Y, "Table limit: the house cannot cover that card. Take something off.", C.orange)
     elseif left < WARN_MS then
       c:textCenter(cx, NOTE_Y, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
     else
-      c:textCenter(cx, NOTE_Y, ("On the card %s   Best case +%s   Each tap adds %s"):format(ui.group(stake),
-        ui.group(maxWin), ui.group(s.chip or 0)), C.text)
+      c:textCenter(cx, NOTE_Y, ("TOTAL BET %s   %s   Best case +%s"):format(ui.group(stake), line[1], ui.group(maxWin)), C[line[2]])
     end
 
     ui.actionBar(c, s.buttons, {
@@ -273,7 +313,8 @@ function M.bet(ctx, tbl, lastWager)
       { id = "stats", label = "STATS", color = C.blue, small = true },
       { id = "card", label = "CARD", color = C.blue, small = true },
       { id = "deal", label = "RACE", color = C.win, textColor = C.ink,
-        disabled = stake < 1 or stake > (ctx.balance or 0) or maxWin > room },
+        disabled = stake < 1 or stake > (ctx.balance or 0) or maxWin > room,
+        why = stake < 1 and "Place a bet first: pick a chip, then tap the card" or "Table limit: take something off the card" },
     })
   end
 
@@ -282,11 +323,30 @@ function M.bet(ctx, tbl, lastWager)
     room = tbl:liabilityRoom()
     local hit = ui.hit(s.buttons or {}, x, y)
     if not hit then return end
-    if hit.id == "cell" then
-      local amount = s.chip or 0
-      if amount < 1 then return end
-      if rules.stake(wagerOf(s)) + amount > (ctx.balance or 0) then
-        tbl:toast("That is more than your balance")
+    if hit.id == "refused" then
+      tbl:toast(hit.why)
+    elseif hit.id == "cell" then
+      if not ctx.balance then
+        tbl:toast("Checking your balance...")
+        return
+      end
+      local amount, why = s.chip or 0, nil
+      if amount == "max" then amount, why = mostOn(s, hit.value) end
+      if amount < 1 then
+        if why then tbl:toast(why == "table limit" and "Table limit: no more on that" or "Your balance: nothing left to bet") end
+        return
+      end
+      if rules.stake(wagerOf(s)) + amount > ctx.balance then
+        tbl:toast("Your balance: " .. ui.group(ctx.balance) .. " is the most you can bet")
+        return
+      end
+      local before = s.chips[hit.value]
+      s.chips[hit.value] = (before or 0) + amount
+      local covered = rules.maxWin(wagerOf(s)) <= room
+      s.chips[hit.value] = before
+      if not covered then
+        local more = mostOn(s, hit.value)
+        tbl:toast("Table limit: " .. (more > 0 and ("up to " .. ui.group(more) .. " more") or "no more") .. " on that")
         return
       end
       s.chips[hit.value] = (s.chips[hit.value] or 0) + amount

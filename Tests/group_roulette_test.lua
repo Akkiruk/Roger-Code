@@ -249,6 +249,32 @@ t.test("a seat cannot lay more than its amount, and the last chip is cut to what
   t.eq(short.players[1].spots.black, 20, "the rest, not the chip")
 end)
 
+t.test("MAX lays what is left, chips over it are greyed, DONE waits for a bet, and a tap with nothing left says why", function()
+  local function button(state, id, value)
+    for _, b in ipairs(rules.actions(state, 1)) do
+      if b.id == id and (value == nil or b.value == value) then return b end
+    end
+    return nil
+  end
+  local state = open({ 1 }, 100)
+  t.truthy(button(state, "done").disabled, "DONE greyed with nothing down")
+  t.truthy(button(state, "done").why, "and says why")
+  t.truthy(button(state, "chip", "max"), "a MAX chip")
+  rules.act(state, 1, "chip", 25)
+  rules.act(state, 1, "spot", "straight:7")
+  t.truthy(not button(state, "done").disabled, "DONE once a bet is down")
+  t.truthy(button(state, "chip", 100).disabled, "a chip over the 75 left is greyed")
+  t.eq(button(state, "chip", 100).why, "Only 75 left of your 100", "and says why")
+  t.truthy(not button(state, "chip", 50).disabled, "one that fits is not")
+  t.eq(rules.why(state, 1, "spot", "red"), nil, "nothing to say while some is left")
+  t.truthy(#rules.act(state, 1, "chip", "max") > 0, "MAX in hand")
+  t.truthy(#rules.act(state, 1, "spot", "red") > 0, "MAX on red")
+  t.eq(state.players[1].spots.red, 75, "all that was left")
+  refused(state, 1, "spot", "black", "nothing left")
+  t.eq(rules.why(state, 1, "spot", "black"), "All of your 100 is down. UNDO or CLEAR to move it")
+  t.truthy(button(state, "chip", "max").disabled, "MAX greyed with nothing left")
+end)
+
 t.test("a seat that is done, and a round that is over, take nothing more", function()
   local state = open({ 1, 2 }, 100)
   rules.act(state, 1, "spot", "red")

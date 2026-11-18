@@ -691,14 +691,19 @@ function Dealer:openBuyIn(number, who, topUp)
   local _, seat = self:seatOf(who)
   local base = seat and seat.stack or 0
   local balance = self:covers(who)
-  local limit = balance and math.min(self.plugin.maxStack - base, balance - base) or 0
   local least = topUp and 1 or self.plugin.minBuy
-  if limit < least then
+  if not balance then
     st.sub = nil
-    self:toast(number, topUp and "Nothing more to top up with" or ("You need " .. ui.group(least) .. " in your wallet"))
+    self:toast(number, "Checking your balance... tap again in a moment")
     return
   end
-  st.sub = { kind = "buyin", who = who, amount = topUp and 0 or least, limit = limit, least = least, topUp = topUp,
+  local limit, reason = limits.allowed(balance - base, self.plugin.maxStack - base)
+  if limit < least then
+    st.sub = nil
+    self:toast(number, topUp and ("Nothing more to top up with: " .. reason) or ("You need " .. ui.group(least) .. " in your wallet"))
+    return
+  end
+  st.sub = { kind = "buyin", who = who, amount = topUp and 0 or least, limit = limit, reason = reason, least = least, topUp = topUp,
     deadline = now() + PANEL_MS }
 end
 
@@ -850,12 +855,86 @@ local function entryOf(number, seat, bet)
   return entry
 end
 
---- The most this seat may add now, from their balance and this game's cap.
-function Dealer:betRoom(number)
-  local seat, bet = self:seat(number), self:bet(number)
-  local room = (self:covers(seat.name) or 0) - bet.total
-  if self.plugin.maxBet then room = math.min(room, self.plugin.maxBet - bet.total) end
-  return math.max(0, room)
+local ROOM_KEPT_MS = 1000   -- one read of the host's balance serves every seat's screen in a push
+
+--- The host's room, read at most once a second. A balance that cannot be read gives the last one heard, or nil.
+function Dealer:roomNow()
+  local time = now()
+  local kept = self.roomKept
+  if kept and time - kept.at < ROOM_KEPT_MS then return kept.room end
+  local host = wallet.hostName()
+  local balance = wallet.hostBalance()
+  if balance then
+    self.roomKept = { at = time, room = limits.room(balance, net.otherExposure(host), host) }
+  elseif kept then
+    kept.at = time
+  end
+  return self.roomKept and self.roomKept.room or nil
+end
+
+--- The spot a bet of this game's goes on when nobody has said: the one the house can cover most of, so "up to" is what can stand.
+local function easiestSpot(plugin)
+  if not plugin.spots then return nil end
+  if plugin.easiestSpot == nil then
+    local best, least = false, math.huge
+    for _, spot in ipairs(plugin.spots) do
+      local ok, win = pcall(plugin.rules.maxWin, { bet = 1000, bets = { [spot.id] = 1000 } })
+      if ok and type(win) == "number" and win < least then best, least = spot.id, win end
+    end
+    plugin.easiestSpot = best
+  end
+  return plugin.easiestSpot or nil
+end
+
+--- What this seat may have down in all, and why it stops there: their balance, the game's cap, or what the house can still cover
+-- after the other seats' bets (the same check fitBets makes at the deal). onSpot asks for a spot game's spot: what the house covers
+-- depends on what it pays. nil, "checking" while the balance cannot be read.
+function Dealer:betAllowance(number, onSpot)
+  local seat, bet, plugin = self:seat(number), self:bet(number), self.plugin
+  local cover = seat and self:covers(seat.name)
+  local cap = plugin.maxBet or math.huge
+  if cover then cap = math.min(cap, cover) end
+  local room = self:roomNow()
+  if room and cap > bet.total then
+    for other = 1, M.MAX_SEATS do
+      local theirs, otherBet = self:seat(other), self.bets[other]
+      if other ~= number and theirs and otherBet and otherBet.total > 0 then
+        local ok, win = pcall(plugin.rules.maxWin, entryOf(other, theirs, otherBet))
+        if ok and type(win) == "number" then room = room - win end
+      end
+    end
+    local spot = onSpot or easiestSpot(plugin)
+    local function fits(total)
+      local entry = { seat = number, name = seat.name, bet = total }
+      if spot then
+        entry.bets = {}
+        for id, amount in pairs(bet.spots) do entry.bets[id] = amount end
+        entry.bets[spot] = (entry.bets[spot] or 0) + total - bet.total
+      end
+      local ok, win = pcall(plugin.rules.maxWin, entry)
+      return ok and type(win) == "number" and win <= room
+    end
+    local low, high = bet.total, cap
+    if not fits(low) then
+      high = low
+    elseif high ~= math.huge and fits(high) then
+      low = high
+    else
+      if high == math.huge then high = math.max(low, room) end
+      while low < high do
+        local mid = math.floor((low + high + 1) / 2)
+        if fits(mid) then low = mid else high = mid - 1 end
+      end
+    end
+    if low < cap then return limits.allowed(cover, low) end
+  end
+  return limits.allowed(cover, plugin.maxBet or cover or 0)
+end
+
+--- The most this seat may add now, from their balance, this game's cap and the house's cover, or 0 while the balance is unknown.
+function Dealer:betRoom(number, onSpot)
+  local most = self:betAllowance(number, onSpot)
+  return math.max(0, (most or 0) - self:bet(number).total)
 end
 
 --- The host must cover every seat's best case. Bets are shrunk to fit, and refused when they cannot. Returns the entries.
@@ -1175,7 +1254,13 @@ function Dealer:handInput(number, input)
   end
   local before = round.spent[number] or 0
   round.spent[number] = before + cost
-  if not self:apply(number, input.id, input.value, false) then round.spent[number] = before end
+  if not self:apply(number, input.id, input.value, false) then
+    round.spent[number] = before
+    -- A tap that did nothing says why, if the game can tell: rules.why(state, seat, id, value) -> text or nil
+    local ok, why = false, nil
+    if rules.why then ok, why = pcall(rules.why, round.state, number, input.id, input.value) end
+    if ok and type(why) == "string" then self:toast(number, why) end
+  end
 end
 
 function Dealer:handTick(time)
@@ -1233,28 +1318,40 @@ function Dealer:subScreen(number, st, screen)
     screen.buttons = { { id = "cancel", label = "CANCEL", color = "red" } }
     screen.approve = sub.who
   elseif sub.kind == "buyin" then
-    screen.lines = { { sub.topUp and "TOP UP" or "BUY IN", "gold", 1 }, { ui.group(sub.amount), "gold", 2 },
-      { ("Up to %s. Nothing is taken until a hand ends."):format(ui.group(sub.limit)), "mute" } }
+    local noun = sub.topUp and "top up" or "buy in"
+    screen.lines = { { sub.topUp and "TOP UP" or "BUY IN", "gold", 1 }, { ui.group(sub.amount), "gold", 2 } }
+    for _, line in ipairs(ui.allowance(sub.limit, sub.reason or "table limit", sub.amount, noun)) do screen.lines[#screen.lines + 1] = line end
+    screen.lines[#screen.lines + 1] = { "Nothing is taken until a hand ends.", "mute" }
+    local over = "Only " .. ui.group(math.max(0, sub.limit - sub.amount)) .. " more: " .. (sub.reason or "table limit")
     local tiles = {}
     for _, value in ipairs(self.plugin.chips or CHIPS) do
       if value <= sub.limit then
         tiles[#tiles + 1] = { id = "chip", value = value, label = ui.group(value), color = "accent", textColor = "ink",
-          disabled = sub.amount + value > sub.limit }
+          disabled = sub.amount + value > sub.limit, why = over }
       end
     end
     screen.tiles = tiles
     screen.buttons = {
       { id = "cancel", label = "CANCEL", color = "red" },
-      { id = "max", label = "MAX", color = "panel2" },
+      { id = "max", label = "MAX", color = "panel2", disabled = sub.amount >= sub.limit, why = "That is the most: " .. (sub.reason or "table limit") },
       { id = "clear", label = "CLEAR", color = "panel2" },
-      { id = "confirm", label = sub.topUp and "ADD" or "SIT", color = "win", textColor = "ink", disabled = sub.amount < sub.least },
+      { id = "confirm", label = sub.topUp and "ADD" or "SIT", color = "win", textColor = "ink", disabled = sub.amount < sub.least,
+        why = "The least is " .. ui.group(sub.least) },
     }
   elseif sub.kind == "stake" then
-    screen.lines = { { "NAME THE STAKE", "gold", 1 }, { "The other player takes it or leaves it. Nothing moves until the match ends.", "mute" } }
+    local multiple = self.plugin.stakeCover or 1
+    local top = 0
+    for _, value in ipairs(self.plugin.stakes) do
+      if value * multiple <= sub.cover then top = math.max(top, value) end
+    end
+    screen.lines = { { "NAME THE STAKE", "gold", 1 },
+      { "You can stake up to " .. ui.group(top) .. (multiple > 1 and (" (your balance covers " .. multiple .. "x the stake)") or ""), "gold" },
+      { "The other player takes it or leaves it. Nothing moves until the match ends.", "mute" } }
     local tiles = {}
     for _, value in ipairs(self.plugin.stakes) do
       tiles[#tiles + 1] = { id = "stake", value = value, label = ui.group(value), color = "accent", textColor = "ink",
-        sub = self.plugin.stakeNote and self.plugin.stakeNote(value) or nil, disabled = value * (self.plugin.stakeCover or 1) > sub.cover }
+        sub = self.plugin.stakeNote and self.plugin.stakeNote(value) or nil, disabled = value * multiple > sub.cover,
+        why = "Your balance: you need " .. ui.group(value * multiple) .. " for this stake" }
     end
     screen.tiles = tiles
     screen.buttons = { { id = "cancel", label = "CANCEL", color = "red" } }
@@ -1356,18 +1453,33 @@ function Dealer:lobbyScreen(number, seat, screen, book)
   end
   screen.tiles = tiles
   screen.lines = { { bet.ready and "BET IS IN" or "PLACE YOUR BET", "gold", 1 }, { ui.group(bet.total), "gold", spots and 1 or 2 } }
-  local room = self:betRoom(number)
-  local list = limits.chips(math.min(room + bet.total, plugin.maxBet or room + bet.total))
-  bet.chip = bet.chip or list[1]
+  -- What may be bet, always in view, and why the total stops where it does. Chips that would go over it are greyed and say so
+  local most, reason = self:betAllowance(number)
+  for _, line in ipairs(ui.allowance(most, reason, bet.total)) do screen.lines[#screen.lines + 1] = line end
+  local rest = most and math.max(0, most - bet.total)
+  local over = most and ("Only " .. ui.group(rest) .. " more: " .. reason) or "Checking your balance..."
+  local list = limits.chips(most or plugin.maxBet or 0)
+  while #list > 6 do table.remove(list, 1) end
+  if spots then list[#list + 1] = "max" end
+  local known = false
+  for _, value in ipairs(list) do known = known or value == bet.chip end
+  if not known then bet.chip = list[1] end
   local buttons = {}
   for _, value in ipairs(list) do
-    buttons[#buttons + 1] = { id = "chip", value = value, label = ui.group(value), color = bet.chip == value and "gold" or "accent",
-      textColor = "ink", disabled = not spots and value > room }
+    local on = bet.chip == value
+    local label = value == "max" and "MAX" or ui.group(value)
+    buttons[#buttons + 1] = { id = "chip", value = value, label = (on and spots) and ("[" .. label .. "]") or label,
+      color = on and spots and "gold" or "accent", textColor = "ink",
+      disabled = not rest or (value == "max" and rest < 1) or (value ~= "max" and value > rest), why = over }
   end
-  buttons[#buttons + 1] = { id = "clear", label = "CLEAR", color = "panel2" }
+  if not spots then
+    buttons[#buttons + 1] = { id = "max", label = "MAX", color = "panel2", disabled = not rest or rest < 1, why = over }
+  end
+  buttons[#buttons + 1] = { id = "clear", label = "CLEAR", color = "panel2", disabled = bet.total == 0 }
   buttons[#buttons + 1] = { id = "leave", label = "LEAVE", color = "red" }
   buttons[#buttons + 1] = { id = "rules", label = "RULES", color = "blue" }
-  buttons[#buttons + 1] = { id = "ready", label = "READY", color = "win", textColor = "ink", disabled = bet.total < plugin.minBet }
+  buttons[#buttons + 1] = { id = "ready", label = "READY", color = "win", textColor = "ink", disabled = bet.total < plugin.minBet,
+    why = "The least bet here is " .. ui.group(plugin.minBet) }
   screen.buttons = buttons
   if self.dealAt then
     screen.countdownText = "Betting closes in %ds"
@@ -1591,22 +1703,42 @@ function Dealer:lobbyInput(number, input)
     if self:readyCount() >= plugin.minSeats and self:canPlay(seat) then self:deal() end
   elseif plugin.kind == "house" then
     local bet = self:bet(number)
-    if id == "chip" and type(input.value) == "number" then
+    -- Nothing goes past what this seat may bet. A press that cannot add anything says why on the seat
+    local function refuse(onSpot)
+      local most, reason = self:betAllowance(number, onSpot)
+      self:toast(number, most and ("That is the most: " .. reason .. " " .. ui.group(most)) or "Checking your balance...")
+    end
+    if id == "chip" and (type(input.value) == "number" or (input.value == "max" and plugin.spots)) then
       if plugin.spots then
         bet.chip = input.value
       else
         local add = math.min(input.value, self:betRoom(number))
+        if add > 0 then
+          bet.total = bet.total + add
+          bet.ready = false
+        else
+          refuse()
+        end
+      end
+    elseif id == "max" and not plugin.spots then
+      local add = self:betRoom(number)
+      if add > 0 then
         bet.total = bet.total + add
         bet.ready = false
+      else
+        refuse()
       end
     elseif id == "spot" and bet.chip then
       local known = false
       for _, spot in ipairs(plugin.spots or {}) do known = known or spot.id == input.value end
-      local add = math.min(bet.chip, self:betRoom(number))
+      local room = known and self:betRoom(number, input.value) or 0
+      local add = bet.chip == "max" and room or math.min(bet.chip, room)
       if known and add > 0 then
         bet.spots[input.value] = (bet.spots[input.value] or 0) + add
         bet.total = bet.total + add
         bet.ready = false
+      elseif known then
+        refuse(input.value)
       end
     elseif id == "clear" then
       bet.total, bet.spots, bet.ready = 0, {}, false

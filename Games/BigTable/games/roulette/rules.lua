@@ -11,7 +11,8 @@ local wheel = require("games.roulette.wheel")
 
 local M = {}
 
-local CHIPS_SHOWN = 5   -- with UNDO, CLEAR, REPEAT, X2 and DONE that fills the two rows of small buttons
+local CHIPS_SHOWN = 5   -- and MAX: with UNDO, CLEAR, REPEAT, X2 and DONE, two rows of small buttons
+local MAX_CHIP = "max" -- lays all that is left of the seat's amount on the spot tapped
 local UNDO_DEPTH = 10   -- wagers kept for UNDO. The state goes in the journal at every press, so it stays short
 
 local function find(state, seat)
@@ -28,7 +29,12 @@ local function chipsFor(budget)
 end
 
 local function chipLabel(value)
+  if value == MAX_CHIP then return "MAX" end
   return value >= 1000 and (value / 1000 .. "K") or tostring(value)
+end
+
+local function group(n)
+  return (tostring(math.floor(n)):reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", ""))
 end
 
 local function isMode(value)
@@ -39,6 +45,7 @@ local function isMode(value)
 end
 
 local function isChip(player, value)
+  if value == MAX_CHIP then return true end
   for _, chip in ipairs(chipsFor(player.budget)) do
     if chip == value then return true end
   end
@@ -75,17 +82,26 @@ function M.actions(state, seat)
   local player = find(state, seat)
   if not player or player.done or state.over then return {} end
   local stake = wheel.stakeOf(player.spots)
+  local left = player.budget - stake
+  -- A chip bigger than what is left is greyed, and says so when tapped. The chip in hand is gold and in brackets
+  local over = left > 0 and ("Only " .. group(left) .. " left of your " .. group(player.budget)) or ("All of your " .. group(player.budget) .. " is down")
   local list = {}
-  for _, chip in ipairs(chipsFor(player.budget)) do
+  local chips = chipsFor(player.budget)
+  chips[#chips + 1] = MAX_CHIP
+  for _, chip in ipairs(chips) do
     local on = chip == player.chip
-    list[#list + 1] = { id = "chip", value = chip, label = chipLabel(chip), small = true,
-      color = on and "gold" or "blue", textColor = on and "ink" or "text" }
+    local label = chipLabel(chip)
+    list[#list + 1] = { id = "chip", value = chip, label = on and ("[" .. label .. "]") or label, small = true,
+      color = on and "gold" or "blue", textColor = on and "ink" or "text",
+      disabled = left < 1 or (chip ~= MAX_CHIP and chip > left), why = over }
   end
   list[#list + 1] = { id = "undo", label = "UNDO", color = "panel2", small = true, disabled = #player.undo == 0 }
   list[#list + 1] = { id = "clear", label = "CLEAR", color = "panel2", small = true, disabled = stake == 0 }
   list[#list + 1] = { id = "again", label = "REPEAT", color = "panel2", small = true, disabled = player.again == nil }
-  list[#list + 1] = { id = "double", label = "X2", color = "panel2", small = true, disabled = stake == 0 or stake * 2 > player.budget }
-  list[#list + 1] = { id = "done", label = "DONE", color = "win", textColor = "ink", small = true }
+  list[#list + 1] = { id = "double", label = "X2", color = "panel2", small = true, disabled = stake == 0 or stake * 2 > player.budget,
+    why = stake > 0 and ("X2 would be over your " .. group(player.budget)) or nil }
+  list[#list + 1] = { id = "done", label = "DONE", color = "win", textColor = "ink", small = true, disabled = stake == 0,
+    why = "Place a bet first: pick a chip, then tap the layout" }
   return list
 end
 
@@ -96,10 +112,11 @@ local function remember(player)
   while #undo > UNDO_DEPTH do table.remove(undo, 1) end
 end
 
---- The chip in hand on a spot, or what is left of the seat's money if that is less.
+--- The chip in hand on a spot, or what is left of the seat's money if that is less. MAX is all that is left.
 local function place(player, id)
   if not wheel.spot(id) then return false end
-  local amount = math.min(player.chip, player.budget - wheel.stakeOf(player.spots))
+  local left = player.budget - wheel.stakeOf(player.spots)
+  local amount = player.chip == MAX_CHIP and left or math.min(player.chip, left)
   if amount <= 0 then return false end
   remember(player)
   player.spots[id] = (player.spots[id] or 0) + amount
@@ -162,6 +179,16 @@ function M.act(state, seat, id, value, rng)
   local player = find(state, seat)
   if not player or player.done or not press(player, id, value) then return {} end
   return { { type = id == "spot" and "bet" or "seat", seat = seat } }
+end
+
+--- Why a seat's press did nothing, for the note on its screen. Only a tap on the layout needs one: the buttons say so themselves.
+function M.why(state, seat, id)
+  local player = find(state, seat)
+  if not player or player.done or state.over or id ~= "spot" then return nil end
+  if player.budget - wheel.stakeOf(player.spots) < 1 then
+    return "All of your " .. group(player.budget) .. " is down. UNDO or CLEAR to move it"
+  end
+  return nil
 end
 
 --- The clock closes betting: a seat's chips stay where they are. With no seat, the wheel spins.

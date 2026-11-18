@@ -865,59 +865,92 @@ function Table:statsPage()
   self:page("STATS", lines)
 end
 
+--- How often a bet screen reads the house's limit again, so what it offers follows the host's balance and the other tables.
+local LIMIT_EVERY_MS = 5000
+
+--- What the seated player may bet now, and why it stops there. See limits.allowed. per says how many of the bet the balance
+-- must hold at once (an Ante and the Play or Blind it needs), so the balance counts for that share.
+function Table:allowance(tableMax, per)
+  local balance = self.ctx.balance
+  if balance and per and per > 1 then balance = math.floor(balance / per) end
+  return limits.allowed(balance, tableMax)
+end
+
 --- The standard bet screen. Chips add up, nothing moves. Returns a bet, or nil when the player leaves.
+-- It always says what may be bet ("You can bet up to X", the smaller of the balance and the table limit, read again every few
+-- seconds), greys every chip that would go over it, and MAX is exactly that much.
 function Table:chooseBet(lastBet)
   local c, ctx = self.c, self.ctx
-  local scene = { name = "bet", bet = 0, deadline = now() + IDLE_BET_MS }
+  local scene = { name = "bet", bet = 0, deadline = now() + IDLE_BET_MS, limitAt = now() }
   local maxBet = self:maxBet()
-  local chips = limits.chips(maxBet)
   local cx = math.floor(c.w / 2)
 
+  local function allowed()
+    return self:allowance(maxBet)
+  end
+
   local function clamp(s)
-    local balance = ctx.balance or 0
-    s.bet = math.min(s.bet, maxBet, balance)
+    local most = allowed() or 0
+    s.bet = math.max(0, math.min(s.bet, most))
+  end
+
+  scene.debugState = function()
+    local most, reason = allowed()
+    return { bet = scene.bet, max = most or false, reason = reason, tableMax = maxBet }
   end
 
   function scene.tick(s)
-    local left = s.deadline - now()
+    local time = now()
+    local left = s.deadline - time
     if left <= 0 then s.finished = true end
     if left < WARN_MS then s.dirty = true end
+    if time - s.limitAt >= LIMIT_EVERY_MS then
+      s.limitAt = time
+      maxBet = self:maxBet()
+      clamp(s)
+      s.dirty = true
+    end
   end
 
   function scene.draw(s)
     feltBase(c)
     ui.bar(c, ctx)
+    local most, reason = allowed()
     c:bigCenter(cx, 12, "PLACE YOUR BET", C.text, 1)
     c:bigCenter(cx, 20, ui.group(s.bet), C.gold, 3)
-    c:textCenter(cx, 37, "Table limit " .. ui.group(maxBet), C.text)
+    for i, line in ipairs(ui.allowance(most, reason, s.bet)) do c:textCenter(cx, 37 + (i - 1) * 2, line[1], C[line[2]]) end
     s.buttons = ui.newButtons()
-    if maxBet < 1 then
-      c:textCenter(cx, 46, "The house cannot cover a bet right now.", C.orange)
-    else
+    if maxBet >= 1 then
+      local over = ui.overNote(most, reason)
       local specs = {}
-      for _, value in ipairs(chips) do
+      for _, value in ipairs(limits.chips(maxBet)) do
         local label = value >= 1000 and (value / 1000 .. "K") or tostring(value)
-        specs[#specs + 1] = { id = "chip", value = value, label = label, color = C.accent, textColor = C.ink }
+        specs[#specs + 1] = { id = "chip", value = value, label = label, color = C.accent, textColor = C.ink,
+          disabled = not most or s.bet + value > most, why = over }
       end
       ui.actionRow(c, s.buttons, specs, 43, 11)
       ui.actionRow(c, s.buttons, {
-        { id = "clear", label = "CLEAR", color = C.panel2 },
-        { id = "double", label = "X2", color = C.panel2, disabled = s.bet == 0 },
-        { id = "max", label = "MAX", color = C.panel2 },
-        { id = "repeat", label = "SAME", color = C.panel2, disabled = not lastBet },
+        { id = "clear", label = "CLEAR", color = C.panel2, disabled = s.bet == 0 },
+        { id = "double", label = "X2", color = C.panel2, disabled = s.bet == 0 or not most or s.bet >= most,
+          why = s.bet > 0 and over or nil },
+        { id = "max", label = "MAX", color = C.panel2, disabled = not most or most < 1 or s.bet == most,
+          why = most and most >= 1 and "That is already the most" or over },
+        { id = "repeat", label = "SAME", color = C.panel2, disabled = not lastBet or not most or most < 1 },
       }, 57, 9)
     end
-    if ctx.owedNotice then c:textCenter(cx, 40, ctx.owedNotice, C.orange) end
     local left = s.deadline - now()
     if left < WARN_MS then
-      c:textCenter(cx, 39, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
+      c:textCenter(cx, 41, "Leaving in " .. math.ceil(left / 1000) .. "s", C.orange)
+    elseif ctx.owedNotice then
+      c:textCenter(cx, 41, ctx.owedNotice, C.orange)
     end
     ui.actionBar(c, s.buttons, {
       { id = "leave", label = "LEAVE", color = C.red, small = true },
       { id = "rules", label = "RULES", color = C.blue, small = true },
       { id = "stats", label = "STATS", color = C.blue, small = true },
       { id = "card", label = "CARD", color = C.blue, small = true },
-      { id = "deal", label = self.game.dealLabel or "DEAL", color = C.win, textColor = C.ink, disabled = s.bet < 1 },
+      { id = "deal", label = self.game.dealLabel or "DEAL", color = C.win, textColor = C.ink, disabled = s.bet < 1,
+        why = "Pick a chip first" },
     })
   end
 
@@ -925,7 +958,9 @@ function Table:chooseBet(lastBet)
     s.deadline = now() + IDLE_BET_MS
     local hit = ui.hit(s.buttons or {}, x, y)
     if not hit then return end
-    if hit.id == "chip" then
+    if hit.id == "refused" then
+      self:toast(hit.why)
+    elseif hit.id == "chip" then
       s.bet = s.bet + hit.value
       audio.play(hit.value >= 100 and "chipBig" or "chip")
     elseif hit.id == "clear" then
@@ -935,7 +970,7 @@ function Table:chooseBet(lastBet)
       s.bet = s.bet * 2
       audio.play("chip")
     elseif hit.id == "max" then
-      s.bet = maxBet
+      s.bet = allowed() or 0
       audio.play("chipBig")
     elseif hit.id == "repeat" then
       s.bet = lastBet

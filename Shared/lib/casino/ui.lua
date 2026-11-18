@@ -57,7 +57,34 @@ function M.button(c, list, spec)
     c:textCenter(cx, y + math.floor(h / 2) - (spec.sub and 1 or 0), label, fg)
     if spec.sub then c:textCenter(cx, y + math.floor(h / 2) + 1, spec.sub, fg) end
   end
-  if not spec.disabled then list[#list + 1] = spec end
+  if not spec.disabled then
+    list[#list + 1] = spec
+  elseif spec.why then
+    -- A greyed button still answers a tap, with why it is greyed, so nobody taps it again and again wondering
+    list[#list + 1] = { id = "refused", why = spec.why, x = x, y = y, w = w, h = h }
+  end
+end
+
+--- What every bet screen says about how much may go down: what this player may bet now, and, once the total has reached that,
+-- why it stops there. max nil means the balance has not been read yet. Returns { text, colorName } lines, the first always there:
+-- a colour's name, as a group seat's screen carries it, so a table draws it with C[name].
+-- noun is what is bet ("bet", "buy in"), and total is what is down so far.
+function M.allowance(max, reason, total, noun)
+  noun = noun or "bet"
+  if max == nil then return { { "Checking your balance...", "mute" } } end
+  if max < 1 then
+    if reason == "your balance" then return { { "Your balance is too low to " .. noun .. " here", "orange" } } end
+    return { { "The house cannot cover a bet right now", "orange" } }
+  end
+  local lines = { { "You can " .. noun .. " up to " .. group(max), "gold" } }
+  if total and total >= max then lines[2] = { "That is the most: " .. reason, "orange" } end
+  return lines
+end
+
+--- The note for a chip or step that would go over what may be bet.
+function M.overNote(max, reason)
+  if max == nil then return "Checking your balance..." end
+  return "Over " .. group(max) .. ": " .. reason
 end
 
 --- The button under a touch, if any.

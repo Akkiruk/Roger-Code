@@ -33,13 +33,14 @@ local HINTS = {
   line = "Tap the line between two columns",
 }
 
+-- Each outside box says what it pays, as on the big table
 local EVEN_ROW = {
-  { id = "low", label = "1-18" },
-  { id = "even", label = "EVEN" },
-  { id = "red", label = "RED", bg = "red" },
-  { id = "black", label = "BLACK", bg = "ink" },
-  { id = "odd", label = "ODD" },
-  { id = "high", label = "19-36" },
+  { id = "low", label = "1-18 1:1" },
+  { id = "even", label = "EVEN 1:1" },
+  { id = "red", label = "RED 1:1", bg = "red" },
+  { id = "black", label = "BLACK 1:1", bg = "ink" },
+  { id = "odd", label = "ODD 1:1" },
+  { id = "high", label = "19-36 1:1" },
 }
 
 local function cellX(column)
@@ -265,7 +266,7 @@ function M.draw(c, top, opts)
   end
 
   for d = 1, 3 do
-    drawOutside(c, cellX(1) + (d - 1) * DOZEN_W, top + BOARD_H, DOZEN_W, "dozen:" .. d, ({ "1ST 12", "2ND 12", "3RD 12" })[d], C.panel, opts)
+    drawOutside(c, cellX(1) + (d - 1) * DOZEN_W, top + BOARD_H, DOZEN_W, "dozen:" .. d, ({ "1ST 12  pays 2:1", "2ND 12  pays 2:1", "3RD 12  pays 2:1" })[d], C.panel, opts)
   end
   local x = cellX(1)
   for _, part in ipairs(EVEN_ROW) do
