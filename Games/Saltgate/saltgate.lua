@@ -128,6 +128,9 @@ local function run(bench)
     return
   end
   local settings = loadSettings()
+  -- the v2 engine (step 0 of the expansion), behind a flag until the new city is ready
+  -- (checked before loading any of it, so the live game never depends on the new code)
+  if fs.exists("saltgate_v2.flag") or settings.engine == "v2" then return require("sg.core.app").main(args) end
   local screen = term.current()
   render.applyPalette(screen)
   screen.setBackgroundColour(colours.black)

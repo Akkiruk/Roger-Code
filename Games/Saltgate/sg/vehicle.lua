@@ -108,28 +108,37 @@ function M.update(car, input, dt, theCity)
   if theCity then
     local cx, cz, hit, hx, hz = city.collide(theCity, nx, nz, spec.radius * 0.8)
     if hit then
-      -- speed into the wall is lost, the rest scrapes along
-      local into = -(fx * hx + fz * hz) * v
-      if into > 0 then
-        impact = into
-        car.v = v * (1 - util.clamp(into / (abs(v) + 0.001), 0, 1) * 0.85)
-        if into > 12 then
-          car.v = -car.v * 0.25
-        elseif into < abs(v) * 0.75 then
-          -- a glancing hit: turn along the wall instead of grinding into it
-          local tx, tz = -hz, hx
-          if tx * fx + tz * fz < 0 then tx, tz = -tx, -tz end
-          if v < 0 then tx, tz = -tx, -tz end
-          car.h = util.turnToward(car.h, math.atan2(tz, tx), 0.35)
-        end
-      end
-      car.side = car.side * 0.3
+      impact = M.hitWall(car, hx, hz)
       nx, nz = cx, cz
     end
   end
   car.x, car.z = nx, nz
-  if impact > 8 then M.damage(car, (impact - 8) * 1.6) end
   if car.hitTimer > 0 then car.hitTimer = car.hitTimer - dt end
+  return impact
+end
+
+--- The car ran into a wall whose push-out direction is (hx, hz): speed into it is lost, the rest scrapes along, a
+-- glancing hit turns it along the wall, and only hard hits hurt. Returns the speed into the wall (0 if moving away).
+function M.hitWall(car, hx, hz)
+  local v = car.v
+  local fx, fz = cos(car.h), sin(car.h)
+  local impact = 0
+  local into = -(fx * hx + fz * hz) * v
+  if into > 0 then
+    impact = into
+    car.v = v * (1 - util.clamp(into / (abs(v) + 0.001), 0, 1) * 0.85)
+    if into > 12 then
+      car.v = -car.v * 0.25
+    elseif into < abs(v) * 0.75 then
+      -- a glancing hit: turn along the wall instead of grinding into it
+      local tx, tz = -hz, hx
+      if tx * fx + tz * fz < 0 then tx, tz = -tx, -tz end
+      if v < 0 then tx, tz = -tx, -tz end
+      car.h = util.turnToward(car.h, math.atan2(tz, tx), 0.35)
+    end
+  end
+  car.side = car.side * 0.3
+  if impact > 8 then M.damage(car, (impact - 8) * 1.6) end
   return impact
 end
 

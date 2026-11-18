@@ -230,7 +230,9 @@ function R:camera(g, mode, dt)
   self.frame:setCamera(camX, camY, camZ, 0, deg(yaw), pitch)
 end
 
-function R:paintSky()
+--- The sky above the horizon; below it, below (default the asphalt grey: in the old city the roads are this background;
+-- the streamed world passes the sea blue).
+function R:paintSky(below)
   local cam = self.cam
   local _, hy = self.frame:map3dTo2d(cam.x + cos(cam.yaw) * 2000, cam.y, cam.z + sin(cam.yaw) * 2000)
   local horizon = floor(hy)
@@ -242,7 +244,7 @@ function R:paintSky()
       local f = y / math.max(1, horizon)
       if f < 0.3 then c = C.purple elseif f < 0.62 then c = C.magenta elseif y < horizon - 2 then c = C.pink else c = C.orange end
     else
-      c = C.gray -- asphalt: the roads are this background
+      c = below or C.gray
     end
     local row = rows[y]
     for x = 1, w do row[x] = c end
