@@ -7,12 +7,12 @@
     "description": "Eight casino games for up to eight players, each at their own screen. Install it on every computer: a 6x6 wall becomes the dealer and a smaller one a seat.",
     "source_root": "Games/BigTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.9"
+    "version": "1.0.10"
   },
   "build": {
-    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
-    "generated_at": "2026-11-18T17:37:48Z",
-    "package_hash": "e870e9c2b01bd2358a3717ed365ca004bdd2e9d2ce5ba73f419aaf79a02cdeb9"
+    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
+    "generated_at": "2026-11-18T19:02:06Z",
+    "package_hash": "dd38d1cee14586c914ab738e39863b32563b532c694aa737c4f7c8c91047d264"
   },
   "install": {
     "preserve": [],
@@ -80,7 +80,7 @@
       {
         "repo_path": "Games/PokerTable/pokertable_app.lua",
         "install_path": "pokertable_app.lua",
-        "sha256": "cadc0b24e036e94ab6e88d2b17dc12962081b366aae0f2ad71c93d901ac96cdf"
+        "sha256": "3a451d6f532600c4ac0bc75182266034d9c8f59d7e006f45eccf9c62b1eee7cf"
       },
       {
         "repo_path": "Games/BigTable/vhcc_lockdown.txt",
@@ -110,7 +110,7 @@
       {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
         "install_path": "lib/casino/group/dealer.lua",
-        "sha256": "b359de02012c5bd5488b7d4035de9775d97a65582641c4349055cd70570426a9"
+        "sha256": "a9dc6aa1efb0db81d22594f932a7a77e57b8985729ab63bc8db4fc9ac0ba6712"
       },
       {
         "repo_path": "Shared/lib/casino/group/link.lua",

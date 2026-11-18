@@ -7,12 +7,12 @@
     "description": "Free games for up to eight players, each at their own screen: Catan and UNO. Install it on every computer: a 6x6 wall becomes the table and a smaller one a seat. No tokens, ever.",
     "source_root": "Games/GameNight",
     "entrypoint": "startup.lua",
-    "version": "1.0.6"
+    "version": "1.0.7"
   },
   "build": {
-    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
-    "generated_at": "2026-11-18T17:37:48Z",
-    "package_hash": "6194de6d6790a02e4d7a15440703386cca9a57a4fb98098f9327d712d93fb237"
+    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
+    "generated_at": "2026-11-18T19:02:06Z",
+    "package_hash": "0fec9e2507a8c80e7877882fe84c95a465499833a7393d792e9edc13876edd4a"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
         "install_path": "lib/casino/group/dealer.lua",
-        "sha256": "b359de02012c5bd5488b7d4035de9775d97a65582641c4349055cd70570426a9"
+        "sha256": "a9dc6aa1efb0db81d22594f932a7a77e57b8985729ab63bc8db4fc9ac0ba6712"
       },
       {
         "repo_path": "Shared/lib/casino/group/free.lua",

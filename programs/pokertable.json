@@ -7,12 +7,12 @@
     "description": "Five-card draw for 2 to 6 players on one wall, player against player, with side pots and no rake.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.47"
+    "version": "1.0.48"
   },
   "build": {
-    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
-    "generated_at": "2026-11-18T17:37:48Z",
-    "package_hash": "3d639c11ba2af84a0aa8b6cd72d19776f18ec5cc11e176a8f140ae35348d12f3"
+    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
+    "generated_at": "2026-11-18T19:02:06Z",
+    "package_hash": "97959eb9acdae7756cc7593d69b8c358761a4d52733500424f4ab0f80a2dd0e1"
   },
   "install": {
     "preserve": [],
@@ -140,7 +140,7 @@
       {
         "repo_path": "Games/PokerTable/pokertable_app.lua",
         "install_path": "pokertable_app.lua",
-        "sha256": "cadc0b24e036e94ab6e88d2b17dc12962081b366aae0f2ad71c93d901ac96cdf"
+        "sha256": "3a451d6f532600c4ac0bc75182266034d9c8f59d7e006f45eccf9c62b1eee7cf"
       },
       {
         "repo_path": "Shared/lib/casino/chat.lua",

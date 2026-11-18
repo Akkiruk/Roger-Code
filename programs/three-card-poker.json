@@ -7,12 +7,12 @@
     "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
     "source_root": "Games/ThreeCardPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.17"
+    "version": "1.0.18"
   },
   "build": {
-    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
-    "generated_at": "2026-11-18T17:37:48Z",
-    "package_hash": "2e746a63f8dbd87ee70291909327571e3cd1d5d2df20b0fc8103631ae4af6349"
+    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
+    "generated_at": "2026-11-18T19:02:06Z",
+    "package_hash": "91ec4dc365429f64b83314ead76742e9155796064f00e08225ee9a9816844965"
   },
   "install": {
     "preserve": [],
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "43b0e2ea66e4ba999e2de082bfcf7387dd555f055fd0667b6b7e1e27f20e2fcb"
+        "sha256": "6f18dc531ff277ae2eafe35867a9a89a62c1785d1b1cf894a5a7632c79de87a0"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -185,7 +185,7 @@
       {
         "repo_path": "Shared/lib/casino/badges.lua",
         "install_path": "lib/casino/badges.lua",
-        "sha256": "245eee1952dc962d197c2ba36b7434644094a4135acb9988fed7dcc7cc99b30a"
+        "sha256": "5e8e00f5bbc8490310a505aa97cd9afc20a0219ec6e54eee54163a157c721334"
       },
       {
         "repo_path": "Shared/lib/casino/bit32_shim.lua",
