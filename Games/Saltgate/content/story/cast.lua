@@ -1,0 +1,25 @@
+-- Who talks in Saltgate. The key is the name shown over their lines; colour is a CC colour name. A mission script may
+-- only use these names (the tests check), so a typo shows up as a failed test and not as a stranger in the box.
+return {
+  ["Wren"] = { full = "Wren Calloway", colour = "lightBlue", role = "getaway driver" },
+  ["Mama Juno"] = { full = "Junoria Bell", colour = "yellow", role = "noodle queen of Old Saltgate" },
+  ["Rusty"] = { full = "Rusty Mott", colour = "orange", role = "owner of the chop yard" },
+  ["Tam"] = { full = "Tamsin Pike", colour = "cyan", role = "mechanic and voice in your ear" },
+  ["Ferris"] = { full = "Ferris Quill", colour = "pink", role = "host of Radio Lantern" },
+  ["Sable"] = { full = "Sable Quinn", colour = "purple", role = "the driver who got away" },
+  ["Harrow"] = { full = "Lt. Dov Harrow", colour = "lightGray", role = "Harbor Patrol" },
+  ["Vane"] = { full = "Commissioner Vane", colour = "red", role = "head of the Harbor Authority" },
+  ["Aurelian"] = { full = "Aurelian Gilt", colour = "yellow", role = "the elder Gilt" },
+  ["Cass"] = { full = "Cassius Gilt", colour = "orange", role = "the younger Gilt" },
+  ["Captain Rook"] = { full = "Bart Rook", colour = "green", role = "skipper of the ferry Tern" },
+  ["Pip"] = { full = "Pip Bell", colour = "lime", role = "Juno's grand-nephew, 12" },
+  ["Ferry Cook"] = { full = "Dill", colour = "white", role = "cook on the night ferry" },
+  ["Hobb"] = { full = "Hobb Marsh", colour = "brown", role = "the Gilts' accountant" },
+  ["Guard"] = { full = "a guard", colour = "gray", role = "somebody's employee" },
+  ["Warden"] = { full = "an Authority warden", colour = "gray", role = "somebody's employee" },
+  ["Radio"] = { full = "the radio", colour = "lightGray", role = "a voice from a speaker" },
+  ["Dispatch"] = { full = "Patrol dispatch", colour = "lightGray", role = "a voice on the Patrol band" },
+  ["Courier"] = { full = "a Gilt courier", colour = "gray", role = "carries things for the Gilts" },
+  ["Crowd"] = { full = "Old Saltgate", colour = "white", role = "everybody" },
+  [""] = { full = "", colour = "lightGray", role = "narration" },
+}
