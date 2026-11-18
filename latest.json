@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-18T07:06:50Z",
+  "generated_at": "2026-11-18T08:06:31Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "db5975e3fc3566b8103ff4acebf51c877d0532dd",
+    "commit": "d12523e77d86eec46dfa9837d9ec938f73064c0c",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -152,9 +152,9 @@
       "name": "Gear Shop",
       "category": "Utilities",
       "description": "The walk-in gear shop: check in at the door, take gear from the display chests, pay your tab on the way out. Also buys gear. Install on the shop computer and on every node that holds its chests and monitors.",
-      "version": "1.0.3",
-      "commit": "db5975e3fc3566b8103ff4acebf51c877d0532dd",
-      "package_hash": "59d3c56afeae38c8a1649174b47d5e7ea33dc6743fccbf69b3fb4bff73abcf15",
+      "version": "1.0.4",
+      "commit": "d12523e77d86eec46dfa9837d9ec938f73064c0c",
+      "package_hash": "bc4f53c76260394cacbf0e4245e6955de0c0fb482220f5caf7b6c935157f124e",
       "spec_path": "programs/gearshop.json"
     },
     "hilo": {
