@@ -194,9 +194,10 @@ function M.drawPhone(ctx, host, idx, args)
   local x0 = 21
   local width = w - x0 - 1
   put(t, x0, 2, text.clip(c.name, width), speakerColour(idx, c.name), "black")
-  put(t, x0, 3, text.clip(c.blurb or "", width), "lightGray")
+  local blurb = text.wrap(c.blurb or "", width)
+  for i = 1, math.min(2, #blurb) do put(t, x0, 2 + i, blurb[i], "lightGray") end
   if args.mode == "call" then
-    local y = 5
+    local y = 6
     for _, l in ipairs(args.lines or {}) do
       put(t, x0, y, l[1] .. ":", speakerColour(idx, l[1]))
       y = y + 1
@@ -209,7 +210,7 @@ function M.drawPhone(ctx, host, idx, args)
     return
   end
   local thread = phoneLib.thread(host.story, c.id)
-  local y = 5
+  local y = 6
   local first = math.max(1, #thread - 3)
   for i = first, #thread do
     for _, row in ipairs(text.wrap(thread[i].text, width)) do
@@ -218,7 +219,7 @@ function M.drawPhone(ctx, host, idx, args)
     end
     y = y + 1
   end
-  if #thread == 0 then put(t, x0, 5, "No texts.", "gray") end
+  if #thread == 0 then put(t, x0, 6, "No texts.", "gray") end
   put(t, x0, h - 1, "ENTER call   W/S contacts", "lightGray")
 end
 

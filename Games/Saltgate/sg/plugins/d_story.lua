@@ -32,6 +32,14 @@ local function patchCamera(view)
   if not view or view.d_patched or type(view.camera) ~= "function" then return end
   local orig = view.camera
   view.d_patched = true
+  -- no minimap over a cutscene
+  local origMap = view.minimap
+  if type(origMap) == "function" then
+    view.minimap = function(self, ...)
+      if self.override then return end
+      return origMap(self, ...)
+    end
+  end
   view.camera = function(self, ctx, dt)
     orig(self, ctx, dt)
     local o = self.override
@@ -57,6 +65,7 @@ function M.init(ctx)
     onSave = function() end,
   })
   ctx.story = { host = host, world = world, idx = idx }
+  M.ctx = ctx -- a handle for scripted tests
   ctx.story.target = function()
     local info = host:objectiveInfo()
     if info and info.target ~= nil then
