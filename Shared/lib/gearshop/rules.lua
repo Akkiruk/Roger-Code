@@ -23,6 +23,8 @@ M.DEFAULTS = {
   highRarities = { "OMEGA" },
   topLevel = 100,           -- from this level only legendary pieces are bought
   sellTypes = { "Gear" },   -- the vaultData.itemType values the shop puts on display
+  chargeAsTaken = true,     -- a piece is paid for as it is taken, and a tab on the next tap or at check-out, whenever the
+                            -- server lets the shop charge the player. Off: pieces only go on the tab, paid with PAY
   stationsPerShopper = 3,   -- display stations one shopper may hold at once: tapping one more frees the one they used
                             -- longest ago. 0 is no limit. Check-in fills none; a station fills when its shopper taps it
   stationIdleMinutes = 5,   -- a station whose shopper has not tapped it or taken from it this long is emptied and freed
@@ -201,6 +203,28 @@ function M.buysText(cfg)
   local top = cfg.topLevel or M.DEFAULTS.topLevel
   return words(cfg.acceptRarities or M.DEFAULTS.acceptRarities) .. "; above level " .. high .. " "
     .. words(cfg.highRarities or M.DEFAULTS.highRarities) .. "; at " .. top .. " Legendary only"
+end
+
+--- What the shop buys as one rule a line, for the sell screen: { "Epic, Omega, Legendary", "Above level 70: Omega,
+-- Legendary", "Level 100 and up: Legendary only", "Identified gear only" }.
+function M.buysLines(cfg)
+  cfg = cfg or M.DEFAULTS
+  local function words(list)
+    local out = {}
+    for _, rarity in ipairs(list or {}) do
+      if rarity ~= "LEGENDARY" then out[#out + 1] = rarity:sub(1, 1) .. rarity:sub(2):lower() end
+    end
+    out[#out + 1] = "Legendary"
+    return table.concat(out, ", ")
+  end
+  local high = cfg.highLevel or M.DEFAULTS.highLevel
+  local top = cfg.topLevel or M.DEFAULTS.topLevel
+  return {
+    words(cfg.acceptRarities or M.DEFAULTS.acceptRarities),
+    "Above level " .. high .. ": " .. words(cfg.highRarities or M.DEFAULTS.highRarities),
+    "Level " .. top .. " and up: Legendary only",
+    "Identified gear only",
+  }
 end
 
 --- What one accepted piece is worth in a sale for tokens, in thousandths of a token.

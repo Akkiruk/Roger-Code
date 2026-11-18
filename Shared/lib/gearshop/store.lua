@@ -93,9 +93,14 @@ function M.newState()
     payment = nil,    -- a tab's tokens on their way into the owed book: { id, name, tokens }
     collecting = nil, -- tokens being taken from a player: { name, owed }, what the book said before, so what moved is counted once
     paying = nil,     -- tokens being paid to a player: { name, owed }, the same the other way
+    paid = {},        -- name -> { { key, price, label, credit, tokens }, ... }: pieces paid for this visit (charged as taken
+                      -- or by PAY). One put back while they are checked in is refunded: credit to credit, tokens back.
+    refunds = {},     -- { { id, name, tokens }, ... }: tokens on their way into the owed book for a player (a piece put
+                      -- back, or store credit put against what they owe), each booked once under "gs-ref-<id>"
     returnsBy = {},   -- key -> who left that refused piece in the returns chest ("?" when nobody could be seen)
     moving = nil,     -- refused gear on its way: { kind = "refuse"|"donate", from, to, keys = { key = n }, by }
-    stats = { donated = 0, sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0 },
+    stats = { donated = 0, sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0,
+      refunded = 0 },
   }
 end
 

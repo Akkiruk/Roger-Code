@@ -45,8 +45,20 @@ local function show(modem)
   end
 end
 
+--- Blank every monitor this node lends: whatever was on it (the installer's "UPDATED / Restarting..." screen, an older
+-- program) must not linger. The shop draws on the ones it uses; one with no job yet it marks as not set up.
+local function clearMonitors()
+  for _, name in ipairs(peripheral.getNames()) do
+    if not name:match("^%d+:") and peripheral.hasType(name, "monitor") then
+      pcall(peripheral.call, name, "setBackgroundColor", colors.black)
+      pcall(peripheral.call, name, "clear")
+    end
+  end
+end
+
 function M.run()
   if not os.getComputerLabel() then pcall(os.setComputerLabel, "Gear Shop node " .. os.getComputerID()) end
+  clearMonitors()
   local modem = enderModem()
   if modem then
     pcall(rednet.open, modem)

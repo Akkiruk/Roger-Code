@@ -1469,18 +1469,18 @@ test("gearshop: what the shop buys is said from the limits, the way accepts() de
     "Rare, Epic and Legendary; above level 50 Legendary; at 90 Legendary only")
 end)
 
--- ---------------------------------------------------------------- the how-it-works screen
+-- ---------------------------------------------------------------- the how-it-works screen (help)
 
---- The how-it-works screen drawn into a pretend monitor of w x h. Returns the screen and its text as one line.
-local function drawInfo(w, h, limits, setup)
+--- The help screen drawn into a pretend monitor of w x h, looking at `view`. Returns the screen and its text as one line.
+local function drawInfo(w, h, limits, setup, view)
   local hadColors = rawget(_G, "colors")
   if not hadColors then rawset(_G, "colors", { black = 32768 }) end
   local ui = require("lib.gearshop.ui")
   local s = ui.screen({ call = function(_, method)
     if method == "getSize" then return true, w, h end
     return true
-  end }, "31:monitor_0", 0.5)
-  ui.info(s, { cfg = limits, setup = setup })
+  end }, "31:monitor_0", 1)
+  ui.info(s, { cfg = limits, setup = setup, noteFor = function() return nil end }, view or {})
   if not hadColors then rawset(_G, "colors", nil) end
   return s, (table.concat(s.text, " "):gsub("%s+", " "))
 end
@@ -1500,41 +1500,95 @@ local function liveLimits(extra)
   return out
 end
 
-test("gearshop info: on the owner's 3x3 monitor every section fits, with what a shopper needs to know", function()
-  local s, text = drawInfo(57, 38, liveLimits(), ownersSetup())
-  for _, heading in ipairs({ "BROWSE", "FIRST VISIT", "YOUR TAB", "PRICES", "PAY", "SELL", "REFUSED", "SEARCH", "FINISHED?" }) do
-    truthy(text:find(heading, 1, true), "the " .. heading .. " section is on it")
+--- Every page of a topic as one line of text, read by stepping NEXT.
+local function topicText(w, h, limits, setup, id)
+  local all = {}
+  for sub = 1, 10 do
+    local s, text = drawInfo(w, h, limits, setup, { page = id, sub = sub })
+    all[#all + 1] = text
+    local more = false
+    for _, b in ipairs(s.buttons) do
+      if b.id == "next" then more = true end
+    end
+    if not more then break end
   end
-  for _, fact in ipairs({ "APPROVE in chat once", "1 token per level", "level 50 = 50", "Tap PAY on any station",
-    "tap STORE CREDIT", "(no tokens)", "Epic, Omega and Legendary", "returns chest", "DONATE", "FIND",
-    "walk 12 blocks away", "leave it 5 min", "Hold up to 3", "Tap any station to start" }) do
-    truthy(text:find(fact, 1, true), "it says " .. fact)
+  return table.concat(all, " ")
+end
+
+test("gearshop help: the home screen on the owner's 4x4 is a big button per topic", function()
+  local s = drawInfo(39, 26, liveLimits(), ownersSetup())
+  local titles = {}
+  for _, b in ipairs(s.buttons) do
+    eq(b.id, "topic")
+    truthy(b.h >= 2, b.label .. " is big enough to tap (" .. b.h .. " rows)")
+    truthy(b.x >= 1 and b.y >= 1 and b.x + b.w - 1 <= 39 and b.y + b.h - 1 <= 26, b.label .. " fits on the screen")
+    titles[#titles + 1] = b.label
   end
-  eq(#s.buttons, 0, "nothing on it is a button")
-  -- a blank row between the sections: they read as separate blocks
-  local blank = 0
-  for y = 5, 37 do
-    if s.text[y]:match("^%s*$") then blank = blank + 1 end
-  end
-  truthy(blank >= 8, "gaps between the sections (" .. blank .. " blank rows)")
+  eq(table.concat(titles, ","), "HOW TO BUY,PAYING & YOUR TAB,SELLING,WHAT WE BUY,PRICES,SEARCH KIOSK,RETURNS & DONATE,"
+    .. "STATIONS & TIMEOUTS,QUESTIONS")
+  -- the same on a 3x3 at scale 0.5
+  local small = drawInfo(57, 38, liveLimits(), ownersSetup())
+  eq(#small.buttons, 9, "every topic on a 3x3 too")
 end)
 
-test("gearshop info: it follows the limits and the setup", function()
-  local _, tokens = drawInfo(57, 38, liveLimits({ sellForTokens = true, pricePerLevel = 2 }), ownersSetup())
-  truthy(tokens:find("TOKENS or STORE CREDIT", 1, true), "with tokens on, both ways to be paid")
-  eq(tokens:find("(no tokens)", 1, true), nil, "and no word of no tokens")
-  truthy(tokens:find("2 tokens per level", 1, true), "the price per level")
-  truthy(tokens:find("level 50 = 100", 1, true), "and what it makes a level 50 piece")
+test("gearshop help: each topic says what the shop really does, from its limits and setup", function()
+  local pay = topicText(39, 26, liveLimits(), ownersSetup(), "pay")
+  for _, fact in ipairs({ "charged the moment you take", "store credit first", "you get it back", "next tap on any screen",
+    "PAY on any station" }) do
+    truthy(pay:find(fact, 1, true), "paying says " .. fact)
+  end
+  truthy(topicText(39, 26, liveLimits(), ownersSetup(), "buys"):find("Epic, Omega and Legendary", 1, true), "what is bought")
+  truthy(topicText(39, 26, liveLimits(), ownersSetup(), "prices"):find("level 50 is 50", 1, true), "prices")
+  local stations = topicText(39, 26, liveLimits({ stationLeaveDistance = 12, stationIdleMinutes = 5 }), ownersSetup(), "stations")
+  for _, fact in ipairs({ "walk 12 blocks away", "for 5 min", "hold 3 at once" }) do
+    truthy(stations:find(fact, 1, true), "stations says " .. fact)
+  end
+  local sell = topicText(39, 26, liveLimits(), ownersSetup(), "sell")
+  truthy(sell:find("No tokens are paid for gear", 1, true), "selling is store credit only")
+  local tokens = topicText(39, 26, liveLimits({ sellForTokens = true }), ownersSetup(), "sell")
+  truthy(tokens:find("TOKENS or STORE CREDIT", 1, true), "with tokens on, both")
+  -- a shop with no kiosk and no returns or junk chest has no such topics
   local bare = ownersSetup()
-  bare.returns, bare.junk, bare.kiosk = nil, nil, nil
-  local _, text = drawInfo(57, 38, liveLimits({ stationLeaveDistance = 0, stationIdleMinutes = 0 }), bare)
-  eq(text:find("REFUSED", 1, true), nil, "no returns or junk chest: no word of them")
-  eq(text:find("SEARCH", 1, true), nil, "no kiosk: no word of it")
-  eq(text:find("frees if", 1, true), nil, "stations that never free themselves do not say so")
-  -- a small monitor shows what fits, from the top, without an error
-  local small, smallText = drawInfo(36, 10, liveLimits(), ownersSetup())
-  truthy(smallText:find("BROWSE", 1, true), "the first section on a 2x1")
-  eq(#small.text, 10)
+  bare.kiosk, bare.returns, bare.junk = nil, nil, nil
+  local home = drawInfo(39, 26, liveLimits(), bare)
+  eq(#home.buttons, 7, "two topics fewer")
+end)
+
+test("gearshop help: a long topic pages with NEXT and BACK, and HOME is always there", function()
+  local s = drawInfo(36, 10, liveLimits(), ownersSetup(), { page = "pay", sub = 1 })
+  local ids = {}
+  for _, b in ipairs(s.buttons) do ids[#ids + 1] = b.id end
+  eq(table.concat(ids, ","), "home,next", "page 1 of several on a small screen")
+  s = drawInfo(36, 10, liveLimits(), ownersSetup(), { page = "pay", sub = 2 })
+  ids = {}
+  for _, b in ipairs(s.buttons) do ids[#ids + 1] = b.id end
+  truthy(table.concat(ids, ","):find("home,prev", 1, true), "page 2 can go back")
+end)
+
+test("gearshop help: the questions open their answers, and a minute untouched goes home", function()
+  local s, text = drawInfo(39, 26, liveLimits(), ownersSetup(), { page = "faq" })
+  local questions = 0
+  for _, b in ipairs(s.buttons) do
+    if b.id == "question" then questions = questions + 1 end
+  end
+  truthy(questions >= 4, "the questions are buttons (" .. questions .. ")")
+  truthy(text:find("Why was my gear refused?", 1, true))
+  local _, answer = drawInfo(39, 26, liveLimits(), ownersSetup(), { page = "faq", q = 1 })
+  truthy(answer:find("Epic, Omega and Legendary", 1, true), "the answer says what is bought")
+  truthy(answer:find("returns chest", 1, true), "and where refused gear is")
+  -- taps only move the view
+  local ui = require("lib.gearshop.ui")
+  local view = {}
+  ui.infoTouch(view, { id = "topic", value = "faq" })
+  ui.infoTouch(view, { id = "question", value = 2 })
+  eq(view.page, "faq") eq(view.q, 2)
+  ui.infoTouch(view, { id = "home" })
+  eq(view.page, nil)
+  -- an old tap: back home
+  if not os.epoch then os.epoch = function() return os.time() * 1000 end end
+  local old = { page = "pay", sub = 2, at = os.epoch("utc") - 61000 }
+  drawInfo(39, 26, liveLimits(), ownersSetup(), old)
+  eq(old.page, nil, "home after a minute")
 end)
 
 -- ---------------------------------------------------------------- Sophisticated storage given a job is never vault

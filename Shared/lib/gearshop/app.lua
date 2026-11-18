@@ -159,7 +159,20 @@ local function runShop()
       screens[name] = nil
       return nil
     end
-    if not screens[name] then screens[name] = ui.screen(io, name, cfg.textScale) end
+    if not screens[name] then
+      local role = shop.monitorRole[name]
+      if role and role.role == "info" then
+        -- the help screen reads best at scale 1 on its 4x4 monitor (39 columns); a smaller one goes to 0.5
+        local s = ui.screen(io, name, 1)
+        if s.w > 0 and s.w < ui.INFO_MIN_WIDTH then
+          io.call(name, "setTextScale", 0.5)
+          s:measure()
+        end
+        screens[name] = s
+      else
+        screens[name] = ui.screen(io, name, cfg.textScale)
+      end
+    end
     if screens[name].w == 0 and not screens[name]:measure() then return nil end
     return screens[name]
   end
@@ -167,9 +180,29 @@ local function runShop()
     views[name] = views[name] or {}
     return views[name]
   end
+  -- the monitors the shop can reach that have no job: worked out again when peripherals come or go
+  local spare = nil
+  local function spareMonitors()
+    if not spare then
+      spare = {}
+      for _, name in ipairs(io.names()) do
+        if not shop.monitorRole[name] and io.hasType(name, "monitor") then spare[#spare + 1] = name end
+      end
+    end
+    return spare
+  end
 
   local function drawMonitors()
-    local dump = debug and { ready = shop.ready, status = shop.status, version = shop.version, boot = boots, monitors = {} } or nil
+    local dump = debug and { ready = shop.ready, status = shop.status, version = shop.version, boot = boots, monitors = {}, spare = {} } or nil
+    -- a monitor with no job says so, so nothing older (the installer's update screen) lingers on it
+    for _, name in ipairs(spareMonitors()) do
+      local s = screenOf(name)
+      if s then
+        local ok, err = pcall(ui.idle, s)
+        if not ok then store.log("drawing " .. name .. ": " .. tostring(err)) end
+        if dump then dump.spare[name] = s.text end
+      end
+    end
     for name, role in pairs(shop.monitorRole) do
       local s = screenOf(name)
       if s then
@@ -183,7 +216,7 @@ local function runShop()
           elseif role.role == "sell" then
             ui.sell(s, shop)
           elseif role.role == "info" then
-            ui.info(s, shop)
+            ui.info(s, shop, viewOf(name))
           end
         end)
         if not ok then store.log("drawing " .. name .. ": " .. tostring(err)) end
@@ -199,6 +232,7 @@ local function runShop()
       dump.stock = shop.ready and shop.stock:summary() or nil
       dump.trouble, dump.linkTrouble, dump.watches = shop.trouble, shop.linkTrouble, shop.watches
       dump.sale, dump.payment, dump.payout = state.sale, state.payment, state.payout
+      dump.paid, dump.refunds, dump.collecting, dump.paying = state.paid, state.refunds, state.collecting, state.paying
       local ok, text = pcall(textutils.serializeJSON, dump)
       if ok then
         local h = fs.open(DEBUG_FILE .. ".tmp", "w")
@@ -890,6 +924,17 @@ local function runShop()
     local s = screens[monitor]
     if not role or not s then return end
     local button = s:hit(x, y)
+    -- Any tap on a shop screen (a button or not, the how-it-works screen too) by someone who owes the shop pays it first:
+    -- jobs run in order, so this goes before what the tap asked for. PAY does it itself.
+    if who and not (button and button.id == "pay") then
+      post("collect:" .. who, function() shop:collectOnTap(who, monitor) end)
+    end
+    if role.role == "info" then
+      -- help pages turn here, at once: nothing on it waits for the server
+      ui.infoTouch(viewOf(monitor), button)
+      os.queueEvent("gs_draw")
+      return
+    end
     if not button then return end
     local function player() return who or wallet.livePlayer() end
     if role.role == "door" then
@@ -947,6 +992,9 @@ local function runShop()
   end
 
   local function screen()
+    -- listening from the start: a node that restarts says so, and its monitors are drawn again (see rednet_message)
+    local modem = shopLib.localEnderModem(io)
+    if modem then pcall(rednet.open, modem) end
     local tick = os.startTimer(TICK)
     local ticked, balanceAt = os.clock(), -math.huge
     local toucher
@@ -976,16 +1024,23 @@ local function runShop()
         chestChanged(e[2])
       elseif event == "peripheral" then
         local name = e[2]
-        screens[name] = nil
+        screens[name], spare = nil, nil
         if shop.ready then post("attach:" .. name, function() shop:attached(name) end) end
         admin.dirty = true
       elseif event == "peripheral_detach" then
         local name = e[2]
-        screens[name] = nil
+        screens[name], spare = nil, nil
         post("detach:" .. name, function() shop:detached(name) end)
         admin.dirty = true
       elseif event == "monitor_resize" then
-        if screens[e[2]] then screens[e[2]]:measure() end
+        -- a real change of size: made again, so its text scale is picked again (the help screen) and it is drawn in
+        -- full. Setting a text scale can raise this event too; then the size is what was measured and nothing happens.
+        local s = screens[e[2]]
+        if s then
+          local w, h = s.w, s.h
+          s:measure()
+          if s.w ~= w or s.h ~= h then screens[e[2]] = nil end
+        end
       elseif event == "char" then
         local ok, err = pcall(adminChar, e[2])
         if not ok then store.log("key: " .. tostring(err)) end
@@ -994,8 +1049,17 @@ local function runShop()
         if not ok then store.log("key: " .. tostring(err)) end
       elseif event == "rednet_message" and e[4] == M.PROTOCOL then
         local message = e[3]
-        if type(message) == "table" and message.kind == "node" and type(message.id) == "number" and admin.page == 5 then
-          addNode(math.floor(message.id))
+        if type(message) == "table" and message.kind == "node" and type(message.id) == "number" then
+          local id = math.floor(message.id)
+          if admin.page == 5 then addNode(id) end
+          -- a node says this when it starts, after blanking its monitors: what is on them is no longer what was sent,
+          -- so each is drawn again in full
+          local prefix = id .. ":"
+          for name in pairs(screens) do
+            if name:sub(1, #prefix) == prefix then screens[name] = nil end
+          end
+          spare = nil
+          os.queueEvent("gs_draw")
         end
       end
       if os.clock() - ticked > TICK * 4 then

@@ -575,6 +575,55 @@ function Shop:untab(key)
   return nil
 end
 
+--- Whether a piece with this key was paid for this visit, and could be refunded if it comes back.
+function Shop:paidFor(key)
+  for _, lines in pairs(self.state.paid) do
+    for _, line in ipairs(lines) do
+      if line.key == key then return true end
+    end
+  end
+  return false
+end
+
+--- A piece paid for this visit came back: its store credit goes back to credit and its tokens back to the player. The
+-- tokens are written down as a refund (state.refunds) in the caller's next save, the same write that takes the line off
+-- `paid`, and bookPending puts them in the owed book once (tag gs-ref-<id>); settle then pays them, host to player, which
+-- needs no touch. Returns the line and the name, or nil. refunded: a set of names, to settle afterwards.
+function Shop:unpay(key, refunded)
+  local st = self.state
+  for name, lines in pairs(st.paid) do
+    for i = #lines, 1, -1 do
+      local line = lines[i]
+      if line.key == key then
+        table.remove(lines, i)
+        if #lines == 0 then st.paid[name] = nil end
+        local credit, tokens = line.credit or 0, line.tokens or 0
+        if credit > 0 then
+          st.credit[name] = (st.credit[name] or 0) + credit * rules.MILLI
+          st.stats.creditSpent = st.stats.creditSpent - credit
+        end
+        if tokens > 0 then
+          st.refunds[#st.refunds + 1] = { id = self:nextId(), name = name, tokens = tokens }
+          st.stats.refunded = (st.stats.refunded or 0) + tokens
+        end
+        st.stats.sold = math.max(0, st.stats.sold - 1)
+        if refunded then refunded[name] = true end
+        return line, name
+      end
+    end
+  end
+  return nil
+end
+
+--- Pay out what refunds put in the book, to each player named. A payout needs only their approval, no touch; what
+-- cannot go now (offline, the owner's floor) stays owed and goes the next time.
+function Shop:settleRefunds(names)
+  if not self:bookPending() then return end
+  for name in pairs(names) do
+    if journal.owedTo(name) > 0 then self:settle(name) end
+  end
+end
+
 function Shop:tabbed(key)
   for _, tab in pairs(self.state.tabs) do
     for _, line in ipairs(tab) do
@@ -635,20 +684,32 @@ function Shop:reconcile(d)
     end
     changed = true
   end
+  local refunded = {}
   for key, held in pairs(have) do
     for _ = 1, held - (ds.shown[key] or 0) do
+      -- put back: off the tab if it is still on one, or refunded if it was paid for this visit
       local line, name = self:untab(key)
+      local back = nil
+      if not line then
+        line, name = self:unpay(key, refunded)
+        back = line and ((line.tokens or 0) + (line.credit or 0)) or nil
+      end
       if not line then break end
-      -- put back: it is on display here again, at the price it was charged
+      -- it is on display here again, at the price it was charged
       ds.shown[key] = (ds.shown[key] or 0) + 1
       if line.price ~= self:priceOf(d, key) then ds.prices[key] = line.price end
       if name == ds.shopper then ds.used = now() end
       self:seen(name)
-      self:note(d.monitor, name .. ": " .. tostring(line.label) .. " put back (tab " .. self:owes(name) .. ")")
+      self:note(d.monitor, name .. ": " .. tostring(line.label) .. " put back"
+        .. (back and (", " .. back .. " back") or (" (tab " .. self:owes(name) .. ")")))
       changed = true
     end
   end
   if changed then self:save("reconcile") end
+  if next(refunded) then self:settleRefunds(refunded) end
+  -- charged as taken: what went on the tab is paid now, if the server lets the shop charge them (they approved this
+  -- computer; an older vhcctweaks also wants a recent touch). Whatever it will not take stays owed, paid on their next tap.
+  if who and #gone > 0 then self:autoPay(who, d.monitor) end
   return true
 end
 
@@ -844,7 +905,11 @@ function Shop:checkOut(name, why, monitor)
   for _, d in ipairs(self.all) do
     if self:ds(d).shopper == name then self:release(d) end
   end
+  -- what they still owe is charged on the way out, if the server lets the shop (see autoPay); else it is kept for next time
+  self:autoPay(name, monitor)
   st.shoppers[name] = nil
+  -- the visit is over: a piece paid for now is theirs, and one brought back later is not refunded
+  st.paid[name] = nil
   self.missing[name] = nil
   self:save("checkout")
   store.log(name .. " checked out (" .. tostring(why) .. ")")
@@ -883,6 +948,18 @@ function Shop:bookPending()
       self:save("payout-booked")
     else
       fine = false
+    end
+  end
+  -- refunds (a paid piece put back, store credit put against what is owed): each in the book once, then off the list
+  while st.refunds[1] do
+    local r = st.refunds[1]
+    if journal.book(r.name, r.tokens, "gs-ref-" .. r.id) then
+      shiftCounts(st, r.name, r.tokens)
+      table.remove(st.refunds, 1)
+      self:save("refund-booked")
+    else
+      fine = false
+      break
     end
   end
   return fine
@@ -962,27 +1039,61 @@ function Shop:collect(name)
   return -moved, -left, err
 end
 
-function Shop:pay(name, monitor)
+--- Store credit goes first, also against tokens a player already owes (a charge the server would not take, or a tab
+-- from before): that much credit is spent and the same is written down as a refund in one save, so the owed book gets it
+-- once. The lines it paid for change from tokens to credit, so a piece put back later gives credit back, not tokens.
+local function creditAgainstDebt(self, name)
+  local st = self.state
+  local debt = math.max(0, -journal.owedTo(name))
+  local have = math.floor((st.credit[name] or 0) / rules.MILLI)
+  local use = math.min(debt, have)
+  if use <= 0 then return 0 end
+  local left = st.credit[name] - use * rules.MILLI
+  st.credit[name] = left > 0 and left or nil
+  st.stats.creditSpent = st.stats.creditSpent + use
+  st.refunds[#st.refunds + 1] = { id = self:nextId(), name = name, tokens = use }
+  local shift = use
+  local lines = st.paid[name] or {}
+  for i = #lines, 1, -1 do
+    if shift <= 0 then break end
+    local line = lines[i]
+    local n = math.min(line.tokens or 0, shift)
+    line.tokens, line.credit, shift = (line.tokens or 0) - n, (line.credit or 0) + n, shift - n
+  end
+  self:save("credit-begin")
+  self:bookPending()
+  return use
+end
+
+--- Pay a player's tab: store credit first, then tokens (taken now, or owed in the book if they will not move).
+-- opts.quiet: charged as taken, so a refusal says nothing (the take's own line on the screen already shows the tab).
+-- Returns moved, left, err: tokens taken, tokens still owed, and why not.
+function Shop:pay(name, monitor, opts)
+  opts = opts or {}
   if not name then
     self:note(monitor, "Could not tell who tapped. Tap again.")
-    return
+    return 0, 0
   end
-  self:seen(name, monitor)
-  -- a piece taken a moment ago is on the tab before it is added up
+  if not opts.quiet then self:seen(name, monitor) end
+  -- a piece taken a moment ago is on the tab before it is added up (and is not charged again from in here)
+  local was = self.inPay
+  self.inPay = true
   for _, d in ipairs(self.all) do
     if self:ds(d).phase == "open" then self:reconcile(d) end
   end
+  self.inPay = was
   if not self:bookPending() then
     self:note(monitor, "The shop cannot write its book. Tell the owner.")
-    return
+    return 0, 0
   end
   local st = self.state
   local lines = st.tabs[name]
   local total = rules.tabTotal(lines)
-  local credit = 0
+  local credit, payTokens = 0, 0
   if total > 0 then
     local tokens
     credit, tokens = rules.splitPayment(total, st.credit[name])
+    payTokens = tokens
     local id = self:nextId()
     st.tabs[name] = nil
     if credit > 0 then
@@ -990,14 +1101,59 @@ function Shop:pay(name, monitor)
       st.credit[name] = left > 0 and left or nil
       st.stats.creditSpent = st.stats.creditSpent + credit
     end
+    -- each line paid is remembered for this visit, with how much of it was credit, so one put back is refunded right
+    local paid = st.paid[name] or {}
+    local creditLeft = credit
+    for _, line in ipairs(lines) do
+      local c = math.min(creditLeft, line.price or 0)
+      creditLeft = creditLeft - c
+      paid[#paid + 1] = { key = line.key, price = line.price, label = line.label, credit = c, tokens = (line.price or 0) - c }
+    end
+    st.paid[name] = paid
     st.stats.sold = st.stats.sold + #lines
     if tokens > 0 then st.payment = { id = id, name = name, tokens = tokens } end
     self:save("pay-begin")
     self:bookPending()
   end
+  local tabCredit, tabLines = credit, (total > 0 and lines or nil)
+  credit = credit + creditAgainstDebt(self, name)
   local moved, left, err = self:collect(name)
+  -- Paid without a PAY tap (as taken, on a tap, at check-out) and the server took nothing: the lines go back on the tab
+  -- as they were, credit and all, rather than sitting as tokens owed. One save puts them back and writes the tokens down
+  -- as a refund against the payment just booked (once, tag gs-ref-<id>), so a reboot anywhere here changes nothing owed.
+  if opts.auto and tabLines and payTokens > 0 and moved == 0 and not st.payment then
+    local mine = st.paid[name] or {}
+    local tokensBack = 0
+    for _ = 1, #tabLines do
+      local line = table.remove(mine)
+      if line then tokensBack = tokensBack + (line.tokens or 0) end
+    end
+    st.paid[name] = #mine > 0 and mine or nil
+    local tab = st.tabs[name] or {}
+    for i, line in ipairs(tabLines) do table.insert(tab, i, line) end
+    st.tabs[name] = tab
+    if tabCredit > 0 then
+      st.credit[name] = (st.credit[name] or 0) + tabCredit * rules.MILLI
+      st.stats.creditSpent = st.stats.creditSpent - tabCredit
+      credit = credit - tabCredit
+    end
+    st.stats.sold = math.max(0, st.stats.sold - #tabLines)
+    if tokensBack > 0 then st.refunds[#st.refunds + 1] = { id = self:nextId(), name = name, tokens = tokensBack } end
+    self:save("pay-undone")
+    self:bookPending()
+    left = self:owes(name)
+  end
   local paidOut = 0
   if journal.owedTo(name) > 0 then paidOut = self:settle(name) end
+  if opts.quiet then
+    if moved > 0 or credit > 0 then
+      local parts = {}
+      if credit > 0 then parts[#parts + 1] = credit .. " credit" end
+      if moved > 0 then parts[#parts + 1] = tokensText(moved) end
+      self:note(monitor, name .. " paid " .. table.concat(parts, " and ") .. (left > 0 and (", owes " .. left) or "") .. ".")
+    end
+    return moved, left, err
+  end
   local parts = {}
   if credit > 0 then parts[#parts + 1] = credit .. " from store credit" end
   if moved > 0 then parts[#parts + 1] = tokensText(moved) end
@@ -1026,6 +1182,30 @@ function Shop:pay(name, monitor)
     end
   end
   self:note(monitor, text, 15000)
+  return moved, left, err
+end
+
+--- Charge what a player owes now, without a PAY tap: after a take (quiet), on any tap of a shop screen, and when they
+-- are checked out. vhcctweaks takes it if they approved this computer (an older build also wants a touch in the last
+-- interactionStaleSeconds); if it will not, it stays owed and the next try collects it. Never asks anything new: an
+-- unapproved player at the computer is only shown the one-time APPROVE, as before.
+function Shop:autoPay(name, monitor, quiet)
+  if quiet == nil then quiet = true end
+  if self.inPay or not self.ready or not name or self.cfg.chargeAsTaken == false then return 0, 0 end
+  if self:owes(name) <= 0 and not (self.state.tabs[name] and #self.state.tabs[name] > 0) then return 0, 0 end
+  -- no economy (a server without ccvault, or it is down): the tab stays a tab
+  if not wallet.available() then return 0, 0 end
+  self.inPay = true
+  local ok, moved, left, err = pcall(self.pay, self, name, monitor, { quiet = quiet, auto = true })
+  self.inPay = false
+  if not ok then error(moved, 0) end
+  return moved, left, err
+end
+
+--- A tap on any shop screen by a player who owes something pays it first, before what the tap asked for.
+function Shop:collectOnTap(name, monitor)
+  if not name or not self.ready or self:owes(name) <= 0 then return end
+  self:autoPay(name, monitor, false)
 end
 
 -- ---------------------------------------------------------------- display chest buttons
@@ -1268,6 +1448,20 @@ function Shop:finishMove()
   return true, went
 end
 
+--- The sell screen's list of what happened to the last batch, one entry a piece: { label, level, grade, ok, why }. Pieces
+-- that come within half a minute of each other, from the same seller, are one batch. Shown only, never saved.
+local BATCH_MS = 30000
+function Shop:addToBatch(by, items)
+  local b = self.lastBatch
+  if not b or now() - b.at > BATCH_MS or (by and b.by and b.by ~= by) then
+    b = { items = {} }
+    self.lastBatch = b
+  end
+  b.at, b.by = now(), by or b.by
+  for _, item in ipairs(items) do b.items[#b.items + 1] = item end
+  self:changed()
+end
+
 --- Refused gear in the sell chest goes to the returns chest at once, if there is one. Its reasons stay on the sell screen.
 function Shop:refuse(view)
   local returns = self.setup.returns
@@ -1278,6 +1472,11 @@ function Shop:refuse(view)
   local done = self:beginMove("refuse", self.setup.sell.chest, returns.chest, slots, by)
   if done then
     self.refused = { entries = view.rejected, by = by, at = now() }
+    local items = {}
+    for _, e in ipairs(view.rejected) do
+      items[#items + 1] = { label = e.label, level = e.level, grade = e.grade, ok = false, why = e.why }
+    end
+    self:addToBatch(by, items)
   end
   return done
 end
@@ -1358,12 +1557,12 @@ function Shop:sellScan(again)
   for slot, detail in pairs(details) do
     local key = rules.key(detail)
     local piece = self.stock.known[key]
-    if self:tabbed(key) then
+    if self:tabbed(key) or self:paidFor(key) then
       view.returns[#view.returns + 1] = { slot = slot, key = key, label = piece.label }
     else
       local yes, why = rules.accepts(piece, self.cfg)
       if yes then
-        view.accepted[#view.accepted + 1] = { slot = slot, key = key, label = piece.label }
+        view.accepted[#view.accepted + 1] = { slot = slot, key = key, label = piece.label, level = piece.level, grade = rules.grade(piece) }
       else
         view.rejected[#view.rejected + 1] = { slot = slot, key = key, label = piece.label, why = why,
           level = piece.level, grade = piece.kind and not piece.unidentified and rules.grade(piece) or nil }
@@ -1472,16 +1671,28 @@ function Shop:finishSale(movedKeys, monitor)
   end
   local left = {}
   for key, n in pairs(movedKeys) do left[key] = n end
-  local back = 0
+  local back, refunded = 0, {}
   for key, n in pairs(sale.returns) do
     for _ = 1, math.min(n, left[key] or 0) do
-      -- a piece off a tab that was handed in here is a piece put back, not a sale
+      -- a piece off a tab (or paid for this visit: refunded) that was handed in here is a piece put back, not a sale.
+      -- The refund is written in the sale-booked save below, with the rest of the sale.
       left[key] = left[key] - 1
-      if self:untab(key) then back = back + 1 end
+      if self:untab(key) or self:unpay(key, refunded) then back = back + 1 end
     end
   end
   local count = 0
-  for key, n in pairs(sale.keys) do count = count + math.min(n, left[key] or 0) end
+  local bought = {}
+  local each = sale.mode == "credit" and ("+" .. rules.showMilli(rules.creditMilli(1, self.cfg)) .. " credit")
+    or ("+" .. rules.showMilli(rules.pieceMilli(self.cfg)) .. " tok")
+  for key, n in pairs(sale.keys) do
+    local got = math.min(n, left[key] or 0)
+    count = count + got
+    local piece = self.stock.known[key]
+    for _ = 1, got do
+      bought[#bought + 1] = { label = piece and piece.label or "Gear", level = piece and piece.level,
+        grade = piece and rules.grade(piece), ok = true, why = each }
+    end
+  end
   local text
   if sale.mode == "credit" then
     local milli = rules.creditMilli(count, self.cfg)
@@ -1495,10 +1706,13 @@ function Shop:finishSale(movedKeys, monitor)
     text = sale.seller .. " sold " .. count .. " for " .. tokensText(tokens)
       .. (carry > 0 and (" (" .. rules.showMilli(carry) .. " carried over)") or "") .. "."
   end
-  if back > 0 then text = text .. " " .. back .. " put back off the tab." end
+  if back > 0 then text = text .. " " .. back .. " put back." end
   st.stats.bought = st.stats.bought + count
   st.sale = nil
   self:save("sale-booked")
+  if #bought > 0 then self:addToBatch(sale.seller, bought) end
+  refunded[sale.seller] = nil   -- the seller is settled just below
+  if next(refunded) then self:settleRefunds(refunded) end
   local moved, why = self:settle(sale.seller)
   local owed = journal.owedTo(sale.seller)
   if sale.mode ~= "credit" and owed > 0 then
@@ -1655,6 +1869,10 @@ function Shop:upkeep()
     self:link()
     self:discover()
     self:bookPending()
+    -- a refund booked but not yet paid (a reboot came between): a shopper still here gets it, no touch needed
+    for name in pairs(self.state.shoppers) do
+      if journal.owedTo(name) > 0 then self:settle(name) end
+    end
     if self.state.sale then self:finishSale() end
     if self.state.moving then self:finishMove() end
     for _, d in ipairs(self.all) do
