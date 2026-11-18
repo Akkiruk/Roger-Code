@@ -4,15 +4,15 @@
     "key": "gearshop",
     "name": "Gear Shop",
     "category": "Utilities",
-    "description": "The walk-in gear shop: check in at the door, take gear from the display chests, pay your tab on the way out. Also buys gear. Install on the shop computer and on every node that holds its chests and monitors.",
+    "description": "The walk-in gear shop: tap a station to browse a gear type, take what you want onto your tab, PAY at any station. Also buys gear for store credit. Install on the shop computer and on every node that holds its chests and monitors.",
     "source_root": "Apps/GearShop",
     "entrypoint": "startup.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "d12523e77d86eec46dfa9837d9ec938f73064c0c",
-    "generated_at": "2026-11-18T08:06:31Z",
-    "package_hash": "bc4f53c76260394cacbf0e4245e6955de0c0fb482220f5caf7b6c935157f124e"
+    "commit": "d9f1aec344e3f9f0788e1b4cc318179245b91e3e",
+    "generated_at": "2026-11-18T15:10:04Z",
+    "package_hash": "9f31bddc67d4c88e4d72a6c4400054a75a8f257c8a143448f03fa5d78a2ec515"
   },
   "install": {
     "preserve": [],
@@ -25,12 +25,12 @@
       {
         "repo_path": "Shared/lib/gearshop/ui.lua",
         "install_path": "lib/gearshop/ui.lua",
-        "sha256": "4e1c928368a9b10c5716ebf32691710308dc571ed11c1b3a67f3a09a616f5af2"
+        "sha256": "b0dd22585d2d18a3b04f32ba53495dbdf273cb8a0b50d9c488e86fe4bfaa0d5e"
       },
       {
         "repo_path": "Shared/lib/gearshop/store.lua",
         "install_path": "lib/gearshop/store.lua",
-        "sha256": "ed7a333dea80a03eeb9367fb8f4e8a405623bfd242bc7432b864276c9d3de449"
+        "sha256": "f57d458082e2c6118b846d08a71ccaac45c52771f59ddef617152403735e0cff"
       },
       {
         "repo_path": "Shared/lib/gearshop/stock.lua",
@@ -40,12 +40,12 @@
       {
         "repo_path": "Shared/lib/gearshop/shop.lua",
         "install_path": "lib/gearshop/shop.lua",
-        "sha256": "d92f9774166b47dfa029bf464ae4f8f90abbfb592800cb0ac7cf40367637f2c3"
+        "sha256": "ea2e5dc6bc3d154a1cacf249aba28ded8f17f3e93dd07a31af94e851a4a3a0e9"
       },
       {
         "repo_path": "Shared/lib/gearshop/rules.lua",
         "install_path": "lib/gearshop/rules.lua",
-        "sha256": "a0dcba10e1fa0e72c113cc1a284ff5e18dc8b7517c3a7414e21af93a485ae9d6"
+        "sha256": "1d92b825584851f77b61f0f56ec56541ae38a2b495b2c5e91ea23170b53bf9ce"
       },
       {
         "repo_path": "Shared/lib/gearshop/node.lua",
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/gearshop/app.lua",
         "install_path": "lib/gearshop/app.lua",
-        "sha256": "598c4a8c97d42bab5250f834abc1cf4aab2b316bd539b769adb6124d1e33086a"
+        "sha256": "11d1a6b0e712b552b4a03891fd7b4c140f19a2ce5519087e7d4ac41af5b78229"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -85,7 +85,7 @@
       {
         "repo_path": "Apps/GearShop/startup.lua",
         "install_path": "gearshop_startup.lua",
-        "sha256": "046bdb22554b5ce6dc022bc5a23f6ef11bde1973410a1af230a783784222582b"
+        "sha256": "e9ca1686c7e2542dadbbefae7b3f976864217f73c8e9487048738b0842b00d43"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
