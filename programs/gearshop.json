@@ -7,12 +7,12 @@
     "description": "The walk-in gear shop: check in at the door, take gear from the display chests, pay your tab on the way out. Also buys gear. Install on the shop computer and on every node that holds its chests and monitors.",
     "source_root": "Apps/GearShop",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "0b8766bcd9b21557a7b24a0c8fb72e4e54dc61eb",
-    "generated_at": "2026-11-17T22:03:05Z",
-    "package_hash": "bc5c3048ee16f78ef5bfa3ce4e150b77ca3a14ac40b1e80bec806deb208d9c6d"
+    "commit": "15422e0a030114332df95dc2de25dc7714680ec0",
+    "generated_at": "2026-11-18T01:20:12Z",
+    "package_hash": "4e424e2a91af5752e5ce18f58db0e2da4ff431d3ed797d2ded7d182e5bc5dec9"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Shared/lib/gearshop/ui.lua",
         "install_path": "lib/gearshop/ui.lua",
-        "sha256": "5582ac4a7cafd8a7eb158de3d69653dba57bb9fd622bf0e1a7e2f7557567dbc7"
+        "sha256": "b28273502ada9a3a69eb59718e412feed816b9fc362e81dd72a0d8fae4e7b206"
       },
       {
         "repo_path": "Shared/lib/gearshop/store.lua",
@@ -40,12 +40,12 @@
       {
         "repo_path": "Shared/lib/gearshop/shop.lua",
         "install_path": "lib/gearshop/shop.lua",
-        "sha256": "e788dd64a275d827118dc00d14c53929938b1627e8b7080693937e8c74abfd73"
+        "sha256": "8abd108ae33237b00f18dcc82797c6d3e83aa7afc4605220e6f6e81b29c2d835"
       },
       {
         "repo_path": "Shared/lib/gearshop/rules.lua",
         "install_path": "lib/gearshop/rules.lua",
-        "sha256": "cc3a31e52e394438fec2bef639249b1bc44dc6c8648f40aa418e9fbd1bf66ce3"
+        "sha256": "b709c2778cb85ea3230a8de75837e65140c8cd0dcafb5b01ff96efacb4179382"
       },
       {
         "repo_path": "Shared/lib/gearshop/node.lua",
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/gearshop/app.lua",
         "install_path": "lib/gearshop/app.lua",
-        "sha256": "3efe32778f74dc9a283d5a0a6a4a2ecd72b1c563a5adebd3e154aae9b33a5816"
+        "sha256": "241ee873929c6d8ec338b1a4ace346b56f4605767cc528ec68bdeeb8298df556"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
