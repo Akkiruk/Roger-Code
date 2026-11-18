@@ -170,55 +170,69 @@ local function plainStep(mine, theirs, from, to)
   return a, b
 end
 
---- Every whole play of the dice: lists of "from>to:die". A play stops when nothing else can move or the game is won.
-local function plays(mine, theirs, left, sofar, out, total)
-  local moved, seen = false, {}
-  if mine.off < 15 then
-    for index, die in ipairs(left) do
-      if not seen[die] then
-        seen[die] = true
-        local rest = {}
-        for position_, other in ipairs(left) do
-          if position_ ~= index then rest[#rest + 1] = other end
-        end
-        for _, hop in ipairs(plainSteps(mine, theirs, die)) do
-          moved = true
-          local a, b = plainStep(mine, theirs, hop[1], hop[2])
-          local path = {}
-          for at, item in ipairs(sofar) do path[at] = item end
-          path[#path + 1] = { hop[1], hop[2], die }
-          plays(a, b, rest, path, out, total)
-        end
+--- A position and the dice still to play, as text, so the search below never works one out twice. Doubles reach the same
+-- position by many orders, and without this a whole game of them takes minutes.
+local function positionKey(mine, theirs, left)
+  local dice = {}
+  for index, die in ipairs(left) do dice[index] = die end
+  table.sort(dice)
+  return table.concat(mine.points, ",") .. "|" .. mine.bar .. "|" .. mine.off .. "|" .. table.concat(theirs.points, ",") .. "|"
+    .. theirs.bar .. "|" .. table.concat(dice, ",")
+end
+
+--- The most dice any whole play from here uses, trying every order of every die. A play stops when nothing else can move or the
+-- game is won, and winning with dice left over counts as using them all.
+local function deepest(mine, theirs, left, used, total, memo)
+  if mine.off >= 15 then return total end
+  local key = positionKey(mine, theirs, left)
+  if memo[key] then return memo[key] end
+  local best, seen = used, {}
+  for index, die in ipairs(left) do
+    if not seen[die] then
+      seen[die] = true
+      local rest = {}
+      for position_, other in ipairs(left) do
+        if position_ ~= index then rest[#rest + 1] = other end
+      end
+      for _, hop in ipairs(plainSteps(mine, theirs, die)) do
+        local a, b = plainStep(mine, theirs, hop[1], hop[2])
+        best = math.max(best, deepest(a, b, rest, used + 1, total, memo))
       end
     end
   end
-  if not moved then
-    -- Winning with dice left over counts as a full play
-    out[#out + 1] = { path = sofar, used = mine.off >= 15 and total or #sofar }
-  end
+  memo[key] = best
+  return best
 end
 
 --- The first moves of every play that uses as many dice as can be used, with the higher die if only one can be.
 local function oracle(state)
   local mine, theirs = state.players[1], state.players[2]
   if mine.seat ~= state.turn then mine, theirs = theirs, mine end
-  local out = {}
-  plays(cloneSide(mine), cloneSide(theirs), state.left, {}, out, #state.left)
-  local best = 0
-  for _, entry in ipairs(out) do best = math.max(best, entry.used) end
-  local high = 0
-  if best == 1 and #state.left == 2 and state.left[1] ~= state.left[2] then
-    for _, entry in ipairs(out) do high = math.max(high, entry.path[1][3]) end
-  end
-  local seen, list = {}, {}
-  for _, entry in ipairs(out) do
-    local first = entry.path[1]
-    if entry.used == best and first and first[3] >= high then
-      local text = first[1] .. ">" .. first[2] .. ":" .. first[3]
-      if not seen[text] then
-        seen[text] = true
-        list[#list + 1] = text
+  mine, theirs = cloneSide(mine), cloneSide(theirs)
+  local left, total, memo = state.left, #state.left, {}
+  local firsts, best, high, seen = {}, 0, 0, {}
+  for index, die in ipairs(left) do
+    if not seen[die] then
+      seen[die] = true
+      local rest = {}
+      for position_, other in ipairs(left) do
+        if position_ ~= index then rest[#rest + 1] = other end
       end
+      for _, hop in ipairs(plainSteps(mine, theirs, die)) do
+        local a, b = plainStep(mine, theirs, hop[1], hop[2])
+        local used = deepest(a, b, rest, 1, total, memo)
+        firsts[#firsts + 1] = { text = hop[1] .. ">" .. hop[2] .. ":" .. die, used = used, die = die }
+        best = math.max(best, used)
+        high = math.max(high, die)
+      end
+    end
+  end
+  if not (best == 1 and total == 2 and left[1] ~= left[2]) then high = 0 end
+  local shown, list = {}, {}
+  for _, first in ipairs(firsts) do
+    if first.used == best and first.die >= high and not shown[first.text] then
+      shown[first.text] = true
+      list[#list + 1] = first.text
     end
   end
   table.sort(list)

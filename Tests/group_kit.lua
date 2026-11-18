@@ -145,7 +145,7 @@ function kit.playRound(plugin, opts)
     steps = steps + 1
     if steps > limit then error("the round never ended", 0) end
     -- A long round (a whole board game) must still let CC breathe
-    if steps % 100 == 0 then testing.breathe() end
+    testing.breathe() -- cheap: it only yields when half a second has gone by
     -- A reboot lands anywhere: a state must come back whole
     state = kit.plain(state, "state")
     if opts.check then opts.check(state, entries) end
@@ -230,7 +230,7 @@ function kit.fuzz(plugin, opts)
     if not good then error("round " .. round .. ": " .. tostring(err), 2) end
     if plugin.rules.finish then plugin.rules.finish(state, keep) end
     kit.plain(keep, "keep")
-    if round % 50 == 0 then testing.breathe() end
+    testing.breathe()
   end
 end
 

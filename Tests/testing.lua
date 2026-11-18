@@ -3,11 +3,19 @@
 
 local M = { passed = 0, failed = 0 }
 
---- Yield now and then under CC, whose computers stop programs that never yield.
+--- Yield now and then under CC, whose computers stop programs that never yield (after about 7 seconds). A yield costs a whole
+-- round trip through the event queue, so it only happens once half a second has passed since the last one: tests call this every
+-- few steps, and yielding each time made a long fuzz spend most of its time waiting on the queue.
+local BREATHE_MS = 500
+local lastBreath = nil
+
 function M.breathe()
   if rawget(_G, "os") and os.queueEvent and os.pullEvent then
+    local time = os.epoch and os.epoch("utc") or nil
+    if time and lastBreath and time - lastBreath < BREATHE_MS then return end
     os.queueEvent("breathe")
     os.pullEvent("breathe")
+    lastBreath = os.epoch("utc")
   end
 end
 
@@ -66,7 +74,7 @@ function M.simulate(rules, rounds, wager, play, seed, stakeOf)
     total = total + rules.net(state)
     staked = staked + (stakeOf and stakeOf(wager) or wager)
     rules.finish(state, keep)
-    if i % 500 == 0 then M.breathe() end
+    M.breathe()
   end
   return (staked + total) / staked
 end

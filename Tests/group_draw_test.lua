@@ -413,6 +413,7 @@ test("each seat is told how it went, in a line that fits", function()
     local line = rules.result(state, nil)
     truthy(#line.title <= 18, "title too long: " .. line.title)
     truthy(#line.detail <= 112, "detail too long: " .. line.detail)
+    testing.breathe() -- 300 six-seat hands take longer than a computer may go without yielding
   end
 end)
 
