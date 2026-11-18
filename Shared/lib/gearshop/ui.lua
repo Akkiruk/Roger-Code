@@ -214,7 +214,7 @@ function M.door(s, shop)
     for name in pairs(shop.state.shoppers) do names[#names + 1] = name end
     table.sort(names)
     if #names == 0 then
-      y = y + s:wrap(y, 3, "Tap CHECK IN, take what you like from the chests, tap PAY on your way out.", "8")
+      y = y + s:wrap(y, 3, "Tap any station to start shopping. PAY here or at any station.", "8")
     end
     for _, name in ipairs(names) do
       if y < buttonsTop - 3 then
@@ -289,17 +289,39 @@ function M.station(s, shop, d, view)
   s:bar(1, "b")
   local owner = ds.shopper and shop.state.shoppers[ds.shopper] and ds.shopper
   if not owner then
-    s:centre(1, (d.category and (d.category:upper() .. " ") or "CHEST ") .. d.id, "0", "b")
-    if ds.phase then
-      s:centre(math.floor(s.h / 2), "Putting gear away...", "8")
-    elseif not shop.ready then
-      s:wrap(3, 2, "The shop is opening...", "8")
+    if d.gearType then
+      -- a station of one type is titled with it even when nobody is at it
+      local title = rules.typePlural(d.gearType):upper()
+      local long = title .. " - tap to browse"
+      s:centre(1, #long <= s.w and long or title:sub(1, s.w), "0", "b")
     else
-      s:centre(math.max(3, math.floor(s.h / 2) - 1), "TAP TO OPEN", "5")
-      s:centre(math.max(4, math.floor(s.h / 2)), "this chest", "8")
-      s.buttons[#s.buttons + 1] = { id = "claim", x = 1, y = 2, w = s.w, h = s.h - 4 }
+      s:centre(1, (d.category and (d.category:upper() .. " ") or "CHEST ") .. d.id, "0", "b")
     end
-    noteRows(s, shop, s.name, s.h - 2, 3)
+    if not shop.ready then
+      s:wrap(3, 2, "The shop is opening...", "8")
+      noteRows(s, shop, s.name, s.h - 2, 3)
+      s:finish()
+      return
+    end
+    -- PAY is on every station's screen, free or not: a tap anywhere else opens it
+    s.buttons[#s.buttons + 1] = { id = "claim", x = 1, y = 1, w = s.w, h = s.h }
+    local idleBh = s.h >= 16 and 3 or 2
+    local buttonsTop = buttonRows(s, { { { "pay", nil, "PAY", "f", "4" } } }, idleBh)
+    local lines = {}
+    if ds.phase then
+      lines[#lines + 1] = { "Putting gear away...", "8" }
+    else
+      lines[#lines + 1] = { "TAP TO OPEN", "5" }
+      local sub = "this chest"
+      if d.gearType then
+        local t = rules.typeCounts(shop.stock:summary(), d.gearType)
+        sub = t and (t.total .. " in stock") or "none in stock"
+      end
+      lines[#lines + 1] = { sub, "8" }
+    end
+    local note = shop:noteFor(s.name)
+    if note then lines[#lines + 1] = { note, "4" } end
+    centred(s, 2, buttonsTop - 1, lines)
     s:finish()
     return
   end
@@ -354,18 +376,35 @@ function M.station(s, shop, d, view)
     return
   end
 
-  local buttonsTop = buttonRows(s, narrow and {
-    { { "types", nil, "TYPE", "0", "b" } },
-    { { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
-    { { "next", nil, "NEXT", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
-  } or {
-    { { "types", nil, "TYPE", "0", "b" }, { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
-    { { "next", nil, "NEXT PAGE", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
-  }, bh)
+  -- a tap anywhere off the buttons, by someone else, tells them whose station it is
+  s.buttons[#s.buttons + 1] = { id = "claim", x = 1, y = 1, w = s.w, h = s.h }
+  local rows
+  if d.gearType then
+    -- one type: no TYPE picker. PAY is on every station, so a shopper pays wherever they are
+    rows = narrow and {
+      { { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
+      { { "next", nil, "NEXT", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
+      { { "pay", nil, "PAY", "f", "4" } },
+    } or {
+      { { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" }, { "pay", nil, "PAY", "f", "4" } },
+      { { "next", nil, "NEXT PAGE", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
+    }
+  else
+    rows = narrow and {
+      { { "types", nil, "TYPE", "0", "b" }, { "pay", nil, "PAY", "f", "4" } },
+      { { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
+      { { "next", nil, "NEXT", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
+    } or {
+      { { "types", nil, "TYPE", "0", "b" }, { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
+      { { "next", nil, "NEXT PAGE", "f", "5" }, { "pay", nil, "PAY", "f", "4" }, { "done", nil, "DONE", "0", "e" } },
+    }
+  end
+  local buttonsTop = buttonRows(s, rows, bh)
 
   local lines = {}
   local function add(text, fg) lines[#lines + 1] = { text, fg } end
-  add(owner .. "'s chest", "8")
+  -- one screen for everyone: whoever walks up sees whose it is
+  add(d.gearType and ("In use by " .. owner) or (owner .. "'s chest"), "8")
   local tab = shop:owes(owner)
   local credit = shop.state.credit[owner]
   local money = "Tab " .. tab
@@ -374,7 +413,7 @@ function M.station(s, shop, d, view)
   if ds.phase ~= "open" then
     add("Fetching gear...", "8")
   elseif (ds.total or 0) == 0 then
-    add("None in stock at this level. Try another level or type.", "8")
+    add(d.gearType and "None in stock at this level. Try LV - or LV +." or "None in stock at this level. Try another level or type.", "8")
   else
     add("Page " .. (ds.page or 1) .. " of " .. (ds.pages or 1), "0")
   end

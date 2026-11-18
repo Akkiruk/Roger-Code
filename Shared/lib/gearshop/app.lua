@@ -281,17 +281,26 @@ local function runShop()
       line("")
       if step.kind == "monitor" then
         line("Tap the monitor of " .. w.what .. ".")
+        if step.optional then line(step.hint or "No monitor yet? S skips it: M sets it later.") end
       elseif step.kind == "chest" then
         line("Put any item into the chest of " .. w.what)
         line("(or take one out). Watching " .. (step.watching or 0) .. " chests.")
       elseif step.kind == "stand" then
-        line("Stand at " .. w.what .. ".")
+        if step.text then
+          -- a display station: its own monitor need not be up yet, any monitor of the shop will do
+          line(step.text)
+          line("any shop monitor, or press Enter here.")
+        else
+          line("Stand at " .. w.what .. ".")
+        end
         if step.detector then
           line("Its own detector is optional: if it has")
           line("one, stand nearer it than any other.")
         end
-        line("Then tap any shop monitor there, or press")
-        line("Enter here.")
+        if not step.text then
+          line("Then tap any shop monitor there, or press")
+          line("Enter here.")
+        end
       end
       line("")
       line("T type its name   " .. (step.optional and "S skip   " or "") .. "Q cancel", colors.lightGray)
@@ -397,19 +406,19 @@ local function runShop()
       line(#ids > 0 and nodes or "Nodes: none")
       line("F find nodes   N add one   X drop the last", colors.lightGray)
       line(("Seen: %d inventories, %d monitors, %d detectors"):format(count("inventory"), count("monitor"), count("playerDetector")), colors.lightGray)
-      line("D door    " .. describe(d.door, { "monitor", "detector" }))
+      line("D door    " .. describe(d.door, { "monitor", "detector" }) .. (d.door and "" or " (optional)"))
       line("S sell    " .. describe(d.sell, { "monitor", "chest" }))
       line("K kiosk   " .. describe(d.kiosk, { "monitor", "chest" }))
       line("I intake  " .. describe(d.intake, { "chest" }))
       line("U returns " .. describe(d.returns, { "chest" }))
       line("J junk    " .. describe(d.junk, { "chest" }))
-      line("A add a display chest   R drop the last   (" .. #d.stations .. " set)")
-      line("G give a display chest a wing", colors.lightGray)
+      line("A add a display station  R drop the last  (" .. #d.stations .. " set)")
+      line("G a station's gear type or wing   M its monitor", colors.lightGray)
       local rows = th - y - 2
       for i = math.max(1, #d.stations - rows + 1), #d.stations do
         local s = d.stations[i]
-        line((" %d %s / %s / %s%s"):format(i, s.monitor or "-", s.chest or "-", s.detector or "-",
-          s.category and ("  " .. s.category) or ""), colors.lightGray)
+        local what = s.gearType and ("  " .. rules.typePlural(s.gearType)) or (s.category and ("  " .. s.category) or "")
+        line((" %d %s / %s / %s%s"):format(i, s.monitor or "-", s.chest or "-", s.detector or "-", what), colors.lightGray)
       end
       y = th - 1
       line("V add a vault chest by name (" .. #d.vault .. ")   C clear all")
@@ -528,6 +537,16 @@ local function runShop()
     admin.dirty = true
   end
 
+  --- Give a station of the draft one gear type, typed by the owner. Returns nil, or what is wrong.
+  local function giveType(s, text)
+    local known = shop.ready and shop.stock:summary().typeList or {}
+    local kind = rules.gearTypeFor(text, known, cfg)
+    if not kind then return "There is no gear type or wing called " .. text .. "." end
+    s.gearType = kind
+    s.category = rules.wingOf(kind, cfg)
+    return nil
+  end
+
   local function setupKey(ch)
     local d = admin.draft
     if ch == "f" then
@@ -548,7 +567,8 @@ local function runShop()
       table.remove(d.nodes)
     elseif ch == "d" then
       -- the door's detector, if it has one, is given its job here so that no display chest near the door takes it as its own
-      startWizard("THE DOOR", "the door", { { kind = "monitor" }, { kind = "stand", detector = true, optional = true } }, function(r)
+      startWizard("THE DOOR", "the door", { { kind = "monitor", optional = true, hint = "No door monitor? S skips it: PAY is on stations." },
+        { kind = "stand", detector = true, optional = true } }, function(r)
         d.door = { monitor = r.monitor, detector = r.detector, pos = r.pos }
         say("Door set.")
       end)
@@ -580,40 +600,72 @@ local function runShop()
         say("Intake set.")
       end)
     elseif ch == "a" then
+      -- Where it is first: the owner stands on the station's chest (it sits on the station's computer), so the place is
+      -- exact, and that works before its monitor is up. Then its chest, its monitor (skippable: M later), its gear type.
       local n = #d.stations + 1
-      startWizard("DISPLAY CHEST " .. n, "display chest " .. n,
-        { { kind = "monitor" }, { kind = "chest" }, { kind = "stand", detector = true, optional = true } }, function(r)
-          d.stations[n] = { monitor = r.monitor, chest = r.chest, detector = r.detector, pos = r.pos }
-          say("Display chest " .. n .. " set. A for the next one.")
+      startWizard("DISPLAY STATION " .. n, "display station " .. n, {
+        { kind = "stand", detector = true, optional = true, text = "Stand on this station's chest, then tap" },
+        { kind = "chest" },
+        { kind = "monitor", optional = true },
+      }, function(r)
+        d.stations[n] = { monitor = r.monitor, chest = r.chest, detector = r.detector, pos = r.pos }
+        -- kept short: the terminal is 51 wide and shows the end of a long line. Blank: any type (the TYPE picker)
+        ask("Gear type for station " .. n .. " (sword, idol...): ", function(text)
+          if text ~= "" then
+            local why = giveType(d.stations[n], text)
+            if why then
+              say(why .. " G to try again.")
+              return
+            end
+          end
+          local s = d.stations[n]
+          say("Station " .. n .. " set" .. (s.gearType and (": " .. rules.typePlural(s.gearType)) or "")
+            .. (s.monitor and "" or ", no monitor yet") .. ". A for the next.")
         end)
+      end)
     elseif ch == "r" then
       table.remove(d.stations)
+    elseif ch == "m" then
+      ask("Display station number: ", function(text)
+        local n = tonumber(text)
+        if not (n and d.stations[n]) then
+          say("There is no display station " .. tostring(text) .. ".")
+          return
+        end
+        startWizard("STATION " .. n .. " MONITOR", "display station " .. n, { { kind = "monitor" } }, function(r)
+          d.stations[n].monitor = r.monitor
+          say("Station " .. n .. " has its monitor. W to write it.")
+        end)
+      end)
     elseif ch == "g" then
-      -- a wing: the chest only shows its wing's types (the categories limit lists them)
-      ask("Display chest number: ", function(text)
+      -- one gear type (the usual: a station per type), or a wing (it shows its wing's types, from the categories limit)
+      ask("Display station number: ", function(text)
         local n = tonumber(text)
         local s = n and d.stations[n]
         if not s then
-          say("There is no display chest " .. tostring(text) .. ".")
+          say("There is no display station " .. tostring(text) .. ".")
           return
         end
-        local wings = {}
-        for _, c in ipairs(cfg.categories or {}) do
-          if type(c) == "table" and type(c.name) == "string" then wings[#wings + 1] = c.name end
-        end
-        ask("Wing (" .. table.concat(wings, "/") .. ", blank for none): ", function(name)
+        -- short enough for the 51-wide terminal, which shows the end of a long line: a gear type ("sword", "idol"), a
+        -- wing's name (the categories limit: Weapons, Armour, Magic, Oddities), or blank for every type
+        ask("Type or wing for station " .. n .. ": ", function(name)
           if name == "" then
-            s.category = nil
-            say("Display chest " .. n .. " shows every type.")
+            s.category, s.gearType = nil, nil
+            say("Display station " .. n .. " shows every type.")
             return
           end
           local c = rules.category(name, cfg)
-          if not c then
-            say("There is no wing called " .. name .. ".")
+          if c then
+            s.category, s.gearType = c.name, nil
+            say("Display station " .. n .. " is in " .. c.name .. ". W to write it.")
             return
           end
-          s.category = c.name
-          say("Display chest " .. n .. " is in " .. c.name .. ". W to write it.")
+          local why = giveType(s, name)
+          if why then
+            say(why)
+            return
+          end
+          say("Display station " .. n .. " shows " .. rules.typePlural(s.gearType) .. ". W to write it.")
         end)
       end)
     elseif ch == "v" then

@@ -202,11 +202,11 @@ function Stock:typesNear(bracket)
   return out
 end
 
---- Pieces of one type in one bracket, nearest the level first: { { chest, slot, key, level }, ... }.
+--- Pieces of one type (or its family: "the_vault:idol" is every idol) in one bracket, nearest the level first: { { chest, slot, key, level }, ... }.
 function Stock:select(kind, bracket, level)
   local list = {}
   each(self, function(piece, chest, slot)
-    if piece.type == kind and rules.bracket(piece.level) == bracket and rules.forSale(piece, self.cfg) then
+    if rules.ofType(piece.type, kind) and rules.bracket(piece.level) == bracket and rules.forSale(piece, self.cfg) then
       list[#list + 1] = { chest = chest, slot = slot, key = piece.key, level = piece.level }
     end
   end)

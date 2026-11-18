@@ -20,6 +20,13 @@
 --
 -- A player can be gone at any moment (logged off, or on another server of the network). Every lookup here returns nil and
 -- a reason instead of throwing, and whatever could not be done waits: a tab stays a tab, a payout stays owed.
+--
+-- Stations. The usual layout is one display station per gear type (setup gives each its type). There is no need for a
+-- door: a tap on a free station (or the kiosk) checks the player in, and PAY is on every station. The station fills
+-- with its type at their level bracket (the nearest bracket with stock), and is theirs until DONE, check-out, walking away from it (stationLeaveDistance), or leaving it untouched for
+-- stationIdleMinutes; then it is emptied into the vault and free again. One shopper holds at most stationsPerShopper at
+-- once: tapping one more frees the one they used longest ago. Anyone else tapping a held station is told whose it is.
+-- A station with no type of its own (old setups, or a wing) still offers its TYPE picker.
 
 local rules = require("lib.gearshop.rules")
 local store = require("lib.gearshop.store")
@@ -55,12 +62,13 @@ function M.new(io, cfg, setup, state)
     sizes = {},        -- display chest -> slots
     missing = {},      -- shopper -> how many looks in a row did not find them
     awaiting = {},     -- player -> when to stop waiting for their APPROVE click, so a payment goes through without another tap
+    away = {},         -- station id -> how many looks in a row found its shopper walked away from it
     sellView = nil,
     ready = false, status = "Starting", version = 0,
   }, Shop)
   for i, s in ipairs(setup.stations or {}) do
     local d = { id = tostring(i), kind = "station", index = i, chest = s.chest, monitor = s.monitor, detector = s.detector, pos = s.pos,
-      category = s.category }
+      category = s.category, gearType = s.gearType }
     self.stations[#self.stations + 1] = d
     self.all[#self.all + 1] = d
   end
@@ -208,6 +216,7 @@ end
 function Shop:presence()
   local names = {}
   for name in pairs(self.state.shoppers) do names[#names + 1] = name end
+  local seenAt = {}
   for _, name in ipairs(names) do
     local shopper = self.state.shoppers[name]
     local why
@@ -215,6 +224,7 @@ function Shop:presence()
       why = "idle"
     else
       local pos, answered = self:playerPos(name)
+      seenAt[name] = pos
       local gone = false
       if answered and not pos then
         gone = true
@@ -234,6 +244,51 @@ function Shop:presence()
     end
     if why then self:checkOut(name, why) end
   end
+  self:freeStations(seenAt)
+end
+
+--- Free the stations their shoppers have left: walked away from (two looks running), or not used for too long.
+-- seenAt: where each shopper was seen just now, when a detector could say.
+function Shop:freeStations(seenAt)
+  local idle = (self.cfg.stationIdleMinutes or 0) * 60000
+  local far = self.cfg.stationLeaveDistance or 0
+  for _, d in ipairs(self.stations) do
+    local ds = self:ds(d)
+    local name = ds.shopper
+    if ds.phase == "open" and name and self.state.shoppers[name] then
+      if not ds.used then ds.used = now() end
+      local why
+      if idle > 0 and now() - ds.used > idle then
+        why = "nobody used it for " .. self.cfg.stationIdleMinutes .. " min"
+      else
+        local pos = seenAt[name]
+        if far > 0 and pos and d.pos and rules.distance(pos, d.pos) > far then
+          self.away[d.id] = (self.away[d.id] or 0) + 1
+          if self.away[d.id] >= 2 then why = name .. " walked away" end
+        else
+          self.away[d.id] = nil
+        end
+      end
+      if why then
+        store.log("station " .. d.id .. " freed: " .. why)
+        if self:release(d) then self:note(d.monitor, "Free again: " .. why .. ".") end
+      end
+    else
+      self.away[d.id] = nil
+    end
+  end
+end
+
+--- How soon a station someone else holds is likely free, for whoever taps it: "" when there is no telling.
+function Shop:freeSoon(d)
+  if (self.away[d.id] or 0) > 0 then return " Free soon." end
+  local idle = (self.cfg.stationIdleMinutes or 0) * 60000
+  local used = self:ds(d).used
+  if idle > 0 and used then
+    local left = math.max(1, math.ceil((idle - (now() - used)) / 60000))
+    return " Free in ~" .. left .. " min if unused."
+  end
+  return ""
 end
 
 -- ---------------------------------------------------------------- the network and the peripherals
@@ -492,6 +547,7 @@ function Shop:charge(who, d, key)
   local label = piece and piece.label
     or (rules.typeLabel(ds.type or "gear") .. " Lv " .. rules.bracketLabel(ds.bracket or 0))
   table.insert(tabOf(self, who), { key = key, price = price, label = label, at = now() })
+  if who == ds.shopper then ds.used = now() end
   self:seen(who)
   self:note(d.monitor, who .. ": " .. label .. " +" .. price .. " (tab " .. self:owes(who) .. ")")
 end
@@ -577,6 +633,7 @@ function Shop:reconcile(d)
       -- put back: it is on display here again, at the price it was charged
       ds.shown[key] = (ds.shown[key] or 0) + 1
       if line.price ~= self:priceOf(d, key) then ds.prices[key] = line.price end
+      if name == ds.shopper then ds.used = now() end
       self:seen(name)
       self:note(d.monitor, name .. ": " .. tostring(line.label) .. " put back (tab " .. self:owes(name) .. ")")
       changed = true
@@ -612,6 +669,8 @@ function Shop:sweep(d, keep)
   ds.shown, ds.prices = {}, {}
   if not keep then
     ds.shopper, ds.type, ds.bracket, ds.page, ds.pages, ds.total, ds.query = nil, nil, nil, nil, nil, nil, nil
+    ds.used = nil
+    self.away[d.id] = nil
   end
   self:save("sweep-begin")
   local ok, list = self.stock:listKnown(d.chest)
@@ -695,6 +754,7 @@ end
 function Shop:open(d, name, kind, bracket, page)
   local ds = self:ds(d)
   ds.shopper, ds.type, ds.bracket, ds.page = name, kind, bracket, page or 1
+  ds.used = now()
   return self:fill(d)
 end
 
@@ -708,36 +768,28 @@ function Shop:typesFor(d, bracket)
   return rules.inCategoryList(self.stock:typesNear(bracket), d.category, self.cfg)
 end
 
---- Fill the free chests nearest a shopper with gear near their level, a different type in each. With wings, the nearest
--- chest of every wing is filled first, then the nearest of the rest (rules.spread), each from its own wing's types.
-function Shop:assign(name)
-  local shopper = self.state.shoppers[name]
-  if not shopper then return 0 end
-  local pos = self:playerPos(name)
-  pos = pos or (self.setup.door and self.setup.door.pos)
-  local free = {}
+--- The stations a shopper holds now, the one they used longest ago first.
+function Shop:held(name)
+  local list = {}
   for _, d in ipairs(self.stations) do
-    if isFree(self, d) then free[#free + 1] = d end
+    if self:ds(d).shopper == name then list[#list + 1] = d end
   end
-  free = rules.nearest(free, pos)
-  local bracket = rules.bracket(shopper.level)
-  local byWing = {}
-  local function typesOf(category)
-    local key = category or ""
-    if not byWing[key] then byWing[key] = rules.inCategoryList(self.stock:typesNear(bracket), category, self.cfg) end
-    return byWing[key]
+  table.sort(list, function(a, b)
+    local ua, ub = self:ds(a).used or 0, self:ds(b).used or 0
+    if ua ~= ub then return ua < ub end
+    return a.index < b.index
+  end)
+  return list
+end
+
+--- The next bracket from `from` in direction `step` (-1 or 1) that has some of a type, or nil.
+local function nextBracket(counts, from, step)
+  local b = from + step
+  while b >= 0 and b <= 10 do
+    if (counts[b] or 0) > 0 then return b end
+    b = b + step
   end
-  local chosen = rules.spread(free, self.cfg.chestsPerShopper, function(category) return #typesOf(category) > 0 end)
-  local filled, used = 0, {}
-  for _, d in ipairs(chosen) do
-    local key = d.category or ""
-    local types = typesOf(d.category)
-    local i = (used[key] or 0) + 1
-    used[key] = i
-    local pick = types[((i - 1) % #types) + 1]
-    if self:open(d, name, pick.type, pick.bracket, math.floor((i - 1) / #types) + 1) then filled = filled + 1 end
-  end
-  return filled
+  return nil
 end
 
 -- ---------------------------------------------------------------- the door
@@ -766,8 +818,9 @@ function Shop:checkIn(name, monitor)
   self:save("checkin")
   local asked = self:askApproval(name)
   self:settle(name)
-  local filled = self:assign(name)
-  local text = "Welcome " .. name .. " (level " .. level .. "). " .. filled .. " chests are yours."
+  -- checked in at the door (if the shop has one) or, the usual way, by tapping a station or the kiosk
+  local atDoor = self.setup.door and monitor ~= nil and monitor == self.setup.door.monitor
+  local text = "Welcome " .. name .. " (level " .. level .. ")." .. (atDoor and " Tap a station to browse." or "")
   local owes = self:owes(name)
   if owes > 0 then text = text .. " Tab from last time: " .. owes .. "." end
   if asked then text = text .. " Click APPROVE in chat so PAY is one tap." end
@@ -973,45 +1026,94 @@ function Shop:stationAction(d, name, action, value)
     return
   end
   self:seen(name)
+  -- PAY is on every station: whoever taps it pays their own tab, at anyone's station
+  if action == "pay" then
+    self:pay(name, d.monitor)
+    return
+  end
   local shopper = self.state.shoppers[name]
   if isFree(self, d) then
-    if not shopper then
-      self:note(d.monitor, "Check in at the door first.")
-      return
-    end
     if not self.ready then return end
+    if not shopper then
+      -- a tap on a free station checks the player in: there is no need to go to the door first
+      if not self:checkIn(name, d.monitor) then return end
+      shopper = self.state.shoppers[name]
+      if not shopper then return end
+    end
     local bracket = rules.bracket(shopper.level)
-    local types = self:typesFor(d, bracket)
-    if #types == 0 then
-      self:note(d.monitor, "Nothing in stock.")
-      return
+    local pick
+    if d.gearType then
+      -- a station of one type: that type at their bracket, or the nearest bracket that has some
+      local t = rules.typeCounts(self.stock:summary(), d.gearType)
+      local b = t and rules.nearestBracket(t.brackets, bracket)
+      if not b then
+        self:note(d.monitor, "No " .. rules.typePlural(d.gearType) .. " in stock right now.")
+        return
+      end
+      pick = { type = d.gearType, bracket = b }
+    else
+      local types = self:typesFor(d, bracket)
+      if #types == 0 then
+        self:note(d.monitor, "Nothing in stock.")
+        return
+      end
+      -- a type none of their other chests is showing, if there is one
+      local showing = {}
+      for _, other in ipairs(self.stations) do
+        local theirs = self:ds(other)
+        if theirs.shopper == name and theirs.type then showing[theirs.type] = true end
+      end
+      pick = types[1]
+      for _, t in ipairs(types) do
+        if not showing[t.type] then
+          pick = t
+          break
+        end
+      end
     end
-    -- a type none of their other chests is showing, if there is one
-    local showing = {}
-    for _, other in ipairs(self.stations) do
-      local theirs = self:ds(other)
-      if theirs.shopper == name and theirs.type then showing[theirs.type] = true end
-    end
-    local pick = types[1]
-    for _, t in ipairs(types) do
-      if not showing[t.type] then
-        pick = t
-        break
+    -- one more than they may hold: the one they used longest ago is given back first
+    local most = self.cfg.stationsPerShopper or 0
+    if most > 0 then
+      local mine = self:held(name)
+      local i = 1
+      while #mine - (i - 1) >= most and mine[i] do
+        local old = mine[i]
+        if self:release(old) then
+          self:note(old.monitor, "Free again: " .. name .. " opened station " .. d.id .. ".")
+        end
+        i = i + 1
       end
     end
     self:open(d, name, pick.type, pick.bracket, 1)
     return
   end
   if ds.shopper ~= name then
-    self:note(d.monitor, "Locked to " .. tostring(ds.shopper) .. ".")
+    if ds.shopper and self.state.shoppers[ds.shopper] then
+      self:note(d.monitor, "In use by " .. ds.shopper .. "." .. self:freeSoon(d))
+    else
+      self:note(d.monitor, "Putting gear away. Tap again in a moment.")
+    end
     return
   end
+  ds.used = now()
   -- what was taken from the page on show is charged at that page's price, before the pick changes
   if ds.phase == "open" and not self:reconcile(d) then
     self:note(d.monitor, "This chest is not answering. Try again in a moment.")
     return
   end
-  if action == "type" and type(value) == "string" and rules.inCategory(value, d.category, self.cfg) then
+  if action == "level" and type(value) == "number" and d.gearType then
+    -- a station of one type steps to the next level that has some of it
+    local t = rules.typeCounts(self.stock:summary(), d.gearType)
+    local b = t and nextBracket(t.brackets, ds.bracket or 0, value < 0 and -1 or 1)
+    if not b then
+      self:note(d.monitor, "No " .. (value < 0 and "lower" or "higher") .. " level in stock.")
+      return
+    end
+    ds.bracket, ds.page = b, 1
+    self:fill(d)
+  elseif action == "type" and d.gearType then
+    return
+  elseif action == "type" and type(value) == "string" and rules.inCategory(value, d.category, self.cfg) then
     local t = self.stock:summary().types[value]
     ds.type, ds.page = value, 1
     if t and (t.brackets[ds.bracket] or 0) == 0 then
@@ -1040,10 +1142,7 @@ function Shop:kioskAction(name, action, query)
     return
   end
   self:seen(name)
-  if not self.state.shoppers[name] then
-    self:note(d.monitor, "Check in at the door first.")
-    return
-  end
+  if not self.state.shoppers[name] and not self:checkIn(name, d.monitor) then return end
   if not isFree(self, d) and ds.shopper ~= name then
     self:note(d.monitor, "In use by " .. tostring(ds.shopper) .. ".")
     return

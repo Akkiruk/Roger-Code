@@ -22,8 +22,11 @@ M.DEFAULTS = {
   highRarities = { "OMEGA" },
   topLevel = 100,           -- from this level only legendary pieces are bought
   sellTypes = { "Gear" },   -- the vaultData.itemType values the shop puts on display
-  chestsPerShopper = 6,     -- display chests filled for one shopper when they check in
-  defaultLevel = 0,         -- the level used for a shopper whose vault level cannot be read
+  stationsPerShopper = 3,   -- display stations one shopper may hold at once: tapping one more frees the one they used
+                            -- longest ago. 0 is no limit. Check-in fills none; a station fills when its shopper taps it
+  stationIdleMinutes = 5,   -- a station whose shopper has not tapped it or taken from it this long is emptied and freed
+  stationLeaveDistance = 12,  -- a shopper this far from a station they hold (two looks running) has walked away: it is freed
+  defaultLevel = 0,        -- the level used for a shopper whose vault level cannot be read
   idleMinutes = 30,         -- a shopper who touches nothing this long is checked out
   presenceSeconds = 20,     -- how often the shop looks for its shoppers
   leaveDistance = 48,       -- a shopper further than this from the shop is checked out
@@ -36,7 +39,8 @@ M.DEFAULTS = {
   textScale = 0.5,
   -- The wings a display chest can be given in setup (G on the setup page), each with the gear types it shows: a name
   -- matches a type exactly or as the start of one ("idol" is every idol). A wing with rest = true has every type no
-  -- other wing names. A chest with no wing shows any type, as before there were wings.
+  -- other wing names. A chest with no wing shows any type, as before there were wings. A station given one gear type
+  -- (the usual way: one station per type) is put in that type's wing for its label.
   categories = {
     { name = "Weapons", types = { "sword", "axe", "battlestaff", "trident", "rang" } },
     { name = "Armour", types = { "helmet", "chestplate", "leggings", "boots", "shield" } },
@@ -321,35 +325,86 @@ function M.inCategoryList(list, name, cfg)
   return out
 end
 
---- Which display chests a shopper gets when they check in, and in what order they are filled.
--- stations: free chests nearest the shopper first, each { category = name|nil }; hasStock(category) says whether a wing
--- has anything to show. First the nearest chest of every wing that has stock (chests with no wing count as one wing of
--- their own), so a shopper finds something in each wing of a big district; then the nearest of the rest. Returns the
--- chosen chests, nearest first, at most `count`.
-function M.spread(stations, count, hasStock)
-  local chosen, taken, seen = {}, {}, {}
-  for i, s in ipairs(stations) do
-    if #chosen >= count then break end
-    local key = s.category or ""
-    if not seen[key] then
-      seen[key] = true
-      if hasStock(s.category) then
-        chosen[#chosen + 1] = i
-        taken[i] = true
+--- The wing a gear type belongs in: the first wing that names it, else the wing for the rest, else nil.
+function M.wingOf(kind, cfg)
+  local path = tostring(kind):match(":(.+)$") or tostring(kind)
+  local rest
+  for _, c in ipairs((cfg and cfg.categories) or M.DEFAULTS.categories) do
+    if type(c) == "table" and type(c.name) == "string" then
+      if c.rest then
+        rest = rest or c.name
+      elseif names(c, path) then
+        return c.name
       end
     end
   end
-  for i, s in ipairs(stations) do
-    if #chosen >= count then break end
-    if not taken[i] and hasStock(s.category) then
-      chosen[#chosen + 1] = i
-      taken[i] = true
+  return rest
+end
+
+--- What the owner typed in setup as a station's gear type, as the type's id ("the_vault:sword"), or a family ("idol":
+-- "the_vault:idol", every idol), or nil.
+-- "sword", "Swords", "idol benevolent" and "the_vault:sword" all work. A type is known when the vault holds some
+-- (known: the stock's type ids) or a wing names it; a full id with a ':' is taken as typed.
+function M.gearTypeFor(text, known, cfg)
+  if type(text) ~= "string" then return nil end
+  local word = text:lower():gsub("^%s+", ""):gsub("%s+$", ""):gsub("%s+", "_")
+  if word == "" then return nil end
+  if word:find(":", 1, true) then return word end
+  local tries = { word }
+  if word:sub(-1) == "s" then tries[#tries + 1] = word:sub(1, -2) end
+  if word:sub(-2) == "es" then tries[#tries + 1] = word:sub(1, -3) end
+  for _, try in ipairs(tries) do
+    for _, id in ipairs(known or {}) do
+      local path = tostring(id):match(":(.+)$") or tostring(id)
+      if path == try then return id end
     end
   end
-  table.sort(chosen)
-  local out = {}
-  for k, i in ipairs(chosen) do out[k] = stations[i] end
+  -- a family of types: "idol" is every idol (the_vault:idol_benevolent, ...), in stock or named by a wing
+  for _, try in ipairs(tries) do
+    for _, id in ipairs(known or {}) do
+      local space, path = tostring(id):match("^(.-):(.+)$")
+      if path and path:sub(1, #try + 1) == try .. "_" then return space .. ":" .. try end
+    end
+  end
+  for _, try in ipairs(tries) do
+    for _, c in ipairs((cfg and cfg.categories) or M.DEFAULTS.categories) do
+      for _, t in ipairs(type(c) == "table" and type(c.types) == "table" and c.types or {}) do
+        if t == try then return "the_vault:" .. try end
+      end
+    end
+  end
+  return nil
+end
+
+--- Whether a gear type is what a station of one type shows: the type itself, or one of its family ("the_vault:idol" is
+-- every "the_vault:idol_..."), as a wing names its types.
+function M.ofType(kind, want)
+  if kind == nil or want == nil then return false end
+  kind, want = tostring(kind), tostring(want)
+  if kind == want then return true end
+  return kind:sub(1, #want + 1) == want .. "_"
+end
+
+--- A station type's stock from the stock summary, its family's counts added together: { total, brackets = { b = n } },
+-- or nil when there is none.
+function M.typeCounts(summary, want)
+  local out
+  for kind, t in pairs((summary and summary.types) or {}) do
+    if M.ofType(kind, want) then
+      out = out or { total = 0, brackets = {} }
+      out.total = out.total + (t.total or 0)
+      for b, n in pairs(t.brackets or {}) do out.brackets[b] = (out.brackets[b] or 0) + n end
+    end
+  end
   return out
+end
+
+--- A type's name for a station's title: "Swords", "Leggings", "Idol Benevolent".
+function M.typePlural(kind)
+  local label = M.typeLabel(kind)
+  if label:find(" ", 1, true) or label:sub(-1):lower() == "s" then return label end
+  if label:sub(-2):lower() == "sh" or label:sub(-2):lower() == "ch" or label:sub(-1):lower() == "x" then return label .. "es" end
+  return label .. "s"
 end
 
 function M.distance(a, b)

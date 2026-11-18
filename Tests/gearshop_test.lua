@@ -232,7 +232,8 @@ test("gearshop: with sellForTokens on the sell screen is as before: TOKENS or ST
 end)
 
 --- A display chest's monitor at a size, open for Alice (tab 20, credit 1.5) with `n` pieces in it, or on its type picker.
-local function drawStation(w, h, n, mode, note, wing)
+local function drawStation(w, h, n, mode, note, wing, opts)
+  opts = opts or {}
   local hadColors = rawget(_G, "colors")
   if not hadColors then rawset(_G, "colors", { black = 32768 }) end
   local ui = require("lib.gearshop.ui")
@@ -249,7 +250,8 @@ local function drawStation(w, h, n, mode, note, wing)
     "the_vault:boots", "the_vault:shield", "the_vault:wand", "the_vault:focus", "the_vault:magnet" }
   local summary = { types = {} }
   for _, t in ipairs(typeList) do summary.types[t] = { total = 15 } end
-  local ds = { shopper = "Alice", type = "the_vault:sword", bracket = 4, phase = "open", page = 1, pages = 3, total = n, shown = shown, prices = {} }
+  local ds = { shopper = "Alice", type = "the_vault:sword", bracket = 4, phase = "open", page = opts.page or 1, pages = 3, total = n, shown = shown, prices = {} }
+  if opts.free then ds = { shown = {}, prices = {} } end
   local shop = {
     ready = true, cfg = cfg, state = { shoppers = { Alice = {} }, credit = { Alice = 1500 } },
     ds = function() return ds end,
@@ -264,7 +266,7 @@ local function drawStation(w, h, n, mode, note, wing)
       end },
     typesFor = function(self, d, bracket) return rules.inCategoryList(self.stock.typesNear(bracket), d.category, cfg) end,
   }
-  ui.station(s, shop, { id = "1", kind = "station", category = wing }, { mode = mode })
+  ui.station(s, shop, { id = "1", kind = "station", category = wing, gearType = opts.gearType }, { mode = mode })
   if not hadColors then rawset(_G, "colors", nil) end
   return s
 end
@@ -280,9 +282,12 @@ test("gearshop: a display chest's screen lists no gear: the type, the price, her
       for _, b in ipairs(s.buttons) do
         local where = ("%dx%d %s %s"):format(w, h, mode or "chest", b.id)
         truthy(b.x >= 1 and b.y >= 1 and b.x + b.w - 1 <= w and b.y + b.h - 1 <= h, where .. " fits on the monitor")
-        eq(b.h, bh, where .. " is big enough to tap")
-        truthy(b.label:match("%a%a"), where .. " has a whole label: " .. b.label)
-        ids[#ids + 1] = b.id
+        -- the whole screen behind the buttons, so a tap by someone else off them is answered
+        if b.id ~= "claim" then
+          eq(b.h, bh, where .. " is big enough to tap")
+          truthy(b.label:match("%a%a"), where .. " has a whole label: " .. b.label)
+          ids[#ids + 1] = b.id
+        end
       end
       local text = table.concat(s.text, " "):gsub("%s+", " ")
       local where = w .. "x" .. h
@@ -290,7 +295,7 @@ test("gearshop: a display chest's screen lists no gear: the type, the price, her
         truthy(table.concat(ids, " "):find("settype settype", 1, true), where .. " types to pick")
         truthy(table.concat(ids, " "):find("back", 1, true), where .. " BACK")
       else
-        eq(table.concat(ids, " "), "types level level next done", where .. " every button")
+        eq(table.concat(ids, " "), w < 24 and "types pay level level next done" or "types level level next pay done", where .. " every button")
         truthy(text:find("Sword", 1, true) and text:find("40-49", 1, true), where .. " what the chest is showing")
         truthy(text:find("10 each", 1, true), where .. " the price")
         truthy(text:find("Alice's chest", 1, true), where .. " whose chest")
@@ -306,6 +311,39 @@ test("gearshop: a display chest's screen lists no gear: the type, the price, her
   truthy((table.concat(s.text, " "):gsub("%s+", " ")):find("Locked to Bob.", 1, true), "the note")
   s = drawStation(36, 10, 0)
   truthy((table.concat(s.text, " "):gsub("%s+", " ")):find("None in stock at this level", 1, true), "nothing at this level")
+end)
+
+test("gearshop stations: a station of one type is titled with it when free, and has no TYPE picker in use", function()
+  local flat = function(s) return (table.concat(s.text, " "):gsub("%s+", " ")) end
+  for _, size in ipairs({ { 36, 10 }, { 15, 24 }, { 57, 24 } }) do
+    local w, h = size[1], size[2]
+    local where = w .. "x" .. h
+    local s = drawStation(w, h, 0, nil, nil, "Weapons", { gearType = "the_vault:sword", free = true })
+    local text = flat(s)
+    truthy(text:find("SWORDS", 1, true), where .. " the type as the title: " .. text)
+    if w >= 22 then truthy(s.text[1]:find("SWORDS - tap to browse", 1, true), where .. " the whole title") end
+    truthy(text:find("TAP TO OPEN", 1, true), where .. " tap to open")
+    truthy(text:find("15 in stock", 1, true), where .. " how many")
+    eq(#s.buttons, 2, where .. " the whole screen, and PAY")
+    eq(s.buttons[1].id, "claim")
+    eq(s.buttons[2].id, "pay", where .. " PAY on a free station too")
+    truthy(s.buttons[2].x >= 1 and s.buttons[2].y + s.buttons[2].h - 1 <= h, where .. " PAY fits")
+    s = drawStation(w, h, 30, nil, nil, "Weapons", { gearType = "the_vault:sword", page = 2 })
+    local ids = {}
+    for _, b in ipairs(s.buttons) do
+      truthy(b.x >= 1 and b.y >= 1 and b.x + b.w - 1 <= w and b.y + b.h - 1 <= h, where .. " " .. b.id .. " fits")
+      ids[#ids + 1] = b.id
+    end
+    eq(table.concat(ids, " "), w < 24 and "claim level level next done pay" or "claim level level pay next done", where .. " no TYPE, and PAY")
+    text = flat(s)
+    truthy(text:find("In use by Alice", 1, true), where .. " whose station, for everyone who looks")
+    truthy(text:find("Page 2 of 3", 1, true), where .. " the page")
+    truthy(text:find("10 each", 1, true), where .. " the price")
+  end
+  local s = drawStation(36, 10, 12, nil, "In use by Alice. Free in ~4 min if unused.", nil, { gearType = "the_vault:sword" })
+  truthy(flat(s):find("In use by Alice. Free in ~4 min if unused.", 1, true), "the note for someone else: " .. flat(s))
+  s = drawStation(36, 10, 0, nil, nil, nil, { gearType = "the_vault:sword" })
+  truthy(flat(s):find("Try LV - or LV +", 1, true), "nothing at this level")
 end)
 
 test("gearshop: a payout never takes the owner below the floor", function()
@@ -432,26 +470,42 @@ test("gearshop wings: each wing takes its own types, idols by their start, and O
   eq(rules.category("Weapons", own), nil)
 end)
 
-test("gearshop wings: check-in fills the nearest chest of every wing first, then the nearest of the rest", function()
-  local function ids(list)
-    local out = {}
-    for i, s in ipairs(list) do out[i] = s.id end
-    return table.concat(out, " ")
-  end
-  local always = function() return true end
-  -- nearest first: two Weapons chests by the shopper, then Armour, Magic, Oddities further off
-  local stations = {
-    { id = "w1", category = "Weapons" }, { id = "w2", category = "Weapons" }, { id = "a1", category = "Armour" },
-    { id = "w3", category = "Weapons" }, { id = "m1", category = "Magic" }, { id = "o1", category = "Oddities" },
-    { id = "a2", category = "Armour" },
-  }
-  eq(ids(rules.spread(stations, 6, always)), "w1 w2 a1 w3 m1 o1", "a chest in every wing, then the nearest left")
-  eq(ids(rules.spread(stations, 3, always)), "w1 a1 m1", "fewer chests than wings: the nearest wings")
-  eq(ids(rules.spread(stations, 6, function(c) return c ~= "Magic" end)), "w1 w2 a1 w3 o1 a2", "a wing with nothing to show is passed over")
-  -- with no wings it is the nearest chests, as before
-  local plain = { { id = "1" }, { id = "2" }, { id = "3" } }
-  eq(ids(rules.spread(plain, 2, always)), "1 2")
-  eq(ids(rules.spread(plain, 2, function() return false end)), "", "nothing in stock")
+test("gearshop stations: the owner's word for a gear type, its wing and its title", function()
+  local known = { "the_vault:axe", "the_vault:idol_benevolent", "the_vault:sword" }
+  eq(rules.gearTypeFor("sword", known, cfg), "the_vault:sword")
+  eq(rules.gearTypeFor(" Swords ", known, cfg), "the_vault:sword", "any case, a plural")
+  eq(rules.gearTypeFor("idol benevolent", known, cfg), "the_vault:idol_benevolent", "spaces for underscores")
+  eq(rules.gearTypeFor("the_vault:magnet", known, cfg), "the_vault:magnet", "a full id as typed")
+  eq(rules.gearTypeFor("helmet", known, cfg), "the_vault:helmet", "none in stock yet, but a wing names it")
+  eq(rules.gearTypeFor("boots", known, cfg), "the_vault:boots", "a name that ends in s")
+  eq(rules.gearTypeFor("Shoes", known, cfg), nil, "nobody has heard of it")
+  eq(rules.gearTypeFor("idol", known, cfg), "the_vault:idol", "a family: every idol")
+  eq(rules.gearTypeFor("Idols", { "the_vault:sword" }, cfg), "the_vault:idol", "a family a wing names, none in stock yet")
+  eq(rules.ofType("the_vault:idol_benevolent", "the_vault:idol"), true, "an idol is of the idol family")
+  eq(rules.ofType("the_vault:idolatry", "the_vault:idol"), false, "a start of a word is not enough")
+  eq(rules.ofType("the_vault:sword", "the_vault:sword"), true)
+  eq(rules.ofType("the_vault:axe", "the_vault:sword"), false)
+  local counts = rules.typeCounts({ types = {
+    ["the_vault:idol_benevolent"] = { total = 3, brackets = { [4] = 2, [5] = 1 } },
+    ["the_vault:idol_timekeeper"] = { total = 2, brackets = { [4] = 2 } },
+    ["the_vault:sword"] = { total = 9, brackets = { [4] = 9 } },
+  } }, "the_vault:idol")
+  eq(counts.total, 5, "every idol counted together")
+  eq(counts.brackets[4], 4)
+  eq(counts.brackets[5], 1)
+  eq(rules.typeCounts({ types = {} }, "the_vault:idol"), nil, "none in stock")
+  eq(rules.typePlural("the_vault:idol"), "Idols")
+  eq(rules.wingOf("the_vault:idol", cfg), "Magic")
+  eq(rules.gearTypeFor("", known, cfg), nil)
+  eq(rules.wingOf("the_vault:sword", cfg), "Weapons")
+  eq(rules.wingOf("the_vault:idol_malevolent", cfg), "Magic")
+  eq(rules.wingOf("the_vault:magnet", cfg), "Oddities", "what no wing names: the rest")
+  eq(rules.typePlural("the_vault:sword"), "Swords")
+  eq(rules.typePlural("the_vault:leggings"), "Leggings")
+  eq(rules.typePlural("the_vault:boots"), "Boots")
+  eq(rules.typePlural("the_vault:idol_benevolent"), "Idol Benevolent")
+  eq(rules.DEFAULTS.stationsPerShopper, 3)
+  eq(rules.DEFAULTS.chestsPerShopper, nil, "check-in fills nothing any more")
 end)
 
 test("gearshop wings: a chest's type picker only offers its wing's types", function()
@@ -1026,3 +1080,271 @@ test("gearshop sell: a reboot at any step of moving refused gear finishes the mo
     if donate then eq(state.stats.donated, 2, point .. ": counted once") end
   end
 end)
+
+-- ---------------------------------------------------------------- one station per gear type
+
+--- Three stations (two of swords, one of axes) over pretend vault chests, with Alice (level 45) and Bob (level 12) checked
+-- in, and a shop whose writes are copied to a pretend disk.
+local function stationShop(opts)
+  opts = opts or {}
+  if not os.epoch then os.epoch = function() return os.time() * 1000 end end
+  local swords, axes = {}, {}
+  for _ = 1, 6 do swords[#swords + 1] = gear("sword", 45) end
+  for _ = 1, 4 do swords[#swords + 1] = gear("sword", 12) end
+  for _ = 1, 2 do swords[#swords + 1] = gear("sword", 75) end
+  for _ = 1, 3 do axes[#axes + 1] = gear("axe", 45) end
+  local world = opts.world or pretend({
+    v1 = { size = 54, items = swords }, v2 = { size = 54, items = axes }, v3 = { size = 54, items = {} },
+    c1 = { size = 54, items = {} }, c2 = { size = 54, items = {} }, c3 = { size = 54, items = {} },
+  })
+  local cfgHere = {}
+  for k, v in pairs(rules.DEFAULTS) do cfgHere[k] = v end
+  for k, v in pairs(opts.limits or {}) do cfgHere[k] = v end
+  local setup = store.newSetup()
+  setup.stations = {
+    { monitor = "m1", chest = "c1", pos = { x = 10, y = 64, z = 0 }, gearType = "the_vault:sword", category = "Weapons" },
+    { monitor = "m2", chest = "c2", pos = { x = 20, y = 64, z = 0 }, gearType = "the_vault:sword", category = "Weapons" },
+    { monitor = "m3", chest = "c3", pos = { x = 30, y = 64, z = 0 }, gearType = "the_vault:axe", category = "Weapons" },
+  }
+  local state = opts.state
+  if not state then
+    state = store.newState()
+    state.shoppers.Alice = { at = 0, last = os.epoch("utc"), level = 45 }
+    state.shoppers.Bob = { at = 0, last = os.epoch("utc"), level = 12 }
+  end
+  world.io.names = function() return {} end
+  world.io.hasType = function() return false end
+  local shop = shopLib.new(world.io, cfgHere, setup, state)
+  for _, name in ipairs({ "v1", "v2", "v3" }) do shop.stock:add(name) end
+  shop.stock:indexAll()
+  shop.ready = true
+  local function copy(v)
+    if type(v) ~= "table" then return v end
+    local out = {}
+    for k, x in pairs(v) do out[k] = copy(x) end
+    return out
+  end
+  local disk = { state = copy(state), copy = copy }
+  shop.save = function(self, why)
+    if opts.crashAt == why then error("crash at " .. why, 0) end
+    self:changed()
+    disk.state = copy(self.state)
+  end
+  return shop, world, disk
+end
+
+--- The shop's books need a disk: a pretend one with nothing on it.
+local function withDisk(fn)
+  return function()
+    local had = rawget(_G, "fs")
+    if not had then rawset(_G, "fs", { exists = function() return false end }) end
+    local ok, err = pcall(fn)
+    if not had then rawset(_G, "fs", nil) end
+    if not ok then error(err, 0) end
+  end
+end
+
+local function all(world)
+  local n = 0
+  for name in pairs(world.chests) do n = n + world.held(name) end
+  return n
+end
+
+local function levelsIn(world, chest)
+  local out = {}
+  for _, item in pairs(world.chests[chest].items) do out[#out + 1] = item.vaultData.level end
+  table.sort(out)
+  return table.concat(out, " ")
+end
+
+test("gearshop stations: check-in fills nothing; a tap fills the station's type at the shopper's level, and it is theirs", withDisk(function()
+  local shop, world = stationShop()
+  local s1, s2, s3 = shop.stations[1], shop.stations[2], shop.stations[3]
+  eq(world.held("c1") + world.held("c2") + world.held("c3"), 0, "nothing on display before anyone taps")
+  shop:stationAction(s1, "Alice", "claim")
+  local ds = shop:ds(s1)
+  eq(ds.shopper, "Alice")
+  eq(ds.type, "the_vault:sword")
+  eq(ds.bracket, 4, "her bracket")
+  eq(ds.phase, "open")
+  eq(levelsIn(world, "c1"), "45 45 45 45 45 45")
+  -- Bob wants swords too: Alice's station tells him whose it is, and roughly when it frees
+  shop:stationAction(s1, "Bob", "claim")
+  eq(shop:noteFor("m1"), "In use by Alice. Free in ~5 min if unused.")
+  eq(ds.shopper, "Alice", "still hers")
+  shop:stationAction(s1, "Bob", "next")
+  eq(ds.page, 1, "his tap on her buttons changes nothing")
+  -- the other sword station is his, at his own bracket
+  shop:stationAction(s2, "Bob", "claim")
+  eq(shop:ds(s2).shopper, "Bob")
+  eq(shop:ds(s2).bracket, 1)
+  eq(levelsIn(world, "c2"), "12 12 12 12")
+  -- someone not checked in yet is checked in by the tap, with no door, and has the station
+  shop:stationAction(s3, "Carol", "claim")
+  truthy(shop.state.shoppers.Carol, "Carol checked in")
+  eq(shop:noteFor("m3"), "Welcome Carol (level 0).")
+  eq(shop:ds(s3).shopper, "Carol")
+  eq(shop:ds(s3).bracket, 4, "the only axes there are")
+  -- PAY from anyone's station pays the tapper's own tab: Carol has none
+  shop:stationAction(s1, "Carol", "pay")
+  eq(shop:noteFor("m1"), "Carol: nothing to pay.")
+  eq(ds.shopper, "Alice", "and Alice's station is still hers")
+  shop:stationAction(s3, "Carol", "done")
+
+  -- LV + and LV - step to the next level that has some; past the last there is nothing to step to
+  shop:stationAction(s1, "Alice", "level", 1)
+  eq(ds.bracket, 7, "40-49 to 70-79, passing the empty ones")
+  eq(levelsIn(world, "c1"), "75 75")
+  shop:stationAction(s1, "Alice", "level", 1)
+  eq(shop:noteFor("m1"), "No higher level in stock.")
+  eq(ds.bracket, 7)
+  shop:stationAction(s1, "Alice", "level", -1)
+  eq(ds.bracket, 4)
+  shop:stationAction(s1, "Alice", "type", "the_vault:axe")
+  eq(ds.type, "the_vault:sword", "a station of one type has no other")
+
+  -- a piece taken there goes on the tab of the station's shopper
+  local slot = next(world.chests.c1.items)
+  world.chests.c1.items[slot] = nil
+  shop:reconcile(s1)
+  eq(#(shop.state.tabs.Alice or {}), 1, "on Alice's tab")
+  eq(shop.state.tabs.Alice[1].price, 10)
+
+  -- DONE: only hers works; the station empties into the vault and is free, and Bob can have it
+  shop:stationAction(s1, "Bob", "done")
+  eq(ds.shopper, "Alice")
+  shop:stationAction(s1, "Alice", "done")
+  eq(ds.shopper, nil)
+  eq(ds.phase, nil)
+  eq(world.held("c1"), 0)
+  shop:stationAction(s1, "Bob", "claim")
+  eq(ds.shopper, "Bob")
+  eq(ds.bracket, 4, "every 10-19 sword is in his other station: the nearest level that has some")
+  eq(all(world), 14, "every piece but the one taken is somewhere, once")
+end))
+
+test("gearshop stations: with nothing of its type at all, a tap says so and opens nothing", withDisk(function()
+  local shop = stationShop()
+  shop.stations[3].gearType = "the_vault:wand"
+  shop:stationAction(shop.stations[3], "Alice", "claim")
+  eq(shop:noteFor("m3"), "No Wands in stock right now.")
+  eq(shop:ds(shop.stations[3]).shopper, nil)
+end))
+
+test("gearshop stations: a station for a family of types (idol) fills with every one of them and nothing else", withDisk(function()
+  local idols = {}
+  for _ = 1, 2 do idols[#idols + 1] = gear("idol_benevolent", 45) end
+  for _ = 1, 3 do idols[#idols + 1] = gear("idol_timekeeper", 44) end
+  idols[#idols + 1] = gear("idol_omniscient", 75)
+  local world = pretend({
+    v1 = { size = 54, items = { gear("sword", 45), gear("sword", 45) } }, v2 = { size = 54, items = idols }, v3 = { size = 54, items = {} },
+    c1 = { size = 54, items = {} }, c2 = { size = 54, items = {} }, c3 = { size = 54, items = {} },
+  })
+  local shop = stationShop({ world = world })
+  local s3 = shop.stations[3]
+  s3.gearType = "the_vault:idol"
+  shop:stationAction(s3, "Alice", "claim")
+  local ds = shop:ds(s3)
+  eq(ds.shopper, "Alice")
+  eq(ds.bracket, 4)
+  eq(world.held("c3"), 5, "both kinds of idol at 40-49")
+  for _, item in pairs(world.chests.c3.items) do
+    truthy(item.name:find("^the_vault:idol_"), "only idols: " .. item.name)
+  end
+  shop:stationAction(s3, "Alice", "level", 1)
+  eq(ds.bracket, 7, "LV + steps to the next bracket any idol has")
+  eq(world.held("c3"), 1)
+  shop:stationAction(s3, "Alice", "done")
+  eq(all(world), 8, "every piece back, once")
+end))
+
+test("gearshop stations: one more station than a shopper may hold frees the one used longest ago", withDisk(function()
+  local shop, world = stationShop({ limits = { stationsPerShopper = 2 } })
+  local s1, s2, s3 = shop.stations[1], shop.stations[2], shop.stations[3]
+  shop:stationAction(s1, "Alice", "claim")
+  shop:stationAction(s3, "Alice", "claim")
+  shop:ds(s1).used, shop:ds(s3).used = 1, 2
+  shop:stationAction(s2, "Alice", "claim")
+  eq(shop:ds(s1).shopper, nil, "the oldest is given back")
+  eq(world.held("c1"), 0, "and emptied")
+  eq(shop:noteFor("m1"), "Free again: Alice opened station 2.")
+  eq(shop:ds(s2).shopper, "Alice")
+  eq(shop:ds(s3).shopper, "Alice")
+  eq(all(world), 15)
+  -- 0 is no limit
+  shop.cfg.stationsPerShopper = 0
+  shop:stationAction(s1, "Alice", "claim")
+  eq(#shop:held("Alice"), 3)
+end))
+
+test("gearshop stations: walking away, leaving it untouched, or checking out frees a station", withDisk(function()
+  local shop, world = stationShop()
+  local s1, s3 = shop.stations[1], shop.stations[3]
+  shop:stationAction(s1, "Alice", "claim")
+  shop:freeStations({ Alice = { x = 12, y = 64, z = 0 } })
+  eq(shop:ds(s1).shopper, "Alice", "she is at it")
+  shop:freeStations({ Alice = { x = 40, y = 64, z = 0 } })
+  eq(shop:ds(s1).shopper, "Alice", "one look away is not enough")
+  shop:stationAction(s1, "Bob", "claim")
+  eq(shop:noteFor("m1"), "In use by Alice. Free soon.")
+  shop:freeStations({ Alice = { x = 40, y = 64, z = 0 } })
+  eq(shop:ds(s1).shopper, nil, "two looks running: she walked away")
+  eq(world.held("c1"), 0)
+  eq(shop:noteFor("m1"), "Free again: Alice walked away.")
+  -- with no word of where she is, a station stays hers
+  shop:stationAction(s1, "Alice", "claim")
+  shop:freeStations({})
+  shop:freeStations({})
+  eq(shop:ds(s1).shopper, "Alice")
+  -- untouched too long
+  shop:stationAction(s3, "Alice", "claim")
+  shop:ds(s3).used = os.epoch("utc") - 6 * 60000
+  shop:freeStations({ Alice = { x = 30, y = 64, z = 0 } })
+  eq(shop:ds(s3).shopper, nil, "five minutes with no tap or take")
+  eq(world.held("c3"), 0)
+  -- checking out gives back every station she holds
+  shop:stationAction(s3, "Alice", "claim")
+  shop:checkOut("Alice", "checked out")
+  eq(shop:ds(s1).shopper, nil)
+  eq(shop:ds(s3).shopper, nil)
+  eq(world.held("c1") + world.held("c3"), 0)
+  eq(all(world), 15)
+end))
+
+test("gearshop stations: a reboot at any step of filling or emptying a station is finished once", withDisk(function()
+  for _, point in ipairs({ "fill-begin", "fill-end", "sweep-begin", "sweep-end" }) do
+    local emptying = point:find("sweep", 1, true) ~= nil
+    local shop, world, disk = stationShop()
+    local s1 = shop.stations[1]
+    if emptying then
+      shop:stationAction(s1, "Alice", "claim")
+      eq(world.held("c1"), 6, point .. ": filled")
+    end
+    local real = shop.save
+    shop.save = function(self, why)
+      if why == point then error("crash at " .. why, 0) end
+      return real(self, why)
+    end
+    eq(pcall(shop.stationAction, shop, s1, "Alice", emptying and "done" or "claim"), false, point .. " went down")
+    -- back up on the same chests, with the state as it was last written
+    local again = stationShop({ world = world, state = disk.copy(disk.state) })
+    for _, d in ipairs(again.stations) do again:mend(d) end
+    local ds = again:ds(again.stations[1])
+    if point == "sweep-end" then
+      eq(ds.shopper, nil, point .. ": the station is free")
+      eq(ds.phase, nil, point)
+      eq(world.held("c1"), 0, point .. ": and empty")
+    elseif point == "sweep-begin" then
+      -- DONE was never written: the station is still hers, as it was
+      eq(ds.shopper, "Alice", point)
+      eq(ds.phase, "open", point)
+      eq(world.held("c1"), 6, point)
+    else
+      eq(ds.shopper, "Alice", point .. ": still hers")
+      eq(ds.phase, "open", point .. ": open again")
+      eq(levelsIn(world, "c1"), "45 45 45 45 45 45", point .. ": her six, once")
+    end
+    eq(all(world), 15, point .. ": nothing made or lost")
+    eq(next(again.state.tabs), nil, point .. ": nobody charged")
+  end
+end))
