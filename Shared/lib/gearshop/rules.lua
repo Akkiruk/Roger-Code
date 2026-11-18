@@ -29,6 +29,8 @@ M.DEFAULTS = {
                             -- that slot by at least this much
   improveBelow = 20,        -- and is no more than this many levels under the shopper's level
   improveAbove = 3,         -- or up to this many over it (those come after the ones usable now)
+  buildWeights = {},        -- the owner's own weights for the IMPROVEMENTS builds (page 4, B), over lib/gearshop/builds.lua:
+                            -- { build = { attribute = weight } }
   stationsPerShopper = 3,   -- display stations one shopper may hold at once: tapping one more frees the one they used
                             -- longest ago. 0 is no limit. Check-in fills none; a station fills when its shopper taps it
   stationIdleMinutes = 5,   -- a station whose shopper has not tapped it or taken from it this long is emptied and freed
@@ -146,7 +148,7 @@ function M.piece(detail)
   end
   -- the numbers the advanced search and IMPROVEMENTS work from (vhcctweaks 2.2.37 details): each modifier's attribute
   -- (registry id, kept without "the_vault:") and numeric value, summed when a piece has several lines of one attribute
-  local stats
+  local stats, abil
   for _, affix in ipairs(AFFIXES) do
     local list = vd[affix]
     if type(list) == "table" then
@@ -155,6 +157,10 @@ function M.piece(detail)
           local a = mod.attribute:gsub("^the_vault:", "")
           stats = stats or {}
           stats[a] = (stats[a] or 0) + mod.value
+        elseif type(mod) == "table" and type(mod.value) == "table" and mod.value.ability then
+          -- "+2 Fireball Volley": { ability, levelChange }, for IMPROVEMENTS by build
+          abil = abil or {}
+          abil[#abil + 1] = { ab = tostring(mod.value.ability), lv = tonumber(mod.value.levelChange) or 1 }
         end
       end
     end
@@ -172,6 +178,7 @@ function M.piece(detail)
     unidentified = (type(vd.state) == "string" and vd.state:upper() ~= "IDENTIFIED") or nil,
     label = tostring(label),
     stats = stats,
+    abil = abil,
     -- the slot it is worn in: head, chest, legs, feet, weapon (mainhand), offhand; a magnet has no equipmentSlot
     slot = (vd.equipmentSlot == "mainhand" and "weapon") or (type(vd.equipmentSlot) == "string" and vd.equipmentSlot)
       or (detail.name == "the_vault:magnet" and "magnet") or nil,

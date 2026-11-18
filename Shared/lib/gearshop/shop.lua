@@ -31,6 +31,8 @@
 local rules = require("lib.gearshop.rules")
 local store = require("lib.gearshop.store")
 local stockLib = require("lib.gearshop.stock")
+local builds = require("lib.gearshop.builds")
+local improve = require("lib.gearshop.improve")
 local journal = require("lib.casino.journal")
 local books = require("lib.casino.books")
 local wallet = require("lib.casino.wallet")
@@ -1352,6 +1354,11 @@ function Shop:kioskAction(name, action, query)
     if self:fill(d) then
       self:note(d.monitor, (ds.total or 0) .. " found, best first. Take what you want from the chest.")
     end
+  elseif action == "setbuild" then
+    -- the shopper's own pick, kept between visits ("auto": let the shop guess again); the counts follow it
+    local id = query and query.build
+    self:pickBuild(name, id ~= "auto" and id or nil)
+    self:improvements(name, "any")
   elseif action == "improve" then
     if not isFree(self, d) and ds.shopper ~= name then return end
     local found, why = self:improvements(name, query and query.slot or "any")
@@ -1381,45 +1388,125 @@ end
 -- ---------------------------------------------------------------- IMPROVEMENTS
 
 local WORN_MS = 60000
-local WORN_SLOTS = { head = "head", chest = "chest", legs = "legs", feet = "feet", mainhand = "weapon", offhand = "offhand" }
+local WORN_SLOTS = { head = "head", chest = "chest", legs = "legs", feet = "feet", offhand = "offhand" }
 
---- What a shopper wears, as Gear Score per slot, and their vault level. Read once a minute at most (two main-thread
--- calls). Returns { level, worn = { slot = gearScore } }, or nil and what to tell them.
-function Shop:wornBy(name)
+--- One ccvault read on the economy thread: the answer, or nil when the server has no such call or it failed.
+local function read(fn, ...)
+  if type(fn) ~= "function" then return nil, "missing" end
+  local ok, value, why = economy.call(fn, ...)
+  if not ok then return nil, tostring(value) end
+  if value == nil then return nil, tostring(why) end
+  return value
+end
+
+--- Everything IMPROVEMENTS knows about a shopper (improve.lua's "player read"), read at most once a minute: what they
+-- wear (as pieces), level, Temper, Gear Score, and from vhcctweaks 2.2.37 their skills, stat-screen totals and caps and
+-- the hotbar weapon Gear Power counts. What a server cannot give is left out and `limited` says so.
+-- Returns the read, or nil and what to tell them.
+function Shop:readPlayer(name)
   self.wornCache = self.wornCache or {}
   local cached = self.wornCache[name]
   if cached and now() - cached.at < WORN_MS then return cached end
   if not ccvault or type(ccvault.getPlayerEquipment) ~= "function" then return nil, "This server cannot read your gear." end
-  local ok, eq, why = economy.call(ccvault.getPlayerEquipment, name)
-  if not ok then return nil, "Could not read your gear: " .. tostring(eq) end
-  if type(eq) ~= "table" then return nil, (tostring(why):find("offline", 1, true) and "Stand at the kiosk while you are online."
-    or ("Could not read your gear: " .. tostring(why))) end
-  local level = self:vaultLevel(name) or (self.state.shoppers[name] or {}).level or self.cfg.defaultLevel
-  local worn = {}
-  for field, slot in pairs(WORN_SLOTS) do
-    local item = eq[field]
-    local vd = type(item) == "table" and type(item.vaultData) == "table" and item.vaultData
-    if vd and type(vd.gearScore) == "number" then worn[slot] = vd.gearScore end
+  local eq, why = read(ccvault.getPlayerEquipment, name)
+  if type(eq) ~= "table" then
+    return nil, (tostring(why):find("offline", 1, true) and "Stand at the kiosk while you are online."
+      or ("Could not read your gear: " .. tostring(why)))
   end
-  -- a magnet is worn as a curio
+  local r = { at = now(), worn = {}, trinkets = {} }
+  r.level = self:vaultLevel(name) or (self.state.shoppers[name] or {}).level or self.cfg.defaultLevel
+  local function piece(detail) return type(detail) == "table" and detail.name and rules.piece(detail) or nil end
+  for field, slot in pairs(WORN_SLOTS) do r.worn[slot] = piece(eq[field]) end
+  -- the weapon Gear Power counts (2.2.37), else what they hold
+  r.worn.weapon = piece(eq.weapon) or piece(eq.mainhand)
+  local limited = eq.weapon == nil and eq.hotbar == nil
   for _, items in pairs(type(eq.curios) == "table" and eq.curios or {}) do
     for _, item in pairs(items) do
-      local vd = type(item) == "table" and item.name == "the_vault:magnet" and type(item.vaultData) == "table" and item.vaultData
-      if vd and type(vd.gearScore) == "number" then worn.magnet = math.max(worn.magnet or 0, vd.gearScore) end
+      if type(item) == "table" and type(item.name) == "string" then
+        if item.name == "the_vault:magnet" then r.worn.magnet = piece(item) else r.trinkets[#r.trinkets + 1] = item.name end
+      end
     end
   end
-  cached = { at = now(), level = level, worn = worn }
-  self.wornCache[name] = cached
-  return cached
+  local temper = read(ccvault.getPlayerTemper, name)
+  if type(temper) == "table" then
+    local function lv(c) return type(temper[c]) == "table" and tonumber(temper[c].level) or 0 end
+    r.temper = { might = lv("might"), magic = lv("magic"), vigor = lv("vigor") }
+  end
+  local gp = read(ccvault.getPlayerGearPower, name)
+  if type(gp) == "table" then
+    r.gearScore = gp.shown ~= false and tonumber(gp.gearScore) or nil
+    r.greed = tonumber(gp.greedTier)
+  end
+  local skills = read(ccvault.getPlayerSkills, name)
+  if type(skills) == "table" and type(skills.abilities) == "table" then
+    r.skills = skills.abilities
+  else
+    limited = true
+  end
+  local stats = read(ccvault.getPlayerStats, name)
+  if type(stats) == "table" then
+    r.totals, r.caps = {}, {}
+    for id, st in pairs(stats) do
+      local a = tostring(id):gsub("^the_vault:", "")
+      if type(st) == "table" then
+        r.totals[a] = tonumber(st.uncapped) or tonumber(st.value)
+        if tonumber(st.limit) then r.caps[a] = tonumber(st.limit) end
+      end
+    end
+  else
+    limited = true
+  end
+  if not r.caps and type(ccvault.getLimits) == "function" then
+    local ok, limits = pcall(ccvault.getLimits)
+    if ok and type(limits) == "table" and type(limits.statCaps) == "table" then
+      r.caps = {}
+      for id, cap in pairs(limits.statCaps) do
+        if type(cap) == "table" and tonumber(cap.base) then r.caps[(tostring(id):gsub("^the_vault:", ""))] = tonumber(cap.base) end
+      end
+    end
+  end
+  r.limited = limited or nil
+  self.wornCache[name] = r
+  return r
 end
 
---- The pieces in stock that beat what a shopper wears (rules.improvements), and the count for every slot.
+--- The build IMPROVEMENTS judges a shopper's gear by: their own pick (kept between visits), else the guess.
+-- Returns id ("gs" for best rolled), label, reason, picked.
+function Shop:buildFor(name, r)
+  local all = builds.all(self.cfg.buildWeights)
+  local mine = self.state.builds[name]
+  if mine and (mine.id == "gs" or all[mine.id]) then
+    if mine.id == "gs" then return "gs", "Best rolled (Gear Score)", "your pick", true end
+    return mine.id, all[mine.id].label, "your pick", true
+  end
+  local id, _, why = improve.infer(r, all)
+  return id, all[id].label, why, false
+end
+
+--- A shopper picks the build IMPROVEMENTS uses for them ("gs": best rolled, nil: let the shop guess again).
+function Shop:pickBuild(name, id)
+  if not name then return end
+  self.state.builds[name] = id and { id = id, at = now() } or nil
+  self:save("build")
+end
+
+--- The pieces in stock that beat what a shopper wears, by their build (or plain Gear Score), and the count for every slot.
+-- Also kept, for the kiosk screen, in improveCounts[name]: counts, the build, why, and whether the read was limited.
 function Shop:improvements(name, slot)
-  local me, why = self:wornBy(name)
-  if not me then return nil, why end
-  local found, counts = rules.improvements(self.stock:pieces(), me.worn, me.level, slot, self.cfg)
+  local r, why = self:readPlayer(name)
+  if not r then return nil, why end
+  local id, label, reason = self:buildFor(name, r)
+  local found, counts
+  if id == "gs" then
+    local worn = {}
+    for s, p in pairs(r.worn) do worn[s] = p.gs end
+    found, counts = rules.improvements(self.stock:pieces(), worn, r.level, slot, self.cfg)
+  else
+    found, counts = improve.search(self.stock:pieces(), r, id, slot, self.cfg)
+  end
   self.improveCounts = self.improveCounts or {}
-  self.improveCounts[name] = { at = now(), counts = counts, level = me.level }
+  self.improveCounts[name] = { at = now(), counts = counts, level = r.level, build = id, label = label, reason = reason,
+    limited = r.limited }
   self:changed()
   return found, counts
 end

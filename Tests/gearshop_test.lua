@@ -1736,3 +1736,111 @@ test("gearshop kiosk: the screen's taps build the search; stats come from the st
   tap("statdel", 1) eq(#view.query.stats, 0)
   eq(tap("find"), false, "FIND goes to the shop")
 end)
+
+-- ---------------------------------------------------------------- IMPROVEMENTS by build (Phase 2)
+
+local builds = require("lib.gearshop.builds")
+local improve = require("lib.gearshop.improve")
+
+local function wear(kind, slot, lines, extra)
+  return rules.piece(scored(kind, 50, 600, slot, lines, extra))
+end
+
+test("gearshop builds: ten presets from the design, the owner's weights over them", function()
+  local all = builds.all()
+  eq(#builds.ORDER, 10)
+  eq(all.caster.weights.ability_power, 3) eq(all.tank.weights.resistance, 3) eq(all.thorns.weights.thorns_damage_flat, 3)
+  eq(builds.weight(all.caster, "health"), 0.6, "the build's own value over the survival floor")
+  eq(builds.weight(all.looter, "armor"), 0.3, "the floor where a build sets none")
+  eq(builds.weight(all.caster, "soul_chance"), 0, "ignored unless named")
+  eq(all.balanced.weights.attack_damage, 1)
+  local mine = builds.all({ caster = { ability_power = 1.5 } })
+  eq(mine.caster.weights.ability_power, 1.5, "the owner's weight")
+  eq(mine.caster.weights.cooldown_reduction, 2.5, "the rest stay")
+end)
+
+test("gearshop builds: the build is read from gear, Temper, what they hold and (2.2.37) their skills", function()
+  local caster = {
+    worn = {
+      head = wear("helmet", "head", { ability_power = 45, cooldown_reduction = 0.15 }),
+      chest = wear("chestplate", "chest", { ability_power = 50, mana_regen = 0.8 }),
+      offhand = wear("wand", "offhand", { ability_power = 48, cooldown_reduction = 0.25 }),
+      weapon = wear("sword", "mainhand", { ability_power = 18, attack_damage = 110 }),
+    },
+    temper = { might = 10, magic = 200, vigor = 20 },
+  }
+  local id, conf, why = improve.infer(caster)
+  eq(id, "caster", "ability power gear, Magic Temper and a wand")
+  truthy(conf >= 0.35, "fairly sure (" .. conf .. ")")
+  truthy(why:find("Magic Temper", 1, true) or why:find("Wand", 1, true) or why:find("Ability Power", 1, true), "says why: " .. why)
+
+  local tank = {
+    worn = {
+      head = wear("helmet", "head", { resistance = 0.15, health = 6 }),
+      chest = wear("chestplate", "chest", { resistance = 0.14, block = 0.1, health = 6 }),
+      legs = wear("leggings", "legs", { resistance = 0.16, health = 5 }),
+      offhand = wear("shield", "offhand", { block = 0.28, resistance = 0.14 }),
+    },
+    temper = { might = 30, magic = 10, vigor = 250 },
+  }
+  eq((improve.infer(tank)), "tank", "resistance, block, a shield and Vigor")
+
+  eq((improve.infer({ worn = {} })), "balanced", "nothing to go on")
+  local _, _, unsure = improve.infer({ worn = {} })
+  truthy(unsure:find("pick your build", 1, true), unsure)
+
+  -- skills tip a player whose gear says little: the ability on their key counts most
+  local plain = { worn = { head = wear("helmet", "head", { armor = 28, ability_power = 20, attack_damage = 30 }) },
+    temper = { might = 50, magic = 50, vigor = 50 },
+    skills = { { id = "Fireball", specialization = "Fireball_Volley", level = 4, selected = true, name = "Fireball" },
+      { id = "Nova", specialization = "Nova_Dot", level = 3 } } }
+  local skilled = improve.infer(plain)
+  local _, _, _, s1 = improve.infer(plain)
+  plain.skills = nil
+  local _, _, _, s2 = improve.infer(plain)
+  truthy(s1.caster > s2.caster, "learned caster abilities raise caster (" .. s1.caster .. " vs " .. s2.caster .. ")")
+  truthy(skilled ~= nil)
+end)
+
+test("gearshop builds: a capped stat counts only up to the cap, and the worth-it threshold", function()
+  local all = builds.all()
+  local cdr = wear("helmet", "head", { cooldown_reduction = 0.2 })
+  -- nothing else gives CDR: all of it counts (2.5 x 0.2/0.28 x 100)
+  local full = improve.fit(cdr, all.caster, { cooldown_reduction = 0 }, {}, nil)
+  truthy(math.abs(full - 2.5 * 0.2 / 0.28 * 100) < 0.01, "all of it: " .. full)
+  -- the rest of their gear already gives 0.75 of a 0.8 cap: only 0.05 of it counts
+  local capped = improve.fit(cdr, all.caster, { cooldown_reduction = 0.75 }, {}, nil)
+  truthy(math.abs(capped - 2.5 * 0.05 / 0.28 * 100) < 0.01, "only up to the cap: " .. capped)
+  -- the player's own cap (getPlayerStats) wins over the build's
+  local own = improve.fit(cdr, all.caster, { cooldown_reduction = 0.75 }, {}, { cooldown_reduction = 0.9 })
+  truthy(math.abs(own - 2.5 * 0.15 / 0.28 * 100) < 0.01, "their own cap: " .. own)
+  -- worth it: at least 15 points and 8% better
+  local cur = wear("helmet", "head", { ability_power = 45 })
+  local tiny = wear("helmet", "head", { ability_power = 47 })
+  local up = improve.upgrade(tiny, cur, all.caster, { totals = {}, caps = nil })
+  truthy(up and not up.worth, "2 ability power is not worth a swap")
+  local big = wear("helmet", "head", { ability_power = 45, cooldown_reduction = 0.15 })
+  truthy(improve.upgrade(big, cur, all.caster, { totals = {} }).worth, "a whole extra line is")
+end)
+
+test("gearshop builds: never a shield to a caster, and never a piece that costs the build's core stat", function()
+  local all = builds.all()
+  local shield = wear("shield", "offhand", { block = 0.3, resistance = 0.16 })
+  eq(improve.upgrade(shield, nil, all.caster, { totals = {} }), nil, "a caster's offhand is a wand or focus")
+  local cur = wear("wand", "offhand", { ability_power = 50 })
+  local less = wear("wand", "offhand", { ability_power = 40, cooldown_reduction = 0.28, area_of_effect = 0.2 })
+  eq(improve.upgrade(less, cur, all.caster, { totals = {} }), nil, "20% less ability power: kept out, however good the rest")
+  local same = wear("wand", "offhand", { ability_power = 47, cooldown_reduction = 0.28 })
+  truthy(improve.upgrade(same, cur, all.caster, { totals = {} }).worth, "6% less is within the 10% it may lose")
+end)
+
+test("gearshop builds: the search keeps the level window, puts the usable ones first and counts per slot", function()
+  local read = { level = 42, worn = { head = wear("helmet", "head", { ability_power = 30 }) }, temper = { magic = 100 } }
+  local function helm(level, ap) return rules.piece(scored("helmet", level, 600, "head", { ability_power = ap })) end
+  local pieces = { helm(40, 48), helm(44, 50), helm(46, 50), helm(15, 50), helm(41, 31), rules.piece(scored("wand", 42, 600, "offhand", { ability_power = 49 })) }
+  local found, counts = improve.search(pieces, read, "caster", "head", rules.DEFAULTS)
+  local levels = {}
+  for _, c in ipairs(found) do levels[#levels + 1] = c.level .. (c.later and "*" or "") end
+  eq(table.concat(levels, " "), "40 44*", "40 now; 44 at level 44; 46 past +3, 15 too low, 41 not worth it")
+  eq(counts.head, 2) eq(counts.offhand, 1, "an empty offhand: any good wand is better")
+end)

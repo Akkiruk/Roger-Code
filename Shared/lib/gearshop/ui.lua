@@ -6,12 +6,9 @@
 -- Monitors come in any size, so every layout is worked out from the size the monitor reports.
 
 local rules = require("lib.gearshop.rules")
+local builds = require("lib.gearshop.builds")
 
 local M = {}
-
-local GRADE_COLOR = {
-  SCRAPPY = "8", COMMON = "3", RARE = "4", EPIC = "2", OMEGA = "5", LEGENDARY = "1", UNIQUE = "1", SPECIAL = "9", CHAOTIC = "e",
-}
 M.RARITIES = { "LEGENDARY", "OMEGA", "EPIC", "RARE", "COMMON", "SCRAPPY" }
 
 -- ---------------------------------------------------------------- a screen
@@ -488,6 +485,35 @@ function M.kiosk(s, shop, d, view)
     return
   end
 
+  if view.mode == "builds" then
+    -- the shopper picks the build IMPROVEMENTS judges by; the shop keeps the pick between visits
+    s:write(1, 1, "PICK YOUR BUILD", "0", "b")
+    local all = builds.all(shop.cfg and shop.cfg.buildWeights)
+    local entries = {}
+    for _, id in ipairs(builds.ORDER) do entries[#entries + 1] = { id, all[id].label } end
+    entries[#entries + 1] = { "gs", "Best rolled (Gear Score)" }
+    entries[#entries + 1] = { "auto", "Let the shop guess" }
+    local cols = s.w >= 40 and 2 or 1
+    local colW = math.floor((s.w - (cols - 1)) / cols)
+    local ih = tall and 3 or 1
+    local rows = math.ceil(#entries / cols)
+    local step = math.max(ih, math.min(ih + 1, math.floor((buttonsTop - 2) / rows)))
+    local current = view.who and shop.state.builds and shop.state.builds[view.who] and shop.state.builds[view.who].id
+    for i, e in ipairs(entries) do
+      local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+      local x = 1 + col * (colW + 1)
+      local w = col == cols - 1 and (s.w - x + 1) or colW
+      local by = 2 + row * step
+      if by + ih - 1 < buttonsTop then
+        local mine = e[1] == current or (e[1] == "auto" and not current)
+        s:button("setbuild", e[1], x, by, w, ih, e[2], mine and "f" or "0", mine and "5" or (e[1] == "gs" and "b" or "7"))
+      end
+    end
+    s:row(buttonsTop, bh, { { "improvesback", nil, "BACK", "0", "7" } })
+    s:finish()
+    return
+  end
+
   if view.mode == "improve" then
     s:write(1, 1, "IMPROVEMENTS", "0", "b")
     if owner then s:right(1, owner, "4", "b") end
@@ -496,7 +522,17 @@ function M.kiosk(s, shop, d, view)
     if not mine then
       s:wrap(y, 3, "Reading what you wear...", "8")
     else
-      y = y + s:wrap(y, 3, "Pieces whose Gear Score beats what you wear in that slot. Tap one to have them brought.", "8") + 1
+      -- the build it judges by, why, and a way to change it
+      s:write(1, y, ("For: " .. tostring(mine.label)):sub(1, s.w), "4")
+      y = y + 1
+      y = y + s:wrap(y, 2, "(" .. tostring(mine.reason) .. ")", "8")
+      if mine.limited then
+        s:write(1, y, ("Build guess limited until the server updates"):sub(1, s.w), "1")
+        y = y + 1
+      end
+      y = y + 1
+      s:button("changebuild", nil, 1, y, s.w, rh, "CHANGE BUILD", "0", "b")
+      y = y + rh + gap + (tall and 0 or 1)
       local counts, total = mine.counts or {}, 0
       for _, n in pairs(counts) do total = total + n end
       local entries = {}
@@ -641,8 +677,10 @@ function M.kioskTouch(view, button, shop)
     if f and q.sort == "stat:" .. f.a then q.sort = nil end
   elseif id == "stat" then
     -- the stat's own name: nothing to do
-  elseif id == "improve" then
+  elseif id == "improve" or id == "improvesback" then
     view.mode = "improve"
+  elseif id == "changebuild" then
+    view.mode = "builds"
   else
     return false
   end
@@ -733,7 +771,7 @@ function M.infoTopics(shop)
   if setup.kiosk and setup.kiosk.chest then
     add("kiosk", "Search kiosk", "a", {
       "Looking for something? At the search kiosk pick a type, levels, a rarity, a least Gear Score and stats (+ ADD STAT, each with a least value), then FIND.",
-      "IMPROVEMENTS brings pieces with a better Gear Score than what you wear: pick a slot, or ANY SLOT.",
+      "IMPROVEMENTS brings pieces that suit your build better than what you wear. The shop reads your build from your gear, Temper and skills; CHANGE BUILD picks your own, kept for next time (Best rolled: plain Gear Score). Then pick a slot, or ANY SLOT.",
       "What comes goes into the kiosk's chest, best first. Take what you want: it is charged the same way. DONE puts the rest back.",
     })
   end

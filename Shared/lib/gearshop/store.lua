@@ -97,6 +97,8 @@ function M.newState()
                       -- or by PAY). One put back while they are checked in is refunded: credit to credit, tokens back.
     refunds = {},     -- { { id, name, tokens }, ... }: tokens on their way into the owed book for a player (a piece put
                       -- back, or store credit put against what they owe), each booked once under "gs-ref-<id>"
+    builds = {},      -- name -> { id, at }: the IMPROVEMENTS build a player picked at the kiosk ("gs": best rolled), kept
+                      -- between visits; with none the shop guesses
     returnsBy = {},   -- key -> who left that refused piece in the returns chest ("?" when nobody could be seen)
     moving = nil,     -- refused gear on its way: { kind = "refuse"|"donate", from, to, keys = { key = n }, by }
     stats = { donated = 0, sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0,

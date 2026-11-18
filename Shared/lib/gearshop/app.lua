@@ -13,6 +13,7 @@ local rules = require("lib.gearshop.rules")
 local store = require("lib.gearshop.store")
 local shopLib = require("lib.gearshop.shop")
 local ui = require("lib.gearshop.ui")
+local builds = require("lib.gearshop.builds")
 local journal = require("lib.casino.journal")
 local wallet = require("lib.casino.wallet")
 
@@ -421,6 +422,38 @@ local function runShop()
         line("In returns: " .. table.concat(parts, ", "), colors.orange)
       end
       line("owed: + the shop owes them, - they owe", colors.lightGray)
+    elseif admin.page == 4 and admin.bw then
+      -- the IMPROVEMENTS build weights: a list of builds, then one build's weights
+      local bw = admin.bw
+      local all = builds.all(cfg.buildWeights)
+      local mine = type(cfg.buildWeights) == "table" and cfg.buildWeights or {}
+      local list, rows = {}, th - 4
+      if bw.build then
+        local defaults = builds.defaults()[bw.build]
+        line("BUILD WEIGHTS: " .. all[bw.build].label, colors.yellow)
+        for _, a in ipairs(builds.attributes()) do list[#list + 1] = a end
+        bw.sel = math.max(1, math.min(bw.sel, #list))
+        if bw.sel <= bw.scroll then bw.scroll = bw.sel - 1 end
+        if bw.sel > bw.scroll + rows then bw.scroll = bw.sel - rows end
+        for i = 1 + bw.scroll, math.min(#list, bw.scroll + rows) do
+          local a = list[i]
+          local own = mine[bw.build] and mine[bw.build][a]
+          local text = ("%-26s %4s"):format(a:sub(1, 26), tostring(builds.weight(all[bw.build], a)))
+            .. (own ~= nil and ("  (default " .. tostring(defaults[a] or 0) .. ")") or "")
+          line((i == bw.sel and "> " or "  ") .. text, i == bw.sel and colors.lime or (own ~= nil and colors.orange or colors.white))
+        end
+        line("Enter change (0-3), D default, Q back", colors.lightGray)
+      else
+        line("BUILD WEIGHTS: which build?", colors.yellow)
+        bw.sel = math.max(1, math.min(bw.sel, #builds.ORDER))
+        for i, id in ipairs(builds.ORDER) do
+          local changed = 0
+          for _ in pairs(mine[id] or {}) do changed = changed + 1 end
+          line((i == bw.sel and "> " or "  ") .. ("%-10s %s"):format(id, all[id].label)
+            .. (changed > 0 and ("  " .. changed .. " changed") or ""), i == bw.sel and colors.lime or colors.white)
+        end
+        line("Up/Down pick, Enter open, Q back", colors.lightGray)
+      end
     elseif admin.page == 4 then
       local list = limitKeys()
       local rows = th - 3
@@ -431,7 +464,7 @@ local function runShop()
         local key = list[i]
         line((i == admin.sel and "> " or "  ") .. ("%-22s %s"):format(key, tostring(cfg[key])), i == admin.sel and colors.lime or colors.white)
       end
-      line("Up/Down pick, Enter change, D back to default", colors.lightGray)
+      line("Up/Down pick, Enter change, D default, B build weights", colors.lightGray)
     elseif admin.page == 5 then
       local d = admin.draft
       local ids = {}
@@ -834,8 +867,26 @@ local function runShop()
       admin.page, admin.scroll, admin.msg, admin.dirty = page, 0, nil, true
       return
     end
+    if admin.page ~= 4 then admin.bw = nil end
     if admin.page == 5 then
       setupKey(ch)
+    elseif admin.page == 4 and admin.bw then
+      local bw = admin.bw
+      if ch == "q" then
+        if bw.build then bw.build, bw.sel, bw.scroll = nil, bw.pick or 1, 0 else admin.bw = nil end
+      elseif ch == "d" and bw.build then
+        local a = builds.attributes()[bw.sel]
+        if type(cfg.buildWeights) == "table" and cfg.buildWeights[bw.build] then
+          cfg.buildWeights[bw.build][a] = nil
+          if not next(cfg.buildWeights[bw.build]) then cfg.buildWeights[bw.build] = nil end
+          store.saveConfig(cfg)
+          shop.improveCounts, shop.wornCache = nil, nil
+        end
+      end
+      admin.dirty = true
+    elseif admin.page == 4 and ch == "b" then
+      admin.bw = { sel = 1, scroll = 0 }
+      admin.dirty = true
     elseif admin.page == 4 and ch == "d" then
       local key = limitKeys()[admin.sel]
       cfg[key] = rules.DEFAULTS[key]
@@ -860,6 +911,34 @@ local function runShop()
       local w = admin.wizard
       local step = w.steps[w.at]
       if key == keys.enter and step.kind == "stand" then stand(w, step) end
+      return
+    end
+    if admin.page == 4 and admin.bw then
+      local bw = admin.bw
+      if key == keys.up then
+        bw.sel = math.max(1, bw.sel - 1)
+      elseif key == keys.down then
+        bw.sel = bw.sel + 1
+      elseif key == keys.enter and not bw.build then
+        bw.build, bw.pick, bw.sel, bw.scroll = builds.ORDER[bw.sel], bw.sel, 1, 0
+      elseif key == keys.enter and bw.build then
+        local id, a = bw.build, builds.attributes()[bw.sel]
+        ask(id .. " " .. a .. " = ", function(text)
+          local v = tonumber(text)
+          if not v or v < 0 or v > 3 then
+            say("A weight is a number from 0 to 3.")
+            return
+          end
+          if type(cfg.buildWeights) ~= "table" then cfg.buildWeights = {} end
+          cfg.buildWeights[id] = cfg.buildWeights[id] or {}
+          cfg.buildWeights[id][a] = v
+          store.saveConfig(cfg)
+          -- every shopper's counts are worked out again with the new weight
+          shop.improveCounts, shop.wornCache = nil, nil
+          say(id .. " " .. a .. " is now " .. v)
+        end)
+      end
+      admin.dirty = true
       return
     end
     if key == keys.up then
@@ -970,6 +1049,12 @@ local function runShop()
         view.who = who2
         if shop.improveCounts and who2 then shop.improveCounts[who2] = nil end
         post("improvecount:" .. tostring(who2), function() if who2 then shop:improvements(who2, "any") end end)
+      elseif button.id == "setbuild" then
+        -- their own build for IMPROVEMENTS: kept, and the counts worked out again for it
+        local id, who2 = button.value, player()
+        view.mode, view.who = "improve", who2
+        if shop.improveCounts and who2 then shop.improveCounts[who2] = nil end
+        post(nil, function() shop:kioskAction(who2, "setbuild", { build = id }) end)
       elseif button.id == "improveslot" then
         local slot = button.value
         post(nil, function() shop:kioskAction(player(), "improve", { slot = slot }) end)
