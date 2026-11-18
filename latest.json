@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-18T21:40:04Z",
+  "generated_at": "2026-11-18T22:07:42Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "55a0353079b78195ec6e95d2900118da71867cda",
+    "commit": "4d6cf1b292d840fd70427e282c08fddbc3737a1d",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -215,9 +215,9 @@
       "name": "SALTGATE: Low Tide",
       "category": "Games",
       "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
-      "version": "1.0.0",
-      "commit": "55a0353079b78195ec6e95d2900118da71867cda",
-      "package_hash": "1abe0b00913508d642c97012ce2d62fff72daed0bad6d2782b030a5282b0586a",
+      "version": "1.0.1",
+      "commit": "4d6cf1b292d840fd70427e282c08fddbc3737a1d",
+      "package_hash": "f61391146fa65ae627aa341988bd5a4bf4d35a3da8dc2e57599f02a4d73cdedd",
       "spec_path": "programs/saltgate.json"
     },
     "slots": {
