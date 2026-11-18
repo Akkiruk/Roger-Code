@@ -328,10 +328,18 @@ function M.station(s, shop, d, view)
 
   local narrow = s.w < 24
   local bh = s.h >= 16 and 3 or 2
-  local price = rules.bracketPrice(ds.bracket or 0, shop.cfg)
+  -- each piece costs its own level's price: the screen shows the range of what is in the chest ("40-49 each"),
+  -- or of the level it is showing while nothing is in it yet
+  local low, high
+  for key in pairs(ds.shown) do
+    local p = shop:priceOf(d, key)
+    if not low or p < low then low = p end
+    if not high or p > high then high = p end
+  end
+  if not low then low, high = rules.bracketPrices(ds.bracket or 0, shop.cfg) end
   local kind = rules.typeLabel(ds.type or "?")
   local level = "Lv " .. rules.bracketLabel(ds.bracket or 0)
-  local each = price .. " each"
+  local each = rules.priceRange(low, high) .. " each"
   local top
   if narrow then
     -- one block across: the type on its own line, the level and the price under it
@@ -588,7 +596,9 @@ function M.sell(s, shop)
       y = y + s:wrap(y, 4, "Put gear in the chest. The shop buys Epic, Omega and Legendary; above level "
         .. cfg.highLevel .. " Omega and Legendary; at " .. cfg.topLevel .. " Legendary only.", "8")
       if tokens then
-        s:wrap(y + 1, 3, cfg.piecesPerToken .. " pieces make 1 token, or " .. cfg.creditMultiplier .. " in store credit.", "8")
+        local each = rules.showMilli(rules.pieceMilli(cfg))
+        s:wrap(y + 1, 3, "Each piece pays " .. each .. (each == "1" and " token, or " or " tokens, or ")
+          .. rules.showMilli(rules.creditMilli(1, cfg)) .. " in store credit.", "8")
       else
         s:wrap(y + 1, 3, "The shop pays in store credit: " .. rules.showMilli(rules.creditMilli(1, cfg))
           .. " a piece, spent on gear here.", "8")
@@ -631,7 +641,7 @@ function M.sell(s, shop)
   if tokens then
     specs = {
       { "tokens", nil, "TOKENS", "f", "4" },
-      { "credit", nil, s.w >= 30 and "STORE CREDIT x" .. cfg.creditMultiplier or "CREDIT", "f", "5" },
+      { "credit", nil, s.w >= 30 and "STORE CREDIT" or "CREDIT", "f", "5" },
     }
   else
     specs = { { "credit", nil, s.w >= 22 and "SELL FOR STORE CREDIT" or (s.w >= 12 and "STORE CREDIT" or "CREDIT"), "f", "5" } }

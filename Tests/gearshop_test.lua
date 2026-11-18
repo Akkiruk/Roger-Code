@@ -11,27 +11,39 @@ local cfg = rules.DEFAULTS
 
 -- ---------------------------------------------------------------- prices
 
-test("gearshop: the price goes up 2 for every 10 levels", function()
-  eq(rules.price(1), 2, "level 1")
-  eq(rules.price(9), 2, "level 9")
-  eq(rules.price(10), 4, "level 10")
-  eq(rules.price(19), 4, "level 19")
-  eq(rules.price(40), 10, "level 40")
-  eq(rules.price(49), 10, "level 49")
-  eq(rules.price(50), 12, "level 50")
-  eq(rules.price(99), 20, "level 99")
-  eq(rules.price(100), 22, "level 100")
-  eq(rules.price(0), 2, "level 0")
-  eq(rules.price(nil), 2, "no level")
-  eq(rules.price(140), 22, "past 100 is the top bracket")
-  for level = 0, 100 do
-    eq(rules.price(level), 2 * (math.min(10, math.floor(level / 10)) + 1), "level " .. level)
+test("gearshop: a piece costs 1 token per level, and never less than 1", function()
+  eq(rules.price(1), 1, "level 1")
+  eq(rules.price(9), 9, "level 9")
+  eq(rules.price(40), 40, "level 40")
+  eq(rules.price(49), 49, "level 49")
+  eq(rules.price(50), 50, "level 50")
+  eq(rules.price(100), 100, "level 100")
+  eq(rules.price(0), 1, "level 0 costs the minimum")
+  eq(rules.price(nil), 1, "no level costs the minimum")
+  eq(rules.price(-5), 1, "a bad level costs the minimum")
+  for level = 1, 120 do
+    eq(rules.price(level), level, "level " .. level)
   end
+  eq(rules.DEFAULTS.pricePerLevel, 1)
+  eq(rules.DEFAULTS.minPrice, 1)
 end)
 
-test("gearshop: the price per bracket is the owner's to change", function()
-  eq(rules.price(45, { pricePerBracket = 3 }), 15, "3 a bracket at 45")
-  eq(rules.bracketPrice(10, { pricePerBracket = 5 }), 55, "5 a bracket at 100")
+test("gearshop: the price per level and the minimum are the owner's to change", function()
+  eq(rules.price(45, { pricePerLevel = 2, minPrice = 1 }), 90, "2 a level at 45")
+  eq(rules.price(3, { pricePerLevel = 1, minPrice = 5 }), 5, "a minimum of 5")
+  eq(rules.price(45, { pricePerLevel = 0.5, minPrice = 1 }), 23, "half a token a level rounds to whole tokens")
+  eq(rules.price(0, { pricePerLevel = 1, minPrice = 0 }), 0, "no minimum")
+end)
+
+test("gearshop: the price range of a level bracket", function()
+  local low, high = rules.bracketPrices(0)
+  eq(low, 1) eq(high, 9)
+  low, high = rules.bracketPrices(4)
+  eq(low, 40) eq(high, 49)
+  low, high = rules.bracketPrices(10)
+  eq(low, 100) eq(high, 100)
+  eq(rules.priceRange(40, 49), "40-49")
+  eq(rules.priceRange(100, 100), "100")
 end)
 
 test("gearshop: brackets and their labels", function()
@@ -120,38 +132,40 @@ test("gearshop: the shop buys epic, omega and legendary; above 70 omega and lege
   eq(select(2, rules.accepts(rules.piece(detail(100, "OMEGA")), cfg)), "Legendary only at 100")
 end)
 
-test("gearshop: ten pieces make a token, and the fraction carries to the next sale", function()
-  eq(rules.pieceMilli(cfg), 100)
+test("gearshop: a piece sold for tokens is worth 1 token, so there is nothing to carry", function()
+  eq(rules.DEFAULTS.tokensPerPiece, 1)
+  eq(rules.pieceMilli(cfg), 1000)
   local tokens, carry = rules.settleSale(0, 7, cfg)
-  eq(tokens, 0)
-  eq(carry, 700)
-  tokens, carry = rules.settleSale(carry, 5, cfg)
-  eq(tokens, 1)
-  eq(carry, 200)
-  tokens, carry = rules.settleSale(carry, 28, cfg)
-  eq(tokens, 3)
+  eq(tokens, 7)
   eq(carry, 0)
   tokens, carry = rules.settleSale(nil, 0, cfg)
   eq(tokens, 0)
   eq(carry, 0)
-  -- nothing is lost however a seller splits their pieces up
+  -- a fraction carried from the old rate stays the seller's, and is paid once it makes a token
+  tokens, carry = rules.settleSale(700, 3, cfg)
+  eq(tokens, 3)
+  eq(carry, 700)
+  -- an owner's fractional rate still carries, and nothing is lost however a seller splits their pieces up
+  local half = { tokensPerPiece = 0.5 }
   local total, left = 0, 0
   for n = 1, 37 do
     local t
-    t, left = rules.settleSale(left, n % 4, cfg)
+    t, left = rules.settleSale(left, n % 4, half)
     total = total + t
   end
   local pieces = 0
   for n = 1, 37 do pieces = pieces + n % 4 end
-  eq(total * 1000 + left, pieces * 100, "tokens paid plus the carry is every piece's worth")
+  eq(total * 1000 + left, pieces * 500, "tokens paid plus the carry is every piece's worth")
 end)
 
-test("gearshop: store credit is four times the tokens", function()
-  eq(rules.creditMilli(10, cfg), 4000)
-  eq(rules.creditMilli(1, cfg), 400)
+test("gearshop: each sold piece is 1 store credit", function()
+  eq(rules.DEFAULTS.creditPerPiece, 1)
+  eq(rules.creditMilli(10, cfg), 10000)
+  eq(rules.creditMilli(1, cfg), 1000)
   eq(rules.creditMilli(0, cfg), 0)
-  eq(rules.creditMilli(10, { piecesPerToken = 5, creditMultiplier = 2 }), 4000)
-  eq(rules.pieceMilli({ piecesPerToken = 3 }), 333)
+  eq(rules.creditMilli(10, { creditPerPiece = 2 }), 20000, "the owner's own rate")
+  eq(rules.creditMilli(3, { creditPerPiece = 0.5 }), 1500)
+  eq(rules.pieceMilli({ tokensPerPiece = 2 }), 2000)
   eq(rules.showMilli(3600), "3.6")
   eq(rules.showMilli(4000), "4")
   eq(rules.showMilli(0), "0")
@@ -216,19 +230,19 @@ test("gearshop: the credit-only sell screen offers store credit and never tokens
     eq(text:lower():find("floor", 1, true), nil, "no word of the floor with " .. n .. " pieces in")
   end
   local empty = drawSell(cfg, sellView(0))
-  truthy(empty:find("store credit: 0.4 a piece", 1, true), "an empty chest says what a piece gives")
+  truthy(empty:find("store credit: 1 a piece", 1, true), "an empty chest says what a piece gives")
   local three = drawSell(cfg, sellView(3))
   truthy(three:find("Buying: 3", 1, true), "how many are bought")
-  truthy(three:find("You get 1.2 store credit", 1, true), "what the seller gets")
+  truthy(three:find("You get 3 store credit", 1, true), "what the seller gets")
 end)
 
 test("gearshop: with sellForTokens on the sell screen is as before: TOKENS or STORE CREDIT", function()
   local text, buttons = drawSell(tokensOn, sellView(3))
-  eq(buttons, "tokens:TOKENS,credit:STORE CREDIT x4")
-  truthy(text:find("tokens 0.3", 1, true), "what three pieces make in tokens")
-  truthy(text:find("or store credit 1.2", 1, true), "and in credit")
+  eq(buttons, "tokens:TOKENS,credit:STORE CREDIT")
+  truthy(text:find("tokens 3", 1, true), "what three pieces make in tokens")
+  truthy(text:find("or store credit 3", 1, true), "and in credit")
   local empty = drawSell(tokensOn, sellView(0))
-  truthy(empty:find("10 pieces make 1 token, or 4 in store credit.", 1, true), "the old rate line")
+  truthy(empty:find("Each piece pays 1 token, or 1 in store credit.", 1, true), "the rate line")
 end)
 
 --- A display chest's monitor at a size, open for Alice (tab 20, credit 1.5) with `n` pieces in it, or on its type picker.
@@ -1208,7 +1222,7 @@ test("gearshop stations: check-in fills nothing; a tap fills the station's type 
   world.chests.c1.items[slot] = nil
   shop:reconcile(s1)
   eq(#(shop.state.tabs.Alice or {}), 1, "on Alice's tab")
-  eq(shop.state.tabs.Alice[1].price, 10)
+  eq(shop.state.tabs.Alice[1].price, 45, "a level 45 sword costs 45")
 
   -- DONE: only hers works; the station empties into the vault and is free, and Bob can have it
   shop:stationAction(s1, "Bob", "done")
@@ -1221,6 +1235,92 @@ test("gearshop stations: check-in fills nothing; a tap fills the station's type 
   eq(ds.shopper, "Bob")
   eq(ds.bracket, 4, "every 10-19 sword is in his other station: the nearest level that has some")
   eq(all(world), 14, "every piece but the one taken is somewhere, once")
+end))
+
+test("gearshop stations: each piece is charged its own level, and one put back takes its own price off the tab", withDisk(function()
+  local swords = { gear("sword", 41), gear("sword", 44), gear("sword", 49), gear("sword", 0), gear("sword", 0) }
+  local world = pretend({
+    v1 = { size = 54, items = swords }, v2 = { size = 54, items = {} }, v3 = { size = 54, items = {} },
+    c1 = { size = 54, items = {} }, c2 = { size = 54, items = {} }, c3 = { size = 54, items = {} },
+  })
+  local shop = stationShop({ world = world })
+  local s1 = shop.stations[1]
+  shop:stationAction(s1, "Alice", "claim")
+  local ds = shop:ds(s1)
+  eq(levelsIn(world, "c1"), "41 44 49")
+  -- the price of each piece is fixed when it goes on display
+  local priced = {}
+  for key in pairs(ds.shown) do priced[#priced + 1] = shop:priceOf(s1, key) end
+  table.sort(priced)
+  eq(table.concat(priced, " "), "41 44 49", "every piece at its own level")
+  local function slotOf(level)
+    for slot, item in pairs(world.chests.c1.items) do
+      if item.vaultData.level == level then return slot, item end
+    end
+  end
+  -- she takes the 41 and the 49: a tab of two lines at their own prices
+  local slot41, item41 = slotOf(41)
+  world.chests.c1.items[slot41] = nil
+  local slot49 = slotOf(49)
+  world.chests.c1.items[slot49] = nil
+  shop:reconcile(s1)
+  eq(#shop.state.tabs.Alice, 2, "two lines")
+  eq(rules.tabTotal(shop.state.tabs.Alice), 90, "41 + 49")
+  eq(shop:owes("Alice"), 90)
+  -- the 41 goes back: 41 comes off, the 49 stays
+  world.chests.c1.items[slot41] = item41
+  shop:reconcile(s1)
+  eq(#shop.state.tabs.Alice, 1, "one line left")
+  eq(shop.state.tabs.Alice[1].price, 49, "the piece she kept")
+  eq(shop:owes("Alice"), 49)
+  -- and taken again it costs what it did
+  world.chests.c1.items[slot41] = nil
+  shop:reconcile(s1)
+  eq(shop:owes("Alice"), 90)
+
+  -- a level 0 piece costs the minimum, 1
+  shop:stationAction(s1, "Alice", "level", -1)
+  eq(ds.bracket, 0)
+  eq(levelsIn(world, "c1"), "0 0")
+  local slot0 = slotOf(0)
+  world.chests.c1.items[slot0] = nil
+  shop:reconcile(s1)
+  eq(shop:owes("Alice"), 91, "41 + 49 + 1")
+end))
+
+test("gearshop stations: the screen shows the price range of what is in the chest", withDisk(function()
+  local swords = { gear("sword", 41), gear("sword", 44), gear("sword", 49) }
+  local world = pretend({
+    v1 = { size = 54, items = swords }, v2 = { size = 54, items = {} }, v3 = { size = 54, items = {} },
+    c1 = { size = 54, items = {} }, c2 = { size = 54, items = {} }, c3 = { size = 54, items = {} },
+  })
+  local shop = stationShop({ world = world })
+  local s1 = shop.stations[1]
+  shop:stationAction(s1, "Alice", "claim")
+  local hadColors = rawget(_G, "colors")
+  if not hadColors then rawset(_G, "colors", { black = 32768 }) end
+  local ui = require("lib.gearshop.ui")
+  local function draw()
+    local s = ui.screen({ call = function(_, method)
+      if method == "getSize" then return true, 36, 10 end
+      return true
+    end }, "m1", 0.5)
+    shop.noteFor = function() return nil end
+    ui.station(s, shop, s1, {})
+    return (table.concat(s.text, " "):gsub("%s+", " "))
+  end
+  local text = draw()
+  if not hadColors then rawset(_G, "colors", nil) end
+  truthy(text:find("41-49 each", 1, true), "the range of the three: " .. text)
+  -- one piece left: its own price
+  for slot, item in pairs(world.chests.c1.items) do
+    if item.vaultData.level ~= 44 then world.chests.c1.items[slot] = nil end
+  end
+  shop:reconcile(s1)
+  if not hadColors then rawset(_G, "colors", { black = 32768 }) end
+  text = draw()
+  if not hadColors then rawset(_G, "colors", nil) end
+  truthy(text:find("44 each", 1, true), "one piece, one price: " .. text)
 end))
 
 test("gearshop stations: with nothing of its type at all, a tap says so and opens nothing", withDisk(function()

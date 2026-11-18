@@ -490,9 +490,12 @@ end
 function Shop:priceOf(d, key)
   local ds = self:ds(d)
   if ds.prices[key] then return ds.prices[key] end
-  if d.kind == "station" and ds.bracket then return rules.bracketPrice(ds.bracket, self.cfg) end
+  -- every piece costs its own level's price
   local piece = self.stock.known[key]
-  return rules.price(piece and piece.level or 0, self.cfg)
+  if piece then return rules.price(piece.level or 0, self.cfg) end
+  -- a piece the index does not know, on a station: the cheapest price of the level it was showing
+  if d.kind == "station" and ds.bracket then return (rules.bracketPrices(ds.bracket, self.cfg)) end
+  return rules.price(0, self.cfg)
 end
 
 --- Who took a piece from this chest: whoever is nearest it, by its own detector. A checked-in shopper at the chest comes
@@ -652,10 +655,8 @@ function Shop:adopt(d)
   for _, item in pairs(list) do
     local key = rules.key(item)
     ds.shown[key] = (ds.shown[key] or 0) + 1
-    if d.kind ~= "station" then
-      local piece = self.stock.known[key]
-      ds.prices[key] = rules.price(piece and piece.level or 0, self.cfg)
-    end
+    -- each piece's price is fixed when it goes on display, so a limit changed meanwhile never changes what it is charged
+    if self.stock.known[key] then ds.prices[key] = self:priceOf(d, key) end
   end
   return true
 end
@@ -1096,7 +1097,7 @@ function Shop:stationAction(d, name, action, value)
     return
   end
   ds.used = now()
-  -- what was taken from the page on show is charged at that page's price, before the pick changes
+  -- what was taken from the page on show is charged (each piece its own price) before the pick changes
   if ds.phase == "open" and not self:reconcile(d) then
     self:note(d.monitor, "This chest is not answering. Try again in a moment.")
     return

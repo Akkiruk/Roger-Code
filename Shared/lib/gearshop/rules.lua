@@ -11,9 +11,10 @@ M.MILLI = 1000
 
 --- Every limit the owner can change (config.lua keeps the owner's own values over these).
 M.DEFAULTS = {
-  pricePerBracket = 2,      -- a 10-level bracket costs this much more than the one below: 1-9 is 2, 40-49 is 10, 100 is 22
-  piecesPerToken = 10,      -- a seller gets one token for this many accepted pieces
-  creditMultiplier = 4,     -- store credit pays this many times the tokens
+  pricePerLevel = 1,        -- a piece costs this many tokens per level of the gear: level 50 is 50, level 100 is 100
+  minPrice = 1,             -- no piece costs less than this (a level 0 piece costs 1). The same for every rarity
+  creditPerPiece = 1,       -- a seller gets this much store credit for each accepted piece
+  tokensPerPiece = 1,       -- with sellForTokens on, a seller who picks tokens gets this many for each accepted piece
   ownerFloor = 1000,        -- a token payout never takes the owner's balance below this
   sellForTokens = false,    -- off: selling to the shop pays store credit only, so the shop never pays tokens out for gear.
                             -- Anything already owed from an earlier token sale is still paid. On: sellers pick tokens or credit.
@@ -73,13 +74,26 @@ function M.bracketLabel(b)
   return (b * 10) .. "-" .. (b * 10 + 9)
 end
 
---- What everything in a bracket costs. The same for every rarity.
-function M.bracketPrice(b, cfg)
-  return ((cfg and cfg.pricePerBracket) or M.DEFAULTS.pricePerBracket) * (b + 1)
+--- What a piece of this level costs, in whole tokens: pricePerLevel a level, never under minPrice. The same for every rarity.
+function M.price(level, cfg)
+  level = math.floor(tonumber(level) or 0)
+  if level < 0 then level = 0 end
+  local per = (cfg and cfg.pricePerLevel) or M.DEFAULTS.pricePerLevel
+  local least = math.floor((cfg and cfg.minPrice) or M.DEFAULTS.minPrice)
+  return math.max(least, math.floor(level * per + 0.5), 0)
 end
 
-function M.price(level, cfg)
-  return M.bracketPrice(M.bracket(level), cfg)
+--- The cheapest and dearest price a piece in a bracket can have: 1-9 is 1 and 9, 40-49 is 40 and 49, 100 is 100 and 100.
+function M.bracketPrices(b, cfg)
+  if b >= 10 then return M.price(100, cfg), M.price(100, cfg) end
+  return M.price(b * 10, cfg), M.price(b * 10 + 9, cfg)
+end
+
+--- "40-49", or "100" when the cheapest and dearest are the same.
+function M.priceRange(low, high)
+  if not low then return "" end
+  if low == high then return tostring(low) end
+  return low .. "-" .. high
 end
 
 -- ---------------------------------------------------------------- pieces
@@ -170,13 +184,16 @@ function M.accepts(piece, cfg)
   return false, "Epic+ only"
 end
 
---- What one accepted piece is worth, in thousandths of a token.
+--- What one accepted piece is worth in a sale for tokens, in thousandths of a token.
 function M.pieceMilli(cfg)
-  return math.floor(M.MILLI / math.max(1, (cfg and cfg.piecesPerToken) or M.DEFAULTS.piecesPerToken) + 0.5)
+  local per = (cfg and cfg.tokensPerPiece) or M.DEFAULTS.tokensPerPiece
+  return math.max(0, math.floor(per * M.MILLI + 0.5))
 end
 
+--- The store credit n accepted pieces are worth, in thousandths of a token.
 function M.creditMilli(n, cfg)
-  return n * M.pieceMilli(cfg) * ((cfg and cfg.creditMultiplier) or M.DEFAULTS.creditMultiplier)
+  local per = (cfg and cfg.creditPerPiece) or M.DEFAULTS.creditPerPiece
+  return n * math.max(0, math.floor(per * M.MILLI + 0.5))
 end
 
 --- Whether a seller may be paid in tokens at all, or only in store credit.
