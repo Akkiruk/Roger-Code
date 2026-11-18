@@ -7,12 +7,12 @@
     "description": "The casino's central board: shared jackpot, leaderboards, each game's measured return, and the tables on the floor.",
     "source_root": "Games/CasinoHub",
     "entrypoint": "startup.lua",
-    "version": "1.0.12"
+    "version": "1.0.13"
   },
   "build": {
-    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
-    "generated_at": "2026-11-18T19:02:06Z",
-    "package_hash": "d71271e0eb082004335fb10119153daf4df67c3ef1f6ffc2deb542c0a61f3e1c"
+    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
+    "generated_at": "2026-11-18T19:30:18Z",
+    "package_hash": "55e103b0269cbd7a611e251a562775b7343a6adfa24ac6d25b54de28926fa6d6"
   },
   "install": {
     "preserve": [],
@@ -30,7 +30,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
+        "sha256": "0824b7fc91015e487717c7cb3ebcfb185d9ddd4ecaf0bc707a91bf42983ba12d"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
+        "sha256": "4523a8a432b89754a88ba95df38808c39beb8d04b720fdf5fedc6b843cb78a85"
       },
       {
         "repo_path": "Shared/lib/casino/lamps.lua",

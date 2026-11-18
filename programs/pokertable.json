@@ -7,12 +7,12 @@
     "description": "Five-card draw for 2 to 6 players on one wall, player against player, with side pots and no rake.",
     "source_root": "Games/PokerTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.48"
+    "version": "1.0.49"
   },
   "build": {
-    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
-    "generated_at": "2026-11-18T19:02:06Z",
-    "package_hash": "97959eb9acdae7756cc7593d69b8c358761a4d52733500424f4ab0f80a2dd0e1"
+    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
+    "generated_at": "2026-11-18T19:30:18Z",
+    "package_hash": "a494a63e8bc1be7e5d85df096d8264903ee380af09c29d5ea0d0af32c9ca1a05"
   },
   "install": {
     "preserve": [],
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
+        "sha256": "4523a8a432b89754a88ba95df38808c39beb8d04b720fdf5fedc6b843cb78a85"
       },
       {
         "repo_path": "Shared/lib/casino/net.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
+        "sha256": "0824b7fc91015e487717c7cb3ebcfb185d9ddd4ecaf0bc707a91bf42983ba12d"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",

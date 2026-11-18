@@ -7,12 +7,12 @@
     "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
     "source_root": "Games/Casino",
     "entrypoint": "startup.lua",
-    "version": "1.0.16"
+    "version": "1.0.17"
   },
   "build": {
-    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
-    "generated_at": "2026-11-18T19:02:06Z",
-    "package_hash": "b883e37c6f1f58defea3ca3eb018007fbe2bf8022a4ccf80d59c1dfad7edbe93"
+    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
+    "generated_at": "2026-11-18T19:30:18Z",
+    "package_hash": "05de097964120b3224cc0eb6c1adab3926b9a97171eaa8486d3bdbfb0f19a35b"
   },
   "install": {
     "preserve": [],
@@ -125,7 +125,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
+        "sha256": "0824b7fc91015e487717c7cb3ebcfb185d9ddd4ecaf0bc707a91bf42983ba12d"
       },
       {
         "repo_path": "Shared/lib/casino/tournament.lua",
@@ -140,7 +140,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "6f18dc531ff277ae2eafe35867a9a89a62c1785d1b1cf894a5a7632c79de87a0"
+        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
@@ -185,7 +185,7 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
+        "sha256": "4523a8a432b89754a88ba95df38808c39beb8d04b720fdf5fedc6b843cb78a85"
       },
       {
         "repo_path": "Games/UltimateHoldem/holdem_view.lua",
@@ -200,7 +200,7 @@
       {
         "repo_path": "Games/UltimateHoldem/holdem_game.lua",
         "install_path": "holdem_game.lua",
-        "sha256": "ef8dc0fb8147823731a8f0179bbe62b2a3a32cbd32eb8477580015fa9f6a5329"
+        "sha256": "4f4c89518a59be9f3b0f79478ca8c3f79529690523098cec5b4eff71ead2a671"
       },
       {
         "repo_path": "Games/ThreeCardPoker/threecard_view.lua",
@@ -310,7 +310,7 @@
       {
         "repo_path": "Games/ThreeCardPoker/threecard_game.lua",
         "install_path": "threecard_game.lua",
-        "sha256": "9f0df53060f896b26f4621c0cd4ee1e4472c0972d4a7d80e18eae232def5b954"
+        "sha256": "a453226afcb4c8e9349058a6d525c4141877a538029d340c0553a6c4c163848f"
       },
       {
         "repo_path": "Games/Slots/slots_view.lua",
@@ -330,7 +330,7 @@
       {
         "repo_path": "Games/Roulette/roulette_view.lua",
         "install_path": "roulette_view.lua",
-        "sha256": "c5de168fce8023aac7b8893065914d45e17a7fa83e256b466bd5c552d2dfc320"
+        "sha256": "59f0443716e1740fbe5490e360ca2775c4f64b91f7fa644791dc560bbd11312c"
       },
       {
         "repo_path": "Games/Roulette/roulette_rules.lua",
@@ -340,7 +340,7 @@
       {
         "repo_path": "Games/Roulette/roulette_game.lua",
         "install_path": "roulette_game.lua",
-        "sha256": "792512c2aaf5ecd5c9eb09fe38241b5924703a7022794948077be733ac3b7796"
+        "sha256": "6aeb8dbea71d585c285a439171d223334dcad8ef0e271f892c18bba01e25e26b"
       },
       {
         "repo_path": "Games/PokerTable/pokertable_view.lua",
@@ -360,7 +360,7 @@
       {
         "repo_path": "Games/HorseRacing/horseracing_view.lua",
         "install_path": "horseracing_view.lua",
-        "sha256": "13993f2cc57bdf357b7b4db2a8f7a746394f1cd225b6f84c441a2e7d323df0e0"
+        "sha256": "5f7032e44424f1539ad76db227ec572a60299aa18f95d0468580b1f4280f41f8"
       },
       {
         "repo_path": "Games/HorseRacing/horseracing_rules.lua",

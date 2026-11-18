@@ -7,12 +7,12 @@
     "description": "Six horses, fresh odds each race, with win, place, show and exacta bets.",
     "source_root": "Games/HorseRacing",
     "entrypoint": "startup.lua",
-    "version": "1.0.18"
+    "version": "1.0.19"
   },
   "build": {
-    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
-    "generated_at": "2026-11-18T19:02:06Z",
-    "package_hash": "4fd3320108cb08f60bc3e818149a05cd4926be500fe39f30a31ef8b5bf9fdbc5"
+    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
+    "generated_at": "2026-11-18T19:30:18Z",
+    "package_hash": "33464eb7d83910b5af5b179fd62b95ed673a8017b01b0f7f4e06dcc6b59615ae"
   },
   "install": {
     "preserve": [],
@@ -40,7 +40,7 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
+        "sha256": "4523a8a432b89754a88ba95df38808c39beb8d04b720fdf5fedc6b843cb78a85"
       },
       {
         "repo_path": "Shared/lib/casino/net.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "6f18dc531ff277ae2eafe35867a9a89a62c1785d1b1cf894a5a7632c79de87a0"
+        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
+        "sha256": "0824b7fc91015e487717c7cb3ebcfb185d9ddd4ecaf0bc707a91bf42983ba12d"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -165,7 +165,7 @@
       {
         "repo_path": "Games/HorseRacing/horseracing_view.lua",
         "install_path": "horseracing_view.lua",
-        "sha256": "13993f2cc57bdf357b7b4db2a8f7a746394f1cd225b6f84c441a2e7d323df0e0"
+        "sha256": "5f7032e44424f1539ad76db227ec572a60299aa18f95d0468580b1f4280f41f8"
       },
       {
         "repo_path": "Games/HorseRacing/startup.lua",

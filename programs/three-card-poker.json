@@ -7,12 +7,12 @@
     "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
     "source_root": "Games/ThreeCardPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.18"
+    "version": "1.0.19"
   },
   "build": {
-    "commit": "7761b4c05bea06af067fbb17d6eef7c542a06cbe",
-    "generated_at": "2026-11-18T19:02:06Z",
-    "package_hash": "91ec4dc365429f64b83314ead76742e9155796064f00e08225ee9a9816844965"
+    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
+    "generated_at": "2026-11-18T19:30:18Z",
+    "package_hash": "3dba0183a56f659e679d8799df868985307aea912b495e91ffff76f0f7256ade"
   },
   "install": {
     "preserve": [],
@@ -35,7 +35,7 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
+        "sha256": "4523a8a432b89754a88ba95df38808c39beb8d04b720fdf5fedc6b843cb78a85"
       },
       {
         "repo_path": "Shared/lib/casino/net.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "6f18dc531ff277ae2eafe35867a9a89a62c1785d1b1cf894a5a7632c79de87a0"
+        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",
@@ -95,7 +95,7 @@
       {
         "repo_path": "Shared/lib/casino/ui.lua",
         "install_path": "lib/casino/ui.lua",
-        "sha256": "5150ed775831bd3e23254dd462da9573fce1a9b82e9889413b522f4f11ff31a3"
+        "sha256": "0824b7fc91015e487717c7cb3ebcfb185d9ddd4ecaf0bc707a91bf42983ba12d"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -160,7 +160,7 @@
       {
         "repo_path": "Games/ThreeCardPoker/threecard_game.lua",
         "install_path": "threecard_game.lua",
-        "sha256": "9f0df53060f896b26f4621c0cd4ee1e4472c0972d4a7d80e18eae232def5b954"
+        "sha256": "a453226afcb4c8e9349058a6d525c4141877a538029d340c0553a6c4c163848f"
       },
       {
         "repo_path": "Games/ThreeCardPoker/threecard_rules.lua",
