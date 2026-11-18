@@ -57,7 +57,8 @@ function M.new(io, cfg, setup, state)
     ready = false, status = "Starting", version = 0,
   }, Shop)
   for i, s in ipairs(setup.stations or {}) do
-    local d = { id = tostring(i), kind = "station", index = i, chest = s.chest, monitor = s.monitor, detector = s.detector, pos = s.pos }
+    local d = { id = tostring(i), kind = "station", index = i, chest = s.chest, monitor = s.monitor, detector = s.detector, pos = s.pos,
+      category = s.category }
     self.stations[#self.stations + 1] = d
     self.all[#self.all + 1] = d
   end
@@ -159,6 +160,8 @@ function Shop:vaultLevel(name)
   return nil, err
 end
 
+--- Every detector the shop can ask where a player is: the ones given a job first, then any other one attached. A display
+-- chest needs no detector of its own, so a shop may have only one, anywhere (the position function works server-wide).
 function Shop:detectors()
   local list, seen = {}, {}
   local function add(name)
@@ -169,6 +172,9 @@ function Shop:detectors()
   end
   if self.setup.door then add(self.setup.door.detector) end
   for _, d in ipairs(self.all) do add(d.detector) end
+  for _, name in ipairs(self.io.names()) do
+    if self.io.hasType(name, "playerDetector") then add(name) end
+  end
   return list
 end
 
@@ -242,6 +248,54 @@ local function localEnderModem(io)
   return nil
 end
 M.localEnderModem = localEnderModem
+
+--- Setup's "stand at it" step: where the owner is, and, when the step offers one, the free detector they stand nearest
+-- (within 16 blocks). A detector of its own is optional: without one the position comes through any detector attached,
+-- which sees the owner wherever they are on the server. assigned(name) says whether a detector already has a job.
+-- Returns { detector = name|nil, pos = {x,y,z}|nil }, or nil and what to tell the owner.
+function M.standAt(io, who, wantDetector, assigned)
+  local detectors = {}
+  for _, name in ipairs(io.names()) do
+    if io.hasType(name, "playerDetector") then detectors[#detectors + 1] = name end
+  end
+  if not who or #detectors == 0 then return nil, "No player detector is attached, or nobody is at the terminal." end
+  local result = {}
+  if wantDetector then
+    local free = {}
+    for _, name in ipairs(detectors) do
+      if not assigned(name) then free[#free + 1] = name end
+    end
+    for range = 1, 16 do
+      local hits = {}
+      for _, name in ipairs(free) do
+        local ok, inside = io.call(name, "isPlayerInRange", range, who)
+        if ok and inside == true then hits[#hits + 1] = name end
+      end
+      if #hits == 1 then
+        result.detector = hits[1]
+        break
+      elseif #hits > 1 then
+        return nil, "Two detectors are as near as each other. Step closer to yours, press Enter."
+      end
+    end
+  end
+  local order = {}
+  if result.detector then order[1] = result.detector end
+  for _, name in ipairs(detectors) do
+    if name ~= result.detector then order[#order + 1] = name end
+  end
+  for _, name in ipairs(order) do
+    local ok, pos = io.call(name, "getPlayerPos", who)
+    if ok and type(pos) == "table" and type(pos.x) == "number" and type(pos.y) == "number" and type(pos.z) == "number" then
+      result.pos = { x = pos.x, y = pos.y, z = pos.z }
+      break
+    end
+  end
+  if not result.detector and not result.pos then
+    return nil, "No detector can see where " .. who .. " is. Press Enter to try again, or S to skip."
+  end
+  return result
+end
 
 --- Link every node that is not linked yet. Links are not saved by the server, so this runs on every boot and again for a
 -- node that was not loaded.
@@ -644,7 +698,13 @@ local function isFree(self, d)
   return not ds.phase and (not ds.shopper or not self.state.shoppers[ds.shopper])
 end
 
---- Fill the free chests nearest a shopper with gear near their level, a different type in each.
+--- The types with stock near a bracket that a chest may show: its wing's, or every type when it has none.
+function Shop:typesFor(d, bracket)
+  return rules.inCategoryList(self.stock:typesNear(bracket), d.category, self.cfg)
+end
+
+--- Fill the free chests nearest a shopper with gear near their level, a different type in each. With wings, the nearest
+-- chest of every wing is filled first, then the nearest of the rest (rules.spread), each from its own wing's types.
 function Shop:assign(name)
   local shopper = self.state.shoppers[name]
   if not shopper then return 0 end
@@ -655,13 +715,22 @@ function Shop:assign(name)
     if isFree(self, d) then free[#free + 1] = d end
   end
   free = rules.nearest(free, pos)
-  local types = self.stock:typesNear(rules.bracket(shopper.level))
-  if #types == 0 then return 0 end
-  local count = math.min(#free, self.cfg.chestsPerShopper)
-  local filled = 0
-  for i = 1, count do
+  local bracket = rules.bracket(shopper.level)
+  local byWing = {}
+  local function typesOf(category)
+    local key = category or ""
+    if not byWing[key] then byWing[key] = rules.inCategoryList(self.stock:typesNear(bracket), category, self.cfg) end
+    return byWing[key]
+  end
+  local chosen = rules.spread(free, self.cfg.chestsPerShopper, function(category) return #typesOf(category) > 0 end)
+  local filled, used = 0, {}
+  for _, d in ipairs(chosen) do
+    local key = d.category or ""
+    local types = typesOf(d.category)
+    local i = (used[key] or 0) + 1
+    used[key] = i
     local pick = types[((i - 1) % #types) + 1]
-    if self:open(free[i], name, pick.type, pick.bracket, math.floor((i - 1) / #types) + 1) then filled = filled + 1 end
+    if self:open(d, name, pick.type, pick.bracket, math.floor((i - 1) / #types) + 1) then filled = filled + 1 end
   end
   return filled
 end
@@ -907,7 +976,7 @@ function Shop:stationAction(d, name, action, value)
     end
     if not self.ready then return end
     local bracket = rules.bracket(shopper.level)
-    local types = self.stock:typesNear(bracket)
+    local types = self:typesFor(d, bracket)
     if #types == 0 then
       self:note(d.monitor, "Nothing in stock.")
       return
@@ -929,7 +998,7 @@ function Shop:stationAction(d, name, action, value)
     return
   end
   if ds.shopper ~= name then
-    self:note(d.monitor, "This chest is " .. tostring(ds.shopper) .. "'s.")
+    self:note(d.monitor, "Locked to " .. tostring(ds.shopper) .. ".")
     return
   end
   -- what was taken from the page on show is charged at that page's price, before the pick changes
@@ -937,7 +1006,7 @@ function Shop:stationAction(d, name, action, value)
     self:note(d.monitor, "This chest is not answering. Try again in a moment.")
     return
   end
-  if action == "type" and type(value) == "string" then
+  if action == "type" and type(value) == "string" and rules.inCategory(value, d.category, self.cfg) then
     local t = self.stock:summary().types[value]
     ds.type, ds.page = value, 1
     if t and (t.brackets[ds.bracket] or 0) == 0 then

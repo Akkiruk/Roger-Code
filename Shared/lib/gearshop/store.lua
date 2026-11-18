@@ -51,11 +51,11 @@ function M.newSetup()
   return {
     v = 1,
     nodes = {},      -- ids of the computers whose peripherals this one uses through its ender modem
-    door = nil,      -- { monitor, pos }
+    door = nil,      -- { monitor, detector, pos }
     sell = nil,      -- { monitor, chest }
-    kiosk = nil,     -- { monitor, chest, detector, pos }
+    kiosk = nil,     -- { monitor, chest, detector, pos }      every detector is optional; pos comes through any detector
     intake = nil,    -- { chest }
-    stations = {},   -- { { monitor, chest, detector, pos }, ... }
+    stations = {},   -- { { monitor, chest, detector, pos, category }, ... }   category: a wing's name (rules categories), or nil
     vault = {},      -- vault chests named by hand, besides everything the vaultMatch limit finds
   }
 end

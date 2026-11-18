@@ -231,6 +231,83 @@ test("gearshop: with sellForTokens on the sell screen is as before: TOKENS or ST
   truthy(empty:find("10 pieces make 1 token, or 4 in store credit.", 1, true), "the old rate line")
 end)
 
+--- A display chest's monitor at a size, open for Alice (tab 20, credit 1.5) with `n` pieces in it, or on its type picker.
+local function drawStation(w, h, n, mode, note, wing)
+  local hadColors = rawget(_G, "colors")
+  if not hadColors then rawset(_G, "colors", { black = 32768 }) end
+  local ui = require("lib.gearshop.ui")
+  local s = ui.screen({ call = function(_, method)
+    if method == "getSize" then return true, w, h end
+    return true
+  end }, "12:monitor_1", 0.5)
+  local shown, known = {}, {}
+  for i = 1, n do
+    shown["the_vault:sword#k" .. i] = 1
+    known["the_vault:sword#k" .. i] = { label = "Sword", level = 40 + i % 10, rarity = "RARE", vaultData = { rarity = "RARE" } }
+  end
+  local typeList = { "the_vault:sword", "the_vault:axe", "the_vault:helmet", "the_vault:chestplate", "the_vault:leggings",
+    "the_vault:boots", "the_vault:shield", "the_vault:wand", "the_vault:focus", "the_vault:magnet" }
+  local summary = { types = {} }
+  for _, t in ipairs(typeList) do summary.types[t] = { total = 15 } end
+  local ds = { shopper = "Alice", type = "the_vault:sword", bracket = 4, phase = "open", page = 1, pages = 3, total = n, shown = shown, prices = {} }
+  local shop = {
+    ready = true, cfg = cfg, state = { shoppers = { Alice = {} }, credit = { Alice = 1500 } },
+    ds = function() return ds end,
+    owes = function() return 20 end,
+    noteFor = function() return note end,
+    priceOf = function() return 10 end,
+    stock = { known = known, summary = function() return summary end,
+      typesNear = function()
+        local out = {}
+        for _, t in ipairs(typeList) do out[#out + 1] = { type = t, bracket = 4, count = 15 } end
+        return out
+      end },
+    typesFor = function(self, d, bracket) return rules.inCategoryList(self.stock.typesNear(bracket), d.category, cfg) end,
+  }
+  ui.station(s, shop, { id = "1", kind = "station", category = wing }, { mode = mode })
+  if not hadColors then rawset(_G, "colors", nil) end
+  return s
+end
+
+test("gearshop: a display chest's screen lists no gear: the type, the price, her tab and credit, the page, on every size", function()
+  -- 2x1 in the floor (the owner's layout), one block wide and two high, and the bigger walls the shop had before
+  for _, size in ipairs({ { 36, 10 }, { 15, 24 }, { 39, 19 }, { 57, 24 } }) do
+    local w, h = size[1], size[2]
+    local bh = h >= 16 and 3 or 2
+    for _, mode in ipairs({ false, "types" }) do
+      local s = drawStation(w, h, 30, mode or nil)
+      local ids = {}
+      for _, b in ipairs(s.buttons) do
+        local where = ("%dx%d %s %s"):format(w, h, mode or "chest", b.id)
+        truthy(b.x >= 1 and b.y >= 1 and b.x + b.w - 1 <= w and b.y + b.h - 1 <= h, where .. " fits on the monitor")
+        eq(b.h, bh, where .. " is big enough to tap")
+        truthy(b.label:match("%a%a"), where .. " has a whole label: " .. b.label)
+        ids[#ids + 1] = b.id
+      end
+      local text = table.concat(s.text, " "):gsub("%s+", " ")
+      local where = w .. "x" .. h
+      if mode then
+        truthy(table.concat(ids, " "):find("settype settype", 1, true), where .. " types to pick")
+        truthy(table.concat(ids, " "):find("back", 1, true), where .. " BACK")
+      else
+        eq(table.concat(ids, " "), "types level level next done", where .. " every button")
+        truthy(text:find("Sword", 1, true) and text:find("40-49", 1, true), where .. " what the chest is showing")
+        truthy(text:find("10 each", 1, true), where .. " the price")
+        truthy(text:find("Alice's chest", 1, true), where .. " whose chest")
+        truthy(text:find("Tab 20", 1, true), where .. " her tab")
+        truthy(text:find("Credit 1.5", 1, true), where .. " her store credit")
+        truthy(text:find("Page 1 of 3", 1, true), where .. " the page")
+        eq(text:find("L4%d"), nil, where .. " no piece is listed")
+        eq(text:find("Rare", 1, true), nil, where .. " no rarity is listed")
+      end
+    end
+  end
+  local s = drawStation(36, 10, 12, nil, "Locked to Bob.")
+  truthy((table.concat(s.text, " "):gsub("%s+", " ")):find("Locked to Bob.", 1, true), "the note")
+  s = drawStation(36, 10, 0)
+  truthy((table.concat(s.text, " "):gsub("%s+", " ")):find("None in stock at this level", 1, true), "nothing at this level")
+end)
+
 test("gearshop: a payout never takes the owner below the floor", function()
   eq(rules.payable(5, 1005, 1000), 5)
   eq(rules.payable(5, 1004, 1000), 4)
@@ -331,6 +408,65 @@ test("gearshop: chests nearest the shopper fill first", function()
   order = rules.nearest(stations, nil)
   eq(order[1].id, "1", "with no idea where the shopper is, the owner's order")
   eq(order[4].id, "4")
+end)
+
+test("gearshop wings: each wing takes its own types, idols by their start, and Oddities the rest", function()
+  eq(rules.inCategory("the_vault:sword", "Weapons", cfg), true)
+  eq(rules.inCategory("the_vault:rang", "weapons", cfg), true, "any case")
+  eq(rules.inCategory("the_vault:helmet", "Weapons", cfg), false)
+  eq(rules.inCategory("the_vault:shield", "Armour", cfg), true)
+  eq(rules.inCategory("the_vault:idol_benevolent", "Magic", cfg), true, "every idol")
+  eq(rules.inCategory("the_vault:idolatry", "Magic", cfg), false, "a start of a word is not enough")
+  eq(rules.inCategory("the_vault:magnet", "Oddities", cfg), true)
+  eq(rules.inCategory("the_vault:sword", "Oddities", cfg), false, "Oddities is only what no other wing names")
+  eq(rules.inCategory("the_vault:sword", nil, cfg), true, "no wing shows every type")
+  eq(rules.inCategory("the_vault:sword", "Gone", cfg), true, "a wing that no longer exists is no wing")
+  local list = { { type = "the_vault:axe" }, { type = "the_vault:boots" }, { type = "the_vault:magnet" }, { type = "the_vault:wand" } }
+  eq(#rules.inCategoryList(list, "Armour", cfg), 1)
+  eq(rules.inCategoryList(list, "Magic", cfg)[1].type, "the_vault:wand")
+  eq(#rules.inCategoryList(list, nil, cfg), 4)
+  -- the owner's own wings
+  local own = { categories = { { name = "Blades", types = { "sword" } }, { name = "Else", rest = true } } }
+  eq(rules.inCategory("the_vault:axe", "Else", own), true)
+  eq(rules.inCategory("the_vault:sword", "Blades", own), true)
+  eq(rules.category("Weapons", own), nil)
+end)
+
+test("gearshop wings: check-in fills the nearest chest of every wing first, then the nearest of the rest", function()
+  local function ids(list)
+    local out = {}
+    for i, s in ipairs(list) do out[i] = s.id end
+    return table.concat(out, " ")
+  end
+  local always = function() return true end
+  -- nearest first: two Weapons chests by the shopper, then Armour, Magic, Oddities further off
+  local stations = {
+    { id = "w1", category = "Weapons" }, { id = "w2", category = "Weapons" }, { id = "a1", category = "Armour" },
+    { id = "w3", category = "Weapons" }, { id = "m1", category = "Magic" }, { id = "o1", category = "Oddities" },
+    { id = "a2", category = "Armour" },
+  }
+  eq(ids(rules.spread(stations, 6, always)), "w1 w2 a1 w3 m1 o1", "a chest in every wing, then the nearest left")
+  eq(ids(rules.spread(stations, 3, always)), "w1 a1 m1", "fewer chests than wings: the nearest wings")
+  eq(ids(rules.spread(stations, 6, function(c) return c ~= "Magic" end)), "w1 w2 a1 w3 o1 a2", "a wing with nothing to show is passed over")
+  -- with no wings it is the nearest chests, as before
+  local plain = { { id = "1" }, { id = "2" }, { id = "3" } }
+  eq(ids(rules.spread(plain, 2, always)), "1 2")
+  eq(ids(rules.spread(plain, 2, function() return false end)), "", "nothing in stock")
+end)
+
+test("gearshop wings: a chest's type picker only offers its wing's types", function()
+  local s = drawStation(36, 10, 5, "types", nil, "Armour")
+  local offered = {}
+  for _, b in ipairs(s.buttons) do
+    if b.id == "settype" then offered[#offered + 1] = b.value end
+  end
+  eq(table.concat(offered, " "), "the_vault:helmet the_vault:chestplate the_vault:leggings the_vault:boots the_vault:shield", "Armour")
+  s = drawStation(15, 24, 5, "types", nil, "Oddities")
+  offered = {}
+  for _, b in ipairs(s.buttons) do
+    if b.id == "settype" then offered[#offered + 1] = b.value end
+  end
+  eq(table.concat(offered, " "), "the_vault:magnet")
 end)
 
 test("gearshop: with nothing at the shopper's level, the nearest bracket that has stock", function()
@@ -551,4 +687,167 @@ test("gearshop stock: the slow look goes round the chests that are not watched",
   for _ = 1, 4 do seen[#seen + 1] = stock:nextTurn({ v2 = true }) end
   eq(table.concat(seen, " "), "v1 v3 v1 v3")
   eq(stock:nextTurn({ v1 = true, v2 = true, v3 = true }), nil)
+end)
+
+-- ---------------------------------------------------------------- detectors: a display chest needs none of its own
+
+local shopLib = require("lib.gearshop.shop")
+local store = require("lib.gearshop.store")
+
+--- Player detectors as the shop sees them, each at a place, and players at theirs. getPlayerPos works server-wide, as
+-- Advanced Peripherals does with its position function on; the range calls only see players near that detector.
+local function detectorWorld(detectors, players)
+  local world = { calls = {} }
+  local function distance(a, b)
+    local dx, dy, dz = a.x - b.x, a.y - b.y, a.z - b.z
+    return math.sqrt(dx * dx + dy * dy + dz * dz)
+  end
+  world.io = {
+    names = function()
+      local list = { "top" }
+      for name in pairs(detectors) do list[#list + 1] = name end
+      table.sort(list)
+      return list
+    end,
+    hasType = function(name, kind)
+      if name == "top" then return kind == "modem" end
+      return detectors[name] ~= nil and kind == "playerDetector"
+    end,
+    call = function(name, method, a, b)
+      local at = detectors[name]
+      if not at then return false, "not attached" end
+      world.calls[#world.calls + 1] = name .. "." .. method
+      if method == "getPlayerPos" then
+        local p = players[a]
+        if not p then return true, {} end -- offline, another server or dimension: an empty table, as Advanced Peripherals answers
+        return true, { x = p.x, y = p.y, z = p.z, dimension = "minecraft:overworld" }
+      elseif method == "isPlayerInRange" then
+        local p = players[b]
+        return true, p ~= nil and distance(p, at) <= a
+      elseif method == "getPlayersInRange" then
+        local out = {}
+        for who, p in pairs(players) do
+          if distance(p, at) <= a then out[#out + 1] = who end
+        end
+        table.sort(out)
+        return true, out
+      end
+      return false, "no such method"
+    end,
+  }
+  return world
+end
+
+local function none() return false end
+
+test("gearshop setup: a display chest with no detector of its own records where the owner stands through the door's", function()
+  local players = { Akkiruk = { x = 110, y = 64, z = 0 } }
+  local world = detectorWorld({ ["12:door"] = { x = 90, y = 64, z = 0 } }, players)
+  local assigned = function(name) return name == "12:door" end
+  local found, why = shopLib.standAt(world.io, "Akkiruk", true, assigned)
+  truthy(found, why)
+  eq(found.detector, nil, "the door's detector is not taken as the chest's own")
+  eq(found.pos.x, 110)
+  eq(found.pos.z, 0)
+
+  -- the same with the door's detector still free but out of reach of the chest: the old setup said "no free detector"
+  found, why = shopLib.standAt(world.io, "Akkiruk", true, none)
+  truthy(found, why)
+  eq(found.detector, nil, "a detector 20 blocks away is not the chest's")
+  eq(found.pos.x, 110)
+
+  -- and for the kiosk, the same step
+  players.Akkiruk = { x = 100, y = 64, z = 20 }
+  found = shopLib.standAt(world.io, "Akkiruk", true, assigned)
+  eq(found.detector, nil)
+  eq(found.pos.z, 20)
+end)
+
+test("gearshop setup: a display chest's own detector is still found and used when it has one", function()
+  local players = { Akkiruk = { x = 110, y = 64, z = 0 } }
+  local world = detectorWorld({
+    ["12:door"] = { x = 90, y = 64, z = 0 }, ["12:d1"] = { x = 111, y = 64, z = 0 }, ["12:d2"] = { x = 130, y = 64, z = 0 },
+  }, players)
+  local found = shopLib.standAt(world.io, "Akkiruk", true, function(name) return name == "12:door" end)
+  eq(found.detector, "12:d1")
+  eq(found.pos.x, 110)
+  eq(world.calls[#world.calls], "12:d1.getPlayerPos", "its position comes from its own detector first")
+
+  -- two free detectors as near as each other still stop the step: either could be the chest's
+  world = detectorWorld({ ["12:a"] = { x = 108, y = 64, z = 0 }, ["12:b"] = { x = 112, y = 64, z = 0 } }, players)
+  local again, why = shopLib.standAt(world.io, "Akkiruk", true, none)
+  eq(again, nil)
+  truthy(why:find("as near as each other", 1, true), why)
+end)
+
+test("gearshop setup: a step with no detector to offer, or no way to see the owner, says so", function()
+  local players = { Akkiruk = { x = 110, y = 64, z = 0 } }
+  local found, why = shopLib.standAt(detectorWorld({}, players).io, "Akkiruk", true, none)
+  eq(found, nil)
+  truthy(why:find("No player detector", 1, true), why)
+  found, why = shopLib.standAt(detectorWorld({ ["12:door"] = { x = 90, y = 64, z = 0 } }, {}).io, "Akkiruk", true, none)
+  eq(found, nil, "the owner is on another server")
+  truthy(why:find("Press Enter to try again", 1, true), why)
+  -- a step that offers no detector of its own gets the position the same way
+  found = shopLib.standAt(detectorWorld({ ["12:door"] = { x = 200, y = 64, z = 0 } }, players).io, "Akkiruk", false, none)
+  eq(found.detector, nil)
+  eq(found.pos.x, 110)
+end)
+
+--- A shop set up with no detector at any display chest or the kiosk, only one at the door.
+local function shopWithoutStationDetectors(players)
+  local world = detectorWorld({ ["12:door"] = { x = 90, y = 64, z = 0 } }, players)
+  local setup = store.newSetup()
+  setup.door = { monitor = "12:m0", detector = "12:door", pos = { x = 90, y = 64, z = 0 } }
+  -- in the owner's order, which is not nearest-first: chest 1 is the far one
+  for i, x in ipairs({ 140, 100, 120 }) do
+    setup.stations[i] = { monitor = "12:m" .. i, chest = "12:c" .. i, pos = { x = x, y = 64, z = 0 } }
+  end
+  setup.kiosk = { monitor = "12:m20", chest = "12:c20", pos = { x = 100, y = 64, z = 20 } }
+  return shopLib.new(world.io, rules.DEFAULTS, setup, store.newState()), world
+end
+
+test("gearshop: with no detectors at the display chests, they still fill nearest the shopper first", function()
+  local players = { Alice = { x = 95, y = 64, z = 0 } }
+  local shop = shopWithoutStationDetectors(players)
+  local pos, answered = shop:playerPos("Alice")
+  truthy(answered, "the door's detector answers")
+  eq(pos.x, 95)
+  local order = rules.nearest(shop.stations, pos)
+  eq(order[1].id, "2", "x=100 first")
+  eq(order[2].id, "3", "then x=120")
+  eq(order[3].id, "1", "the far one last")
+  players.Alice = { x = 145, y = 64, z = 0 }
+  order = rules.nearest(shop.stations, (shop:playerPos("Alice")))
+  eq(order[1].id, "1", "a shopper at the far end gets the far chest first")
+
+  -- a shopper on another server: the detector answers that they are not here
+  pos, answered = shop:playerPos("Bob")
+  eq(pos, nil)
+  eq(answered, true)
+end)
+
+test("gearshop: any attached detector answers where a player is, after the ones with a job", function()
+  local players = { Alice = { x = 95, y = 64, z = 0 } }
+  local world = detectorWorld({ ["12:spare"] = { x = 0, y = 64, z = 0 } }, players)
+  local setup = store.newSetup()
+  setup.stations[1] = { monitor = "12:m1", chest = "12:c1", pos = { x = 100, y = 64, z = 0 } }
+  local shop = shopLib.new(world.io, rules.DEFAULTS, setup, store.newState())
+  eq(table.concat(shop:detectors(), " "), "12:spare")
+  eq(shop:playerPos("Alice").x, 95)
+  shop = shopWithoutStationDetectors(players)
+  eq(table.concat(shop:detectors(), " "), "12:door", "the door's is listed once")
+end)
+
+test("gearshop: a piece taken from a chest with no detector is charged to the shopper the chest is locked to", function()
+  local players = { Alice = { x = 100, y = 64, z = 0 }, Bob = { x = 100, y = 64, z = 1 } }
+  local shop = shopWithoutStationDetectors(players)
+  shop.state.shoppers.Alice = { at = 0, last = 0, level = 45 }
+  shop.state.shoppers.Bob = { at = 0, last = 0, level = 12 }
+  shop:ds(shop.stations[2]).shopper = "Bob"
+  shop:ds(shop.stations[3]).shopper = "Alice"
+  eq(shop:taker(shop.stations[2]), "Bob", "Bob's chest, though Alice stands as near")
+  eq(shop:taker(shop.stations[3]), "Alice")
+  shop:ds(shop.kiosk).shopper = "Alice"
+  eq(shop:taker(shop.kiosk), "Alice", "the kiosk's pickup chest the same")
 end)

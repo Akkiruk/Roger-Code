@@ -284,8 +284,11 @@ local function runShop()
         line("Put any item into the chest of " .. w.what)
         line("(or take one out). Watching " .. (step.watching or 0) .. " chests.")
       elseif step.kind == "stand" then
-        line("Stand at " .. w.what .. (step.detector and ", nearer its" or "."))
-        if step.detector then line("detector than any other.") end
+        line("Stand at " .. w.what .. ".")
+        if step.detector then
+          line("Its own detector is optional: if it has")
+          line("one, stand nearer it than any other.")
+        end
         line("Then tap any shop monitor there, or press")
         line("Enter here.")
       end
@@ -381,15 +384,17 @@ local function runShop()
       line(#ids > 0 and nodes or "Nodes: none")
       line("F find nodes   N add one   X drop the last", colors.lightGray)
       line(("Seen: %d inventories, %d monitors, %d detectors"):format(count("inventory"), count("monitor"), count("playerDetector")), colors.lightGray)
-      line("D door    " .. describe(d.door, { "monitor" }))
+      line("D door    " .. describe(d.door, { "monitor", "detector" }))
       line("S sell    " .. describe(d.sell, { "monitor", "chest" }))
       line("K kiosk   " .. describe(d.kiosk, { "monitor", "chest" }))
       line("I intake  " .. describe(d.intake, { "chest" }))
       line("A add a display chest   R drop the last   (" .. #d.stations .. " set)")
+      line("G give a display chest a wing", colors.lightGray)
       local rows = th - y - 2
       for i = math.max(1, #d.stations - rows + 1), #d.stations do
         local s = d.stations[i]
-        line((" %d %s / %s / %s"):format(i, s.monitor or "-", s.chest or "-", s.detector or "-"), colors.lightGray)
+        line((" %d %s / %s / %s%s"):format(i, s.monitor or "-", s.chest or "-", s.detector or "-",
+          s.category and ("  " .. s.category) or ""), colors.lightGray)
       end
       y = th - 1
       line("V add a vault chest by name (" .. #d.vault .. ")   C clear all")
@@ -465,51 +470,16 @@ local function runShop()
     wizardNext(admin.wizard)
   end
 
-  --- Which detector the owner is standing at, and where that is.
+  --- Where the owner is standing, and the detector they stand at when the step has one (it need not).
   local function stand(w, step, toucher)
     post(nil, function()
       local who = toucher or wallet.livePlayer() or wallet.hostName()
-      local detectors = {}
-      for _, name in ipairs(io.names()) do
-        if io.hasType(name, "playerDetector") then detectors[#detectors + 1] = name end
-      end
-      if not who or #detectors == 0 then
-        say("No player detector is attached, or nobody is at the terminal.")
+      local found, why = shopLib.standAt(io, who, step.detector, assigned)
+      if not found then
+        say(why)
         return
       end
-      local chosen
-      if step.detector then
-        local free = {}
-        for _, name in ipairs(detectors) do
-          if not assigned(name) then free[#free + 1] = name end
-        end
-        for range = 1, 16 do
-          local hits = {}
-          for _, name in ipairs(free) do
-            local ok, inside = io.call(name, "isPlayerInRange", range, who)
-            if ok and inside == true then hits[#hits + 1] = name end
-          end
-          if #hits == 1 then
-            chosen = hits[1]
-            break
-          elseif #hits > 1 then
-            say("Two detectors are as near as each other. Step closer to yours, press Enter.")
-            return
-          end
-        end
-        if not chosen then
-          say("No free detector within 16 blocks of " .. who .. ". Press Enter to try again.")
-          return
-        end
-        w.result.detector = chosen
-      end
-      for _, name in ipairs(chosen and { chosen } or detectors) do
-        local ok, pos = io.call(name, "getPlayerPos", who)
-        if ok and type(pos) == "table" and type(pos.x) == "number" then
-          w.result.pos = { x = pos.x, y = pos.y, z = pos.z }
-          break
-        end
-      end
+      w.result.detector, w.result.pos = found.detector, found.pos
       if admin.wizard == w and w.steps[w.at] == step then wizardNext(w) end
     end)
   end
@@ -562,8 +532,9 @@ local function runShop()
     elseif ch == "x" then
       table.remove(d.nodes)
     elseif ch == "d" then
-      startWizard("THE DOOR", "the door", { { kind = "monitor" }, { kind = "stand", optional = true } }, function(r)
-        d.door = { monitor = r.monitor, pos = r.pos }
+      -- the door's detector, if it has one, is given its job here so that no display chest near the door takes it as its own
+      startWizard("THE DOOR", "the door", { { kind = "monitor" }, { kind = "stand", detector = true, optional = true } }, function(r)
+        d.door = { monitor = r.monitor, detector = r.detector, pos = r.pos }
         say("Door set.")
       end)
     elseif ch == "s" then
@@ -591,6 +562,34 @@ local function runShop()
         end)
     elseif ch == "r" then
       table.remove(d.stations)
+    elseif ch == "g" then
+      -- a wing: the chest only shows its wing's types (the categories limit lists them)
+      ask("Display chest number: ", function(text)
+        local n = tonumber(text)
+        local s = n and d.stations[n]
+        if not s then
+          say("There is no display chest " .. tostring(text) .. ".")
+          return
+        end
+        local wings = {}
+        for _, c in ipairs(cfg.categories or {}) do
+          if type(c) == "table" and type(c.name) == "string" then wings[#wings + 1] = c.name end
+        end
+        ask("Wing (" .. table.concat(wings, "/") .. ", blank for none): ", function(name)
+          if name == "" then
+            s.category = nil
+            say("Display chest " .. n .. " shows every type.")
+            return
+          end
+          local c = rules.category(name, cfg)
+          if not c then
+            say("There is no wing called " .. name .. ".")
+            return
+          end
+          s.category = c.name
+          say("Display chest " .. n .. " is in " .. c.name .. ". W to write it.")
+        end)
+      end)
     elseif ch == "v" then
       ask("Vault chest name: ", function(text)
         if io.isPresent(text) and io.hasType(text, "inventory") then

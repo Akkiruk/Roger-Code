@@ -186,8 +186,7 @@ local function pieceRows(s, list, top, bottom, withPrice)
       local entry = list[i]
       -- every piece of a type has the same name, so the rarity is spelt out beside the colour
       local grade = entry.grade ~= "?" and (entry.grade:sub(1, 1) .. entry.grade:sub(2):lower() .. " ") or ""
-      local tail = grade .. "L" .. entry.level .. (withPrice and (" " .. entry.price .. "t") or "")
-      s:write(1, y, entry.label:sub(1, math.max(1, s.w - #tail - 1)), GRADE_COLOR[entry.grade] or "0")
+      local tail = grade .. "L" .. entry.level .. (withPrice and (" " .. entry.price .. "t") or "")      s:write(1, y, entry.label:sub(1, math.max(1, s.w - #tail - 1)), GRADE_COLOR[entry.grade] or "0")
       s:right(y, tail, "8")
     end
   end
@@ -236,6 +235,52 @@ function M.door(s, shop)
 end
 
 -- ---------------------------------------------------------------- a display chest
+-- The shopper opens the chest to see the gear, so its monitor lists none of it. It says what the chest is showing, the
+-- price of a piece, the shopper's own tab and store credit, and which page this is; its buttons change the type, the
+-- level and the page, and give the chest back. The main target is a 2x1 monitor flush in the floor in front of the chest
+-- (36x10 at scale 0.5); every size gets the same screen, bigger where there is room.
+
+--- Rows of buttons from the bottom of the screen up, each bh lines high. Returns the top line of the first row.
+local function buttonRows(s, rows, bh)
+  local top = s.h - bh * #rows + 1
+  for i, specs in ipairs(rows) do s:row(top + (i - 1) * bh, bh, specs) end
+  return top
+end
+
+--- Lines of text centred in the rows from top to bottom, with a blank row between them when there is room.
+-- lines: { { text, fg }, ... }; a line too wide is wrapped, and its rows stay together.
+local function centred(s, top, bottom, lines)
+  local rows = {}
+  for idx, line in ipairs(lines) do
+    local text, piece = line[1], ""
+    for word in text:gmatch("%S+") do
+      if #piece > 0 and #piece + 1 + #word > s.w then
+        rows[#rows + 1] = { piece, line[2], idx }
+        piece = word
+      else
+        piece = #piece > 0 and (piece .. " " .. word) or word
+      end
+    end
+    if #piece > 0 then rows[#rows + 1] = { piece, line[2], idx } end
+  end
+  local room = bottom - top + 1
+  -- too many: the first lines give way, so a note (always last) is never cut
+  while #rows > math.max(0, room) do table.remove(rows, 1) end
+  -- a blank row between lines, not between the rows of one wrapped line
+  local gaps = 0
+  for i = 2, #rows do
+    if rows[i][3] ~= rows[i - 1][3] then gaps = gaps + 1 end
+  end
+  local spaced = #rows + gaps <= room
+  local used = spaced and (#rows + gaps) or math.min(#rows, room)
+  local y = top + math.floor((room - used) / 2)
+  for i, row in ipairs(rows) do
+    if y > bottom then break end
+    if spaced and i > 1 and row[3] ~= rows[i - 1][3] then y = y + 1 end
+    s:centre(y, row[1]:sub(1, s.w), row[2])
+    y = y + 1
+  end
+end
 
 --- view: this monitor's own state, { mode = "types"|nil, scroll }
 function M.station(s, shop, d, view)
@@ -244,7 +289,7 @@ function M.station(s, shop, d, view)
   s:bar(1, "b")
   local owner = ds.shopper and shop.state.shoppers[ds.shopper] and ds.shopper
   if not owner then
-    s:centre(1, "CHEST " .. d.id, "0", "b")
+    s:centre(1, (d.category and (d.category:upper() .. " ") or "CHEST ") .. d.id, "0", "b")
     if ds.phase then
       s:centre(math.floor(s.h / 2), "Putting gear away...", "8")
     elseif not shop.ready then
@@ -259,56 +304,83 @@ function M.station(s, shop, d, view)
     return
   end
 
+  local narrow = s.w < 24
+  local bh = s.h >= 16 and 3 or 2
   local price = rules.bracketPrice(ds.bracket or 0, shop.cfg)
-  s:write(1, 1, (rules.typeLabel(ds.type or "?") .. " Lv " .. rules.bracketLabel(ds.bracket or 0)):sub(1, s.w - 9), "0", "b")
-  s:right(1, " " .. price .. " each", "4", "b")
+  local kind = rules.typeLabel(ds.type or "?")
+  local level = "Lv " .. rules.bracketLabel(ds.bracket or 0)
+  local each = price .. " each"
+  local top
+  if narrow then
+    -- one block across: the type on its own line, the level and the price under it
+    s:centre(1, kind:sub(1, s.w), "0", "b")
+    s:bar(2, "b")
+    s:write(1, 2, level, "0", "b")
+    s:right(2, each, "4", "b")
+    top = 3
+  else
+    local title = kind .. " " .. level
+    s:write(1, 1, title:sub(1, s.w - #each - 1), "0", "b")
+    s:right(1, each, "4", "b")
+    top = 2
+  end
 
-  local bh = buttonHeight(s)
-  local buttonsTop = s.h - bh + 1
   if view.mode == "types" then
-    local types = shop.stock:typesNear(ds.bracket or 0)
-    local rows = buttonsTop - 3
-    view.scroll = math.max(0, math.min(view.scroll or 0, math.max(0, #types - rows)))
-    for i = 1, math.min(rows, #types - view.scroll) do
+    local types = shop:typesFor(d, ds.bracket or 0)
+    local cols = math.max(1, math.floor(s.w / 16))
+    local buttonsTop = s.h - bh + 1
+    local perCol = math.max(1, math.floor((buttonsTop - top) / bh))
+    local page = perCol * cols
+    view.scroll = math.max(0, math.min(view.scroll or 0, math.max(0, #types - page)))
+    local colW = math.floor((s.w - (cols - 1)) / cols)
+    for i = 1, math.min(page, #types - view.scroll) do
       local t = types[i + view.scroll]
-      local label = rules.typeLabel(t.type)
-      s:button("settype", t.type, 1, 1 + i, s.w, 1,
-        label .. (" "):rep(math.max(1, s.w - #label - 8)) .. ("%4d"):format(shop.stock:summary().types[t.type].total),
-        t.type == ds.type and "5" or "0", "f")
+      local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+      local x, w = 1 + col * (colW + 1), col == cols - 1 and (s.w - col * (colW + 1)) or colW
+      local count = tostring(shop.stock:summary().types[t.type].total)
+      local label = rules.typeLabel(t.type):sub(1, math.max(1, w - #count - 1))
+      label = label .. (" "):rep(math.max(1, w - #label - #count)) .. count
+      -- alternate shades so neighbouring entries read as separate buttons
+      s:button("settype", t.type, x, top + row * bh, w, bh, label,
+        t.type == ds.type and "5" or "0", (col + row) % 2 == 0 and "7" or "f")
     end
-    local specs = { { "back", nil, "BACK", "0", "7" } }
-    if #types > rows then
-      specs[#specs + 1] = { "scroll", -rows, "UP", "0", "7" }
-      specs[#specs + 1] = { "scroll", rows, "DOWN", "0", "7" }
+    local specs = { { "back", nil, "BACK", "0", "e" } }
+    if #types > page then
+      specs[#specs + 1] = { "scroll", -page, "UP", "0", "b" }
+      specs[#specs + 1] = { "scroll", page, "DOWN", "0", "b" }
     end
-    s:row(buttonsTop, bh, specs)
+    buttonRows(s, { specs }, bh)
     s:finish()
     return
   end
 
-  local listBottom = buttonsTop - 4
+  local buttonsTop = buttonRows(s, narrow and {
+    { { "types", nil, "TYPE", "0", "b" } },
+    { { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
+    { { "next", nil, "NEXT", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
+  } or {
+    { { "types", nil, "TYPE", "0", "b" }, { "level", -1, "LV -", "0", "7" }, { "level", 1, "LV +", "0", "7" } },
+    { { "next", nil, "NEXT PAGE", "f", "5" }, { "done", nil, "DONE", "0", "e" } },
+  }, bh)
+
+  local lines = {}
+  local function add(text, fg) lines[#lines + 1] = { text, fg } end
+  add(owner .. "'s chest", "8")
+  local tab = shop:owes(owner)
+  local credit = shop.state.credit[owner]
+  local money = "Tab " .. tab
+  if credit and credit > 0 then money = money .. "   Credit " .. rules.showMilli(credit) end
+  add(money, tab > 0 and "4" or "0")
   if ds.phase ~= "open" then
-    s:centre(math.floor(s.h / 2), "Fetching gear...", "8")
+    add("Fetching gear...", "8")
+  elseif (ds.total or 0) == 0 then
+    add("None in stock at this level. Try another level or type.", "8")
   else
-    local list = holding(shop, d)
-    if #list == 0 then
-      s:wrap(3, 3, (ds.total or 0) == 0 and "None in stock at this level. Try another level or type."
-        or "This chest is empty. NEXT brings more.", "8")
-    else
-      pieceRows(s, list, 2, listBottom, false)
-    end
+    add("Page " .. (ds.page or 1) .. " of " .. (ds.pages or 1), "0")
   end
-  s:write(1, buttonsTop - 3, ("For " .. owner):sub(1, s.w), "8")
-  s:right(buttonsTop - 3, "page " .. (ds.page or 1) .. "/" .. (ds.pages or 1), "8")
-  noteRows(s, shop, s.name, buttonsTop - 2, 2)
-  local wide = s.w >= 30
-  s:row(buttonsTop, bh, {
-    { "types", nil, "TYPE", "0", "b" },
-    { "level", -1, wide and "LV -" or "-", "0", "7" },
-    { "level", 1, wide and "LV +" or "+", "0", "7" },
-    { "next", nil, s.w >= 49 and "NEXT PAGE" or "NEXT", "f", "5" },   -- five buttons share the width
-    { "done", nil, "DONE", "0", "e" },
-  })
+  local note = shop:noteFor(s.name)
+  if note then add(note, "4") end
+  centred(s, top, buttonsTop - 1, lines)
   s:finish()
 end
 

@@ -34,6 +34,15 @@ M.DEFAULTS = {
   maxBatchMoves = 256,      -- the server's inventory.maxBatchMoves
   vaultMatch = "sophisticated",  -- every unassigned inventory whose type has this in it is a vault chest
   textScale = 0.5,
+  -- The wings a display chest can be given in setup (G on the setup page), each with the gear types it shows: a name
+  -- matches a type exactly or as the start of one ("idol" is every idol). A wing with rest = true has every type no
+  -- other wing names. A chest with no wing shows any type, as before there were wings.
+  categories = {
+    { name = "Weapons", types = { "sword", "axe", "battlestaff", "trident", "rang" } },
+    { name = "Armour", types = { "helmet", "chestplate", "leggings", "boots", "shield" } },
+    { name = "Magic", types = { "wand", "focus", "idol" } },
+    { name = "Oddities", rest = true },
+  },
 }
 
 local function has(list, value)
@@ -266,6 +275,77 @@ function M.nearest(stations, pos)
   end)
   local out = {}
   for i, entry in ipairs(list) do out[i] = entry.s end
+  return out
+end
+
+-- ---------------------------------------------------------------- wings
+
+--- The wing called `name` (any case), or nil.
+function M.category(name, cfg)
+  if type(name) ~= "string" then return nil end
+  for _, c in ipairs((cfg and cfg.categories) or M.DEFAULTS.categories) do
+    if type(c) == "table" and type(c.name) == "string" and c.name:lower() == name:lower() then return c end
+  end
+  return nil
+end
+
+local function names(c, path)
+  for _, t in ipairs(type(c.types) == "table" and c.types or {}) do
+    if path == t or path:sub(1, #t + 1) == t .. "_" then return true end
+  end
+  return false
+end
+
+--- Whether a gear type ("the_vault:sword") belongs in a wing. No wing (nil, or a name no wing has) takes every type.
+function M.inCategory(kind, name, cfg)
+  local c = M.category(name, cfg)
+  if not c then return true end
+  local path = tostring(kind):match(":(.+)$") or tostring(kind)
+  if not c.rest then return names(c, path) end
+  for _, other in ipairs((cfg and cfg.categories) or M.DEFAULTS.categories) do
+    if type(other) == "table" and not other.rest and names(other, path) then return false end
+  end
+  return true
+end
+
+--- Only the entries of a list of { type = ... } that belong in a wing, in the same order.
+function M.inCategoryList(list, name, cfg)
+  if not M.category(name, cfg) then return list end
+  local out = {}
+  for _, t in ipairs(list) do
+    if M.inCategory(t.type, name, cfg) then out[#out + 1] = t end
+  end
+  return out
+end
+
+--- Which display chests a shopper gets when they check in, and in what order they are filled.
+-- stations: free chests nearest the shopper first, each { category = name|nil }; hasStock(category) says whether a wing
+-- has anything to show. First the nearest chest of every wing that has stock (chests with no wing count as one wing of
+-- their own), so a shopper finds something in each wing of a big district; then the nearest of the rest. Returns the
+-- chosen chests, nearest first, at most `count`.
+function M.spread(stations, count, hasStock)
+  local chosen, taken, seen = {}, {}, {}
+  for i, s in ipairs(stations) do
+    if #chosen >= count then break end
+    local key = s.category or ""
+    if not seen[key] then
+      seen[key] = true
+      if hasStock(s.category) then
+        chosen[#chosen + 1] = i
+        taken[i] = true
+      end
+    end
+  end
+  for i, s in ipairs(stations) do
+    if #chosen >= count then break end
+    if not taken[i] and hasStock(s.category) then
+      chosen[#chosen + 1] = i
+      taken[i] = true
+    end
+  end
+  table.sort(chosen)
+  local out = {}
+  for k, i in ipairs(chosen) do out[k] = stations[i] end
   return out
 end
 
