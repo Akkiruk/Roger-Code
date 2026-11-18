@@ -7,12 +7,12 @@
     "description": "The walk-in gear shop: tap a station to browse a gear type, take what you want onto your tab, PAY at any station. Also buys gear for store credit. Install on the shop computer and on every node that holds its chests and monitors.",
     "source_root": "Apps/GearShop",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
-    "commit": "bf662b2b8fbc3ae8465de2e60ecc77a8d54c61b9",
-    "generated_at": "2026-11-18T19:30:18Z",
-    "package_hash": "b90e1d0e5e1798912f5256f77a77d769d0fbf7e2b7198c65f7f6f777b1f25b2e"
+    "commit": "26b82bc58bf3ba0960a5fa7df90b50607c3b9308",
+    "generated_at": "2026-11-18T19:34:04Z",
+    "package_hash": "9f3976fef3acc376378fa13585c9f4105618c99fe432bf68e757e08a553f1689"
   },
   "install": {
     "preserve": [],
@@ -25,7 +25,7 @@
       {
         "repo_path": "Shared/lib/gearshop/ui.lua",
         "install_path": "lib/gearshop/ui.lua",
-        "sha256": "ea038eb2de60bbff6badd7f844f52a0005ce21e4480520880df51b857e6e7c77"
+        "sha256": "08220d879be6a87c7c047effa13679575e5b0432e57466a0444836221e29d8dd"
       },
       {
         "repo_path": "Shared/lib/gearshop/store.lua",
@@ -40,12 +40,12 @@
       {
         "repo_path": "Shared/lib/gearshop/shop.lua",
         "install_path": "lib/gearshop/shop.lua",
-        "sha256": "6d0148bfd92b5e9b978774cf47f0ccb6e09570d519f7caba0a12dd3a7e1c4b5f"
+        "sha256": "8a2dd2efb7a9913fb4ce91d754b69d76eb0409b33147dfb4b37a3fa990764690"
       },
       {
         "repo_path": "Shared/lib/gearshop/rules.lua",
         "install_path": "lib/gearshop/rules.lua",
-        "sha256": "ef1d21929805c2dc29a77dc010a05156e0295b43f539eef7f87275c126c3a716"
+        "sha256": "c860e40cb6e8897e7fe543ee0e26d22a991790af9d6907e60c569b5961bf97e3"
       },
       {
         "repo_path": "Shared/lib/gearshop/node.lua",
@@ -65,7 +65,7 @@
       {
         "repo_path": "Shared/lib/gearshop/app.lua",
         "install_path": "lib/gearshop/app.lua",
-        "sha256": "a63fc61e15285e29741f82bdb1672e82dcf30f7532f2e1ac7c314c5640772dae"
+        "sha256": "c487bcda1894f8a03852bf4713c1c8b2714f6883a649700f409a52a9bada6d48"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
