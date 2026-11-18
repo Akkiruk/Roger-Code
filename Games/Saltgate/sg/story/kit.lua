@@ -25,6 +25,7 @@
 --   jump(opts)                      leave the ground and land it: opts.text, min (distance), name
 --   timer(seconds, text, reason)    a clock on the screen; at zero the mission fails      stopTimer()
 --   watch(fn, reason) -> id         every frame; a truthy result (or a string) fails the mission
+--   guard(name, reason)             fail the mission if that actor is wrecked or knocked down
 --   text(from, message)             a text on the phone         unlock(contact)     toast(message)
 --   hint(text)                      what Tam says if you phone her now
 --   music(cue)                      title ... job, drive, heat_low, heat_high, finale, credits, complete
@@ -373,6 +374,14 @@ function M.extend(api, host)
     local id = #host.watches + 1
     host.watches[id] = { fn = fn, reason = reason or "failed" }
     return id
+  end
+  --- Fail the mission if the named actor is wrecked or knocked down.
+  function k.guard(name, reason)
+    local a = actorOf(name)
+    return k.watch(function()
+      local st = w:state(a)
+      if st == "wrecked" or st == "down" then return reason end
+    end, reason)
   end
   function k.unwatch(id)
     if host.watches[id] then host.watches[id] = { fn = noop, reason = "" } end

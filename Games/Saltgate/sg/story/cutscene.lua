@@ -38,7 +38,7 @@ function M.validate(shots)
       return false, "shot " .. i .. ": seconds must be 0-20"
     end
     if s.caption and not text.fits(s.caption, text.SCREEN - 4, 2) then return false, "shot " .. i .. ": caption too long" end
-    if s.title and not text.fits(s.title, text.SCREEN - 4, 2) then return false, "shot " .. i .. ": title too long" end
+    if s.title and not text.fits(s.title, text.SCREEN - 4, 4) then return false, "shot " .. i .. ": title too long" end
     if s.say then
       if type(s.say) ~= "table" or type(s.say[1]) ~= "string" or type(s.say[2]) ~= "string" then
         return false, "shot " .. i .. ": say is { who, text }"

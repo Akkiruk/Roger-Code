@@ -122,9 +122,12 @@ t.test("story: every mission plays start to finish with the first choice every t
 end)
 
 t.test("story: every line fits 51 columns (talk, choices, objectives, texts, cutscenes)", function()
-  local bad = {}
+  local bad, said = {}, {}
   local function check(ok, msg)
-    if not ok and #bad < 12 then bad[#bad + 1] = msg end
+    if not ok and not said[msg] and #bad < 40 then
+      said[msg] = true
+      bad[#bad + 1] = msg
+    end
   end
   eachMission(function(def)
     -- try the first, middle and last answer everywhere
@@ -159,7 +162,7 @@ t.test("story: every line fits 51 columns (talk, choices, objectives, texts, cut
       end
     end
   end)
-  t.eq(table.concat(bad, " | "), "", "lines that do not fit")
+  t.eq(table.concat(bad, " ## "), "", "lines that do not fit")
 end)
 
 -- ---------------------------------------------------------------- choices
@@ -190,15 +193,23 @@ local function allPaths(def, limit)
 end
 
 t.test("story: every choice path of every mission finishes", function()
+  local total, branching = 0, 0
   eachMission(function(def)
-    local n = allPaths(def, 200)
+    local n = allPaths(def, 400)
     t.truthy(n >= 1, def.id)
+    total = total + n
+    if n > 1 then branching = branching + 1 end
   end)
+  if not only then
+    t.truthy(branching >= 24, "choices branch in every mission (" .. branching .. ")")
+    t.truthy(total >= 200, "many paths were played (" .. total .. ")")
+  end
 end)
 
 -- ---------------------------------------------------------------- failing, retrying, saving
 
 t.test("story: every mission can be failed at every step and retried from its checkpoint", function()
+  local failedRuns, steps = 0, 0
   eachMission(function(def)
     -- find this mission's checkpoints from a clean run
     local host, w = hostAt(def, fresh())
@@ -212,7 +223,9 @@ t.test("story: every mission can be failed at every step and retried from its ch
       local h2, w2 = hostAt(def, fresh())
       local st = sim.play(h2, w2, { failAt = name, stopAt = nil, maxTicks = 3000, spoilOnly = true })
       -- spoiled at `name` only if it ever waits on the game there; a step that only talks cannot fail
+      steps = steps + 1
       if h2.state == "failed" then
+        failedRuns = failedRuns + 1
         t.eq(h2.failed.checkpoint, name, def.id .. " fails in " .. name)
         t.truthy(h2.failed.reason and #h2.failed.reason > 0, def.id .. " has a reason")
         t.truthy(w2.suspended, "the world waits on the failure screen")
@@ -232,9 +245,11 @@ t.test("story: every mission can be failed at every step and retried from its ch
       end
     end
   end)
+  if not only then t.truthy(failedRuns >= 80, "failed and retried at " .. failedRuns .. " of " .. steps .. " steps") end
 end)
 
 t.test("story: a save made at any checkpoint resumes there, with its flags, and finishes", function()
+  local resumed = 0
   eachMission(function(def)
     local host, w = hostAt(def, fresh())
     local _, seen = sim.play(host, w, {})
@@ -254,12 +269,14 @@ t.test("story: a save made at any checkpoint resumes there, with its flags, and 
         t.truthy(h2:resume(), def.id .. " resumes")
         t.eq(h2.state, "running")
         local st2 = sim.play(h2, w2, {})
+        resumed = resumed + 1
         t.eq(st2, "passed", def.id .. " finishes after loading at " .. name)
         t.truthy(story.done[def.id])
         t.truthy(story.mission == nil, "the checkpoint is cleared when the job is done")
       end
     end
   end)
+  if not only then t.truthy(resumed >= 100, "resumed " .. resumed .. " saves") end
 end)
 
 -- ---------------------------------------------------------------- the endings

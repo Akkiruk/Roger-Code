@@ -105,14 +105,19 @@ function M.drawCutscene(ctx, host, idx)
   end
   if shot.title then
     local lines = {}
-    for l in (shot.title .. "\n"):gmatch("([^\n]*)\n") do lines[#lines + 1] = l end
+    for l in (shot.title .. "\n"):gmatch("([^\n]*)\n") do
+      for _, row in ipairs(text.wrap(l, w - 4)) do lines[#lines + 1] = row end
+    end
     local top = math.floor((h - #lines) / 2)
     for i, l in ipairs(lines) do
       put(t, math.floor((w - #l) / 2) + 1, top + i, l, i == 1 and "yellow" or "lightGray")
     end
   end
   if shot.caption then
-    put(t, math.floor((w - #shot.caption) / 2) + 1, h - 3, shot.caption, "white")
+    local rows = text.wrap(shot.caption, w - 4)
+    for i = 1, math.min(2, #rows) do
+      put(t, math.floor((w - #rows[i]) / 2) + 1, h - 4 + i, rows[i], "white")
+    end
   end
   if shot.say then
     local who, line = shot.say[1], shot.say[2]
