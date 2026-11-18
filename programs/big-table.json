@@ -7,12 +7,12 @@
     "description": "Eight casino games for up to eight players, each at their own screen. Install it on every computer: a 6x6 wall becomes the dealer and a smaller one a seat.",
     "source_root": "Games/BigTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-18T15:10:04Z",
-    "package_hash": "5dbd18bcd20b495c4ec14503b3b9e29eb81efbf3e8226b90f37343dd6eb1bcd2"
+    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
+    "generated_at": "2026-11-18T16:22:21Z",
+    "package_hash": "e870e9c2b01bd2358a3717ed365ca004bdd2e9d2ce5ba73f419aaf79a02cdeb9"
   },
   "install": {
     "preserve": [],
@@ -110,7 +110,7 @@
       {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
         "install_path": "lib/casino/group/dealer.lua",
-        "sha256": "4f3f7247c12eda461b7f1dce3600fb040d10e1016b50e8440fbf87e4097e6132"
+        "sha256": "b359de02012c5bd5488b7d4035de9775d97a65582641c4349055cd70570426a9"
       },
       {
         "repo_path": "Shared/lib/casino/group/link.lua",
@@ -165,7 +165,7 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
       },
       {
         "repo_path": "Shared/lib/casino/lamps.lua",
@@ -200,7 +200,7 @@
       {
         "repo_path": "Shared/lib/casino/net.lua",
         "install_path": "lib/casino/net.lua",
-        "sha256": "7bd86ddd1a5ab7436160f623482734e3fab31fae442332fbbe757d813f802338"
+        "sha256": "6df040808700beb160f402ea259e48b7e4d7b1e6678c7e0150c4ced68deb93cf"
       },
       {
         "repo_path": "Shared/lib/sound_picks.lua",

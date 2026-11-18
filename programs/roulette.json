@@ -7,12 +7,12 @@
     "description": "Single-zero European roulette with inside and outside bets.",
     "source_root": "Games/Roulette",
     "entrypoint": "startup.lua",
-    "version": "1.0.120"
+    "version": "1.0.121"
   },
   "build": {
-    "commit": "86c4d95429af65c111532182648d8e508c9be3ee",
-    "generated_at": "2026-11-18T15:10:04Z",
-    "package_hash": "560da759072c2d7b997f87ecc4fcff05ce9596a721cdd517ac264478d468c237"
+    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
+    "generated_at": "2026-11-18T16:22:21Z",
+    "package_hash": "462e688a6288c5cdc58701b937f474e77769ed4d427679adf77da1ec1f6ca096"
   },
   "install": {
     "preserve": [],
@@ -40,12 +40,12 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
       },
       {
         "repo_path": "Shared/lib/casino/net.lua",
         "install_path": "lib/casino/net.lua",
-        "sha256": "7bd86ddd1a5ab7436160f623482734e3fab31fae442332fbbe757d813f802338"
+        "sha256": "6df040808700beb160f402ea259e48b7e4d7b1e6678c7e0150c4ced68deb93cf"
       },
       {
         "repo_path": "Shared/lib/casino/playercard.lua",
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "b83b054bdb944f448c46b0911073ffa8ef63d22e482d69b0a9f47252792e4e2b"
+        "sha256": "43b0e2ea66e4ba999e2de082bfcf7387dd555f055fd0667b6b7e1e27f20e2fcb"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",

@@ -7,12 +7,12 @@
     "description": "Free games for up to eight players, each at their own screen: Catan and UNO. Install it on every computer: a 6x6 wall becomes the table and a smaller one a seat. No tokens, ever.",
     "source_root": "Games/GameNight",
     "entrypoint": "startup.lua",
-    "version": "1.0.5"
+    "version": "1.0.6"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-18T15:10:04Z",
-    "package_hash": "8b1e224ca8d89ea91f0c7ea205b667ac2e73c9b82504c317b644df7031ca3e74"
+    "commit": "4bcbf562e3b0ec001c371589bfdda63fa1e9a210",
+    "generated_at": "2026-11-18T16:22:21Z",
+    "package_hash": "6194de6d6790a02e4d7a15440703386cca9a57a4fb98098f9327d712d93fb237"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Shared/lib/casino/group/dealer.lua",
         "install_path": "lib/casino/group/dealer.lua",
-        "sha256": "4f3f7247c12eda461b7f1dce3600fb040d10e1016b50e8440fbf87e4097e6132"
+        "sha256": "b359de02012c5bd5488b7d4035de9775d97a65582641c4349055cd70570426a9"
       },
       {
         "repo_path": "Shared/lib/casino/group/free.lua",
@@ -90,12 +90,12 @@
       {
         "repo_path": "Shared/lib/casino/limits.lua",
         "install_path": "lib/casino/limits.lua",
-        "sha256": "525233cca5c78f4c690099ffdf26a14963c677e1f17134d1e94a7f3dc48c2a11"
+        "sha256": "ca5d1412bd2d3d65d66ccd60d161a81ca791eb1cef51ecb84b1547338a375d04"
       },
       {
         "repo_path": "Shared/lib/casino/net.lua",
         "install_path": "lib/casino/net.lua",
-        "sha256": "7bd86ddd1a5ab7436160f623482734e3fab31fae442332fbbe757d813f802338"
+        "sha256": "6df040808700beb160f402ea259e48b7e4d7b1e6678c7e0150c4ced68deb93cf"
       },
       {
         "repo_path": "Shared/lib/casino/rng.lua",
