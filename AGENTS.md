@@ -34,6 +34,12 @@
 - Assume runtime computers live on the dedicated server and are not directly accessible from this workspace.
 - Validate changes through source inspection, package metadata, and the published installer/update flow unless the user explicitly supplies external runtime evidence.
 
+## Crash Reports
+
+- A crash on a server computer becomes a GitHub issue here (label `crash-report` and `game: <program>`; one issue per kind of crash, repeats add to its count in a comment at most once an hour). `Shared/lib/crashreport.lua` posts it to the crash relay (`cc-crash-relay` on Cloudflare, source in craftos-agent `tools/crashrelay`), and `.github/workflows/crash-issues.yml` turns it into an issue every 10 minutes. Computers hold no key.
+- A long-running program wraps its top-level call and nothing else: `crashreport.guard(name, main, { log = "<its log>" })` in its startup file (it raises the error again, with "Crash report sent (#n)" added, for the supervisor), or `crashreport.run` where the program has a crash screen of its own (SALTGATE). Require it as `pcall(function() return require("lib.crashreport") end)` so the program still runs without it (test harnesses copy only some libs).
+- Ctrl+T is never reported. A computer turns it off with `set crashreport.enabled false`. In the emulator it is off unless that setting is `true`, so test suites that crash programs on purpose file nothing.
+
 ## Casino
 
 - Every wagering game is a plugin on `Shared/lib/casino/table.lua`: pure rules, a view, a game table. Read that file's header first; `Games/HiLo` is the reference.

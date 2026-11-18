@@ -6,4 +6,9 @@
 
 -- Free play: the stand-ins go in before anything can require the wallet, so nothing on this computer can move a token
 require("lib.casino.group.free").install()
-require("lib.casino.group.dealer").start(require("games.registry"))
+
+-- A crash goes to the owner as a GitHub issue (lib/crashreport), then on to the supervisor as before; without the module it
+-- runs as it always has
+local function main() require("lib.casino.group.dealer").start(require("games.registry")) end
+local hasReport, crashreport = pcall(function() return require("lib.crashreport") end)
+if hasReport and type(crashreport) == "table" then crashreport.guard("Game Night", main, { log = "casino.log" }) else main() end

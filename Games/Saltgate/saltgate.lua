@@ -374,8 +374,11 @@ end
 local CRASH_LOG = "saltgate_crash.log"
 local native = term.current()
 
---- The error and where it happened, on the screen and in saltgate_crash.log, so it can be sent to whoever fixes it.
-local function showCrash(err, trace)
+-- lib/crashreport sends the crash to the owner as a GitHub issue. Without it (a desktop harness) the game still runs.
+local hasReport, crashreport = pcall(function() return require("lib.crashreport") end)
+if not hasReport or type(crashreport) ~= "table" then crashreport = nil end
+
+local function writeCrashLog(err, trace)
   local h = fs.open(CRASH_LOG, "a")
   if h then
     h.writeLine("==== " .. os.date("%Y-%m-%d %H:%M:%S"))
@@ -384,6 +387,10 @@ local function showCrash(err, trace)
     h.close()
   end
   log("crash: " .. tostring(err))
+end
+
+--- The error and where it happened on the screen; status: how the crash report went (nil when none was sent).
+local function showCrash(err, trace, status)
   term.redirect(native)
   render.resetPalette(native)
   native.setBackgroundColour(colours.black)
@@ -392,7 +399,7 @@ local function showCrash(err, trace)
   local y = 1
   local function line(text, colour)
     for _, part in ipairs(render.wrap(text, w - 1)) do
-      if y > hgt - 2 then return end
+      if y > hgt - 3 then return end
       native.setCursorPos(1, y)
       native.setTextColour(colour)
       native.write(part)
@@ -406,25 +413,43 @@ local function showCrash(err, trace)
       line(frame:gsub("^%s+", ""), colours.lightGrey)
     end
   end
+  if status then
+    native.setCursorPos(1, hgt - 2)
+    native.setTextColour(status:find("sent", 1, true) and colours.lightBlue or colours.orange)
+    native.write(status)
+  end
   native.setCursorPos(1, hgt - 1)
   native.setTextColour(colours.white)
   native.write("Saved to " .. CRASH_LOG .. ".")
   native.setCursorPos(1, hgt)
   native.write("Press any key to restart.")
-  os.pullEvent("key")
 end
 
-local crashTrace = nil
-local ok, err = xpcall(function() run(args[1] == "bench") end, function(e)
-  crashTrace = debug and debug.traceback and debug.traceback(tostring(e), 2) or tostring(e)
-  return e
-end)
+local function game() run(args[1] == "bench") end
+local logged = false
+local ok, err, status, crashTrace
+if crashreport then
+  ok, err, status, crashTrace = crashreport.run("Saltgate", nil, game, {
+    log = LOG,
+    onCrash = function(e, trace)
+      writeCrashLog(e, trace)
+      logged = true
+      if crashreport.enabled() and http then pcall(showCrash, e, trace, "Sending crash report...") end
+    end,
+  })
+else
+  ok, err = xpcall(game, function(e)
+    crashTrace = debug and debug.traceback and debug.traceback(tostring(e), 2) or tostring(e)
+    return e
+  end)
+end
 if not ok then
   if type(err) == "string" and err:find("Terminated", 1, true) then
     render.resetPalette(native)
     error(err, 0)
   end
-  local shown = pcall(showCrash, err, crashTrace)
-  if not shown then log("crash: " .. tostring(err)) end
+  if not logged then writeCrashLog(err, crashTrace) end
+  local shown = pcall(showCrash, err, crashTrace, status)
+  if shown then pcall(os.pullEvent, "key") end
   error(err, 0)
 end

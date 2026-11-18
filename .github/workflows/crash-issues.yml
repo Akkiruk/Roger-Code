@@ -1,0 +1,60 @@
+name: Crash reports to issues
+
+# Programs on the server send their crashes to the crash relay (cc-crash-relay, a Cloudflare Worker; lib/crashreport.lua).
+# Every 10 minutes this opens an issue for each new kind of crash and comments the running count on known ones.
+# The relay hands out only what is still to do, so most runs do nothing and take seconds. If the relay has a GitHub token of
+# its own it does this itself and this finds nothing. To stop it: disable this workflow in the Actions tab.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: crash-issues
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Open and comment crash issues
+        env:
+          RELAY: https://cc-crash-relay.rboone98s5.workers.dev
+          KEY: ${{ secrets.CRASH_RELAY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEY:-}" ]; then echo "No CRASH_RELAY_KEY secret: nothing to do."; exit 0; fi
+          pending=$(curl -fsS --max-time 20 -H "Authorization: Bearer $KEY" "$RELAY/crash/pending")
+          count=$(jq '.items | length' <<<"$pending")
+          echo "$count to do"
+          for i in $(seq 0 $((count - 1))); do
+            item=$(jq -c ".items[$i]" <<<"$pending")
+            sig=$(jq -r .sig <<<"$item")
+            n=$(jq .count <<<"$item")
+            if [ "$(jq -r .action <<<"$item")" = create ]; then
+              jq -r '.labels[]' <<<"$item" | while IFS= read -r name; do
+                color=fbca04; [ "$name" = crash-report ] && color=b60205
+                gh api "repos/$REPO/labels" -f name="$name" -f color="$color" >/dev/null 2>&1 || true
+              done
+              if ! issue=$(jq '{title, body, labels}' <<<"$item" | gh api "repos/$REPO/issues" --input - --jq .number); then
+                echo "could not open the issue for $sig"; continue
+              fi
+              echo "opened #$issue for $sig"
+            else
+              issue=$(jq .issue <<<"$item")
+              if ! jq '{body}' <<<"$item" | gh api "repos/$REPO/issues/$issue/comments" --input - >/dev/null; then
+                echo "could not comment on #$issue"; continue
+              fi
+              echo "commented on #$issue ($n in all)"
+            fi
+            # Marked one at a time, so a failure further on can never open the same issue twice
+            jq -nc --arg sig "$sig" --argjson issue "$issue" --argjson n "$n" '{items: [{sig: $sig, issue: $issue, count: $n}]}' \
+              | curl -fsS --max-time 20 -X POST -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+                  --data-binary @- "$RELAY/crash/synced" >/dev/null
+          done
