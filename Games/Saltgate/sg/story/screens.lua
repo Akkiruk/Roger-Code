@@ -16,9 +16,16 @@ local M = {}
 local FALLBACK = { white = 1, orange = 2, magenta = 4, lightBlue = 8, yellow = 16, lime = 32, pink = 64, gray = 128,
   lightGray = 256, cyan = 512, purple = 1024, blue = 2048, brown = 4096, green = 8192, red = 16384, black = 32768 }
 
+-- CC has the American spellings (gray, lightGray) in `colors` and the British (grey, lightGrey) in `colours`
 local function col(name)
-  local c = rawget(_G, "colours") or rawget(_G, "colors") or FALLBACK
-  return c[name] or c.white
+  local c = rawget(_G, "colors")
+  if c and c[name] then return c[name] end
+  c = rawget(_G, "colours")
+  if c then
+    local british = name:gsub("ray", "rey")
+    return c[name] or c[british] or c.white
+  end
+  return FALLBACK[name] or FALLBACK.white
 end
 
 local function put(t, x, y, str, fg, bg)

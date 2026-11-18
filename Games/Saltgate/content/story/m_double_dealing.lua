@@ -60,6 +60,9 @@ return function(api)
 
   api.step("juno", function()
     api.say("Mama Juno", "You look like a woman with a question. Sit. The soup is hot. The soup will not answer it, but it is hot.")
+    if api.recall("told_juno_first") then
+      api.say("Mama Juno", "Sable's map. You brought it to me first, before the radio. That is the only reason I am not lying to you now.")
+    end
     api.say("Wren", "Rusty said to ask you about the tip.")
     api.say("Mama Juno", "...Ah.")
     api.say("Wren", "Three years ago. The docks. The Patrol were waiting. Somebody told them. I have thought it was Sable for three years.")

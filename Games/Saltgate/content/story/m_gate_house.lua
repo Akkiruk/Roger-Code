@@ -15,6 +15,9 @@ return function(api)
       api.say("Harrow", "I am here to ask you to stop. The Commissioner has a plan, and plans survive. People do not necessarily. I would like to keep as many as I can.")
       api.say("Harrow", "I will not help you. I will not stop you either. I have run out of good ideas, and I have a sandwich.")
     end
+    if api.recall("harrow_helped") then
+      api.say("Harrow", "I left a cell unlocked for you once. I am still not sure that was legal. It felt like a good rule to break.")
+    end
     local pick = api.choose("Harrow looks up at the sea wall, then down at his shoes.", {
       "Dov, the old town is your mother's town.",
       "Say you'll look away. That is enough.",

@@ -11,6 +11,16 @@ return function(api)
     api.say("Tam", "Pit Wall to everybody. Gate sensors say the surge is forty minutes out. Old Saltgate is three minutes from the waterline.")
     api.say("Ferris", "Radio Lantern, live from a very damp mast. Saltgate, if you can hear me, the gate is open and the crowd is on the wall. Thank you. Thank you.")
     api.say("Sable", "Wren. The Authority has the gate house. They are going to close it by hand. Go. I will drive you to the wall.")
+    local cass = api.recall("cass_fate")
+    if cass == "join" then
+      api.say("Cass", "Reporting for duty! I have a hat and a very loud voice. Where do you want me?")
+    elseif cass == "dock" then
+      api.say("Cass", "(on the radio, sulking) I own a dock now. Nobody asked. I am watching the water from it.")
+    elseif cass == "law" then
+      api.say("Harrow", "Cass Gilt is in my cells, eating biscuits. He says good luck. He means it. Mostly.")
+    elseif cass == "free" then
+      api.say("Ferris", "Cass Gilt has been feeding my cat for three days. I do not know how to feel about it.")
+    end
     local pick = api.choose("The whole crew is behind you. The rain is horizontal.", {
       "Everyone know their part? Go.",
       "I'll do it. You stay with the crowd.",
@@ -74,6 +84,9 @@ return function(api)
       api.tally("heart", 1)
       api.tally("law", 1)
     elseif pick == 2 then
+      if api.recall("vane_hinted") then
+        api.say("Wren", "You told me to ask her on the roof deck. I did. She told me everything.")
+      end
       api.say("Vane", "She gave me a girl and I gave her a street. It was a fair price. It is, as ever, a question of who paid.")
       api.say("Wren", "She paid three years of it. I paid the rest.")
       api.remember("vane_confronted", true)

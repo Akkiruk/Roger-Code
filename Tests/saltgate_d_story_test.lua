@@ -165,6 +165,39 @@ t.test("story: every line fits 51 columns (talk, choices, objectives, texts, cut
   t.eq(table.concat(bad, " ## "), "", "lines that do not fit")
 end)
 
+t.test("story: every step after the first says where a retry puts you, with a car that exists; music cues are the soundtrack's", function()
+  local musicPlayer = require("music.player")
+  local cues = {}
+  for _, c in ipairs(musicPlayer.CUES) do cues[c] = true end
+  local cars = { pipit = 1, marlin = 1, kestrel = 1, tidewater = 1, sovereign = 1, cruiser = 1, skiff = 1, patrol_boat = 1 }
+  eachMission(function(def)
+    local host, w = hostAt(def, fresh())
+    local state, seen = sim.play(host, w, {})
+    t.eq(state, "passed", def.id)
+    local count = 0
+    for name in pairs(seen.checkpoints) do
+      count = count + 1
+      local so = host.stepOpts[name]
+      t.truthy(so, def.id .. "/" .. name .. " registered its options")
+      if so.at then t.truthy(idx.places[so.at], def.id .. "/" .. name .. ": retry place " .. so.at) end
+      if so.give then
+        t.truthy(cars[so.give.kind], def.id .. "/" .. name .. ": car " .. tostring(so.give.kind))
+        t.truthy(so.at, def.id .. "/" .. name .. ": a car needs a place")
+      end
+    end
+    -- the first step may be talk only; every other has somewhere to put you
+    local noAt = 0
+    for name in pairs(seen.checkpoints) do
+      if not host.stepOpts[name].at then noAt = noAt + 1 end
+    end
+    t.truthy(noAt <= 1, def.id .. ": steps with no retry place: " .. noAt)
+    for _, c in ipairs(host.cues) do
+      t.truthy(cues[c] or c == "title", def.id .. ": the soundtrack has no cue '" .. c .. "'")
+    end
+    local _ = count
+  end)
+end)
+
 -- ---------------------------------------------------------------- choices
 
 --- Every combination of answers a mission can be played with, by walking the tree of choices.

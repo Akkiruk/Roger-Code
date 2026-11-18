@@ -153,7 +153,7 @@ function H:start(id, state)
   self.failed = nil
   self.state = "running"
   self.restoring = state ~= nil and state.checkpoint ~= nil
-  self.fast = self.restoring
+  self.fast = false -- a load plays the step's talk again (a retry after a failure skips it)
   self:makeRunner(state)
   self.story.mission = nil
   self:emit("mission_start", { id = id })
