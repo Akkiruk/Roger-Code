@@ -116,8 +116,8 @@ test("gearshop: the shop buys epic, omega and legendary; above 70 omega and lege
   local ok, why = rules.accepts(rules.piece({ name = "minecraft:dirt", count = 1 }), cfg)
   eq(ok, false)
   eq(why, "not gear")
-  eq(select(2, rules.accepts(rules.piece(detail(80, "EPIC")), cfg)), "omega or better above 70")
-  eq(select(2, rules.accepts(rules.piece(detail(100, "OMEGA")), cfg)), "legendary only at 100")
+  eq(select(2, rules.accepts(rules.piece(detail(80, "EPIC")), cfg)), "Omega+ above 70")
+  eq(select(2, rules.accepts(rules.piece(detail(100, "OMEGA")), cfg)), "Legendary only at 100")
 end)
 
 test("gearshop: ten pieces make a token, and the fraction carries to the next sale", function()
@@ -850,4 +850,179 @@ test("gearshop: a piece taken from a chest with no detector is charged to the sh
   eq(shop:taker(shop.stations[3]), "Alice")
   shop:ds(shop.kiosk).shopper = "Alice"
   eq(shop:taker(shop.kiosk), "Alice", "the kiosk's pickup chest the same")
+end)
+
+-- ---------------------------------------------------------------- refused gear: the returns chest and DONATE
+
+--- A sell point with pretend chests (sell, returns, junk), a detector by it, and a shop whose writes are counted instead of
+-- written. crashAt names a write the computer goes down at, before it is made.
+local function sellPoint(opts)
+  opts = opts or {}
+  if not os.epoch then os.epoch = function() return os.time() * 1000 end end
+  local world = pretend({
+    sell = { size = 27, items = {} }, returns = { size = 27, items = {} }, junk = { size = 27, items = {} },
+  })
+  local players = opts.players or { Bob = { x = 1, y = 64, z = 0 } }
+  local call = world.io.call
+  world.io.names = function() return { "det" } end
+  world.io.hasType = function(name, kind) return name == "det" and kind == "playerDetector" end
+  world.io.call = function(name, method, a)
+    if name == "det" then
+      if method == "getOnlinePlayers" then
+        local out = {}
+        for who in pairs(players) do out[#out + 1] = who end
+        table.sort(out)
+        return true, out
+      elseif method == "getPlayerPos" then
+        return true, players[a] or {}
+      end
+      return false, "no such method"
+    end
+    return call(name, method, a)
+  end
+  local setup = store.newSetup()
+  setup.sell = { monitor = "msell", chest = "sell", pos = { x = 0, y = 64, z = 0 } }
+  if opts.returns ~= false then setup.returns = { chest = "returns" } end
+  if opts.junk ~= false then setup.junk = { chest = "junk" } end
+  local state = opts.state or store.newState()
+  local shop = shopLib.new(world.io, rules.DEFAULTS, setup, state)
+  shop.ready = true
+  shop.saves = {}
+  shop.save = function(self, why)
+    if opts.crashAt == why then error("crash at " .. why, 0) end
+    self.saves[#self.saves + 1] = why
+  end
+  return shop, world, state
+end
+
+local function unidentified(kind)
+  local g = gear(kind, 30, "RARE")
+  g.vaultData.state = "UNIDENTIFIED"
+  return g
+end
+
+test("gearshop sell: refused gear goes to the returns chest at once, with whose it is and why", function()
+  local shop, world, state = sellPoint()
+  local bought = gear("sword", 40, "EPIC")
+  world.chests.sell.items = { bought, gear("sword", 71, "EPIC"), unidentified("axe"), gear("helmet", 20, "RARE") }
+  shop:sellScan()
+  eq(world.held("sell"), 1, "only what the shop buys is left in the sell chest")
+  eq(world.chests.sell.items[1], bought)
+  eq(world.held("returns"), 3, "the three refused pieces are in the returns chest")
+  local whose = 0
+  for _, by in pairs(state.returnsBy) do
+    eq(by, "Bob", "Bob was standing at the sell point")
+    whose = whose + 1
+  end
+  eq(whose, 3)
+  eq(table.concat(shop.saves, " "), "refuse-begin refuse-done", "the move is written down before and after")
+  eq(#shop.sellView.accepted, 1)
+  eq(#shop.sellView.rejected, 0)
+  local why = {}
+  for _, entry in ipairs(shop.refused.entries) do
+    local what = entry.grade and ("L" .. entry.level .. " " .. entry.grade) or entry.label
+    why[#why + 1] = what .. ": " .. entry.why
+  end
+  table.sort(why)
+  truthy(table.concat(why, " | "):match("^L20 RARE: Epic%+ only | L71 EPIC: Omega%+ above 70 | axe %d+: identify it first$"), table.concat(why, " | "))
+  -- taken out of the returns chest by its owner: forgotten
+  world.chests.returns.items = {}
+  shop:pruneReturns()
+  eq(next(state.returnsBy), nil)
+end)
+
+test("gearshop sell: with nobody near the sell point the record says someone, and with no returns chest nothing moves", function()
+  local shop, world, state = sellPoint({ players = { Bob = { x = 40, y = 64, z = 0 } } })
+  world.chests.sell.items = { gear("sword", 20, "RARE") }
+  shop:sellScan()
+  local _, by = next(state.returnsBy)
+  eq(by, "?")
+  shop, world = sellPoint({ returns = false })
+  world.chests.sell.items = { gear("sword", 20, "RARE") }
+  shop:sellScan()
+  eq(world.held("sell"), 1, "it stays in the sell chest, as before")
+  eq(#shop.sellView.rejected, 1)
+  eq(#shop.saves, 0, "nothing was written")
+end)
+
+test("gearshop sell: DONATE gives the tapper's refused gear to the junk chest, never to stock", function()
+  local shop, world, state = sellPoint({ players = { Bob = { x = 1, y = 64, z = 0 }, Alice = { x = 30, y = 64, z = 0 } } })
+  world.chests.sell.items = { gear("sword", 20, "RARE"), gear("axe", 20, "RARE") }
+  shop:sellScan()
+  -- one more, left by someone else
+  local alices = gear("helmet", 20, "RARE")
+  world.chests.returns.items[5] = alices
+  state.returnsBy[rules.key(alices)] = "Alice"
+  shop:donate("Bob", "msell")
+  eq(world.held("junk"), 2, "Bob's two")
+  eq(world.held("returns"), 1, "Alice's stays")
+  eq(state.stats.donated, 2)
+  eq(state.returnsBy[rules.key(alices)], "Alice")
+  local left = 0
+  for _ in pairs(state.returnsBy) do left = left + 1 end
+  eq(left, 1, "only Alice's is still recorded")
+  eq(shop.stock:summary().total, 0, "nothing went into stock")
+  -- with no returns chest, DONATE takes the refused gear straight from the sell chest, and leaves what is bought
+  shop, world = sellPoint({ returns = false })
+  local epic = gear("sword", 20, "EPIC")
+  world.chests.sell.items = { epic, gear("axe", 20, "RARE") }
+  shop:donate("Bob", "msell")
+  eq(world.held("junk"), 1)
+  eq(world.chests.sell.items[1], epic)
+  -- and with no junk chest there is no DONATE
+  shop, world = sellPoint({ junk = false })
+  world.chests.sell.items = { gear("axe", 20, "RARE") }
+  shop:sellScan()
+  shop:donate("Bob", "msell")
+  eq(world.held("returns"), 1)
+end)
+
+test("gearshop sell: a reboot at any step of moving refused gear finishes the move once", function()
+  local function copy(v)
+    if type(v) ~= "table" then return v end
+    local out = {}
+    for k, x in pairs(v) do out[k] = copy(x) end
+    return out
+  end
+  for _, point in ipairs({ "refuse-begin", "refuse-done", "donate-begin", "donate-done" }) do
+    local donate = point:find("donate", 1, true) ~= nil
+    local shop, world = sellPoint()
+    -- what is on disk: each write as it was made; the computer goes down at `point`, before that write is made
+    local disk = store.newState()
+    shop.save = function(self, why)
+      if why == point then error("crash at " .. why, 0) end
+      disk = copy(self.state)
+    end
+    world.chests.sell.items = { gear("sword", 20, "RARE"), gear("axe", 71, "EPIC") }
+    if donate then
+      shop:sellScan()
+      eq(world.held("returns"), 2, point .. ": refused first")
+      eq(pcall(shop.donate, shop, "Bob", "msell"), false, point .. " went down")
+    else
+      eq(pcall(shop.sellScan, shop), false, point .. " went down")
+    end
+    -- back up, on the same chests and the state as it was last written
+    local state = copy(disk)
+    local again = shopLib.new(world.io, rules.DEFAULTS, shop.setup, state)
+    again.ready = true
+    again.save = function() end
+    if point:find("begin", 1, true) then
+      -- the write that would have begun the move was never made: nothing moved, and the next look starts it again
+      eq(state.moving, nil, point)
+      eq(world.held(donate and "junk" or "returns"), 0, point .. ": nothing moved")
+      if donate then again:donate("Bob", "msell") else again:sellScan() end
+    else
+      truthy(state.moving, point .. ": the move is still written down")
+      if again.state.moving then again:finishMove() end
+    end
+    eq(state.moving, nil, point .. ": finished")
+    local where = donate and "junk" or "returns"
+    eq(world.held(where), 2, point .. ": both pieces in " .. where .. ", once")
+    eq(world.held("sell"), 0, point)
+    eq(world.held(donate and "returns" or "junk"), 0, point)
+    local recorded = 0
+    for _ in pairs(state.returnsBy) do recorded = recorded + 1 end
+    eq(recorded, donate and 0 or 2, point .. ": the record")
+    if donate then eq(state.stats.donated, 2, point .. ": counted once") end
+  end
 end)

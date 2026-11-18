@@ -10,6 +10,8 @@
 --               in the same write that takes it out of `shown`, so it is charged once. A piece that comes back comes off.
 --     sweeping  the chest is being emptied into the vault. After a reboot whatever is still in it goes on.
 --   A piece is only ever moved by moveMany from one inventory to another, so it is in one of them whatever happens.
+--   Refused gear (sell chest to returns, or to junk with DONATE): state.moving is written before it moves, and the record
+--   of who left it is written with the end of the move; after a reboot finishMove sends on whatever is still behind.
 --   Tokens. PAY takes the lines off the tab and writes the amount down as a payment in one write; the payment then goes
 --   into the casino's owed book under a tag that can only be booked once (journal.book), and lib.casino.books moves it with
 --   its own write-ahead. A sale to the shop for tokens (only with the sellForTokens limit on) is the same the other way round;
@@ -76,6 +78,8 @@ function M.new(io, cfg, setup, state)
     if setup.sell.monitor then self.monitorRole[setup.sell.monitor] = { role = "sell" } end
   end
   if setup.intake and setup.intake.chest then self.chestRole[setup.intake.chest] = { role = "intake" } end
+  if setup.returns and setup.returns.chest then self.chestRole[setup.returns.chest] = { role = "returns" } end
+  if setup.junk and setup.junk.chest then self.chestRole[setup.junk.chest] = { role = "junk" } end
   if setup.door and setup.door.monitor then self.monitorRole[setup.door.monitor] = { role = "door" } end
   return self
 end
@@ -394,6 +398,7 @@ function Shop:attached(name)
   elseif role.role == "sell" then
     self:watch(name)
     if self.state.sale then self:finishSale() end
+    if self.state.moving then self:finishMove() end
     self:sellScan()
   elseif role.role == "intake" then
     self:watch(name)
@@ -1061,8 +1066,173 @@ end
 
 -- ---------------------------------------------------------------- buying from players
 
+--- Who is at the sell point: the nearest player online within 8 blocks of it, through any detector. nil when the sell
+-- point has no recorded place or nobody is near it.
+function Shop:atSell()
+  local sell = self.setup.sell
+  if not (sell and sell.pos) then return nil end
+  local names
+  for _, detector in ipairs(self:detectors()) do
+    local ok, list = self.io.call(detector, "getOnlinePlayers")
+    if ok and type(list) == "table" then
+      names = list
+      break
+    end
+  end
+  local best, bestDistance
+  for _, name in ipairs(names or {}) do
+    if type(name) == "string" then
+      local pos = self:playerPos(name)
+      local distance = pos and rules.distance(pos, sell.pos)
+      if distance and distance <= 8 and (not bestDistance or distance < bestDistance) then best, bestDistance = name, distance end
+    end
+  end
+  return best
+end
+
+--- Move refused gear from one chest to another: to the returns chest when the shop will not buy it, to the junk chest
+-- when its owner gives it away. The move is written down before anything moves, so after a reboot finishMove ends it:
+-- what is still in the first chest goes on, and the record of who left what is written with the end of the move.
+function Shop:beginMove(kind, from, to, slots, by)
+  local keys, any = {}, false
+  for _, key in pairs(slots) do
+    keys[key] = (keys[key] or 0) + 1
+    any = true
+  end
+  if not any then return true end
+  self.state.moving = { kind = kind, from = from, to = to, keys = keys, by = by }
+  self:save(kind .. "-begin")
+  return self:finishMove()
+end
+
+local function countKeys(list)
+  local out = {}
+  for _, item in pairs(list) do
+    local key = rules.key(item)
+    out[key] = (out[key] or 0) + 1
+  end
+  return out
+end
+
+function Shop:finishMove()
+  local mv = self.state.moving
+  if not mv then return true end
+  local ok, list = self.io.call(mv.from, "list")
+  if not ok or type(list) ~= "table" then return false end
+  local moves, picked = {}, {}
+  for slot, item in pairs(list) do
+    local key = rules.key(item)
+    if (picked[key] or 0) < (mv.keys[key] or 0) then
+      picked[key] = (picked[key] or 0) + 1
+      moves[#moves + 1] = { fromSlot = slot, to = mv.to }
+    end
+  end
+  if #moves > 0 then
+    local _, err = self.stock:batch(mv.from, moves)
+    if err then store.log(mv.kind .. " from " .. tostring(mv.from) .. ": " .. err) end
+  end
+  ok, list = self.io.call(mv.from, "list")
+  if not ok or type(list) ~= "table" then return false end
+  -- a piece no longer in the first chest went (now, or before a reboot); one still there did not fit
+  local still, went, stuck = countKeys(list), 0, 0
+  for key, n in pairs(mv.keys) do
+    local left = math.min(n, still[key] or 0)
+    stuck = stuck + left
+    if left < n then
+      went = went + (n - left)
+      if mv.kind == "refuse" then
+        self.state.returnsBy[key] = mv.by or "?"
+      else
+        self.state.returnsBy[key] = nil
+      end
+    end
+  end
+  if mv.kind == "donate" then self.state.stats.donated = (self.state.stats.donated or 0) + went end
+  self.state.moving = nil
+  self:save(mv.kind .. "-done")
+  if stuck > 0 then
+    self.trouble = "The " .. (mv.kind == "refuse" and "returns" or "junk") .. " chest has no room for " .. stuck .. " pieces"
+  end
+  return true, went
+end
+
+--- Refused gear in the sell chest goes to the returns chest at once, if there is one. Its reasons stay on the sell screen.
+function Shop:refuse(view)
+  local returns = self.setup.returns
+  if not (returns and returns.chest) or #view.rejected == 0 or self.state.sale or self.state.moving then return false end
+  local slots = {}
+  for _, entry in ipairs(view.rejected) do slots[entry.slot] = entry.key end
+  local by = self:atSell()
+  local done = self:beginMove("refuse", self.setup.sell.chest, returns.chest, slots, by)
+  if done then
+    self.refused = { entries = view.rejected, by = by, at = now() }
+  end
+  return done
+end
+
+--- DONATE: the tapper gives their refused gear to the shop for nothing. It goes to the junk chest, never into stock:
+-- from the returns chest what was left by them (or by nobody anyone saw), or with no returns chest what the sell chest refused.
+function Shop:donate(name, monitor)
+  local junk, sell, returns = self.setup.junk, self.setup.sell, self.setup.returns
+  if not (junk and junk.chest) or not (sell and sell.chest) then return end
+  if not name then
+    self:note(monitor, "Could not tell who tapped. Tap again.")
+    return
+  end
+  self:seen(name)
+  if self.state.moving and not self:finishMove() then
+    self:note(monitor, "Still moving gear. Try again in a moment.")
+    return
+  end
+  local from, slots = nil, {}
+  if returns and returns.chest then
+    from = returns.chest
+    local ok, list = self.io.call(from, "list")
+    if not ok or type(list) ~= "table" then
+      self:note(monitor, "The returns chest is not answering.")
+      return
+    end
+    for slot, item in pairs(list) do
+      local key = rules.key(item)
+      local by = self.state.returnsBy[key]
+      if by == name or by == nil or by == "?" then slots[slot] = key end
+    end
+  else
+    from = sell.chest
+    self:sellScan()
+    for _, entry in ipairs(self.sellView and self.sellView.rejected or {}) do slots[entry.slot] = entry.key end
+  end
+  if not next(slots) then
+    self:note(monitor, "No refused gear of " .. name .. "'s to give.")
+    return
+  end
+  local _, went = self:beginMove("donate", from, junk.chest, slots, name)
+  self.refused = nil
+  self:note(monitor, "Thank you, " .. name .. ": " .. tostring(went or 0) .. " given to the shop.", 12000)
+  self:sellScan()
+end
+
+--- Forget who left a piece in the returns chest once it has been taken out.
+function Shop:pruneReturns()
+  local returns = self.setup.returns
+  if not (returns and returns.chest) or self.state.moving or not next(self.state.returnsBy) then return end
+  local ok, list = self.io.call(returns.chest, "list")
+  if not ok or type(list) ~= "table" then return end
+  local present, changed = countKeys(list), false
+  for key in pairs(self.state.returnsBy) do
+    if not present[key] then
+      self.state.returnsBy[key] = nil
+      changed = true
+    end
+  end
+  if changed then
+    self:save("returns-taken")
+    self:changed()
+  end
+end
+
 --- Look at the sell chest and work out the offer.
-function Shop:sellScan()
+function Shop:sellScan(again)
   local sell = self.setup.sell
   if not sell or not sell.chest then return end
   local ok, details = self.io.call(sell.chest, "listDetailed")
@@ -1084,10 +1254,13 @@ function Shop:sellScan()
         view.accepted[#view.accepted + 1] = { slot = slot, key = key, label = piece.label }
       else
         view.rejected[#view.rejected + 1] = { slot = slot, key = key, label = piece.label, why = why,
-          level = piece.level, grade = piece.kind and rules.grade(piece) or nil }
+          level = piece.level, grade = piece.kind and not piece.unidentified and rules.grade(piece) or nil }
       end
     end
   end
+  -- refused gear goes to the returns chest straight away; the chest is then looked at again
+  if not again and self:refuse(view) then return self:sellScan(true) end
+  view.returnsChest = self.setup.returns and self.setup.returns.chest ~= nil
   self.sellView = view
   self:changed()
 end
@@ -1270,6 +1443,7 @@ function Shop:boot(progress)
   self:bookPending()
   self:resolve()
   if self.state.sale then self:finishSale() end
+  if self.state.moving then self:finishMove() end
   for _, d in ipairs(self.all) do self:mend(d) end
   self:sellScan()
   self:intake()
@@ -1343,6 +1517,7 @@ function Shop:upkeep()
     local sell, intake = self.setup.sell, self.setup.intake
     if sell and sell.chest and self:differs(sell.chest) then self:sellScan() end
     if intake and intake.chest and self:differs(intake.chest) then self:intake() end
+    if due(self, "returns", 30) then self:pruneReturns() end
   end
   if due(self, "rescan", self.cfg.rescanSeconds) then
     local name = self.stock:nextTurn(self.watched)
@@ -1367,6 +1542,7 @@ function Shop:upkeep()
     self:discover()
     self:bookPending()
     if self.state.sale then self:finishSale() end
+    if self.state.moving then self:finishMove() end
     for _, d in ipairs(self.all) do
       local ds = self:ds(d)
       local stale = ds.shopper and not self.state.shoppers[ds.shopper]

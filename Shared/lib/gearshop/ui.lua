@@ -506,6 +506,15 @@ end
 
 -- ---------------------------------------------------------------- the sell point
 
+--- "L71 Epic: Omega+ above 70": which refused piece (every piece of a type has the same name, so its level and rarity
+-- say which one is meant; an unidentified one goes by its name) and why.
+local function refusal(entry)
+  local what = entry.grade and ("L" .. tostring(entry.level) .. " " .. entry.grade:sub(1, 1) .. entry.grade:sub(2):lower()) or entry.label
+  return what .. ": " .. tostring(entry.why)
+end
+
+local REFUSED_MS = 120000
+
 function M.sell(s, shop)
   s:start()
   s:bar(1, "b")
@@ -516,16 +525,35 @@ function M.sell(s, shop)
   local y = 3
   local cfg = shop.cfg
   local tokens = rules.sellsForTokens(cfg)  -- off: store credit is the only way a sale is paid
+  local junk = shop.setup and shop.setup.junk and shop.setup.junk.chest
+  local returnsChest = shop.setup and shop.setup.returns and shop.setup.returns.chest
+  -- what was just refused and moved to the returns chest, with its reasons, for a couple of minutes
+  local clock = os.epoch and os.epoch("utc") or 0
+  local refused = shop.refused and (clock - (shop.refused.at or 0)) < REFUSED_MS and shop.refused.entries or nil
+  local function reasons(list)
+    for _, entry in ipairs(list) do
+      if y < buttonsTop - 4 then
+        s:write(2, y, refusal(entry):sub(1, s.w - 1), "8")
+        y = y + 1
+      end
+    end
+  end
   if not shop.ready then
     s:wrap(y, 2, "The shop is opening...", "8")
   elseif not view or (#view.accepted + #view.rejected + #view.returns) == 0 then
-    y = y + s:wrap(y, 4, "Put gear in the chest. The shop buys Epic, Omega and Legendary; above level "
-      .. cfg.highLevel .. " Omega and Legendary; at " .. cfg.topLevel .. " Legendary only.", "8")
-    if tokens then
-      s:wrap(y + 1, 3, cfg.piecesPerToken .. " pieces make 1 token, or " .. cfg.creditMultiplier .. " in store credit.", "8")
+    if refused then
+      s:write(1, y, ("Refused: " .. #refused .. ", in the returns chest"):sub(1, s.w), "e")
+      y = y + 1
+      reasons(refused)
     else
-      s:wrap(y + 1, 3, "The shop pays in store credit: " .. rules.showMilli(rules.creditMilli(1, cfg))
-        .. " a piece, spent on gear here.", "8")
+      y = y + s:wrap(y, 4, "Put gear in the chest. The shop buys Epic, Omega and Legendary; above level "
+        .. cfg.highLevel .. " Omega and Legendary; at " .. cfg.topLevel .. " Legendary only.", "8")
+      if tokens then
+        s:wrap(y + 1, 3, cfg.piecesPerToken .. " pieces make 1 token, or " .. cfg.creditMultiplier .. " in store credit.", "8")
+      else
+        s:wrap(y + 1, 3, "The shop pays in store credit: " .. rules.showMilli(rules.creditMilli(1, cfg))
+          .. " a piece, spent on gear here.", "8")
+      end
     end
   else
     local n = #view.accepted
@@ -547,25 +575,41 @@ function M.sell(s, shop)
     if #view.rejected > 0 then
       s:write(1, y, "Not wanted: " .. #view.rejected .. " (take them back)", "e")
       y = y + 1
-      for _, entry in ipairs(view.rejected) do
-        if y < buttonsTop - 4 then
-          -- every piece of a type has the same name, so its level and rarity say which one is meant
-          local what = entry.grade and ("L" .. tostring(entry.level) .. " " .. entry.grade:sub(1, 1) .. entry.grade:sub(2):lower()) or entry.label
-          s:write(2, y, (what .. ": " .. tostring(entry.why)):sub(1, s.w - 1), "8")
-          y = y + 1
-        end
+      if not returnsChest then
+        -- no returns chest set up: refused gear stays here, as it always did
+        s:write(2, y, "No returns chest: they stay here.", "8")
+        y = y + 1
       end
+      reasons(view.rejected)
+    elseif refused then
+      s:write(1, y, ("Refused: " .. #refused .. ", in the returns chest"):sub(1, s.w), "e")
+      y = y + 1
+      reasons(refused)
     end
   end
   noteRows(s, shop, s.name, buttonsTop - 3, 3)
+  local specs
   if tokens then
-    s:row(buttonsTop, bh, {
+    specs = {
       { "tokens", nil, "TOKENS", "f", "4" },
       { "credit", nil, s.w >= 30 and "STORE CREDIT x" .. cfg.creditMultiplier or "CREDIT", "f", "5" },
-    })
+    }
   else
-    s:row(buttonsTop, bh, { { "credit", nil, s.w >= 22 and "SELL FOR STORE CREDIT" or (s.w >= 12 and "STORE CREDIT" or "CREDIT"), "f", "5" } })
+    specs = { { "credit", nil, s.w >= 22 and "SELL FOR STORE CREDIT" or (s.w >= 12 and "STORE CREDIT" or "CREDIT"), "f", "5" } }
   end
+  -- DONATE gives refused gear to the shop for nothing (to the junk chest), offered only when there is a junk chest and
+  -- refused gear to give
+  local giveable = view and #view.rejected > 0
+  if returnsChest then giveable = shop.state and next(shop.state.returnsBy or {}) ~= nil end
+  if junk and giveable and shop.ready then
+    if tokens then
+      specs[#specs + 1] = { "donate", nil, "DONATE", "0", "7" }
+    else
+      specs[1][3] = s.w >= 40 and "SELL FOR STORE CREDIT" or "STORE CREDIT"
+      specs[2] = { "donate", nil, s.w >= 30 and "DONATE REFUSED" or "DONATE", "0", "7" }
+    end
+  end
+  s:row(buttonsTop, bh, specs)
   s:finish()
 end
 

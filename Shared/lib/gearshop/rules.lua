@@ -129,6 +129,8 @@ function M.piece(detail)
     level = tonumber(vd.level) or 0,
     rarity = type(vd.rarity) == "string" and vd.rarity:upper() or nil,
     legendary = legendary(vd) or nil,
+    -- vhcctweaks gives UNIDENTIFIED, ROLLING or IDENTIFIED; anything but IDENTIFIED cannot be judged yet
+    unidentified = (type(vd.state) == "string" and vd.state:upper() ~= "IDENTIFIED") or nil,
     label = tostring(label),
   }
   piece.search = (piece.label .. " " .. table.concat(words, " ")):lower()
@@ -152,15 +154,16 @@ end
 function M.accepts(piece, cfg)
   cfg = cfg or M.DEFAULTS
   if not piece or not M.forSale(piece, cfg) then return false, "not gear" end
+  if piece.unidentified then return false, "identify it first" end
   local level = piece.level or 0
   if piece.legendary then return true end
-  if level >= cfg.topLevel then return false, "legendary only at " .. cfg.topLevel end
+  if level >= cfg.topLevel then return false, "Legendary only at " .. cfg.topLevel end
   if level > cfg.highLevel then
     if has(cfg.highRarities, piece.rarity) then return true end
-    return false, "omega or better above " .. cfg.highLevel
+    return false, "Omega+ above " .. cfg.highLevel
   end
   if has(cfg.acceptRarities, piece.rarity) then return true end
-  return false, "epic or better only"
+  return false, "Epic+ only"
 end
 
 --- What one accepted piece is worth, in thousandths of a token.

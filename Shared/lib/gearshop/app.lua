@@ -193,6 +193,7 @@ local function runShop()
     if dump then
       dump.shoppers, dump.tabs, dump.credit, dump.carry = state.shoppers, state.tabs, state.credit, state.carry
       dump.displays, dump.stats, dump.owed = state.displays, state.stats, journal.owed()
+      dump.returnsBy, dump.moving = state.returnsBy, state.moving
       dump.stock = shop.ready and shop.stock:summary() or nil
       dump.trouble, dump.linkTrouble, dump.watches = shop.trouble, shop.linkTrouble, shop.watches
       dump.sale, dump.payment, dump.payout = state.sale, state.payment, state.payout
@@ -233,7 +234,7 @@ local function runShop()
     local function used(role)
       return role and (role.monitor == name or role.chest == name or role.detector == name)
     end
-    if used(d.door) or used(d.sell) or used(d.kiosk) or used(d.intake) then return true end
+    if used(d.door) or used(d.sell) or used(d.kiosk) or used(d.intake) or used(d.returns) or used(d.junk) then return true end
     for _, s in ipairs(d.stations) do
       if used(s) then return true end
     end
@@ -349,12 +350,24 @@ local function runShop()
       end
       table.sort(names)
       line(("%-16s %5s %6s %8s %6s"):format("player", "tab", "owed", "credit", "carry"), colors.lightGray)
-      local rows = th - 3
+      -- who left refused gear in the returns chest: a record only, nothing is held back
+      local left, leftNames = {}, {}
+      for _, by in pairs(state.returnsBy or {}) do
+        if not left[by] then leftNames[#leftNames + 1] = by end
+        left[by] = (left[by] or 0) + 1
+      end
+      table.sort(leftNames)
+      local rows = th - 3 - (#leftNames > 0 and 1 or 0)
       admin.scroll = math.max(0, math.min(admin.scroll, math.max(0, #names - rows)))
       for i = 1 + admin.scroll, math.min(#names, admin.scroll + rows) do
         local name = names[i]
         line(("%-16s %5d %6d %8s %6s"):format(name:sub(1, 16), rules.tabTotal(state.tabs[name]), owed[name] or 0,
           rules.showMilli(state.credit[name] or 0), rules.showMilli(state.carry[name] or 0)))
+      end
+      if #leftNames > 0 then
+        local parts = {}
+        for _, by in ipairs(leftNames) do parts[#parts + 1] = (by == "?" and "someone" or by) .. " " .. left[by] end
+        line("In returns: " .. table.concat(parts, ", "), colors.orange)
       end
       line("owed: + the shop owes them, - they owe", colors.lightGray)
     elseif admin.page == 4 then
@@ -388,6 +401,8 @@ local function runShop()
       line("S sell    " .. describe(d.sell, { "monitor", "chest" }))
       line("K kiosk   " .. describe(d.kiosk, { "monitor", "chest" }))
       line("I intake  " .. describe(d.intake, { "chest" }))
+      line("U returns " .. describe(d.returns, { "chest" }))
+      line("J junk    " .. describe(d.junk, { "chest" }))
       line("A add a display chest   R drop the last   (" .. #d.stations .. " set)")
       line("G give a display chest a wing", colors.lightGray)
       local rows = th - y - 2
@@ -538,8 +553,9 @@ local function runShop()
         say("Door set.")
       end)
     elseif ch == "s" then
-      startWizard("SELL POINT", "the sell point", { { kind = "monitor" }, { kind = "chest" } }, function(r)
-        d.sell = { monitor = r.monitor, chest = r.chest }
+      -- where it is, so refused gear left there is put down to whoever was standing at it
+      startWizard("SELL POINT", "the sell point", { { kind = "monitor" }, { kind = "chest" }, { kind = "stand", optional = true } }, function(r)
+        d.sell = { monitor = r.monitor, chest = r.chest, pos = r.pos }
         say("Sell point set.")
       end)
     elseif ch == "k" then
@@ -548,6 +564,16 @@ local function runShop()
           d.kiosk = { monitor = r.monitor, chest = r.chest, detector = r.detector, pos = r.pos }
           say("Kiosk set.")
         end)
+    elseif ch == "u" then
+      startWizard("RETURNS CHEST", "the returns chest", { { kind = "chest" } }, function(r)
+        d.returns = { chest = r.chest }
+        say("Returns chest set: refused gear goes there.")
+      end)
+    elseif ch == "j" then
+      startWizard("JUNK CHEST", "the junk chest", { { kind = "chest" } }, function(r)
+        d.junk = { chest = r.chest }
+        say("Junk chest set: DONATE puts gear there.")
+      end)
     elseif ch == "i" then
       startWizard("INTAKE CHEST", "the intake", { { kind = "chest" } }, function(r)
         d.intake = { chest = r.chest }
@@ -779,7 +805,11 @@ local function runShop()
       end
     elseif role.role == "sell" then
       local mode = button.id
-      post(nil, function() shop:sell(player(), mode, monitor) end)
+      if mode == "donate" then
+        post(nil, function() shop:donate(player(), monitor) end)
+      else
+        post(nil, function() shop:sell(player(), mode, monitor) end)
+      end
     end
   end
 

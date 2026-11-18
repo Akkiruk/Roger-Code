@@ -52,7 +52,9 @@ function M.newSetup()
     v = 1,
     nodes = {},      -- ids of the computers whose peripherals this one uses through its ender modem
     door = nil,      -- { monitor, detector, pos }
-    sell = nil,      -- { monitor, chest }
+    sell = nil,      -- { monitor, chest, pos }   pos: where the sell point is, to tell who left refused gear
+    returns = nil,   -- { chest }   refused gear is moved here at once; without it, it stays in the sell chest
+    junk = nil,      -- { chest }   gear given to the shop with DONATE, for the owner to salvage; never stock
     kiosk = nil,     -- { monitor, chest, detector, pos }      every detector is optional; pos comes through any detector
     intake = nil,    -- { chest }
     stations = {},   -- { { monitor, chest, detector, pos, category }, ... }   category: a wing's name (rules categories), or nil
@@ -89,7 +91,9 @@ function M.newState()
     payment = nil,    -- a tab's tokens on their way into the owed book: { id, name, tokens }
     collecting = nil, -- tokens being taken from a player: { name, owed }, what the book said before, so what moved is counted once
     paying = nil,     -- tokens being paid to a player: { name, owed }, the same the other way
-    stats = { sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0 },
+    returnsBy = {},   -- key -> who left that refused piece in the returns chest ("?" when nobody could be seen)
+    moving = nil,     -- refused gear on its way: { kind = "refuse"|"donate", from, to, keys = { key = n }, by }
+    stats = { donated = 0, sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0 },
   }
 end
 
