@@ -77,6 +77,12 @@
 - A player lookup can fail at any moment (offline, or on another server of the network): it returns nil and a reason, never throws, and what could not be done waits.
 - The whole shop is tested in the emulator from craftos-agent: `node tools/geartest/all.mjs` (visits, selling, unloads and other servers, a crash at every money and item step, setup at the terminal, 15,000 pieces). Money or item code is not done until `crash.mjs` passes.
 
+## Saltgate
+
+- `Games/Saltgate`: SALTGATE: Low Tide, a 3D open-city driving game on Pine3D (vendored in `pine3d/`, MIT, unmodified; keep `pine3d/LICENSE.txt` and `CREDITS.txt`). Everything in `sg/` except `render.lua`, `models.lua`, `bigtext.lua` and `sound.lua` is pure (no screen, keyboard or peripherals) and tested by `Tests/saltgate_test.lua` under plain Lua 5.1.
+- The city is fixed (`city.new(1)`); the background below the horizon is the asphalt, so roads have no polygons; the sea is drawn round the land. Only `saltgate_save.dat` and `.log` files are written (the lockdown allows them).
+- Frame cost grows with pixels (2x3 per character): the auto monitor scale keeps the picture at most `maxColumns` (100) wide. `saltgate bench [n]` writes frame times to `saltgate_bench.log`. In craftos-agent, `tools/saltgate/emu.mjs` runs benches and scripted scenarios in the emulator, and `tools/saltgate/shot.mjs` renders under desktop Lua.
+
 ## Lua And ComputerCraft Rules
 
 - Target Lua 5.1 and CC:Tweaked-compatible APIs.

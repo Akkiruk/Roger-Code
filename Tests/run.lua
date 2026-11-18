@@ -16,7 +16,7 @@ package.path = table.concat({
 for _, game in ipairs({
   "BigTable", "Duel",
   "Arcade", "Baccarat", "Blackjack", "CasinoHub", "CrazyEights", "HiLo", "HorseRacing", "PokerTable",
-  "Roulette", "Slots", "ThreeCardPoker", "UltimateHoldem", "VideoPoker",
+  "Roulette", "Slots", "ThreeCardPoker", "UltimateHoldem", "VideoPoker", "Saltgate",
 }) do
   package.path = root .. "/Games/" .. game .. "/?.lua;" .. package.path
 end

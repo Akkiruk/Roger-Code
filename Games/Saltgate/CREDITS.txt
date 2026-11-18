@@ -1,0 +1,7 @@
+SALTGATE: LOW TIDE
+An original game for ComputerCraft: Tweaked. Story, city, characters, music cues and art by Roger-Code.
+
+3D rendering: Pine3D by Xella (https://github.com/Xella37/Pine3D), MIT License.
+  pine3d/Pine3D.lua and pine3d/betterblittle.lua are unmodified copies of commit 2fbbd2c.
+  The license text is in pine3d/LICENSE.txt.
+Found through awesome-computercraft (https://github.com/tomodachi94/awesome-computercraft).
