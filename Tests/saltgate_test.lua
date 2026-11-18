@@ -493,3 +493,299 @@ t.test("saltgate: twenty minutes of random play breaks nothing", function()
     if step % 400 == 0 then t.breathe() end
   end
 end)
+
+-- ---------------------------------------------------------------- controls: keys as CC sends them
+
+local inputlib = require("sg.input")
+local hints = require("sg.hints")
+
+-- the CC:Tweaked 1.101.3 key codes (GLFW)
+local KEYS = { w = 87, a = 65, s = 83, d = 68, e = 69, f = 70, x = 88, h = 72, m = 77, p = 80, c = 67, q = 81,
+  up = 265, down = 264, left = 263, right = 262, space = 32, leftShift = 340, rightShift = 344, enter = 257,
+  numPadEnter = 335, tab = 258, f3 = 292 }
+
+--- Hold a key for some frames the way CC does: key (not held), then a repeat (held) each frame, then key_up.
+local function holdFrames(inp, code, frames, each)
+  local clock = inp.now
+  inp:event(clock, "key", code, false)
+  for i = 1, frames do
+    if i > 1 then inp:event(clock, "key", code, true) end
+    each(inp:read())
+    clock = clock + 0.05
+    inp:endFrame(clock)
+  end
+  inp:event(clock, "key_up", code)
+end
+
+t.test("saltgate input: a held key counts every frame, repeats are not new presses, key_up stops it at once", function()
+  local inp = inputlib.new(KEYS)
+  local frames, uses = 0, 0
+  holdFrames(inp, KEYS.w, 30, function(i)
+    if i.throttle == 1 then frames = frames + 1 end
+  end)
+  t.eq(frames, 30, "W held all 30 frames")
+  t.eq(inp:read().throttle, 1, "the frame of the key_up still feels the tap")
+  inp:endFrame(inp.now + 0.05)
+  t.eq(inp:read().throttle, 0, "let go: nothing next frame")
+  holdFrames(inp, KEYS.e, 20, function(i) if i.enter then uses = uses + 1 end end)
+  t.eq(uses, 1, "holding E is one press, not twenty")
+end)
+
+t.test("saltgate input: a tap shorter than a frame still moves, and two keys at once both count", function()
+  local inp = inputlib.new(KEYS)
+  inp:event(0, "key", KEYS.a, false)
+  inp:event(0.01, "key_up", KEYS.a)
+  t.eq(inp:read().steer, -1, "the tap is felt for one frame")
+  inp:endFrame(0.05)
+  t.eq(inp:read().steer, 0)
+  inp:event(0.06, "key", KEYS.w, false)
+  inp:event(0.07, "key", KEYS.d, false)
+  inp:event(0.08, "key", KEYS.d, true) -- only the last key repeats, as in Minecraft; W stays held
+  local i = inp:read()
+  t.eq(i.throttle, 1)
+  t.eq(i.steer, 1)
+  inp:endFrame(0.1)
+  i = inp:read()
+  t.eq(i.throttle, 1, "W still held without its own repeats")
+end)
+
+t.test("saltgate input: E and F are one action, arrows are WASD, X skips, a lost key_up does not stick forever", function()
+  local inp = inputlib.new(KEYS)
+  inp:event(0, "key", KEYS.e, false)
+  inp:event(0, "key", KEYS.f, false)
+  t.truthy(inp:read().enter)
+  inp:endFrame(0.05)
+  t.truthy(not inp:read().enter, "once")
+  inp:event(0.1, "key", KEYS.up, false)
+  inp:event(0.1, "key", KEYS.left, false)
+  t.eq(inp:read().throttle, 1)
+  t.eq(inp:read().steer, -1)
+  inp:event(0.1, "key", KEYS.x, false)
+  t.truthy(inp:read().skip)
+  inp:endFrame(0.1 + inputlib.STALE + 0.5)
+  t.eq(inp:read().throttle, 0, "no key_up came, but the key went quiet")
+  inp:event(1, "key_up", KEYS.s) -- a key_up for a key never seen down changes nothing
+  t.eq(inp:read().throttle, 0)
+end)
+
+t.test("saltgate controls: on foot W walks the way you face, S backs up, D turns right, A left", function()
+  local g = quietGame()
+  removeParked(g)
+  local p = g.player
+  p.x, p.z = city.lanePoint(4, 4, 0, 20)
+  p.h = 0
+  local x0 = p.x
+  run(g, 1, { throttle = 1 })
+  t.truthy(p.x - x0 > 3, "forward along +x (the way it faces)")
+  local x1 = p.x
+  run(g, 0.5, { throttle = -1 })
+  t.truthy(p.x < x1, "S walks backward")
+  local h0 = p.h
+  run(g, 0.3, { steer = 1 })
+  t.truthy(util.wrap(p.h - h0) > 0.3, "D turns right (toward +z when facing +x)")
+  local fx, fz = math.cos(h0), math.sin(h0)
+  local rx, rz = -fz, fx
+  t.truthy(math.cos(p.h) * rx + math.sin(p.h) * rz > 0, "now facing more to the right of before")
+  h0 = p.h
+  run(g, 0.3, { steer = -1 })
+  t.truthy(util.wrap(p.h - h0) < -0.3, "A turns left")
+  t.truthy(gamelib.FOOT_TURN <= 2.5, "a turn slow enough to watch")
+end)
+
+t.test("saltgate controls: W walks forward at walking speed and SHIFT runs, never backward (the wrapped-speed bug)", function()
+  -- speeds once went through the angle helper, which wraps: 4.2 became -2.08 (W walked backward) and 7.5 became 1.22
+  t.eq(util.approach(0, 4.2, 100), 4.2)
+  t.eq(util.approach(0, 7.5, 100), 7.5)
+  t.eq(util.approach(5, -3, 2), 3)
+  local g = quietGame()
+  removeParked(g)
+  local p = g.player
+  p.x, p.z = city.lanePoint(4, 4, 0, 10)
+  p.h = 0
+  run(g, 0.5, { throttle = 1 })
+  t.near(p.v, gamelib.WALK, 0.001, "walking speed, forward")
+  run(g, 0.5, { throttle = 1, sprint = true })
+  t.near(p.v, gamelib.RUN, 0.001, "running speed, forward")
+  run(g, 0.5, { throttle = -1 })
+  t.truthy(p.v < 0, "S backs up")
+  run(g, 0.5, {})
+  t.eq(p.v, 0, "let go: stop")
+end)
+
+t.test("saltgate controls: in a car W drives, letting go coasts, S brakes then reverses, D steers right", function()
+  local g = quietGame()
+  removeParked(g)
+  local p = g.player
+  local x, z = city.lanePoint(1, 4, 0, 4)
+  p.x, p.z = x, z
+  local car = giveCar(g, "marlin")
+  car.x, car.z, car.h = x, z, 0
+  run(g, 2, { throttle = 1 })
+  local v = car.v
+  t.truthy(v > 12, "up to speed: " .. v)
+  run(g, 0.5, {})
+  t.truthy(car.v > v * 0.85 and car.v < v, "coasting, not stopping: " .. car.v)
+  local h0 = car.h
+  run(g, 0.3, { throttle = 1, steer = 1 })
+  t.truthy(util.wrap(car.h - h0) > 0.2, "D steers right")
+  car.h = 0
+  run(g, 1.2, { throttle = -1 })
+  t.truthy(car.v < 0, "S stopped it and now reverses: " .. car.v)
+end)
+
+t.test("saltgate driving: right turns at every junction with W held never hit a wall, for every car", function()
+  local c = city.new(1)
+  for _, kind in ipairs({ "pipit", "marlin", "kestrel", "tidewater", "sovereign", "cruiser" }) do
+    local x, z = city.lanePoint(2, 2, 0, 8)
+    local car = vehicle.new(kind, x, z, 0)
+    local d, k, l, turning, hits = 0, 3, 2, false, 0
+    for _ = 1, 1600 do
+      local nx, nz = city.nodePos(k, l)
+      local dir = city.DIRS[d + 1]
+      local ahead = (nx - car.x) * dir[1] + (nz - car.z) * dir[2]
+      local input = { throttle = 1, steer = 0 }
+      if not turning and ahead < 9 then turning = true end
+      if turning then
+        input.steer = 1
+        if math.abs(util.wrap(city.DIR_HEADING[(d + 1) % 4 + 1] - car.h)) < 0.12 then
+          turning = false
+          d = (d + 1) % 4
+          local nd = city.DIRS[d + 1]
+          k, l = k + nd[1], l + nd[2]
+        end
+      end
+      if vehicle.update(car, input, 0.05, c) > 2 then hits = hits + 1 end
+    end
+    t.eq(hits, 0, kind .. " wall hits")
+    t.eq(car.health, car.spec.health, kind .. " undamaged")
+  end
+end)
+
+t.test("saltgate driving: a glancing hit slides along the wall instead of stopping dead", function()
+  local c = city.new(1)
+  local bld = c.tiles[4][1].buildings[1]
+  -- running south along the building's west face, angled 20 degrees into it
+  local car = vehicle.new("marlin", bld.x0 - 3, bld.z0 - 4, math.pi / 2 - math.rad(20))
+  car.v = 25
+  local hit = 0
+  for _ = 1, 20 do hit = math.max(hit, vehicle.update(car, { throttle = 1 }, 0.05, c)) end
+  t.truthy(hit > 0, "it did touch the wall")
+  t.truthy(car.v > 10, "still moving: " .. car.v)
+  t.truthy(not car.wrecked and car.health > 70, "a scrape, not a wreck: " .. car.health)
+end)
+
+t.test("saltgate driving: no NaN from zero time steps, stacked cars or a car dead centre in a building", function()
+  local c = city.new(1)
+  local a = vehicle.new("marlin", 100, 100, 0)
+  local b = vehicle.new("marlin", 100, 100, 0)
+  vehicle.update(a, { throttle = 1, steer = 1 }, 0, c)
+  vehicle.bump(a, b)
+  local bld = c.tiles[4][1].buildings[1]
+  local inside = vehicle.new("pipit", (bld.x0 + bld.x1) / 2, (bld.z0 + bld.z1) / 2, 0)
+  inside.v = 30
+  vehicle.update(inside, { throttle = 1 }, 0.05, c)
+  for _, car in ipairs({ a, b, inside }) do
+    for _, key in ipairs({ "x", "z", "h", "v", "side", "health" }) do
+      t.truthy(car[key] == car[key] and math.abs(car[key]) < 1e6, key .. " is a number")
+    end
+  end
+  t.truthy(not city.buildingAt(c, inside.x, inside.z), "pushed out")
+end)
+
+t.test("saltgate hints: the arrow points where the target is from the camera", function()
+  -- facing east (yaw 0): +z is to the right
+  t.eq((hints.direction(0, 0, 0, 50, 0)), "ahead")
+  t.eq((hints.direction(0, 0, 0, 0, 50)), "right")
+  t.eq((hints.direction(0, 0, 0, 0, -50)), "left")
+  t.eq((hints.direction(0, 0, 0, -50, 0)), "behind")
+  -- facing south (yaw pi/2): west (-x) is to the right
+  t.eq((hints.direction(0, 0, math.pi / 2, -50, 0)), "right")
+  local _, d = hints.direction(0, 0, 0, 30, 40)
+  t.near(d, 50, 0.001)
+end)
+
+t.test("saltgate hints: the key line changes with what you are doing", function()
+  local g = quietGame()
+  removeParked(g)
+  t.eq(hints.line(g), hints.FOOT)
+  t.truthy(hints.FOOT:find("WASD") and hints.FOOT:find("SHIFT") and hints.FOOT:find("E enter car"))
+  local car = g:spawnCar("pipit", g.player.x + 2, g.player.z, 0)
+  t.eq(hints.line(g), hints.NEAR_CAR)
+  t.truthy(hints.NEAR_CAR:find("E steal car"))
+  g.player.car = car
+  t.eq(hints.line(g), hints.DRIVING)
+  for _, k in ipairs({ "W gas", "S brake", "A/D steer", "SPACE handbrake", "E out" }) do
+    t.truthy(hints.DRIVING:find(k, 1, true), "driving hint has " .. k)
+  end
+  g:dialogue({ { "Mama Juno", "Hi." } })
+  t.eq(hints.line(g), "ENTER next")
+  for _, line in ipairs({ hints.FOOT, hints.NEAR_CAR, hints.DRIVING, hints.TALK }) do
+    t.truthy(#line <= 50, "fits a 51-wide screen: " .. line)
+    t.truthy(not line:find("F "), "one key per action: no F in " .. line)
+  end
+end)
+
+t.test("saltgate tutorial: walk to the red car, E, drive to the marker; each step waits; the save remembers", function()
+  local g = gamelib.new({ seed = 4, quiet = true, tutorial = true })
+  t.eq(g.tutorial.step, "walk")
+  local car = g.tutorial.car
+  t.truthy(car and car.parked, "a parked car to walk to")
+  run(g, 3, {})
+  t.eq(g.tutorial.step, "walk", "waits for you")
+  local tx, tz, kind = hints.target(g)
+  t.eq(kind, "car")
+  t.near(tx, car.x, 0.001)
+  t.near(tz, car.z, 0.001)
+  g.player.x, g.player.z = car.x - 3, car.z
+  g:update(0.05, {})
+  t.eq(g.tutorial.step, "enter")
+  g:update(0.05, { enter = true })
+  g:update(0.05, {})
+  t.eq(g.tutorial.step, "drive")
+  t.eq(g.player.car, car)
+  local _, _, k2 = hints.target(g)
+  t.eq(k2, "giver")
+  local j = g.city.places.juno
+  car.x, car.z, car.v = j.x, j.z, 0
+  g:update(0.05, {})
+  t.eq(g.tutorial, nil, "done at Juno's")
+  t.truthy(g.talk, "and Fresh Air starts")
+  t.truthy(g:saveData().tutorialDone)
+  local again = gamelib.new({ seed = 4, quiet = true, tutorial = true, save = g:saveData() })
+  t.eq(again.tutorial, nil, "not again")
+end)
+
+t.test("saltgate tutorial: X skips it", function()
+  local g = gamelib.new({ seed = 4, quiet = true, tutorial = true })
+  g:update(0.05, { skip = true })
+  t.eq(g.tutorial, nil)
+  t.truthy(g.tutorialDone)
+end)
+
+t.test("saltgate music: a cue for every state, in the right order of importance", function()
+  local g = quietGame()
+  t.eq(hints.music(g, "title"), "title")
+  t.eq(hints.music(g, "play"), "free_roam")
+  giveCar(g)
+  t.eq(hints.music(g, "play"), "driving")
+  missions.start(g, missions.BY_ID.hot_broth)
+  t.eq(hints.music(g, "play"), "job_hot_broth")
+  heat.add(g.heat, 2)
+  t.eq(hints.music(g, "play"), "heat_low")
+  heat.add(g.heat, 1)
+  t.eq(hints.music(g, "play"), "heat_high")
+  g.overlay = { kind = "nabbed", t = 3 }
+  t.eq(hints.music(g, "play"), "cuffed")
+  g.overlay = { kind = "ko", t = 3 }
+  t.eq(hints.music(g, "play"), "wasted")
+  g.overlay = nil
+  heat.clear(g.heat)
+  g.mission = nil
+  missions.start(g, missions.BY_ID.low_tide)
+  t.eq(hints.music(g, "play"), "finale")
+  local all = {}
+  for _, name in ipairs(hints.MUSIC_STATES) do all[name] = true end
+  for _, def in ipairs(missions.LIST) do
+    t.truthy(all[def.final and "finale" or ("job_" .. def.id)], "a cue for " .. def.id)
+  end
+end)

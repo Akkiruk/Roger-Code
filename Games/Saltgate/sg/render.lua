@@ -11,6 +11,7 @@ local bigtext = require("sg.bigtext")
 local missions = require("sg.missions")
 local heatlib = require("sg.heat")
 local vehicle = require("sg.vehicle")
+local hints = require("sg.hints")
 
 local M = {}
 local R = {}
@@ -42,6 +43,7 @@ end
 
 local HEADS = 32
 local MAP_RES = 2
+M.CAR_CAM_RATE = 5
 
 -- the job givers: where they stand from their place, which way they face, what they wear
 M.NPCS = {
@@ -177,10 +179,14 @@ function R:camera(g, mode, dt)
   local p = g.player
   local car = p.car
   local tx, tz, th = p.x, p.z, p.h
-  local yawRate = car and 3.2 or 5
   if self.camYaw == nil then self.camYaw = th end
-  -- in reverse the camera keeps looking the way the car faces
-  self.camYaw = util.turnToward(self.camYaw, th, yawRate * (dt or 0.05) * (1 + abs(util.wrap(th - self.camYaw))))
+  if car then
+    -- behind the car, catching up quickly; in reverse it keeps looking the way the car faces
+    self.camYaw = util.turnToward(self.camYaw, th, M.CAR_CAM_RATE * (dt or 0.05) * (1 + abs(util.wrap(th - self.camYaw))))
+  else
+    -- on foot the camera is locked behind you: A/D turn the view, W always walks into the screen
+    self.camYaw = th
+  end
   local yaw = self.camYaw
   local fx, fz = cos(yaw), sin(yaw)
   local camX, camY, camZ, pitch
@@ -307,7 +313,7 @@ function R:scene(g)
     end
   end
   -- the job marker, and the services you can use
-  local tx, tz, kind = missions.target(g)
+  local tx, tz, kind = hints.target(g)
   if tx and close(tx, tz) and not g.talk then
     local colour = kind == "giver" and "yellow" or (kind == "car" and "red" or "cyan")
     local beaconY = kind == "car" and 2 or 0
@@ -330,12 +336,22 @@ function R:minimap(g)
   local p = g.player
   local scale = p.car and (2.4 + util.clamp(abs(p.car.v) / 25, 0, 1.6)) or 1.8
   local cx, cy = x0 + floor(mw / 2), y0 + floor(mh / 2)
+  -- heading-up: the top of the minimap is the way the camera looks, so left and right agree with the 3D view
+  local yaw = self.cam and self.cam.yaw or p.h
+  local fx, fz = cos(yaw), sin(yaw)
+  local rx, rz = -fz, fx
   for v = 0, mh - 1 do
     local row = rows[y0 + v]
-    local wz = p.z + (v - mh / 2) * scale
+    local up = -(v - mh / 2) * scale
+    local bx, bz = p.x + fx * up, p.z + fz * up
     for u = 0, mw - 1 do
-      row[x0 + u] = self:mapColour(p.x + (u - mw / 2) * scale, wz)
+      local side = (u - mw / 2) * scale
+      row[x0 + u] = self:mapColour(bx + rx * side, bz + rz * side)
     end
+  end
+  local function toMap(wx, wz)
+    local dx, dz = wx - p.x, wz - p.z
+    return floor((dx * rx + dz * rz) / scale + mw / 2), floor(-(dx * fx + dz * fz) / scale + mh / 2)
   end
   -- frame
   for u = -1, mw do
@@ -347,8 +363,7 @@ function R:minimap(g)
     rows[y0 + v][x0 + mw] = C.white
   end
   local function blip(wx, wz, c, clampToEdge)
-    local u = floor((wx - p.x) / scale + mw / 2)
-    local v = floor((wz - p.z) / scale + mh / 2)
+    local u, v = toMap(wx, wz)
     if clampToEdge then
       u, v = util.clamp(u, 0, mw - 2), util.clamp(v, 0, mh - 2)
     elseif u < 0 or v < 0 or u > mw - 2 or v > mh - 2 then
@@ -366,14 +381,26 @@ function R:minimap(g)
   for _, car in ipairs(g.cars) do
     if car.ai and car.ai.mode == "cop" and g.heat.level > 0 then blip(car.x, car.z, flash and C.red or C.blue, false) end
   end
-  local tx, tz, kind = missions.target(g)
+  local tx, tz, kind = hints.target(g)
   if tx then blip(tx, tz, kind == "giver" and C.yellow or (kind == "car" and C.red or C.cyan), true) end
-  -- you: a white dot with an orange nose
+  -- north: a red pip on the rim
+  local nu, nv = toMap(p.x, p.z - 1000)
+  local half = math.min(mw, mh) / 2 - 1
+  local du, dv = nu - mw / 2, nv - mh / 2
+  local len = math.sqrt(du * du + dv * dv)
+  if len > 0 then
+    local px = util.clamp(floor(mw / 2 + du / len * half), 0, mw - 2)
+    local py = util.clamp(floor(mh / 2 + dv / len * half), 0, mh - 2)
+    rows[y0 + py][x0 + px] = C.red
+    rows[y0 + py][x0 + px + 1] = C.red
+  end
+  -- you: a white dot with an orange nose (straight up on foot; the car's way when the camera lags a turn)
   rows[cy][cx] = C.white
   rows[cy][cx + 1] = C.white
   rows[cy + 1][cx] = C.white
   rows[cy + 1][cx + 1] = C.white
-  local nx, ny = floor(cx + 0.5 + cos(p.h) * 2.2), floor(cy + 0.5 + sin(p.h) * 2.2)
+  local nx, ny = toMap(p.x + cos(p.h) * 2.4 * scale, p.z + sin(p.h) * 2.4 * scale)
+  nx, ny = nx + x0, ny + y0
   if rows[ny] and rows[ny][nx] then rows[ny][nx] = C.orange end
   self.minimapBox = { x0 = x0, y0 = y0, w = mw, h = mh }
 end
@@ -410,7 +437,7 @@ function R:bigMap(g)
     local sx, sy = toScreen(pl.x, pl.z)
     icons[#icons + 1] = { x = floor(sx / 2) + 1, y = floor(sy / 3) + 1, icon = pl.icon, colour = pl.color, label = pl.label }
   end
-  local tx, tz = missions.target(g)
+  local tx, tz = hints.target(g)
   if tx then
     local sx, sy = toScreen(tx, tz)
     icons[#icons + 1] = { x = floor(sx / 2) + 1, y = floor(sy / 3) + 1, icon = "*", colour = "yellow", label = "job" }
@@ -472,31 +499,56 @@ function R:hud(g, cameraMode)
     if i <= level then bg = (flash and g:copSees()) and C.blue or C.red end
     put(t, hx + 4 + i * 2 - 1, 1, " ", C.white, bg)
   end
-  if level > 0 and not g:copSees() then
-    -- how near the heat is to cooling, as a thin bar under the pips
-    local fill = floor(heatlib.coolProgress(g.heat) * 10 + 0.5)
-    if H > 12 then put(t, hx + 5, 2, string.rep("\140", fill), C.lightBlue, C.black) end
+
+  local overlay = g.overlay ~= nil
+  local mapCols = self.minimapBox and math.ceil((self.minimapBox.w + 3) / 2) + 1 or 0
+  local left = W - mapCols
+
+  -- where to go: an arrow (from where the camera looks) and how far, then the objective in words
+  local objective = (not overlay and not g.talk) and hints.objective(g) or nil
+  local tx, tz = hints.target(g)
+  local tutorial = g.tutorial ~= nil
+  local row = 2
+  if tx and not overlay and not g.talk then
+    local word, dist = hints.direction(p.x, p.z, self.cam and self.cam.yaw or p.h, tx, tz)
+    local head = " " .. hints.ARROWS[word] .. " " .. floor(dist + 0.5) .. "m "
+    put(t, 1, row, head, C.black, tutorial and C.cyan or C.yellow)
+    local x = #head + 1
+    local timeLeft = missions.timeLeft(g)
+    if timeLeft then
+      local s = math.max(0, floor(timeLeft))
+      local clock = string.format(" %d:%02d ", floor(s / 60), s % 60)
+      put(t, x + 1, row, clock, C.white, timeLeft < 15 and C.red or C.gray)
+      x = x + #clock + 1
+    end
+    if tutorial then put(t, x + 1, row, "TUTORIAL  X skip", C.cyan, C.black) end
+    row = row + 1
+  end
+  if objective then
+    local lines = wrap(objective, math.max(12, left - 2))
+    for i = 1, math.min(3, #lines) do
+      put(t, 1, row, " " .. lines[i] .. " ", tutorial and C.cyan or C.white, C.black)
+      row = row + 1
+    end
+  elseif not overlay and not g.talk and not g.mission and missions.nextMission(g.progress) then
+    local def = missions.nextMission(g.progress)
+    local who = def.giver == "juno" and "Mama Juno" or "Rusty"
+    for _, line in ipairs(wrap(who .. " has work. Follow the arrow.", math.max(12, left - 2))) do
+      put(t, 1, row, " " .. line .. " ", C.lightGray, C.black)
+      row = row + 1
+    end
   end
 
-  -- timer
-  local left = missions.timeLeft(g)
-  if left then
-    local s = math.max(0, floor(left))
-    put(t, 2, 3, string.format(" %d:%02d ", floor(s / 60), s % 60), left < 15 and C.red or C.white, C.black)
-  end
-
-  -- messages
-  local my = floor(H * 0.32)
-  for i, m in ipairs(g.messages) do
-    local lines = wrap(m.text, W - 4)
-    for _, line in ipairs(lines) do
-      centre(t, my, " " .. line .. " ", C.white, C.black, W)
+  -- messages, in the middle
+  local my = math.max(row + 1, floor(H * 0.42))
+  for _, m in ipairs(g.messages) do
+    for _, line in ipairs(wrap(m.text, W - 4)) do
+      if my < H - 2 then centre(t, my, " " .. line .. " ", C.white, C.black, W) end
       my = my + 1
     end
-    local _ = i
   end
 
-  -- talk
+  -- talk: a box at the bottom
   if g.talk then
     local line = g.talk.lines[g.talk.index]
     local body = wrap(line[2], W - 4)
@@ -504,52 +556,48 @@ function R:hud(g, cameraMode)
     for y = top - 1, H do put(t, 1, y, string.rep(" ", W), C.white, C.black) end
     put(t, 2, top - 1, line[1], line[1] == "Wren" and C.orange or C.yellow, C.black)
     for i, text in ipairs(body) do put(t, 3, top - 1 + i, text, C.white, C.black) end
-    local hint = "[Enter]"
-    put(t, W - #hint, H, hint, C.gray, C.black)
+    self:hintLine(hints.line(g))
     return
   end
 
-  -- objective
-  local objective = missions.objective(g)
-  if g.overlay then
-    objective = nil
-  elseif objective then
-    local lines = wrap(objective, W - 2)
-    for i = 1, math.min(2, #lines) do
-      centre(t, H - 1 - math.min(2, #lines) + i, " " .. lines[i] .. " ", C.yellow, C.black, W)
+  -- status: what you drive (or you), how fast, and how much punishment is left
+  if not overlay then
+    local sy = H - 1
+    local narrow = W < 40
+    local bar = narrow and 5 or 10
+    put(t, 1, sy, string.rep(" ", math.min(W, 34)), C.white, C.black)
+    if p.car then
+      local car = p.car
+      local label = narrow and car.spec.name:match("(%S+)$") or car.spec.name
+      local spd = vehicle.speedo(car) .. (narrow and "" or " km/h")
+      put(t, 2, sy, label, C.white, C.black)
+      put(t, 3 + #label, sy, spd, C.lightGray, C.black)
+      local hp = car.health / car.spec.health
+      local x = 4 + #label + #spd
+      put(t, x, sy, string.rep(" ", floor(hp * bar + 0.5)), C.white, hp > 0.35 and C.lime or C.red)
+      put(t, x + floor(hp * bar + 0.5), sy, string.rep(" ", bar - floor(hp * bar + 0.5)), C.white, C.gray)
+    else
+      put(t, 2, sy, "Wren", C.orange, C.black)
+      local hp = p.health / 100
+      put(t, 7, sy, string.rep(" ", floor(hp * bar + 0.5)), C.white, hp > 0.35 and C.lime or C.red)
+      put(t, 7 + floor(hp * bar + 0.5), sy, string.rep(" ", bar - floor(hp * bar + 0.5)), C.white, C.gray)
     end
-  elseif not g.mission and missions.nextMission(g.progress) and H > 14 then
-    local def = missions.nextMission(g.progress)
-    local who = def.giver == "juno" and "Mama Juno" or "Rusty"
-    local hint = W >= 46 and (who .. " has work: follow the yellow mark") or (who .. ": yellow mark")
-    centre(t, H - 1, " " .. hint .. " ", C.lightGray, C.black, W)
   end
+  self:hintLine(hints.line(g))
+  if g.hurtFlash then put(t, 1, H - 1, " ", C.white, C.red) end
+end
 
-  -- bottom bar: what you drive (or you), how fast, and how much punishment is left
+--- The bottom line: which keys do what right now. Keys in yellow, what they do in grey.
+function R:hintLine(text)
+  local t = self.target
+  local W, H = self.cw, self.ch
   put(t, 1, H, string.rep(" ", W), C.white, C.black)
-  local narrow = W < 40
-  local bar = narrow and 5 or 10
-  if p.car then
-    local car = p.car
-    local label = narrow and car.spec.name:match("(%S+)$") or car.spec.name
-    local spd = vehicle.speedo(car) .. (narrow and "" or " km/h")
-    put(t, 2, H, label, C.white, C.black)
-    put(t, 3 + #label, H, spd, C.lightGray, C.black)
-    local hp = car.health / car.spec.health
-    local x = W - bar
-    if not narrow then put(t, x - 4, H, "CAR", C.gray, C.black) end
-    put(t, x, H, string.rep(" ", floor(hp * bar + 0.5)), C.white, hp > 0.35 and C.lime or C.red)
-  else
-    put(t, 2, H, "Wren", C.orange, C.black)
-    local hp = p.health / 100
-    put(t, 7, H, string.rep(" ", floor(hp * bar + 0.5)), C.white, hp > 0.35 and C.lime or C.red)
-    local car = g:nearestCar()
-    if car then
-      local text = narrow and "F: get in" or "F: take the " .. car.spec.name
-      put(t, 9 + bar, H, text, C.lightGray, C.black)
-    end
+  local x = 2
+  for word, gap in text:gmatch("(%S+)(%s*)") do
+    if x + #word - 1 > W then break end
+    put(t, x, H, word, hints.isKey(word) and C.yellow or C.lightGray, C.black)
+    x = x + #word + #gap
   end
-  if g.hurtFlash then put(t, 1, 2, " ", C.white, C.red) end
 end
 
 -- ---------------------------------------------------------------- frames

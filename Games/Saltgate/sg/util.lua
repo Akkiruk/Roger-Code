@@ -38,7 +38,13 @@ function M.headingTo(ax, az, bx, bz)
   return atan2(bz - az, bx - ax)
 end
 
---- Step a toward b by at most step, along the short way round.
+--- Step a plain number a toward b by at most step. (For angles use turnToward, which wraps.)
+function M.approach(a, b, step)
+  if b > a then return math.min(b, a + step) end
+  return math.max(b, a - step)
+end
+
+--- Step an angle a toward angle b by at most step, along the short way round. Only for angles: it wraps.
 function M.turnToward(a, b, step)
   local d = M.wrap(b - a)
   if d > step then d = step elseif d < -step then d = -step end

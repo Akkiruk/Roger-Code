@@ -27,6 +27,7 @@ M.RESPRAY_COST = 150
 M.WALK, M.RUN = 4.2, 7.5
 M.PLAYER_RADIUS = 0.45
 M.PARKED_MAX = 8
+M.FOOT_TURN = 2.2 -- radians a second; the camera stays right behind, so A/D turn the view at this pace
 
 --- A new game. opts: seed, save (a table from saveData), quiet (no ambient traffic/peds, for tests).
 function M.new(opts)
@@ -48,6 +49,10 @@ function M.new(opts)
   if opts.save then g:load(opts.save) end
   g.pickups = g:makePickups()
   g:parkedCars()
+  -- first time: show how to walk, get in and drive (opts.tutorial), unless a save says it was done
+  if opts.tutorial and not g.tutorialDone then
+    g.tutorial = { step = "walk", car = g.startCar }
+  end
   g.overlay = nil -- { kind = "nabbed"/"ko", t = seconds }
   g.saveTimer = 60
   g.rammed = 0
@@ -96,7 +101,8 @@ end
 function G:saveData()
   local done = {}
   for id in pairs(self.progress.done) do done[#done + 1] = id end
-  return { version = 1, money = self.money, done = done, finished = self.progress.finished, stats = self.stats }
+  return { version = 1, money = self.money, done = done, finished = self.progress.finished, stats = self.stats,
+    tutorialDone = self.tutorialDone or nil }
 end
 
 function G:load(data)
@@ -106,6 +112,7 @@ function G:load(data)
     if missions.BY_ID[id] then self.progress.done[id] = true end
   end
   self.progress.finished = data.finished and true or false
+  self.tutorialDone = data.tutorialDone and true or nil
   if type(data.stats) == "table" then
     for k, v in pairs(data.stats) do
       if type(v) == "number" and self.stats[k] then self.stats[k] = v end
@@ -146,7 +153,7 @@ function G:parkedCars()
     car.parked = true
     return car
   end
-  park("marlin", "start", 10, -4.5, 0, "red")
+  self.startCar = park("marlin", "start", 10, -4.5, 0, "red")
   park("pipit", "juno", 14, -4.5, 0, "cyan")
   park("tidewater", "rusty", -6, 0, math.pi / 2)
   park("marlin", "hospital", 8, 4.5, math.pi, "green")
@@ -347,13 +354,13 @@ end
 
 local function footMove(g, input, dt)
   local p = g.player
-  local turn = 3.2
+  local turn = M.FOOT_TURN
   p.h = util.wrap(p.h + (input.steer or 0) * turn * dt)
   local throttle = input.throttle or 0
   local top = (input.sprint and M.RUN or M.WALK)
   local want = throttle * top
   if throttle < 0 then want = throttle * M.WALK * 0.6 end
-  p.v = util.turnToward(p.v, want, 25 * dt)
+  p.v = util.approach(p.v, want, 25 * dt)
   local nx, nz = p.x + cos(p.h) * p.v * dt, p.z + sin(p.h) * p.v * dt
   nx, nz = city.collide(g.city, nx, nz, M.PLAYER_RADIUS)
   p.x, p.z = nx, nz
@@ -492,6 +499,46 @@ function G:storyTick(dt)
     self:dialogue(def.intro, function() missions.start(self, def) end)
     self.giverCooldown = 4
   end
+end
+
+-- ---------------------------------------------------------------- the first-time tutorial
+
+--- Walk to the red car, press E, drive to Juno's marker. Each step waits for you; X skips the lot.
+function G:tutorialTick(input)
+  local tut = self.tutorial
+  if not tut then return end
+  local p = self.player
+  if input.skip then
+    self:endTutorial("Tutorial skipped. P shows the controls any time.")
+    return
+  end
+  if tut.step == "walk" then
+    local car = tut.car
+    if p.car then
+      tut.step = "drive"
+      self:cue("start")
+    elseif not car or car.wrecked or util.dist2(p.x, p.z, car.x, car.z) < 4.5 * 4.5 then
+      tut.step = "enter"
+      self:cue("start")
+    end
+  elseif tut.step == "enter" then
+    if p.car then
+      tut.step = "drive"
+      self:cue("start")
+    end
+  elseif tut.step == "drive" then
+    local j = self.city.places.juno
+    if util.dist2(p.x, p.z, j.x, j.z) <= (j.r + 1) ^ 2 then
+      self:endTutorial("That's it. Juno has your first job. P shows the controls any time.")
+    end
+  end
+end
+
+function G:endTutorial(text)
+  self.tutorial = nil
+  self.tutorialDone = true
+  self:message(text, 4)
+  self:save()
 end
 
 -- ---------------------------------------------------------------- one step
@@ -649,6 +696,7 @@ function G:update(dt, input)
     if self.heat.level == 0 then self:message("You lost the Patrol.", 3) end
   end
 
+  self:tutorialTick(input)
   self:services(dt)
   self:storyTick(dt)
 

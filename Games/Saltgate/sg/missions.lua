@@ -26,7 +26,7 @@ M.LIST = {
       { "Mama Juno", "First you need wheels. Borrow some. Bring them round to my back lot." },
     },
     steps = {
-      { kind = "car", text = "Get into any car (walk up to one, press F)." },
+      { kind = "car", text = "Get into any car (walk up to one, press E)." },
       { kind = "reach", place = "juno_lot", car = true, text = "Drive to Juno's back lot." },
     },
     outro = {

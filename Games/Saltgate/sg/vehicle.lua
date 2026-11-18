@@ -12,22 +12,24 @@ local cos, sin, abs = math.cos, math.sin, math.abs
 
 -- speeds in units (about a metre) a second. value is what Rusty pays for a clean one.
 M.TYPES = {
-  pipit = { name = "Pipit", top = 24, accel = 12, brake = 26, turn = 2.5, grip = 6, health = 80, value = 90,
+  pipit = { name = "Pipit", top = 24, accel = 12, brake = 26, turn = 2.8, grip = 6, health = 80, value = 90,
     length = 3.6, width = 1.8, height = 1.5, body = "orange", cabin = "black", radius = 1.7 },
-  marlin = { name = "Marlin", top = 29, accel = 11, brake = 24, turn = 2.1, grip = 5, health = 100, value = 160,
+  marlin = { name = "Marlin", top = 29, accel = 11, brake = 24, turn = 2.6, grip = 5, health = 100, value = 160,
     length = 4.4, width = 2.0, height = 1.5, body = "blue", cabin = "black", radius = 2.0 },
-  kestrel = { name = "Kestrel Cab", top = 28, accel = 11, brake = 24, turn = 2.1, grip = 5, health = 100, value = 140,
+  kestrel = { name = "Kestrel Cab", top = 28, accel = 11, brake = 24, turn = 2.6, grip = 5, health = 100, value = 140,
     length = 4.4, width = 2.0, height = 1.6, body = "yellow", cabin = "black", radius = 2.0, sign = true },
-  tidewater = { name = "Tidewater Van", top = 22, accel = 8, brake = 20, turn = 1.7, grip = 4.5, health = 150, value = 120,
+  tidewater = { name = "Tidewater Van", top = 22, accel = 8, brake = 20, turn = 2.3, grip = 4.5, health = 150, value = 120,
     length = 5.0, width = 2.2, height = 2.4, body = "white", cabin = "black", radius = 2.3, van = true },
-  sovereign = { name = "Gilt Sovereign", top = 42, accel = 19, brake = 30, turn = 2.7, grip = 7, health = 90, value = 900,
+  sovereign = { name = "Gilt Sovereign", top = 42, accel = 19, brake = 30, turn = 3.0, grip = 7, health = 90, value = 900,
     length = 4.6, width = 2.0, height = 1.2, body = "yellow", cabin = "black", radius = 2.0, low = true, special = true },
-  cruiser = { name = "Gull Cruiser", top = 35, accel = 15, brake = 28, turn = 2.4, grip = 6.5, health = 170, value = 0,
+  cruiser = { name = "Gull Cruiser", top = 35, accel = 15, brake = 28, turn = 2.8, grip = 6.5, health = 170, value = 0,
     length = 4.6, width = 2.0, height = 1.5, body = "white", cabin = "blue", radius = 2.0, police = true },
 }
 
 M.TRAFFIC_TYPES = { "pipit", "marlin", "marlin", "kestrel", "tidewater", "pipit" }
 M.BODY_COLOURS = { "orange", "blue", "red", "lightGray", "green", "white", "purple", "cyan" }
+
+M.CORNER_SCRUB = 9 -- speed lost a second while steering hard above half speed
 
 local nextId = 0
 
@@ -79,12 +81,17 @@ function M.update(car, input, dt, theCity)
   car.v = v
 
   -- steering: the wheel turns quickly, the car turns by speed (less at the very top, none standing still)
-  car.steer = util.turnToward(car.steer, steerIn, 6 * dt)
-  local speedFactor = util.clamp(abs(v) / 6, 0, 1) * (1 - 0.35 * util.clamp(abs(v) / spec.top, 0, 1))
+  car.steer = util.approach(car.steer, steerIn, 6 * dt)
+  local speedFactor = util.clamp(abs(v) / 6, 0, 1) * (1 - 0.2 * util.clamp(abs(v) / spec.top, 0, 1))
   local turn = spec.turn * (handbrake and 1.6 or 1)
   local sign = v >= 0 and 1 or -1
   local dh = car.steer * turn * speedFactor * sign * dt
   car.h = util.wrap(car.h + dh)
+  -- turning hard at speed scrubs some off, so a corner taken flat out still makes the corner
+  if abs(car.steer) > 0.5 and abs(v) > spec.top * 0.5 then
+    car.v = v - sign * M.CORNER_SCRUB * abs(car.steer) * dt
+    v = car.v
+  end
 
   -- slide: turning hard at speed (or on the handbrake) lets the back step out
   local slip = handbrake and 0.6 or 0.18
@@ -106,14 +113,22 @@ function M.update(car, input, dt, theCity)
       if into > 0 then
         impact = into
         car.v = v * (1 - util.clamp(into / (abs(v) + 0.001), 0, 1) * 0.85)
-        if into > 7 then car.v = -car.v * 0.25 end
+        if into > 12 then
+          car.v = -car.v * 0.25
+        elseif into < abs(v) * 0.75 then
+          -- a glancing hit: turn along the wall instead of grinding into it
+          local tx, tz = -hz, hx
+          if tx * fx + tz * fz < 0 then tx, tz = -tx, -tz end
+          if v < 0 then tx, tz = -tx, -tz end
+          car.h = util.turnToward(car.h, math.atan2(tz, tx), 0.35)
+        end
       end
       car.side = car.side * 0.3
       nx, nz = cx, cz
     end
   end
   car.x, car.z = nx, nz
-  if impact > 6 then M.damage(car, (impact - 6) * 2.2) end
+  if impact > 8 then M.damage(car, (impact - 8) * 1.6) end
   if car.hitTimer > 0 then car.hitTimer = car.hitTimer - dt end
   return impact
 end
