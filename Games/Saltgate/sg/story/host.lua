@@ -375,18 +375,23 @@ function H:acknowledge()
   end
 end
 
-function H:update(dt)
-  if self.state == "idle" then
-    if self.story then self:offer(dt) end
-    return
-  end
-  if self.state ~= "running" then return end
+--- The talk and the cutscene move on (the modal screens call this; update does too).
+function H:tickUI(dt)
   self.talk:update(dt)
   local cut = self.cut
   if cut then
     cut:update(dt)
     if cut.done then self.cut, self.cutDone = nil, true end
   end
+end
+
+function H:update(dt)
+  if self.state == "idle" then
+    if self.story then self:offer(dt) end
+    return
+  end
+  if self.state ~= "running" then return end
+  self:tickUI(dt)
   local frozen = self.talk:talking() or self.cut ~= nil
   if not frozen then self:checkWatches(dt) end
   local r = self.runner
