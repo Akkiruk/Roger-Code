@@ -34,8 +34,10 @@ local CUES = {
 }
 M.CUES = CUES
 
-function M.new(speaker)
-  return { speaker = speaker, queue = {}, clock = 0, sirenT = 0, sirenHigh = false }
+--- maxPerUpdate: notes it may send at once (the speaker takes 8 a tick; the music keeps 6 of them when it plays).
+function M.new(speaker, maxPerUpdate)
+  return { speaker = speaker, queue = {}, clock = 0, sirenT = 0, sirenHigh = false, cap = maxPerUpdate or 7 }
+
 end
 
 function M.play(s, name)
@@ -59,18 +61,22 @@ function M.update(s, dt, siren)
       s.queue[#s.queue + 1] = { at = s.clock, inst = "bit", pitch = s.sirenHigh and 19 or 14, vol = 0.35 }
     end
   end
-  local played = 0
-  for i = #s.queue, 1, -1 do
+  -- the due notes, oldest first, at most cap of them; the rest wait for the next update (a second late at most)
+  local played, i = 0, 1
+  local playNote = s.speaker.playNote
+  while i <= #s.queue and played < s.cap do
     local n = s.queue[i]
     if n.at <= s.clock then
       table.remove(s.queue, i)
-      local playNote = s.speaker.playNote
-      if played < 7 and playNote then
+      if s.clock - n.at < 1 and playNote then
         pcall(playNote, n.inst, n.vol, n.pitch)
         played = played + 1
       end
+    else
+      i = i + 1
     end
   end
+  s.lastPlayed = played
 end
 
 return M

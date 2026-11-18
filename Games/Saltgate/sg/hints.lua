@@ -75,7 +75,7 @@ M.TUTORIAL = {
 -- The music cues, for the soundtrack in music/ (see saltgate.lua): state cues play until the state changes,
 -- event cues once.
 M.MUSIC_STATES = { "title", "free_roam", "driving", "job_fresh_air", "job_hot_broth", "job_gulls", "job_gilded", "finale",
-  "heat_low", "heat_high", "cuffed", "wasted" }
+  "heat_low", "heat_high", "cuffed", "wasted", "credits" }
 M.MUSIC_EVENTS = { "job_complete" }
 
 --- The music cue for the game as it is now (mode "title" for the title screen).
@@ -89,8 +89,20 @@ function M.music(g, mode)
     if g.mission.def.final then return "finale" end
     return "job_" .. g.mission.def.id
   end
+  if g.credits then return "credits" end
   if g.player.car then return "driving" end
   return "free_roam"
+end
+
+--- The district the music should play for where you are: gilt, lantern, cinder, brine or mid (the park and the old
+-- town are mid; off the grid counts as the nearest block).
+function M.district(g)
+  local city = require("sg.city")
+  local p = g.player
+  local i = util.clamp(math.floor(p.x / city.P), 0, city.N - 1)
+  local j = util.clamp(math.floor(p.z / city.P), 0, city.N - 1)
+  if i ~= i or j ~= j then return "mid" end
+  return city.district(i, j)
 end
 
 return M

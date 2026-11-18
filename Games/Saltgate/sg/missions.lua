@@ -108,6 +108,8 @@ M.LIST = {
   },
 }
 
+M.CREDITS_SECONDS = 90 -- how long the credits music plays after the ending, unless the Patrol interrupts
+
 M.BY_ID = {}
 for i, def in ipairs(M.LIST) do
   def.index = i
@@ -147,8 +149,13 @@ local function finish(g)
   g:message("JOB DONE: " .. def.title .. "  +" .. util.money(def.reward), 5, "pass")
   if m.car and m.car ~= g.player.car then m.car.mission = nil end
   if m.car then m.car.mission = nil end
-  g:dialogue(def.outro)
-  if def.final then g.progress.finished = true end
+  if def.final then
+    g.progress.finished = true
+    -- the ending: once the last words are said, the credits roll (the music has a track for them)
+    g:dialogue(def.outro, function() g.credits = M.CREDITS_SECONDS end)
+  else
+    g:dialogue(def.outro)
+  end
   g:save()
 end
 

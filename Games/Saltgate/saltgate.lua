@@ -5,7 +5,9 @@
 --   saltgate bench [n]   drive itself for n frames (default 200) and write the frame times to saltgate_bench.log
 --
 -- Music: if a music module is installed (music.lua or music/init.lua), it is told what is going on through
--- music.cue(name); music.init({ speaker = ... }) and music.update(dt) are called too if it has them. Every call is
+-- music.cue(name) and music.setDistrict(name) (gilt, lantern, cinder, brine, mid, when you cross into another);
+-- music.init({ speaker, sound }) and music.update(dt) are called too if it has them, and the sound effects keep to
+-- 2 notes a tick so the speaker's 8 hold both. Every call is
 -- optional and guarded. State cues (sg/hints.lua MUSIC_STATES) are sent when the state changes; event cues
 -- (MUSIC_EVENTS) once, after which the current state cue is sent again.
 
@@ -132,8 +134,9 @@ local function run(bench)
   screen.clear()
 
   local speaker = settings.sound and peripheral.find("speaker") or nil
-  local sfx = sound.new(speaker)
-  musicCall("init", { speaker = speaker })
+  -- with the soundtrack playing (up to 6 of the speaker's 8 notes a tick), the effects keep to 2 a tick
+  local sfx = sound.new(speaker, music.cue and 2 or 7)
+  musicCall("init", { speaker = speaker, sound = settings.sound })
 
   local saved = readSave()
   local g = gamelib.new({ seed = os.epoch("utc") % 100000, saver = writeSave })
@@ -160,7 +163,7 @@ local function run(bench)
   local frameMs, benchTimes, benchDraw = 0, {}, 0
   local showPerf = false
   local benchFrames = bench and (tonumber(args[2]) or 200) or 0
-  local lastMusic = nil
+  local lastMusic, lastDistrict = nil, nil
 
   if bench then
     local spot = g.city.places.start
@@ -269,6 +272,14 @@ local function run(bench)
         if state ~= lastMusic then
           musicCall("cue", state)
           lastMusic = state
+        end
+        -- each district has its own arrangement of the roaming tune
+        if mode == "play" then
+          local district = hints.district(g)
+          if district ~= lastDistrict then
+            musicCall("setDistrict", district)
+            lastDistrict = district
+          end
         end
       end
 

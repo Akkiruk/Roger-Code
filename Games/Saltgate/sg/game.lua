@@ -558,6 +558,10 @@ function G:update(dt, input)
     self.lastMoney.t = self.lastMoney.t - dt
     if self.lastMoney.t <= 0 then self.lastMoney = nil end
   end
+  if self.credits then
+    self.credits = self.credits - dt
+    if self.credits <= 0 then self.credits = nil end
+  end
   if self.hurtFlash then
     self.hurtFlash = self.hurtFlash - dt
     if self.hurtFlash <= 0 then self.hurtFlash = nil end

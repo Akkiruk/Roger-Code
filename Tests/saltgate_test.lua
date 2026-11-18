@@ -789,3 +789,71 @@ t.test("saltgate music: a cue for every state, in the right order of importance"
     t.truthy(all[def.final and "finale" or ("job_" .. def.id)], "a cue for " .. def.id)
   end
 end)
+
+-- ---------------------------------------------------------------- music: districts, credits, sharing the speaker
+
+local soundlib = require("sg.sound")
+
+t.test("saltgate music: the district under you, for the roaming tune", function()
+  local g = quietGame()
+  local function at(i, j)
+    g.player.x, g.player.z = i * city.P + city.P / 2, j * city.P + city.P / 2
+    return hints.district(g)
+  end
+  t.eq(at(6, 1), "gilt")
+  t.eq(at(1, 3), "lantern")
+  t.eq(at(7, 4), "cinder")
+  t.eq(at(3, 7), "brine")
+  t.eq(at(4, 4), "mid")
+  t.eq(at(3, 4), "mid", "the park plays the old town's")
+  g.player.x, g.player.z = (city.pier.x0 + city.pier.x1) / 2, city.pier.z1 - 2
+  t.eq(hints.district(g), "brine", "the pier is the docks'")
+  g.player.x, g.player.z = -100, -100
+  t.truthy(hints.district(g), "off the map still has one")
+  local names = { gilt = true, lantern = true, cinder = true, brine = true, mid = true }
+  for i = 0, city.N - 1 do
+    for j = 0, city.N - 1 do t.truthy(names[at(i, j)], "a known district at " .. i .. "," .. j) end
+  end
+end)
+
+t.test("saltgate music: the credits roll after Low Tide's last words, until the Patrol or the clock ends them", function()
+  local g = quietGame()
+  for _, id in ipairs({ "fresh_air", "hot_broth", "gulls", "gilded" }) do g.progress.done[id] = true end
+  missions.start(g, missions.BY_ID.low_tide)
+  local car = giveCar(g, "sovereign")
+  g.mission.index = 4
+  putPlayer(g, "ferry", car)
+  g:update(0.05, {})
+  t.truthy(g.talk, "the outro")
+  t.eq(hints.music(g, "play"), "driving", "no credits during the talk")
+  talkThrough(g)
+  t.truthy(g.progress.finished)
+  t.eq(hints.music(g, "play"), "credits")
+  local all = {}
+  for _, name in ipairs(hints.MUSIC_STATES) do all[name] = true end
+  t.truthy(all.credits, "credits is a cue")
+  heat.add(g.heat, 1)
+  t.eq(hints.music(g, "play"), "heat_low", "the Patrol cuts in")
+  heat.clear(g.heat)
+  run(g, missions.CREDITS_SECONDS + 1, {})
+  t.eq(hints.music(g, "play"), "driving", "and they end")
+end)
+
+t.test("saltgate sound: effects keep to their share of the speaker, and wait rather than vanish", function()
+  local calls = 0
+  local speaker = { playNote = function() calls = calls + 1 return true end }
+  local s = soundlib.new(speaker, 2)
+  soundlib.play(s, "pass") -- several notes at once
+  soundlib.play(s, "cash")
+  local most = 0
+  for _ = 1, 40 do
+    local before = calls
+    soundlib.update(s, 0.05, false)
+    most = math.max(most, calls - before)
+  end
+  t.truthy(most <= 2, "never more than 2 at once: " .. most)
+  local total = #soundlib.CUES.pass + #soundlib.CUES.cash
+  t.eq(calls, total, "every note played, a little later if need be")
+  local free = soundlib.new(speaker)
+  t.eq(free.cap, 7, "without music the effects may use 7")
+end)
