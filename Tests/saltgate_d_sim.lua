@@ -100,11 +100,22 @@ end
 
 function W:spawn(kind, at, opts)
   local x, z = self:pos(at or "player")
-  local a = { kind = kind, vehicle = opts.vehicle, group = opts.group, name = opts.name, x = x or 0, z = z or 0,
-    state = "ok", health = 1, gap = 30, route = opts.route, count = opts.count }
-  self.actors[#self.actors + 1] = a
-  if kind == "crew" or kind == "thugs" or kind == "guards" then a.count = opts.count or 3 end
-  return a
+  local function make()
+    local a = { kind = kind, vehicle = opts.vehicle, group = opts.group, name = opts.name, x = x or 0, z = z or 0,
+      state = "ok", health = 1, gap = 30, route = opts.route }
+    self.actors[#self.actors + 1] = a
+    return a
+  end
+  if kind == "crew" then
+    local n = opts.count or 3
+    local first
+    for i = 1, n do
+      local a = make()
+      first = first or a
+    end
+    return first
+  end
+  return make()
 end
 
 function W:remove(a)
@@ -126,7 +137,7 @@ function W:pay(n) self.money = self.money + n end
 function W:remaining(group)
   local n = 0
   for _, a in ipairs(self.actors) do
-    if a.group == group and a.state ~= "down" then n = n + (a.count or 1) end
+    if a.group == group and a.state ~= "down" then n = n + 1 end
   end
   return n
 end
