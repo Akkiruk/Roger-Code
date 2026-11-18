@@ -385,13 +385,13 @@ function Table:maxBet()
   local host = wallet.hostName()
   local balance = wallet.hostBalance() or 0
   local cap = self.pretend and math.min(self.game.capTokens or math.huge, self.pretend.chips) or self.game.capTokens
-  return limits.maxBet(balance, net.otherExposure(host), self.game.rules.maxWin(1), cap)
+  return limits.maxBet(balance, net.otherExposure(host), self.game.rules.maxWin(1), cap, host)
 end
 
 --- The biggest net win a single round may promise right now, for games with several bets at once.
 function Table:liabilityRoom()
-  local balance = wallet.hostBalance() or 0
-  return math.floor(limits.protected(balance, net.otherExposure(wallet.hostName())) * limits.LIABILITY_SHARE)
+  local host = wallet.hostName()
+  return limits.room(wallet.hostBalance() or 0, net.otherExposure(host), host)
 end
 
 function Table:setExposure(amount)

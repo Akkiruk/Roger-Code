@@ -14,6 +14,7 @@
 --
 -- Anyone on the network can send anything. Messages are only checked for the right shape and a believable size.
 
+local limits = require("lib.casino.limits")
 local contest = require("casino_hub_contest")
 
 local M = {
@@ -83,6 +84,7 @@ function M.new()
     arcade = {},
     contest = contest.new(),
     champions = {},
+    house = { reserve = limits.RESERVE, share = limits.LIABILITY_SHARE },  -- the owner's house limits, set on the wall
   }
 end
 
@@ -93,7 +95,16 @@ function M.restore(saved)
   for key, value in pairs(saved) do
     if type(data[key]) == type(value) then data[key] = value end
   end
+  if not limits.valid(data.house.reserve, data.house.share) then data.house = M.new().house end
   return data
+end
+
+--- The owner picked a house limit on the wall. Only values limits.lua offers are kept. Returns true if it changed.
+function M.setHouse(data, reserve, share)
+  reserve, share = reserve or data.house.reserve, share or data.house.share
+  if not limits.valid(reserve, share) or (reserve == data.house.reserve and share == data.house.share) then return false end
+  data.house = { reserve = reserve, share = share }
+  return true
 end
 
 function M.gameName(id)
@@ -337,9 +348,12 @@ function M.champions(data)
   return list
 end
 
---- What every table hears: net.lua reads jackpot, leaders and champions.
-function M.state(data)
-  return { jackpot = data.jackpot, leaders = M.leaders(data, M.TOP), champions = M.champions(data) }
+--- What every table hears: net.lua reads jackpot, leaders and champions, and the house limits when the hub knows its owner.
+-- Only tables of that owner take the limits.
+function M.state(data, host)
+  local state = { jackpot = data.jackpot, leaders = M.leaders(data, M.TOP), champions = M.champions(data) }
+  if host then state.limits = { host = host, reserve = data.house.reserve, share = data.house.share } end
+  return state
 end
 
 return M

@@ -1,6 +1,8 @@
 -- casino_hub_contest_view.lua
 -- The hub wall's tournament page, and the menu the owner gets by touching the wall. Nobody else's touch opens it.
+-- The menu also holds HOUSE LIMITS: the owner's reserve and per-round share, which every table of theirs takes from the hub.
 
+local limits = require("lib.casino.limits")
 local theme = require("lib.casino.theme")
 local ui = require("lib.casino.ui")
 local contest = require("casino_hub_contest")
@@ -144,7 +146,35 @@ local function drawGames(c, menu)
     ui.button(c, menu.buttons, { id = "game", value = id, label = label, x = 5 + column * (width + 3),
       y = TOP + row * 10, w = width, h = 8, color = C.blue, small = c:bigWidth(label, 1) > width - 4 })
   end
-  ui.actionBar(c, menu.buttons, { { id = "cancel", label = "CANCEL", color = C.red } })
+  ui.actionBar(c, menu.buttons, { { id = "house", label = "HOUSE LIMITS", color = C.panel2 }, { id = "cancel", label = "CANCEL", color = C.red } })
+end
+
+local function shortTokens(value)
+  if value >= 1000 and value % 1000 == 0 then return math.floor(value / 1000) .. "K" end
+  return tostring(value)
+end
+
+--- The owner's house limits: a row for the reserve, a row for the share. The one lit up is what the tables use now.
+local function drawHouse(c, menu, house)
+  local cx = math.floor(c.w / 2)
+  title(c, "HOUSE LIMITS", "every table of yours")
+  c:textCenter(cx, TOP, "Reserve: your balance below this is never bet", C.text)
+  local specs = {}
+  for _, value in ipairs(limits.RESERVES) do
+    local on = value == house.reserve
+    specs[#specs + 1] = { id = "reserve", value = value, label = shortTokens(value), color = on and C.win or C.blue, textColor = on and C.ink or nil }
+  end
+  ui.actionRow(c, menu.buttons, specs, TOP + 2, 8)
+  c:textCenter(cx, TOP + 13, "Per round: the most one round may win, of what is above it", C.text)
+  specs = {}
+  for _, value in ipairs(limits.SHARES) do
+    local on = value == house.share
+    specs[#specs + 1] = { id = "share", value = value, label = limits.percent(value), color = on and C.win or C.blue, textColor = on and C.ink or nil }
+  end
+  ui.actionRow(c, menu.buttons, specs, TOP + 15, 8)
+  c:textCenter(cx, TOP + 27, "Now: keep " .. ui.group(house.reserve) .. ", risk up to " .. limits.percent(house.share)
+    .. " of the rest a round", C.gold)
+  ui.actionBar(c, menu.buttons, { { id = "cancel", label = "DONE", color = C.win, textColor = C.ink } })
 end
 
 local function drawLengths(c, menu)
@@ -161,17 +191,18 @@ end
 local function drawStop(c, menu, book, at)
   title(c, "TOURNAMENT", rules.gameName(book.live.game) .. ", " .. minutesLeft(book.live.ends - at))
   c:textCenter(math.floor(c.w / 2), MENU_MIDDLE, "End it now? Rounds still playing get to finish.", C.text)
-  ui.actionBar(c, menu.buttons, { { id = "stop", label = "END IT", color = C.red }, { id = "cancel", label = "KEEP GOING", color = C.win, textColor = C.ink } })
+  ui.actionBar(c, menu.buttons, { { id = "stop", label = "END IT", color = C.red }, { id = "house", label = "LIMITS", color = C.panel2 },
+    { id = "cancel", label = "KEEP GOING", color = C.win, textColor = C.ink } })
 end
 
 local function drawClosing(c, menu)
   title(c, "TOURNAMENT", "time up")
   c:textCenter(math.floor(c.w / 2), MENU_MIDDLE, "The last scores are coming in. Touch again in a minute.", C.text)
-  ui.actionBar(c, menu.buttons, { { id = "cancel", label = "OK", color = C.blue } })
+  ui.actionBar(c, menu.buttons, { { id = "house", label = "HOUSE LIMITS", color = C.panel2 }, { id = "cancel", label = "OK", color = C.blue } })
 end
 
 --- Draw the menu in place of a page, and keep its buttons on it.
-function M.drawMenu(c, menu, book, at)
+function M.drawMenu(c, menu, book, at, house)
   c:clear(C.felt)
   c:frame(1, 1, c.w, c.h, C.feltDark)
   ui.bar(c, { title = "CASINO HUB" })
@@ -182,13 +213,16 @@ function M.drawMenu(c, menu, book, at)
     drawLengths(c, menu)
   elseif menu.step == "stop" then
     drawStop(c, menu, book, at)
+  elseif menu.step == "house" then
+    drawHouse(c, menu, house)
   else
     drawClosing(c, menu)
   end
 end
 
---- The owner touched the open menu. Returns the menu to keep open, or nil, and true if the contest changed.
-function M.touch(menu, hit, book, by, at)
+--- The owner touched the open menu. Returns the menu to keep open, or nil, and true if the contest or the house limits changed.
+-- data is the hub's whole book, for the house limits (casino_hub_rules.setHouse).
+function M.touch(menu, hit, book, by, at, data)
   menu.deadline = at + M.MENU_MS
   if not hit then return menu end
   if hit.id == "game" then
@@ -199,6 +233,12 @@ function M.touch(menu, hit, book, by, at)
     return nil, contest.start(book, menu.game, hit.value, by, at) ~= nil
   elseif hit.id == "stop" then
     return nil, contest.stop(book, at)
+  elseif hit.id == "house" then
+    menu.step = "house"
+  elseif hit.id == "reserve" and data then
+    return menu, rules.setHouse(data, hit.value, nil)
+  elseif hit.id == "share" and data then
+    return menu, rules.setHouse(data, nil, hit.value)
   elseif hit.id == "cancel" then
     return nil
   end

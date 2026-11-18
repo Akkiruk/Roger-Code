@@ -833,7 +833,7 @@ end
 --- What the host can stand behind for a round: the same share of the reserve-protected balance any table offers.
 function Dealer:hostRoom()
   local host = wallet.hostName()
-  return math.floor(limits.protected(wallet.hostBalance(), net.otherExposure(host)) * limits.LIABILITY_SHARE), host
+  return limits.room(wallet.hostBalance(), net.otherExposure(host), host), host
 end
 
 local function entryOf(number, seat, bet)

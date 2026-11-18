@@ -1,7 +1,8 @@
 -- casino_hub_app.lua
 -- The hub's computer: listens to the floor, keeps the books on disk, and tells every table where things stand.
 -- It moves no tokens. A monitor is optional, and with none it prints a short summary to its own screen.
--- Its wall is a display for everyone but the owner, whose touch locks it like any table and opens the tournament menu.
+-- Its wall is a display for everyone but the owner, whose touch locks it like any table and opens the tournament menu,
+-- which also holds HOUSE LIMITS: the reserve and per-round share every table of the owner's takes from the state it sends.
 -- It also hears the Arcade's results, for one page of the wall, and a jackpot from any table lights its own lamp (lamps.lua).
 -- A contest moves no tokens. Its rules are casino_hub_contest.lua; a chat box, if there is one, whispers the top three.
 
@@ -103,6 +104,7 @@ local function writeDebug(c, data, page, at, menu)
       contest = contest.broadcast(data.contest, at) or false,
       past = data.contest.past,
       champions = rules.champions(data),
+      house = data.house,
     },
   }))
   handle.close()
@@ -123,7 +125,7 @@ local function floor()
   local frame = os.startTimer(FRAME)
 
   local function announce()
-    net.send("state", rules.state(data))
+    net.send("state", rules.state(data, wallet.hostName()))
     local message = contest.broadcast(data.contest, now())
     if message then net.send("contest", message) end
   end
@@ -136,7 +138,7 @@ local function floor()
       return
     end
     local changed
-    menu, changed = contestView.touch(menu, ui.hit(menu.buttons or {}, x, y), data.contest, who, at)
+    menu, changed = contestView.touch(menu, ui.hit(menu.buttons or {}, x, y), data.contest, who, at, data)
     if changed then
       journal.saveKeep(data)
       dirty = false
@@ -209,7 +211,7 @@ local function floor()
         os.queueEvent("roger_alive")
       end
       if c and menu then
-        contestView.drawMenu(c, menu, data.contest, at)
+        contestView.drawMenu(c, menu, data.contest, at, data.house)
         c:flush()
       elseif c then
         local note = not online and "No modem: no tables can be heard" or (wallet.wantsLock() and LOCK_NOTICE) or nil

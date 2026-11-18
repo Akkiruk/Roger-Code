@@ -3,13 +3,16 @@
 --   exposure  each table says what its open round could still cost its host, so tables owned by one host
 --             do not promise the same tokens twice
 --   round     each finished round goes to the hub for leaderboards and history
---   state     the hub answers with the shared jackpot and leaderboard, and who has beaten every game (badges.lua)
+--   state     the hub answers with the shared jackpot and leaderboard, and who has beaten every game (badges.lua). It
+--             also carries its owner's house limits, which only that owner's tables take, and only values the hub offers
 --   claim     a table about to pay the shared pot asks the hub what it may pay, and grant is the answer, so
 --             two tables working from the same broadcast figure cannot both pay the same pot
 --   contest   the hub says what tournament is on, for how long, and who has which chips. No tokens are ever in play, so a
 --             forged one can only fake a leaderboard line. tscore is a table's answer, sent by tournament.lua
 -- Anyone on the network can say anything, and anti-cheat stays light: there is no signing here. Every message is only
 -- checked for being the right shape and a believable size, so nonsense cannot stop a table or lift its limits.
+
+local limits = require("lib.casino.limits")
 
 local M = {}
 
@@ -209,6 +212,8 @@ function M.worker()
         others[sender] = { host = message.host, amount = message.amount, at = now() }
       elseif message.kind == "state" and M.validState(message) then
         hub = { jackpot = message.jackpot, leaders = message.leaders, champions = message.champions, at = now() }
+        local house = message.limits
+        if type(house) == "table" then limits.choose(house.host, house.reserve, house.share) end
       elseif message.kind == "grant" and message.to == os.getComputerID() and M.validGrant(message) then
         grants[message.id] = message.amount
       elseif message.kind == "contest" and M.validContest(message) then
