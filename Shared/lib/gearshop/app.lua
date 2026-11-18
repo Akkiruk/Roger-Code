@@ -298,6 +298,7 @@ local function runShop()
       line(("Stock: %d pieces (%d for sale) in %d chests"):format(summary.total, summary.forSale, summary.chests))
       line(("Room: %d/%d slots, %d unread, %d watched"):format(summary.used, summary.slots, summary.unread, shop.watches))
       line("Owner balance: " .. tostring(admin.hostBalance or "?") .. "   floor " .. cfg.ownerFloor)
+      line("Sellers are paid: " .. (rules.sellsForTokens(cfg) and "tokens or store credit" or "store credit only"))
       local stats = state.stats
       line(("Sold %d pieces: %d tokens, %d store credit"):format(stats.sold, stats.takings, stats.creditSpent))
       line(("Bought %d pieces: %d tokens paid, %s credit given"):format(stats.bought, stats.paidOut, rules.showMilli(stats.creditGiven)))
@@ -689,6 +690,14 @@ local function runShop()
       admin.scroll, admin.sel = admin.scroll + 1, admin.sel + 1
     elseif key == keys.enter and admin.page == 4 then
       local name = limitKeys()[admin.sel]
+      if type(rules.DEFAULTS[name]) == "boolean" then
+        -- an on/off limit flips with Enter
+        cfg[name] = not cfg[name]
+        store.saveConfig(cfg)
+        say(name .. " is now " .. tostring(cfg[name]))
+        admin.dirty = true
+        return
+      end
       ask(name .. " = ", function(text)
         local default = rules.DEFAULTS[name]
         local value = text

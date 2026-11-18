@@ -12,7 +12,8 @@
 --   A piece is only ever moved by moveMany from one inventory to another, so it is in one of them whatever happens.
 --   Tokens. PAY takes the lines off the tab and writes the amount down as a payment in one write; the payment then goes
 --   into the casino's owed book under a tag that can only be booked once (journal.book), and lib.casino.books moves it with
---   its own write-ahead. A sale to the shop is the same the other way round. A step repeated after a reboot finds its tag
+--   its own write-ahead. A sale to the shop for tokens (only with the sellForTokens limit on) is the same the other way round;
+--   a sale for store credit only adds to the seller's credit in the sale-booked write. A step repeated after a reboot finds its tag
 --   already used and changes nothing.
 --
 -- A player can be gone at any moment (logged off, or on another server of the network). Every lookup here returns nil and
@@ -1036,6 +1037,8 @@ function Shop:sell(name, mode, monitor)
     return
   end
   self:seen(name)
+  -- with sellForTokens off every sale is store credit, whatever button (or old screen) the tap came from
+  mode = rules.saleMode(mode, self.cfg)
   if not self.ready then
     self:note(monitor, "The shop is still counting its stock.")
     return
@@ -1083,6 +1086,7 @@ function Shop:sell(name, mode, monitor)
 end
 
 --- Close a sale: count what reached the vault and pay for it. With no count given (after a reboot) the chests say.
+-- A sale is paid the way it was begun: one begun for tokens before sellForTokens was turned off is still paid in tokens.
 function Shop:finishSale(movedKeys, monitor)
   local st = self.state
   local sale = st.sale

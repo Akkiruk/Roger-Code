@@ -158,6 +158,79 @@ test("gearshop: store credit is four times the tokens", function()
   eq(rules.showMilli(50), "0.05")
 end)
 
+-- ---------------------------------------------------------------- store credit only, unless the owner turns tokens on
+
+local tokensOn = {}
+for k, v in pairs(cfg) do tokensOn[k] = v end
+tokensOn.sellForTokens = true
+
+test("gearshop: by default a sale pays store credit only", function()
+  eq(rules.DEFAULTS.sellForTokens, false, "the default is credit only")
+  eq(rules.sellsForTokens(cfg), false)
+  eq(rules.sellsForTokens(nil), false, "no limits at all is the default")
+  eq(rules.sellsForTokens({}), false, "a limit left out is the default")
+  eq(rules.saleMode("credit", cfg), "credit")
+  eq(rules.saleMode("tokens", cfg), "credit", "a tokens tap from an old screen still pays credit")
+  eq(rules.saleMode(nil, cfg), "credit")
+  eq(rules.saleMode("tokens", nil), "credit")
+end)
+
+test("gearshop: with sellForTokens on the seller picks tokens or credit", function()
+  eq(rules.sellsForTokens(tokensOn), true)
+  eq(rules.saleMode("tokens", tokensOn), "tokens")
+  eq(rules.saleMode("credit", tokensOn), "credit")
+  eq(rules.saleMode("anything", tokensOn), "credit", "only TOKENS is ever a token sale")
+  eq(rules.sellsForTokens({ sellForTokens = "true" }), false, "only a real true turns tokens on")
+end)
+
+-- the sell point's monitor, drawn into a pretend 39x19 monitor
+local function drawSell(limits, view)
+  local hadColors = rawget(_G, "colors")
+  if not hadColors then rawset(_G, "colors", { black = 32768 }) end
+  local ui = require("lib.gearshop.ui")
+  local fakeIo = { call = function(_, method)
+    if method == "getSize" then return true, 39, 19 end
+    return true
+  end }
+  local s = ui.screen(fakeIo, "monitor_sell", 0.5)
+  local shop = { ready = true, cfg = limits, sellView = view, noteFor = function() return nil end }
+  ui.sell(s, shop)
+  if not hadColors then rawset(_G, "colors", nil) end
+  local labels = {}
+  for _, b in ipairs(s.buttons) do labels[#labels + 1] = b.id .. ":" .. b.label end
+  -- the rows read as one line of words, so text wrapped over two rows is still found
+  return (table.concat(s.text, " "):gsub("%s+", " ")), table.concat(labels, ",")
+end
+
+local function sellView(n)
+  local view = { accepted = {}, rejected = {}, returns = {} }
+  for i = 1, n do view.accepted[i] = { slot = i, key = "k" .. i, label = "Sword" } end
+  return view
+end
+
+test("gearshop: the credit-only sell screen offers store credit and never tokens or the floor", function()
+  for _, n in ipairs({ 0, 3 }) do
+    local text, buttons = drawSell(cfg, sellView(n))
+    eq(buttons, "credit:SELL FOR STORE CREDIT", "one button, store credit, with " .. n .. " pieces in")
+    eq(text:lower():find("token", 1, true), nil, "no word of tokens with " .. n .. " pieces in")
+    eq(text:lower():find("floor", 1, true), nil, "no word of the floor with " .. n .. " pieces in")
+  end
+  local empty = drawSell(cfg, sellView(0))
+  truthy(empty:find("store credit: 0.4 a piece", 1, true), "an empty chest says what a piece gives")
+  local three = drawSell(cfg, sellView(3))
+  truthy(three:find("Buying: 3", 1, true), "how many are bought")
+  truthy(three:find("You get 1.2 store credit", 1, true), "what the seller gets")
+end)
+
+test("gearshop: with sellForTokens on the sell screen is as before: TOKENS or STORE CREDIT", function()
+  local text, buttons = drawSell(tokensOn, sellView(3))
+  eq(buttons, "tokens:TOKENS,credit:STORE CREDIT x4")
+  truthy(text:find("tokens 0.3", 1, true), "what three pieces make in tokens")
+  truthy(text:find("or store credit 1.2", 1, true), "and in credit")
+  local empty = drawSell(tokensOn, sellView(0))
+  truthy(empty:find("10 pieces make 1 token, or 4 in store credit.", 1, true), "the old rate line")
+end)
+
 test("gearshop: a payout never takes the owner below the floor", function()
   eq(rules.payable(5, 1005, 1000), 5)
   eq(rules.payable(5, 1004, 1000), 4)

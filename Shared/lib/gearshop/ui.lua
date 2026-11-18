@@ -443,19 +443,30 @@ function M.sell(s, shop)
   local view = shop.sellView
   local y = 3
   local cfg = shop.cfg
+  local tokens = rules.sellsForTokens(cfg)  -- off: store credit is the only way a sale is paid
   if not shop.ready then
     s:wrap(y, 2, "The shop is opening...", "8")
   elseif not view or (#view.accepted + #view.rejected + #view.returns) == 0 then
     y = y + s:wrap(y, 4, "Put gear in the chest. The shop buys Epic, Omega and Legendary; above level "
       .. cfg.highLevel .. " Omega and Legendary; at " .. cfg.topLevel .. " Legendary only.", "8")
-    s:wrap(y + 1, 3, cfg.piecesPerToken .. " pieces make 1 token, or " .. cfg.creditMultiplier .. " in store credit.", "8")
+    if tokens then
+      s:wrap(y + 1, 3, cfg.piecesPerToken .. " pieces make 1 token, or " .. cfg.creditMultiplier .. " in store credit.", "8")
+    else
+      s:wrap(y + 1, 3, "The shop pays in store credit: " .. rules.showMilli(rules.creditMilli(1, cfg))
+        .. " a piece, spent on gear here.", "8")
+    end
   else
     local n = #view.accepted
     s:write(1, y, "Buying: " .. n, "5")
     y = y + 1
-    s:write(1, y, " tokens " .. rules.showMilli(n * rules.pieceMilli(cfg)), "0")
-    y = y + 1
-    s:write(1, y, " or store credit " .. rules.showMilli(rules.creditMilli(n, cfg)), "0")
+    if tokens then
+      s:write(1, y, " tokens " .. rules.showMilli(n * rules.pieceMilli(cfg)), "0")
+      y = y + 1
+      s:write(1, y, " or store credit " .. rules.showMilli(rules.creditMilli(n, cfg)), "0")
+    else
+      -- wrapped, so the whole amount shows on a narrow sell monitor too
+      y = y + s:wrap(y, 2, "You get " .. rules.showMilli(rules.creditMilli(n, cfg)) .. " store credit", "0") - 1
+    end
     y = y + 2
     if #view.returns > 0 then
       s:write(1, y, "Back off a tab: " .. #view.returns, "4")
@@ -475,10 +486,14 @@ function M.sell(s, shop)
     end
   end
   noteRows(s, shop, s.name, buttonsTop - 3, 3)
-  s:row(buttonsTop, bh, {
-    { "tokens", nil, "TOKENS", "f", "4" },
-    { "credit", nil, s.w >= 30 and "STORE CREDIT x" .. cfg.creditMultiplier or "CREDIT", "f", "5" },
-  })
+  if tokens then
+    s:row(buttonsTop, bh, {
+      { "tokens", nil, "TOKENS", "f", "4" },
+      { "credit", nil, s.w >= 30 and "STORE CREDIT x" .. cfg.creditMultiplier or "CREDIT", "f", "5" },
+    })
+  else
+    s:row(buttonsTop, bh, { { "credit", nil, s.w >= 22 and "SELL FOR STORE CREDIT" or (s.w >= 12 and "STORE CREDIT" or "CREDIT"), "f", "5" } })
+  end
   s:finish()
 end
 

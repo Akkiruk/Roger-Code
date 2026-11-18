@@ -15,6 +15,8 @@ M.DEFAULTS = {
   piecesPerToken = 10,      -- a seller gets one token for this many accepted pieces
   creditMultiplier = 4,     -- store credit pays this many times the tokens
   ownerFloor = 1000,        -- a token payout never takes the owner's balance below this
+  sellForTokens = false,    -- off: selling to the shop pays store credit only, so the shop never pays tokens out for gear.
+                            -- Anything already owed from an earlier token sale is still paid. On: sellers pick tokens or credit.
   acceptRarities = { "EPIC", "OMEGA" },  -- bought from players, besides anything legendary
   highLevel = 70,           -- above this level only OMEGA and legendary pieces are bought
   highRarities = { "OMEGA" },
@@ -159,6 +161,19 @@ end
 
 function M.creditMilli(n, cfg)
   return n * M.pieceMilli(cfg) * ((cfg and cfg.creditMultiplier) or M.DEFAULTS.creditMultiplier)
+end
+
+--- Whether a seller may be paid in tokens at all, or only in store credit.
+function M.sellsForTokens(cfg)
+  local v = cfg and cfg.sellForTokens
+  if v == nil then v = M.DEFAULTS.sellForTokens end
+  return v == true
+end
+
+--- The way a sale is paid: what the seller asked for, unless tokens are off, when it is store credit.
+function M.saleMode(mode, cfg)
+  if mode == "tokens" and M.sellsForTokens(cfg) then return "tokens" end
+  return "credit"
 end
 
 --- A sale for tokens: whole tokens are paid, and the fraction is carried to the seller's next sale.
