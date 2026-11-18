@@ -57,6 +57,7 @@ function M.newSetup()
     junk = nil,      -- { chest }   gear given to the shop with DONATE, for the owner to salvage; never stock
     kiosk = nil,     -- { monitor, chest, detector, pos }      every detector is optional; pos comes through any detector
     intake = nil,    -- { chest }
+    info = nil,      -- { monitor }   the how-it-works screen: it only explains the shop, nothing on it is a button
     stations = {},   -- { { monitor, chest, detector, pos, category, gearType }, ... }   gearType: the one type it shows ("the_vault:sword"),
                      -- or nil for the TYPE picker; category: a wing's name (rules categories), or nil
     vault = {},      -- vault chests named by hand, besides everything the vaultMatch limit finds

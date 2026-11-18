@@ -184,6 +184,25 @@ function M.accepts(piece, cfg)
   return false, "Epic+ only"
 end
 
+--- What the shop buys, in words, from the limits: "Epic, Omega and Legendary; above level 70 Omega and Legendary; at 100
+-- Legendary only". The sell screen and the how-it-works screen both say it, so they never disagree with accepts().
+function M.buysText(cfg)
+  cfg = cfg or M.DEFAULTS
+  local function words(list)
+    local out = {}
+    for _, rarity in ipairs(list or {}) do
+      if rarity ~= "LEGENDARY" then out[#out + 1] = rarity:sub(1, 1) .. rarity:sub(2):lower() end
+    end
+    out[#out + 1] = "Legendary"
+    if #out == 1 then return out[1] end
+    return table.concat(out, ", ", 1, #out - 1) .. " and " .. out[#out]
+  end
+  local high = cfg.highLevel or M.DEFAULTS.highLevel
+  local top = cfg.topLevel or M.DEFAULTS.topLevel
+  return words(cfg.acceptRarities or M.DEFAULTS.acceptRarities) .. "; above level " .. high .. " "
+    .. words(cfg.highRarities or M.DEFAULTS.highRarities) .. "; at " .. top .. " Legendary only"
+end
+
 --- What one accepted piece is worth in a sale for tokens, in thousandths of a token.
 function M.pieceMilli(cfg)
   local per = (cfg and cfg.tokensPerPiece) or M.DEFAULTS.tokensPerPiece

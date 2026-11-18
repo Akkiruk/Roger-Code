@@ -63,6 +63,7 @@ function M.new(io, cfg, setup, state)
     missing = {},      -- shopper -> how many looks in a row did not find them
     awaiting = {},     -- player -> when to stop waiting for their APPROVE click, so a payment goes through without another tap
     away = {},         -- station id -> how many looks in a row found its shopper walked away from it
+    tappedAt = {},     -- player -> the monitor they last tapped, for what is told them once they click APPROVE
     sellView = nil,
     ready = false, status = "Starting", version = 0,
   }, Shop)
@@ -89,6 +90,7 @@ function M.new(io, cfg, setup, state)
   if setup.returns and setup.returns.chest then self.chestRole[setup.returns.chest] = { role = "returns" } end
   if setup.junk and setup.junk.chest then self.chestRole[setup.junk.chest] = { role = "junk" } end
   if setup.door and setup.door.monitor then self.monitorRole[setup.door.monitor] = { role = "door" } end
+  if setup.info and setup.info.monitor then self.monitorRole[setup.info.monitor] = { role = "info" } end
   return self
 end
 
@@ -131,10 +133,12 @@ function Shop:noteFor(monitor)
   return nil
 end
 
-function Shop:seen(name)
+--- A player did something. monitor: the screen they tapped, where a later note for them (after APPROVE) is shown.
+function Shop:seen(name, monitor)
   local shopper = name and self.state.shoppers[name]
   if shopper then shopper.last = now() end
   if name then self.missing[name] = nil end
+  if name and monitor then self.tappedAt[name] = monitor end
 end
 
 -- ---------------------------------------------------------------- players, never throwing
@@ -206,6 +210,8 @@ end
 local function places(self)
   local list = {}
   if self.setup.door and self.setup.door.pos then list[#list + 1] = self.setup.door.pos end
+  -- a shopper at the sell counter is in the shop too
+  if self.setup.sell and self.setup.sell.pos then list[#list + 1] = self.setup.sell.pos end
   for _, d in ipairs(self.all) do
     if d.pos then list[#list + 1] = d.pos end
   end
@@ -247,12 +253,12 @@ function Shop:presence()
   self:freeStations(seenAt)
 end
 
---- Free the stations their shoppers have left: walked away from (two looks running), or not used for too long.
--- seenAt: where each shopper was seen just now, when a detector could say.
+--- Free the stations (and the kiosk) their shoppers have left: walked away from (two looks running), or not used for too
+-- long. seenAt: where each shopper was seen just now, when a detector could say.
 function Shop:freeStations(seenAt)
   local idle = (self.cfg.stationIdleMinutes or 0) * 60000
   local far = self.cfg.stationLeaveDistance or 0
-  for _, d in ipairs(self.stations) do
+  for _, d in ipairs(self.all) do
     local ds = self:ds(d)
     local name = ds.shopper
     if ds.phase == "open" and name and self.state.shoppers[name] then
@@ -961,7 +967,7 @@ function Shop:pay(name, monitor)
     self:note(monitor, "Could not tell who tapped. Tap again.")
     return
   end
-  self:seen(name)
+  self:seen(name, monitor)
   -- a piece taken a moment ago is on the tab before it is added up
   for _, d in ipairs(self.all) do
     if self:ds(d).phase == "open" then self:reconcile(d) end
@@ -1007,8 +1013,12 @@ function Shop:pay(name, monitor)
   end
   if left > 0 then
     if needsApproval(err) then
-      self:askApproval(name)
-      text = text .. " Still owes " .. left .. ". Click APPROVE in chat, then tap PAY again."
+      -- once asked, the click is waited for (approvals) and the payment goes through without another tap
+      if self:askApproval(name) or self.awaiting[name] then
+        text = text .. " Still owes " .. left .. ". Click APPROVE in chat and it is paid."
+      else
+        text = text .. " Still owes " .. left .. ". Click APPROVE in chat, then tap PAY again."
+      end
     elseif tostring(err):find("insufficient", 1, true) then
       text = text .. " Still owes " .. left .. ": not enough tokens. It stays on the tab."
     else
@@ -1026,7 +1036,7 @@ function Shop:stationAction(d, name, action, value)
     self:note(d.monitor, "Could not tell who tapped. Tap again.")
     return
   end
-  self:seen(name)
+  self:seen(name, d.monitor)
   -- PAY is on every station: whoever taps it pays their own tab, at anyone's station
   if action == "pay" then
     self:pay(name, d.monitor)
@@ -1142,15 +1152,17 @@ function Shop:kioskAction(name, action, query)
     self:note(d.monitor, "Could not tell who tapped. Tap again.")
     return
   end
-  self:seen(name)
+  self:seen(name, d.monitor)
   if not self.state.shoppers[name] and not self:checkIn(name, d.monitor) then return end
   if not isFree(self, d) and ds.shopper ~= name then
-    self:note(d.monitor, "In use by " .. tostring(ds.shopper) .. ".")
+    self:note(d.monitor, "In use by " .. tostring(ds.shopper) .. "." .. self:freeSoon(d))
     return
   end
+  -- a tap by its shopper keeps the kiosk theirs (it frees itself like a station, freeStations)
+  if ds.shopper == name then ds.used = now() end
   if action == "find" then
     if not isFree(self, d) and ds.shopper ~= name then return end
-    ds.shopper, ds.page = name, 1
+    ds.shopper, ds.page, ds.used = name, 1, now()
     ds.query = { type = query and query.type, bracket = query and query.bracket, rarity = query and query.rarity,
       text = query and query.text }
     if self:fill(d) then
@@ -1279,7 +1291,7 @@ function Shop:donate(name, monitor)
     self:note(monitor, "Could not tell who tapped. Tap again.")
     return
   end
-  self:seen(name)
+  self:seen(name, monitor)
   if self.state.moving and not self:finishMove() then
     self:note(monitor, "Still moving gear. Try again in a moment.")
     return
@@ -1378,7 +1390,7 @@ function Shop:sell(name, mode, monitor)
     self:note(monitor, "Could not tell who tapped. Tap again.")
     return
   end
-  self:seen(name)
+  self:seen(name, monitor)
   -- with sellForTokens off every sale is store credit, whatever button (or old screen) the tap came from
   mode = rules.saleMode(mode, self.cfg)
   if not self.ready then
@@ -1573,14 +1585,16 @@ function Shop:approvals()
       self.awaiting[name] = nil
       self:resolve(name)
       local owed = journal.owedTo(name)
-      local door = self.setup.door and self.setup.door.monitor
+      -- told on the screen they last tapped (a shop with no door has no other place to say it)
+      local at = self.tappedAt[name]
       if owed > 0 then
         local moved = self:settle(name)
-        if moved > 0 then self:note(self.setup.sell and self.setup.sell.monitor, name .. " was paid " .. tokensText(moved) .. ".") end
+        if moved > 0 then self:note(at or (self.setup.sell and self.setup.sell.monitor), name .. " was paid " .. tokensText(moved) .. ".") end
       elseif owed < 0 then
         local moved, left = self:collect(name)
         if moved > 0 then
-          self:note(door, name .. " paid " .. tokensText(moved) .. "." .. (left > 0 and (" Still owes " .. left .. ".") or ""))
+          self:note(at or (self.setup.door and self.setup.door.monitor),
+            name .. " paid " .. tokensText(moved) .. "." .. (left > 0 and (" Still owes " .. left .. ".") or ""))
         end
       end
     end

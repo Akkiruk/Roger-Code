@@ -198,22 +198,22 @@ test("gearshop: with sellForTokens on the seller picks tokens or credit", functi
 end)
 
 -- the sell point's monitor, drawn into a pretend 39x19 monitor
-local function drawSell(limits, view)
+local function drawSell(limits, view, w, h, note)
   local hadColors = rawget(_G, "colors")
   if not hadColors then rawset(_G, "colors", { black = 32768 }) end
   local ui = require("lib.gearshop.ui")
   local fakeIo = { call = function(_, method)
-    if method == "getSize" then return true, 39, 19 end
+    if method == "getSize" then return true, w or 39, h or 19 end
     return true
   end }
   local s = ui.screen(fakeIo, "monitor_sell", 0.5)
-  local shop = { ready = true, cfg = limits, sellView = view, noteFor = function() return nil end }
+  local shop = { ready = true, cfg = limits, sellView = view, noteFor = function() return note end }
   ui.sell(s, shop)
   if not hadColors then rawset(_G, "colors", nil) end
   local labels = {}
   for _, b in ipairs(s.buttons) do labels[#labels + 1] = b.id .. ":" .. b.label end
   -- the rows read as one line of words, so text wrapped over two rows is still found
-  return (table.concat(s.text, " "):gsub("%s+", " ")), table.concat(labels, ",")
+  return (table.concat(s.text, " "):gsub("%s+", " ")), table.concat(labels, ","), s
 end
 
 local function sellView(n)
@@ -221,6 +221,18 @@ local function sellView(n)
   for i = 1, n do view.accepted[i] = { slot = i, key = "k" .. i, label = "Sword" } end
   return view
 end
+
+test("gearshop: on the owner's 2x1 floor sell monitor the rules fit, the button is two rows, and a note leaves no old text", function()
+  local text, _, s = drawSell(cfg, sellView(0), 36, 10)
+  truthy(text:find("Legendary only.", 1, true), "the whole of what is bought")
+  truthy(text:find("Put gear in: 1 store credit a piece.", 1, true), "and what a piece gives")
+  eq(s.buttons[1].h, 2, "a button a player can hit")
+  local _, _, noted = drawSell(cfg, sellView(0), 36, 10, "Hi.")
+  for y = 6, 8 do
+    local row = noted.text[y]:gsub("%s+$", "")
+    truthy(row == "" or row == "Hi.", "row " .. y .. " holds only the note: '" .. row .. "'")
+  end
+end)
 
 test("gearshop: the credit-only sell screen offers store credit and never tokens or the floor", function()
   for _, n in ipairs({ 0, 3 }) do
@@ -1448,3 +1460,123 @@ test("gearshop stations: a reboot at any step of filling or emptying a station i
     eq(next(again.state.tabs), nil, point .. ": nobody charged")
   end
 end))
+
+-- ---------------------------------------------------------------- what the shop buys, in words
+
+test("gearshop: what the shop buys is said from the limits, the way accepts() decides it", function()
+  eq(rules.buysText(cfg), "Epic, Omega and Legendary; above level 70 Omega and Legendary; at 100 Legendary only")
+  eq(rules.buysText({ acceptRarities = { "RARE", "EPIC" }, highRarities = {}, highLevel = 50, topLevel = 90 }),
+    "Rare, Epic and Legendary; above level 50 Legendary; at 90 Legendary only")
+end)
+
+-- ---------------------------------------------------------------- the how-it-works screen
+
+--- The how-it-works screen drawn into a pretend monitor of w x h. Returns the screen and its text as one line.
+local function drawInfo(w, h, limits, setup)
+  local hadColors = rawget(_G, "colors")
+  if not hadColors then rawset(_G, "colors", { black = 32768 }) end
+  local ui = require("lib.gearshop.ui")
+  local s = ui.screen({ call = function(_, method)
+    if method == "getSize" then return true, w, h end
+    return true
+  end }, "31:monitor_0", 0.5)
+  ui.info(s, { cfg = limits, setup = setup })
+  if not hadColors then rawset(_G, "colors", nil) end
+  return s, (table.concat(s.text, " "):gsub("%s+", " "))
+end
+
+--- The owner's shop: sell point, returns barrel, junk, kiosk, and the limits it runs at.
+local function ownersSetup()
+  return {
+    sell = { monitor = "24:monitor_0", chest = "24:top" }, returns = { chest = "23:top" }, junk = { chest = "24:right" },
+    kiosk = { monitor = "26:monitor_0", chest = "26:top" }, intake = { chest = "30:top" }, info = { monitor = "31:monitor_0" },
+  }
+end
+
+local function liveLimits(extra)
+  local out = {}
+  for k, v in pairs(cfg) do out[k] = v end
+  for k, v in pairs(extra or {}) do out[k] = v end
+  return out
+end
+
+test("gearshop info: on the owner's 3x3 monitor every section fits, with what a shopper needs to know", function()
+  local s, text = drawInfo(57, 38, liveLimits(), ownersSetup())
+  for _, heading in ipairs({ "BROWSE", "FIRST VISIT", "YOUR TAB", "PRICES", "PAY", "SELL", "REFUSED", "SEARCH", "FINISHED?" }) do
+    truthy(text:find(heading, 1, true), "the " .. heading .. " section is on it")
+  end
+  for _, fact in ipairs({ "APPROVE in chat once", "1 token per level", "level 50 = 50", "Tap PAY on any station",
+    "tap STORE CREDIT", "(no tokens)", "Epic, Omega and Legendary", "returns chest", "DONATE", "FIND",
+    "walk 12 blocks away", "leave it 5 min", "Hold up to 3", "Tap any station to start" }) do
+    truthy(text:find(fact, 1, true), "it says " .. fact)
+  end
+  eq(#s.buttons, 0, "nothing on it is a button")
+  -- a blank row between the sections: they read as separate blocks
+  local blank = 0
+  for y = 5, 37 do
+    if s.text[y]:match("^%s*$") then blank = blank + 1 end
+  end
+  truthy(blank >= 8, "gaps between the sections (" .. blank .. " blank rows)")
+end)
+
+test("gearshop info: it follows the limits and the setup", function()
+  local _, tokens = drawInfo(57, 38, liveLimits({ sellForTokens = true, pricePerLevel = 2 }), ownersSetup())
+  truthy(tokens:find("TOKENS or STORE CREDIT", 1, true), "with tokens on, both ways to be paid")
+  eq(tokens:find("(no tokens)", 1, true), nil, "and no word of no tokens")
+  truthy(tokens:find("2 tokens per level", 1, true), "the price per level")
+  truthy(tokens:find("level 50 = 100", 1, true), "and what it makes a level 50 piece")
+  local bare = ownersSetup()
+  bare.returns, bare.junk, bare.kiosk = nil, nil, nil
+  local _, text = drawInfo(57, 38, liveLimits({ stationLeaveDistance = 0, stationIdleMinutes = 0 }), bare)
+  eq(text:find("REFUSED", 1, true), nil, "no returns or junk chest: no word of them")
+  eq(text:find("SEARCH", 1, true), nil, "no kiosk: no word of it")
+  eq(text:find("frees if", 1, true), nil, "stations that never free themselves do not say so")
+  -- a small monitor shows what fits, from the top, without an error
+  local small, smallText = drawInfo(36, 10, liveLimits(), ownersSetup())
+  truthy(smallText:find("BROWSE", 1, true), "the first section on a 2x1")
+  eq(#small.text, 10)
+end)
+
+-- ---------------------------------------------------------------- Sophisticated storage given a job is never vault
+
+test("gearshop: a Sophisticated barrel set up as returns or junk is never vault, even when also named as vault", function()
+  local names = { "23:top", "24:right", "17:sophisticatedstorage:barrel_5" }
+  local io = {
+    names = function() return names end,
+    types = function() return { "sophisticatedstorage:barrel", "inventory" } end,
+    hasType = function(_, kind) return kind == "inventory" end,
+    isPresent = function() return true end,
+    call = function() return false, "not here" end,
+  }
+  local setup = store.newSetup()
+  setup.returns = { chest = "23:top" }
+  setup.junk = { chest = "24:right" }
+  setup.vault = { "23:top" }
+  local shop = shopLib.new(io, cfg, setup, store.newState())
+  eq(shop:isVaultChest("23:top"), false, "the returns barrel")
+  eq(shop:isVaultChest("24:right"), false, "the junk barrel")
+  eq(shop:isVaultChest("17:sophisticatedstorage:barrel_5"), true, "a barrel with no job is vault")
+  shop:discover()
+  eq(shop.stock:has("23:top"), false, "the returns barrel is not counted")
+  eq(shop.stock:has("24:right"), false, "nor the junk one")
+  eq(shop.stock:has("17:sophisticatedstorage:barrel_5"), true)
+  -- and attaching again later does not make it vault either
+  shop:attached("23:top")
+  eq(shop.stock:has("23:top"), false, "after its node comes back")
+end)
+
+test("gearshop: a setup written before the how-it-works screen loads as before; one with it gives the monitor its job", function()
+  local io = { names = function() return {} end, types = function() return {} end, hasType = function() return false end,
+    isPresent = function() return false end, call = function() return false end }
+  local old = store.newSetup()
+  old.info = nil
+  old.sell = { monitor = "m1", chest = "c1" }
+  local shop = shopLib.new(io, cfg, old, store.newState())
+  eq(shop.monitorRole.m1.role, "sell")
+  local count = 0
+  for _ in pairs(shop.monitorRole) do count = count + 1 end
+  eq(count, 1, "nothing else has a job")
+  old.info = { monitor = "31:monitor_0" }
+  shop = shopLib.new(io, cfg, old, store.newState())
+  eq(shop.monitorRole["31:monitor_0"].role, "info")
+end)

@@ -182,6 +182,8 @@ local function runShop()
             ui.kiosk(s, shop, role.d, viewOf(name))
           elseif role.role == "sell" then
             ui.sell(s, shop)
+          elseif role.role == "info" then
+            ui.info(s, shop)
           end
         end)
         if not ok then store.log("drawing " .. name .. ": " .. tostring(err)) end
@@ -234,7 +236,9 @@ local function runShop()
     local function used(role)
       return role and (role.monitor == name or role.chest == name or role.detector == name)
     end
-    if used(d.door) or used(d.sell) or used(d.kiosk) or used(d.intake) or used(d.returns) or used(d.junk) then return true end
+    if used(d.door) or used(d.sell) or used(d.kiosk) or used(d.intake) or used(d.returns) or used(d.junk) or used(d.info) then
+      return true
+    end
     for _, s in ipairs(d.stations) do
       if used(s) then return true end
     end
@@ -285,6 +289,10 @@ local function runShop()
       elseif step.kind == "chest" then
         line("Put any item into the chest of " .. w.what)
         line("(or take one out). Watching " .. (step.watching or 0) .. " chests.")
+        if (step.slow or 0) > 0 then
+          -- a Sophisticated barrel or chest is looked at a few at a time: it can take some seconds to be seen
+          line("And " .. step.slow .. " Sophisticated: give those a few seconds.")
+        end
       elseif step.kind == "stand" then
         if step.text then
           -- a display station: its own monitor need not be up yet, any monitor of the shop will do
@@ -412,6 +420,7 @@ local function runShop()
       line("I intake  " .. describe(d.intake, { "chest" }))
       line("U returns " .. describe(d.returns, { "chest" }))
       line("J junk    " .. describe(d.junk, { "chest" }))
+      line("H info    " .. describe(d.info, { "monitor" }) .. (d.info and "" or " (the how-it-works screen)"))
       line("A add a display station  R drop the last  (" .. #d.stations .. " set)")
       line("G a station's gear type or wing   M its monitor", colors.lightGray)
       local rows = th - y - 2
@@ -453,9 +462,13 @@ local function runShop()
     end
     local step = w.steps[w.at]
     if step.kind == "chest" then
-      -- the worker watches every chest that has no job yet and is not a vault chest, until one changes
+      -- The worker watches every chest that has no job yet and is not a vault chest, until one changes. A step that may
+      -- be a Sophisticated block (the returns, junk or intake container: a netherite barrel is the usual returns one)
+      -- watches the unassigned Sophisticated storage too, which is otherwise all vault: a few of those at a time, as a
+      -- shop has a hundred or more. Nothing else moves items meanwhile (this is the worker's only job), so a change is
+      -- the owner's. The container the step is redoing counts as free, so the owner can show the same one again.
       post(nil, function()
-        local names, base = {}, {}
+        local names, base, slow = {}, {}, {}
         local function print_(name)
           local ok, list = io.call(name, "list")
           if not ok or type(list) ~= "table" then return nil end
@@ -465,21 +478,43 @@ local function runShop()
           return table.concat(parts, ",")
         end
         for _, name in ipairs(io.names()) do
-          if io.hasType(name, "inventory") and not assigned(name) and not shop:isVaultChest(name) then
-            names[#names + 1] = name
-            base[name] = print_(name)
+          if io.hasType(name, "inventory") and (not assigned(name) or name == step.current) then
+            if not shop:isVaultChest(name) then
+              names[#names + 1] = name
+              base[name] = print_(name)
+            elseif step.vaultToo then
+              slow[#slow + 1] = name
+            end
           end
         end
-        step.watching = #names
+        -- every one is read once before the step says it is watching, so an item dropped from then on is seen
+        for _, name in ipairs(slow) do
+          if admin.wizard ~= w or w.steps[w.at] ~= step then return end
+          base[name] = print_(name)
+        end
+        step.watching, step.slow = #names, #slow
         admin.dirty = true
+        local turn = 0
+        local function found(name)
+          w.result.chest = name
+          local chest = shop.stock.chests[name]
+          if chest and (chest.used or 0) > 0 then
+            -- it was vault until now: whatever the shop filed in it is no longer stock once this is written
+            w.result.warning = " It holds vault stock: empty it before W."
+          end
+          wizardNext(w)
+        end
         while admin.wizard == w and w.steps[w.at] == step do
           for _, name in ipairs(names) do
             local seen = print_(name)
-            if seen and base[name] and seen ~= base[name] then
-              w.result.chest = name
-              wizardNext(w)
-              return
-            end
+            if seen and base[name] and seen ~= base[name] then return found(name) end
+            base[name] = seen or base[name]
+          end
+          for _ = 1, math.min(8, #slow) do
+            turn = turn % #slow + 1
+            local name = slow[turn]
+            local seen = print_(name)
+            if seen and base[name] and seen ~= base[name] then return found(name) end
             base[name] = seen or base[name]
           end
           sleep(0.3)
@@ -585,19 +620,28 @@ local function runShop()
           say("Kiosk set.")
         end)
     elseif ch == "u" then
-      startWizard("RETURNS CHEST", "the returns chest", { { kind = "chest" } }, function(r)
-        d.returns = { chest = r.chest }
-        say("Returns chest set: refused gear goes there.")
-      end)
+      -- these three may be Sophisticated blocks (a netherite barrel for returns): their step watches those too, and once
+      -- one has this job it is never vault
+      startWizard("RETURNS CHEST", "the returns chest",
+        { { kind = "chest", vaultToo = true, current = d.returns and d.returns.chest } }, function(r)
+          d.returns = { chest = r.chest }
+          say("Returns chest set: refused gear goes there." .. (r.warning or ""))
+        end)
     elseif ch == "j" then
-      startWizard("JUNK CHEST", "the junk chest", { { kind = "chest" } }, function(r)
+      startWizard("JUNK CHEST", "the junk chest", { { kind = "chest", vaultToo = true, current = d.junk and d.junk.chest } }, function(r)
         d.junk = { chest = r.chest }
-        say("Junk chest set: DONATE puts gear there.")
+        say("Junk chest set: DONATE puts gear there." .. (r.warning or ""))
       end)
     elseif ch == "i" then
-      startWizard("INTAKE CHEST", "the intake", { { kind = "chest" } }, function(r)
+      startWizard("INTAKE CHEST", "the intake", { { kind = "chest", vaultToo = true, current = d.intake and d.intake.chest } }, function(r)
         d.intake = { chest = r.chest }
-        say("Intake set.")
+        say("Intake set." .. (r.warning or ""))
+      end)
+    elseif ch == "h" then
+      -- the how-it-works screen: a monitor that only explains the shop
+      startWizard("HOW-IT-WORKS SCREEN", "the how-it-works screen", { { kind = "monitor" } }, function(r)
+        d.info = { monitor = r.monitor }
+        say("How-it-works screen set. W to write it.")
       end)
     elseif ch == "a" then
       -- Where it is first: the owner stands on the station's chest (it sits on the station's computer), so the place is
@@ -681,20 +725,43 @@ local function runShop()
       admin.draft.nodes = d.nodes
       say("Cleared. Nothing is written until W.")
     elseif ch == "w" then
+      local function write()
+        if store.saveSetup(admin.draft) then
+          term.clear()
+          term.setCursorPos(1, 1)
+          print("Written. Restarting...")
+          sleep(0.5)
+          os.reboot()
+        else
+          say("Could not write the setup.")
+        end
+      end
       if next(state.shoppers) then
-        say("Someone is checked in. Wait until the shop is empty.")
+        -- A shop with no door has no CHECK OUT, and the owner is often checked in himself: a second W checks everyone
+        -- out first (their stations are emptied into the vault, their tabs kept), in the worker, then writes.
+        if not admin.confirmWrite then
+          admin.confirmWrite = true
+          -- kept under the terminal's 51 columns
+          say("Shoppers in. W again checks them out (tabs kept).")
+          return
+        end
+        admin.confirmWrite = nil
+        say("Checking everyone out, then writing...")
+        post(nil, function()
+          local names = {}
+          for name in pairs(state.shoppers) do names[#names + 1] = name end
+          for _, name in ipairs(names) do shop:checkOut(name, "the owner wrote the setup") end
+          if next(state.shoppers) then
+            say("Could not check everyone out. Try W again.")
+            return
+          end
+          write()
+        end)
         return
       end
-      if store.saveSetup(admin.draft) then
-        term.clear()
-        term.setCursorPos(1, 1)
-        print("Written. Restarting...")
-        sleep(0.5)
-        os.reboot()
-      else
-        say("Could not write the setup.")
-      end
+      write()
     end
+    if ch ~= "w" then admin.confirmWrite = nil end
     admin.dirty = true
   end
 

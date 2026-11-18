@@ -1,5 +1,6 @@
 -- gearshop/ui.lua
--- What the shop's monitors show: the door, each display chest's own monitor, the search kiosk and the sell point.
+-- What the shop's monitors show: the door, each display chest's own monitor, the search kiosk, the sell point and the
+-- how-it-works screen.
 -- Nothing here changes the shop or waits for the server. Each draw builds the whole screen in memory, sends only the lines
 -- that changed, and leaves a list of buttons; a touch is looked up in that list and handed back to app.lua as an action.
 -- Monitors come in any size, so every layout is worked out from the size the monitor reports.
@@ -194,7 +195,11 @@ end
 
 local function noteRows(s, shop, monitor, y, rows)
   local note = shop:noteFor(monitor)
-  if note then s:wrap(y, rows, note, "4") end
+  if note then
+    -- the rows are cleared first: on a small screen they may hold other text, whose tail would show past a short note
+    for row = y, y + rows - 1 do s:write(1, row, (" "):rep(s.w), "0", "f") end
+    s:wrap(y, rows, note, "4")
+  end
 end
 
 -- ---------------------------------------------------------------- the door
@@ -447,17 +452,24 @@ function M.kiosk(s, shop, d, view)
   if owner then s:right(1, owner, "4", "b") end
   local bh = buttonHeight(s)
   local buttonsTop = s.h - bh + 1
+  -- On a tall screen (the usual kiosk is a 3x3 monitor, 57x38 at scale 0.5) a one-row button is a sliver a player can
+  -- hardly hit, so every button is three rows high there, with a gap or a change of shade between neighbours.
+  -- (a 3x2 one keeps one-row buttons: taller ones would leave it no room to list what was found)
+  local tall = s.h >= 30
 
   if view.mode == "types" then
     local list = shop.stock:summary().typeList
-    local rows = buttonsTop - 3
+    local ih = tall and 3 or 1
+    local rows = math.max(1, math.floor((buttonsTop - 2) / ih))
     view.scroll = math.max(0, math.min(view.scroll or 0, math.max(0, #list + 1 - rows)))
     for i = 1, math.min(rows, #list + 1 - view.scroll) do
       local index = i + view.scroll - 1
+      local y = 2 + (i - 1) * ih
+      local shade = (tall and i % 2 == 0) and "7" or "f"
       if index == 0 then
-        s:button("settype", false, 1, 1 + i, s.w, 1, "Any type", q.type == nil and "5" or "0", "f")
+        s:button("settype", false, 1, y, s.w, ih, "Any type", q.type == nil and "5" or "0", shade)
       else
-        s:button("settype", list[index], 1, 1 + i, s.w, 1, rules.typeLabel(list[index]), list[index] == q.type and "5" or "0", "f")
+        s:button("settype", list[index], 1, y, s.w, ih, rules.typeLabel(list[index]), list[index] == q.type and "5" or "0", shade)
       end
     end
     local specs = { { "back", nil, "BACK", "0", "7" } }
@@ -473,13 +485,14 @@ function M.kiosk(s, shop, d, view)
   if view.mode == "keys" then
     s:write(1, 3, "Name or modifier:", "8")
     s:write(1, 4, "> " .. (q.text or "") .. "_", "0")
-    local kw = math.max(2, math.min(4, math.floor(s.w / 10)))
+    local kw = math.max(2, math.min(tall and 5 or 4, math.floor(s.w / 10)))
+    local kh = tall and 3 or 1
     for r, row in ipairs(KEY_ROWS) do
-      local y = 5 + (r - 1) * 2 + 1
+      local y = 6 + (r - 1) * (kh + 1)
       local x = 1 + math.floor((s.w - #row * kw) / 2)
       for i = 1, #row do
         local ch = row:sub(i, i)
-        s:button("key", ch:lower(), x + (i - 1) * kw, y, kw - 1, 1, ch, "0", "7")
+        s:button("key", ch:lower(), x + (i - 1) * kw, y, kw - 1, kh, ch, "0", "7")
       end
     end
     s:row(buttonsTop, bh, {
@@ -491,19 +504,26 @@ function M.kiosk(s, shop, d, view)
     return
   end
 
-  s:button("types", nil, 1, 3, s.w, 1, "Type:   " .. (q.type and rules.typeLabel(q.type) or "Any"), "0", "7")
-  s:button("bracket", nil, 1, 4, s.w, 1, "Level:  " .. (q.bracket and rules.bracketLabel(q.bracket) or "Any"), "0", "7")
-  s:button("rarity", nil, 1, 5, s.w, 1, "Rarity: " .. (q.rarity or "Any"), "0", "7")
-  s:button("keys", nil, 1, 6, s.w, 1, "Text:   " .. ((q.text and q.text ~= "") and q.text or "(tap to type)"), "0", "7")
+  local qh = tall and 3 or 1
+  local y = 3
+  local function query(id, label)
+    s:button(id, nil, 1, y, s.w, qh, label, "0", "7")
+    y = y + qh + (tall and 1 or 0)
+  end
+  query("types", "Type:   " .. (q.type and rules.typeLabel(q.type) or "Any"))
+  query("bracket", "Level:  " .. (q.bracket and rules.bracketLabel(q.bracket) or "Any"))
+  query("rarity", "Rarity: " .. (q.rarity or "Any"))
+  query("keys", "Text:   " .. ((q.text and q.text ~= "") and q.text or "(tap to type)"))
+  local at = y + (tall and 0 or 1)
   local listBottom = buttonsTop - 4
   if owner and ds.phase == "open" then
     local list = holding(shop, d)
-    s:write(1, 8, ((ds.total or 0) .. " found, page " .. (ds.page or 1) .. "/" .. (ds.pages or 1)):sub(1, s.w), "8")
-    pieceRows(s, list, 9, listBottom, true)
+    s:write(1, at, ((ds.total or 0) .. " found, page " .. (ds.page or 1) .. "/" .. (ds.pages or 1)):sub(1, s.w), "8")
+    pieceRows(s, list, at + 1, listBottom, true)
   elseif ds.phase then
-    s:write(1, 8, "Fetching gear...", "8")
+    s:write(1, at, "Fetching gear...", "8")
   else
-    s:wrap(8, 3, "Pick what you are after, tap FIND, and it is brought to the chest here.", "8")
+    s:wrap(at, 3, "Pick what you are after, tap FIND, and it is brought to the chest here. Taking a piece puts it on your tab.", "8")
   end
   noteRows(s, shop, s.name, buttonsTop - 3, 3)
   s:row(buttonsTop, bh, {
@@ -551,6 +571,137 @@ function M.kioskTouch(view, button)
   return true
 end
 
+-- ---------------------------------------------------------------- the how-it-works screen
+-- A wall screen that only explains the shop: nothing on it is a button. Every number on it comes from the limits and the
+-- setup, so it says what the shop really does. Made for a 3x3 advanced monitor (57x38 at scale 0.5); on a smaller one the
+-- gaps go first, then the last sections.
+
+local INFO_TITLE_BG = "b"
+
+--- The sections of the how-it-works screen: { { heading, colour, text }, ... }, most important first.
+function M.infoSections(shop)
+  local cfg, setup = shop.cfg, shop.setup or {}
+  local list = {}
+  local function add(heading, colour, text) list[#list + 1] = { heading, colour, text } end
+  add("BROWSE", "5", "Tap any station's floor screen: its chest fills with that gear near your vault level."
+    .. " LV - and LV + change the level, NEXT PAGE shows more.")
+  add("FIRST VISIT", "1", "Click APPROVE in chat once, so PAY works.")
+  add("YOUR TAB", "4", "Take a piece: its price goes on your tab. Put it back: it comes off.")
+  local per = cfg.pricePerLevel or rules.DEFAULTS.pricePerLevel
+  local least = cfg.minPrice or rules.DEFAULTS.minPrice
+  -- the minimum is only worth saying when it is more than a level 1 piece costs anyway
+  add("PRICES", "6", (per == 1 and "1 token" or (tostring(per) .. " tokens")) .. " per level, any rarity: level 50 = "
+    .. rules.price(50, cfg) .. "." .. (least > rules.price(1, { pricePerLevel = per, minPrice = 0 }) and (" Never under " .. least .. ".") or ""))
+  add("PAY", "d", "Tap PAY on any station. Store credit goes first; an unpaid tab waits for next time.")
+  if setup.sell and setup.sell.chest then
+    local credit = rules.showMilli(rules.creditMilli(1, cfg))
+    local pays
+    if rules.sellsForTokens(cfg) then
+      pays = "tap TOKENS or STORE CREDIT: " .. rules.showMilli(rules.pieceMilli(cfg)) .. " tokens or " .. credit .. " credit a piece."
+    else
+      pays = "tap STORE CREDIT: " .. credit .. " credit a piece, spent on gear here (no tokens)."
+    end
+    add("SELL", "3", "Gear in the sell chest, then " .. pays .. " Bought: identified " .. rules.buysText(cfg) .. ".")
+  end
+  local returns, junk = setup.returns and setup.returns.chest, setup.junk and setup.junk.chest
+  if returns then
+    add("REFUSED", "e", "Gear the shop will not buy goes to the returns chest: take it back"
+      .. (junk and ", or tap DONATE to give it to the shop." or " from there."))
+  elseif junk then
+    add("REFUSED", "e", "Gear the shop will not buy stays in the sell chest: take it back, or tap DONATE to give it away.")
+  end
+  if setup.kiosk and setup.kiosk.chest then
+    add("SEARCH", "a", "At the kiosk pick a type, level, rarity or name and tap FIND: matches come to its chest.")
+  end
+  local free = { "Tap DONE." }
+  local also = {}
+  if (cfg.stationLeaveDistance or 0) > 0 then also[#also + 1] = "walk " .. cfg.stationLeaveDistance .. " blocks away" end
+  if (cfg.stationIdleMinutes or 0) > 0 then also[#also + 1] = "leave it " .. cfg.stationIdleMinutes .. " min" end
+  if #also > 0 then free[#free + 1] = "A station also frees if you " .. table.concat(also, " or ") .. "." end
+  local most = cfg.stationsPerShopper or 0
+  if most > 0 then free[#free + 1] = "Hold up to " .. most .. " at once." end
+  add("FINISHED?", "9", table.concat(free, " "))
+  return list
+end
+
+--- Word-wrap text into lines of at most width characters.
+local function wrapLines(text, width)
+  local out, line = {}, ""
+  for word in tostring(text):gmatch("%S+") do
+    if #line > 0 and #line + 1 + #word > width then
+      out[#out + 1] = line
+      line = word
+    else
+      line = #line > 0 and (line .. " " .. word) or word
+    end
+    while #line > width do
+      out[#out + 1] = line:sub(1, width)
+      line = line:sub(width + 1)
+    end
+  end
+  if #line > 0 then out[#out + 1] = line end
+  return out
+end
+
+function M.info(s, shop)
+  s:start()
+  -- the title: a band across the top
+  local big = s.h >= 24
+  local top = 1
+  if big then
+    s:bar(1, INFO_TITLE_BG)
+    s:bar(2, INFO_TITLE_BG)
+    s:bar(3, INFO_TITLE_BG)
+    local title, sub = "G E A R   S H O P", "   -   HOW IT WORKS"
+    local x0 = math.max(1, math.floor((s.w - #title - #sub) / 2) + 1)
+    s:write(x0, 2, title, "0", INFO_TITLE_BG)
+    s:write(x0 + #title, 2, sub, "3", INFO_TITLE_BG)
+    top = 5
+  else
+    s:bar(1, INFO_TITLE_BG)
+    s:centre(1, "GEAR SHOP", "0", INFO_TITLE_BG)
+    top = 3
+  end
+  local footer = "Tap any station to start"
+  local bottom = s.h - 1   -- the last row is the footer
+  s:bar(s.h, "7")
+  s:centre(s.h, footer, "5", "7")
+
+  -- each section: a coloured stripe down the left, its heading in that colour, then its text
+  local x = 4
+  local width = math.max(1, s.w - x)
+  local blocks = {}
+  for _, section in ipairs(M.infoSections(shop)) do
+    local heading, colour, text = section[1], section[2], section[3]
+    blocks[#blocks + 1] = { heading = heading, colour = colour, lines = wrapLines(heading .. "  " .. text, width) }
+  end
+  local room = bottom - top + 1
+  local function needed(n, gap)
+    local rows = 0
+    for i = 1, n do rows = rows + #blocks[i].lines end
+    return rows + gap * math.max(0, n - 1)
+  end
+  -- as many sections as fit, with a gap between them if there is room for one
+  local n, gap = #blocks, 1
+  if needed(n, 1) > room then gap = 0 end
+  while n > 0 and needed(n, gap) > room do n = n - 1 end
+  -- a little more air when there is plenty
+  if needed(n, 2) <= room then gap = 2 end
+  local y = top + math.max(0, math.floor((room - needed(n, gap)) / 2))
+  for i = 1, n do
+    local b = blocks[i]
+    for j, line in ipairs(b.lines) do
+      if y > bottom then break end
+      s:write(1, y, "  ", "0", b.colour)
+      s:write(x, y, line, "0")
+      if j == 1 then s:write(x, y, b.heading, b.colour) end
+      y = y + 1
+    end
+    y = y + gap
+  end
+  s:finish()
+end
+
 -- ---------------------------------------------------------------- the sell point
 
 --- "L71 Epic: Omega+ above 70": which refused piece (every piece of a type has the same name, so its level and rarity
@@ -566,7 +717,10 @@ function M.sell(s, shop)
   s:start()
   s:bar(1, "b")
   s:centre(1, "SELL GEAR", "0", "b")
-  local bh = buttonHeight(s)
+  -- The owner's sell point is a 2x1 monitor in the floor (36x10): there the button is two rows high (one is a sliver a
+  -- player can hardly hit), the words are fewer, and the reasons for a refusal use every free row.
+  local small = s.h < 16
+  local bh = small and 2 or buttonHeight(s)
   local buttonsTop = s.h - bh + 1
   local view = shop.sellView
   local y = 3
@@ -577,9 +731,11 @@ function M.sell(s, shop)
   -- what was just refused and moved to the returns chest, with its reasons, for a couple of minutes
   local clock = os.epoch and os.epoch("utc") or 0
   local refused = shop.refused and (clock - (shop.refused.at or 0)) < REFUSED_MS and shop.refused.entries or nil
+  -- the note takes the three rows over the buttons while it shows; otherwise those are free for reasons
+  local lastRow = shop:noteFor(s.name) and (buttonsTop - 4) or (small and buttonsTop - 1 or buttonsTop - 4)
   local function reasons(list)
     for _, entry in ipairs(list) do
-      if y < buttonsTop - 4 then
+      if y <= lastRow then
         s:write(2, y, refusal(entry):sub(1, s.w - 1), "8")
         y = y + 1
       end
@@ -592,9 +748,17 @@ function M.sell(s, shop)
       s:write(1, y, ("Refused: " .. #refused .. ", in the returns chest"):sub(1, s.w), "e")
       y = y + 1
       reasons(refused)
+    elseif small then
+      y = y + s:wrap(y, 3, "Buys " .. rules.buysText(cfg) .. ".", "8")
+      if tokens then
+        local each = rules.showMilli(rules.pieceMilli(cfg))
+        s:wrap(y + 1, 2, "Put gear in: " .. each .. (each == "1" and " token or " or " tokens or ")
+          .. rules.showMilli(rules.creditMilli(1, cfg)) .. " credit a piece.", "0")
+      else
+        s:wrap(y + 1, 2, "Put gear in: " .. rules.showMilli(rules.creditMilli(1, cfg)) .. " store credit a piece.", "0")
+      end
     else
-      y = y + s:wrap(y, 4, "Put gear in the chest. The shop buys Epic, Omega and Legendary; above level "
-        .. cfg.highLevel .. " Omega and Legendary; at " .. cfg.topLevel .. " Legendary only.", "8")
+      y = y + s:wrap(y, 4, "Put gear in the chest. The shop buys " .. rules.buysText(cfg) .. ".", "8")
       if tokens then
         local each = rules.showMilli(rules.pieceMilli(cfg))
         s:wrap(y + 1, 3, "Each piece pays " .. each .. (each == "1" and " token, or " or " tokens, or ")
@@ -616,7 +780,7 @@ function M.sell(s, shop)
       -- wrapped, so the whole amount shows on a narrow sell monitor too
       y = y + s:wrap(y, 2, "You get " .. rules.showMilli(rules.creditMilli(n, cfg)) .. " store credit", "0") - 1
     end
-    y = y + 2
+    y = y + (small and 1 or 2)
     if #view.returns > 0 then
       s:write(1, y, "Back off a tab: " .. #view.returns, "4")
       y = y + 1
