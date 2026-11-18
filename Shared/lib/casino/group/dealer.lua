@@ -21,8 +21,10 @@
 --   5. An order stays open until the seat it went to answers, however long that takes. If that seat has been silent longer than a
 --      touch lasts it can no longer be moving tokens, so when the player touches another computer that one reads the ledger for the
 --      answer (a trace, see seat.lua), the order closes on it, and a fresh one goes out from where they are.
--- The final reveal waits until the orders are answered, or a few seconds if a seat has gone quiet, so the money moves before it. Until
--- the last cards have played the dealer's wall shows the seats as they stood when the hand ended: the book would give the result away.
+-- Nothing is booked or ordered until the final reveal has played: the hand's result is journaled (phase "decided") the moment the
+-- rules say it is over, the last cards turn, and only then do the nets go in the book and the orders go out. So neither a balance
+-- nor the bank's chat line ("[CCVault] +N tokens") can give the result away before the screen does. Until the last cards have
+-- played the dealer's wall shows the seats as they stood when the hand ended.
 --
 -- On Duel the walls are on this computer, so there is no seat book: a move is books.move, as on a Poker Table.
 --
@@ -32,7 +34,7 @@
 -- token, so a call missed here fails instead of reaching ccvault.
 --
 -- A reboot resumes the hand from the journal, seats show WAITING FOR THE DEALER until then, and open orders simply go again. The
--- journal keeps a hand until its result has been up, so a reboot during the reveal still shows it, and the money does not move again.
+-- journal keeps a hand until its result has been up, so a reboot during the reveal shows the same result again and books it once.
 -- Everything the dealer hears comes through the link's checks. It runs in one loop with no scenes inside scenes, because any seat
 -- can say anything at any moment. Every event lands in the pump, which makes no wallet call and so can never lose one.
 
@@ -74,7 +76,6 @@ local PANEL_MS = 30000           -- a buy-in or a page nobody touches closes
 local APPROVE_MS = 60000
 local VOTE_MS = 30000
 local COLLECT_WAIT_MS = 3000     -- winners wait this long for a loser's seat to answer, so one payment is not two
-local SETTLE_WAIT_MS = 3000      -- the final reveal waits this long for the money
 local AWAY_LIMIT = 2             -- hands in a row a player can time out before losing their seat
 local VIEWER_MS = 300000         -- on a Duel wall, a player's private view stays up this long after their last touch
 local COMPUTER_MS = 1000         -- the pause before the computer takes a move of its own
@@ -598,13 +599,17 @@ function Dealer:recover()
     self:refreshPublic()
     return
   end
+  if round.phase == "decided" and not plugin then
+    -- No game to show it on: book it now rather than never
+    self:closeDecided(round)
+  end
   if round.phase == "settling" then self:book(round) end
-  if round.phase ~= "closed" then self:finishBooks(round) end
+  if round.phase ~= "closed" and round.phase ~= "decided" then self:finishBooks(round) end
   if not plugin then
     journal.clearRound()
     return
   end
-  -- The tokens are settled or on their way, so only the showing is left. Screens have nothing of the hand to hold, so there is no hold
+  -- Shown again from the start: a decided hand books once this reveal has played, a booked one only has the showing left
   self.finished, self.finalEvents = round, round.finalEvents
   self:reveal()
 end
@@ -1009,7 +1014,7 @@ function Dealer:deal()
   self.bets, self.deadlines, self.queue, self.playing = {}, {}, {}, nil
   self.publicView, self.computerAt = nil, nil
   if plugin.rules.done(state) then
-    -- A round can be over as it is dealt, such as every hand a natural. It still settles before anyone sees it
+    -- A round can be over as it is dealt, such as every hand a natural. It still settles only once it has been seen
     self:endHand(round, events)
   else
     self:refreshPublic()
@@ -1085,16 +1090,20 @@ function Dealer:syncTurns()
   self.computerAt = next(waiting) == nil and (self.computerAt or (start + COMPUTER_MS)) or nil
 end
 
---- The rules say it is over. The money moves before the reveal plays, so nothing that happens during it can change the result.
+--- The rules say it is over. The result goes on disk first, so a reboot can only show it again, never deal another; the reveal
+-- plays, and the money waits for it (tick closes the hand when the reveal is done).
 function Dealer:endHand(round, events)
   self.finalEvents, round.finalEvents = events, events
+  round.phase = "decided"
+  journal.saveRound(round)
   self.finished, self.round = round, nil
-  self.mode = "hold"
-  self.holdUntil = now() + SETTLE_WAIT_MS
   self.deadlines, self.waiting, self.computerAt = {}, {}, nil
-  -- From here the book and the stacks hold the result, and the cards have not turned
-  self.heldStrip = nil
-  self.heldStrip = self:stripSeats(journal.owed())
+  self:reveal()
+end
+
+--- The reveal has played: the hand's nets go in the book now, and the orders follow.
+function Dealer:closeDecided(round)
+  if round.phase ~= "decided" then return end
   local ok, err = pcall(self.closeHand, self, round)
   if not ok then log("closing a hand failed: " .. tostring(err)) end
   self.settledAt = 0
@@ -1487,12 +1496,6 @@ end
 function Dealer:screenFor(number, book)
   local st = self.stations[number]
   local seat, screen = self:seat(number), base(self, number)
-  if self.mode == "hold" and st.last and st.last.kind == "game" then
-    for key, value in pairs(st.last) do screen[key] = value end
-    screen.buttons, screen.tap, screen.events, screen.left, screen.total = {}, false, nil, nil, nil
-    screen.note, screen.warn = "Settling...", false
-    return screen
-  end
   if st.sub then return self:subScreen(number, st, screen) end
   if self.vote and seat and self.mode == "lobby" then return self:voteScreen(number, screen) end
   if self.mode ~= "lobby" and (self.round or self.finished) then
@@ -1854,7 +1857,6 @@ function Dealer:drawBoard()
 end
 
 function Dealer:stripSeats(book)
-  if self.heldStrip then return self.heldStrip end
   local seats = {}
   for number = 1, M.MAX_SEATS do
     local seat, st = self:seat(number), self.stations[number]
@@ -2002,7 +2004,6 @@ function Dealer:drawTable(book)
     local _, top, _, h = seatui.tableArea(c)
     ui.banner(c, top + h - ui.BANNER_H, tostring(self.tableResult.title or ""), self.tableResult.detail, C.gold)
   end
-  if self.mode == "hold" then c:textCenter(math.floor(c.w / 2), c.h - seatui.STRIP_H - 1, "Settling...", C.gold, C.ink) end
   -- The promise the FAIR page makes: the hash is up before any card is
   ui.hash(c, round.commit:sub(1, HASH_SHOWN))
 end
@@ -2109,13 +2110,12 @@ function Dealer:tick(time)
     self:lobbyTick(time)
   elseif self.mode == "hand" then
     self:handTick(time)
-  elseif self.mode == "hold" then
-    if not self.moving or time > self.holdUntil then self:reveal() end
   elseif self.mode == "reveal" then
     if time >= (self.showUntil or 0) then
+      self:closeDecided(self.finished)
       self.mode = "result"
       self.resultUntil = time + RESULT_MS
-      self.nexted, self.heldStrip = {}, nil
+      self.nexted = {}
       self:resultLamp(self.finished)
       self:mark()
     end
@@ -2176,7 +2176,7 @@ function Dealer:step(time, dt)
     self.wantsLock = wallet.wantsLock()
     self:closeStale(time)
     -- The leaders already hold the hand, and the cards have not turned yet
-    if self.mode ~= "hold" and self.mode ~= "reveal" then self:drawBoard() end
+    if self.mode ~= "reveal" then self:drawBoard() end
     self.wallDirty = true
     for _, st in pairs(self.stations) do
       if st.front then st.front.lockNote = self.wantsLock and LOCK_NOTICE or nil end

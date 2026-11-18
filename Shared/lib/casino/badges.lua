@@ -16,7 +16,7 @@
 -- sends, and says who has done it in its state. M.hear puts that on this table's card. Only the table that played the winning
 -- round whispers it, so a player hears it once however many tables there are.
 --
--- A whisper waits for M.sayAll, because a badge is earned when the money moves, before the reveal, and the whisper would give
+-- A whisper waits for M.sayAll, because a badge is earned as the money moves, and during a reveal the whisper would give
 -- the result away. See Table:badgeNews. With no chat box it stays untold, so one added later still gets to say it.
 
 local chat = require("lib.casino.chat")

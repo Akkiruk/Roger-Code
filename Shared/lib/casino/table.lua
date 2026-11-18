@@ -1,7 +1,9 @@
 -- table.lua
 -- A casino table: one game on one 6x6 monitor wall. Every game plugs in rules (pure) and a view (drawing).
 --
--- A round's money moves once, when its result is known, and before the final reveal plays:
+-- A round's money moves once, when its result is known and has been shown: after the final reveal plays, never before it,
+-- so neither the balance nor the bank's chat line ("[CCVault] +N tokens") gives the result away. The result is journaled
+-- before the reveal starts, so a reboot during it shows the same result and settles it once:
 --   open    the bet is chosen and nothing moves. The round is journaled at every decision, so a reboot resumes it.
 --   settle  the net result goes in the owed book, then moves to or from the seated player, named, so nobody else's touch
 --           matters. books.lua holds the steps, and a crash between any two of them is answered on the next boot.
@@ -335,7 +337,7 @@ function Table:awardBadges(round)
 end
 
 --- What the hub has said about the floor, and whatever nobody has been told. Never while a round plays: a badge is earned as
--- the money moves, before the reveal, and a whisper then would give the result away.
+-- the money moves, and a whisper during the reveal would give the result away.
 function Table:badgeNews()
   local ok, err = pcall(function()
     local hub = net.hub()
@@ -1047,12 +1049,11 @@ function Table:playRound(round, stream, firstEvents)
     for _, ev in ipairs(events) do s.queue[#s.queue + 1] = ev end
     s.touched = now()
     if #events > 0 then s.hint = nil end -- the table has moved on from what it advised
+    -- The result is on disk before any of it plays, so a reboot shows this result and can never roll another
+    journal.saveRound(round)
     if rules.done(round.state) then
-      -- The money moves now, before the reveal plays, so nothing that happens during it can change the result
-      self:settle(round)
-      s.settled = true
-    else
-      journal.saveRound(round)
+      s.decided = true
+      self:claimJackpot(round) -- moves nothing, and the reveal then shows what the pot really pays
     end
   end
 
@@ -1074,7 +1075,12 @@ function Table:playRound(round, stream, firstEvents)
     end
     if not s.playing then startNext(s) end
     if s.playing then return end
-    if s.settled then
+    if s.decided then
+      -- The reveal has played (or been skipped): only now does the money move
+      if not s.settled then
+        self:settle(round)
+        s.settled = true
+      end
       s.finished = true
       return
     end
@@ -1100,7 +1106,7 @@ function Table:playRound(round, stream, firstEvents)
     view.draw(c, model, round.state, s.playing)
     ui.bar(c, ctx, ui.group(round.stake))
     s.buttons = ui.newButtons()
-    if not s.playing and #s.queue == 0 and not s.settled then
+    if not s.playing and #s.queue == 0 and not s.decided then
       local specs = {}
       local offered, choices, offerKey = {}, 0, ""
       local room = (ctx.balance or 0) - (rules.risk and rules.risk(round.state) or 0)
@@ -1144,7 +1150,7 @@ function Table:playRound(round, stream, firstEvents)
       skipAll(s)
       return
     end
-    if s.settled then return end
+    if s.decided then return end
     local hit = ui.hit(s.buttons or {}, x, y)
     if hit and hit.id == "hint" then
       audio.play("tap")
@@ -1159,10 +1165,10 @@ function Table:playRound(round, stream, firstEvents)
     end
   end
 
-  -- A round decided as it opens, such as a spin, has no decision to wait for: settle before the reveal plays
+  -- A round decided as it opens, such as a spin, has no decision to wait for: it settles once its reveal has played
   if rules.done(round.state) then
-    self:settle(round)
-    scene.settled = true
+    scene.decided = true
+    self:claimJackpot(round)
   end
 
   self:run(scene)
@@ -1209,7 +1215,7 @@ function Table:showResult(round, model)
   local bigWin = result.kind == "win" and round.net >= stake * BIG_WIN_TIMES
   audio.play(result.kind == "win" and (bigWin and "bigWin" or "win")
     or result.kind == "push" and "push" or "lose")
-  -- Here and not when the money moves: that is before the reveal, and a lamp would give the result away
+  -- Here, as the result goes up: a lamp any sooner would give the result away
   if round.state.jackpotHit then
     lamps.pulse("jackpot")
   elseif bigWin then

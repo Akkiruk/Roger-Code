@@ -60,7 +60,7 @@ The owner said on 2026-11-01 that no game may need a person dealing or running i
 
 The owner's flow, on 2026-11-01: when a game resolves, money goes from the losers to the computer's owner, and from the owner out to the winners. That is the `players` order below. The owner is the go-between and keeps only the rounding: when a split pot cannot divide evenly, the odd chips go to the owner, not to a player. That is the only cut in a `players` game, and there is no rake. The lead adds this after the review fixes, so nobody else changes it yet.
 
-The rules in `casino_roadmap.md` hold, all of them: stakes never up front, one settle before the final reveal, a reboot resumes, every transfer through `books.lua`, chips declared not taken, `transfer` needs a touch within 30 seconds on that computer. The server runs vhcctweaks 2.2.36 (2.2.35 never went live).
+The rules in `casino_roadmap.md` hold, all of them: stakes never up front, one settle after the final reveal (the result journaled before it), a reboot resumes, every transfer through `books.lua`, chips declared not taken, `transfer` needs a touch within 30 seconds on that computer. The server runs vhcctweaks 2.2.36 (2.2.35 never went live).
 
 ccvault sessions are per player per computer, so **only the seat's computer can move that player's tokens**. The dealer owns the truth; the seat is the hands.
 

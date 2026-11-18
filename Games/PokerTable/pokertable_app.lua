@@ -967,13 +967,10 @@ function App:playHand(round, firstEvents)
     for _, ev in ipairs(events) do s.queue[#s.queue + 1] = ev end
     s.deadline = now() + TURN_MS
     s.peek = nil
-    if rules.done(state) then
-      -- The money moves before the reveal plays, so nothing that happens during it can change the result
-      self:closeHand(round)
-      s.settled = true
-    else
-      journal.saveRound(round)
-    end
+    -- The result is on disk before anything of it plays, so a reboot shows this hand and cannot deal another. The money moves
+    -- once the reveal has played (tick), so neither the bank's chat line nor a balance gives the result away first
+    journal.saveRound(round)
+    if rules.done(state) then s.settled = true end
     return true
   end
 
@@ -985,7 +982,10 @@ function App:playHand(round, firstEvents)
     end
     if not s.playing then startNext(s) end
     if s.playing then return end
-    if s.settled then
+    if s.settled or rules.done(state) then
+      -- The reveal has played, or a resumed hand was already over: only now does the money move
+      s.settled = true
+      self:closeHand(round)
       s.finished = true
       return
     end
