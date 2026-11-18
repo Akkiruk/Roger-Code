@@ -7,12 +7,12 @@
     "description": "The casino's central board: shared jackpot, leaderboards, each game's measured return, and the tables on the floor.",
     "source_root": "Games/CasinoHub",
     "entrypoint": "startup.lua",
-    "version": "1.0.13"
+    "version": "1.0.14"
   },
   "build": {
-    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
-    "generated_at": "2026-11-18T23:20:51Z",
-    "package_hash": "55e103b0269cbd7a611e251a562775b7343a6adfa24ac6d25b54de28926fa6d6"
+    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
+    "generated_at": "2026-11-18T23:34:15Z",
+    "package_hash": "f04a5f8baefa26e6db3f0d832380c6385d1f2b1e807969218f830d16b6ad9503"
   },
   "install": {
     "preserve": [],
@@ -21,6 +21,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -83,14 +88,14 @@
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
-        "repo_path": "Shared/lib/runtime_exit.lua",
-        "install_path": "lib/runtime_exit.lua",
-        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
-      },
-      {
         "repo_path": "Shared/lib/casino/canvas.lua",
         "install_path": "lib/casino/canvas.lua",
         "sha256": "389127a7f59b92ca019bc5a4ce50c7f5f465230b9e3fe07bfeb846de7cb5858a"
+      },
+      {
+        "repo_path": "Shared/lib/casino/board.lua",
+        "install_path": "lib/casino/board.lua",
+        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
       },
       {
         "repo_path": "Games/CasinoHub/vhcc_lockdown.txt",
@@ -100,7 +105,7 @@
       {
         "repo_path": "Games/CasinoHub/startup.lua",
         "install_path": "casino-hub_startup.lua",
-        "sha256": "0265d981d32e646392247b4e62ec85f3393b2ab2fefb950d24d0bd54bc4c4c92"
+        "sha256": "13b8ff3e3ec32b5e84d4fdb402bd8aa16e5b0b5d0d5dc5549c83f0ff1db685c8"
       },
       {
         "repo_path": "Games/CasinoHub/casino_hub_view.lua",
@@ -153,9 +158,9 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Shared/lib/casino/board.lua",
-        "install_path": "lib/casino/board.lua",
-        "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
+        "repo_path": "Shared/lib/runtime_exit.lua",
+        "install_path": "lib/runtime_exit.lua",
+        "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -186,6 +191,7 @@
       "lib.casino.theme",
       "lib.casino.ui",
       "lib.casino.wallet",
+      "lib.crashreport",
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",

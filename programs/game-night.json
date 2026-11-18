@@ -7,12 +7,12 @@
     "description": "Free games for up to eight players, each at their own screen: Catan and UNO. Install it on every computer: a 6x6 wall becomes the table and a smaller one a seat. No tokens, ever.",
     "source_root": "Games/GameNight",
     "entrypoint": "startup.lua",
-    "version": "1.0.8"
+    "version": "1.0.9"
   },
   "build": {
-    "commit": "d893f4fc72a1e28c40c69481eaef7c389da9effc",
-    "generated_at": "2026-11-18T23:20:51Z",
-    "package_hash": "034cb76d73ded563e80d21cdbd659a9d83d7bbd5a008e34e9183dea8a7f90ae7"
+    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
+    "generated_at": "2026-11-18T23:34:15Z",
+    "package_hash": "8f84d9b4c3c3fbdb0132c72668539c6897a8d629832779c01f5fe68a6f041335"
   },
   "install": {
     "preserve": [],
@@ -73,14 +73,14 @@
         "sha256": "32e69598ff73e3a64c2dc5dc20915e08b43bbd944f01ae6cbf367da3181a76d9"
       },
       {
-        "repo_path": "Shared/lib/casino/books.lua",
-        "install_path": "lib/casino/books.lua",
-        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
-      },
-      {
         "repo_path": "Shared/lib/casino/group/station.lua",
         "install_path": "lib/casino/group/station.lua",
         "sha256": "8a58ee62a47cd0196fc548846d570db74d065188eda652e8007954c39e962b4f"
+      },
+      {
+        "repo_path": "Shared/lib/casino/journal.lua",
+        "install_path": "lib/casino/journal.lua",
+        "sha256": "477c1f9b9dca49e1ddd33c6dadea92ab06696f6e399b93d6641adec2564bfc6b"
       },
       {
         "repo_path": "Shared/lib/casino/lamps.lua",
@@ -128,24 +128,29 @@
         "sha256": "b401acf6462e70f56484cbeaa718c216cea1278cf1c32f32a73dc926a9b724e9"
       },
       {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
-        "repo_path": "Shared/lib/casino/journal.lua",
-        "install_path": "lib/casino/journal.lua",
-        "sha256": "477c1f9b9dca49e1ddd33c6dadea92ab06696f6e399b93d6641adec2564bfc6b"
+        "repo_path": "Shared/lib/casino/books.lua",
+        "install_path": "lib/casino/books.lua",
+        "sha256": "c73b69bfbdcf160621f105b4d8a11a2abc0d7bc8a8d68d1f39df74b8aa9c341c"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
         "repo_path": "Shared/lib/casino/board.lua",
         "install_path": "lib/casino/board.lua",
         "sha256": "9a876616de9d0d5d460c35c342840d0c577c83873b4f5f888c1798272438b909"
-      },
-      {
-        "repo_path": "Shared/lib/casino/bit32_shim.lua",
-        "install_path": "lib/casino/bit32_shim.lua",
-        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
       },
       {
         "repo_path": "Shared/lib/casino/audio.lua",
@@ -260,7 +265,7 @@
       {
         "repo_path": "Games/GameNight/startup.lua",
         "install_path": "game-night_startup.lua",
-        "sha256": "5cab239d785aea9a03e4a47c79665a3afd2c1e338cd36ce607713c5b0c6e1ec3"
+        "sha256": "881e4a6c27dc4818070cc0864dcda06e6e5cc4a786482d463c0a5b31a65b1e40"
       },
       {
         "repo_path": "Games/GameNight/vhcc_lockdown.txt",
@@ -268,9 +273,9 @@
         "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
       },
       {
-        "repo_path": "Shared/lib/sound_picks.lua",
-        "install_path": "lib/sound_picks.lua",
-        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
+        "repo_path": "Shared/lib/casino/bit32_shim.lua",
+        "install_path": "lib/casino/bit32_shim.lua",
+        "sha256": "0d5578b611ba445fd76cb54001416d134155f5a1ee184dd9ad1760fb8437e2e0"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -312,6 +317,7 @@
       "lib.casino.theme",
       "lib.casino.ui",
       "lib.casino.wallet",
+      "lib.crashreport",
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",

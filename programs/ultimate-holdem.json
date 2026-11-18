@@ -7,12 +7,12 @@
     "description": "Ante and Blind against the dealer, with one raise from 4x down to 1x and a Trips side bet.",
     "source_root": "Games/UltimateHoldem",
     "entrypoint": "startup.lua",
-    "version": "1.0.19"
+    "version": "1.0.20"
   },
   "build": {
-    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
-    "generated_at": "2026-11-18T23:20:51Z",
-    "package_hash": "92eeed99c3a13b6f7b4cf7d925997e4832308db29b00fdd9d347f33e5d335a75"
+    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
+    "generated_at": "2026-11-18T23:34:15Z",
+    "package_hash": "649e1c170753b705bddd53d4979ab7082828ed656c3c8dcc1e65f8ac1df8be90"
   },
   "install": {
     "preserve": [],
@@ -63,14 +63,14 @@
         "sha256": "22bf1d987790d708b389b351a35b2902e01b648bfcd53e070366fe2489d3836f"
       },
       {
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
         "repo_path": "Shared/lib/casino/rng.lua",
         "install_path": "lib/casino/rng.lua",
         "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
-      },
-      {
-        "repo_path": "Shared/lib/casino/session.lua",
-        "install_path": "lib/casino/session.lua",
-        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
@@ -103,24 +103,29 @@
         "sha256": "b401acf6462e70f56484cbeaa718c216cea1278cf1c32f32a73dc926a9b724e9"
       },
       {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
         "repo_path": "Shared/lib/casino/economy.lua",
         "install_path": "lib/casino/economy.lua",
         "sha256": "a13791cf91fb531dd452fe8c5f6cbdddb8544a28897e84be0978412808485918"
-      },
-      {
-        "repo_path": "Shared/lib/casino/door.lua",
-        "install_path": "lib/casino/door.lua",
-        "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
       },
       {
         "repo_path": "Shared/lib/casino/demo.lua",
@@ -168,14 +173,14 @@
         "sha256": "a44b495b0bd2f9850e949d31c0cace9b58821666ac3066a1aa26e93dc3cdf5dd"
       },
       {
-        "repo_path": "Shared/lib/sound_picks.lua",
-        "install_path": "lib/sound_picks.lua",
-        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
+        "repo_path": "Shared/lib/casino/door.lua",
+        "install_path": "lib/casino/door.lua",
+        "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
       },
       {
         "repo_path": "Games/UltimateHoldem/startup.lua",
         "install_path": "ultimate-holdem_startup.lua",
-        "sha256": "b06f33af0bba7d03ef3912c60931ccaed7e1b8cf720f05d2f8cdb276f9866e28"
+        "sha256": "afc56567a5f13d367d9d5253ca4b44c77efaca79cd5b3199ea06a264877bfec3"
       },
       {
         "repo_path": "Shared/lib/casino/audio.lua",
@@ -265,6 +270,7 @@
       "lib.casino.tournament",
       "lib.casino.ui",
       "lib.casino.wallet",
+      "lib.crashreport",
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",

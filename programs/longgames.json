@@ -7,12 +7,12 @@
     "description": "Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.",
     "source_root": "Games/LongGames",
     "entrypoint": "startup.lua",
-    "version": "1.0.23"
+    "version": "1.0.24"
   },
   "build": {
-    "commit": "32b4fa48dbdf923b846ea58d90e037603e2a04ec",
-    "generated_at": "2026-11-18T23:20:51Z",
-    "package_hash": "101844b6ae465f2d07656b8e0196e71708afbb3c668951858aa56796acab0e5e"
+    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
+    "generated_at": "2026-11-18T23:34:15Z",
+    "package_hash": "a939ab13dbc7064cd488653a332076d6797d54182605b0841f719b6885c49d59"
   },
   "install": {
     "preserve": [],
@@ -83,14 +83,14 @@
         "sha256": "c3540ce2cb5da1199718f650c728c56ae90c3ea2c43a21041af5eae68a9da217"
       },
       {
+        "repo_path": "Games/LongGames/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
         "repo_path": "Shared/lib/arcade/replay.lua",
         "install_path": "lib/arcade/replay.lua",
         "sha256": "9e30c410f4f00234c071ca5e40a4a330c43df6166914991f37d49979e41887af"
-      },
-      {
-        "repo_path": "Shared/lib/arcade/saves.lua",
-        "install_path": "lib/arcade/saves.lua",
-        "sha256": "7862be44d1208427c35196cede5aee92e7ba0f1f7609eaec27e451da7f650aac"
       },
       {
         "repo_path": "Shared/lib/arcade/scores.lua",
@@ -133,6 +133,11 @@
         "sha256": "5a8426bbefdbd02ddc3796f7dbbf79ded81a755f30ecfe7ba0a57637c2c9790c"
       },
       {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
+      },
+      {
         "repo_path": "Shared/lib/peripherals.lua",
         "install_path": "lib/peripherals.lua",
         "sha256": "606b6a1d37a705541adeb3fa6a517d7d7d7a1405c8c826647124e054334700c8"
@@ -148,19 +153,19 @@
         "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
-        "repo_path": "Games/LongGames/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+        "repo_path": "Shared/lib/arcade/saves.lua",
+        "install_path": "lib/arcade/saves.lua",
+        "sha256": "7862be44d1208427c35196cede5aee92e7ba0f1f7609eaec27e451da7f650aac"
+      },
+      {
+        "repo_path": "Shared/lib/sound.lua",
+        "install_path": "lib/sound.lua",
+        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
       },
       {
         "repo_path": "Games/LongGames/surface",
         "install_path": "surface",
         "sha256": "4da281173aebc3b5f35dc48388ef3c5bbd2f9b68968829a4525bd4963000e54b"
-      },
-      {
-        "repo_path": "Games/LongGames/font",
-        "install_path": "font",
-        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
         "repo_path": "Games/LongGames/startup.lua",
@@ -228,9 +233,9 @@
         "sha256": "6406c6694e6e5033e5a8e258d51555721c3224534bc098a20bfd2bb09ea0eed6"
       },
       {
-        "repo_path": "Shared/lib/sound.lua",
-        "install_path": "lib/sound.lua",
-        "sha256": "dae4e0353242372b41d8e5d359ad654d3e0571640ca676e8280bcc9335cce917"
+        "repo_path": "Games/LongGames/font",
+        "install_path": "font",
+        "sha256": "d714c5e3395a6463fb6931ca9909fd025b5ee7368d4d49f687aca20b4a132e88"
       },
       {
         "repo_path": "Games/LongGames/games/craftworld/rules.lua",
@@ -295,7 +300,7 @@
       {
         "repo_path": "Games/LongGames/longgames.lua",
         "install_path": "longgames.lua",
-        "sha256": "cf9a2a8e9b7e97f78c9849a28ed0f86ee8d363bfa88d0070eb023973f9dbfb34"
+        "sha256": "2c64054d2cbc8acc15315f35a681e9fd59a77092963b6c21de22c517d9d3e162"
       },
       {
         "repo_path": "Games/LongGames/games/craftworld/view.lua",
@@ -339,6 +344,7 @@
       "lib.arcade.track",
       "lib.arcade.ui",
       "lib.arcade.versus",
+      "lib.crashreport",
       "lib.peripherals",
       "lib.roger_logging",
       "lib.roger_supervisor",

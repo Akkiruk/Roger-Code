@@ -7,12 +7,12 @@
     "description": "Eight casino games for up to eight players, each at their own screen. Install it on every computer: a 6x6 wall becomes the dealer and a smaller one a seat.",
     "source_root": "Games/BigTable",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "d893f4fc72a1e28c40c69481eaef7c389da9effc",
-    "generated_at": "2026-11-18T23:20:51Z",
-    "package_hash": "7d8179aa4f1e34b09a2f3abdbb1e1a1d8d69e5c91630bd1331bda2592bbec6a6"
+    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
+    "generated_at": "2026-11-18T23:34:15Z",
+    "package_hash": "7fffa878289a0decde95170c3dfb70744c7ec4c0dc86acd5ba9cf3da307ce028"
   },
   "install": {
     "preserve": [],
@@ -21,6 +21,11 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
+      },
+      {
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
         "repo_path": "Shared/lib/casino/economy.lua",
@@ -90,17 +95,7 @@
       {
         "repo_path": "Games/BigTable/startup.lua",
         "install_path": "big-table_startup.lua",
-        "sha256": "d9ab1e21be8085af3589a179288e515a047b8e3c85e790c556e61ad65ae61cff"
-      },
-      {
-        "repo_path": "Games/BigTable/games/stud/tableView.lua",
-        "install_path": "games/stud/tableView.lua",
-        "sha256": "63304ed6ef90bade06f63ad3971fc0c4e8a42343bc49a421dc56bc44aa9813f6"
-      },
-      {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+        "sha256": "91cff69925d973a59060eddbc791bc9178746a5b2893b2888c3645964bdf87e1"
       },
       {
         "repo_path": "Shared/lib/casino/group/community.lua",
@@ -118,9 +113,19 @@
         "sha256": "2e4c532af443f54ae4740f8893ab4d0599e38ebab2fb79324e488fa27c796316"
       },
       {
+        "repo_path": "Shared/lib/casino/group/rounding.lua",
+        "install_path": "lib/casino/group/rounding.lua",
+        "sha256": "1e08f614fc14377218cbd5f3afad69ff4c308136976e62cfe71a3608f3df2055"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
+      },
+      {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
       },
       {
         "repo_path": "Shared/lib/casino/wallet.lua",
@@ -148,19 +153,19 @@
         "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
       },
       {
+        "repo_path": "Games/BigTable/games/stud/tableView.lua",
+        "install_path": "games/stud/tableView.lua",
+        "sha256": "63304ed6ef90bade06f63ad3971fc0c4e8a42343bc49a421dc56bc44aa9813f6"
+      },
+      {
         "repo_path": "Shared/lib/casino/rng.lua",
         "install_path": "lib/casino/rng.lua",
         "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
-        "repo_path": "Games/BigTable/games/stud/seatView.lua",
-        "install_path": "games/stud/seatView.lua",
-        "sha256": "69f33ce06101359828f75de8b2ca16547ee030d8fe7bf817046b68312be7cfb1"
-      },
-      {
-        "repo_path": "Shared/lib/casino/poker.lua",
-        "install_path": "lib/casino/poker.lua",
-        "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
+        "repo_path": "Shared/lib/casino/net.lua",
+        "install_path": "lib/casino/net.lua",
+        "sha256": "6df040808700beb160f402ea259e48b7e4d7b1e6678c7e0150c4ced68deb93cf"
       },
       {
         "repo_path": "Shared/lib/casino/limits.lua",
@@ -193,19 +198,14 @@
         "sha256": "7c106fce42fc720c1f48a137fc6aae18ad3ecb6c9d4ccb73eab7c4b80f6f7641"
       },
       {
-        "repo_path": "Shared/lib/casino/group/rounding.lua",
-        "install_path": "lib/casino/group/rounding.lua",
-        "sha256": "1e08f614fc14377218cbd5f3afad69ff4c308136976e62cfe71a3608f3df2055"
+        "repo_path": "Shared/lib/casino/poker.lua",
+        "install_path": "lib/casino/poker.lua",
+        "sha256": "0a0994e4b1b497165a01296ba8ff9f2908789d264f70e2e9a694195d5ab1fb1b"
       },
       {
-        "repo_path": "Shared/lib/casino/net.lua",
-        "install_path": "lib/casino/net.lua",
-        "sha256": "6df040808700beb160f402ea259e48b7e4d7b1e6678c7e0150c4ced68deb93cf"
-      },
-      {
-        "repo_path": "Shared/lib/sound_picks.lua",
-        "install_path": "lib/sound_picks.lua",
-        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
+        "repo_path": "Games/BigTable/games/stud/seatView.lua",
+        "install_path": "games/stud/seatView.lua",
+        "sha256": "69f33ce06101359828f75de8b2ca16547ee030d8fe7bf817046b68312be7cfb1"
       },
       {
         "repo_path": "Games/BigTable/games/stud/rules.lua",
@@ -213,9 +213,14 @@
         "sha256": "b7aa405b04826fde83c9ebe9cbafce4618f58f83c6027770694de5299148e883"
       },
       {
-        "repo_path": "Games/BigTable/games/stud/cards.lua",
-        "install_path": "games/stud/cards.lua",
-        "sha256": "343e38b06bd1e14fb379f3c13995f4b4ba0c8e50458f89d75bcec1172950f69e"
+        "repo_path": "Games/BigTable/games/stud/plugin.lua",
+        "install_path": "games/stud/plugin.lua",
+        "sha256": "ed79f528127e8f2b949ece84911463b414f51b0af19e5b1d9cb714d1136bb3eb"
+      },
+      {
+        "repo_path": "Games/BigTable/games/blackjack/tableView.lua",
+        "install_path": "games/blackjack/tableView.lua",
+        "sha256": "d581f11ef1360968115dc82659e56bb69d6ef24063ec0e61699edb7c2c2c01a7"
       },
       {
         "repo_path": "Games/BigTable/games/blackjack/seatView.lua",
@@ -248,14 +253,14 @@
         "sha256": "d4b345c4f548161c5b879db7ce18f8d86b408506289118f8a1abdca8f4a64720"
       },
       {
+        "repo_path": "Games/BigTable/games/craps/dice.lua",
+        "install_path": "games/craps/dice.lua",
+        "sha256": "01e99fabbcedc32b6cce0b2a5c39912d8cdc651536ae3113b9a41f13a436a2c4"
+      },
+      {
         "repo_path": "Games/BigTable/games/baccarat/rules.lua",
         "install_path": "games/baccarat/rules.lua",
         "sha256": "ea19c307e82649dc6dd849f9d284aaeedbd553b8cbab1aeb2b4157e1e80cd019"
-      },
-      {
-        "repo_path": "Games/BigTable/games/baccarat/plugin.lua",
-        "install_path": "games/baccarat/plugin.lua",
-        "sha256": "8fc1858b9dec5d47ed779009cbf85e0cb0de27658d5d980a59b1ce02fb5706f7"
       },
       {
         "repo_path": "Games/BigTable/games/baccarat/played.lua",
@@ -293,14 +298,14 @@
         "sha256": "6ecff86686f77a1d5255013f98c986493b8f4c7e1347ef3139441f7726338428"
       },
       {
-        "repo_path": "Games/BigTable/games/blackjack/tableView.lua",
-        "install_path": "games/blackjack/tableView.lua",
-        "sha256": "d581f11ef1360968115dc82659e56bb69d6ef24063ec0e61699edb7c2c2c01a7"
+        "repo_path": "Games/BigTable/games/baccarat/plugin.lua",
+        "install_path": "games/baccarat/plugin.lua",
+        "sha256": "8fc1858b9dec5d47ed779009cbf85e0cb0de27658d5d980a59b1ce02fb5706f7"
       },
       {
-        "repo_path": "Games/BigTable/games/craps/dice.lua",
-        "install_path": "games/craps/dice.lua",
-        "sha256": "01e99fabbcedc32b6cce0b2a5c39912d8cdc651536ae3113b9a41f13a436a2c4"
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
         "repo_path": "Games/BigTable/games/craps/plugin.lua",
@@ -308,9 +313,14 @@
         "sha256": "ff1c2da120db8967868131faf8b607ac7e8e91638fda123e5e86fe24fb1104af"
       },
       {
-        "repo_path": "Games/BigTable/games/craps/rules.lua",
-        "install_path": "games/craps/rules.lua",
-        "sha256": "b75d8359b32176fb07016c96e44769a83b90e4805c940df783c0367c762fcabe"
+        "repo_path": "Games/BigTable/games/craps/seat_view.lua",
+        "install_path": "games/craps/seat_view.lua",
+        "sha256": "913918b874f5c506cbbc35d392c5dfc6830e641b306dcdb8cae44818a8904e8b"
+      },
+      {
+        "repo_path": "Games/BigTable/games/stud/cards.lua",
+        "install_path": "games/stud/cards.lua",
+        "sha256": "343e38b06bd1e14fb379f3c13995f4b4ba0c8e50458f89d75bcec1172950f69e"
       },
       {
         "repo_path": "Games/BigTable/games/roulette/wheel.lua",
@@ -343,19 +353,19 @@
         "sha256": "9bee1716cae1b5472e3e79754988481d9141cc154ae1b56e05f57c8247950851"
       },
       {
+        "repo_path": "Games/BigTable/games/craps/rules.lua",
+        "install_path": "games/craps/rules.lua",
+        "sha256": "b75d8359b32176fb07016c96e44769a83b90e4805c940df783c0367c762fcabe"
+      },
+      {
         "repo_path": "Games/BigTable/games/registry.lua",
         "install_path": "games/registry.lua",
         "sha256": "10dc99dea4cf07386d59429390f3cd9f9991e4af078cd11a117809aeb874530a"
       },
       {
-        "repo_path": "Games/BigTable/games/stud/plugin.lua",
-        "install_path": "games/stud/plugin.lua",
-        "sha256": "ed79f528127e8f2b949ece84911463b414f51b0af19e5b1d9cb714d1136bb3eb"
-      },
-      {
-        "repo_path": "Games/BigTable/games/omaha/plugin.lua",
-        "install_path": "games/omaha/plugin.lua",
-        "sha256": "2d62e4416df59c5c825d219abad1cdc888c3cecaad5d678514ce62eaa5179884"
+        "repo_path": "Games/BigTable/games/holdem/plugin.lua",
+        "install_path": "games/holdem/plugin.lua",
+        "sha256": "e05d662d6228ff509fb3411ae19f91b6c8284c0101e52c664e07944c511a2072"
       },
       {
         "repo_path": "Games/BigTable/games/draw/tableView.lua",
@@ -388,14 +398,9 @@
         "sha256": "422277a96c421934f1d2d3068f419adb2cf83dd6891c8bf333984ad1644cbe6b"
       },
       {
-        "repo_path": "Games/BigTable/games/craps/seat_view.lua",
-        "install_path": "games/craps/seat_view.lua",
-        "sha256": "913918b874f5c506cbbc35d392c5dfc6830e641b306dcdb8cae44818a8904e8b"
-      },
-      {
-        "repo_path": "Games/BigTable/games/holdem/plugin.lua",
-        "install_path": "games/holdem/plugin.lua",
-        "sha256": "e05d662d6228ff509fb3411ae19f91b6c8284c0101e52c664e07944c511a2072"
+        "repo_path": "Games/BigTable/games/omaha/plugin.lua",
+        "install_path": "games/omaha/plugin.lua",
+        "sha256": "2d62e4416df59c5c825d219abad1cdc888c3cecaad5d678514ce62eaa5179884"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -440,6 +445,7 @@
       "lib.casino.theme",
       "lib.casino.ui",
       "lib.casino.wallet",
+      "lib.crashreport",
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",

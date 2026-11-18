@@ -7,12 +7,12 @@
     "description": "Jacks or Better draw poker with payout and tutorial screens.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.103"
+    "version": "1.0.104"
   },
   "build": {
-    "commit": "36a8b17cc7796afac488862d7e4cd4fe7e07e6f5",
-    "generated_at": "2026-11-18T23:20:51Z",
-    "package_hash": "9e6af10d6e91ba87f2b5e538446e027776ba68387086283f60390f7994cd576e"
+    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
+    "generated_at": "2026-11-18T23:34:15Z",
+    "package_hash": "3aa66d229dc46388a5f6b3db43a8dcfc11e4df5ba9947b1378c0fd0e25f8b00f"
   },
   "install": {
     "preserve": [],
@@ -21,11 +21,6 @@
         "repo_path": "System/runtime_startup.lua",
         "install_path": "startup.lua",
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
-      },
-      {
-        "repo_path": "Shared/lib/casino/font.lua",
-        "install_path": "lib/casino/font.lua",
-        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
       },
       {
         "repo_path": "Shared/lib/casino/journal.lua",
@@ -63,19 +58,19 @@
         "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
       },
       {
-        "repo_path": "Shared/lib/casino/economy.lua",
-        "install_path": "lib/casino/economy.lua",
-        "sha256": "a13791cf91fb531dd452fe8c5f6cbdddb8544a28897e84be0978412808485918"
-      },
-      {
         "repo_path": "Shared/lib/casino/pretend.lua",
         "install_path": "lib/casino/pretend.lua",
         "sha256": "22bf1d987790d708b389b351a35b2902e01b648bfcd53e070366fe2489d3836f"
       },
       {
-        "repo_path": "Shared/lib/casino/session.lua",
-        "install_path": "lib/casino/session.lua",
-        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
+        "repo_path": "Shared/lib/casino/font.lua",
+        "install_path": "lib/casino/font.lua",
+        "sha256": "b64073e94894da50e4e6229b3aeffb92663a5ff044b0c950c7da1818e3851dba"
+      },
+      {
+        "repo_path": "Shared/lib/casino/rng.lua",
+        "install_path": "lib/casino/rng.lua",
+        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
@@ -108,19 +103,24 @@
         "sha256": "b401acf6462e70f56484cbeaa718c216cea1278cf1c32f32a73dc926a9b724e9"
       },
       {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
+      },
+      {
         "repo_path": "Shared/lib/runtime_exit.lua",
         "install_path": "lib/runtime_exit.lua",
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
-        "repo_path": "Shared/lib/casino/rng.lua",
-        "install_path": "lib/casino/rng.lua",
-        "sha256": "abef98035dde975bedef919f39f62cd9b9c4f3ed52734e178298c60bdfe7cc03"
+        "repo_path": "Shared/lib/casino/session.lua",
+        "install_path": "lib/casino/session.lua",
+        "sha256": "ef65142e6d804e99dfdfef0e17c45bfbb3dd58f13d98cbe220058c421e8045b6"
       },
       {
-        "repo_path": "Shared/lib/sound_picks.lua",
-        "install_path": "lib/sound_picks.lua",
-        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
+        "repo_path": "Shared/lib/casino/economy.lua",
+        "install_path": "lib/casino/economy.lua",
+        "sha256": "a13791cf91fb531dd452fe8c5f6cbdddb8544a28897e84be0978412808485918"
       },
       {
         "repo_path": "Shared/lib/casino/door.lua",
@@ -128,9 +128,9 @@
         "sha256": "ccac282b63704aa81641c6092da60e621926c0612816d839d4bc37f0cc108027"
       },
       {
-        "repo_path": "Shared/lib/casino/deck.lua",
-        "install_path": "lib/casino/deck.lua",
-        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
+        "repo_path": "Shared/lib/casino/demo.lua",
+        "install_path": "lib/casino/demo.lua",
+        "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -160,7 +160,7 @@
       {
         "repo_path": "Games/VideoPoker/startup.lua",
         "install_path": "videopoker_startup.lua",
-        "sha256": "055c074f6b64dd86d3b0664a74549dbdba116fcb689a97712ebfc128ad4807da"
+        "sha256": "5a0a28929a503454c90347e28b1e1959a8ecd670012088b6d505512c5963e9cd"
       },
       {
         "repo_path": "Games/VideoPoker/videopoker_game.lua",
@@ -173,14 +173,14 @@
         "sha256": "b2b6b49978a223fae6354503be972ebfda98d81bf024a01ff56c3af4d93cdaa9"
       },
       {
-        "repo_path": "Shared/lib/casino/demo.lua",
-        "install_path": "lib/casino/demo.lua",
-        "sha256": "2148790ea502cf163b6889edcb61910ec92613177fa8f429bf73f7072bc68576"
-      },
-      {
         "repo_path": "Games/VideoPoker/videopoker_rules.lua",
         "install_path": "videopoker_rules.lua",
         "sha256": "7b5925beb033a42ed814edfcf1c536f0df044596bf0dd78dcbb9b3cf5dfe2aea"
+      },
+      {
+        "repo_path": "Games/VideoPoker/videopoker_view.lua",
+        "install_path": "videopoker_view.lua",
+        "sha256": "4837944d9e5ccffc23709d63fef6470feea12d15ad00185fee9499d92b8085df"
       },
       {
         "repo_path": "Games/VideoPoker/vhcc_lockdown.txt",
@@ -223,9 +223,14 @@
         "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
       },
       {
-        "repo_path": "Games/VideoPoker/videopoker_view.lua",
-        "install_path": "videopoker_view.lua",
-        "sha256": "4837944d9e5ccffc23709d63fef6470feea12d15ad00185fee9499d92b8085df"
+        "repo_path": "Shared/lib/casino/deck.lua",
+        "install_path": "lib/casino/deck.lua",
+        "sha256": "f95f8fd0c391b11634a00a49dbacf0afe3ed7336983523a3f62859e9eb9671b0"
+      },
+      {
+        "repo_path": "Shared/lib/sound_picks.lua",
+        "install_path": "lib/sound_picks.lua",
+        "sha256": "7b1e181ee5a283322dbaa48a4f745ee1703251da3e82c0af3fed4cf242791b59"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
@@ -270,6 +275,7 @@
       "lib.casino.tournament",
       "lib.casino.ui",
       "lib.casino.wallet",
+      "lib.crashreport",
       "lib.roger_logging",
       "lib.roger_supervisor",
       "lib.runtime_exit",
