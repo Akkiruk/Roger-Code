@@ -84,7 +84,8 @@ function M.actions(state, seat)
   local stake = wheel.stakeOf(player.spots)
   local left = player.budget - stake
   -- A chip bigger than what is left is greyed, and says so when tapped. The chip in hand is gold and in brackets
-  local over = left > 0 and ("Only " .. group(left) .. " left of your " .. group(player.budget)) or ("All of your " .. group(player.budget) .. " is down")
+  -- The same note all round, so the buttons only change when one is greyed or not: a change drops a press on its way
+  local over = "Over what is left of your " .. group(player.budget)
   local list = {}
   local chips = chipsFor(player.budget)
   chips[#chips + 1] = MAX_CHIP

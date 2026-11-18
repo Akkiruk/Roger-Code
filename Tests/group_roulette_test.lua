@@ -264,7 +264,7 @@ t.test("MAX lays what is left, chips over it are greyed, DONE waits for a bet, a
   rules.act(state, 1, "spot", "straight:7")
   t.truthy(not button(state, "done").disabled, "DONE once a bet is down")
   t.truthy(button(state, "chip", 100).disabled, "a chip over the 75 left is greyed")
-  t.eq(button(state, "chip", 100).why, "Only 75 left of your 100", "and says why")
+  t.eq(button(state, "chip", 100).why, "Over what is left of your 100", "and says why")
   t.truthy(not button(state, "chip", 50).disabled, "one that fits is not")
   t.eq(rules.why(state, 1, "spot", "red"), nil, "nothing to say while some is left")
   t.truthy(#rules.act(state, 1, "chip", "max") > 0, "MAX in hand")

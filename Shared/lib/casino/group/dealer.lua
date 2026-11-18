@@ -1322,7 +1322,8 @@ function Dealer:subScreen(number, st, screen)
     screen.lines = { { sub.topUp and "TOP UP" or "BUY IN", "gold", 1 }, { ui.group(sub.amount), "gold", 2 } }
     for _, line in ipairs(ui.allowance(sub.limit, sub.reason or "table limit", sub.amount, noun)) do screen.lines[#screen.lines + 1] = line end
     screen.lines[#screen.lines + 1] = { "Nothing is taken until a hand ends.", "mute" }
-    local over = "Only " .. ui.group(math.max(0, sub.limit - sub.amount)) .. " more: " .. (sub.reason or "table limit")
+    -- Fixed for the panel's life: a note that changed with every chip would change the buttons, and drop a press on its way
+    local over = "Over the most you can " .. noun .. ": " .. (sub.reason or "table limit") .. " " .. ui.group(sub.limit)
     local tiles = {}
     for _, value in ipairs(self.plugin.chips or CHIPS) do
       if value <= sub.limit then
@@ -1457,7 +1458,8 @@ function Dealer:lobbyScreen(number, seat, screen, book)
   local most, reason = self:betAllowance(number)
   for _, line in ipairs(ui.allowance(most, reason, bet.total)) do screen.lines[#screen.lines + 1] = line end
   local rest = most and math.max(0, most - bet.total)
-  local over = most and ("Only " .. ui.group(rest) .. " more: " .. reason) or "Checking your balance..."
+  -- No figure in it: the other seats' bets move X, and buttons that change drop a press on its way. The figure is in the lines
+  local over = most and ("Over the most you can bet: " .. reason) or "Checking your balance..."
   local list = limits.chips(most or plugin.maxBet or 0)
   while #list > 6 do table.remove(list, 1) end
   if spots then list[#list + 1] = "max" end
