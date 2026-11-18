@@ -25,6 +25,10 @@ M.DEFAULTS = {
   sellTypes = { "Gear" },   -- the vaultData.itemType values the shop puts on display
   chargeAsTaken = true,     -- a piece is paid for as it is taken, and a tab on the next tap or at check-out, whenever the
                             -- server lets the shop charge the player. Off: pieces only go on the tab, paid with PAY
+  improveMargin = 25,       -- IMPROVEMENTS at the kiosk: a piece counts when its Gear Score beats what the shopper wears in
+                            -- that slot by at least this much
+  improveBelow = 20,        -- and is no more than this many levels under the shopper's level
+  improveAbove = 3,         -- or up to this many over it (those come after the ones usable now)
   stationsPerShopper = 3,   -- display stations one shopper may hold at once: tapping one more frees the one they used
                             -- longest ago. 0 is no limit. Check-in fills none; a station fills when its shopper taps it
   stationIdleMinutes = 5,   -- a station whose shopper has not tapped it or taken from it this long is emptied and freed
@@ -140,6 +144,21 @@ function M.piece(detail)
       end
     end
   end
+  -- the numbers the advanced search and IMPROVEMENTS work from (vhcctweaks 2.2.37 details): each modifier's attribute
+  -- (registry id, kept without "the_vault:") and numeric value, summed when a piece has several lines of one attribute
+  local stats
+  for _, affix in ipairs(AFFIXES) do
+    local list = vd[affix]
+    if type(list) == "table" then
+      for _, mod in ipairs(list) do
+        if type(mod) == "table" and type(mod.attribute) == "string" and type(mod.value) == "number" then
+          local a = mod.attribute:gsub("^the_vault:", "")
+          stats = stats or {}
+          stats[a] = (stats[a] or 0) + mod.value
+        end
+      end
+    end
+  end
   local label = vd.gearName or vd.name or detail.displayName or M.typeLabel(detail.name)
   local piece = {
     key = M.key(detail),
@@ -152,9 +171,60 @@ function M.piece(detail)
     -- vhcctweaks gives UNIDENTIFIED, ROLLING or IDENTIFIED; anything but IDENTIFIED cannot be judged yet
     unidentified = (type(vd.state) == "string" and vd.state:upper() ~= "IDENTIFIED") or nil,
     label = tostring(label),
+    stats = stats,
+    -- the slot it is worn in: head, chest, legs, feet, weapon (mainhand), offhand; a magnet has no equipmentSlot
+    slot = (vd.equipmentSlot == "mainhand" and "weapon") or (type(vd.equipmentSlot) == "string" and vd.equipmentSlot)
+      or (detail.name == "the_vault:magnet" and "magnet") or nil,
+    -- the piece's own Gear Score, when the scorer counts it
+    gs = (type(vd.gearScore) == "number" and (vd.gearScoreStatus == nil or vd.gearScoreStatus == "COUNTED")) and vd.gearScore or nil,
+    greed = tonumber(vd.greedTier),
+    broken = (type(vd.durability) == "table" and vd.durability.current == 0) or nil,
   }
   piece.search = (piece.label .. " " .. table.concat(words, " ")):lower()
   return piece
+end
+
+-- ---------------------------------------------------------------- stats, for the advanced search
+
+--- "ability_power" reads "Ability Power".
+function M.statName(a)
+  return (tostring(a):gsub("^.*:", ""):gsub("_", " "):gsub("(%a)([%w]*)", function(x, y) return x:upper() .. y:lower() end))
+end
+
+--- Which group a stat is listed under on the kiosk, from words in its name: Offense, Defense or Utility.
+local OFFENSE = { "damage", "attack", "crit", "power", "fatal", "cleave", "thorns_damage", "execute", "chaining", "shocking",
+  "sweeping", "hammer", "spell", "ability", "stun", "lightning", "fire", "poison", "freeze" }
+local DEFENSE = { "armor", "armour", "resist", "health", "block", "knockback", "dodge", "toughness", "healing", "heal",
+  "regen", "thorns", "immunity", "absorb", "shield" }
+function M.statGroup(a)
+  a = tostring(a):lower()
+  for _, word in ipairs(OFFENSE) do
+    if a:find(word, 1, true) then return "Offense" end
+  end
+  for _, word in ipairs(DEFENSE) do
+    if a:find(word, 1, true) then return "Defense" end
+  end
+  return "Utility"
+end
+
+--- A stat's value for the screen: 0.125 reads "0.13", 12.5 reads "12.5", 120 reads "120".
+function M.showStat(v)
+  v = tonumber(v) or 0
+  if v == math.floor(v) then return tostring(v) end
+  if math.abs(v) < 10 then return (("%.2f"):format(v):gsub("0$", "")) end
+  return ("%.1f"):format(v)
+end
+
+--- How much one tap of + or - changes a stat's minimum: about a tenth of the best in stock, rounded to a plain step.
+function M.statStep(max)
+  max = math.abs(tonumber(max) or 0)
+  if max <= 0 then return 1 end
+  local raw = max / 10
+  local p = 10 ^ math.floor(math.log10 and math.log10(raw) or (math.log(raw) / math.log(10)))
+  for _, m in ipairs({ 1, 2, 5, 10 }) do
+    if raw <= m * p then return m * p end
+  end
+  return 10 * p
 end
 
 --- LEGENDARY, or the piece's own rarity.
@@ -316,12 +386,80 @@ function M.page(list, page, perPage)
 end
 
 --- Whether a piece is what a search asked for. query: { type, bracket, rarity, text }, each optional.
+--- Whether a piece is what a kiosk search asks for. query: { type, lo, hi (levels, inclusive), rarity, legendary (only),
+-- minGs, stats = { { a = attribute, min = value }, ... } (every one must be on the piece, at least min) }. bracket and text
+-- are from searches saved by older versions.
 function M.matches(piece, query)
-  if query.type and piece.type ~= query.type then return false end
+  if query.type and not M.ofType(piece.type, query.type) then return false end
   if query.bracket and M.bracket(piece.level) ~= query.bracket then return false end
+  if query.lo and (piece.level or 0) < query.lo then return false end
+  if query.hi and (piece.level or 0) > query.hi then return false end
   if query.rarity and M.grade(piece) ~= query.rarity then return false end
+  if query.legendary and not piece.legendary then return false end
+  if query.minGs and (piece.gs or 0) < query.minGs then return false end
+  for _, want in ipairs(query.stats or {}) do
+    local have = piece.stats and piece.stats[want.a]
+    if have == nil or have < (want.min or 0) then return false end
+  end
   if query.text and query.text ~= "" and not piece.search:find(query.text:lower(), 1, true) then return false end
   return true
+end
+
+--- Best matches first: by Gear Score (the default), level ("level"), or one stat ("stat:<attribute>"), highest first;
+-- then nearest the shopper's level, then by key so the order never changes between two looks.
+-- list: { { key, level, piece }, ... }
+function M.rank(list, query, level)
+  level = tonumber(level) or 0
+  local sort = query and query.sort or "gs"
+  local stat = sort:match("^stat:(.+)$")
+  local function score(e)
+    local p = e.piece or {}
+    if stat then return p.stats and p.stats[stat] or -math.huge end
+    if sort == "level" then return p.level or 0 end
+    return p.gs or -math.huge
+  end
+  table.sort(list, function(a, b)
+    local sa, sb = score(a), score(b)
+    if sa ~= sb then return sa > sb end
+    local da, db = math.abs((a.level or 0) - level), math.abs((b.level or 0) - level)
+    if da ~= db then return da < db end
+    return a.key < b.key
+  end)
+  return list
+end
+
+--- IMPROVEMENTS, Phase 1 (no build logic): pieces with a better Gear Score than what the shopper wears in the same slot,
+-- by at least cfg.improveMargin, from improveBelow levels under theirs up to improveAbove over it (those come last: they
+-- are usable once the shopper reaches their level). Identified pieces only.
+-- pieces: { piece, ... }; worn: { slot = gearScore }; slot: one slot or "any". Returns { { piece, gain, later } },
+-- ordered usable-now first, biggest gain first; and counts: { slot = n } for every slot.
+function M.improvements(pieces, worn, playerLevel, slot, cfg)
+  cfg = cfg or M.DEFAULTS
+  local level = math.floor(tonumber(playerLevel) or 0)
+  local top = math.min(100, level)
+  local lo = math.max(0, top - (cfg.improveBelow or M.DEFAULTS.improveBelow))
+  local hi = math.min(100, level + (cfg.improveAbove or M.DEFAULTS.improveAbove))
+  if level >= 100 then lo, hi = math.max(0, 100 - (cfg.improveBelow or M.DEFAULTS.improveBelow)), 100 end
+  local margin = cfg.improveMargin or M.DEFAULTS.improveMargin
+  local out, counts = {}, {}
+  for _, p in ipairs(pieces) do
+    if p.slot and p.gs and not p.unidentified and not p.broken and (p.level or 0) >= lo and (p.level or 0) <= hi then
+      local gain = p.gs - (worn[p.slot] or 0)
+      if gain >= margin then
+        counts[p.slot] = (counts[p.slot] or 0) + 1
+        if slot == "any" or slot == p.slot then
+          out[#out + 1] = { piece = p, key = p.key, level = p.level, gain = gain, later = (p.level or 0) > level }
+        end
+      end
+    end
+  end
+  table.sort(out, function(a, b)
+    if a.later ~= b.later then return not a.later end
+    if a.gain ~= b.gain then return a.gain > b.gain end
+    if (a.level or 0) ~= (b.level or 0) then return (a.level or 0) < (b.level or 0) end
+    return a.key < b.key
+  end)
+  return out, counts
 end
 
 --- Display chests in the order they fill: nearest the shopper first. Chests with no known position come last, in their own order.

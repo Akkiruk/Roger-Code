@@ -1634,3 +1634,105 @@ test("gearshop: a setup written before the how-it-works screen loads as before; 
   shop = shopLib.new(io, cfg, old, store.newState())
   eq(shop.monitorRole["31:monitor_0"].role, "info")
 end)
+
+-- ---------------------------------------------------------------- the kiosk's advanced search and IMPROVEMENTS
+
+--- A piece as vhcctweaks 2.2.37 details it: its slot, Gear Score and modifier lines with attribute ids and values.
+local function scored(kind, level, gs, slot, lines, extra)
+  serial = serial + 1
+  local prefixes = {}
+  for a, v in pairs(lines or {}) do prefixes[#prefixes + 1] = { name = a, attribute = "the_vault:" .. a, value = v } end
+  table.sort(prefixes, function(x, y) return x.attribute < y.attribute end)
+  local vd = { itemType = "Gear", level = level, rarity = "EPIC", state = "IDENTIFIED", name = kind .. " " .. serial,
+    gearScore = gs, gearScoreStatus = gs and "COUNTED" or nil, equipmentSlot = slot, prefixes = prefixes }
+  for k, v in pairs(extra or {}) do vd[k] = v end
+  return { name = "the_vault:" .. kind, count = 1, nbt = "s" .. serial, vaultData = vd }
+end
+
+test("gearshop search: a piece keeps its slot, Gear Score and stats by attribute", function()
+  local p = rules.piece(scored("sword", 50, 640, "mainhand", { attack_damage = 4.5, critical_hit_chance = 0.05 }))
+  eq(p.slot, "weapon") eq(p.gs, 640)
+  eq(p.stats.attack_damage, 4.5) eq(p.stats.critical_hit_chance, 0.05)
+  local m = rules.piece(scored("magnet", 30, 200, nil, {}))
+  eq(m.slot, "magnet", "a magnet has no equipmentSlot")
+  local inert = rules.piece(scored("helmet", 30, 500, "head", {}, { gearScoreStatus = "INERT" }))
+  eq(inert.gs, nil, "a score the scorer does not count is not kept")
+  eq(rules.statName("the_vault:ability_power"), "Ability Power")
+  eq(rules.statGroup("attack_damage"), "Offense") eq(rules.statGroup("armor"), "Defense") eq(rules.statGroup("item_quantity"), "Utility")
+  eq(rules.statStep(48), 5) eq(rules.statStep(0.3), 0.05) eq(rules.statStep(900), 100)
+  eq(rules.showStat(0.126), "0.13") eq(rules.showStat(12), "12")
+end)
+
+test("gearshop search: every filter at once, and best first by Gear Score, level or a stat", function()
+  local pieces = {
+    rules.piece(scored("sword", 45, 700, "mainhand", { attack_damage = 6, critical_hit_chance = 0.1 })),
+    rules.piece(scored("sword", 48, 820, "mainhand", { attack_damage = 4 })),
+    rules.piece(scored("sword", 52, 900, "mainhand", { attack_damage = 9 })),
+    rules.piece(scored("axe", 46, 990, "mainhand", { attack_damage = 12 })),
+  }
+  local q = { type = "the_vault:sword", lo = 40, hi = 49, stats = { { a = "attack_damage", min = 3 } } }
+  local function found(query)
+    local list = {}
+    for _, p in ipairs(pieces) do
+      if rules.matches(p, query) then list[#list + 1] = { key = p.key, level = p.level, piece = p } end
+    end
+    rules.rank(list, query, 45)
+    local out = {}
+    for _, e in ipairs(list) do out[#out + 1] = e.piece.level end
+    return table.concat(out, " ")
+  end
+  eq(found(q), "48 45", "the two swords in 40-49 with attack damage, best Gear Score first")
+  q.stats[1].min = 5
+  eq(found(q), "45", "a least value")
+  q.stats[1].min = 0
+  q.stats[2] = { a = "critical_hit_chance", min = 0 }
+  eq(found(q), "45", "every stat asked for must be on it")
+  q.stats[2] = nil
+  q.sort = "stat:attack_damage"
+  eq(found(q), "45 48", "best by a stat")
+  q.sort = "level"
+  eq(found(q), "48 45", "best by level")
+  eq(found({ minGs = 850 }), "46 52", "a least Gear Score, any type, highest first")
+  eq(found({ legendary = true }), "", "legendary only")
+end)
+
+test("gearshop IMPROVEMENTS: better than what is worn by the margin, usable ones first, then up to three levels over", function()
+  local list = {
+    rules.piece(scored("helmet", 40, 600, "head")),   -- +100: usable
+    rules.piece(scored("helmet", 42, 700, "head")),   -- +200: usable, the best
+    rules.piece(scored("helmet", 44, 900, "head")),   -- +400 but 2 over her level: after the usable ones
+    rules.piece(scored("helmet", 46, 950, "head")),   -- 4 over: out of the window
+    rules.piece(scored("helmet", 41, 510, "head")),   -- +10: under the margin
+    rules.piece(scored("helmet", 15, 990, "head")),   -- too far under her level
+    rules.piece(scored("boots", 40, 700, "feet")),    -- nothing worn there: any score is better
+  }
+  local worn = { head = 500 }
+  local found, counts = rules.improvements(list, worn, 42, "head", cfg)
+  local levels = {}
+  for _, c in ipairs(found) do levels[#levels + 1] = c.level .. (c.later and "*" or "") end
+  eq(table.concat(levels, " "), "42 40 44*", "usable by gain, then the one she can wear in two levels")
+  eq(counts.head, 3) eq(counts.feet, 1)
+  local any = rules.improvements(list, worn, 42, "any", cfg)
+  eq(#any, 4, "any slot")
+end)
+
+test("gearshop kiosk: the screen's taps build the search; stats come from the stock with steps that fit them", function()
+  local ui = require("lib.gearshop.ui")
+  local shopish = { stock = { stats = function() return { { a = "attack_damage", name = "Attack Damage", group = "Offense", count = 3, max = 48 } }, 950 end } }
+  local view = {}
+  local function tap(id, value) return ui.kioskTouch(view, { id = id, value = value }, shopish) end
+  tap("from") tap("from") tap("from") tap("from")
+  eq(view.query.lo, 40)
+  tap("to") eq(view.query.hi, 9) tap("to") tap("to") tap("to") tap("to")
+  eq(view.query.hi, 49)
+  tap("addstat") eq(view.mode, "stats")
+  tap("pickstat", "attack_damage") eq(view.mode, nil)
+  tap("statup", 1) tap("statup", 1)
+  eq(view.query.stats[1].min, 10, "two steps of 5")
+  tap("statdown", 1) eq(view.query.stats[1].min, 5)
+  tap("sort") eq(view.query.sort, "level") tap("sort") eq(view.query.sort, "stat:attack_damage") tap("sort") eq(view.query.sort, nil)
+  tap("mings") eq(view.query.minGs, 100)
+  tap("legendary") eq(view.query.legendary, true)
+  tap("statdel", 1) eq(#view.query.stats, 0)
+  eq(tap("find"), false, "FIND goes to the shop")
+end)

@@ -153,46 +153,6 @@ local function buttonHeight(s)
   return s.h >= 16 and 3 or 1
 end
 
---- What a display chest holds, for its monitor: { { label, grade, level, price, n }, ... }, lowest level first.
-local function holding(shop, d)
-  local ds = shop:ds(d)
-  local list = {}
-  for key, n in pairs(ds.shown) do
-    local piece = shop.stock.known[key]
-    list[#list + 1] = {
-      key = key, n = n,
-      label = piece and piece.label or rules.typeLabel(key:match("^(.-)#") or "gear"),
-      grade = piece and rules.grade(piece) or "?",
-      level = piece and piece.level or 0,
-      price = shop:priceOf(d, key),
-    }
-  end
-  table.sort(list, function(a, b)
-    if a.level ~= b.level then return a.level < b.level end
-    if a.label ~= b.label then return a.label < b.label end
-    return a.key < b.key
-  end)
-  return list
-end
-
-local function pieceRows(s, list, top, bottom, withPrice)
-  local rows = bottom - top + 1
-  if rows < 1 then return end
-  local more = #list - rows
-  for i = 1, math.min(#list, rows) do
-    local y = top + i - 1
-    if more > 0 and i == rows then
-      s:write(1, y, "+" .. (more + 1) .. " more in the chest", "8")
-    else
-      local entry = list[i]
-      -- every piece of a type has the same name, so the rarity is spelt out beside the colour
-      local grade = entry.grade ~= "?" and (entry.grade:sub(1, 1) .. entry.grade:sub(2):lower() .. " ") or ""
-      local tail = grade .. "L" .. entry.level .. (withPrice and (" " .. entry.price .. "t") or "")      s:write(1, y, entry.label:sub(1, math.max(1, s.w - #tail - 1)), GRADE_COLOR[entry.grade] or "0")
-      s:right(y, tail, "8")
-    end
-  end
-end
-
 local function noteRows(s, shop, monitor, y, rows)
   local note = shop:noteFor(monitor)
   if note then
@@ -439,27 +399,37 @@ function M.station(s, shop, d, view)
 end
 
 -- ---------------------------------------------------------------- the search kiosk
+-- Inputs only: what the search brings goes into the kiosk's pickup chest, best first, and the shopper looks through it
+-- there. ADVANCED SEARCH: type, a level range, rarity, legendary only, a least Gear Score, up to a few stats (from what is
+-- in stock now, each with a least value), and what "best" means. IMPROVEMENTS: pieces with a better Gear Score than what
+-- the shopper wears, per slot or any slot. On a tall screen (the 3x3, 57x38) every button is three rows high.
 
-local KEY_ROWS = { "QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM" }
+local SLOT_ORDER = { "head", "chest", "legs", "feet", "weapon", "offhand", "magnet" }
+local GROUP_COLOUR = { Offense = "1", Defense = "3", Utility = "5" }
 
---- view: { mode = nil|"types"|"keys", query = { type, bracket, rarity, text }, scroll }
+local function sortName(sort)
+  local stat = tostring(sort or "gs"):match("^stat:(.+)$")
+  if stat then return rules.statName(stat) end
+  if sort == "level" then return "Level" end
+  return "Gear Score"
+end
+
+--- view: { mode = nil|"types"|"stats"|"improve", query = { type, lo, hi, rarity, legendary, minGs, stats, sort }, scroll, who }
 function M.kiosk(s, shop, d, view)
   local ds = shop:ds(d)
   view.query = view.query or {}
   local q = view.query
+  q.stats = q.stats or {}
   s:start()
   s:bar(1, "b")
-  s:write(1, 1, "SEARCH", "0", "b")
   local owner = ds.shopper and shop.state.shoppers[ds.shopper] and ds.shopper
-  if owner then s:right(1, owner, "4", "b") end
+  local tall = s.h >= 30
+  local rh, gap = tall and 3 or 1, tall and 1 or 0
   local bh = buttonHeight(s)
   local buttonsTop = s.h - bh + 1
-  -- On a tall screen (the usual kiosk is a 3x3 monitor, 57x38 at scale 0.5) a one-row button is a sliver a player can
-  -- hardly hit, so every button is three rows high there, with a gap or a change of shade between neighbours.
-  -- (a 3x2 one keeps one-row buttons: taller ones would leave it no room to list what was found)
-  local tall = s.h >= 30
 
   if view.mode == "types" then
+    s:write(1, 1, "TYPE", "0", "b")
     local list = shop.stock:summary().typeList
     local ih = tall and 3 or 1
     local rows = math.max(1, math.floor((buttonsTop - 2) / ih))
@@ -484,89 +454,195 @@ function M.kiosk(s, shop, d, view)
     return
   end
 
-  if view.mode == "keys" then
-    s:write(1, 3, "Name or modifier:", "8")
-    s:write(1, 4, "> " .. (q.text or "") .. "_", "0")
-    local kw = math.max(2, math.min(tall and 5 or 4, math.floor(s.w / 10)))
-    local kh = tall and 3 or 1
-    for r, row in ipairs(KEY_ROWS) do
-      local y = 6 + (r - 1) * (kh + 1)
-      local x = 1 + math.floor((s.w - #row * kw) / 2)
-      for i = 1, #row do
-        local ch = row:sub(i, i)
-        s:button("key", ch:lower(), x + (i - 1) * kw, y, kw - 1, kh, ch, "0", "7")
-      end
+  if view.mode == "stats" then
+    -- + ADD STAT: the stats on pieces in stock now, by group, each with how many pieces have it
+    s:write(1, 1, "ADD A STAT", "0", "b")
+    local chosen = {}
+    for _, f in ipairs(q.stats) do chosen[f.a] = true end
+    local list = {}
+    for _, st in ipairs((shop.stock:stats())) do
+      if not chosen[st.a] then list[#list + 1] = st end
     end
-    s:row(buttonsTop, bh, {
-      { "key", " ", "SPACE", "0", "7" },
-      { "key", "del", "DEL", "0", "e" },
-      { "back", nil, "OK", "f", "5" },
-    })
+    local ih = tall and 3 or 1
+    local cols = s.w >= 40 and 2 or 1
+    local colW = math.floor((s.w - (cols - 1)) / cols)
+    local rows = math.max(1, math.floor((buttonsTop - 2) / ih))
+    local page = rows * cols
+    view.scroll = math.max(0, math.min(view.scroll or 0, math.max(0, #list - page)))
+    if #list == 0 then s:wrap(3, 3, "No stats to add: nothing in stock has any others.", "8") end
+    for i = 1, math.min(page, #list - view.scroll) do
+      local st = list[i + view.scroll]
+      local col, row = math.floor((i - 1) / rows), (i - 1) % rows
+      local x = 1 + col * (colW + 1)
+      local w = col == cols - 1 and (s.w - x + 1) or colW
+      local label = st.name .. " (" .. st.count .. ")"
+      s:button("pickstat", st.a, x, 2 + row * ih, w, ih, label, GROUP_COLOUR[st.group] or "0", (row % 2 == 0) and "f" or "7")
+    end
+    local specs = { { "back", nil, "BACK", "0", "7" } }
+    if #list > page then
+      specs[#specs + 1] = { "scroll", -page, "UP", "0", "7" }
+      specs[#specs + 1] = { "scroll", page, "DOWN", "0", "7" }
+    end
+    s:row(buttonsTop, bh, specs)
     s:finish()
     return
   end
 
-  local qh = tall and 3 or 1
-  local y = 3
-  local function query(id, label)
-    s:button(id, nil, 1, y, s.w, qh, label, "0", "7")
-    y = y + qh + (tall and 1 or 0)
+  if view.mode == "improve" then
+    s:write(1, 1, "IMPROVEMENTS", "0", "b")
+    if owner then s:right(1, owner, "4", "b") end
+    local mine = view.who and shop.improveCounts and shop.improveCounts[view.who]
+    local y = 3
+    if not mine then
+      s:wrap(y, 3, "Reading what you wear...", "8")
+    else
+      y = y + s:wrap(y, 3, "Pieces whose Gear Score beats what you wear in that slot. Tap one to have them brought.", "8") + 1
+      local counts, total = mine.counts or {}, 0
+      for _, n in pairs(counts) do total = total + n end
+      local entries = {}
+      for _, slot in ipairs(SLOT_ORDER) do entries[#entries + 1] = { slot, slot:upper(), counts[slot] or 0 } end
+      entries[#entries + 1] = { "any", "ANY SLOT", total }
+      local cols = s.w >= 30 and 2 or 1
+      local colW = math.floor((s.w - (cols - 1)) / cols)
+      for i, e in ipairs(entries) do
+        local col, row = (i - 1) % cols, math.floor((i - 1) / cols)
+        local x = 1 + col * (colW + 1)
+        local w = col == cols - 1 and (s.w - x + 1) or colW
+        local by = y + row * (rh + gap)
+        if by + rh - 1 <= buttonsTop - 4 then
+          local label = e[2] .. "  " .. (e[3] > 0 and (e[3] .. " better") or "none")
+          s:button("improveslot", e[1], x, by, w, rh, label, e[3] > 0 and "f" or "8", e[3] > 0 and (e[1] == "any" and "4" or "5") or "7")
+        end
+      end
+    end
+    if owner and ds.phase == "open" then
+      s:write(1, buttonsTop - 4, ((ds.total or 0) .. " in the chest, page " .. (ds.page or 1) .. "/" .. (ds.pages or 1)):sub(1, s.w), "8")
+    end
+    noteRows(s, shop, s.name, buttonsTop - 3, 3)
+    s:row(buttonsTop, bh, { { "back", nil, "BACK", "0", "7" }, { "next", nil, s.w >= 30 and "NEXT PAGE" or "NEXT", "0", "b" },
+      { "done", nil, "DONE", "0", "e" } })
+    s:finish()
+    return
   end
-  query("types", "Type:   " .. (q.type and rules.typeLabel(q.type) or "Any"))
-  query("bracket", "Level:  " .. (q.bracket and rules.bracketLabel(q.bracket) or "Any"))
-  query("rarity", "Rarity: " .. (q.rarity or "Any"))
-  query("keys", "Text:   " .. ((q.text and q.text ~= "") and q.text or "(tap to type)"))
-  local at = y + (tall and 0 or 1)
-  local listBottom = buttonsTop - 4
+
+  -- the search itself
+  s:write(1, 1, "ADVANCED SEARCH", "0", "b")
+  if owner then s:right(1, owner, "4", "b") end
+  local half = math.floor((s.w - 1) / 2)
+  local y = 3
+  local function pair(a, b)
+    s:button(a[1], nil, 1, y, half, rh, a[2], "0", "7")
+    s:button(b[1], nil, half + 2, y, s.w - half - 1, rh, b[2], "0", "7")
+    y = y + rh + gap
+  end
+  s:button("types", nil, 1, y, s.w, rh, "Type: " .. (q.type and rules.typeLabel(q.type) or "any"), "0", "7")
+  y = y + rh + gap
+  pair({ "from", "From level: " .. (q.lo and tostring(q.lo) or "any") }, { "to", "To level: " .. (q.hi and tostring(q.hi) or "any") })
+  pair({ "rarity", "Rarity: " .. (q.rarity and (q.rarity:sub(1, 1) .. q.rarity:sub(2):lower()) or "any") },
+    { "legendary", "Legendary only: " .. (q.legendary and "yes" or "no") })
+  pair({ "mings", "Least score: " .. (q.minGs and tostring(q.minGs) or "any") }, { "sort", "Best: " .. sortName(q.sort) })
+  -- the stat filters: each a line with - + X
+  local small = tall and 5 or 3
+  local lastRow = buttonsTop - 5
+  for i, f in ipairs(q.stats) do
+    if y + rh - 1 > lastRow then break end
+    local labelW = s.w - 3 * (small + 1)
+    local text = rules.statName(f.a) .. ((f.min or 0) > 0 and (" at least " .. rules.showStat(f.min)) or ": any")
+    s:button("stat", i, 1, y, labelW, rh, text, GROUP_COLOUR[rules.statGroup(f.a)] or "0", "f")
+    s:button("statdown", i, labelW + 2, y, small, rh, "-", "0", "7")
+    s:button("statup", i, labelW + small + 3, y, small, rh, "+", "0", "7")
+    s:button("statdel", i, labelW + 2 * small + 4, y, small, rh, "X", "0", "e")
+    y = y + rh + gap
+  end
+  if y + rh - 1 <= lastRow then
+    s:button("addstat", nil, 1, y, s.w, rh, "+ ADD STAT", "f", "5")
+  end
   if owner and ds.phase == "open" then
-    local list = holding(shop, d)
-    s:write(1, at, ((ds.total or 0) .. " found, page " .. (ds.page or 1) .. "/" .. (ds.pages or 1)):sub(1, s.w), "8")
-    pieceRows(s, list, at + 1, listBottom, true)
+    s:write(1, buttonsTop - 4, ((ds.total or 0) .. " found, page " .. (ds.page or 1) .. "/" .. (ds.pages or 1)):sub(1, s.w), "8")
   elseif ds.phase then
-    s:write(1, at, "Fetching gear...", "8")
-  else
-    s:wrap(at, 3, "Pick what you are after, tap FIND, and it is brought to the chest here. Taking a piece puts it on your tab.", "8")
+    s:write(1, buttonsTop - 4, "Fetching gear...", "8")
   end
   noteRows(s, shop, s.name, buttonsTop - 3, 3)
   s:row(buttonsTop, bh, {
     { "find", nil, "FIND", "f", "5" },
-    { "next", nil, s.w >= 30 and "NEXT PAGE" or "NEXT", "0", "b" },
+    { "improve", nil, s.w >= 50 and "IMPROVEMENTS" or "BETTER", "f", "4" },
+    { "next", nil, s.w >= 50 and "NEXT PAGE" or "NEXT", "0", "b" },
     { "done", nil, "DONE", "0", "e" },
   })
   s:finish()
 end
 
---- A touch on the kiosk that only changes what is being typed or picked. Returns true if it was one of those.
-function M.kioskTouch(view, button)
+--- A touch on the kiosk that only changes what is being picked. Returns true if it was one of those. shop: read only, for
+-- the stats in stock (their steps) and the best Gear Score.
+function M.kioskTouch(view, button, shop)
   view.query = view.query or {}
   local q = view.query
-  if button.id == "types" then
+  q.stats = q.stats or {}
+  local stats, maxGs = {}, 0
+  if shop and shop.stock and shop.stock.stats then stats, maxGs = shop.stock:stats() end
+  local function maxOf(a)
+    for _, st in ipairs(stats) do
+      if st.a == a then return st.max end
+    end
+    return 0
+  end
+  local id = button.id
+  if id == "types" then
     view.mode, view.scroll = "types", 0
-  elseif button.id == "keys" then
-    view.mode = "keys"
-  elseif button.id == "back" then
+  elseif id == "addstat" then
+    view.mode, view.scroll = "stats", 0
+  elseif id == "back" then
     view.mode = nil
-  elseif button.id == "scroll" then
+  elseif id == "scroll" then
     view.scroll = (view.scroll or 0) + button.value
-  elseif button.id == "settype" then
+  elseif id == "settype" then
     q.type = button.value or nil
     view.mode = nil
-  elseif button.id == "bracket" then
-    if q.bracket == nil then q.bracket = 0 elseif q.bracket >= 10 then q.bracket = nil else q.bracket = q.bracket + 1 end
-  elseif button.id == "rarity" then
+  elseif id == "from" then
+    if q.lo == nil then q.lo = 10 elseif q.lo >= 100 then q.lo = nil else q.lo = q.lo + 10 end
+    if q.lo and q.hi and q.hi < q.lo then q.hi = nil end
+  elseif id == "to" then
+    if q.hi == nil then q.hi = 9 elseif q.hi >= 99 then q.hi = nil else q.hi = q.hi + 10 end
+    if q.lo and q.hi and q.hi < q.lo then q.lo = nil end
+  elseif id == "rarity" then
     local at = 0
     for i, rarity in ipairs(M.RARITIES) do
       if rarity == q.rarity then at = i end
     end
     q.rarity = M.RARITIES[at + 1]
-  elseif button.id == "key" then
-    local text = q.text or ""
-    if button.value == "del" then
-      text = text:sub(1, -2)
-    elseif #text < 24 then
-      text = text .. button.value
+  elseif id == "legendary" then
+    q.legendary = not q.legendary or nil
+  elseif id == "mings" then
+    local step = rules.statStep(maxGs)
+    local nextGs = (q.minGs or 0) + step
+    q.minGs = nextGs <= maxGs and nextGs or nil
+  elseif id == "sort" then
+    local options = { "gs", "level" }
+    for _, f in ipairs(q.stats) do options[#options + 1] = "stat:" .. f.a end
+    local at = 1
+    for i, o in ipairs(options) do
+      if o == (q.sort or "gs") then at = i end
     end
-    q.text = text
+    q.sort = options[at % #options + 1]
+    if q.sort == "gs" then q.sort = nil end
+  elseif id == "pickstat" then
+    q.stats[#q.stats + 1] = { a = button.value, min = 0 }
+    view.mode = nil
+  elseif id == "statup" or id == "statdown" then
+    local f = q.stats[button.value]
+    if f then
+      local step = rules.statStep(maxOf(f.a))
+      local v = (f.min or 0) + (id == "statup" and step or -step)
+      -- whole steps, so repeated taps never drift
+      f.min = math.max(0, math.floor(v / step + 0.5) * step)
+    end
+  elseif id == "statdel" then
+    local f = table.remove(q.stats, button.value)
+    if f and q.sort == "stat:" .. f.a then q.sort = nil end
+  elseif id == "stat" then
+    -- the stat's own name: nothing to do
+  elseif id == "improve" then
+    view.mode = "improve"
   else
     return false
   end
@@ -656,8 +732,9 @@ function M.infoTopics(shop)
   })
   if setup.kiosk and setup.kiosk.chest then
     add("kiosk", "Search kiosk", "a", {
-      "Looking for something? At the search kiosk pick a type, a level, a rarity or a name, and tap FIND.",
-      "What matches comes to the kiosk's chest. Take what you want: it is charged the same way. DONE puts the rest back.",
+      "Looking for something? At the search kiosk pick a type, levels, a rarity, a least Gear Score and stats (+ ADD STAT, each with a least value), then FIND.",
+      "IMPROVEMENTS brings pieces with a better Gear Score than what you wear: pick a slot, or ANY SLOT.",
+      "What comes goes into the kiosk's chest, best first. Take what you want: it is charged the same way. DONE puts the rest back.",
     })
   end
   if returns or junk then

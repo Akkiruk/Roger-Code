@@ -213,15 +213,70 @@ function Stock:select(kind, bracket, level)
   return rules.order(list, level)
 end
 
---- Pieces a search asked for, nearest the level first.
+--- Pieces a search asked for, best first (rules.rank). A query with `keys` (IMPROVEMENTS) is those pieces, in that order.
 function Stock:search(query, level)
   local list = {}
+  if query.keys then
+    local at = {}
+    for i, key in ipairs(query.keys) do at[key] = at[key] or i end
+    each(self, function(piece, chest, slot)
+      if at[piece.key] then list[#list + 1] = { chest = chest, slot = slot, key = piece.key, level = piece.level, at = at[piece.key] } end
+    end)
+    table.sort(list, function(a, b)
+      if a.at ~= b.at then return a.at < b.at end
+      return a.chest < b.chest or (a.chest == b.chest and a.slot < b.slot)
+    end)
+    return list
+  end
   each(self, function(piece, chest, slot)
     if rules.forSale(piece, self.cfg) and rules.matches(piece, query) then
-      list[#list + 1] = { chest = chest, slot = slot, key = piece.key, level = piece.level }
+      list[#list + 1] = { chest = chest, slot = slot, key = piece.key, level = piece.level, piece = piece }
     end
   end)
-  return rules.order(list, level)
+  return rules.rank(list, query, level)
+end
+
+--- Every identified piece for sale, once each (for IMPROVEMENTS).
+function Stock:pieces()
+  local list, seen = {}, {}
+  each(self, function(piece)
+    if not seen[piece.key] and rules.forSale(piece, self.cfg) and not piece.unidentified then
+      seen[piece.key] = true
+      list[#list + 1] = piece
+    end
+  end)
+  return list
+end
+
+--- The stats on pieces in stock, for the kiosk's + ADD STAT: { { a, name, group, count, max }, ... } by group, then
+-- name; and the highest Gear Score in stock. Worked out again only when the stock has changed.
+function Stock:stats()
+  local summary = self:summary()
+  if self.statsFor == summary then return self.statsCache, self.maxGs end
+  local found, maxGs = {}, 0
+  each(self, function(piece)
+    if rules.forSale(piece, self.cfg) then
+      if piece.gs and piece.gs > maxGs then maxGs = piece.gs end
+      for a, v in pairs(piece.stats or {}) do
+        local s = found[a]
+        if not s then
+          s = { a = a, name = rules.statName(a), group = rules.statGroup(a), count = 0, max = v }
+          found[a] = s
+        end
+        s.count = s.count + 1
+        if v > s.max then s.max = v end
+      end
+    end
+  end)
+  local list = {}
+  for _, s in pairs(found) do list[#list + 1] = s end
+  local ORDER = { Offense = 1, Defense = 2, Utility = 3 }
+  table.sort(list, function(x, y)
+    if x.group ~= y.group then return ORDER[x.group] < ORDER[y.group] end
+    return x.name < y.name
+  end)
+  self.statsFor, self.statsCache, self.maxGs = summary, list, maxGs
+  return list, maxGs
 end
 
 --- How many slots of the vault hold this key.

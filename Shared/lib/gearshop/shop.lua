@@ -1343,10 +1343,32 @@ function Shop:kioskAction(name, action, query)
   if action == "find" then
     if not isFree(self, d) and ds.shopper ~= name then return end
     ds.shopper, ds.page, ds.used = name, 1, now()
-    ds.query = { type = query and query.type, bracket = query and query.bracket, rarity = query and query.rarity,
-      text = query and query.text }
+    -- the whole search, as the kiosk screen built it (a copy: the screen goes on changing its own)
+    query = query or {}
+    local stats = {}
+    for i, s in ipairs(query.stats or {}) do stats[i] = { a = s.a, min = s.min } end
+    ds.query = { type = query.type, lo = query.lo, hi = query.hi, rarity = query.rarity, legendary = query.legendary,
+      minGs = query.minGs, stats = stats, sort = query.sort }
     if self:fill(d) then
-      self:note(d.monitor, (ds.total or 0) .. " found. Take what you want from the chest.")
+      self:note(d.monitor, (ds.total or 0) .. " found, best first. Take what you want from the chest.")
+    end
+  elseif action == "improve" then
+    if not isFree(self, d) and ds.shopper ~= name then return end
+    local found, why = self:improvements(name, query and query.slot or "any")
+    if not found then
+      self:note(d.monitor, why)
+      return
+    end
+    if #found == 0 then
+      self:note(d.monitor, "Nothing in stock beats what you wear there.")
+      return
+    end
+    local keys = {}
+    for i, c in ipairs(found) do keys[i] = c.key end
+    ds.shopper, ds.page, ds.used = name, 1, now()
+    ds.query = { keys = keys, slot = query and query.slot or "any" }
+    if self:fill(d) then
+      self:note(d.monitor, (ds.total or 0) .. " better than yours, best first. Take what you want from the chest.")
     end
   elseif action == "next" and ds.shopper == name then
     ds.page = (ds.page or 1) + 1
@@ -1354,6 +1376,52 @@ function Shop:kioskAction(name, action, query)
   elseif action == "done" and ds.shopper == name then
     self:release(d)
   end
+end
+
+-- ---------------------------------------------------------------- IMPROVEMENTS
+
+local WORN_MS = 60000
+local WORN_SLOTS = { head = "head", chest = "chest", legs = "legs", feet = "feet", mainhand = "weapon", offhand = "offhand" }
+
+--- What a shopper wears, as Gear Score per slot, and their vault level. Read once a minute at most (two main-thread
+-- calls). Returns { level, worn = { slot = gearScore } }, or nil and what to tell them.
+function Shop:wornBy(name)
+  self.wornCache = self.wornCache or {}
+  local cached = self.wornCache[name]
+  if cached and now() - cached.at < WORN_MS then return cached end
+  if not ccvault or type(ccvault.getPlayerEquipment) ~= "function" then return nil, "This server cannot read your gear." end
+  local ok, eq, why = economy.call(ccvault.getPlayerEquipment, name)
+  if not ok then return nil, "Could not read your gear: " .. tostring(eq) end
+  if type(eq) ~= "table" then return nil, (tostring(why):find("offline", 1, true) and "Stand at the kiosk while you are online."
+    or ("Could not read your gear: " .. tostring(why))) end
+  local level = self:vaultLevel(name) or (self.state.shoppers[name] or {}).level or self.cfg.defaultLevel
+  local worn = {}
+  for field, slot in pairs(WORN_SLOTS) do
+    local item = eq[field]
+    local vd = type(item) == "table" and type(item.vaultData) == "table" and item.vaultData
+    if vd and type(vd.gearScore) == "number" then worn[slot] = vd.gearScore end
+  end
+  -- a magnet is worn as a curio
+  for _, items in pairs(type(eq.curios) == "table" and eq.curios or {}) do
+    for _, item in pairs(items) do
+      local vd = type(item) == "table" and item.name == "the_vault:magnet" and type(item.vaultData) == "table" and item.vaultData
+      if vd and type(vd.gearScore) == "number" then worn.magnet = math.max(worn.magnet or 0, vd.gearScore) end
+    end
+  end
+  cached = { at = now(), level = level, worn = worn }
+  self.wornCache[name] = cached
+  return cached
+end
+
+--- The pieces in stock that beat what a shopper wears (rules.improvements), and the count for every slot.
+function Shop:improvements(name, slot)
+  local me, why = self:wornBy(name)
+  if not me then return nil, why end
+  local found, counts = rules.improvements(self.stock:pieces(), me.worn, me.level, slot, self.cfg)
+  self.improveCounts = self.improveCounts or {}
+  self.improveCounts[name] = { at = now(), counts = counts, level = me.level }
+  self:changed()
+  return found, counts
 end
 
 -- ---------------------------------------------------------------- buying from players

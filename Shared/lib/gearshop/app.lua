@@ -963,7 +963,17 @@ local function runShop()
       end
     elseif role.role == "kiosk" then
       local view = viewOf(monitor)
-      if not ui.kioskTouch(view, button) then
+      if button.id == "improve" then
+        -- IMPROVEMENTS: the slot picker, with how many better pieces each slot has once the worker has read their gear
+        ui.kioskTouch(view, button, shop)
+        local who2 = player()
+        view.who = who2
+        if shop.improveCounts and who2 then shop.improveCounts[who2] = nil end
+        post("improvecount:" .. tostring(who2), function() if who2 then shop:improvements(who2, "any") end end)
+      elseif button.id == "improveslot" then
+        local slot = button.value
+        post(nil, function() shop:kioskAction(player(), "improve", { slot = slot }) end)
+      elseif not ui.kioskTouch(view, button, shop) then
         local query = copy(view.query or {})
         post(nil, function() shop:kioskAction(player(), button.id, query) end)
       end
