@@ -100,36 +100,70 @@ end)
 
 -- ---------------------------------------------------------------- buying
 
-test("gearshop: the shop buys epic, omega and legendary; above 70 omega and legendary; at 100 legendary only", function()
-  local function buys(level, rarity, extra)
-    return (rules.accepts(rules.piece(detail(level, rarity, extra)), cfg))
+test("gearshop: the shop buys only pieces with a legendary roll: Rare+ below 70, Epic+ 70-99, Omega+ at 100", function()
+  local LEG = { isLegendary = true }
+  local function judge(level, rarity, extra)
+    return rules.accepts(rules.piece(detail(level, rarity, extra)), cfg)
   end
-  for _, level in ipairs({ 0, 1, 35, 69, 70 }) do
-    eq(buys(level, "SCRAPPY"), false, "scrappy " .. level)
-    eq(buys(level, "COMMON"), false, "common " .. level)
-    eq(buys(level, "RARE"), false, "rare " .. level)
-    eq(buys(level, "EPIC"), true, "epic " .. level)
-    eq(buys(level, "OMEGA"), true, "omega " .. level)
-    eq(buys(level, "RARE", { isLegendary = true }), true, "legendary " .. level)
+  local function buys(level, rarity, extra) return (judge(level, rarity, extra)) end
+  local function why(level, rarity, extra) return select(2, judge(level, rarity, extra)) end
+  -- no legendary roll: never, whatever the rarity or level
+  for _, level in ipairs({ 0, 1, 69, 70, 99, 100 }) do
+    for _, rarity in ipairs({ "SCRAPPY", "COMMON", "RARE", "EPIC", "OMEGA", "UNIQUE" }) do
+      eq(buys(level, rarity), false, rarity .. " " .. level .. " with no legendary roll")
+      eq(why(level, rarity), "needs a legendary roll")
+    end
   end
-  for _, level in ipairs({ 71, 85, 99 }) do
-    eq(buys(level, "RARE"), false, "rare " .. level)
-    eq(buys(level, "EPIC"), false, "epic " .. level)
-    eq(buys(level, "OMEGA"), true, "omega " .. level)
-    eq(buys(level, "EPIC", { isLegendary = true }), true, "legendary " .. level)
+  -- below 70: Rare+ (69 is the edge)
+  for _, level in ipairs({ 0, 1, 35, 69 }) do
+    eq(buys(level, "SCRAPPY", LEG), false, "legendary scrappy " .. level)
+    eq(buys(level, "COMMON", LEG), false, "legendary common " .. level)
+    eq(buys(level, "RARE", LEG), true, "legendary rare " .. level)
+    eq(buys(level, "EPIC", LEG), true, "legendary epic " .. level)
+    eq(buys(level, "OMEGA", LEG), true, "legendary omega " .. level)
+    eq(why(level, "COMMON", LEG), "Rare+ with a legendary roll below 70")
   end
+  -- 70-99: Epic+
+  for _, level in ipairs({ 70, 85, 99 }) do
+    eq(buys(level, "RARE", LEG), false, "legendary rare " .. level)
+    eq(buys(level, "EPIC", LEG), true, "legendary epic " .. level)
+    eq(buys(level, "OMEGA", LEG), true, "legendary omega " .. level)
+    eq(why(level, "RARE", LEG), "Epic+ with a legendary roll 70-99")
+  end
+  -- 100 and up: Omega+
   for _, level in ipairs({ 100, 101 }) do
-    eq(buys(level, "EPIC"), false, "epic " .. level)
-    eq(buys(level, "OMEGA"), false, "omega " .. level)
-    eq(buys(level, "OMEGA", { isLegendary = true }), true, "legendary " .. level)
-    eq(buys(level, "COMMON", { prefixes = { { name = "x", legendary = true } } }), true, "legendary modifier " .. level)
+    eq(buys(level, "EPIC", LEG), false, "legendary epic " .. level)
+    eq(buys(level, "OMEGA", LEG), true, "legendary omega " .. level)
+    eq(why(level, "EPIC", LEG), "Omega+ with a legendary roll at 100")
   end
-  eq(buys(50, "UNIQUE"), false, "unique")
-  local ok, why = rules.accepts(rules.piece({ name = "minecraft:dirt", count = 1 }), cfg)
+  -- a legendary modifier counts as a legendary roll; uniques rank above Omega but still need one
+  eq(buys(100, "OMEGA", { prefixes = { { name = "x", legendary = true } } }), true, "legendary modifier at 100")
+  eq(buys(69, "COMMON", { prefixes = { { name = "x", legendary = true } } }), false, "legendary modifier, too low a rarity")
+  eq(buys(100, "UNIQUE", LEG), true, "a unique is above Omega")
+  eq(buys(50, "UNIQUE"), false, "a unique with no legendary roll")
+  eq(buys(50, "NONE", LEG), false, "a rarity the shop does not know")
+  eq(why(30, "RARE", { isLegendary = true, state = "UNIDENTIFIED" }), "identify it first")
+  local ok, reason = rules.accepts(rules.piece({ name = "minecraft:dirt", count = 1 }), cfg)
   eq(ok, false)
-  eq(why, "not gear")
-  eq(select(2, rules.accepts(rules.piece(detail(80, "EPIC")), cfg)), "Omega+ above 70")
-  eq(select(2, rules.accepts(rules.piece(detail(100, "OMEGA")), cfg)), "Legendary only at 100")
+  eq(reason, "not gear")
+end)
+
+test("gearshop: the owner's buy bands: parsed, checked, sorted; bad or old saved limits fall back to the defaults", function()
+  eq(rules.bandsText(cfg), "0:RARE 70:EPIC 100:OMEGA")
+  local bands = assert(rules.parseBands("50:epic 0:common"))
+  local mine = { buyBands = bands, sellTypes = cfg.sellTypes }
+  eq(rules.bandsText(mine), "0:COMMON 50:EPIC", "sorted by level")
+  eq(rules.accepts(rules.piece(detail(49, "COMMON", { isLegendary = true })), mine), true)
+  eq(select(2, rules.accepts(rules.piece(detail(50, "RARE", { isLegendary = true })), mine)), "Epic+ with a legendary roll from 50")
+  eq(select(2, rules.accepts(rules.piece(detail(10, "SCRAPPY", { isLegendary = true })), mine)), "Common+ with a legendary roll below 50")
+  eq(rules.parseBands("0:SHINY"), nil, "an unknown rarity")
+  eq(rules.parseBands("rare"), nil, "no level")
+  eq(rules.bandsText({ buyBands = { { fromLevel = "x" }, "junk" } }), "0:RARE 70:EPIC 100:OMEGA", "nothing usable: the defaults")
+  eq(rules.bandsText({ acceptRarities = { "EPIC" }, highLevel = 70 }), "0:RARE 70:EPIC 100:OMEGA", "old limits are not read")
+  eq(rules.rarityRank("SCRAPPY") < rules.rarityRank("COMMON") and rules.rarityRank("COMMON") < rules.rarityRank("RARE")
+    and rules.rarityRank("RARE") < rules.rarityRank("EPIC") and rules.rarityRank("EPIC") < rules.rarityRank("OMEGA"), true, "the ladder")
+  -- an old config file with the removed keys loads without them
+  eq(rules.DEFAULTS.acceptRarities, nil) eq(rules.DEFAULTS.highLevel, nil) eq(rules.DEFAULTS.topLevel, nil)
 end)
 
 test("gearshop: a piece sold for tokens is worth 1 token, so there is nothing to carry", function()
@@ -222,12 +256,29 @@ local function sellView(n)
   return view
 end
 
+-- the limits with buy on drop off: the seller taps STORE CREDIT, as before
+local tapToSell = {}
+for k, v in pairs(cfg) do tapToSell[k] = v end
+tapToSell.sellOnDrop = false
+
+--- n pieces in the chest that the shop cannot sell on its own: two players stand at the sell point
+local function unsureView(n)
+  local view = sellView(n)
+  view.unsure = { "Alice", "Bob" }
+  return view
+end
+
 test("gearshop: on the owner's 2x1 floor sell monitor the rules fit, the button is two rows, and a note leaves no old text", function()
-  local text, _, s = drawSell(cfg, sellView(0), 36, 10)
-  truthy(text:find("Legendary only.", 1, true), "the whole of what is bought")
-  truthy(text:find("Put gear in: 1 store credit a piece.", 1, true), "and what a piece gives")
-  eq(s.buttons[1].h, 2, "a button a player can hit")
-  local _, _, noted = drawSell(cfg, sellView(0), 36, 10, "Hi.")
+  local text, buttons, s = drawSell(cfg, sellView(0), 36, 10)
+  truthy(text:find("Omega+ at 100.", 1, true), "the whole of what is bought")
+  truthy(text:find("Drop gear in: 1 store credit a piece, no tap.", 1, true), "and what a piece gives, with no tap")
+  eq(buttons, "", "buy on drop: no STORE CREDIT button while the shop can tell who sells")
+  local _, claim, two = drawSell(cfg, unsureView(2), 36, 10)
+  eq(claim, "credit:SELL FOR STORE CREDIT", "two players at the sell point: the seller taps")
+  eq(two.buttons[1].h, 2, "a button a player can hit")
+  local _, _, old = drawSell(tapToSell, sellView(0), 36, 10)
+  eq(old.buttons[1].h, 2, "sellOnDrop off: the button, two rows")
+  local _, _, noted = drawSell(tapToSell, sellView(0), 36, 10, "Hi.")
   for y = 6, 8 do
     local row = noted.text[y]:gsub("%s+$", "")
     truthy(row == "" or row == "Hi.", "row " .. y .. " holds only the note: '" .. row .. "'")
@@ -236,16 +287,29 @@ end)
 
 test("gearshop: the credit-only sell screen offers store credit and never tokens or the floor", function()
   for _, n in ipairs({ 0, 3 }) do
-    local text, buttons = drawSell(cfg, sellView(n))
+    local text, buttons = drawSell(tapToSell, sellView(n))
     eq(buttons, "credit:SELL FOR STORE CREDIT", "one button, store credit, with " .. n .. " pieces in")
     eq(text:lower():find("token", 1, true), nil, "no word of tokens with " .. n .. " pieces in")
     eq(text:lower():find("floor", 1, true), nil, "no word of the floor with " .. n .. " pieces in")
+    local auto, none = drawSell(cfg, sellView(n))
+    eq(none, "", "buy on drop: no button with " .. n .. " pieces in")
+    eq(auto:lower():find("token", 1, true), nil, "buy on drop: no word of tokens")
   end
-  local empty = drawSell(cfg, sellView(0))
+  local empty = drawSell(tapToSell, sellView(0))
   truthy(empty:find("store credit: 1 a piece", 1, true), "an empty chest says what a piece gives")
-  local three = drawSell(cfg, sellView(3))
+  local three = drawSell(tapToSell, sellView(3))
   truthy(three:find("Buying: 3", 1, true), "how many are bought")
   truthy(three:find("You get 3 store credit", 1, true), "what the seller gets")
+  local drop = drawSell(cfg, sellView(0))
+  truthy(drop:find("1 store credit a piece at once", 1, true), "buy on drop: paid at once")
+  truthy(drop:find("No tap needed", 1, true), "and no tap")
+  local unsure, buttons = drawSell(cfg, unsureView(3))
+  eq(buttons, "credit:SELL FOR STORE CREDIT", "two at the sell point: STORE CREDIT is back")
+  truthy(unsure:find("Alice and Bob are both here", 1, true), "it says why")
+  local held = sellView(0)
+  held.held = { { slot = 1, key = "u", label = "Mystery Axe", why = "click APPROVE in chat" } }
+  held.seller = "Bob"
+  truthy(drawSell(cfg, held):find("Waiting: 1 (click APPROVE in chat)", 1, true), "a piece waiting to be identified")
 end)
 
 test("gearshop: with sellForTokens on the sell screen is as before: TOKENS or STORE CREDIT", function()
@@ -613,10 +677,10 @@ local function pretend(chests)
 end
 
 local serial = 0
-local function gear(kind, level, rarity)
+local function gear(kind, level, rarity, legendary)
   serial = serial + 1
   return { name = "the_vault:" .. kind, count = 1, nbt = "hash" .. serial,
-    vaultData = { itemType = "Gear", level = level, rarity = rarity or "RARE", name = kind .. " " .. serial } }
+    vaultData = { itemType = "Gear", level = level, rarity = rarity or "RARE", name = kind .. " " .. serial, isLegendary = legendary } }
 end
 
 local function vault()
@@ -965,7 +1029,7 @@ local function sellPoint(opts)
   if opts.returns ~= false then setup.returns = { chest = "returns" } end
   if opts.junk ~= false then setup.junk = { chest = "junk" } end
   local state = opts.state or store.newState()
-  local shop = shopLib.new(world.io, rules.DEFAULTS, setup, state)
+  local shop = shopLib.new(world.io, opts.cfg or tapToSell, setup, state)
   shop.ready = true
   shop.saves = {}
   shop.save = function(self, why)
@@ -983,8 +1047,8 @@ end
 
 test("gearshop sell: refused gear goes to the returns chest at once, with whose it is and why", function()
   local shop, world, state = sellPoint()
-  local bought = gear("sword", 40, "EPIC")
-  world.chests.sell.items = { bought, gear("sword", 71, "EPIC"), unidentified("axe"), gear("helmet", 20, "RARE") }
+  local bought = gear("sword", 40, "EPIC", true)
+  world.chests.sell.items = { bought, gear("sword", 71, "RARE", true), unidentified("axe"), gear("helmet", 20, "EPIC") }
   shop:sellScan()
   eq(world.held("sell"), 1, "only what the shop buys is left in the sell chest")
   eq(world.chests.sell.items[1], bought)
@@ -1004,11 +1068,34 @@ test("gearshop sell: refused gear goes to the returns chest at once, with whose 
     why[#why + 1] = what .. ": " .. entry.why
   end
   table.sort(why)
-  truthy(table.concat(why, " | "):match("^L20 RARE: Epic%+ only | L71 EPIC: Omega%+ above 70 | axe %d+: identify it first$"), table.concat(why, " | "))
+  truthy(table.concat(why, " | "):match("^L20 EPIC: needs a legendary roll | L71 LEGENDARY: Epic%+ with a legendary roll 70%-99 | axe %d+: identify it first$"), table.concat(why, " | "))
   -- taken out of the returns chest by its owner: forgotten
   world.chests.returns.items = {}
   shop:pruneReturns()
   eq(next(state.returnsBy), nil)
+end)
+
+test("gearshop sell: buy on drop pays the one player at the sell point; two about as near, or nobody, wait for a tap", function()
+  local function seller(players, tap)
+    local shop = sellPoint({ players = players, cfg = rules.DEFAULTS })
+    if tap then shop:seen(tap, "msell") end
+    return shop:sellSeller()
+  end
+  eq(seller({ Bob = { x = 1, y = 64, z = 0 } }), "Bob", "alone at it")
+  eq(seller({ Bob = { x = 1, y = 64, z = 0 }, Alice = { x = 30, y = 64, z = 0 } }), "Bob", "Alice is far off")
+  eq(seller({ Bob = { x = 1, y = 64, z = 0 }, Alice = { x = 6, y = 64, z = 0 } }), "Bob", "Bob is clearly nearer")
+  local who, why, names = seller({ Bob = { x = 1, y = 64, z = 0 }, Alice = { x = 2, y = 64, z = 0 } })
+  eq(who, nil) eq(why, "two") eq(table.concat(names, ","), "Bob,Alice", "nearest first")
+  eq(select(2, seller({ Bob = { x = 40, y = 64, z = 0 } })), "none", "nobody near and no tap")
+  eq(seller({ Bob = { x = 40, y = 64, z = 0 } }, "Bob"), "Bob", "nobody near, but Bob tapped the sell screen")
+  eq(seller({ Bob = { x = 1, y = 64, z = 0 }, Alice = { x = 2, y = 64, z = 0 } }, "Alice"), nil, "a tap does not settle two at it")
+  eq(rules.sellsOnDrop(rules.DEFAULTS), true, "on by default")
+  eq(rules.sellsOnDrop(tokensOn), false, "with sellForTokens the seller picks, so taps")
+  eq(rules.sellsOnDrop(tapToSell), false)
+  eq(shopLib.isContainerItem("sophisticatedbackpacks:iron_backpack"), true)
+  eq(shopLib.isContainerItem("minecraft:red_shulker_box"), true)
+  eq(shopLib.isContainerItem("the_vault:wooden_barrel"), true)
+  eq(shopLib.isContainerItem("the_vault:sword"), false)
 end)
 
 test("gearshop sell: with nobody near the sell point the record says someone, and with no returns chest nothing moves", function()
@@ -1044,7 +1131,7 @@ test("gearshop sell: DONATE gives the tapper's refused gear to the junk chest, n
   eq(shop.stock:summary().total, 0, "nothing went into stock")
   -- with no returns chest, DONATE takes the refused gear straight from the sell chest, and leaves what is bought
   shop, world = sellPoint({ returns = false })
-  local epic = gear("sword", 20, "EPIC")
+  local epic = gear("sword", 20, "EPIC", true)
   world.chests.sell.items = { epic, gear("axe", 20, "RARE") }
   shop:donate("Bob", "msell")
   eq(world.held("junk"), 1)
@@ -1464,9 +1551,17 @@ end))
 -- ---------------------------------------------------------------- what the shop buys, in words
 
 test("gearshop: what the shop buys is said from the limits, the way accepts() decides it", function()
-  eq(rules.buysText(cfg), "Epic, Omega and Legendary; above level 70 Omega and Legendary; at 100 Legendary only")
-  eq(rules.buysText({ acceptRarities = { "RARE", "EPIC" }, highRarities = {}, highLevel = 50, topLevel = 90 }),
-    "Rare, Epic and Legendary; above level 50 Legendary; at 90 Legendary only")
+  eq(rules.buysText(cfg), "gear with a legendary roll: Rare+ below 70, Epic+ 70-99, Omega+ at 100")
+  eq(table.concat(rules.buysLines(cfg), "|"), "A legendary roll on every piece|Rare+ below 70|Epic+ 70-99|Omega+ at 100|Identified gear only")
+  eq(rules.buysText({ buyBands = { { fromLevel = 0, minRarity = "EPIC" } } }), "gear with a legendary roll: Epic+ at any level")
+  eq(select(2, rules.accepts(rules.piece(detail(5, "RARE", { isLegendary = true })), { buyBands = { { fromLevel = 0, minRarity = "EPIC" } },
+    sellTypes = cfg.sellTypes })), "Epic+ with a legendary roll at any level")
+  -- every band's words on the screens are the same words a refusal gives
+  for _, level in ipairs({ 10, 80, 100 }) do
+    local reason = select(2, rules.accepts(rules.piece(detail(level, "SCRAPPY", { isLegendary = true })), cfg))
+    local band = reason:gsub(" with a legendary roll", "")
+    if not rules.buysText(cfg):find(band, 1, true) then error(band .. " is not in " .. rules.buysText(cfg)) end
+  end
 end)
 
 -- ---------------------------------------------------------------- the how-it-works screen (help)
@@ -1537,7 +1632,7 @@ test("gearshop help: each topic says what the shop really does, from its limits 
     "PAY on any station" }) do
     truthy(pay:find(fact, 1, true), "paying says " .. fact)
   end
-  truthy(topicText(39, 26, liveLimits(), ownersSetup(), "buys"):find("Epic, Omega and Legendary", 1, true), "what is bought")
+  truthy(topicText(39, 26, liveLimits(), ownersSetup(), "buys"):find("Rare+ below 70, Epic+ 70-99, Omega+ at 100", 1, true), "what is bought")
   truthy(topicText(39, 26, liveLimits(), ownersSetup(), "prices"):find("level 50 is 50", 1, true), "prices")
   local stations = topicText(39, 26, liveLimits({ stationLeaveDistance = 12, stationIdleMinutes = 5 }), ownersSetup(), "stations")
   for _, fact in ipairs({ "walk 12 blocks away", "for 5 min", "hold 3 at once" }) do
@@ -1574,7 +1669,7 @@ test("gearshop help: the questions open their answers, and a minute untouched go
   truthy(questions >= 4, "the questions are buttons (" .. questions .. ")")
   truthy(text:find("Why was my gear refused?", 1, true))
   local _, answer = drawInfo(39, 26, liveLimits(), ownersSetup(), { page = "faq", q = 1 })
-  truthy(answer:find("Epic, Omega and Legendary", 1, true), "the answer says what is bought")
+  truthy(answer:find("legendary roll: Rare+ below 70", 1, true), "the answer says what is bought")
   truthy(answer:find("returns chest", 1, true), "and where refused gear is")
   -- taps only move the view
   local ui = require("lib.gearshop.ui")

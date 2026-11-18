@@ -18,10 +18,17 @@ M.DEFAULTS = {
   ownerFloor = 1000,        -- a token payout never takes the owner's balance below this
   sellForTokens = false,    -- off: selling to the shop pays store credit only, so the shop never pays tokens out for gear.
                             -- Anything already owed from an earlier token sale is still paid. On: sellers pick tokens or credit.
-  acceptRarities = { "EPIC", "OMEGA" },  -- bought from players, besides anything legendary
-  highLevel = 70,           -- above this level only OMEGA and legendary pieces are bought
-  highRarities = { "OMEGA" },
-  topLevel = 100,           -- from this level only legendary pieces are bought
+  sellOnDrop = true,        -- gear dropped in the sell chest is bought at once for store credit, paid to whoever is at the
+                            -- sell point (else whoever tapped its screen in the last two minutes). STORE CREDIT is then
+                            -- only for when the shop cannot tell who (two players there). Off, or sellForTokens on: tap
+  -- What the shop buys from players: only pieces with a legendary roll, of at least each level band's rarity. A band
+  -- covers fromLevel up to the next band's. Page 4, V. (The old acceptRarities, highLevel, highRarities and topLevel
+  -- limits are gone; a config that still has them is read without them.)
+  buyBands = {
+    { fromLevel = 0, minRarity = "RARE" },
+    { fromLevel = 70, minRarity = "EPIC" },
+    { fromLevel = 100, minRarity = "OMEGA" },
+  },
   sellTypes = { "Gear" },   -- the vaultData.itemType values the shop puts on display
   chargeAsTaken = true,     -- a piece is paid for as it is taken, and a tab on the next tap or at check-out, whenever the
                             -- server lets the shop charge the player. Off: pieces only go on the tab, paid with PAY
@@ -247,61 +254,114 @@ end
 
 -- ---------------------------------------------------------------- buying from players
 
---- Whether the shop buys this piece. Returns true, or false and why not.
+-- Vault Hunters' gear rarities, lowest first (VaultGearRarity). UNIQUE, SPECIAL and CHAOTIC are not on the ladder
+-- (fixed or special pieces): they count as above OMEGA, so they pass any band's rarity, but they still need a
+-- legendary roll like everything else.
+M.RARITY_ORDER = { "SCRAPPY", "COMMON", "RARE", "EPIC", "OMEGA" }
+local RANK = { SCRAPPY = 1, COMMON = 2, RARE = 3, EPIC = 4, OMEGA = 5, UNIQUE = 6, SPECIAL = 6, CHAOTIC = 6 }
+
+--- A rarity's place on the ladder: 0 for none or one the shop does not know.
+function M.rarityRank(rarity)
+  return RANK[tostring(rarity or ""):upper()] or 0
+end
+
+local function rarityWord(rarity)
+  rarity = tostring(rarity)
+  return rarity:sub(1, 1):upper() .. rarity:sub(2):lower()
+end
+
+--- The owner's bands (the buyBands limit), checked and in order of level; the defaults when the saved ones are no good.
+-- Each { fromLevel, minRarity }: a piece of fromLevel or more (up to the next band) needs at least minRarity.
+function M.bands(cfg)
+  local list = cfg and cfg.buyBands
+  local out = {}
+  if type(list) == "table" then
+    for _, b in ipairs(list) do
+      if type(b) == "table" and tonumber(b.fromLevel) and RANK[tostring(b.minRarity or ""):upper()] then
+        out[#out + 1] = { fromLevel = math.floor(tonumber(b.fromLevel)), minRarity = tostring(b.minRarity):upper() }
+      end
+    end
+  end
+  if #out == 0 then
+    for _, b in ipairs(M.DEFAULTS.buyBands) do out[#out + 1] = { fromLevel = b.fromLevel, minRarity = b.minRarity } end
+  end
+  table.sort(out, function(a, b) return a.fromLevel < b.fromLevel end)
+  return out
+end
+
+--- The levels a band covers, in words: "below 70", "70-99", "at 100", "from 80" (the last band, under level 100).
+local function bandLevels(bands, i)
+  local b, nxt = bands[i], bands[i + 1]
+  if #bands == 1 then return "at any level" end
+  if i == 1 then return "below " .. nxt.fromLevel end
+  if nxt then
+    if nxt.fromLevel - 1 == b.fromLevel then return "at " .. b.fromLevel end
+    return b.fromLevel .. "-" .. (nxt.fromLevel - 1)
+  end
+  if b.fromLevel >= 100 then return "at " .. b.fromLevel end
+  return "from " .. b.fromLevel
+end
+
+--- The band a level falls in: its index in M.bands. A level under the first band's fromLevel is in the first.
+local function bandOf(bands, level)
+  local at = 1
+  for i, b in ipairs(bands) do
+    if level >= b.fromLevel then at = i end
+  end
+  return at
+end
+
+--- Parse "0:RARE 70:EPIC 100:OMEGA" (the owner's terminal input) into bands, or nil and why.
+function M.parseBands(text)
+  local out = {}
+  for level, rarity in tostring(text):gmatch("(%-?%d+)%s*:%s*(%a+)") do
+    if not RANK[rarity:upper()] or RANK[rarity:upper()] > 5 then return nil, "unknown rarity " .. rarity end
+    out[#out + 1] = { fromLevel = tonumber(level), minRarity = rarity:upper() }
+  end
+  if #out == 0 then return nil, "write it as level:rarity, e.g. 0:RARE 70:EPIC 100:OMEGA" end
+  return out
+end
+
+--- The bands as the owner writes them: "0:RARE 70:EPIC 100:OMEGA".
+function M.bandsText(cfg)
+  local parts = {}
+  for _, b in ipairs(M.bands(cfg)) do parts[#parts + 1] = b.fromLevel .. ":" .. b.minRarity end
+  return table.concat(parts, " ")
+end
+
+--- Whether the shop buys this piece. Returns true, or false and why not. Only pieces with a legendary roll, at least the
+-- rarity of their level's band (buyBands): by default Rare+ below 70, Epic+ 70-99, Omega+ at 100.
 function M.accepts(piece, cfg)
   cfg = cfg or M.DEFAULTS
   if not piece or not M.forSale(piece, cfg) then return false, "not gear" end
   if piece.unidentified then return false, "identify it first" end
-  local level = piece.level or 0
-  if piece.legendary then return true end
-  if level >= cfg.topLevel then return false, "Legendary only at " .. cfg.topLevel end
-  if level > cfg.highLevel then
-    if has(cfg.highRarities, piece.rarity) then return true end
-    return false, "Omega+ above " .. cfg.highLevel
-  end
-  if has(cfg.acceptRarities, piece.rarity) then return true end
-  return false, "Epic+ only"
+  if not piece.legendary then return false, "needs a legendary roll" end
+  local bands = M.bands(cfg)
+  local i = bandOf(bands, piece.level or 0)
+  if M.rarityRank(piece.rarity) >= RANK[bands[i].minRarity] then return true end
+  return false, rarityWord(bands[i].minRarity) .. "+ with a legendary roll " .. bandLevels(bands, i)
 end
 
---- What the shop buys, in words, from the limits: "Epic, Omega and Legendary; above level 70 Omega and Legendary; at 100
--- Legendary only". The sell screen and the how-it-works screen both say it, so they never disagree with accepts().
+--- Each band in words, { "Rare+ below 70", "Epic+ 70-99", "Omega+ at 100" }: what accepts() decides, said the same way.
+local function bandWords(cfg)
+  local bands, out = M.bands(cfg), {}
+  for i, b in ipairs(bands) do out[#out + 1] = rarityWord(b.minRarity) .. "+ " .. bandLevels(bands, i) end
+  return out
+end
+
+--- What the shop buys, in words, from the limits: "gear with a legendary roll: Rare+ below 70, Epic+ 70-99, Omega+ at
+-- 100". The sell screen and the how-it-works screen both say it, so they never disagree with accepts().
 function M.buysText(cfg)
-  cfg = cfg or M.DEFAULTS
-  local function words(list)
-    local out = {}
-    for _, rarity in ipairs(list or {}) do
-      if rarity ~= "LEGENDARY" then out[#out + 1] = rarity:sub(1, 1) .. rarity:sub(2):lower() end
-    end
-    out[#out + 1] = "Legendary"
-    if #out == 1 then return out[1] end
-    return table.concat(out, ", ", 1, #out - 1) .. " and " .. out[#out]
-  end
-  local high = cfg.highLevel or M.DEFAULTS.highLevel
-  local top = cfg.topLevel or M.DEFAULTS.topLevel
-  return words(cfg.acceptRarities or M.DEFAULTS.acceptRarities) .. "; above level " .. high .. " "
-    .. words(cfg.highRarities or M.DEFAULTS.highRarities) .. "; at " .. top .. " Legendary only"
+  return "gear with a legendary roll: " .. table.concat(bandWords(cfg), ", ")
 end
 
---- What the shop buys as one rule a line, for the sell screen: { "Epic, Omega, Legendary", "Above level 70: Omega,
--- Legendary", "Level 100 and up: Legendary only", "Identified gear only" }.
+--- What the shop buys as one rule a line, for the sell screen: { "A legendary roll on every piece", "Rare+ below 70",
+-- "Epic+ 70-99", "Omega+ at 100", "Identified gear only" }.
 function M.buysLines(cfg)
-  cfg = cfg or M.DEFAULTS
-  local function words(list)
-    local out = {}
-    for _, rarity in ipairs(list or {}) do
-      if rarity ~= "LEGENDARY" then out[#out + 1] = rarity:sub(1, 1) .. rarity:sub(2):lower() end
-    end
-    out[#out + 1] = "Legendary"
-    return table.concat(out, ", ")
-  end
-  local high = cfg.highLevel or M.DEFAULTS.highLevel
-  local top = cfg.topLevel or M.DEFAULTS.topLevel
-  return {
-    words(cfg.acceptRarities or M.DEFAULTS.acceptRarities),
-    "Above level " .. high .. ": " .. words(cfg.highRarities or M.DEFAULTS.highRarities),
-    "Level " .. top .. " and up: Legendary only",
-    "Identified gear only",
-  }
+  local out = { "A legendary roll on every piece" }
+  for _, line in ipairs(bandWords(cfg)) do out[#out + 1] = line end
+  out[#out + 1] = "Identified gear only"
+  return out
 end
 
 --- What one accepted piece is worth in a sale for tokens, in thousandths of a token.
@@ -321,6 +381,13 @@ function M.sellsForTokens(cfg)
   local v = cfg and cfg.sellForTokens
   if v == nil then v = M.DEFAULTS.sellForTokens end
   return v == true
+end
+
+--- Whether gear dropped in the sell chest is bought with no tap: store credit, to whoever is at the sell point.
+function M.sellsOnDrop(cfg)
+  local v = cfg and cfg.sellOnDrop
+  if v == nil then v = M.DEFAULTS.sellOnDrop end
+  return v == true and not M.sellsForTokens(cfg)
 end
 
 --- The way a sale is paid: what the seller asked for, unless tokens are off, when it is store credit.

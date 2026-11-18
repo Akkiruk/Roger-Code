@@ -141,6 +141,8 @@ function Shop:seen(name, monitor)
   if shopper then shopper.last = now() end
   if name then self.missing[name] = nil end
   if name and monitor then self.tappedAt[name] = monitor end
+  -- a tap on the sell screen says who is selling, for two minutes, when nobody can be seen at the sell point
+  if name and monitor and self.setup.sell and monitor == self.setup.sell.monitor then self.sellTap = { name = name, at = now() } end
 end
 
 -- ---------------------------------------------------------------- players, never throwing
@@ -460,6 +462,7 @@ function Shop:attached(name)
     self:mend(role.d)
   elseif role.role == "sell" then
     self:watch(name)
+    self.sellCaps = nil   -- asked again: the server may have been updated meanwhile
     if self.state.sale then self:finishSale() end
     if self.state.moving then self:finishMove() end
     self:sellScan()
@@ -1514,10 +1517,11 @@ end
 -- ---------------------------------------------------------------- buying from players
 
 --- Who is at the sell point: the nearest player online within 8 blocks of it, through any detector. nil when the sell
--- point has no recorded place or nobody is near it.
+-- point has no recorded place or nobody is near it. Also gives every player within those 8 blocks, nearest first, each
+-- { name, distance }.
 function Shop:atSell()
   local sell = self.setup.sell
-  if not (sell and sell.pos) then return nil end
+  if not (sell and sell.pos) then return nil, {} end
   local names
   for _, detector in ipairs(self:detectors()) do
     local ok, list = self.io.call(detector, "getOnlinePlayers")
@@ -1526,15 +1530,36 @@ function Shop:atSell()
       break
     end
   end
-  local best, bestDistance
+  local near = {}
   for _, name in ipairs(names or {}) do
     if type(name) == "string" then
       local pos = self:playerPos(name)
       local distance = pos and rules.distance(pos, sell.pos)
-      if distance and distance <= 8 and (not bestDistance or distance < bestDistance) then best, bestDistance = name, distance end
+      if distance and distance <= 8 then near[#near + 1] = { name = name, distance = distance } end
     end
   end
-  return best
+  table.sort(near, function(a, b) return a.distance < b.distance end)
+  return near[1] and near[1].name, near
+end
+
+local SELL_TAP_MS = 120000   -- a tap on the sell screen this recent says who is selling, when nobody stands at it
+local CLEAR_LEAD = 3         -- with two players at the sell point, the nearest is the seller only when this many blocks nearer
+
+--- Who the gear in the sell chest is from, for a sale with no tap: the one player at the sell point (or one clearly
+-- nearer than the rest), else whoever tapped the sell screen in the last two minutes. nil and "two" with the names when
+-- two or more stand there about as near (the screen then asks the seller to tap STORE CREDIT); nil and "none" when
+-- nobody can be told.
+function Shop:sellSeller()
+  local _, near = self:atSell()
+  if #near == 1 or (#near > 1 and near[1].distance + CLEAR_LEAD <= near[2].distance) then return near[1].name end
+  if #near > 1 then
+    local names = {}
+    for _, p in ipairs(near) do names[#names + 1] = p.name end
+    return nil, "two", names
+  end
+  local tap = self.sellTap
+  if tap and now() - tap.at <= SELL_TAP_MS then return tap.name end
+  return nil, "none"
 end
 
 --- Move refused gear from one chest to another: to the returns chest when the shop will not buy it, to the junk chest
@@ -1697,8 +1722,128 @@ function Shop:pruneReturns()
   end
 end
 
---- Look at the sell chest and work out the offer.
-function Shop:sellScan(again)
+-- ---------------------------------------------------------------- vhcctweaks 2.2.37 at the sell chest
+-- On 2.2.37 every inventory has identify(slot, player [, inner]), listContents(slot [, detailed]) and pushContents(to,
+-- slot, inner). Then the shop identifies an unidentified piece in the sell chest with the seller's approval (rolled as
+-- the Identification Stand would for them), and takes the gear it buys out of a backpack or shulker box dropped there,
+-- into the sell chest itself, where it is bought like any piece; the bag, with what is left in it, is then refused to
+-- the returns chest. None of this needs writing down first: an identify changes one piece in place or nothing, and a
+-- piece taken out of a bag lands in the same sell chest (into the chest first, then out of the bag, in one server
+-- call), so after a reboot the next look at the chest simply goes on. The sale itself is the usual write-ahead sale.
+-- On an older server none of it is offered: unidentified gear is refused as before, and a bag goes to the Modular
+-- Router unpacker if there is one, else it is refused.
+
+local HOLD_MS = 90000   -- a piece waiting for its seller's APPROVE to be identified waits this long, then is refused
+
+--- Whether an item is a container the server can look into: a Sophisticated Backpack, a shulker box, a vault barrel.
+local function isContainerItem(name)
+  local n = tostring(name):lower()
+  return n:find("backpack", 1, true) ~= nil or n:find("shulker_box", 1, true) ~= nil
+    or (n:sub(1, 10) == "the_vault:" and n:sub(-7) == "_barrel")
+end
+M.isContainerItem = isContainerItem
+
+--- What the sell chest can do on this server: { identify = true?, contents = true? }. Asked once per chest (getMethods
+-- and the mod's switches in ccvault.getLimits), again when it comes back.
+function Shop:sellAbilities()
+  local sell = self.setup.sell
+  if not (sell and sell.chest) then return {} end
+  local c = self.sellCaps
+  if c and c.chest == sell.chest then return c end
+  local methods = self.io.methods and self.io.methods(sell.chest)
+  if type(methods) ~= "table" then return {} end
+  local has = {}
+  for _, m in ipairs(methods) do has[m] = true end
+  local limits = {}
+  if ccvault and type(ccvault.getLimits) == "function" then
+    local ok, l = pcall(ccvault.getLimits)
+    if ok and type(l) == "table" then limits = l end
+  end
+  c = { chest = sell.chest,
+    identify = (has.identify and limits.identify ~= false) or nil,
+    contents = (has.listContents and has.pushContents and limits.containerItems ~= false) or nil }
+  self.sellCaps = c
+  return c
+end
+
+--- Identify one piece (in a bag with inner) for the seller. true, or false and "approve" (they have to click APPROVE in
+-- chat first, and were asked if they could be), "offline", or the server's reason (that piece is then not tried again).
+function Shop:identifyFor(seller, slot, inner, key)
+  self.idFailed = self.idFailed or {}
+  if self.idFailed[key] then return false, self.idFailed[key] end
+  local ok, detail, why = self.io.call(self.setup.sell.chest, "identify", slot, seller, inner)
+  if ok and type(detail) == "table" then
+    self.stock:learn({ detail })
+    store.log("identified " .. tostring(detail.name) .. " for " .. seller)
+    return true
+  end
+  why = tostring(ok and why or detail)
+  if why:find("approved", 1, true) then
+    if not (self.awaiting[seller] and self.awaiting[seller] > now()) then self:askApproval(seller) end
+    return false, "approve"
+  end
+  if why:find("not online", 1, true) then return false, "offline" end
+  -- a look at the chest from before the identify (a linked chest answers a moment late), or a player rolling it: next time
+  if why:find("already identified", 1, true) or why:find("being identified", 1, true) then return false, "again" end
+  self.idFailed[key] = why
+  store.log("identify for " .. seller .. ": " .. why)
+  return false, why
+end
+
+--- Get the sell chest ready for a sale for this seller: identify what is unidentified, take what the shop buys out of
+-- bags. Returns whether anything changed (the chest is then read again), and the slots still being worked on: a bag
+-- with pieces still waiting for APPROVE or for room in the sell chest, and pieces waiting for APPROVE.
+function Shop:sellPrepare(details, seller, caps)
+  local chest = self.setup.sell.chest
+  local changed, busy = false, {}
+  for slot, detail in pairs(details) do
+    local key = rules.key(detail)
+    local piece = self.stock.known[key]
+    if caps.identify and piece and piece.unidentified then
+      local done, why = self:identifyFor(seller, slot, nil, key)
+      if done then
+        changed = true
+      elseif why == "approve" or why == "offline" or why == "again" then
+        busy[slot] = why == "again" and "again" or "approve"
+      end
+    elseif caps.contents and isContainerItem(detail.name) and (detail.count or 1) == 1 then
+      local ok, contents = self.io.call(chest, "listContents", slot, true)
+      if ok and type(contents) == "table" then
+        self.stock:learn(contents)
+        for inner, d in pairs(contents) do
+          local k = rules.key(d)
+          local p = self.stock.known[k]
+          if caps.identify and p and p.unidentified then
+            local done, why = self:identifyFor(seller, slot, inner, k)
+            if done then
+              changed = true
+              local fine, again = self.io.call(chest, "listContents", slot, true)
+              d = fine and type(again) == "table" and again[inner]
+              k = d and rules.key(d)
+              if d then self.stock:learn({ d }) end
+              p = k and self.stock.known[k]
+            elseif why == "approve" or why == "offline" or why == "again" then
+              busy[slot] = busy[slot] or (why == "again" and "again" or "approve")
+            end
+          end
+          if p and not p.unidentified and (self:tabbed(k) or self:paidFor(k) or rules.accepts(p, self.cfg)) then
+            local fine, moved = self.io.call(chest, "pushContents", chest, slot, inner)
+            if fine and (tonumber(moved) or 0) > 0 then
+              changed = true
+            else
+              busy[slot] = busy[slot] or "room"   -- the sell chest is full: the bag waits for the sale to make room
+            end
+          end
+        end
+      end
+    end
+  end
+  return changed, busy
+end
+
+--- Look at the sell chest and work out the offer. With sellOnDrop (the default) what the shop buys is then bought at
+-- once, for store credit, from whoever is at the sell point (sellSeller); `as` is a seller who tapped STORE CREDIT.
+function Shop:sellScan(again, as)
   local sell = self.setup.sell
   if not sell or not sell.chest then return end
   local ok, details = self.io.call(sell.chest, "listDetailed")
@@ -1708,11 +1853,55 @@ function Shop:sellScan(again)
     return
   end
   self.stock:learn(details)
-  local view = { accepted = {}, rejected = {}, returns = {} }
+  local caps = self:sellAbilities()
+  -- who is selling, worked out only when it matters (it asks the detectors)
+  local seller, unsure, names, asked = as, nil, nil, as ~= nil
+  local function who()
+    if not asked then
+      asked = true
+      seller, unsure, names = self:sellSeller()
+    end
+    return seller
+  end
+  local busy = {}
+  if caps.identify or caps.contents then
+    local work = false
+    for _, detail in pairs(details) do
+      local piece = self.stock.known[rules.key(detail)]
+      if (caps.identify and piece and piece.unidentified) or (caps.contents and isContainerItem(detail.name)) then work = true end
+    end
+    if work and who() then
+      local changed
+      changed, busy = self:sellPrepare(details, seller, caps)
+      if changed then
+        ok, details = self.io.call(sell.chest, "listDetailed")
+        if not ok or type(details) ~= "table" then return end
+        self.stock:learn(details)
+        busy = select(2, self:sellPrepare(details, seller, caps))
+      end
+    end
+  end
+  self.sellHeld = self.sellHeld or {}
+  local view = { accepted = {}, rejected = {}, returns = {}, held = {} }
+  local heldNow = {}
   for slot, detail in pairs(details) do
     local key = rules.key(detail)
     local piece = self.stock.known[key]
-    if self:tabbed(key) or self:paidFor(key) then
+    -- waiting: an unidentified piece or a bag the server can deal with once the shop knows whose it is, or once its
+    -- seller clicks APPROVE (for HOLD_MS); then it is refused like any other
+    local wait
+    if piece and caps.identify and piece.unidentified and not (self.idFailed and self.idFailed[key]) then
+      wait = (not seller or busy[slot]) and (busy[slot] == "approve" and "click APPROVE in chat" or "identifying")
+    elseif caps.contents and isContainerItem(detail.name) then
+      wait = (not seller or busy[slot]) and (busy[slot] == "approve" and "click APPROVE in chat" or "opening")
+    end
+    if wait and busy[slot] == "approve" then
+      heldNow[key] = self.sellHeld[key] or now()
+      if now() - heldNow[key] > HOLD_MS then wait = nil end
+    end
+    if wait then
+      view.held[#view.held + 1] = { slot = slot, key = key, label = piece and piece.label or detail.name, why = wait }
+    elseif self:tabbed(key) or self:paidFor(key) then
       view.returns[#view.returns + 1] = { slot = slot, key = key, label = piece.label }
     else
       local yes, why = rules.accepts(piece, self.cfg)
@@ -1724,11 +1913,29 @@ function Shop:sellScan(again)
       end
     end
   end
+  self.sellHeld = heldNow
   -- refused gear goes to the returns chest straight away; the chest is then looked at again
-  if not again and self:refuse(view) then return self:sellScan(true) end
+  if not again and self:refuse(view) then return self:sellScan(true, as) end
   view.returnsChest = self.setup.returns and self.setup.returns.chest ~= nil
+  view.identifies, view.opens = caps.identify, caps.contents
+  local auto = rules.sellsOnDrop(self.cfg)
+  if auto and (#view.accepted > 0 or #view.returns > 0 or #view.held > 0) then
+    who()
+    view.seller = seller
+    -- two players about as near the sell point: the screen asks the seller to tap STORE CREDIT
+    view.unsure = unsure == "two" and names or nil
+    view.waiting = (unsure == "none") or nil
+  end
   self.sellView = view
   self:changed()
+  -- buy on drop: no tap, store credit, to the one seller the shop can tell
+  if auto and not as and not self.autoSelling and self.ready and seller and not self.state.sale and not self.state.moving
+    and (#view.accepted > 0 or #view.returns > 0) then
+    self.autoSelling = true
+    local fine, err = pcall(self.sell, self, seller, "credit", sell.monitor, true)
+    self.autoSelling = false
+    if not fine then error(err, 0) end
+  end
 end
 
 --- Whether the owner can pay this many tokens and stay at or above the floor.
@@ -1737,14 +1944,28 @@ function Shop:canPay(name, tokens)
   return rules.payable(tokens, wallet.hostBalance(), self.cfg.ownerFloor) >= tokens
 end
 
-function Shop:sell(name, mode, monitor)
+--- A tap on the sell screen that hit no button: the tapper is at the sell point. Whatever is owed to them from an
+-- earlier token sale is paid, and the chest is looked at again (what waited for a seller the shop could tell goes on).
+function Shop:sellTapped(name, monitor)
+  self:seen(name, monitor)
+  if not self.ready then return end
+  if journal.owedTo(name) > 0 then
+    local moved = self:settle(name)
+    if moved > 0 then self:note(monitor, name .. " was paid " .. tokensText(moved) .. " from before.") end
+  end
+  self:sellScan()
+end
+
+--- A sale: a tap on STORE CREDIT (or TOKENS) by `name`, or with `auto` the buy-on-drop sale sellScan starts for the
+-- seller it could tell (no tap, so it is not a tap of theirs either).
+function Shop:sell(name, mode, monitor, auto)
   local sell = self.setup.sell
   if not sell or not sell.chest then return end
   if not name then
     self:note(monitor, "Could not tell who tapped. Tap again.")
     return
   end
-  self:seen(name, monitor)
+  self:seen(name, not auto and monitor or nil)
   -- with sellForTokens off every sale is store credit, whatever button (or old screen) the tap came from
   mode = rules.saleMode(mode, self.cfg)
   if not self.ready then
@@ -1759,15 +1980,20 @@ function Shop:sell(name, mode, monitor)
   local paidOld = 0
   if journal.owedTo(name) > 0 then paidOld = self:settle(name) end
   if mode == "tokens" then self:askApproval(name) end
-  self:sellScan()
+  -- the tapper is the seller: the chest is got ready for them (identified, bags emptied) and not sold on its own
+  self:sellScan(nil, name)
   local view = self.sellView
   if not view then
-    self:note(monitor, "The sell chest is not answering.")
+    if not auto then self:note(monitor, "The sell chest is not answering.") end
     return
   end
   local count = #view.accepted
   if count == 0 and #view.returns == 0 then
-    self:note(monitor, paidOld > 0 and (name .. " was paid " .. tokensText(paidOld) .. " from before.") or "Nothing in the chest that the shop buys.")
+    if auto then return end
+    local waiting = #(view.held or {}) > 0 and "Waiting on " .. #view.held .. (#view.held == 1 and " piece" or " pieces")
+      .. (self.awaiting[name] and ": click APPROVE in chat to identify." or ".")
+    self:note(monitor, paidOld > 0 and (name .. " was paid " .. tokensText(paidOld) .. " from before.")
+      or waiting or "Nothing in the chest that the shop buys.")
     return
   end
   if mode == "tokens" and count > 0 then
@@ -1966,6 +2192,8 @@ function Shop:approvals()
             name .. " paid " .. tokensText(moved) .. "." .. (left > 0 and (" Still owes " .. left .. ".") or ""))
         end
       end
+      -- gear of theirs waiting in the sell chest to be identified goes on now
+      if self.sellView and self.sellView.held and #self.sellView.held > 0 then self:sellScan() end
     end
   end
 end
@@ -1998,7 +2226,11 @@ function Shop:upkeep()
     -- that touches the computer, so gear put in the other half would sit there unseen. A plain list is cheap, and the
     -- chest is only read in detail when it is not what it was.
     local sell, intake = self.setup.sell, self.setup.intake
-    if sell and sell.chest and self:differs(sell.chest) then self:sellScan() end
+    -- gear waiting for a seller the shop can tell (or for APPROVE) is looked at again too: someone may have walked up
+    local view = self.sellView
+    local waiting = view and (#(view.held or {}) > 0
+      or (rules.sellsOnDrop(self.cfg) and (#view.accepted + #view.returns) > 0))
+    if sell and sell.chest and (self:differs(sell.chest) or waiting) then self:sellScan() end
     if intake and intake.chest and self:differs(intake.chest) then self:intake() end
     if due(self, "returns", 30) then self:pruneReturns() end
   end

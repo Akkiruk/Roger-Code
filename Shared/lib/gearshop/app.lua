@@ -61,6 +61,13 @@ function io.hasType(name, kind)
   return false
 end
 
+--- The methods a peripheral has, or nil when it is not there (vhcctweaks 2.2.37 inventories add identify and the rest).
+function io.methods(name)
+  if type(name) ~= "string" or not io.isPresent(name) then return nil end
+  local ok, methods = pcall(peripheral.getMethods, name)
+  return ok and type(methods) == "table" and methods or nil
+end
+
 M.io = io
 
 -- ---------------------------------------------------------------- first boot: shop or node
@@ -456,7 +463,7 @@ local function runShop()
       end
     elseif admin.page == 4 then
       local list = limitKeys()
-      local rows = th - 3
+      local rows = th - 4
       admin.sel = math.max(1, math.min(admin.sel, #list))
       if admin.sel <= admin.scroll then admin.scroll = admin.sel - 1 end
       if admin.sel > admin.scroll + rows then admin.scroll = admin.sel - rows end
@@ -465,6 +472,7 @@ local function runShop()
         line((i == admin.sel and "> " or "  ") .. ("%-22s %s"):format(key, tostring(cfg[key])), i == admin.sel and colors.lime or colors.white)
       end
       line("Up/Down pick, Enter change, D default, B build weights", colors.lightGray)
+      line("V what we buy: " .. rules.bandsText(cfg) .. " (legendary roll)", colors.lightGray)
     elseif admin.page == 5 then
       local d = admin.draft
       local ids = {}
@@ -887,6 +895,23 @@ local function runShop()
     elseif admin.page == 4 and ch == "b" then
       admin.bw = { sel = 1, scroll = 0 }
       admin.dirty = true
+    elseif admin.page == 4 and ch == "v" then
+      -- what the shop buys: a least rarity a level band, every piece with a legendary roll (buyBands)
+      ask("Bands, level:rarity (empty: default) = ", function(text)
+        if text == "" then
+          cfg.buyBands = rules.DEFAULTS.buyBands
+        else
+          local bands, why = rules.parseBands(text)
+          if not bands then
+            say(why)
+            return
+          end
+          cfg.buyBands = bands
+        end
+        store.saveConfig(cfg)
+        say("Buys " .. rules.buysText(cfg))
+        shop:changed()
+      end)
     elseif admin.page == 4 and ch == "d" then
       local key = limitKeys()[admin.sel]
       cfg[key] = rules.DEFAULTS[key]
@@ -1012,6 +1037,15 @@ local function runShop()
       -- help pages turn here, at once: nothing on it waits for the server
       ui.infoTouch(viewOf(monitor), button)
       os.queueEvent("gs_draw")
+      return
+    end
+    if role.role == "sell" and not button then
+      -- a tap anywhere on the sell screen says who is selling: what waits in the chest for a seller goes on. Who it was
+      -- is asked in the worker when the touch did not say (the server's player lookup waits)
+      post("selltap", function()
+        local name = who or wallet.livePlayer()
+        if name then shop:sellTapped(name, monitor) end
+      end)
       return
     end
     if not button then return end

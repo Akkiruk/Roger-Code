@@ -745,21 +745,39 @@ function M.infoTopics(shop)
       "Leave with a tab and it is charged as you are checked out, or kept for your next visit.",
     })
   end
+  -- what the server lets the sell chest do (vhcctweaks 2.2.37), as the worker last found it
+  local caps = shop.sellCaps or {}
   if setup.sell and setup.sell.chest then
-    local paid
-    if rules.sellsForTokens(cfg) then
-      paid = "then tap TOKENS or STORE CREDIT: " .. rules.showMilli(rules.pieceMilli(cfg)) .. " tokens or " .. credit .. " store credit a piece."
+    local text
+    if rules.sellsOnDrop(cfg) then
+      text = {
+        "Drop gear in the sell chest and walk away. What the shop buys is bought at once: " .. credit
+          .. " store credit a piece, paid to you, spent on gear here. No tokens are paid for gear, and no tap is needed.",
+        "The shop pays whoever stands at the sell point. If two of you stand there, the seller taps STORE CREDIT.",
+      }
+    elseif rules.sellsForTokens(cfg) then
+      text = { "Put gear in the sell chest, then tap TOKENS or STORE CREDIT: " .. rules.showMilli(rules.pieceMilli(cfg))
+        .. " tokens or " .. credit .. " store credit a piece." }
     else
-      paid = "then tap STORE CREDIT. Each piece the shop buys pays " .. credit .. " store credit, spent on gear here. No tokens are paid for gear."
+      text = { "Put gear in the sell chest, then tap STORE CREDIT. Each piece the shop buys pays " .. credit
+        .. " store credit, spent on gear here. No tokens are paid for gear." }
     end
-    add("sell", "Selling", "3", {
-      "Put gear in the sell chest, " .. paid,
-      "Gear the shop does not buy is not taken: see What we buy" .. (returns and ", and Returns." or "."),
-    })
+    if caps.identify then
+      text[#text + 1] = "Unidentified gear is identified for you, rolled as the Identification Stand rolls it for you. "
+        .. "The first time, click APPROVE in chat."
+    end
+    if caps.contents then
+      text[#text + 1] = "A backpack or shulker box of gear works too: the shop takes out what it buys, and the bag "
+        .. (returns and "goes to the returns chest" or "stays in the sell chest") .. " with the rest."
+    end
+    text[#text + 1] = "Gear the shop does not buy is not taken: see What we buy" .. (returns and ", and Returns." or ".")
+      .. (junk and " DONATE gives refused gear to the shop." or "")
+    add("sell", "Selling", "3", text)
   end
   add("buys", "What we buy", "1", {
-    "Identified gear only: " .. rules.buysText(cfg) .. ".",
-    "Unidentified gear is refused: identify it first.",
+    "Only " .. rules.buysText(cfg) .. ".",
+    caps.identify and "Unidentified gear is identified when you sell it, then judged like the rest."
+      or "Unidentified gear is refused: identify it first.",
   })
   local per = cfg.pricePerLevel or rules.DEFAULTS.pricePerLevel
   add("prices", "Prices", "6", {
@@ -804,7 +822,7 @@ function M.infoFaq(shop)
   local returns = setup.returns and setup.returns.chest
   local list = {}
   local function add(q, a) list[#list + 1] = { q = q, a = a } end
-  add("Why was my gear refused?", "The shop buys identified " .. rules.buysText(cfg) .. ". The sell screen gives the reason for each piece."
+  add("Why was my gear refused?", "The shop buys only identified " .. rules.buysText(cfg) .. ". The sell screen gives the reason for each piece."
     .. (returns and " Refused gear is in the returns chest." or " Refused gear stays in the sell chest."))
   add("Where does my store credit go?", "It stays with you at this shop and is spent by itself, before tokens, on anything you take. It is never paid out as tokens.")
   add("I walked away. What happened to my tab?", "Your stations emptied back into the shop. What was still on your tab was charged when you were checked out if the shop could; if not, it waits, and your next tap here pays it.")
@@ -973,10 +991,13 @@ end
 
 local REFUSED_MS = 120000
 
---- One piece of a batch as a line: "L45 Epic  Sword ........ +1 credit" or "L30 Rare  Sword ..... Epic+ only".
+--- One piece of a batch as a line: "L45 Epic  Sword ........ +1 credit" or "L30 Common ... needs a legendary roll".
+-- ok true is bought (green), false refused (red), nil still waiting (yellow: identifying, opening, click APPROVE).
 local function batchLine(s, y, item)
   local result = tostring(item.why or (item.ok and "bought" or "refused"))
-  local colour = item.ok and "5" or "e"
+  -- a band's reason is long for one line: "Rare+ with a legendary roll below 70" reads "Rare+ legendary below 70"
+  if #result > s.w - 12 then result = result:gsub(" with a legendary roll", " legendary") end
+  local colour = item.ok and "5" or (item.ok == nil and "4" or "e")
   local room = s.w - #result - 1
   if item.grade and item.grade ~= "?" then
     local what = "L" .. tostring(item.level or 0) .. " " .. item.grade:sub(1, 1) .. item.grade:sub(2):lower()
@@ -990,6 +1011,28 @@ local function batchLine(s, y, item)
   s:right(y, result, colour)
 end
 
+--- With buy on drop: why the gear in the chest is not being bought on its own, as the ask to tap, or nil. Two players
+-- about as near the sell point, or nobody the shop can see: then the seller taps STORE CREDIT (the fallback).
+local function sellClaim(shop, view)
+  if not (view and rules.sellsOnDrop(shop.cfg)) then return nil end
+  if (#view.accepted + #view.returns + #(view.held or {})) == 0 then return nil end
+  if view.unsure then
+    return table.concat(view.unsure, " and ", 1, math.min(#view.unsure, 2)) .. " are both here. Whose gear? The seller taps STORE CREDIT."
+  end
+  if view.waiting then return "Whose gear is this? The seller taps STORE CREDIT." end
+  return nil
+end
+
+--- What the server lets the sell chest do, as one line: identify gear, empty backpacks and shulker boxes. nil on an
+-- older server.
+local function sellExtras(view)
+  if not view then return nil end
+  if view.identifies and view.opens then return "Unidentified gear is identified for you; backpacks and shulkers are emptied." end
+  if view.identifies then return "Unidentified gear is identified for you." end
+  if view.opens then return "Backpacks and shulker boxes are emptied for you." end
+  return nil
+end
+
 --- The sell point on a monitor at least 20 rows high (the owner's 2x2 in the floor, 36x24): what to do, what the shop
 -- buys one rule a line, the pieces in the chest now or the last batch one a line (green bought, red refused and why),
 -- the seller's store credit, and big buttons. Laid out from the top down, so a later "drop in a backpack" line or an
@@ -997,12 +1040,17 @@ end
 local function sellBig(s, shop)
   local cfg, setup = shop.cfg, shop.setup or {}
   local tokens = rules.sellsForTokens(cfg)
+  local onDrop = rules.sellsOnDrop(cfg)
   local junk = setup.junk and setup.junk.chest
   local returnsChest = setup.returns and setup.returns.chest
   local view = shop.sellView
   local clock = os.epoch and os.epoch("utc") or 0
   local batch = shop.lastBatch and (clock - (shop.lastBatch.at or 0)) < REFUSED_MS and shop.lastBatch or nil
-  local bh = 3
+  local claim = sellClaim(shop, view)
+  local giveable = view and #view.rejected > 0
+  if returnsChest then giveable = shop.state and next(shop.state.returnsBy or {}) ~= nil end
+  local buttons = not onDrop or claim or (junk and giveable)
+  local bh = buttons and 3 or 0
   local buttonsTop = s.h - bh + 1
   s:start()
   s:bar(1, "b")
@@ -1018,22 +1066,36 @@ local function sellBig(s, shop)
     return
   end
 
-  heading("PUT GEAR IN THE CHEST", "4")
   local each = rules.showMilli(rules.creditMilli(1, cfg))
-  y = y + s:wrap(y, 2, tokens and ("Each piece bought pays " .. rules.showMilli(rules.pieceMilli(cfg)) .. " token or " .. each .. " store credit.")
-    or ("Each piece bought pays " .. each .. " store credit, spent on gear here."), "0")
-  y = y + 1
+  if onDrop then
+    heading("DROP GEAR IN THE CHEST", "4")
+    y = y + s:wrap(y, 2, "It pays " .. each .. " store credit a piece, to you, at once. No tap.", "0")
+  else
+    heading("PUT GEAR IN THE CHEST", "4")
+    y = y + s:wrap(y, 2, tokens and ("Each piece bought pays " .. rules.showMilli(rules.pieceMilli(cfg)) .. " token or " .. each .. " store credit.")
+      or ("Each piece bought pays " .. each .. " store credit, spent on gear here."), "0")
+  end
+  local extra = sellExtras(view)
+  if extra then y = y + s:wrap(y, 2, extra, "8") end
+  -- no blank row here: the coloured headings part the sections, and every row is wanted for the pieces
 
   heading("WHAT WE BUY", "3")
   for _, line in ipairs(rules.buysLines(cfg)) do
-    s:write(2, y, ("- " .. line):sub(1, s.w - 1), "0")
+    -- with identify on the server, "Identified gear only" is not so: the shop identifies it
+    if not (view and view.identifies and line:find("Identified", 1, true)) then
+      s:write(2, y, ("- " .. line):sub(1, s.w - 1), "0")
+      y = y + 1
+    end
+  end
+  if claim then
     y = y + 1
+    y = y + s:wrap(y, 3, claim, "e")
   end
   y = y + 1
 
   -- the pieces: what is in the chest now, or else what became of the last batch
   local items, title = {}, nil
-  if view and (#view.accepted + #view.rejected + #view.returns) > 0 then
+  if view and (#view.accepted + #view.rejected + #view.returns + #(view.held or {})) > 0 then
     title = "IN THE CHEST"
     for _, e in ipairs(view.accepted) do
       items[#items + 1] = { label = e.label, level = e.level, grade = e.grade, ok = true,
@@ -1041,6 +1103,9 @@ local function sellBig(s, shop)
     end
     for _, e in ipairs(view.returns) do
       items[#items + 1] = { label = e.label, ok = true, why = "put back" }
+    end
+    for _, e in ipairs(view.held or {}) do
+      items[#items + 1] = { label = e.label, why = e.why }
     end
     for _, e in ipairs(view.rejected) do
       items[#items + 1] = { label = e.label, level = e.level, grade = e.grade, ok = false, why = e.why }
@@ -1059,12 +1124,13 @@ local function sellBig(s, shop)
   local note = shop:noteFor(s.name)
   if note then listBottom = math.min(listBottom, buttonsTop - 5) end
   if title then
-    local bought, refused = 0, 0
+    local bought, refused, waiting = 0, 0, 0
     for _, item in ipairs(items) do
-      if item.ok then bought = bought + 1 else refused = refused + 1 end
+      if item.ok then bought = bought + 1 elseif item.ok == nil then waiting = waiting + 1 else refused = refused + 1 end
     end
     if title == "IN THE CHEST" then
-      heading("IN THE CHEST  Buying: " .. bought .. (refused > 0 and ("  Refused: " .. refused) or ""), "1")
+      heading(("IN THE CHEST  Buying: " .. bought .. (refused > 0 and ("  Refused: " .. refused) or "")
+        .. (waiting > 0 and ("  Wait: " .. waiting) or "")):sub(1, s.w), "1")
     else
       heading(title .. ": " .. bought .. " bought, " .. refused .. " refused", "1")
     end
@@ -1088,16 +1154,15 @@ local function sellBig(s, shop)
   end
   if note then noteRows(s, shop, s.name, buttonsTop - 4, 3) end
 
-  local specs
+  -- STORE CREDIT: with buy on drop only when the shop cannot tell whose the gear is; DONATE for refused gear
+  local specs = {}
   if tokens then
     specs = { { "tokens", nil, "TOKENS", "f", "4" }, { "credit", nil, "STORE CREDIT", "f", "5" } }
-  else
+  elseif not onDrop or claim then
     specs = { { "credit", nil, "STORE CREDIT", "f", "5" } }
   end
-  local giveable = view and #view.rejected > 0
-  if returnsChest then giveable = shop.state and next(shop.state.returnsBy or {}) ~= nil end
   if junk and giveable then specs[#specs + 1] = { "donate", nil, "DONATE", "0", "7" } end
-  s:row(buttonsTop, bh, specs)
+  if bh > 0 then s:row(buttonsTop, bh, specs) end
   s:finish()
 end
 
@@ -1130,13 +1195,25 @@ function M.sell(s, shop)
       end
     end
   end
+  local onDrop = rules.sellsOnDrop(cfg)
+  local claim = sellClaim(shop, view)
+  local held = view and view.held or {}
   if not shop.ready then
     s:wrap(y, 2, "The shop is opening...", "8")
-  elseif not view or (#view.accepted + #view.rejected + #view.returns) == 0 then
+  elseif not view or (#view.accepted + #view.rejected + #view.returns + #held) == 0 then
     if refused then
       s:write(1, y, ("Refused: " .. #refused .. ", in the returns chest"):sub(1, s.w), "e")
       y = y + 1
       reasons(refused)
+    elseif onDrop and small then
+      y = y + s:wrap(y, 3, "Buys " .. rules.buysText(cfg) .. ".", "8")
+      s:wrap(y + 1, 2, "Drop gear in: " .. rules.showMilli(rules.creditMilli(1, cfg)) .. " store credit a piece, no tap.", "0")
+    elseif onDrop then
+      y = y + s:wrap(y, 4, "Drop gear in the chest. The shop buys " .. rules.buysText(cfg) .. ".", "8")
+      y = y + s:wrap(y + 1, 3, "It pays you " .. rules.showMilli(rules.creditMilli(1, cfg))
+        .. " store credit a piece at once, spent on gear here. No tap needed.", "8") + 1
+      local extra = sellExtras(view)
+      if extra and y + 1 <= lastRow then s:wrap(y + 1, 2, extra, "8") end
     elseif small then
       y = y + s:wrap(y, 3, "Buys " .. rules.buysText(cfg) .. ".", "8")
       if tokens then
@@ -1170,6 +1247,13 @@ function M.sell(s, shop)
       y = y + s:wrap(y, 2, "You get " .. rules.showMilli(rules.creditMilli(n, cfg)) .. " store credit", "0") - 1
     end
     y = y + (small and 1 or 2)
+    if claim then
+      y = y + s:wrap(y, small and 2 or 3, claim, "e")
+    end
+    if #held > 0 then
+      s:write(1, y, ("Waiting: " .. #held .. " (" .. tostring(held[1].why) .. ")"):sub(1, s.w), "4")
+      y = y + 1
+    end
     if #view.returns > 0 then
       s:write(1, y, "Back off a tab: " .. #view.returns, "4")
       y = y + 1
@@ -1211,6 +1295,8 @@ function M.sell(s, shop)
       specs[2] = { "donate", nil, s.w >= 30 and "DONATE REFUSED" or "DONATE", "0", "7" }
     end
   end
+  -- buy on drop: STORE CREDIT only when the shop cannot tell whose the gear is
+  if onDrop and not claim and specs[1] and specs[1][1] == "credit" then table.remove(specs, 1) end
   s:row(buttonsTop, bh, specs)
   s:finish()
 end
