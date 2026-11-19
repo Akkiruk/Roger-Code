@@ -211,7 +211,7 @@ t.test("world shape: real height: hills over 40, a tunnel, bridges, an overpass,
   t.truthy((ribbons.tunnel or 0) >= 3, "tunnel pieces")
   t.truthy((ribbons.bridge or 0) >= 8, "bridge pieces")
   t.truthy((ribbons.overpass or 0) >= 1, "an overpass")
-  t.truthy((ribbons.ramp or 0) >= 4, "ramps")
+  t.truthy((ribbons.ramp or 0) >= 16, "ramps and stunt ramps: " .. tostring(ribbons.ramp))
   t.truthy((ribbons.pier or 0) >= 3, "piers")
   t.truthy((floors.deck or 0) >= 3, "car-park levels")
   t.truthy((floors.dock or 0) >= 1, "a raised dock")
@@ -299,6 +299,7 @@ t.test("world interiors: every door in the city leads to a room with an exit and
       local player = false
       for _, s in ipairs(room.spawns) do if s[1] == "player" then player = true end end
       t.truthy(player, d[4] .. " has a spawn")
+      t.truthy(next(info.spots or {}) and info.spots.greeter1, d[4] .. " has named spots for people")
     end
   end
   t.truthy(doorsN >= 12, "doors " .. doorsN)

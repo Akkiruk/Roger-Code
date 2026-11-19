@@ -61,63 +61,203 @@ return {
   jumps = {
     {
       district = "cinder",
-      h = -1.57,
+      h = 2.96,
       id = "jump1",
       min = 12,
       name = "Jump 1: Cinder Flats",
-      x = 581,
-      y = 11.3,
-      z = 589.9
+      x = 641.7,
+      y = 16.4,
+      z = 178.1
+    },
+    {
+      district = "brine",
+      h = -1.16,
+      id = "jump2",
+      min = 12,
+      name = "Jump 2: Brine Docks",
+      x = 263.8,
+      y = 5.5,
+      z = 676.8
     },
     {
       district = "lantern",
       h = -0.51,
-      id = "jump2",
+      id = "jump3",
       min = 8,
-      name = "Jump 2: Lantern Row",
+      name = "Jump 3: Lantern Row",
       x = 1067.4,
       y = 17.4,
       z = 592.8
     },
     {
       district = "cinder",
+      h = -0.22,
+      id = "jump4",
+      min = 12,
+      name = "Jump 4: Cinder Flats",
+      x = 690.2,
+      y = 5.5,
+      z = 672.5
+    },
+    {
+      district = "mid",
+      h = -0.87,
+      id = "jump5",
+      min = 12,
+      name = "Jump 5: Old Saltgate",
+      x = 874.7,
+      y = 5.5,
+      z = 391.1
+    },
+    {
+      district = "mid",
+      h = -3,
+      id = "jump6",
+      min = 12,
+      name = "Jump 6: Old Saltgate",
+      x = 431.9,
+      y = 6.2,
+      z = 464.7
+    },
+    {
+      district = "brine",
+      h = -0.15,
+      id = "jump7",
+      min = 12,
+      name = "Jump 7: Brine Docks",
+      x = 540.7,
+      y = 6.7,
+      z = 57.7
+    },
+    {
+      district = "cinder",
+      h = 1.41,
+      id = "jump8",
+      min = 12,
+      name = "Jump 8: Cinder Flats",
+      x = 736.3,
+      y = 5.4,
+      z = 461.9
+    },
+    {
+      district = "lantern",
+      h = -1.57,
+      id = "jump9",
+      min = 12,
+      name = "Jump 9: Lantern Row",
+      x = 549,
+      y = 6.8,
+      z = 611.9
+    },
+    {
+      district = "mid",
+      h = 0.14,
+      id = "jump10",
+      min = 12,
+      name = "Jump 10: Old Saltgate",
+      x = 409.3,
+      y = 6.2,
+      z = 606.9
+    },
+    {
+      district = "lantern",
+      h = -2.77,
+      id = "jump11",
+      min = 12,
+      name = "Jump 11: Lantern Row",
+      x = 938.3,
+      y = 5.4,
+      z = 584.1
+    },
+    {
+      district = "gilt",
+      h = -1.49,
+      id = "jump12",
+      min = 12,
+      name = "Jump 12: Gilt Heights",
+      x = 540.8,
+      y = 45.5,
+      z = 396.8
+    },
+    {
+      district = "cinder",
+      h = 2.06,
+      id = "jump13",
+      min = 12,
+      name = "Jump 13: Cinder Flats",
+      x = 662.4,
+      y = 9.6,
+      z = 552.2
+    },
+    {
+      district = "cinder",
+      h = -3.05,
+      id = "jump14",
+      min = 12,
+      name = "Jump 14: Cinder Flats",
+      x = 633.4,
+      y = 5.6,
+      z = 751.9
+    },
+    {
+      district = "cinder",
+      h = -0.74,
+      id = "jump15",
+      min = 12,
+      name = "Jump 15: Cinder Flats",
+      x = 721.1,
+      y = 5.5,
+      z = 576.6
+    },
+    {
+      district = "brine",
+      h = -3.09,
+      id = "jump16",
+      min = 12,
+      name = "Jump 16: Brine Docks",
+      x = 596.4,
+      y = 6,
+      z = 59.4
+    },
+    {
+      district = "mid",
+      h = 0.14,
+      id = "jump17",
+      min = 12,
+      name = "Jump 17: Old Saltgate",
+      x = 378.2,
+      y = 4.9,
+      z = 457.2
+    },
+    {
+      district = "cinder",
       h = 1.96,
-      id = "jump3",
+      id = "jump18",
       min = 8,
-      name = "Jump 3: Cinder Flats",
+      name = "Jump 18: Cinder Flats",
       x = 708.3,
       y = 16.1,
       z = 150
     },
     {
       district = "cinder",
-      h = 2.06,
-      id = "jump4",
+      h = -1.57,
+      id = "jump19",
       min = 12,
-      name = "Jump 4: Cinder Flats",
-      x = 662.4,
-      y = 9.6,
-      z = 552.2
+      name = "Jump 19: Cinder Flats",
+      x = 581,
+      y = 11.3,
+      z = 589.9
     },
     {
       district = "lantern",
       h = -1.57,
-      id = "jump5",
+      id = "jump20",
       min = 12,
-      name = "Jump 5: Lantern Row",
+      name = "Jump 20: Lantern Row",
       x = 549,
       y = 3.5,
       z = 631.6
-    },
-    {
-      district = "lantern",
-      h = -1.57,
-      id = "jump6",
-      min = 12,
-      name = "Jump 6: Lantern Row",
-      x = 549,
-      y = 6.8,
-      z = 611.9
     }
   },
   postcards = {

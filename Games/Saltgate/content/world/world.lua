@@ -158,6 +158,33 @@ return {
       floor = "wood",
       spawn = { 17644, 48.6, -1.57 },
       exit = { 17644, 51.1 },
+      spots = {
+        behind1 = {
+          x = 17644,
+          z = 37.5,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 17640.8,
+          z = 46.8,
+          h = 3.14,
+        },
+        patron2 = {
+          x = 17650.8,
+          z = 46.8,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 17644,
+          z = 47.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 17651.6,
+          z = 39.4,
+          h = 2.36,
+        },
+      },
     },
     chopshop = {
       name = "Rusty's Chop Yard",
@@ -166,6 +193,18 @@ return {
       floor = "lot",
       spawn = { 17732, 51.6, -1.57 },
       exit = { 17732, 54.1 },
+      spots = {
+        greeter1 = {
+          x = 17732,
+          z = 50.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 17743.6,
+          z = 36.4,
+          h = 2.36,
+        },
+      },
     },
     respray = {
       name = "Paint & Pray",
@@ -174,6 +213,18 @@ return {
       floor = "tile",
       spawn = { 17820, 49.6, -1.57 },
       exit = { 17820, 52.1 },
+      spots = {
+        greeter1 = {
+          x = 17820,
+          z = 48.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 17828.6,
+          z = 38.4,
+          h = 2.36,
+        },
+      },
     },
     precinct = {
       name = "Harbor Patrol HQ",
@@ -182,6 +233,28 @@ return {
       floor = "tile",
       spawn = { 17908, 50.6, -1.57 },
       exit = { 17908, 53.1 },
+      spots = {
+        behind1 = {
+          x = 17908,
+          z = 35.4,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 17910.1,
+          z = 48.5,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 17908,
+          z = 49.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 17919.6,
+          z = 37.4,
+          h = 2.36,
+        },
+      },
     },
     hospital = {
       name = "Saltgate General",
@@ -190,6 +263,38 @@ return {
       floor = "tile",
       spawn = { 17996, 50.6, -1.57 },
       exit = { 17996, 53.1 },
+      spots = {
+        patient1 = {
+          x = 17987.33,
+          z = 39.5,
+          h = 0,
+        },
+        patient2 = {
+          x = 17996,
+          z = 39.5,
+          h = 0,
+        },
+        patient3 = {
+          x = 18004.67,
+          z = 39.5,
+          h = 0,
+        },
+        behind1 = {
+          x = 17996,
+          z = 45.3,
+          h = 1.57,
+        },
+        greeter1 = {
+          x = 17996,
+          z = 49.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18006.6,
+          z = 37.4,
+          h = 2.36,
+        },
+      },
     },
     bank = {
       name = "Meridian Trust",
@@ -198,6 +303,28 @@ return {
       floor = "tile",
       spawn = { 18084, 49.6, -1.57 },
       exit = { 18084, 52.1 },
+      spots = {
+        behind1 = {
+          x = 18084,
+          z = 38.4,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 18077.9,
+          z = 47.2,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 18084,
+          z = 48.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18093.6,
+          z = 38.4,
+          h = 2.36,
+        },
+      },
     },
     tavern = {
       name = "The Low Tide",
@@ -206,6 +333,43 @@ return {
       floor = "wood",
       spawn = { 18172, 49.6, -1.57 },
       exit = { 18172, 52.1 },
+      spots = {
+        behind1 = {
+          x = 18166.5,
+          z = 36.5,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 18181.13,
+          z = 40,
+          h = 3.14,
+        },
+        patron2 = {
+          x = 18181.13,
+          z = 46.67,
+          h = 3.14,
+        },
+        patron3 = {
+          x = 18166.47,
+          z = 46.67,
+          h = 3.14,
+        },
+        patron4 = {
+          x = 18173.8,
+          z = 46.67,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 18172,
+          z = 48.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18180.6,
+          z = 38.4,
+          h = 2.36,
+        },
+      },
     },
     museum = {
       name = "Old Saltgate Museum",
@@ -214,6 +378,43 @@ return {
       floor = "tile",
       spawn = { 18260, 50.6, -1.57 },
       exit = { 18260, 53.1 },
+      spots = {
+        visitor1 = {
+          x = 18252,
+          z = 42.4,
+          h = -1.57,
+        },
+        visitor2 = {
+          x = 18260,
+          z = 42.4,
+          h = -1.57,
+        },
+        visitor3 = {
+          x = 18268,
+          z = 42.4,
+          h = -1.57,
+        },
+        visitor4 = {
+          x = 18252,
+          z = 49,
+          h = -1.57,
+        },
+        visitor5 = {
+          x = 18268,
+          z = 49,
+          h = -1.57,
+        },
+        greeter1 = {
+          x = 18260,
+          z = 49.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18269.6,
+          z = 37.4,
+          h = 2.36,
+        },
+      },
     },
     pawn = {
       name = "Brass Eel Pawn",
@@ -222,6 +423,33 @@ return {
       floor = "wood",
       spawn = { 18348, 47.6, -1.57 },
       exit = { 18348, 50.1 },
+      spots = {
+        behind1 = {
+          x = 18348,
+          z = 38.5,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 18345.8,
+          z = 46.4,
+          h = 3.14,
+        },
+        patron2 = {
+          x = 18353.8,
+          z = 46.4,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 18348,
+          z = 46.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18353.6,
+          z = 40.4,
+          h = 2.36,
+        },
+      },
     },
     bait = {
       name = "Brine Bait & Tackle",
@@ -230,6 +458,33 @@ return {
       floor = "wood",
       spawn = { 18436, 47.6, -1.57 },
       exit = { 18436, 50.1 },
+      spots = {
+        behind1 = {
+          x = 18436,
+          z = 38.5,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 18433.8,
+          z = 46.4,
+          h = 3.14,
+        },
+        patron2 = {
+          x = 18441.8,
+          z = 46.4,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 18436,
+          z = 46.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18441.6,
+          z = 40.4,
+          h = 2.36,
+        },
+      },
     },
     club = {
       name = "The Gilt Room",
@@ -238,6 +493,38 @@ return {
       floor = "carpet",
       spawn = { 18524, 51.6, -1.57 },
       exit = { 18524, 54.1 },
+      spots = {
+        patron1 = {
+          x = 18517.23,
+          z = 48,
+          h = 3.14,
+        },
+        patron2 = {
+          x = 18534.57,
+          z = 48,
+          h = 3.14,
+        },
+        patron3 = {
+          x = 18525.9,
+          z = 50.67,
+          h = 3.14,
+        },
+        behind1 = {
+          x = 18535.5,
+          z = 35.1,
+          h = 1.57,
+        },
+        greeter1 = {
+          x = 18524,
+          z = 50.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18534.6,
+          z = 36.4,
+          h = 2.36,
+        },
+      },
     },
     hotel = {
       name = "Kestrel Grand",
@@ -246,6 +533,33 @@ return {
       floor = "carpet",
       spawn = { 18612, 51.6, -1.57 },
       exit = { 18612, 54.1 },
+      spots = {
+        behind1 = {
+          x = 18612,
+          z = 34.3,
+          h = 1.57,
+        },
+        seated1 = {
+          x = 18602.67,
+          z = 48.83,
+          h = -1.57,
+        },
+        seated2 = {
+          x = 18621.33,
+          z = 48.83,
+          h = -1.57,
+        },
+        greeter1 = {
+          x = 18612,
+          z = 50.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18623.6,
+          z = 36.4,
+          h = 2.36,
+        },
+      },
     },
     arcade = {
       name = "Spin Arcade",
@@ -254,6 +568,33 @@ return {
       floor = "tile",
       spawn = { 18700, 49.6, -1.57 },
       exit = { 18700, 52.1 },
+      spots = {
+        behind1 = {
+          x = 18700,
+          z = 36.5,
+          h = 1.57,
+        },
+        patron1 = {
+          x = 18696.8,
+          z = 47.2,
+          h = 3.14,
+        },
+        patron2 = {
+          x = 18706.8,
+          z = 47.2,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 18700,
+          z = 48.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18707.6,
+          z = 38.4,
+          h = 2.36,
+        },
+      },
     },
     lighthouse = {
       name = "Windward Light",
@@ -262,6 +603,23 @@ return {
       floor = "wood",
       spawn = { 18788, 48.6, -1.57 },
       exit = { 18788, 51.1 },
+      spots = {
+        patron1 = {
+          x = 18786.4,
+          z = 48,
+          h = 3.14,
+        },
+        greeter1 = {
+          x = 18788,
+          z = 47.4,
+          h = -1.57,
+        },
+        corner1 = {
+          x = 18792.6,
+          z = 39.4,
+          h = 2.36,
+        },
+      },
     },
   },
   places = {
