@@ -18,7 +18,7 @@ function M.cast(opts, ox, oy, oz, angle, range)
   local bestS, bestE = range, nil
   local assist = opts.assist or 0
   for _, e in ipairs(opts.targets or {}) do
-    if e ~= opts.ignore and not e.knocked then
+    if e ~= opts.ignore and not e.knocked and e.down ~= true then
       local rx, rz = e.x - ox, e.z - oz
       local s = rx * dx + rz * dz
       if s > 0.2 and s < bestS then

@@ -11,7 +11,7 @@ return {
   { id = "splasher", class = "boat", name = "Splasher", shape = "jetski", body = "yellow", cabin = "black", stripe = "black",
     top = 28, accel = 14, brake = 10, turn = 2.8, grip = 2.4, bob = 0.2, health = 40, length = 2.6, width = 1.0, height = 1.0,
     mass = 0.3, value = 500, seats = 1 },
-  { id = "gullboat", class = "boat", radius = 2.2, name = "Gull Patrol Boat", shape = "patrol", body = "white", cabin = "blue", police = true,
+  { id = "patrol_boat", class = "boat", radius = 2.2, name = "Gull Patrol Boat", shape = "patrol", body = "white", cabin = "blue", police = true,
     top = 26, accel = 9, brake = 9, turn = 1.8, grip = 1.7, bob = 0.14, health = 180, length = 7.0, width = 2.6, height = 1.6,
     mass = 1.5, value = 0, seats = 4 },
   { id = "tidebarge", class = "boat", radius = 3.0, name = "Tide Barge", shape = "barge", body = "gray", cabin = "orange", stripe = "yellow",

@@ -34,7 +34,7 @@ function M.rank(list, x, z, h, range, cone)
     if d <= range and d > 0.05 then
       local a = wrap(atan2(dz, dx) - h)
       if abs(a) <= cone then
-        local score = d + 14 * abs(a) - ((e.hostile or (e.tags and e.tags.hostile)) and 6 or 0)
+        local score = d + 14 * abs(a) - ((e.hostile or (e.tags and (e.tags.hostile or e.tags.enemy))) and 6 or 0)
         out[#out + 1] = { e = e, d = d, a = a, score = score }
       end
     end

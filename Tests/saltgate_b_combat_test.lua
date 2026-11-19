@@ -305,6 +305,46 @@ t.test("b combat: melee swings at the nearest person in front, in reach only, an
   t.truthy(cb.msg and cb.msg:find("car"), "no swinging from a car")
 end)
 
+t.test("b combat: a car at speed knocks a person down (down = true, even tagged mission), never worse; slow cars do not", function()
+  local ctx, cb, log = newCtx()
+  local car = vehicle.new("marlin", 0, 0, 0)
+  car.y = 0
+  ctx.cars[1], ctx.player.car = car, car
+  local m = ctx.world:add({ kind = "ped", x = 1, y = 0, z = 0, radius = 0.5, health = 3, tags = { mission = true, enemy = true } })
+  car.v = 3
+  steps(cb, 1)
+  t.truthy(not m.down, "too slow")
+  car.v = 12
+  steps(cb, 1)
+  t.eq(m.down, true)
+  t.truthy(not m.removed and m.knocked)
+  car.v = 0
+  steps(cb, math.floor((knock.DOWN + 0.5) / 0.05))
+  t.eq(m.down, false, "and up again")
+  ctx.world:remove(m)
+  ctx.cars[1] = nil
+  -- a gun does the same to a mission person
+  ctx.player.car = nil
+  local g = ctx.world:add({ kind = "ped", x = 8, y = 0, z = 0, radius = 0.5, health = 3, tags = { mission = true, enemy = true } })
+  steps(cb, 6)
+  steps(cb, 1, { fire = true })
+  t.eq(g.down, true)
+  -- stream C's hooks are called when present
+  local calls = {}
+  ctx.ai = { knock = function(e, vx, vz) calls[#calls + 1] = "knock" end, alarm = function(x, z, r, kind) calls[#calls + 1] = kind end,
+    gangs = {} }
+  local g2 = ctx.world:add({ kind = "ped", x = 9, y = 0, z = 0, radius = 0.5, health = 3, tags = { mission = true } })
+  cb.cool = 0
+  steps(cb, 8)
+  steps(cb, 1, { fire = true })
+  t.truthy(#calls >= 2, "alarm and knock: " .. table.concat(calls, ","))
+  t.truthy(type(ctx.ai.gangs.onShoot) == "function", "the gang shot hook is ours")
+  local n = #cb.fx
+  ctx.ai.gangs.onShoot({ x = 20, z = 0, y = 0 }, { x = 0, z = 0, y = 0 }, false)
+  t.truthy(#cb.fx > n, "a gang shot gets a tracer")
+  local _ = log and g2
+end)
+
 -- ---------------------------------------------------------------- ammo, reloads, pickups
 
 t.test("b ammo: a magazine empties, reloads itself from the reserve, runs dry, and the next gun with ammo comes out", function()

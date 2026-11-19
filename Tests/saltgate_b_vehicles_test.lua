@@ -550,6 +550,54 @@ t.test("b install: today's cars keep today's physics exactly through the wrapped
   t.eq(a.x, b.x) t.eq(a.z, b.z) t.eq(a.h, b.h) t.eq(a.v, b.v)
 end)
 
+t.test("b physics: a trailer is a solid box: a car that runs into it is pushed out and hurt, one beside it is left alone", function()
+  load()
+  local sp = testbed.spawn
+  local s = testbedStream(sp.x, sp.z)
+  local ctx = { vehicles = vehicles, cars = {}, stream = s }
+  local fleet = fleetLib.new(ctx)
+  local rig = fleet:spawn("haulrig", sp.x, sp.z, 0, { trailer = "t_box" })
+  local tr = rig.trailer
+  local car = vehicle.new("marlin", tr.x, tr.z + 0.3, 0)
+  car.v = 14
+  local before = car.health
+  local speed = physics.trailerBump(tr, car)
+  t.truthy(speed >= 14, "closing")
+  t.truthy(car.health < before, "hurt")
+  local lz = -(car.x - tr.x) * math.sin(tr.h) + (car.z - tr.z) * math.cos(tr.h)
+  local lx = (car.x - tr.x) * math.cos(tr.h) + (car.z - tr.z) * math.sin(tr.h)
+  t.truthy(math.abs(lx) >= tr.spec.length / 2 or math.abs(lz) >= tr.spec.width / 2, "pushed out of the box")
+  local clear = vehicle.new("marlin", tr.x, tr.z + 10, 0)
+  clear.v = 14
+  t.eq(physics.trailerBump(tr, clear), 0)
+  t.eq(clear.v, 14)
+end)
+
+t.test("b fleet: vehicle_enter and vehicle_exit are sent when the player gets in and out, once each", function()
+  load()
+  local events = require("sg.core.events")
+  local bus = events.new()
+  local log = {}
+  bus:on("vehicle_enter", function(d) log[#log + 1] = "in:" .. d.vehicle.kind .. ":" .. tostring(d.stolen) end)
+  bus:on("vehicle_exit", function(d) log[#log + 1] = "out:" .. d.vehicle.kind end)
+  local ctx = { vehicles = vehicles, cars = {}, bus = bus, player = { x = 0, z = 0 }, stream = testbedStream(testbed.spawn.x, testbed.spawn.z) }
+  local fleet = fleetLib.new(ctx)
+  local car = fleet:spawn("tern", testbed.spawn.x, testbed.spawn.z, 0)
+  fleet:update(0.05)
+  t.eq(#log, 0)
+  ctx.player.car = car
+  fleet:update(0.05) fleet:update(0.05)
+  t.eq(table.concat(log, ","), "in:tern:true")
+  car.owned = true
+  ctx.player.car = nil
+  fleet:update(0.05)
+  t.eq(table.concat(log, ","), "in:tern:true,out:tern")
+  ctx.coreSendsVehicleEvents = true
+  ctx.player.car = car
+  fleet:update(0.05)
+  t.eq(#log, 2, "silent once the core sends them")
+end)
+
 t.test("b install: leave the game's modules as they were", function()
   t.truthy(install.uninstall())
 end)

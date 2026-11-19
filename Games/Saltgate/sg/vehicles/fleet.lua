@@ -107,13 +107,33 @@ local function thrownRider(self, car)
   end
 end
 
+--- vehicle_enter and vehicle_exit, sent when the player's vehicle changes (the core's loop does not send them yet;
+-- set ctx.coreSendsVehicleEvents = true once it does, so they are not sent twice).
+local function vehicleEvents(self)
+  local ctx = self.ctx
+  if ctx.coreSendsVehicleEvents or not ctx.player then return end
+  local now = ctx.player.car
+  if now ~= self.lastCar then
+    if self.lastCar then ctx.bus:emit("vehicle_exit", { vehicle = self.lastCar }) end
+    if now then ctx.bus:emit("vehicle_enter", { vehicle = now, stolen = not now.owned }) end
+    self.lastCar = now
+  end
+end
+
 function F:update(dt)
   local ctx = self.ctx
   self.clock = self.clock + dt
+  vehicleEvents(self)
   for _, car in ipairs(ctx.cars) do
     self:sync(car)
     if car.thrown then thrownRider(self, car) end
-    if car.trailer then physics.trailer(car.trailer, car, dt, ctx.stream) end
+    local tr = car.trailer
+    if tr then
+      physics.trailer(tr, car, dt, ctx.stream)
+      for _, other in ipairs(ctx.cars) do
+        if other ~= car and math.abs((other.y or 0) - (tr.y or 0)) < 2.5 then physics.trailerBump(tr, other) end
+      end
+    end
   end
 end
 

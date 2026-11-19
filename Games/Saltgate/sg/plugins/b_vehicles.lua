@@ -97,6 +97,14 @@ return {
     install.install()
     local fleet = fleetLib.new(ctx)
     ctx.fleet = fleet
+    -- stream D's signature: ctx.spawnVehicle(kind, x, z, h, colour) -> a vehicle (not added to ctx.cars; the caller does)
+    if not ctx.spawnVehicle then
+      ctx.spawnVehicle = function(kind, x, z, h, colour)
+        local car = fleet:spawn(kind, x, z, h, { paint = colour, detached = true })
+        if not car and vehicleLib.TYPES[kind] then car = vehicleLib.new(kind, x, z, h or 0, colour) end
+        return car
+      end
+    end
     if ctx.view and ctx.view.r then
       overlay.install(ctx.view.r.frame, playing(ctx))
       wrapScene(ctx.view, ctx)

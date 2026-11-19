@@ -215,6 +215,27 @@ function M.hitch(def, cab, world)
   return tr
 end
 
+--- A vehicle that runs into a trailer is pushed out of it (the trailer is a box, not a circle) and hurt if it was
+-- going fast; the trailer does not move. Returns the closing speed (0 if apart).
+function M.trailerBump(tr, car)
+  local ch, sh = cos(tr.h), sin(tr.h)
+  local rx, rz = car.x - tr.x, car.z - tr.z
+  local lx, lz = rx * ch + rz * sh, -rx * sh + rz * ch
+  local r = car.spec.radius * 0.7
+  local hl, hw = tr.spec.length / 2 + r, tr.spec.width / 2 + r
+  if abs(lx) >= hl or abs(lz) >= hw then return 0 end
+  -- out through the nearest face
+  local px, pz = hl - abs(lx), hw - abs(lz)
+  local nlx, nlz = lx, lz
+  if px < pz then nlx = (lx >= 0 and hl or -hl) else nlz = (lz >= 0 and hw or -hw) end
+  local dx, dz = nlx - lx, nlz - lz
+  car.x, car.z = car.x + dx * ch - dz * sh, car.z + dx * sh + dz * ch
+  local speed = abs(car.v or 0)
+  car.v = (car.v or 0) * 0.4
+  if speed > 8 then vehicle.damage(car, (speed - 8) * 1.6) end
+  return speed
+end
+
 -- ---------------------------------------------------------------- boats
 
 --- The level of the water at (x, z) if a boat may float there (a water polygon, with the bottom well below it).

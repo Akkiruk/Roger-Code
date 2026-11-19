@@ -22,7 +22,7 @@ M.OUT_AFTER = 3 -- knockdowns a minute before they are out
 M.DAZE = 4
 M.WINDOW = 60
 
-function M.isDown(e) return e.knocked == true end
+function M.isDown(e) return e.knocked == true or e.down == true end
 
 local function maxOf(e)
   e.maxHealth = e.maxHealth or 30
@@ -37,6 +37,7 @@ function M.down(e, secs)
   e.knockCount = (e.knockCount or 0) + 1
   e.countT = M.WINDOW
   e.knocked = true
+  e.down = true -- stream D's missions read this on people tagged mission
   if e.knockCount >= M.OUT_AFTER then
     e.out = true
     e.knockT = math.max(secs or 0, M.OUT)
@@ -51,6 +52,7 @@ end
 function M.standUp(e)
   local m = maxOf(e)
   e.knocked = false
+  e.down = false
   e.knockT = 0
   e.health = math.max(1, math.floor(m * 0.5))
   if e.out then
@@ -64,7 +66,7 @@ end
 -- "hurt" or "down" (this hit put them on the ground).
 function M.hit(e, dmg)
   maxOf(e)
-  if e.knocked then return "up" end
+  if e.knocked or e.down == true then return "up" end
   e.health = e.health - dmg
   e.hurtT = 0.35
   if e.health <= 0 then

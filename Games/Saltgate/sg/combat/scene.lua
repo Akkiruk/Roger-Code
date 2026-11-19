@@ -63,6 +63,16 @@ function M.wrap(view, ctx, cb)
         r:place(list, r:variant(key, e.h or 0, function() return models.person(shirt, down, "black") end), e.x, (e.y or 0) + 0.05, e.z)
       end
     end
+    -- people from stream D's missions (tagged mission, no shirt of their own for stream C's peds layer to use)
+    local LOOK = { thug = "red", guard = "blue", crew = "green", boss = "purple" }
+    for _, e in ipairs(c.world:each("mission")) do
+      if e.kind ~= "car" and e.shirt == nil and e.x and near(e.x, e.z, 90) then
+        local shirt = LOOK[e.look] or "magenta"
+        local down = e.down == true or e.knocked == true
+        local key = "mperson:" .. shirt .. (down and ":down" or "")
+        r:place(list, r:variant(key, e.h or 0, function() return models.person(shirt, down, "black") end), e.x, (e.y or 0) + 0.05, e.z)
+      end
+    end
     for _, e in ipairs(c.world:each("pickup")) do
       if e.pk and not e.hiddenT and near(e.x, e.z, 70) then
         local pk = e.pk

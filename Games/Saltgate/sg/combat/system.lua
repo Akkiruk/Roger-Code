@@ -160,7 +160,7 @@ end
 function S:targets(x, z, r, withDown)
   local out = {}
   for _, e in ipairs(self.ctx.world:near(x, z, r)) do
-    if self:isTarget(e) and (withDown or not e.knocked) then out[#out + 1] = e end
+    if self:isTarget(e) and (withDown or not (e.knocked or e.down == true)) then out[#out + 1] = e end
   end
   return out
 end
@@ -206,6 +206,8 @@ local function applyHit(self, shooter, w, hit, scale)
       self:pop(hit.x, hit.y + 0.6, hit.z, popWords(self, w))
       -- the shove: knocked a little away from the shooter, only if the way is clear
       local ang = atan2(e.z - shooter.z, e.x - shooter.x)
+      local ai = self.ctx.ai
+      if ai and ai.knock then pcall(ai.knock, e, cos(ang) * 4, sin(ang) * 4) end
       local nx, nz = e.x + cos(ang) * 0.7, e.z + sin(ang) * 0.7
       if not self.ctx.stream or not select(3, self.ctx.stream:collide(nx, nz, 0.4, e.y or 0)) then
         if self.ctx.world.move then self.ctx.world:move(e, nx, nz) else e.x, e.z = nx, nz end
@@ -253,6 +255,8 @@ function S:shoot(shooter, id, angle, opts)
   local cars = {}
   for _, c in ipairs(self.ctx.cars or {}) do
     if abs(c.x - ox) < reach + 4 and abs(c.z - oz) < reach + 4 then cars[#cars + 1] = c end
+    local tr = c.trailer -- a trailer is cover too
+    if tr and abs(tr.x - ox) < reach + 4 and abs(tr.z - oz) < reach + 4 then cars[#cars + 1] = tr end
   end
   local copts = { targets = list, cars = cars, stream = self.ctx.stream, ignore = shooter, ignoreCar = shooter.car,
     assist = opts.assist or (fromPlayer and 0.35 or 0), feet = (shooter.y or 0) }
@@ -267,6 +271,8 @@ function S:shoot(shooter, id, angle, opts)
     addFx(self, { kind = "tracer", x0 = ox, y0 = oy, z0 = oz, x1 = hit.x, y1 = hit.y or oy, z1 = hit.z, c = w.tracer, ttl = 0.12 })
   end
   addFx(self, { kind = "muzzle", x = ox, y = oy, z = oz, ttl = 0.07 })
+  local ai = self.ctx.ai
+  if fromPlayer and ai and ai.alarm then pcall(ai.alarm, ox, oz, 28, "gunfire") end
   return out
 end
 
@@ -424,6 +430,51 @@ local function goons(self, dt)
   end
 end
 
+--- Vehicles knock people down: anyone moving faster than 5 that runs into a person (the player's car, traffic, a
+-- mission driver) puts them on the ground (never worse), and a stranger knocked by the player's car is assault.
+function S:carHits()
+  local ctx = self.ctx
+  local p = ctx.player
+  for _, car in ipairs(ctx.cars or {}) do
+    if abs(car.v or 0) > 5 and not car.wrecked and abs(car.x - p.x) < 70 and abs(car.z - p.z) < 70 then
+      local r = car.spec.radius * 0.8 + 0.5
+      for _, e in ipairs(ctx.world:near(car.x, car.z, r)) do
+        if self:isTarget(e) and not (e.knocked or e.down == true) and abs((e.y or 0) - (car.y or 0)) < 2 then
+          knock.down(e)
+          touch(self, e)
+          local ai = ctx.ai
+          if ai and ai.knock then pcall(ai.knock, e, cos(car.h) * car.v * 0.5, sin(car.h) * car.v * 0.5, car == p.car) end
+          self:pop(e.x, (e.y or 0) + 1.6, e.z, "BONK!")
+          self:puff(e.x, (e.y or 0) + 1, e.z, "white", 0.35, 1.4)
+          if car == p.car and not (e.hostile or (e.tags and (e.tags.hostile or e.tags.enemy))) then
+            ctx.bus:emit("crime", { kind = "assault", level = 1 })
+          end
+          if e.onKnock then e.onKnock(e, car) end
+        end
+      end
+    end
+  end
+end
+
+--- Stream C's gang members shoot through a hook: give their shots our tracers (a miss lands a little to the side).
+function S:hookGangs()
+  local ai = self.ctx.ai
+  local g = ai and ai.gangs
+  if not g or g.onShoot then return end
+  g.onShoot = function(m, tgt, hit)
+    local ang = atan2(tgt.z - m.z, tgt.x - m.x)
+    local ex, ez = tgt.x, tgt.z
+    if not hit then
+      local off = (self.rng() < 0.5 and -1 or 1) * (1.2 + self.rng())
+      ex, ez = ex - sin(ang) * off, ez + cos(ang) * off
+    end
+    local ox, oz = m.x + cos(ang) * 0.5, m.z + sin(ang) * 0.5
+    addFx(self, { kind = "tracer", x0 = ox, y0 = (m.y or 0) + 1.2, z0 = oz, x1 = ex, y1 = (tgt.y or 0) + 1.1, z1 = ez, c = "yellow", ttl = 0.12 })
+    addFx(self, { kind = "muzzle", x = ox, y = (m.y or 0) + 1.2, z = oz, ttl = 0.07 })
+    if hit then self:puff(ex, (tgt.y or 0) + 1.1, ez, "yellow", 0.3, 1) end
+  end
+end
+
 --- Once a frame. input: fire (held), target, weapon (pressed), slot (a number key).
 function S:update(dt, input)
   input = input or {}
@@ -485,6 +536,8 @@ function S:update(dt, input)
 
   pickupsNear(self, dt)
   goons(self, dt)
+  self:carHits()
+  self:hookGangs()
 
   if self.reloadT > 0 then
     self.reloadT = self.reloadT - dt
