@@ -58,6 +58,8 @@ function M.newSetup()
     kiosk = nil,     -- { monitor, chest, detector, pos }      every detector is optional; pos comes through any detector
     intake = nil,    -- { chest }
     info = nil,      -- { monitor }   the how-it-works screen: it only explains the shop, nothing on it is a button
+    unpack = nil,    -- { router, integrator, side }   the backpack unpacker at the sell point: a Modular Router (an
+                     -- inventory) and the Redstone Integrator side that pulses it
     stations = {},   -- { { monitor, chest, detector, pos, category, gearType }, ... }   gearType: the one type it shows ("the_vault:sword"),
                      -- or nil for the TYPE picker; category: a wing's name (rules categories), or nil
     vault = {},      -- vault chests named by hand, besides everything the vaultMatch limit finds
@@ -99,6 +101,9 @@ function M.newState()
                       -- back, or store credit put against what they owe), each booked once under "gs-ref-<id>"
     builds = {},      -- name -> { id, at }: the IMPROVEMENTS build a player picked at the kiosk ("gs": best rolled), kept
                       -- between visits; with none the shop guesses
+    unpack = nil,     -- a bag the unpacker is opening: { phase = "sending"|"sent"|"selling"|"pulse"|"pulsed"|"returning",
+                      -- key, slot, by, at, bag, pulses, bought } (Shop:unpackStep; written before each step)
+    unpackFailed = {},  -- bag key -> true: the unpacker could not open it; it is refused (to the returns chest) instead
     returnsBy = {},   -- key -> who left that refused piece in the returns chest ("?" when nobody could be seen)
     moving = nil,     -- refused gear on its way: { kind = "refuse"|"donate", from, to, keys = { key = n }, by }
     stats = { donated = 0, sold = 0, takings = 0, creditSpent = 0, bought = 0, paidOut = 0, creditGiven = 0, unaccounted = 0,

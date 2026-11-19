@@ -1939,3 +1939,29 @@ test("gearshop builds: the search keeps the level window, puts the usable ones f
   eq(table.concat(levels, " "), "40 44*", "40 now; 44 at level 44; 46 past +3, 15 too low, 41 not worth it")
   eq(counts.head, 2) eq(counts.offhand, 1, "an empty offhand: any good wand is better")
 end)
+
+test("gearshop unpacker: a placed backpack, a shulker box and the router are never vault, whatever vaultMatch says", function()
+  local kinds = {
+    ["24:sophisticatedbackpacks:backpack_3"] = { "sophisticatedbackpacks:backpack", "inventory" },
+    ["24:minecraft:shulker_box_0"] = { "minecraft:shulker_box", "inventory" },
+    ["24:modularrouters:modular_router_0"] = { "modularrouters:modular_router", "inventory" },
+    ["17:sophisticatedstorage:barrel_5"] = { "sophisticatedstorage:barrel", "inventory" },
+  }
+  local names = {}
+  for n in pairs(kinds) do names[#names + 1] = n end
+  local io = { names = function() return names end, types = function(n) return kinds[n] or {} end,
+    hasType = function(n, kind) for _, k in ipairs(kinds[n] or {}) do if k == kind then return true end end return false end,
+    isPresent = function() return true end, call = function() return false, "not here" end }
+  local setup = store.newSetup()
+  setup.unpack = { router = "24:modularrouters:modular_router_0", integrator = "24:redstoneIntegrator_0", side = "up" }
+  local shop = shopLib.new(io, cfg, setup, store.newState())
+  eq(shop:isVaultChest("24:sophisticatedbackpacks:backpack_3"), false, "a backpack is sophisticated, but never vault")
+  eq(shop:isVaultChest("24:minecraft:shulker_box_0"), false)
+  eq(shop:isVaultChest("24:modularrouters:modular_router_0"), false)
+  eq(shop:isVaultChest("17:sophisticatedstorage:barrel_5"), true)
+  shop:discover()
+  eq(shop.stock:has("24:sophisticatedbackpacks:backpack_3"), false, "never counted")
+  eq(shopLib.isBag("sophisticatedbackpacks:backpack"), true) eq(shopLib.isBag("minecraft:red_shulker_box"), true)
+  eq(shopLib.isBag("the_vault:sword"), false)
+  eq(shop:placedBag(), "24:sophisticatedbackpacks:backpack_3", "the bag on the router's node")
+end)

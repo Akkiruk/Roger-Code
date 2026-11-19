@@ -769,6 +769,10 @@ function M.infoTopics(shop)
     if caps.contents then
       text[#text + 1] = "A backpack or shulker box of gear works too: the shop takes out what it buys, and the bag "
         .. (returns and "goes to the returns chest" or "stays in the sell chest") .. " with the rest."
+    elseif setup.unpack then
+      -- an older server: the Modular Router unpacker at the sell point opens it
+      text[#text + 1] = "A backpack (or shulker box) of gear works too: drop it in the sell chest. The shop takes out what it "
+        .. "buys, pays you store credit for it, and sends the bag with the rest to the returns chest."
     end
     text[#text + 1] = "Gear the shop does not buy is not taken: see What we buy" .. (returns and ", and Returns." or ".")
       .. (junk and " DONATE gives refused gear to the shop." or "")
@@ -991,6 +995,23 @@ end
 
 local REFUSED_MS = 120000
 
+--- What the backpack unpacker is doing, as one line for the sell screen, or nil.
+local function unpackLine(shop)
+  local job = shop.state and shop.state.unpack
+  local clock = os.epoch and os.epoch("utc") or 0
+  if job then
+    local who = (job.by and job.by ~= "?") and (job.by .. "'s") or "your"
+    if job.phase == "sending" or job.phase == "sent" then return "Opening " .. who .. " backpack..." end
+    return "Unpacking " .. who .. " backpack: " .. tostring(job.bought or 0) .. " bought, the rest goes to RETURNS"
+  end
+  local done = shop.unpacked
+  if done and clock - (done.at or 0) < 60000 then
+    local who = (done.by and done.by ~= "?") and (done.by .. "'s") or "The"
+    return who .. " backpack: " .. tostring(done.bought) .. " bought, the rest is in RETURNS"
+  end
+  return nil
+end
+
 --- One piece of a batch as a line: "L45 Epic  Sword ........ +1 credit" or "L30 Common ... needs a legendary roll".
 -- ok true is bought (green), false refused (red), nil still waiting (yellow: identifying, opening, click APPROVE).
 local function batchLine(s, y, item)
@@ -1066,6 +1087,11 @@ local function sellBig(s, shop)
     return
   end
 
+  -- the backpack unpacker (an older server's bags), when it is at work
+  local unpacking = unpackLine(shop)
+  if unpacking then
+    y = y + s:wrap(y, 2, unpacking, "1") + 1
+  end
   local each = rules.showMilli(rules.creditMilli(1, cfg))
   if onDrop then
     heading("DROP GEAR IN THE CHEST", "4")
@@ -1198,6 +1224,8 @@ function M.sell(s, shop)
   local onDrop = rules.sellsOnDrop(cfg)
   local claim = sellClaim(shop, view)
   local held = view and view.held or {}
+  local unpacking = unpackLine(shop)
+  if unpacking and shop.ready then y = y + s:wrap(y, 2, unpacking, "1") end
   if not shop.ready then
     s:wrap(y, 2, "The shop is opening...", "8")
   elseif not view or (#view.accepted + #view.rejected + #view.returns + #held) == 0 then
