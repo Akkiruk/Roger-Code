@@ -275,3 +275,22 @@ if fakeColors then
   _G.colors = nil
   _G.colours = nil
 end
+
+t.test("world view: the skyline paints only the rows there are, when the horizon is below the screen (a crash in the long play-test)", function()
+  local V = require("sg.world.view")
+  local paint = V.V and V.V.paintSkyline
+  t.truthy(paint, "the view paints a skyline")
+  local rows = {}
+  for y = 1, 6 do rows[y] = {} for x = 1, 12 do rows[y][x] = 0 end end
+  -- a skyline of tall things everywhere, and a camera whose horizon is far below the 6 rows (tipped up on a ramp)
+  local top = {}
+  for v = 1, 200 do top[v] = {} for u = 1, 200 do top[v][u] = 40 end end
+  local fake = {
+    city = { skyline = function() return { top = top, res = 8 } end },
+    r = { pw = 12, ph = 6, frame = { map3dTo2d = function(_, x, y, z) return (x + z) * 0.01, 15 - y * 0.05 end } },
+    sky = { hour = 12, kind = "clear" },
+  }
+  local ok, err = pcall(paint, fake, { x = 400, y = 5, z = 400, yaw = 0 }, 20, rows)
+  t.truthy(ok, "no error: " .. tostring(err))
+  t.eq(#rows, 6, "no rows made past the screen")
+end)

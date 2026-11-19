@@ -288,11 +288,15 @@ function V:paintSkyline(cam, horizon, rows)
     end
     local y0 = floor(best)
     if y0 < horizon then
-      for y = math.max(1, y0), horizon - 1 do
+      -- (the horizon can be below the screen's last row: the camera tipped up, on a ramp or in the air. Only the rows
+      -- there are; past them was "attempt to index local 'row'", a crash seen in the long play-test)
+      for y = math.max(1, y0), math.min(horizon - 1, self.r.ph or #rows) do
         local row = rows[y]
-        row[x] = colour
-        if row[x + 1] then row[x + 1] = colour end
-        if row[x + 2] then row[x + 2] = colour end
+        if row then
+          row[x] = colour
+          if row[x + 1] then row[x + 1] = colour end
+          if row[x + 2] then row[x + 2] = colour end
+        end
       end
     end
   end
@@ -586,4 +590,5 @@ function V:draw(ctx, dt)
   end)
 end
 
+M.V = V -- (the methods, for tests)
 return M
