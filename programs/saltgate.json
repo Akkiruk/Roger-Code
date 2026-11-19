@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.7"
+    "version": "1.0.8"
   },
   "build": {
-    "commit": "ead69295d093c9d960414138890756f2f50f2210",
-    "generated_at": "2026-11-19T00:00:46Z",
-    "package_hash": "7fc44870bc92c7717ea0286c0835386809e45376355d592c3e7857fbcc606fdf"
+    "commit": "f5eb541ece4f1c1f4f025bfbe0ff7af3a8ab906b",
+    "generated_at": "2026-11-19T00:02:06Z",
+    "package_hash": "60586ed96b9c0ab4ec6b4bc3c750dbd2b61099d9396b2711b8bb957da25c59d8"
   },
   "install": {
     "preserve": [
@@ -293,7 +293,7 @@
       {
         "repo_path": "Games/Saltgate/sg/plugins/c_police.lua",
         "install_path": "sg/plugins/c_police.lua",
-        "sha256": "93ce4d008db9eddffc9125830391c32324a95f624c0cc9a2a23992e1298b57f7"
+        "sha256": "2efd8318114236174c3d6514d1251133845be1528bc99c336769b79460ec049f"
       },
       {
         "repo_path": "Games/Saltgate/sg/plugins/c_peds.lua",
