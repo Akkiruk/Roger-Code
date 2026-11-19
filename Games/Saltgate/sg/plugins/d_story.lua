@@ -230,6 +230,8 @@ function M.init(ctx)
     input = function(c, inp)
       local _, args = ui.top()
       local list = phoneLib.contacts(host.story, idx)
+      -- the press of T that opened it is still down this frame: it must not close it again at once
+      if args.opening then args.opening = nil return end
       if inp:pressedAction("phone") or inp:pressedAction("pause") then
         ui.pop()
         return
@@ -314,7 +316,7 @@ function M.init(ctx)
     local top = ui.top()
     if top and top.name == "play" then
       if inp:pressedAction("phone") then
-        ui.push("d_phone", { sel = 1 })
+        ui.push("d_phone", { sel = 1, opening = true })
       end
       if inp:pressedAction("punch") then world.punch = true end
     end

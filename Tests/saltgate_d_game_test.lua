@@ -337,6 +337,34 @@ t.test("story plugin: failing shows the failure screen; retrying goes back to th
   t.eq(ctx.save.story.mission, nil)
 end)
 
+t.test("story plugin: T opens the phone with the real keyboard, and the same press does not close it again", function()
+  -- (the test keyboard answers a press once; the game's own keeps it for the whole frame, so the phone opened by the
+  -- plugins' input was closed by its own screen's input in the same frame: T did nothing in the game)
+  local ctx = game()
+  local kit = require("saltgate_testkit")
+  local K = { t = 84, g = 71, one = 49, two = 50, three = 51, four = 52 }
+  for k, v in pairs(kit.KEYS) do K[k] = v end
+  local real = require("sg.input").new(K)
+  ctx.inp = real
+  local now = 0
+  local function realFrame(code)
+    now = now + 0.05
+    if code then real:event(now, "key", code, false) end
+    for _, pl in ipairs(ctx.plugins) do if pl.input then pl.input(ctx, real) end end
+    local top = ctx.ui.top()
+    if top and top.input then top.input(ctx, real, 0.05) end
+    if code then real:event(now, "key_up", code) end
+    real:endFrame(now)
+  end
+  realFrame() -- the plugin binds T on its first frame
+  realFrame(K.t)
+  t.eq(topName(ctx), "d_phone", "T opened the phone")
+  realFrame()
+  t.eq(topName(ctx), "d_phone", "and it stays open")
+  realFrame(K.t)
+  t.eq(topName(ctx), "play", "T again closes it")
+end)
+
 t.test("story plugin: the phone lists who you know, shows texts as read, and a call says something", function()
   local ctx = game()
   frame(ctx, 0.1, { "phone" })
