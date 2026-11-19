@@ -311,10 +311,16 @@ function W:route(a, dest)
   a.follow = plan(self, a, a.d_run.route)
 end
 
+--- How many of a group are still to be knocked down. Once down, someone counts as beaten even after they get up again
+-- (they do, a few seconds later and tougher): needing a whole group down at the same moment was nearly impossible
+-- with a 12-round pistol (four wardens on the Authority Hall roof).
 function W:remaining(group)
   local n = 0
   for _, e in ipairs(self.people) do
-    if e.d_group == group and not (e.down or (e.health or 1) <= 0) then n = n + 1 end
+    if e.d_group == group then
+      if e.down or (e.health or 1) <= 0 then e.d_beaten = true end
+      if not e.d_beaten then n = n + 1 end
+    end
   end
   return n
 end
@@ -356,6 +362,31 @@ function W:suspend() self.suspended = true end
 function W:resume()
   self.suspended = false
   self.down = false
+end
+
+--- Move the player to a place at its own height (a lift between levels); with the car they are in unless onFoot (then
+-- they step out and it stays where it is). True if it moved.
+function W:moveTo(name, onFoot)
+  local pl = self:place(name)
+  if not pl then return false end
+  local ctx = self.ctx
+  local p = ctx.player
+  local y = pl.y or self:ground(pl.x, pl.z, nil)
+  if ctx.stream and ctx.stream.loadAll then ctx.stream:loadAll(pl.x, pl.z) end
+  local h = headingAt(self, pl.x, pl.z)
+  p.x, p.z, p.y, p.v = pl.x, pl.z, y, 0
+  if h then p.h = h end
+  local car = p.car
+  if car and onFoot then
+    car.v = 0
+    p.car = nil
+    car = nil
+  end
+  if car then
+    car.x, car.z, car.y, car.v, car.h = pl.x, pl.z, y, 0, p.h or car.h
+    car.vy, car.airborne = 0, false
+  end
+  return true
 end
 
 function W:restore(opts)

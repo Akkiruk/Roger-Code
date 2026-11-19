@@ -294,3 +294,33 @@ t.test("world view: the skyline paints only the rows there are, when the horizon
   t.truthy(ok, "no error: " .. tostring(err))
   t.eq(#rows, 6, "no rows made past the screen")
 end)
+
+t.test("world tunnel: through the Crown Tunnel the ground is its floor all the way, the mouth too (no climb over the hill, no hop)", function()
+  local stream = require("sg.core.stream")
+  local s = stream.new({ source = function(cx, cz) return city:source(cx, cz) end, full = 1, low = 1 })
+  -- the tunnel's line, mouth to mouth (tools/saltgate/citybuild.mjs: S (592, 493) to N (664, 357) by (608, 444), (632, 398))
+  local pts = { 588, 500, 592, 493, 608, 444, 632, 398, 664, 357 }
+  s:loadAll(600, 460)
+  local floorAt, worst, worstAt, prev = nil, 0, nil, nil
+  for i = 1, #pts - 3, 2 do
+    local ax, az, bx, bz = pts[i], pts[i + 1], pts[i + 2], pts[i + 3]
+    for k = 0, 9 do
+      local x, z = ax + (bx - ax) * k / 10, az + (bz - az) * k / 10
+      s:update(x, z, true)
+      if s:surface(x, z) == "tunnel" then
+        -- a car on the floor asks for the ground from its own height
+        local fy = floorAt or s:groundAt(x, z, nil)
+        local gy = s:groundAt(x, z, fy + 0.6)
+        floorAt = gy
+        -- the floor changes slowly along the tunnel: no step up onto the hill, no drop off it
+        if prev then
+          local jump = math.abs(gy - prev)
+          if jump > worst then worst, worstAt = jump, string.format("%.0f,%.0f", x, z) end
+        end
+        prev = gy
+      end
+    end
+  end
+  t.truthy(floorAt, "the tunnel is there")
+  t.truthy(worst < 0.6, "no step along the floor bigger than a slope's: " .. string.format("%.2f", worst) .. " at " .. tostring(worstAt))
+end)

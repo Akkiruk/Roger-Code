@@ -3,7 +3,7 @@
 -- and back up when there is room. Every computer on the server shares one Lua thread, so a slow frame here is a slow
 -- frame for everyone. Pure apart from the clock it is given.
 --
---   local b = budget.new({ clock = fn_ms, target = 5 })
+--   local b = budget.new({ clock = fn_ms, target = 12, stepDown = 16 })
 --   b:time("render", function() ... end)     -- or b:start("ai") ... b:stop("ai")
 --   b:frame()                                -- at the end of each frame: averages, quality
 --   b.quality                                -- 0 (best) .. 3 (lightest); listen to "quality" on the bus to follow it
@@ -14,7 +14,8 @@ local M = {}
 local B = {}
 B.__index = B
 
-M.TARGET_MS = 5 -- the emulator's ms a frame on 51x19
+M.TARGET_MS = 12 -- the mean frame aimed for (ms, 51x19 in the emulator); back up a step when well under it
+M.STEP_DOWN_P90 = 16 -- a step down only when the 90th percentile of recent frames is over this
 M.MAX_QUALITY = 3
 
 local function defaultClock()
@@ -28,6 +29,7 @@ function M.new(opts)
   return setmetatable({
     clock = opts.clock or defaultClock,
     target = opts.target or M.TARGET_MS,
+    stepDown = opts.stepDown,
     bus = opts.bus,
     quality = 0,
     systems = {}, -- name -> { ms (this frame), avg }
@@ -69,6 +71,7 @@ local function setQuality(self, q)
   if q == self.quality then return end
   local prev = self.quality
   self.quality = q
+  self.samples = {} -- the frames before a change say nothing about the frames after it
   if self.bus then self.bus:emit("quality", { level = q, previous = prev }) end
 end
 
@@ -92,9 +95,20 @@ function B:frame(frameMs)
     self.heapKB = gc("count")
     if self.heapKB > self.heapMaxKB then self.heapMaxKB = self.heapKB end
   end
-  -- quality: a second over budget steps down, five seconds well under steps back up
-  if self.frameAvg > self.target * 1.25 then
-    self.over, self.under = self.over + 1, 0
+  -- quality: a second of frames whose 90th percentile is over STEP_DOWN_P90 steps down (a normal computer's 6-8 ms
+  -- frames keep full quality; it used to step down past 6.25 ms and every player got the lightest), five seconds well
+  -- under the mean target steps back up
+  local recent = {}
+  local ns = #self.samples
+  for i = math.max(1, ns - 19), ns do recent[#recent + 1] = self.samples[i] end -- the last 20 frames (one second)
+  table.sort(recent)
+  local p90 = recent[math.max(1, math.floor(#recent * 0.9))] or frameMs
+  local line = self.stepDown or M.STEP_DOWN_P90
+  if p90 > line then
+    -- only a slow frame counts toward a step down; a fast one while the window is still slow holds the count (so a
+    -- burst of slow frames is one step, not two)
+    self.under = 0
+    if frameMs > line then self.over = self.over + 1 end
     if self.over >= 20 and self.quality < M.MAX_QUALITY then
       setQuality(self, self.quality + 1)
       self.over = 0

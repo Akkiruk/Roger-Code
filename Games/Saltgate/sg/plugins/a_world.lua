@@ -271,7 +271,10 @@ local function doors(ctx, state, api, dt)
       local l = ctx.stream:loaded()[chunkLib.key(cx + dx, cz + dz)]
       if l then
         for _, d in ipairs(l.chunk.doors) do
-          if d[4] ~= "@exit" and (p.x - d[1]) ^ 2 + (p.z - d[2]) ^ 2 < 1.5 * 1.5 and api.enter(d[4]) then return end
+          -- (at the door's height too: the Gilt Room's street door is right under the Authority Hall roof deck, and walking
+          -- over that spot up on the roof used to take you into the club)
+          local atHeight = not d[3] or d[3] == chunkLib.TERRAIN or math.abs((p.y or 0) - d[3]) < 3
+          if d[4] ~= "@exit" and atHeight and (p.x - d[1]) ^ 2 + (p.z - d[2]) ^ 2 < 1.5 * 1.5 and api.enter(d[4]) then return end
         end
       end
     end

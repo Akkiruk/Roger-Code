@@ -510,6 +510,10 @@ t.test("story world: people to knock down fall to a car at speed (or a punch) wh
   ctx.combat = {}
   again.health = 0
   t.eq(w:remaining("g2"), 1)
+  -- knocked down, then up again (a combat knockdown lasts a few seconds): still beaten. The play-test's four roof deck
+  -- wardens were never all down at once, and the job could not be won
+  again.health, again.down = 15, false
+  t.eq(w:remaining("g2"), 1, "the one who got up still counts as beaten")
 end)
 
 t.test("story world: a jump is measured from take-off to landing, and water is not a landing", function()

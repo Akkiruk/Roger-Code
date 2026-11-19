@@ -377,7 +377,9 @@ function M.collide(c, x, z, r, y)
     if b[9] ~= false then
       local base = b[6]
       if base == M.TERRAIN then base = M.terrainY(c, b[1], b[2]) end
-      if y == nil or (y + 1.5 > base and y < base + b[7]) then
+      -- (a wall for what is at its height; not for what stands on top of it: a roof deck's feet are at the building's top,
+      -- and on the Authority Hall roof you could neither walk nor shoot. Up to a step below the top climbs onto it)
+      if y == nil or (y + 1.5 > base and y < base + b[7] - M.STEP) then
         local px, pz, bnx, bnz = geom.pushOutOfBox(b, x, z, r)
         if px then
           x, z = px, pz

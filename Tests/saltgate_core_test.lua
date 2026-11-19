@@ -653,10 +653,13 @@ t.test("core budget: quality steps down when frames run long and back up when th
   local bus = events.new()
   local levels = {}
   bus:on("quality", function(d) levels[#levels + 1] = d.level end)
-  local b = budget.new({ bus = bus, target = 5, clock = function() return 0 end })
-  for _ = 1, 30 do b:frame(12) end
-  t.eq(b.quality, 1, "slow frames: lighter")
-  for _ = 1, 200 do b:frame(1) end
+  local b = budget.new({ bus = bus, clock = function() return 0 end })
+  -- a normal computer's frames (6-8 ms, the owner's "about 8 is fine") keep full quality
+  for i = 1, 400 do b:frame(6 + (i % 3)) end
+  t.eq(b.quality, 0, "6-8 ms frames: full quality")
+  for _ = 1, 30 do b:frame(22) end
+  t.eq(b.quality, 1, "slow frames (90th percentile over 16 ms): lighter")
+  for _ = 1, 300 do b:frame(1) end
   t.eq(b.quality, 0, "fast again: back to the best")
   t.eq(table.concat(levels, ","), "1,0")
   if rawget(_G, "collectgarbage") then t.truthy(b:report().heapKB > 0, "the heap, where Lua can tell") end
@@ -805,4 +808,42 @@ t.test("core view: the objective comes from ctx.objective (table or function), e
   o = view.objective({ story = { target = function() end, text = function() return "Lose the Harbor Patrol." end } })
   t.eq(o.text, "Lose the Harbor Patrol.", "a goal with no place still has its line")
   t.eq(o.x, nil, "and no arrow")
+end)
+
+t.test("core app: on foot you stop at a ledge (a bridge's side, a roof deck's edge) instead of walking off it", function()
+  local app = require("sg.core.app")
+  -- the deck (bridge or overpass) that stands highest above what is beside it
+  local best
+  for _, c in pairs(testbed.chunks()) do
+    for _, r in ipairs(c.ribbons) do
+      if r[1] == "bridge" or r[1] == "overpass" then
+        local pts = r[3]
+        local mx, my, mz, dx, dz = geom.polylineAt(pts, geom.polylineLength(pts) / 2)
+        local s = testbedStream(mx, mz)
+        local side = r[2] / 2 + 3
+        local below = s:groundAt(mx - dz * side, mz + dx * side, my - 1) or -99
+        if not best or my - below > best.drop then
+          best = { s = s, x = mx, y = my, z = mz, dx = dx, dz = dz, drop = my - below }
+        end
+      end
+    end
+  end
+  t.truthy(best and best.drop > app.LEDGE, "a deck well above what is beside it: " .. tostring(best and best.drop))
+  local p = { x = best.x, z = best.z, y = best.y, h = math.atan2(best.dx, -best.dz), v = 0 } -- facing straight off the side
+  local ctx = { player = p, stream = best.s }
+  for _ = 1, 60 do app.walk(ctx, { throttle = 1 }, 0.05) end
+  t.truthy(math.abs(p.y - best.y) < 1, "still on the deck: y " .. p.y .. " (deck " .. best.y .. ")")
+  t.truthy(not p.airborne, "not falling")
+end)
+
+t.test("core chunk: a building is a wall at its height, not for what stands on its roof (the Authority Hall roof deck)", function()
+  local c = chunk.new(0, 0, "mid")
+  -- a 10 x 10 block, ground at 0, 20 high
+  c.buildings[1] = { 40, 40, 10, 10, 0, 0, 20, "concrete", true }
+  local _, _, hitSide = chunk.collide(c, 40, 40, 0.5, 5)
+  t.truthy(hitSide, "at street level it is a wall")
+  local _, _, hitHigh = chunk.collide(c, 40, 40, 0.5, 18)
+  t.truthy(hitHigh, "two below the top it is still a wall")
+  local _, _, hitTop = chunk.collide(c, 40, 40, 0.5, 20)
+  t.truthy(not hitTop, "standing on its roof you can walk (and shoot) about")
 end)

@@ -203,6 +203,14 @@ function M.extend(api, host)
     return true
   end
 
+  --- A lift between levels (a lift up a building, a goods hoist): a short card over black, then you are at the place,
+  -- at its height; with your car, or on foot (opts.onFoot: the car stays where it was). For places no road climbs to.
+  function k.lift(place, opts)
+    opts = opts or {}
+    k.cutscene({ { black = true, title = opts.title or "...", seconds = opts.seconds or 1.5 } })
+    w:moveTo(place, opts.onFoot)
+  end
+
   function k.hold(place, seconds, opts)
     opts = opts or {}
     k.objective(opts.text or "Hold position.", place)

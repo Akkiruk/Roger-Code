@@ -66,6 +66,14 @@ function S.world(places)
 end
 
 function W:player() return self.p end
+function W:moveTo(name, onFoot)
+  local pl = self.places[name]
+  if not pl then return false end
+  self.p.x, self.p.z, self.p.speed = pl.x, pl.z, 0
+  if onFoot then self.p.car = nil end
+  self.moves = (self.moves or 0) + 1
+  return true
+end
 function W:place(name) return self.places[name] end
 function W:speed() return self.p.speed end
 

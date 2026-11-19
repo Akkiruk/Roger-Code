@@ -342,3 +342,13 @@ t.test("story: the whole story, start to ending, with answers all first, all las
   end
   t.truthy(endings.leave and endings.stay and endings.crown, "all three endings can be reached")
 end)
+
+t.test("story: Heights Heist reaches the roof deck by the staff lift and comes down the same way (no road climbs there)", function()
+  local def
+  for _, d in ipairs(idx.missions) do if d.id == "heights_heist" then def = d end end
+  t.truthy(def, "the mission is in the story")
+  local host, w = hostAt(def, fresh())
+  local state = sim.play(host, w, {})
+  t.eq(state, "passed")
+  t.eq(w.moves, 2, "up the lift, and down again")
+end)

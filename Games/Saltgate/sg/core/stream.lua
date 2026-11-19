@@ -250,7 +250,9 @@ function S:groundAt(x, z, y)
     if floorY then
       for i = #list, 1, -1 do
         local s = list[i]
-        if (s.kind == "terrain" or s.kind == "shoulder") and s.y > floorY + chunkLib.STEP then table.remove(list, i) end
+        -- (any of it above the floor: the floor is the ground in here. Removing only what was a step above let a car
+        -- climb the first gentle rise of the hill at the mouth and then drop to the floor, a hop and "Nice air")
+        if (s.kind == "terrain" or s.kind == "shoulder") and s.y > floorY + 0.05 then table.remove(list, i) end
       end
       if #list == 0 then return floorY, "tunnel" end
     end

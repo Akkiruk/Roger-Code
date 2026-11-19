@@ -193,7 +193,17 @@ local function walk(ctx, input, dt)
   if p.swimming then want = want * 0.45 end
   p.v = util.approach(p.v or 0, want, 25 * dt)
   local nx, nz = p.x + math.cos(p.h) * p.v * dt, p.z + math.sin(p.h) * p.v * dt
+  local ox, oz, oy, wasAir = p.x, p.z, p.y, p.airborne
   local r = motion.move(p, ctx.stream, nx, nz, dt, { radius = 0.45, speed = p.v, swims = false, length = 0.6, width = 0.6 })
+  -- on foot you do not step off a ledge (a roof deck's edge, a pier's): a drop of more than LEDGE is a wall. Cars still
+  -- fly off things; people walked off the small Authority Hall roof in a fight and fell to the street
+  if p.airborne and not wasAir and not p.swimming then
+    local gy = ctx.stream:groundAt(p.x, p.z, oy)
+    if gy and (oy or 0) - gy > M.LEDGE then
+      p.x, p.z, p.y, p.airborne, p.vy, p.v = ox, oz, oy, false, 0, 0
+      return
+    end
+  end
   -- deep water: swim at the surface (slowly), never walk on the sea floor. A swimmer held at the surface is above the
   -- WADE line, so motion stops reporting water: still swimming while the ground under them is deep under the level
   local level = r.water
@@ -211,6 +221,7 @@ local function walk(ctx, input, dt)
   end
 end
 M.walk = walk
+M.LEDGE = 2.5 -- on foot, a drop deeper than this is a ledge you stop at
 
 --- A land vehicle in deep water (its physics said r.water): it stalls and floods. After SINK_TIME it is a wreck and
 --- whoever drove it swims out at the surface (vehicle_exit, then vehicle_sunk). Boats' physics never report water.
