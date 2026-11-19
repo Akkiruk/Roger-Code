@@ -14,6 +14,7 @@ local models = require("sg.models")
 local chunkmodel = require("sg.core.chunkmodel")
 local mapview = require("sg.core.mapview")
 local chunkLib = require("sg.core.chunk")
+local vehicles = require("sg.core.vehicles")
 local util = require("sg.util")
 
 local M = {}
@@ -102,14 +103,135 @@ function V:camera(ctx, dt)
     -- never under the ground (a hill behind you)
     local gy = stream:groundAt(camX, camZ, camY + 5)
     if gy and camY < gy + 1.4 then camY = gy + 1.4 end
+    -- and never under the water: the sea is a surface the camera stays above
+    local level = stream:waterAt(camX, camZ)
+    if level and camY < level + 0.8 then camY = level + 0.8 end
     -- ease the height so a bump does not shake the picture
     self.camY = self.camY and (self.camY + (camY - self.camY) * util.clamp(dt * 6, 0, 1)) or camY
-    camY = math.max(self.camY, (gy or -100) + 1.2)
+    camY = math.max(self.camY, (gy or -100) + 1.2, level and level + 0.8 or -100)
     pitch = -deg(atan2(camY - (ty + 1.2), step + 4))
   end
   self.cam = { x = camX, y = camY, z = camZ, yaw = yaw, pitch = pitch }
+  -- a cutscene (or anything else) may take the camera: view.override = { x, y, z, yaw (radians), pitch (degrees) }
+  local o = self.override
+  if o then self.cam = { x = o.x, y = o.y, z = o.z, yaw = o.yaw, pitch = o.pitch } end
   self.r.cam = self.cam
-  self.r.frame:setCamera(camX, camY, camZ, 0, deg(yaw), pitch)
+  self.r.frame:setCamera(self.cam.x, self.cam.y, self.cam.z, 0, deg(self.cam.yaw), self.cam.pitch)
+end
+
+-- ---------------------------------------------------------------- what plugins add to the picture
+
+--- Add to the 3D scene each frame: fn(ctx, view, list, cam) puts objects in list (with view:place, view:variant or
+-- Pine3D objects of its own). Layers run in name order after the core's cars and player. Re-adding a name replaces it.
+function V:layer(name, fn)
+  self.layers = self.layers or {}
+  self.layers[name] = fn
+end
+
+--- Add dots to the minimap each frame: fn(ctx, view, dot), dot(x, z, colour) puts a world point on the map (off the
+-- edge it is left out; dot(x, z, colour, true) pins it to the edge instead).
+function V:minimapLayer(name, fn)
+  self.miniLayers = self.miniLayers or {}
+  self.miniLayers[name] = fn
+end
+
+--- Draw into the pixel buffer each frame, after the 3D and before the blit: fn(ctx, view, rows, cam), rows[y][x] =
+-- a colour (y 1..view.r.ph, x 1..view.r.pw). For particles, rain, muzzle flashes, screen flashes. Map a world point
+-- to the buffer with view.r.frame:map3dTo2d(x, y, z) -> px, py, inFront.
+function V:effectLayer(name, fn)
+  self.effects = self.effects or {}
+  self.effects[name] = fn
+end
+
+--- Put a Pine3D object (from variant or frame:newObject) into the scene at a place.
+function V:place(list, obj, x, y, z)
+  self.r:place(list, obj, x, y, z)
+end
+
+--- A model at a heading, built once per heading step: make() returns a Pine3D model (+x is forward).
+function V:variant(key, h, make)
+  return self.r:variant(key, h, make)
+end
+
+local function sortedNames(t)
+  local names = {}
+  for k in pairs(t or {}) do names[#names + 1] = k end
+  table.sort(names)
+  return names
+end
+
+--- Where the player should go: ctx.objective (a table, or a function returning one: { text, x, z, kind }), else
+-- the story's target (ctx.story.target() -> x, z, kind). nil when there is nowhere.
+function M.objective(ctx)
+  local o = ctx.objective
+  if type(o) == "function" then o = o(ctx) end
+  if type(o) == "table" and (o.text or o.x) then return o end
+  local story = ctx.story
+  if story and type(story.target) == "function" then
+    local x, z, kind = story.target()
+    if x and z then return { x = x, z = z, kind = kind } end
+  end
+  return nil
+end
+
+-- ---------------------------------------------------------------- the hooks, for any view
+
+--- Give another view (stream A's) the same drawing hooks: layer, minimapLayer, effectLayer, place, variant. It then
+-- calls M.sceneHooks, M.minimapHooks, M.effectHooks and M.overrideCamera at the same points as this one.
+function M.install(VV)
+  VV.layer, VV.minimapLayer, VV.effectLayer = V.layer, V.minimapLayer, V.effectLayer
+  VV.place, VV.variant = V.place, V.variant
+end
+
+--- After the view's own scene: the objective's beacon, then the plugins' layers. close(x, z) says what is near
+-- enough to draw.
+function M.sceneHooks(view, ctx, list, cam, isNear)
+  local r = view.r
+  local o = M.objective(ctx)
+  if o and o.x and o.z and isNear(o.x, o.z) then
+    local colour = o.colour or (o.kind == "car" and "red" or (o.kind == "giver" and "yellow" or "cyan"))
+    local gy = ctx.stream:groundAt(o.x, o.z, o.y) or 0
+    r:place(list, r:variant("beacon:" .. colour, 0, function() return models.beacon(colour) end), o.x, gy, o.z)
+  end
+  for _, name in ipairs(sortedNames(view.layers)) do view.layers[name](ctx, view, list, cam) end
+end
+
+--- After the view's own minimap: the objective's dot (pinned to the edge) and the plugins' dots. The map round
+-- (px, pz), scale units a pixel, up = (fx, fz), right = (rx, rz), box at (x0, y0) mw x mh pixels.
+function M.minimapHooks(view, ctx, rows, px, pz, scale, fx, fz, rx, rz, x0, y0, mw, mh)
+  local function dot(x, z, colour, pin)
+    local dx, dz = x - px, z - pz
+    local u = floor(mw / 2 + (dx * rx + dz * rz) / scale)
+    local v = floor(mh / 2 - (dx * fx + dz * fz) / scale)
+    if pin then
+      u, v = util.clamp(u, 0, mw - 2), util.clamp(v, 0, mh - 2)
+    elseif u < 0 or v < 0 or u > mw - 2 or v > mh - 2 then
+      return
+    end
+    rows[y0 + v][x0 + u] = colour
+    rows[y0 + v][x0 + u + 1] = colour
+    rows[y0 + v + 1][x0 + u] = colour
+    rows[y0 + v + 1][x0 + u + 1] = colour
+  end
+  local o = M.objective(ctx)
+  if o and o.x and o.z then dot(o.x, o.z, C[o.colour or "yellow"] or C.yellow, true) end
+  for _, name in ipairs(sortedNames(view.miniLayers)) do view.miniLayers[name](ctx, view, dot) end
+end
+
+--- The plugins' pixel effects, after the 3D and before the blit.
+function M.effectHooks(view, ctx)
+  if not view.effects then return end
+  local rows = view.r.buffer.colorValues
+  for _, name in ipairs(sortedNames(view.effects)) do view.effects[name](ctx, view, rows, view.cam) end
+end
+
+--- If something holds the camera (view.override), point it there. Call at the end of the view's camera.
+function M.overrideCamera(view)
+  local o = view.override
+  if not o then return end
+  view.cam = { x = o.x, y = o.y, z = o.z, yaw = o.yaw, pitch = o.pitch }
+  view.r.cam = view.cam
+  view.r.frame:setCamera(o.x, o.y, o.z, 0, deg(o.yaw), o.pitch)
 end
 
 -- ---------------------------------------------------------------- the scene
@@ -164,15 +286,25 @@ function V:scene(ctx)
         r:place(list, self.tiltObj, car.x, car.y or 0, car.z)
       else
         local spec, colour, wrecked = car.spec, car.colour, car.wrecked
-        local key = "car:" .. car.kind .. ":" .. colour .. (wrecked and ":w" or "")
-        r:place(list, r:variant(key, car.h, function() return models.car(spec, colour, wrecked) end), car.x, car.y or 0, car.z)
+        -- a class or vehicle with its own look (vehicles.model: bikes, boats, trucks) is built by that; the key
+        -- carries the damage stage so a dented model is cached apart from a clean one
+        local modeler = vehicles.modelFor(car)
+        local stage = car.damageStage or 0
+        local key = "car:" .. car.kind .. ":" .. colour .. (wrecked and ":w" or "") .. ":" .. stage
+        local make = modeler and function() return modeler(car) end or function() return models.car(spec, colour, wrecked) end
+        r:place(list, r:variant(key, car.h, make), car.x, car.y or 0, car.z)
       end
     end
   end
   local p = ctx.player
   if not p.car then
-    r:place(list, r:variant("wren", p.h, function() return models.person("orange", false, "gray") end), p.x, (p.y or 0) + 0.05, p.z)
+    -- the player's clothes (ctx.player.outfit = { shirt, legs }: the clothes shop changes them)
+    local o = p.outfit or {}
+    local shirt, legs = o.shirt or "orange", o.legs or "gray"
+    r:place(list, r:variant("wren:" .. shirt .. ":" .. legs, p.h, function() return models.person(shirt, false, legs) end), p.x, (p.y or 0) + 0.05, p.z)
   end
+  -- the objective's beacon, standing on the ground there, then the plugins' layers
+  M.sceneHooks(self, ctx, list, cam, close)
   return list
 end
 
@@ -228,6 +360,8 @@ function V:minimap(ctx)
   rows[cy - 2][cx] = C.white
   rows[cy - 2][cx + 1] = C.white
   self.minimapBox = { x0 = x0, y0 = y0, w = mw, h = mh }
+  -- dots: the objective (pinned to the edge when it is off the map), then the plugins'
+  M.minimapHooks(self, ctx, rows, px, pz, scale, fx, fz, rx, rz, x0, y0, mw, mh)
 end
 
 --- The whole map: chunks is a table of chunks (keyed or a list). North is up; height shows as contour lines.
@@ -283,7 +417,13 @@ function V:draw(ctx, dt)
   local list
   timed("r.scene", function() list = self:scene(ctx) end)
   timed("r.tris", function() self.r.frame:drawObjects(list) end)
-  timed("r.minimap", function() self:minimap(ctx) end)
+  if not self.override then timed("r.minimap", function() self:minimap(ctx) end) end -- no map over a cutscene
+  -- pixel effects (particles, rain, flashes) go into the pixel buffer after the 3D, before it reaches the screen
+  if self.effects then
+    timed("r.effects", function()
+      for _, name in ipairs(sortedNames(self.effects)) do self.effects[name](ctx, self, self.r.buffer.colorValues, self.cam) end
+    end)
+  end
   timed("r.blit", function() self.r.frame:drawBuffer() end)
   -- the HUD: every registered widget, slot by slot
   timed("r.hud", function()

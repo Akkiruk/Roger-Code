@@ -755,7 +755,7 @@ t.test("shops with B's data: paint and stripes priced from the car's value, tune
   local shops = ctx.activities.shops
   local custom = require("sg.vehicles.custom")
   local paints, price = shops:paints()
-  t.eq(#paints, 16, "B's sixteen paints")
+  t.eq(#paints, 12, "B's twelve paints (none on the sky's slots)")
   t.eq(price, custom.paintPrice(car.spec), "a coat costs a share of the car's value")
   local before = wallet.balance(ctx)
   t.truthy(shops:respray("cyan"))

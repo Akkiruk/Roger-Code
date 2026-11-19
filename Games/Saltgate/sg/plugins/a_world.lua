@@ -48,17 +48,6 @@ local function readDebug()
   return ok and type(t) == "table" and t or nil
 end
 
---- Forget everything the streamer holds: the testbed's chunks use the same keys as the city's.
-local function resetStream(ctx)
-  local s = ctx.stream
-  for key, l in pairs(s.live) do
-    s.drop(l.chunk, l.handle)
-    s.roads:removeChunk(l.chunk)
-    s.live[key] = nil
-  end
-  s.cache, s.jobs, s.missing = {}, {}, {}
-end
-
 local function clockText(hour)
   local h = floor(hour) % 24
   local m = floor((hour - floor(hour)) * 60)
@@ -75,60 +64,27 @@ function P.init(ctx)
   end
   local debug = readDebug()
   local data = city.data
-  local old = ctx.view
   local view = viewLib.new(ctx.screen, city)
-  view.mode = old and old.mode or "chase"
-  view.drawDistance = old and old.drawDistance
-  ctx.view = view
 
-  -- the streamer now reads the city
-  local s = ctx.stream
-  resetStream(ctx)
-  s.source = function(cx, cz) return city:source(cx, cz) end
-  s.build = view:builder()
-  s.drop = view:dropper()
-
-  -- the player and the cars start in the city
+  -- the game moves into the city: the core clears the streamer, points it at the city's chunks, uses this view, and
+  -- puts you at the city's start (or where you saved, if that was in the city)
   local save = ctx.save
   save.world = save.world or {}
+  if save.world.city == 1 and not save.world.worldId then save.world.worldId = "city" end -- saves from before setWorld
+  local at = (debug and debug.x) and { x = debug.x, z = debug.z, h = debug.h or data.spawn.h } or nil
+  ctx.setWorld({
+    id = "city",
+    source = function(cx, cz) return city:source(cx, cz) end,
+    view = view,
+    spawn = { x = data.spawn.x, z = data.spawn.z, h = data.spawn.h },
+    at = at,
+    chunks = function() return city:chunks() end,
+  })
+  local s = ctx.stream
   local p = ctx.player
-  local sx, sz, sh = data.spawn.x, data.spawn.z, data.spawn.h
-  local sp = save.player or {}
-  if save.world.city == 1 and sp.x and sp.z and not (ctx.cars[1] and ctx.cars[1].follow) then sx, sz, sh = sp.x, sp.z, sp.h or sh end
-  if debug and debug.x then sx, sz, sh = debug.x, debug.z, debug.h or sh end
   local rng = util.rng(11)
-  local car = ctx.cars[1]
-  local autopilot = car and car.follow ~= nil
-  for i = #ctx.cars, 2, -1 do ctx.cars[i] = nil end
-  s:loadAll(sx, sz, breathe)
-  local gy = s:groundAt(sx, sz, nil)
-  if not gy then
-    -- a saved place that is not in the city: the start
-    sx, sz, sh = data.spawn.x, data.spawn.z, data.spawn.h
-    s:loadAll(sx, sz, breathe)
-    gy = s:groundAt(sx, sz, nil) or 0
-  end
-  p.x, p.z, p.h, p.y = sx, sz, sh, gy
-  if car then
-    car.x, car.z, car.h, car.y, car.v = sx, sz, sh, gy, 0
-    car.vy, car.airborne, car.pitch, car.roll = 0, false, 0, 0
-    if autopilot then car.follow = follow.new(ctx.roads, sx, sz, rng) end
-  end
-  -- a little traffic on the city's roads (stream C replaces this with the real thing)
-  local edges = {}
-  for _, e in pairs(s.roads.edges) do
-    if e.kind ~= "path" and e.kind ~= "rail" and e.length > 12 then edges[#edges + 1] = e end
-  end
-  table.sort(edges, function(a, b) return a.id < b.id end)
-  local kinds = { "pipit", "marlin", "kestrel", "tidewater" }
-  for i = 1, math.min(autopilot and 4 or 6, #edges) do
-    local e = edges[floor(rng() * #edges) + 1]
-    local x, y, z, dx, dz = s.roads:pointAt(e, e.length * 0.5, follow.LANE)
-    local c = vehicle.new(kinds[(i % #kinds) + 1], x, z, math.atan2(dz, dx), vehicle.BODY_COLOURS[(i % #vehicle.BODY_COLOURS) + 1])
-    c.y, c.v = y, 6
-    c.follow = follow.new(ctx.roads, x, z, rng)
-    if c.follow then ctx.cars[#ctx.cars + 1] = c end
-  end
+  -- the day is this plugin's: the core leaves ctx.clock to it (and sends no time_of_day of its own)
+  ctx.clock.owner = "a_world"
 
   -- the clock and the weather
   local state = {
@@ -164,9 +120,7 @@ function P.init(ctx)
   applyPalette(true)
 
   -- districts, the clock on the top line, the objective line
-  for _, w in ipairs(ctx.ui.widgetList) do
-    if w.name == "core_objective" then w.draw = function() end end
-  end
+  -- (the core's objective line shows the story's target now: it is no longer blanked here)
   ctx.ui.widget({ name = "a_clock", slot = "top-right", priority = 60, visible = function() return not state.inside end, draw = function(c, t)
     local w = c.screen.getSize()
     local text = clockText(state.hour) .. " " .. state.weather.kind
@@ -200,7 +154,7 @@ function P.init(ctx)
   -- interiors: a door on foot takes you to a room far from the city, the room's door takes you back
   local api = { city = city, view = view }
   function api.hour() return state.hour end
-  function api.setHour(h) state.hour = h % 24 applyPalette(true) end
+  function api.setHour(h) state.hour = h % 24 ctx.clock.hour = state.hour applyPalette(true) end
   function api.weather() return state.weather.kind end
   function api.setWeather(kind)
     if not sky.WEATHER[kind] then return false end
@@ -318,6 +272,7 @@ function P.update(ctx, dt)
   local view = api.view
   -- the day
   state.hour = (state.hour + dt * sky.HOURS_PER_SECOND * state.speed) % 24
+  ctx.clock.hour = state.hour -- the core's clock follows the sky (and is saved as world.time)
   local kind, previous = sky.weather.update(state.weather, dt)
   if kind then ctx.bus:emit("weather", { kind = kind, previous = previous }) end
   -- storms flash

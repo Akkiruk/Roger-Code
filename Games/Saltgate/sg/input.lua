@@ -43,6 +43,13 @@ function M.new(keys)
   return self
 end
 
+--- Add (or change) an action and its keys, for parts of the game that bring their own (a plugin's fire, aim, radio).
+-- codes: a list of key codes. Read it with down(action) and pressedAction(action).
+function I:bind(action, codes)
+  if type(action) ~= "string" or type(codes) ~= "table" then error("bind needs an action name and a list of keys", 2) end
+  self.map[action] = codes
+end
+
 --- Feed one event (the values os.pullEvent returns). t is the time now in seconds.
 function I:event(t, name, code, isHeld)
   self.now = t

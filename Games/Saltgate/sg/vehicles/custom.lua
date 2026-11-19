@@ -82,15 +82,22 @@ function M.tuned(def, tune)
   return spec
 end
 
+--- The value a vehicle's work is priced from: its own, but never under the data's priceFloor (a $160 car would
+-- otherwise get a $6 respray, next to jobs paying hundreds).
+local function priceBase(def)
+  return math.max(def.value or 0, M.data and M.data.priceFloor or 0)
+end
+M.priceBase = priceBase
+
 --- What tier (1-3) of a slot costs for this vehicle.
 function M.price(def, slot, tier)
   local s = M.data and M.data.slots[slot]
   if not s or not s.price[tier] then return nil end
-  return math.floor((def.value or 0) * s.price[tier] + 0.5)
+  return math.floor(priceBase(def) * s.price[tier] + 0.5)
 end
 
-function M.paintPrice(def) return math.floor((def.value or 0) * (M.data and M.data.paintPrice or 0.04) + 0.5) end
-function M.stripePrice(def) return math.floor((def.value or 0) * (M.data and M.data.stripePrice or 0.02) + 0.5) end
+function M.paintPrice(def) return math.floor(priceBase(def) * (M.data and M.data.paintPrice or 0.04) + 0.5) end
+function M.stripePrice(def) return math.floor(priceBase(def) * (M.data and M.data.stripePrice or 0.02) + 0.5) end
 
 --- Is this a colour the paint shop sells?
 function M.validPaint(name)

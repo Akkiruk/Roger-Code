@@ -175,7 +175,11 @@ function S:update(x, z, unlimited)
   end)
   for _, o in ipairs(order) do
     if not unlimited and self.clock() - start >= self.budgetMs then break end
+    -- inJob: a source or builder may yield (to spread its work over frames) only while one of these jobs runs; anywhere
+    -- else a bare coroutine.yield under CC is os.pullEventRaw and would swallow the next event (the frame timer)
+    M.inJob = true
     local ok, c, handle = coroutine.resume(o.job.co)
+    M.inJob = false
     if not ok then
       self.jobs[o.key] = nil
       error("loading chunk " .. o.key .. ": " .. tostring(c), 0)
@@ -232,7 +236,8 @@ function S:groundAt(x, z, y)
   local own = self:chunkAt(x, z)
   if not own then return nil, "unloaded" end
   local list = { { y = chunkLib.terrainY(own, x, z), kind = "terrain" } }
-  eachNear(self, x, z, function(c) chunkLib.extraSurfaces(c, x, z, list) end)
+  local ground = list[1].y
+  eachNear(self, x, z, function(c) chunkLib.extraSurfaces(c, x, z, list, ground) end)
   if #list == 1 then return list[1].y, "terrain" end
   table.sort(list, function(a, b) return a.y > b.y end)
   if y == nil then return list[1].y, list[1].kind end

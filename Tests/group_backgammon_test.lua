@@ -667,14 +667,11 @@ test("the oracle agrees on the positions that make the hard rules bite", functio
 end)
 
 test("games reach every way of ending, and random play stays in the contract at each stake", function()
-  -- A backgammon game is hundreds of steps, each checked whole by the kit, so this was 1,070 games and two minutes under desktop
-  -- Lua (past the emulator's limit for one test file). Forty a stake still crosses every stake and stack, and the games for the
-  -- ways of ending stop once all three have been seen.
   for _, setup in ipairs({ { 25, 25 }, { 25, 5000 }, { 100, 450 }, { 250, 1000 }, { 500, 5000 }, { 500, 300 } }) do
-    kit.fuzz(plugin, { rounds = 40, seats = { 2 }, stake = setup[1], stack = setup[2], pick = tapper, seed = setup[2], check = breathing() })
+    kit.fuzz(plugin, { rounds = 120, seats = { 2 }, stake = setup[1], stack = setup[2], pick = tapper, seed = setup[2], check = breathing() })
   end
-  kit.fuzz(plugin, { rounds = 40, seats = { 2 }, stake = 100, stack = 3000, absent = 50, pick = tapper, seed = 99, check = breathing() })
-  kit.fuzz(plugin, { rounds = 30, seats = { 2 }, stake = 50, stack = 800, absent = 15, seed = 7, check = breathing() })
+  kit.fuzz(plugin, { rounds = 120, seats = { 2 }, stake = 100, stack = 3000, absent = 50, pick = tapper, seed = 99, check = breathing() })
+  kit.fuzz(plugin, { rounds = 80, seats = { 2 }, stake = 50, stack = 800, absent = 15, seed = 7, check = breathing() })
 
   local seen = {}
   local rng = testing.fastRng(77)
@@ -682,7 +679,6 @@ test("games reach every way of ending, and random play stays in the contract at 
     local state = kit.playRound(plugin, { rng = rng, stake = 100, stack = 1000, pick = longTapper, check = breathing() })
     seen[state.how] = (seen[state.how] or 0) + 1
     kit.checkEnd(plugin, state, kit.entries(plugin, 2, { stake = 100, stack = 1000 }))
-    if seen.single and seen.gammon and seen.backgammon then break end
   end
   truthy(seen.single, "singles")
   truthy(seen.gammon, "gammons")
@@ -867,21 +863,15 @@ end)
 
 test("every view draws on a screenless wall, public and private, through every event", function()
   local canvas = require("lib.casino.canvas")
-  -- Every state is drawn on every wall; the six animations go over every fifth state, which still puts each one over every
-  -- phase of a game (all six on every state was most of a minute, for the same drawing code)
-  local count = 0
   local function draws(state)
-    count = count + 1
     for _, seat in ipairs({ 1, 2, false }) do
       local view = rules.viewFor(state, seat or nil)
       for wall = 1, 2 do
         local c = canvas.new(nil, 121, 81)
         plugin.seatView.draw(c, view, nil, { seat = wall, name = "Ann" })
-        if count % 5 == 1 then
-          for _, ev in ipairs({ { type = "roll", seat = 1 }, { type = "opening", seat = 1 }, { type = "move", seat = 1, from = 13, to = 8 }, { type = "move", seat = 2, from = 13, to = 0 },
-            { type = "move", seat = 2, from = 25, to = 20, hit = true }, { type = "double", seat = 1, cube = 2 } }) do
-            plugin.seatView.draw(c, view, { ev = ev, t = 0.4 }, { seat = wall })
-          end
+        for _, ev in ipairs({ { type = "roll", seat = 1 }, { type = "opening", seat = 1 }, { type = "move", seat = 1, from = 13, to = 8 }, { type = "move", seat = 2, from = 13, to = 0 },
+          { type = "move", seat = 2, from = 25, to = 20, hit = true }, { type = "double", seat = 1, cube = 2 } }) do
+          plugin.seatView.draw(c, view, { ev = ev, t = 0.4 }, { seat = wall })
         end
       end
     end

@@ -85,7 +85,23 @@ local function terrain(w, x, z)
 end
 
 --- Is a circle of radius pad at (x, z) clear of buildings, roads, ribbons and water? (looks at the 3x3 chunks round it)
+-- Under CC a long layout (the whole city) would run past the 7 s limit without a yield: breathe, at most every 0.4 s
+-- (and not at all under desktop Lua, where there is no os.queueEvent).
+local lastBreath = 0
+local function breathe()
+  local os_ = rawget(_G, "os")
+  if not (os_ and os_.queueEvent and os_.pullEvent and os_.epoch) then return end
+  local now = os_.epoch("utc")
+  if now - lastBreath < 400 then return end
+  lastBreath = now
+  os_.queueEvent("sg_layout_breathe")
+  os_.pullEvent("sg_layout_breathe")
+  lastBreath = os_.epoch("utc")
+end
+M.breathe = breathe
+
 local function clear(w, x, z, pad)
+  breathe()
   local c0 = chunkAt(w, x, z)
   if not c0 then return false end
   local y = chunkLib.terrainY(c0, x, z)
@@ -248,6 +264,7 @@ end
 -- ---------------------------------------------------------------- races
 
 local function routeFrom(w, fromId, toId)
+  breathe()
   local nodes, edges = w.roads:path(fromId, toId, DRIVABLE)
   if not nodes or #edges < 3 then return nil end
   local flat = {}

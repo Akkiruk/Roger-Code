@@ -206,7 +206,7 @@ t.test("core testbed: every chunk is valid, and it has hills, curves, a bridge, 
   t.eq(n, testbed.N * testbed.N)
   local g = testbedGraph()
   local hill = g:node(testbed.FEATURES.hairpins[#testbed.FEATURES.hairpins])
-  t.truthy(hill.y > 25, "the hill road climbs: " .. hill.y)
+  t.truthy(hill.y > 14, "the hill road climbs (at a drivable grade): " .. hill.y)
   t.truthy(testbed.FEATURES.overpass.y > 8, "the overpass is up in the air")
   -- the hairpins really turn: the heading changes by more than two half-turns along them
   local turned = 0
@@ -348,7 +348,7 @@ t.test("core motion: a slope too steep is a wall, and the car tilts with the hil
     topY = math.max(topY, p.y)
     if r.hit then blocked = true end
   end
-  t.truthy(topY > 20, "it climbed toward the top: " .. topY)
+  t.truthy(topY > 10, "it climbed the hillside: " .. topY)
   local car = vehicle.new("marlin", hx - 40, hz + 5, 0)
   car.y = s:groundAt(car.x, car.z, nil)
   motion.move(car, s, car.x + 0.1, car.z, 0.05, { radius = 1.6, speed = 1 })
@@ -617,5 +617,103 @@ t.test("core maps: roads follow their curves on the map, bridges and buildings s
   local code = mapview.sample(at, testbed.spawn.x, testbed.spawn.z)
   t.eq(code, "r", "the spawn is on a road on the map too")
   local _, hHill = mapview.sample(at, testbed.HILL.x, testbed.HILL.z)
-  t.truthy(hHill > 25, "the map knows the hill is high: " .. hHill)
+  t.truthy(hHill > 12, "the map knows the hill is high: " .. hHill)
+end)
+
+-- ---------------------------------------------------------------- integration requests (streams C and D)
+
+t.test("core testbed: one road network, every junction reachable from the coast road", function()
+  local g = testbedGraph()
+  local start = testbed.FEATURES.coast[1]
+  local seen, queue = { [start] = true }, { start }
+  while #queue > 0 do
+    local id = table.remove(queue)
+    for _, e in ipairs(g:node(id).edges) do
+      for _, nid in ipairs({ e.a, e.b }) do
+        if not seen[nid] then
+          seen[nid] = true
+          queue[#queue + 1] = nid
+        end
+      end
+    end
+  end
+  for id in pairs(g.nodes) do t.truthy(seen[id], "node " .. id .. " reachable") end
+  local path = g:path(testbed.FEATURES.coast[1], testbed.FEATURES.oldtown[1])
+  t.truthy(path, "even the old town")
+end)
+
+t.test("core roads: on a road the ground is the road, so cars never float over a switchback", function()
+  local s = stream.new({ source = testbed.source, full = 3, low = 3 })
+  s:loadAll(testbed.CENTRE.x, testbed.CENTRE.z)
+  local worst = 0
+  for _, c in pairs(testbed.chunks()) do
+    for _, rd in ipairs(c.roads) do
+      local p = rd[8]
+      for i = 1, #p, 3 do
+        local gy = s:groundAt(p[i], p[i + 2], p[i + 1])
+        worst = math.max(worst, math.abs(gy - p[i + 1]))
+      end
+    end
+  end
+  t.truthy(worst < 1.2, "road and ground agree everywhere: worst " .. worst)
+end)
+
+if not rawget(_G, "colors") then
+  -- outside CC: the colour numbers the view's modules read when they load
+  colors = {}
+  local names = { "white", "orange", "magenta", "lightBlue", "yellow", "lime", "pink", "gray", "lightGray", "cyan", "purple",
+    "blue", "brown", "green", "red", "black" }
+  for i, n in ipairs(names) do colors[n] = 2 ^ (i - 1) end
+  colors.grey, colors.lightGrey = colors.gray, colors.lightGray
+  colours = colors
+end
+
+t.test("core app: the parts of the day", function()
+  local app = require("sg.core.app")
+  t.eq(app.phase(6), "dawn")
+  t.eq(app.phase(12), "day")
+  t.eq(app.phase(19.5), "dusk")
+  t.eq(app.phase(23), "night")
+  t.eq(app.phase(2), "night")
+  t.eq(app.MUSIC_DISTRICTS.lantern, "lantern")
+end)
+
+t.test("core app: a car driven into deep water stalls, floods, and the driver swims out at the surface", function()
+  local app = require("sg.core.app")
+  local bus = events.new()
+  local got = {}
+  bus:on("vehicle_exit", function(d) got.exit = d end, "t")
+  bus:on("vehicle_sunk", function(d) got.sunk = d end, "t")
+  local car = { x = 10, y = -7, z = 20, h = 1, v = 18, health = 100 }
+  local ctx = { bus = bus, player = { x = 10, y = -7, z = 20, car = car } }
+  t.eq(app.sink(ctx, car, { water = 0 }, 0.1), true)
+  t.truthy(car.v < 18, "it slows in the water")
+  t.truthy(ctx.player.car == car, "still in it for a moment")
+  for _ = 1, 20 do app.sink(ctx, car, { water = 0 }, 0.1) end
+  t.truthy(car.sunk and car.wrecked, "a wreck")
+  t.eq(car.v, 0)
+  t.eq(ctx.player.car, nil, "the driver is out")
+  t.truthy(ctx.player.swimming, "swimming")
+  t.eq(ctx.player.y, -0.5, "at the surface, not on the sea floor")
+  t.truthy(got.exit and got.exit.sunk, "vehicle_exit says sunk")
+  t.truthy(got.sunk and got.sunk.vehicle == car)
+  -- on land (or a boat, whose physics never report water) nothing happens
+  local dry = { x = 0, z = 0, v = 10 }
+  t.eq(app.sink(ctx, dry, { water = nil }, 0.1), false)
+  t.eq(app.sink(ctx, dry, 0, 0.1), false, "an older physics that returns a number")
+  t.eq(dry.v, 10)
+end)
+
+t.test("core view: the objective comes from ctx.objective (table or function), else the story's target", function()
+  local view = require("sg.core.view")
+  t.eq(view.objective({}), nil, "nowhere to go")
+  local o = view.objective({ objective = { text = "Go", x = 1, z = 2 } })
+  t.eq(o.text, "Go")
+  o = view.objective({ objective = function() return { x = 5, z = 6, kind = "car" } end })
+  t.eq(o.kind, "car")
+  o = view.objective({ story = { target = function() return 7, 8, "giver" end } })
+  t.eq(o.x, 7)
+  t.eq(o.kind, "giver")
+  o = view.objective({ objective = { text = "first" }, story = { target = function() return 1, 1 end } })
+  t.eq(o.text, "first", "ctx.objective wins over the story's target")
 end)

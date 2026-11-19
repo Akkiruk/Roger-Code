@@ -12,6 +12,8 @@ local vehicle = require("sg.vehicle")
 local util = require("sg.util")
 
 local M = {}
+
+local TRAFFIC_PAINTS = { "orange", "blue", "red", "lightGray", "green", "white", "cyan", "yellow", "gray", "brown" }
 local T = {}
 T.__index = T
 
@@ -137,7 +139,8 @@ function T:spawnOn(e, s, dir, cop)
     if (ddx * math.cos(cam.yaw) + ddz * math.sin(cam.yaw)) / d > 0.3 then return nil end
   end
   local kind = cop and "cruiser" or pickKind(self)
-  local colour = vehicle.BODY_COLOURS[self.rng(#vehicle.BODY_COLOURS)]
+  -- paints off the sky's slots (purple, magenta, pink, lightBlue change with the hour in the city)
+  local colour = TRAFFIC_PAINTS[self.rng(#TRAFFIC_PAINTS)]
   local h = math.atan2(dz * dir, dx * dir)
   local car
   if vehicle.TYPES[kind] then

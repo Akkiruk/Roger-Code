@@ -74,7 +74,49 @@ local function onGround(ctrl, lift)
 end
 
 --- A road along a 3D polyline, split into edges no longer than maxLen, with nodes between; returns the node ids.
+M.MAX_GRADE = 0.2 -- the steepest a testbed road climbs (1 in 5)
+
+--- The height of a node already made (nil if none).
+local function nodeY(id)
+  for _, nd in ipairs(nodes) do
+    if nd[1] == id then return nd[3] end
+  end
+  return nil
+end
+
+--- Keep a road drivable: its ends meet the junctions' heights, and no stretch climbs steeper than MAX_GRADE
+-- (passes from both ends; where the ground is steeper the road cuts into it or stands on it, as real roads do).
+local function easeGrade(pts, y0, y1)
+  local n = #pts / 3
+  if y0 then pts[2] = y0 end
+  if y1 then pts[#pts - 1] = y1 end
+  local function ds(i)
+    local a, b = (i - 1) * 3 + 1, i * 3 + 1
+    return math.sqrt((pts[b] - pts[a]) ^ 2 + (pts[b + 2] - pts[a + 2]) ^ 2)
+  end
+  for _ = 1, 2 do
+    for i = 2, n do
+      local lim = M.MAX_GRADE * ds(i - 1)
+      local prev = pts[(i - 2) * 3 + 2]
+      local k = (i - 1) * 3 + 2
+      if not (i == n and y1) then pts[k] = math.max(prev - lim, math.min(prev + lim, pts[k])) end
+    end
+    for i = n - 1, 1, -1 do
+      local lim = M.MAX_GRADE * ds(i)
+      local nxt = pts[i * 3 + 2]
+      local k = (i - 1) * 3 + 2
+      if not (i == 1 and y0) then pts[k] = math.max(nxt - lim, math.min(nxt + lim, pts[k])) end
+    end
+  end
+  return pts
+end
+
 local function road(pts, width, kind, speed, lanes, closeTo)
+  -- ends that join existing junctions take those junctions' heights; loops end where they start
+  local y0 = closeTo and closeTo[1] and nodeY(closeTo[1]) or nil
+  local y1 = closeTo and closeTo[2] and nodeY(closeTo[2]) or nil
+  if closeTo and closeTo.loop then y1 = pts[2] end
+  if kind ~= "rail" then easeGrade(pts, y0, y1) end
   local length = geom.polylineLength(pts)
   local pieces = math.max(1, math.ceil(length / 60))
   local ids = {}
@@ -160,8 +202,9 @@ end
 do
   local start = coastNode(HILL_X - 64, HILL_Z + 52)
   local ctrl = {
-    start[2], start[4], HILL_X - 20, HILL_Z + 50, HILL_X + 22, HILL_Z + 40, HILL_X - 22, HILL_Z + 24,
-    HILL_X - 30, HILL_Z + 10, HILL_X + 18, HILL_Z + 6, HILL_X + 20, HILL_Z - 8, HILL_X - 12, HILL_Z - 12, HILL_X, HILL_Z - 2,
+    -- switchbacks about 20 units apart: far enough that each leg keeps its own ground
+    start[2], start[4], HILL_X - 24, HILL_Z + 62, HILL_X + 28, HILL_Z + 52, HILL_X - 28, HILL_Z + 32,
+    HILL_X - 36, HILL_Z + 12, HILL_X + 24, HILL_Z + 8, HILL_X + 26, HILL_Z - 12, HILL_X - 14, HILL_Z - 18, HILL_X, HILL_Z - 2,
   }
   local pts = geom.curve(onGround(ctrl), 4)
   M.FEATURES.hairpins = road(pts, 7, "road", 9, 2, { start[1] })
@@ -251,6 +294,21 @@ do
       if j < 2 then link(i, j, i, j + 1) end
     end
   end
+  -- and joined to the rest: a street from its north-west corner up to the avenue, one from its south-east corner
+  -- down to the coast road
+  local function joinTo(gridId, candidates)
+    local g = nodeById(gridId)
+    local best, bd = nil, math.huge
+    for _, id in ipairs(candidates) do
+      local nd = nodeById(id)
+      local d = (nd[2] - g[2]) ^ 2 + (nd[4] - g[4]) ^ 2
+      if d < bd then best, bd = nd, d end
+    end
+    local pts = geom.curve(onGround({ g[2], g[4], (g[2] + best[2]) / 2 - 6, (g[4] + best[4]) / 2, best[2], best[4] }), 4)
+    road(pts, 7, "road", 12, 2, { g[1], best[1] })
+  end
+  joinTo(grid[0][0], M.FEATURES.avenueNE)
+  joinTo(grid[2][2], M.FEATURES.coast)
   for i = 0, 1 do
     for j = 0, 1 do
       buildings[#buildings + 1] = { gx + 11 + i * 22, gz + 11 + j * 22, 12, 12, 0, chunkLib.TERRAIN, 22 + 9 * ((i + j) % 2),
@@ -286,6 +344,49 @@ do
   local dx, dz = -sin(a), cos(a)
   ribbon("ramp", 5, { x - dx * 8, y, z - dz * 8, x + dx * 6, y + 3.5, z + dz * 6 })
   M.FEATURES.jump = { x = x, z = z, h = math.atan2(dz, dx), top = y + 3.5 }
+end
+
+-- 9b. one network: every piece of road that is not joined to the coast road gets a short street to the nearest
+-- junction that is (traffic and the Patrol can reach everywhere)
+local function connectAll()
+  local function reached()
+    local adj = {}
+    for _, r in ipairs(roads) do
+      adj[r[2]] = adj[r[2]] or {}
+      adj[r[3]] = adj[r[3]] or {}
+      table.insert(adj[r[2]], r[3])
+      table.insert(adj[r[3]], r[2])
+    end
+    local seen, queue = { [M.FEATURES.coast[1]] = true }, { M.FEATURES.coast[1] }
+    while #queue > 0 do
+      local id = table.remove(queue)
+      for _, n in ipairs(adj[id] or {}) do
+        if not seen[n] then
+          seen[n] = true
+          queue[#queue + 1] = n
+        end
+      end
+    end
+    return seen
+  end
+  for _ = 1, 10 do
+    local seen = reached()
+    local bestA, bestB, bd = nil, nil, math.huge
+    for _, a in ipairs(nodes) do
+      if not seen[a[1]] then
+        for _, b in ipairs(nodes) do
+          if seen[b[1]] then
+            local d = (a[2] - b[2]) ^ 2 + (a[4] - b[4]) ^ 2
+            if d < bd then bestA, bestB, bd = a, b, d end
+          end
+        end
+      end
+    end
+    if not bestA then break end
+    local mx, mz = (bestA[2] + bestB[2]) / 2, (bestA[4] + bestB[4]) / 2
+    local pts = geom.curve(onGround({ bestA[2], bestA[4], mx + 4, mz - 4, bestB[2], bestB[4] }), 4)
+    road(pts, 6, "road", 10, 2, { bestA[1], bestB[1] })
+  end
 end
 
 -- 10. houses along the coast road, turned to face it, where there is room
@@ -329,6 +430,7 @@ do
   road(path, 2.5, "path", 3, 2)
   for i = 1, 6 do props[#props + 1] = { "tree", RX + 25 + i * 5, RZ + 30 + (i % 3) * 7, 0, chunkLib.TERRAIN } end
 end
+connectAll()
 
 -- ---------------------------------------------------------------- cutting roads into the ground, chunking
 
@@ -343,7 +445,7 @@ local function buildChunks(yield)
     local out2 = {}
     for _, r in ipairs(list) do
       local x0, z0, x1, z1 = geom.bounds(r[ptsAt], 3)
-      local pad = r[widthAt] / 2 + 5
+      local pad = r[widthAt] / 2 + 20
       out2[#out2 + 1] = { r = r, x0 = x0 - pad, z0 = z0 - pad, x1 = x1 + pad, z1 = z1 + pad }
     end
     return out2
@@ -369,22 +471,32 @@ local function buildChunks(yield)
         for i = 0, n - 1 do
           local x, z = cx * SIZE + i * step, cz * SIZE + j * step
           local y = rawHeight(x, z)
-          -- roads flatten the ground under them to their own height (not under bridges and overpasses)
+          -- roads flatten the ground under them to their own height (not under bridges and overpasses). Every
+          -- height sample within a whole grid cell of a road's edge takes the road's height, so the ground under any
+          -- part of the road is the road (a narrower band left hillside corners in the cells under it: the road
+          -- floated or sank); past that it eases back over BLEND. Where roads come close (switchbacks), the
+          -- nearest one decides.
+          local FULL, BLEND = step * 1.45, 6
+          local bestD, bestY = math.huge, nil
           for _, box in ipairs(roadBoxes) do
-            if x > box.x0 and x < box.x1 and z > box.z0 and z < box.z1 then
+            if x > box.x0 - FULL and x < box.x1 + FULL and z > box.z0 - FULL and z < box.z1 + FULL then
               local r = box.r
               local d, ry = geom.polylineNearest(r[8], x, z)
-              if d < r[4] / 2 + 4 then
-                local t = math.max(0, math.min(1, (d - r[4] / 2) / 4))
-                local onBridge = false
-                for _, rbox in ipairs(ribbonBoxes) do
-                  if x > rbox.x0 and x < rbox.x1 and z > rbox.z0 and z < rbox.z1 then
-                    local d2 = geom.polylineNearest(rbox.r[3], x, z)
-                    if d2 < rbox.r[2] / 2 + 1 then onBridge = true end
-                  end
-                end
-                if not onBridge then y = ry * (1 - t) + y * t - 0.05 * (1 - t) end
+              local edge = d - r[4] / 2
+              if edge < FULL + BLEND and edge < bestD then bestD, bestY = edge, ry end
+            end
+          end
+          if bestY then
+            local onBridge = false
+            for _, rbox in ipairs(ribbonBoxes) do
+              if x > rbox.x0 and x < rbox.x1 and z > rbox.z0 and z < rbox.z1 then
+                local d2 = geom.polylineNearest(rbox.r[3], x, z)
+                if d2 < rbox.r[2] / 2 + 1 then onBridge = true end
               end
+            end
+            if not onBridge then
+              local t = math.max(0, math.min(1, (bestD - FULL) / BLEND))
+              y = bestY * (1 - t) + y * t - 0.05 * (1 - t)
             end
           end
           h[j * n + i + 1] = floor(y * 100 + 0.5) / 100

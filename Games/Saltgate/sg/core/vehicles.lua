@@ -126,8 +126,31 @@ function M.registerLegacy()
     end
   end
   if not physics.car then
-    M.physics("car", function(car, input, dt, world) return vehicle.update(car, input, dt, world) end)
+    -- cars drive over the streamed 3D world (core/drive.lua); a stream registers bikes, boats and the rest
+    M.physics("car", function(car, input, dt, world, opts) return require("sg.core.drive").step(car, input, dt, world, opts) end)
   end
+end
+
+-- ---------------------------------------------------------------- models
+
+local modelers = {}
+
+--- How a class (or one vehicle id) looks: fn(car) -> a Pine3D model facing +x. An id beats its class.
+function M.model(key, fn)
+  if type(fn) ~= "function" then error("vehicles.model needs a function", 2) end
+  modelers[key] = fn
+end
+
+--- The model builder for a car: by its id, then its class, else nil (the core draws today's car shape).
+function M.modelFor(car)
+  local def = defs[car.def or car.kind]
+  return modelers[car.def or car.kind] or (def and modelers[def.class]) or nil
+end
+
+--- The physics for a car table (by its definition), else nil.
+function M.physicsForCar(car)
+  local def = defs[car.def or car.kind]
+  return def and physics[def.class] or nil
 end
 
 return M

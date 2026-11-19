@@ -22,7 +22,8 @@ local function B(list, x0, y0, z0, x1, y1, z1, c, cx, cz, o)
 end
 
 local DARKER = { white = "lightGray", lightGray = "gray", yellow = "orange", orange = "brown", red = "brown", lime = "green",
-  green = "gray", cyan = "blue", lightBlue = "blue", blue = "purple", purple = "gray", magenta = "purple", pink = "magenta",
+  -- shades never land on the sky's slots (purple, magenta, pink, lightBlue change with the hour)
+  green = "gray", cyan = "blue", lightBlue = "blue", blue = "black", purple = "gray", magenta = "red", pink = "red",
   brown = "black", gray = "black", black = "black" }
 
 local function col(name) return C[name] or C.red end

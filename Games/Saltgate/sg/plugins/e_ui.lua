@@ -89,19 +89,10 @@ function P.init(ctx)
   end, "e_ui")
 end
 
-function P.update(ctx, dt)
-  ctx.hud.adopt()
-  ctx.hud.tick(dt)
-  -- the camera key and the rest are the main loop's; here only a title that has not been shown yet
-end
-
-function P.draw(ctx)
+--- The title screen, once, before the first frame of play is drawn (asked from update, which runs before the first
+-- draw, and again from draw in case update did not run).
+local function maybeTitle(ctx)
   local eui = ctx.eui
-  local t = nowSeconds()
-  eui.dt = math.min(0.25, math.max(0, t - eui.lastT))
-  eui.lastT = t
-  ctx.hud.adopt()
-  -- the title screen, once, before the first frame of play
   if not eui.titleShown then
     local top = ctx.ui.top()
     if top and top.name == "play" then
@@ -114,6 +105,22 @@ function P.draw(ctx)
       if not skip and not demo then eui.screens.title() end
     end
   end
+end
+
+function P.update(ctx, dt)
+  ctx.hud.adopt()
+  ctx.hud.tick(dt)
+  -- the camera key and the rest are the main loop's; here only a title that has not been shown yet
+  maybeTitle(ctx)
+end
+
+function P.draw(ctx)
+  local eui = ctx.eui
+  local t = nowSeconds()
+  eui.dt = math.min(0.25, math.max(0, t - eui.lastT))
+  eui.lastT = t
+  ctx.hud.adopt()
+  maybeTitle(ctx)
 end
 
 return require("sg.ui.guard").plugin(P)

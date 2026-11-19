@@ -18,7 +18,8 @@ Bus.__index = Bus
 M.NAMES = {
   -- the player
   vehicle_enter = "vehicle (entity or car table), stolen (bool)",
-  vehicle_exit = "vehicle",
+  vehicle_exit = "vehicle, sunk (bool, the car flooded under you)",
+  vehicle_sunk = "vehicle (a land vehicle that drove into deep water: wrecked)",
   district_enter = "district (gilt|lantern|cinder|brine|mid|...), previous",
   player_hurt = "amount, by (string)",
   player_down = "kind ('nabbed'|'ko')",

@@ -84,7 +84,9 @@ local function findLine(text, cx, cz)
 end
 
 local function maybeYield()
-  if coroutine.running() then coroutine.yield() end
+  -- only inside one of the streamer's jobs: anywhere else under CC a bare yield is os.pullEventRaw and eats the next
+  -- event (the game's frame timer: the map screen called this and the game stopped)
+  if require("sg.core.stream").inJob then coroutine.yield() end
 end
 
 function C:source(cx, cz)
@@ -139,8 +141,9 @@ function C:skyline()
   return s
 end
 
---- Every world chunk (for the whole-city map). Reads every file once.
-function C:chunks()
+--- Every chunk of the city (loaded once and kept). yield, if given, is called between chunks (a test or a loading screen
+-- breathing); never pass one from inside the game's frame (a filtered pull drops the frame timer).
+function C:chunks(yield)
   if self.all then return self.all end
   local out = {}
   local data = self.data
@@ -149,6 +152,7 @@ function C:chunks()
     for cx = b[1], b[3] do
       local c = self:source(cx, cz)
       if c then out[chunkLib.key(cx, cz)] = c end
+      if yield then yield() end
     end
   end
   self.all = out

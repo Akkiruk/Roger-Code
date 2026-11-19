@@ -21,6 +21,9 @@ local util = require("sg.util")
 local M = {}
 local V = {}
 V.__index = V
+-- the core's drawing hooks (layer, minimapLayer, effectLayer, place, variant, view.override, the objective)
+local hooks = require("sg.core.view")
+hooks.install(V)
 
 local cos, sin, abs, floor, deg = math.cos, math.sin, math.abs, math.floor, math.deg
 local atan2 = math.atan2 or math.atan
@@ -131,6 +134,7 @@ function V:camera(ctx, dt)
   self.cam = { x = camX, y = camY, z = camZ, yaw = yaw, pitch = pitch }
   self.r.cam = self.cam
   self.r.frame:setCamera(camX, camY, camZ, 0, deg(yaw), pitch)
+  hooks.overrideCamera(self)
 end
 
 -- ---------------------------------------------------------------- the sky
@@ -352,8 +356,16 @@ function V:scene(ctx)
   for _, fn in ipairs(self.scenery) do fn(list, self) end
   local p = ctx.player
   if not p.car then
-    r:place(list, r:variant("wren", p.h, function() return models.person("orange", false, "gray") end), p.x, (p.y or 0) + 0.05, p.z)
+    -- the player's clothes (ctx.player.outfit = { shirt, legs }: the clothes shop changes them)
+    local o = p.outfit or {}
+    local shirt, legs = o.shirt or "orange", o.legs or "gray"
+    r:place(list, r:variant("wren:" .. shirt .. ":" .. legs, p.h, function() return models.person(shirt, false, legs) end), p.x, (p.y or 0) + 0.05, p.z)
   end
+  -- the objective's beacon and the plugins' layers (people, rail cars, the helicopter, effects' models ...)
+  hooks.sceneHooks(self, ctx, list, cam, function(x, z)
+    local dx, dz = x - cam.x, z - cam.z
+    return dx * dx + dz * dz < 130 * 130 and (dx * fx + dz * fz) > -8
+  end)
   return list
 end
 
@@ -460,6 +472,7 @@ function V:minimap(ctx)
   rows[cy - 2][cx] = C.white
   rows[cy - 2][cx + 1] = C.white
   self.minimapBox = { x0 = x0, y0 = y0, w = mw, h = mh }
+  hooks.minimapHooks(self, ctx, rows, px, pz, scale, fx, fz, rx, rz, x0, y0, mw, mh)
 end
 
 --- The whole map from every chunk given (keyed or a list). North is up; height shows as contour lines.
@@ -554,8 +567,11 @@ function V:draw(ctx, dt)
   local list
   timed("r.scene", function() list = self:scene(ctx) end)
   timed("r.tris", function() self.r.frame:drawObjects(list) end)
-  timed("r.fx", function() self:drawEffects(ctx, dt) end)
-  timed("r.minimap", function() if not self.inside then self:minimap(ctx) end end)
+  timed("r.fx", function()
+    self:drawEffects(ctx, dt)
+    hooks.effectHooks(self, ctx)
+  end)
+  timed("r.minimap", function() if not self.inside and not self.override then self:minimap(ctx) end end)
   timed("r.blit", function() self.r.frame:drawBuffer() end)
   timed("r.hud", function()
     for _, slot in ipairs({ "top-left", "top-right", "objective", "centre", "status", "hints", "bottom-right" }) do

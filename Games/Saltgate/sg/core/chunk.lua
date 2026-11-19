@@ -230,7 +230,7 @@ end
 M.boxOf = boxOf
 
 --- The raised and sunken surfaces (floors and ribbons, not terrain) of a chunk at a point, added to out.
-function M.extraSurfaces(c, x, z, out)
+function M.extraSurfaces(c, x, z, out, groundY)
   for _, f in ipairs(c.floors) do
     local b = boxOf(f, f[3], 2, 0)
     if x >= b[1] and x <= b[3] and z >= b[2] and z <= b[4] and geom.inPolygon(f[3], x, z) then
@@ -242,27 +242,80 @@ function M.extraSurfaces(c, x, z, out)
     if x >= b[1] and x <= b[3] and z >= b[2] and z <= b[4] then
       local d, y = geom.polylineNearest(r[3], x, z)
       if d <= r[2] / 2 then out[#out + 1] = { y = y, kind = r[1], what = r } end
+    end
+  end
+  -- a road is a surface of its own: on it, the ground is the road's height, whatever the coarse height grid says
+  -- (a 5.5-unit grid cannot follow a switchback exactly; the road is the truth). Asked many times a frame, so the
+  -- road segments are kept in a grid of ROAD_CELL cells and only those in the point's cell are looked at.
+  -- Past the edge a SHOULDER eases from the road's height to the ground's, so a road raised above (or cut below) the
+  -- coarse ground is a slope you can walk or drive onto, not a wall. groundY: the ground here (the caller knows it).
+  local cell = c._roadGrid or M.roadGrid(c)
+  local list = cell[floor(x / M.ROAD_CELL) .. "," .. floor(z / M.ROAD_CELL)]
+  if list then
+    local best = {}
+    local S = M.SHOULDER
+    for _, seg in ipairs(list) do
+      local t, d2 = geom.segmentNearest(seg[1], seg[3], seg[4], seg[6], x, z)
+      local hw = seg[7]
+      if d2 <= (hw + S) * (hw + S) then
+        local r = seg[8]
+        -- one surface a road (the nearest of its segments)
+        if not best[r] or d2 < best[r].d2 then best[r] = { d2 = d2, y = seg[2] + (seg[5] - seg[2]) * t, hw = hw } end
+      end
+    end
+    for r, b in pairs(best) do
+      local d = math.sqrt(b.d2)
+      if d <= b.hw then
+        out[#out + 1] = { y = b.y, kind = "road", what = r }
+      else
+        local gy = groundY or M.terrainY(c, x, z)
+        if math.abs(b.y - gy) > 0.3 then
+          local f = (d - b.hw) / S
+          out[#out + 1] = { y = b.y + (gy - b.y) * f, kind = "shoulder", what = r }
+        end
+      end
     end
   end
   return out
 end
 
+M.ROAD_CELL = 8
+M.SHOULDER = 3
+
+--- The chunk's road segments by grid cell (built once, kept as c._roadGrid): each { x1, y1, z1, x2, y2, z2, halfWidth,
+-- road }, in every cell its padded box touches.
+function M.roadGrid(c)
+  local grid = {}
+  local size = M.ROAD_CELL
+  for _, r in ipairs(c.roads) do
+    if r[7] ~= "rail" then
+      local p, hw = r[8], r[4] / 2 + M.SHOULDER -- cells reach the shoulder too
+      for i = 1, #p - 3, 3 do
+        local seg = { p[i], p[i + 1], p[i + 2], p[i + 3], p[i + 4], p[i + 5], r[4] / 2, r }
+        local x0, x1 = math.min(p[i], p[i + 3]) - hw, math.max(p[i], p[i + 3]) + hw
+        local z0, z1 = math.min(p[i + 2], p[i + 5]) - hw, math.max(p[i + 2], p[i + 5]) + hw
+        for gx = floor(x0 / size), floor(x1 / size) do
+          for gz = floor(z0 / size), floor(z1 / size) do
+            local key = gx .. "," .. gz
+            local l = grid[key]
+            if not l then
+              l = {}
+              grid[key] = l
+            end
+            l[#l + 1] = seg
+          end
+        end
+      end
+    end
+  end
+  c._roadGrid = grid
+  return grid
+end
+
 function M.surfaces(c, x, z)
   local out = {}
   out[1] = { y = M.terrainY(c, x, z), kind = "terrain" }
-  for _, f in ipairs(c.floors) do
-    local b = boxOf(f, f[3], 2, 0)
-    if x >= b[1] and x <= b[3] and z >= b[2] and z <= b[4] and geom.inPolygon(f[3], x, z) then
-      out[#out + 1] = { y = f[2], kind = f[1], what = f }
-    end
-  end
-  for _, r in ipairs(c.ribbons) do
-    local b = boxOf(r, r[3], 3, r[2] / 2)
-    if x >= b[1] and x <= b[3] and z >= b[2] and z <= b[4] then
-      local d, y = geom.polylineNearest(r[3], x, z)
-      if d <= r[2] / 2 then out[#out + 1] = { y = y, kind = r[1], what = r } end
-    end
-  end
+  M.extraSurfaces(c, x, z, out)
   if #out > 1 then table.sort(out, function(a, b) return a.y > b.y end) end
   return out
 end

@@ -66,7 +66,6 @@ function M.new(io, cfg, setup, state)
     awaiting = {},     -- player -> when to stop waiting for their APPROVE click, so a payment goes through without another tap
     away = {},         -- station id -> how many looks in a row found its shopper walked away from it
     tappedAt = {},     -- player -> the monitor they last tapped, for what is told them once they click APPROVE
-    known = {},        -- peripheral -> true once the shop has looked at it (discover, attached), until it detaches
     sellView = nil,
     ready = false, status = "Starting", version = 0,
   }, Shop)
@@ -155,13 +154,8 @@ end
 --- Ask a player to approve this computer, if they are the one at it and have not yet. Returns true if they were asked.
 -- Their click is then waited for (upkeep), and what was held up for it goes through.
 function Shop:askApproval(name)
-  -- asked a moment ago, by the same tap (the tap asks first, then check-in): one prompt in chat, not two. Any later tap
-  -- asks again, as before: the last prompt may have been sent while they were on another server, and is gone.
-  self.askedAt = self.askedAt or {}
-  if self.askedAt[name] and now() - self.askedAt[name] < 3000 and self.awaiting[name] then return true end
   if wallet.livePlayer() ~= name or wallet.isApproved() then return false end
   if wallet.requestApproval() == nil then return false end
-  self.askedAt[name] = now()
   self.awaiting[name] = now() + 90000
   return true
 end
@@ -394,31 +388,9 @@ function Shop:link()
   return all
 end
 
---- Whether an item (or a peripheral's name) is a bag the unpacker opens: a Sophisticated Backpack or a shulker box.
-function M.isBag(name)
-  local n = tostring(name):lower()
-  return n:find("backpack", 1, true) ~= nil or n:find("shulker_box", 1, true) ~= nil
-end
-
---- A container block that holds a player's things for a moment (a backpack the unpacker placed, a shulker box): never
--- stock, whatever vaultMatch says ("sophisticatedbackpacks:backpack" has "sophisticated" in it).
-local function isCarrier(kinds)
-  for _, kind in ipairs(kinds) do
-    local k = kind:lower()
-    if k:find("backpack", 1, true) or k:find("shulker", 1, true) then return true end
-  end
-  return false
-end
-
 function Shop:isVaultChest(name)
   if self.chestRole[name] and self.chestRole[name].role ~= "vault" then return false end
   if not self.io.hasType(name, "inventory") then return false end
-  if isCarrier(self.io.types(name)) or M.isBag(name) then
-    return false
-  end
-  -- the unpacker's router is a machine, not a chest
-  local un = self.setup.unpack
-  if un and (name == un.router) then return false end
   for _, listed in ipairs(self.setup.vault or {}) do
     if listed == name then return true end
   end
@@ -458,14 +430,7 @@ function Shop:discover()
       self.stock:add(name)
       self.chestRole[name] = { role = "vault" }
     end
-    self.known[name] = true
   end
-end
-
---- Whether the shop has already looked at this peripheral (found it, or handled its attach) and it has not gone since:
--- its attach event then needs nothing.
-function Shop:knows(name)
-  return self.known[name] == true
 end
 
 function Shop:watchAll()
@@ -480,7 +445,6 @@ end
 
 --- A peripheral is back (its computer loaded, or a link was made).
 function Shop:attached(name)
-  self.known[name] = true
   local role = self.chestRole[name]
   if not role and self:isVaultChest(name) then
     self.stock:add(name)
@@ -510,7 +474,6 @@ function Shop:attached(name)
 end
 
 function Shop:detached(name)
-  self.known[name] = nil
   unwatched(self, name)
   if self.stock:has(name) then self.stock:lose(name) end
   self:changed()
@@ -1878,188 +1841,6 @@ function Shop:sellPrepare(details, seller, caps)
   return changed, busy
 end
 
--- ---------------------------------------------------------------- the backpack unpacker
--- A Modular Router at the sell point (setup P): the shop pushes a bag from the sell chest into the router; the router
--- places it (it then shows up as an inventory on the same node); the shop buys what it would buy from the sell chest,
--- straight out of the bag, for store credit (a sale whose `from` is the bag, so finishSale's recovery covers it); then it
--- pulses the router through a Redstone Integrator, and the router breaks the bag and sends it, with whatever is left, to
--- the returns chest. Each step is written down first (state.unpack), so a reboot at any point goes on from where it was.
-
-local UNPACK_WAIT_MS = 30000   -- a bag the router has not placed in this long is given back
-local PULSE_AGAIN_MS = 5000    -- a placed bag still there this long after a pulse is pulsed again
-local PULSES = 5               -- then the shop gives up on it and says so
-
---- The bag the router has placed right now: the inventory of a bag type on the router's node, or nil.
-function Shop:placedBag()
-  local un = self.setup.unpack
-  if not (un and un.router) then return nil end
-  local node = un.router:match("^(%d+:)") or ""
-  -- the placed bag is on the router's wired network, so its name is its type ("sophisticatedbackpacks:backpack_3"):
-  -- only names like that are asked their type
-  for _, name in ipairs(self.io.names()) do
-    if name:sub(1, #node) == node and name ~= un.router and M.isBag(name)
-      and self.io.hasType(name, "inventory") and isCarrier(self.io.types(name)) then
-      return name
-    end
-  end
-  return nil
-end
-
---- Who a bag in the sell chest is from: the same rule as buy on drop (sellSeller: the one player at the sell point,
--- else whoever tapped its screen lately). nil when that cannot be told: the bag waits.
-function Shop:sellerNow()
-  return (self:sellSeller())
-end
-
-function Shop:pulseRouter()
-  local un = self.setup.unpack
-  if not (un and un.integrator) then return false end
-  local side = un.side or "up"
-  -- A rising edge held a few server ticks: each Redstone Integrator call takes a server tick, so reading it back a few
-  -- times holds the signal without a sleep (a timer would let other jobs' events pile up behind it).
-  self.io.call(un.integrator, "setOutput", side, false)
-  local ok = self.io.call(un.integrator, "setOutput", side, true)
-  for _ = 1, 4 do self.io.call(un.integrator, "getOutput", side) end
-  self.io.call(un.integrator, "setOutput", side, false)
-  return ok
-end
-
---- One step of the unpacker, whatever it was doing. Called often (upkeep, after a look at the sell chest); cheap when idle.
-function Shop:unpackStep()
-  local un, sell = self.setup.unpack, self.setup.sell
-  if not (un and un.router and sell and sell.chest) or self.state.sale or self.state.moving then return end
-  local st = self.state
-  local job = st.unpack
-  if not job then
-    -- something sitting in the router that is not on its way (it could not place it): back to the sell chest, and that
-    -- bag is refused from now on rather than tried again
-    local ok, held = self.io.call(un.router, "list")
-    if ok and type(held) == "table" and next(held) then
-      self.routerSeen = (self.routerSeen or 0) + 1
-      if self.routerSeen >= 2 then
-        for slot, item in pairs(held) do st.unpackFailed[rules.key(item)] = true end
-        self:save("unpack-stuck")
-        local moves = {}
-        for slot in pairs(held) do moves[#moves + 1] = { fromSlot = slot, to = sell.chest } end
-        self.stock:batch(un.router, moves)
-        self.routerSeen = nil
-        store.log("unpacker: the router held something it did not place; it went back to the sell chest")
-      end
-      return
-    end
-    self.routerSeen = nil
-    local bag = self.sellView and self.sellView.bags and self.sellView.bags[1]
-    if not bag then return end
-    -- whose it is, by the buy-on-drop rule; when that cannot be told the bag waits (credit goes to a person, never "?")
-    local by = self:sellerNow()
-    if not by then return end
-    st.unpack = { phase = "sending", key = bag.key, slot = bag.slot, by = by, at = now() }
-    self:save("unpack-send")
-    job = st.unpack
-  end
-
-  if job.phase == "sending" then
-    local ok, list = self.io.call(sell.chest, "list")
-    if not ok or type(list) ~= "table" then return end
-    local item = list[job.slot]
-    if item and rules.key(item) == job.key then
-      self.stock:batch(sell.chest, { { fromSlot = job.slot, to = un.router } })
-      ok, list = self.io.call(sell.chest, "list")
-      if not ok or type(list) ~= "table" then return end
-      item = list[job.slot]
-      if item and rules.key(item) == job.key then
-        -- the router would not take it (full): leave it and try again later
-        st.unpack = nil
-        self:save("unpack-busy")
-        return
-      end
-    end
-    job.phase, job.at = "sent", now()
-    self:save("unpack-sent")
-  end
-
-  if job.phase == "sent" then
-    local bag = self:placedBag()
-    if not bag then
-      if now() - (job.at or 0) > UNPACK_WAIT_MS then
-        -- never placed: the stuck rule above gives it back
-        st.unpackFailed[job.key] = true
-        st.unpack = nil
-        self:save("unpack-unplaced")
-      end
-      return
-    end
-    local ok, details = self.io.call(bag, "listDetailed")
-    if not ok or type(details) ~= "table" then return end
-    self.stock:learn(details)
-    local sale = { id = self:nextId(), seller = job.by, mode = "credit", keys = {}, returns = {}, phase = "moving", from = bag }
-    local slots, n = {}, 0
-    for slot, detail in pairs(details) do
-      local key = rules.key(detail)
-      local piece = self.stock.known[key]
-      if piece and not M.isBag(detail.name) and not self:tabbed(key) and not self:paidFor(key) and rules.accepts(piece, self.cfg) then
-        sale.keys[key] = (sale.keys[key] or 0) + 1
-        slots[slot] = key
-        n = n + 1
-      end
-    end
-    job.bag, job.phase = bag, "selling"
-    if n > 0 then
-      st.sale = sale
-      self:save("unpack-sell")
-      local _, movedKeys = self.stock:put(bag, slots)
-      self:finishSale(movedKeys, sell.monitor)
-      job.bought = n
-    else
-      job.bought = 0
-    end
-    job.phase = "pulse"
-    self:save("unpack-pulse")
-  end
-
-  if job.phase == "selling" then
-    -- a reboot came while the sale was under way: finishSale has put it right (boot, mend), so it is time to pulse
-    job.phase = "pulse"
-    self:save("unpack-pulse")
-  end
-
-  if job.phase == "pulse" or job.phase == "pulsed" then
-    local bag = self:placedBag()
-    if not bag then
-      job.phase, job.at = "returning", now()
-      self:save("unpack-gone")
-    elseif job.phase == "pulse" or now() - (job.pulsedAt or 0) > PULSE_AGAIN_MS then
-      if (job.pulses or 0) >= PULSES then
-        self.trouble = "The unpacker cannot break the bag: check the router"
-        return
-      end
-      self:pulseRouter()
-      job.phase, job.pulsedAt, job.pulses = "pulsed", now(), (job.pulses or 0) + 1
-      self:save("unpack-pulsed")
-      return
-    end
-  end
-
-  if job.phase == "returning" then
-    -- the bag lands in the returns chest: put it down to its owner, like refused gear
-    local returns = self.setup.returns
-    local ok, list = returns and returns.chest and self.io.call(returns.chest, "list")
-    if ok and type(list) == "table" then
-      for _, item in pairs(list) do
-        local key = rules.key(item)
-        if M.isBag(item.name) and st.returnsBy[key] == nil then st.returnsBy[key] = job.by end
-      end
-    end
-    if (ok and type(list) == "table") or now() - (job.at or 0) > 20000 or not (returns and returns.chest) then
-      local done = st.unpack
-      st.unpack = nil
-      self.unpacked = { by = done.by, bought = done.bought or 0, at = now() }
-      self:save("unpack-done")
-      self:sellScan()
-    end
-  end
-end
-
 --- Look at the sell chest and work out the offer. With sellOnDrop (the default) what the shop buys is then bought at
 -- once, for store credit, from whoever is at the sell point (sellSeller); `as` is a seller who tapped STORE CREDIT.
 function Shop:sellScan(again, as)
@@ -2101,8 +1882,7 @@ function Shop:sellScan(again, as)
     end
   end
   self.sellHeld = self.sellHeld or {}
-  local view = { accepted = {}, rejected = {}, returns = {}, held = {}, bags = {} }
-  local unpacking = self.setup.unpack and self.setup.unpack.router
+  local view = { accepted = {}, rejected = {}, returns = {}, held = {} }
   local heldNow = {}
   for slot, detail in pairs(details) do
     local key = rules.key(detail)
@@ -2121,10 +1901,6 @@ function Shop:sellScan(again, as)
     end
     if wait then
       view.held[#view.held + 1] = { slot = slot, key = key, label = piece and piece.label or detail.name, why = wait }
-    elseif unpacking and not caps.contents and M.isBag(detail.name) and not self.state.unpackFailed[key] then
-      -- a server that cannot open a bag in the sell chest (older vhcctweaks): the Modular Router unpacker does, one at
-      -- a time (Shop:unpackStep)
-      view.bags[#view.bags + 1] = { slot = slot, key = key, label = piece and piece.label or detail.name }
     elseif self:tabbed(key) or self:paidFor(key) then
       view.returns[#view.returns + 1] = { slot = slot, key = key, label = piece.label }
     else
@@ -2252,9 +2028,7 @@ function Shop:finishSale(movedKeys, monitor)
   local sell = self.setup.sell
   monitor = monitor or (sell and sell.monitor)
   if not movedKeys then
-    -- where the pieces were: the sell chest, or a backpack the unpacker placed (sale.from)
-    local from = sale.from or sell.chest
-    local ok, list = self.stock:listKnown(from)
+    local ok, list = self.stock:listKnown(sell.chest)
     if not ok or type(list) ~= "table" then return false end
     -- what is still in the chest goes on to the vault first
     local slots, left = {}, {}
@@ -2266,7 +2040,7 @@ function Shop:finishSale(movedKeys, monitor)
         slots[slot] = key
       end
     end
-    local _, went = self.stock:put(from, slots)
+    local _, went = self.stock:put(sell.chest, slots)
     movedKeys = {}
     local function settle(key, wanted)
       if movedKeys[key] then return end
@@ -2459,8 +2233,6 @@ function Shop:upkeep()
     if sell and sell.chest and (self:differs(sell.chest) or waiting) then self:sellScan() end
     if intake and intake.chest and self:differs(intake.chest) then self:intake() end
     if due(self, "returns", 30) then self:pruneReturns() end
-    -- the backpack unpacker, a step at a time
-    if self.setup.unpack then self:unpackStep() end
   end
   if due(self, "rescan", self.cfg.rescanSeconds) then
     local name = self.stock:nextTurn(self.watched)

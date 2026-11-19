@@ -47,7 +47,7 @@ function P.init(ctx)
       local d2 = dx * dx + dz * dz
       if d2 < 80 * 80 and (dx * fx + dz * fz) > -4 then
         local down = ped.state == "down"
-        local shirt = ped.shirt
+        local shirt = ped.shirt or "white" -- story people may come without one
         local key = "ped:" .. shirt .. (down and ":d" or "")
         local y = (ped.y or 0) + 0.05
         if ped.state == "walk" or ped.state == "flee" then y = y + 0.07 * math.abs(math.sin(t * (ped.state == "flee" and 14 or 7) + (ped.wob or 0))) end

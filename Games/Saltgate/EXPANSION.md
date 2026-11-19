@@ -54,7 +54,8 @@ Every name must be in `events.NAMES`. An unknown name is an error. To add one, a
 | Event | Data |
 |---|---|
 | `vehicle_enter` | vehicle, stolen |
-| `vehicle_exit` | vehicle |
+| `vehicle_exit` | vehicle, sunk (the car flooded under you) |
+| `vehicle_sunk` | vehicle (a land vehicle that drove into deep water stalls, floods after 1.2 s and is a wreck; the driver swims out) |
 | `district_enter` | district, previous |
 | `player_hurt` | amount, by |
 | `player_down` | kind (`nabbed` or `ko`) |
@@ -233,12 +234,37 @@ ctx.ui.widget({ name, slot, priority, draw(ctx, term), visible?(ctx) })
 Each stream adds files `sg/plugins/<letter>_<name>.lua` (for example `a_world.lua`, `c_police.lua`). Each returns:
 
 ```lua
-{ name = "<file name>", order = n, needs = { ... }, init(ctx), update(ctx, dt)?, draw(ctx)? }
+{ name = "<file name>", order = n, needs = { ... }, init(ctx), input(ctx, inp)?, update(ctx, dt)?, draw(ctx)? }
 ```
 
 - They are found by themselves; nobody edits a list.
 - A plugin that fails to load is logged and left out.
-- `ctx` holds: `bus`, `world`, `stream`, `roads`, `content`, `ui`, `save`, `vehicles`, `budget`, `player`, `cars`, `view`, `log`.
+- Every frame the core calls, in this order:
+  1. each plugin's `input(ctx, inp)`;
+  2. the top screen's `input(ctx, inp, dt)` and `update(ctx, dt)`, if a plugin registered that screen;
+  3. the world (cars, `car.brain`, the world's systems, streaming);
+  4. each plugin's `update(ctx, dt)`, while no modal screen is up;
+  5. the top screen's `draw`, then each plugin's `draw(ctx)`.
+- `ctx` holds: `bus`, `world`, `stream`, `roads`, `content`, `ui`, `save`, `vehicles`, `budget`, `player`, `cars`, `view`, `log`, and:
+
+| Field | What it is |
+|---|---|
+| `ctx.input` | the keys (`sg/input.lua`). `ctx.input:bind(action, { keys.x, ... })` at init adds your own action; read it with `down(action)` and `pressedAction(action)`. |
+| `ctx.objective` | where the player should go: a table `{ text, x, z, kind, colour }` or a function returning one. The core draws the beacon, the minimap dot (pinned to the edge) and the arrow, distance and text at the top. Without it, the core falls back to `ctx.story.target()`. |
+| `ctx.sfx(name)` | a sound effect from `sg/sound.lua`'s cues. Capped at 2 notes a tick while the soundtrack plays. |
+| `ctx.music.cue(name)`, `ctx.music.setDistrict(d)` | the soundtrack (no-ops without one). The core sends `driving`/`free_roam` on getting in and out, the district when it changes, and calls `init`/`update` itself. |
+| `ctx.clock.hour` | the time of day, 0–24, a game hour a real minute, saved in `save.world.time`. The core emits `time_of_day` once a game minute (hour, phase dawn/day/dusk/night). Stream A's sky reads it. |
+| `ctx.bump(a, b)` | if set, replaces car-against-car contact. |
+| `ctx.coreSendsVehicleEvents` | `true`: `vehicle_enter { vehicle, stolen }` and `vehicle_exit { vehicle }` come from the core. |
+| `car.brain(ctx, car, dt)` | a car's own driver. It returns the input (`throttle`, `steer`, `handbrake`) for the physics. Used before `car.follow`. |
+| `ctx.setWorld(def)` | puts the game in a world: `{ id, source(cx, cz), spawn = { x, z, h }, view?, build?, drop?, chunks?, drawMap?, at? }`. It clears the streamer, loads round the start (or the saved place if the save is from the same world id), and moves you and your car there. Stream A's plugin calls it with the city. Without `content/world` the core uses the testbed. |
+| `ctx.worldDef` | the world in use. |
+| `ctx.setPalette(pal)` | colours by name (`{ purple = 0x5A4785, ... }`). Sets the screen and the 3D frame's window (a window pushes its own palette on every blit), then re-tunes the pixel mixer. Use it for every palette change. |
+| `ctx.clock.owner` | a plugin that runs the day (A's sky) sets this and keeps `ctx.clock.hour` up to date; the core then neither moves the clock nor sends `time_of_day`. |
+| `ctx.noTitle` | true on benches (or with `saltgate_notitle.flag`): no title screen. |
+| `ctx.routesScreenInput` | true: the core calls plugin and screen input (no need to read `os.pullEventRaw` yourself). |
+| `ctx.player.outfit` | `{ shirt, legs }` colour names for Wren; the views draw them. |
+| Paint | never the sky's slots (`purple`, `magenta`, `pink`, `lightBlue`): they change with the hour. |
 
 ### Budget: `core/budget.lua`
 
@@ -252,6 +278,31 @@ F3 shows the timings in game.
 ### Drawing: `core/view.lua`, `core/chunkmodel.lua`, `core/mapview.lua`
 
 These are the reference renderer: terrain mesh, roads along curves, decks and pillars, rotated buildings, a heading-up minimap with contour lines, and the map. **Stream A takes these over**, starting by forking them into `sg/world/`; core keeps the interface (`builder()`, `draw(ctx, dt)`, `drawMap(ctx, chunks)`).
+
+**The drawing hooks** (one API for every stream; stream A's renderer keeps them):
+
+```lua
+ctx.view:layer(name, function(ctx, view, list, cam) end)
+  -- add 3D objects to the scene each frame: view:place(list, view:variant(key, heading, makeModel), x, y, z)
+ctx.view:minimapLayer(name, function(ctx, view, dot) end)
+  -- dot(x, z, colour [, pinToEdge])
+ctx.view:effectLayer(name, function(ctx, view, rows, cam) end)
+  -- pixels after the 3D and before the blit (particles, tracers, rain, flashes);
+  -- rows[y][x] = colour; view.r.frame:map3dTo2d(x, y, z) -> px, py, inFront
+ctx.view.override = { x, y, z, yaw, pitch }
+  -- take the camera (cutscenes); the minimap hides while it is set
+vehicles.model(idOrClass, function(car) return model end)
+  -- how a vehicle class or id looks; car.damageStage picks a dented model
+vehicles.physics(class, fn(car, input, dt, world, opts))
+  -- a class's physics; cars default to core/drive.lua
+```
+
+Please move to these instead of wrapping `view.scene`, `view.minimap`, `view.camera`, `frame.drawBuffer`, `follow.input`, `drive.step`, `vehicle.bump`, `models.car` or `sg.input.new`. The wrappers still work for now.
+
+**Ground rules that changed after step 0:**
+- A road is a surface itself: on a road, the ground is the road's height.
+- The player swims (slowly, at the surface) in deep water.
+- The camera never goes under water.
 
 ### Tests and tools
 
@@ -305,7 +356,10 @@ Light use: one emulator process at a time, other agents share the machine.
 - **Uses:** the chunk format, `geom.curve`, stream, content, events `time_of_day`, `weather`, `chunk_loaded`, `interior_enter`/`interior_exit`, `quality`.
 - **Gate:**
   - every chunk passes `chunk.validate`;
-  - every road node is reachable on the graph;
+  - every road node is reachable on the graph (the testbed joins stragglers with `connectAll`);
+  - no road steeper than 1 in 5 (`testbed.MAX_GRADE`: ends meet their junctions' heights, then the grade is eased);
+  - the ground under every road is flattened to it within a whole height cell, and blended beyond;
+  - switchbacks at least 20 units apart;
   - no building stands on a road;
   - emulator screenshots, top-down and in game, for every district at dawn, noon, dusk and night, showing curves and height;
   - `budget.mjs` passes.

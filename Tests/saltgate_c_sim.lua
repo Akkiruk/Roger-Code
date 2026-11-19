@@ -27,6 +27,7 @@ local follow = require("sg.core.follow")
 local testbed = require("sg.core.testbed")
 local vehicle = require("sg.vehicle")
 local util = require("sg.util")
+local testing = require("testing")
 
 --- Stand-in for the renderer: place() counts, variant() builds the model once so a model that errors is found.
 local function fakeRenderer()
@@ -126,7 +127,11 @@ function M.step(ctx, dt, input)
     if pl.update then ctx.budget:time(pl.name, function() pl.update(ctx, dt) end) end
   end
   ctx.budget:frame(4)
-  return os.clock() - t0
+  -- CC stops code that runs 7 s (wall time) without yielding: on a busy machine a long test loop got there, so every
+  -- step breathes (testing.breathe yields at most every half second, and only under CC)
+  local cost = os.clock() - t0
+  testing.breathe()
+  return cost
 end
 
 --- Draw one frame's worth through the stand-in renderer (to prove the draw hooks run).

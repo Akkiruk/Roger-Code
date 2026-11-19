@@ -556,6 +556,22 @@ t.test("b keys: J fire, K target, L weapon and 1-6 are added to the game's input
   combatInput.uninstall()
 end)
 
+t.test("b keys: the core's ctx.input, made before the plugins load, gets J fire too (the play-test found J dead)", function()
+  local keys = fakeKeys()
+  local ctx = newCtx()
+  combatInput.uninstall()
+  ctx.input = inputlib.new(keys)
+  local inp = ctx.input
+  t.truthy(combatInput.install(function() return ctx end, keys))
+  t.eq(ctx.input, inp, "the same object, extended")
+  inp:event(0, "key", keys.j, false)
+  t.truthy(combatInput.read(inp).fire, "J fires")
+  inp:endFrame(0)
+  inp:event(0, "key_up", keys.j)
+  inp:endFrame(0)
+  combatInput.uninstall()
+end)
+
 t.test("b keys: every direction still moves the right way with real key timing, and a knocked-down player reads as pressing nothing", function()
   local keys = fakeKeys()
   local ctx, cb = newCtx()
