@@ -135,6 +135,13 @@ local function runShop()
     jobs[#jobs + 1] = { key = key, fn = fn }
     os.queueEvent("gs_job")
   end
+  --- A job that goes ahead of every other waiting: one that must happen while a player's tap is still fresh.
+  local function postFirst(key, fn)
+    if queued[key] then return end
+    queued[key] = true
+    table.insert(jobs, 1, { key = key, fn = fn })
+    os.queueEvent("gs_job")
+  end
 
   local function worker()
     local ok, err = pcall(function() shop:boot() end)
@@ -188,16 +195,29 @@ local function runShop()
     views[name] = views[name] or {}
     return views[name]
   end
-  -- the monitors the shop can reach that have no job: worked out again when peripherals come or go
-  local spare = nil
+  -- The monitors the shop can reach that have no job: worked out again when peripherals come or go. Asking every
+  -- peripheral its type is a call that can wait on a linked computer, so the worker does it (screen coroutine: never).
+  -- spareGen counts the changes: a list worked out while peripherals were still coming (a node being linked) is worked
+  -- out again, not kept.
+  local spare, spareList, spareAsked, spareGen = nil, {}, false, 0
   local function spareMonitors()
-    if not spare then
-      spare = {}
-      for _, name in ipairs(io.names()) do
-        if not shop.monitorRole[name] and io.hasType(name, "monitor") then spare[#spare + 1] = name end
-      end
+    if not spare and not spareAsked then
+      spareAsked = true
+      local gen = spareGen
+      post("spare", function()
+        local list = {}
+        for _, name in ipairs(io.names()) do
+          if not shop.monitorRole[name] and io.hasType(name, "monitor") then list[#list + 1] = name end
+        end
+        spareList, spareAsked = list, false
+        spare = gen == spareGen or nil
+        os.queueEvent("gs_draw")
+      end)
     end
-    return spare
+    return spareList
+  end
+  local function spareChanged()
+    spare, spareGen = nil, spareGen + 1
   end
 
   local function drawMonitors()
@@ -241,6 +261,7 @@ local function runShop()
       dump.trouble, dump.linkTrouble, dump.watches = shop.trouble, shop.linkTrouble, shop.watches
       dump.sale, dump.payment, dump.payout = state.sale, state.payment, state.payout
       dump.paid, dump.refunds, dump.collecting, dump.paying = state.paid, state.refunds, state.collecting, state.paying
+      dump.unpack, dump.unpackFailed = state.unpack, state.unpackFailed
       local ok, text = pcall(textutils.serializeJSON, dump)
       if ok then
         local h = fs.open(DEBUG_FILE .. ".tmp", "w")
@@ -281,6 +302,7 @@ local function runShop()
     if used(d.door) or used(d.sell) or used(d.kiosk) or used(d.intake) or used(d.returns) or used(d.junk) or used(d.info) then
       return true
     end
+    if d.unpack and (d.unpack.router == name or d.unpack.integrator == name) then return true end
     for _, s in ipairs(d.stations) do
       if used(s) then return true end
     end
@@ -496,6 +518,8 @@ local function runShop()
       line("U returns " .. describe(d.returns, { "chest" }))
       line("J junk    " .. describe(d.junk, { "chest" }))
       line("H info    " .. describe(d.info, { "monitor" }) .. (d.info and "" or " (the how-it-works screen)"))
+      line("P unpack  " .. (d.unpack and (tostring(d.unpack.router) .. " / " .. tostring(d.unpack.integrator) .. " " .. tostring(d.unpack.side))
+        or "not set (backpacks at the sell point)"))
       line("A add a display station  R drop the last  (" .. #d.stations .. " set)")
       line("G a station's gear type or wing   M its monitor", colors.lightGray)
       local rows = th - y - 2
@@ -712,6 +736,50 @@ local function runShop()
         d.intake = { chest = r.chest }
         say("Intake set." .. (r.warning or ""))
       end)
+    elseif ch == "p" then
+      -- the backpack unpacker at the sell point: its Modular Router and the Redstone Integrator that pulses it
+      local routers, integrators = {}, {}
+      for _, name in ipairs(io.names()) do
+        local own = d.unpack and (d.unpack.router == name or d.unpack.integrator == name)
+        if own or not assigned(name) then
+          for _, kind in ipairs(io.types(name)) do
+            if kind:lower():find("modular_router", 1, true) then routers[#routers + 1] = name end
+            if kind == "redstoneIntegrator" then integrators[#integrators + 1] = name end
+          end
+        end
+      end
+      local function side(router, integrator)
+        ask("Integrator side to the router [up]: ", function(text)
+          d.unpack = { router = router, integrator = integrator, side = text ~= "" and text:lower() or "up" }
+          say("Unpacker set. W to write it.")
+        end)
+      end
+      local function pickIntegrator(router)
+        if #integrators == 1 then return side(router, integrators[1]) end
+        say(#integrators == 0 and "No Redstone Integrator is attached." or ("Integrators: " .. table.concat(integrators, " ")))
+        ask("Redstone integrator name: ", function(text)
+          if not io.hasType(text, "redstoneIntegrator") then
+            say("That is no Redstone Integrator.")
+            return
+          end
+          side(router, text)
+        end)
+      end
+      if #routers == 0 and d.unpack then
+        d.unpack = nil
+        say("Unpacker removed. W to write it.")
+      elseif #routers == 1 then
+        pickIntegrator(routers[1])
+      else
+        say(#routers == 0 and "No Modular Router is attached." or ("Routers: " .. table.concat(routers, " ")))
+        ask("Router name: ", function(text)
+          if not (io.isPresent(text) and io.hasType(text, "inventory")) then
+            say("No inventory is called that.")
+            return
+          end
+          pickIntegrator(text)
+        end)
+      end
     elseif ch == "h" then
       -- the how-it-works screen: a monitor that only explains the shop
       startWizard("HOW-IT-WORKS SCREEN", "the how-it-works screen", { { kind = "monitor" } }, function(r)
@@ -1027,6 +1095,10 @@ local function runShop()
     local role = shop.monitorRole[monitor]
     local s = screens[monitor]
     if not role or not s then return end
+    -- The one-time APPROVE is asked for first, ahead of everything waiting, while this tap is fresh: on vhcctweaks
+    -- 2.2.36 the server only lets the shop ask (and charge) within 30 s of a touch, and filling a station or reading
+    -- a player can take longer than that on a busy server. A player already approved is not asked.
+    if who and shop.ready then postFirst("approve:" .. who, function() shop:askApproval(who) end) end
     local button = s:hit(x, y)
     -- Any tap on a shop screen (a button or not, the how-it-works screen too) by someone who owes the shop pays it first:
     -- jobs run in order, so this goes before what the tap asked for. PAY does it itself.
@@ -1152,13 +1224,20 @@ local function runShop()
       elseif event == "inventory_changed" then
         chestChanged(e[2])
       elseif event == "peripheral" then
+        -- A peripheral the shop already has needs nothing: the link attaches every node's peripherals again at boot,
+        -- right after the first draw, and a full redraw of each screen then held up the shop's first wallet call by
+        -- 16-36 s under load (a tap's touch is only fresh for 30 s on vhcctweaks 2.2.36). A screen already measured
+        -- and drawn stays as it is; a detach clears it, and a node that restarts says so and is drawn again in full.
         local name = e[2]
-        screens[name], spare = nil, nil
-        if shop.ready then post("attach:" .. name, function() shop:attached(name) end) end
-        admin.dirty = true
+        if not shop:knows(name) then
+          spareChanged()
+          if shop.ready then post("attach:" .. name, function() shop:attached(name) end) end
+          admin.dirty = true
+        end
       elseif event == "peripheral_detach" then
         local name = e[2]
-        screens[name], spare = nil, nil
+        screens[name] = nil
+        spareChanged()
         post("detach:" .. name, function() shop:detached(name) end)
         admin.dirty = true
       elseif event == "monitor_resize" then
@@ -1187,7 +1266,7 @@ local function runShop()
           for name in pairs(screens) do
             if name:sub(1, #prefix) == prefix then screens[name] = nil end
           end
-          spare = nil
+          spareChanged()
           os.queueEvent("gs_draw")
         end
       end
