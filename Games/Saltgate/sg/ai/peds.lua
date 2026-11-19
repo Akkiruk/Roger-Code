@@ -124,6 +124,7 @@ function P:scare(x, z, radius, kind)
       local away = atan2(ped.z - z, ped.x - x) + (self.rng() - 0.5) * 0.9
       ped.state = (ped.officer and kind ~= "gunfire") and "stand" or "flee"
       if ped.state == "flee" then
+        ped.dodge = nil
         ped.fleeH = away
         ped.t = 4 + self.rng() * 3
         ped.cower = (self.rng() < 0.18) and 2.5 or nil
@@ -245,7 +246,7 @@ local function update(self, ped, dt)
           local along = rx * fx + rz * fz
           local lateral = rx * fz - rz * fx
           if along > 0 and abs(lateral) < 3.2 then
-            ped.state, ped.t = "flee", 1.6
+            ped.state, ped.t, ped.dodge = "flee", 1.6, true -- a sidestep out of a car's way (not running from trouble)
             -- sidestep: across the car's line, away from it
             local sgn = lateral >= 0 and 1 or -1
             ped.fleeH = atan2(-fx * sgn, fz * sgn)
@@ -280,7 +281,7 @@ local function update(self, ped, dt)
   elseif st == "dazed" then
     ped.t = ped.t - dt
     if ped.t <= 0 then
-      ped.state, ped.t, ped.fleeH = "flee", 3 + self.rng() * 2, (ped.fleeH or 0) + math.pi + (self.rng() - 0.5)
+      ped.state, ped.t, ped.fleeH, ped.dodge = "flee", 3 + self.rng() * 2, (ped.fleeH or 0) + math.pi + (self.rng() - 0.5), nil
     end
   end
 end

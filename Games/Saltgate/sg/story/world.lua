@@ -156,7 +156,22 @@ local function nodeNear(roads, x, z)
   return nodeId, e
 end
 
---- Plan a runner's way along the road graph from where it is to the last place of its route.
+--- The loaded road node nearest a point (the road graph holds only the chunks round the player).
+local function nearestLoadedNode(roads, x, z)
+  local best, bd
+  for id, n in pairs(roads.nodes or {}) do
+    if n.x and n.defined then
+      local d = (n.x - x) ^ 2 + (n.z - z) ^ 2
+      if not bd or d < bd then best, bd = id, d end
+    end
+  end
+  return best
+end
+
+--- Plan a runner's way along the road graph from where it is to the last place of its route. The graph holds only
+-- the chunks loaded round the player: when a place is past them, the plan goes as far toward it as the loaded roads
+-- reach (f.partial) and the runner plans again as more of the city loads (see W:update). Without that a runner whose
+-- goal was past the loaded roads had no route and wandered at random (Pit Wall's courier circled the counting house).
 local function plan(self, car, route)
   local roads = self.ctx.roads
   if not roads then return nil end
@@ -166,20 +181,32 @@ local function plan(self, car, route)
   local fromId = (f.dir == 1) and f.edge.b or f.edge.a
   for _, name in ipairs(route) do
     local pl = self:place(name)
-    if pl then
+    if pl and fromId then
       local toId = nodeNear(roads, pl.x, pl.z)
-      if toId and fromId then
-        local ids, edges = roads:path(fromId, toId)
-        if edges then
-          for _, e in ipairs(edges) do list[#list + 1] = e end
-          fromId = toId
+      local edges
+      if toId then
+        local _, e = roads:path(fromId, toId)
+        edges = e
+      end
+      if edges then
+        for _, e in ipairs(edges) do list[#list + 1] = e end
+        fromId = toId
+      else
+        -- past the loaded roads: as near as they go, and plan again later
+        local near = nearestLoadedNode(roads, pl.x, pl.z)
+        if near and near ~= fromId then
+          local _, e = roads:path(fromId, near)
+          if e then for _, ed in ipairs(e) do list[#list + 1] = ed end end
         end
+        f.partial = true
+        break
       end
     end
   end
   f.route = list
   return f
 end
+M.REPLAN_SECONDS = 3
 
 function W:spawn(kind, at, opts)
   local x, z = self:pos(at or "player")
@@ -373,8 +400,30 @@ function W:update(dt)
     local r = c.d_run
     if r and r.state == "ok" then
       r.t = r.t + dt
+      -- a plan that stopped at the edge of the loaded roads is made again when it runs out (more of the city has loaded)
+      local f = c.follow
+      if f and (not f.route or #f.route == 0) and #r.route > 0 then
+        r.replan = (r.replan or M.REPLAN_SECONDS) - dt
+        if r.replan <= 0 then
+          r.replan = M.REPLAN_SECONDS
+          local again = plan(self, c, r.route)
+          if again and #again.route > 0 then c.follow = again end
+        end
+      end
       local last = r.route[#r.route] and self:place(r.route[#r.route])
-      if last and dist(c.x, c.z, last.x, last.z) < (last.r or 6) + 3 and r.t > 2 then
+      -- arrived: at the place, or as near as the roads go (a door on a plaza is off the road: the Gilt Tower's is 17
+      -- units from the ring road, and the courier went round the ring for ever)
+      local reach = last and ((last.r or 6) + 3) or 0
+      if last and ctx.roads then
+        if not r.offRoad then
+          -- how far the place is from the road node a plan ends at (see plan: nodeNear)
+          local id = nodeNear(ctx.roads, last.x, last.z)
+          local n = id and ctx.roads:node(id)
+          r.offRoad = (n and n.x) and dist(n.x, n.z, last.x, last.z) or false
+        end
+        if r.offRoad then reach = math.max(reach, r.offRoad + 6) end
+      end
+      if last and dist(c.x, c.z, last.x, last.z) < reach and r.t > 2 then
         r.state = "arrived"
         c.follow = nil
       elseif r.flees then

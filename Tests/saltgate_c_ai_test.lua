@@ -397,7 +397,8 @@ t.test("c peds: gunfire sends everyone near running, and they come back to walki
   for _, p in ipairs(far) do t.truthy(p.state ~= "flee", "beyond earshot they carry on") end
   for _ = 1, 400 do sim.step(ctx, 0.05, { handbrake = true }) end
   local still = 0
-  for ped in pairs(P.list) do if ped.state == "flee" then still = still + 1 end end
+  -- (a sidestep out of a passing car's way, ped.dodge, is not running from the shots)
+  for ped in pairs(P.list) do if ped.state == "flee" and not ped.dodge then still = still + 1 end end
   t.truthy(still <= 3, "they have settled again: " .. still)
   local _ = ctx
 end)

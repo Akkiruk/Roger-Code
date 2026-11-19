@@ -8,9 +8,24 @@
 --   f.edge, f.s, f.dir (1 = a->b, -1 = b->a), f.route (optional list of edges to take)
 
 local roadgraph = require("sg.core.roadgraph")
+local geom = require("sg.core.geom")
 local util = require("sg.util")
 
 local M = {}
+
+--- How far along edge e (flat distance from its a end) the point nearest (x, z) is.
+local function along(e, x, z)
+  local pts = e.pts
+  local best, bs, walked = math.huge, 0, 0
+  for i = 1, #pts - 3, 3 do
+    local ax, az, bx, bz = pts[i], pts[i + 2], pts[i + 3], pts[i + 5]
+    local t, d2 = geom.segmentNearest(ax, az, bx, bz, x, z)
+    local len = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
+    if d2 < best then best, bs = d2, walked + t * len end
+    walked = walked + len
+  end
+  return bs
+end
 
 M.LOOK = 7
 M.LANE = 2.2
@@ -56,9 +71,10 @@ function M.input(f, car, dt)
     f.edge, f.s, f.dir = again.edge, again.s, again.dir
     e = f.edge
   end
-  -- how far along the edge the car is now
-  local near, s = f.roads:nearest(car.x, car.z, 30)
-  if near == e then f.s = s end
+  -- how far along the edge the car is now: measured on the edge it follows, not on whichever road is nearest (at a
+  -- junction where roads lie close together the nearest is often another, progress was never seen, and the car
+  -- circled the point it was aiming at: Pit Wall's courier van)
+  f.s = along(e, car.x, car.z)
   local target = f.s + f.dir * M.LOOK
   if target > e.length or target < 0 then
     if not nextEdge(f) then

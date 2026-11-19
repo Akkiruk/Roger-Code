@@ -563,6 +563,42 @@ t.test("story world: a runner follows its route over the testbed's roads and arr
   t.truthy(car.follow == nil, "and stops")
 end)
 
+t.test("story world: a runner whose goal is past the loaded roads heads toward it and plans again as the city loads (Pit Wall's courier)", function()
+  local ctx = game()
+  local w = ctx.story.world
+  -- a goal on the coast road far from the start: with only the chunks round the start loaded there is no full path
+  local farNode, best = nil, 0
+  for _, c in pairs(testbed.chunks()) do
+    for _, n in ipairs(c.nodes) do
+      local d = (n[2] - testbed.spawn.x) ^ 2 + (n[4] - testbed.spawn.z) ^ 2
+      if d > best then farNode, best = n, d end
+    end
+  end
+  local goal = { x = farNode[2], z = farNode[4], r = 12 }
+  ctx.places = { from = { x = testbed.spawn.x, z = testbed.spawn.z, r = 6 }, to = goal }
+  ctx.stream = stream.new({ source = testbed.source, full = 1, low = 1 })
+  ctx.stream:loadAll(testbed.spawn.x, testbed.spawn.z)
+  ctx.roads = ctx.stream.roads
+  t.truthy(ctx.roads:nearest(goal.x, goal.z, 30) == nil, "the goal's roads are not loaded yet")
+  local car = w:spawn("runner", "from", { vehicle = "kestrel", route = { "to" } })
+  t.truthy(car.follow and car.follow.partial, "a plan as far as the loaded roads go")
+  t.truthy(#car.follow.route > 0, "and it has somewhere to drive")
+  local start = math.sqrt((car.x - goal.x) ^ 2 + (car.z - goal.z) ^ 2)
+  local nearest = start
+  for _ = 1, 20 * 240 do
+    -- the player tails it, so the city loads round them both
+    ctx.player.x, ctx.player.z = car.x - 20, car.z
+    ctx.stream:update(ctx.player.x, ctx.player.z, true)
+    local input = car.follow and follow.input(car.follow, car, 0.05) or { throttle = 0 }
+    drive.step(car, input, 0.05, ctx.stream)
+    w:update(0.05)
+    nearest = math.min(nearest, math.sqrt((car.x - goal.x) ^ 2 + (car.z - goal.z) ^ 2))
+    if w:state(car) ~= "ok" then break end
+  end
+  t.truthy(nearest < start * 0.5, "it made real progress toward the goal: " .. math.floor(start) .. " to " .. math.floor(nearest))
+  t.eq(w:state(car), "arrived", "and got there")
+end)
+
 t.test("story world: a fleeing runner counts as caught when it is rammed down to nothing", function()
   local ctx = game()
   local w = ctx.story.world

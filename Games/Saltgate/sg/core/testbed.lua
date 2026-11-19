@@ -520,7 +520,33 @@ local function buildChunks(yield)
     table.insert(chunkOf(pts[mid], pts[mid + 2]).ribbons, r)
   end
   for _, f in ipairs(floors) do table.insert(chunkOf(f[3][1], f[3][2]).floors, f) end
-  for _, b in ipairs(buildings) do table.insert(chunkOf(b[1], b[2]).buildings, b) end
+  -- no building on a road: the joining roads (joinTo, connectAll) came after the blocks were placed, and a few ran
+  -- through them (a driver following its lane drove into a wall)
+  local roadSamples = {}
+  for _, r in ipairs(roads) do
+    if r[7] ~= "rail" then
+      local pts, hw = r[8], r[4] / 2 + 1.5
+      local len = geom.polylineLength(pts)
+      local s = 0
+      while s <= len do
+        local x, _, z = geom.polylineAt(pts, s)
+        roadSamples[#roadSamples + 1] = { x, z, hw }
+        s = s + 2
+      end
+    end
+  end
+  local function onRoad(b)
+    local reach = math.max(b[3], b[4]) + 8
+    for _, q in ipairs(roadSamples) do
+      if math.abs(q[1] - b[1]) < reach and math.abs(q[2] - b[2]) < reach and geom.pushOutOfBox(b, q[1], q[2], q[3]) then
+        return true
+      end
+    end
+    return false
+  end
+  for _, b in ipairs(buildings) do
+    if not onRoad(b) then table.insert(chunkOf(b[1], b[2]).buildings, b) end
+  end
   for _, p in ipairs(props) do table.insert(chunkOf(p[2], p[3]).props, p) end
   for _, gd in ipairs(grounds) do table.insert(chunkOf(gd[3][1], gd[3][2]).ground, gd) end
   local sx, sz = CX + cos(0.3) * (coastRadius(0.3) - 20), CZ + sin(0.3) * (coastRadius(0.3) - 20)
