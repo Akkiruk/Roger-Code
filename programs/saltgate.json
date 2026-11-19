@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.21"
+    "version": "1.0.22"
   },
   "build": {
-    "commit": "924448740c267a6b0a9c790e9cbb014a156d7df8",
-    "generated_at": "2026-11-19T07:24:16Z",
-    "package_hash": "34e9d0b4574e29342b365ebc13497a05eb17acba6c9becc79464e79ad6acf43c"
+    "commit": "3b96e9b62cd477f029dc685f738d3f42e0182e84",
+    "generated_at": "2026-11-19T08:50:39Z",
+    "package_hash": "6c063c537079bbaab562e778b0ec67155f0fa66d288c425a1ea7ee9c122fb641"
   },
   "install": {
     "preserve": [
@@ -102,7 +102,7 @@
       {
         "repo_path": "Games/Saltgate/sg/story/kit.lua",
         "install_path": "sg/story/kit.lua",
-        "sha256": "bd29c24c0ac092c8096d0625d4506d0576242470d11cdb8101ea1e99ac786e64"
+        "sha256": "6e667c1f3a9a3649c3b482e3388b4c8633e6ce36df58d5852a78bf5db1a29a32"
       },
       {
         "repo_path": "Games/Saltgate/sg/story/phone.lua",
@@ -127,7 +127,7 @@
       {
         "repo_path": "Games/Saltgate/sg/story/world.lua",
         "install_path": "sg/story/world.lua",
-        "sha256": "38f13e217082e3bbcc902eea43306c7688220aa14c00bbec44a2bde2c5bb8e2f"
+        "sha256": "9bc546564fe8853155e8cde9722633db3acf4e02830609679ff9405acccba14c"
       },
       {
         "repo_path": "Games/Saltgate/sg/ui/guard.lua",
@@ -197,7 +197,7 @@
       {
         "repo_path": "Games/Saltgate/sg/core/stream.lua",
         "install_path": "sg/core/stream.lua",
-        "sha256": "6cb25fb91dd95a64fc8967d23b7d3b68fcbb17697bf803e50dcfc38662a34f0c"
+        "sha256": "b3ebeb7e8e7a4d3a62946bb9c7e0d0f1a1aa87674d248b1e3e6b2c67cc70c5a4"
       },
       {
         "repo_path": "Games/Saltgate/sg/core/testbed.lua",
@@ -262,7 +262,7 @@
       {
         "repo_path": "Games/Saltgate/sg/plugins/a_world.lua",
         "install_path": "sg/plugins/a_world.lua",
-        "sha256": "d832453c036679fd9e544dfd6799eb05dcad0b384fecaa9b757fe9248096d7e8"
+        "sha256": "173d55edc9e18f32416e8c8ef1361e6c46e887bbaa50d3986247a80d2b1b29c4"
       },
       {
         "repo_path": "Games/Saltgate/sg/plugins/b_combat.lua",
@@ -813,7 +813,7 @@
       {
         "repo_path": "Games/Saltgate/content/story/m_heights_heist.lua",
         "install_path": "content/story/m_heights_heist.lua",
-        "sha256": "dfe5047710d356bdb8e8189ed3d1312e3264aeea003d8791d648be0560cc1c37"
+        "sha256": "7609b3b810a440783ff83624a6ff7e98183780283c3e4c90615d3afb56a7b5fc"
       },
       {
         "repo_path": "Games/Saltgate/content/story/m_hot_broth.lua",
@@ -938,17 +938,17 @@
       {
         "repo_path": "Games/Saltgate/sg/core/app.lua",
         "install_path": "sg/core/app.lua",
-        "sha256": "e3554eab2136a01b4fb6c25793a9503168748fb08ee587cc1b0e1006f25968d7"
+        "sha256": "f40bc267f24ec008c1132585fd9f8b24b2a68120d0d16c69803999220eda88d1"
       },
       {
         "repo_path": "Games/Saltgate/sg/core/budget.lua",
         "install_path": "sg/core/budget.lua",
-        "sha256": "6cdc51b1d21a45109ac950ebb617bda1fc5b2e62c60277398c3f3ac1a3ed2895"
+        "sha256": "6bb2c8e819e8172d440ccdd3a69e97d0079767a90efdc29b2195a1d9aeec35ef"
       },
       {
         "repo_path": "Games/Saltgate/sg/core/chunk.lua",
         "install_path": "sg/core/chunk.lua",
-        "sha256": "38ae23eb340a83611accbf271cf8c1151bdd37fb9ea74c2a40f1fa069c9940fd"
+        "sha256": "714c7064c6c744bedf6bd05a4530a929b9363564332c3f9f6e58a2a5b7ae2584"
       },
       {
         "repo_path": "Games/Saltgate/sg/core/chunkmodel.lua",
