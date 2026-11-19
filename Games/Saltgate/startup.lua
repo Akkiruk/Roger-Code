@@ -3,6 +3,7 @@
 -- manifest-name: SALTGATE: Low Tide
 -- manifest-description: A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.
 -- manifest-category: Games
+-- manifest-ship: startup.lua saltgate.lua sgpak.lua saltgate.pak saltgate_settings.lua vhcc_lockdown.txt CREDITS.txt pine3d/LICENSE.txt
 
 -- Restarts SALTGATE after a crash and keeps a log. Terminate (Ctrl+T) leaves for the shell.
 local LOG = "saltgate.log"

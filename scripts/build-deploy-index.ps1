@@ -602,6 +602,30 @@ foreach ($programDir in ($programDirs | Sort-Object { $_.Directory.FullName })) 
         }
     }
 
+    # "-- manifest-ship: a.lua b.pak ..." in startup.lua: only those files of the package are installed (the rest, such as
+    # readable sources a build step packs into one of them, stay in the repo). Its lib dependencies are still found from
+    # all its Lua files. A listed file that does not exist is an error.
+    if (Test-Path -LiteralPath $startupPath) {
+        $ship = $null
+        foreach ($line in Get-Content -LiteralPath $startupPath) {
+            if ($line -match '^\s*--\s*manifest-ship:\s*(.+)$') { $ship = @($Matches[1].Trim() -split '\s+') }
+        }
+        if ($ship) {
+            $shipSet = @{}
+            foreach ($f in $ship) {
+                if (-not (Test-Path -LiteralPath (Join-Path $dir.FullName ($f.Replace('/', '\'))))) { throw "manifest-ship in '$sourceRoot' lists '$f', which does not exist" }
+                $shipSet[$f.ToLowerInvariant()] = $true
+            }
+            $keep = { param($list) @(@($list) | Where-Object { $shipSet.ContainsKey($_.ToLowerInvariant()) }) }
+            $discovered = [ordered]@{
+                files        = & $keep $discovered.files
+                config_files = & $keep $discovered.config_files
+                assets       = & $keep $discovered.assets
+                lua_files    = $discovered.lua_files
+            }
+        }
+    }
+
     foreach ($entrypoint in $entrypoints) {
         $meta = Get-ProgramMetadata -Dir $dir.FullName -DirName $dir.Name -SourceRoot $sourceRoot -DefaultCategory $category -Entrypoint $entrypoint
         if (-not $seenProgramKeys.Add($meta.key)) {

@@ -5,11 +5,15 @@
 --   saltgate bench [n]   the autopilot drives n frames; the frame times and memory go to saltgate_bench.log
 -- Saves go to saltgate_save2.dat; the first time, a save from the first SALTGATE (saltgate_save.dat) is read and moved
 -- over (money, the jobs done, stats). Music: music/ (see sg/core/app.lua). A crash is logged, shown, and reported.
-
-local render = require("sg.render")
+-- Installed, the game is saltgate.pak (everything under sg/, content/, music/ and pine3d/, compressed): sgpak.lua
+-- inflates it into memory behind a loading card and runs the game from there. Beside its readable sources (the repo)
+-- it runs them instead.
 
 local args = { ... }
 local LOG = "saltgate.log"
+local here = fs.getDir(shell and shell.getRunningProgram() or "")
+local function at(p) return here == "" and p or fs.combine(here, p) end
+local gameRequire = require
 
 local function log(msg)
   local h = fs.open(LOG, "a")
@@ -19,12 +23,69 @@ local function log(msg)
   end
 end
 
+--- The loading card while the pack inflates: done and total are bytes.
+local function loadingCard(done, total)
+  local t = term.current()
+  local w, h = t.getSize()
+  local y = math.floor(h / 2)
+  if done == 0 then
+    t.setBackgroundColour(colours.black)
+    t.clear()
+    local title = "SALTGATE"
+    t.setCursorPos(math.floor((w - #title) / 2) + 1, y - 1)
+    t.setTextColour(colours.orange)
+    t.write(title)
+    local sub = "Waking the harbor..."
+    t.setCursorPos(math.floor((w - #sub) / 2) + 1, y + 3)
+    t.setTextColour(colours.grey)
+    t.write(sub)
+  end
+  local barW = math.max(10, math.floor(w * 0.6))
+  local x0 = math.floor((w - barW) / 2) + 1
+  local fill = math.floor(barW * math.min(1, done / math.max(1, total)) + 0.5)
+  t.setCursorPos(x0, y + 1)
+  t.setBackgroundColour(colours.orange)
+  t.write(string.rep(" ", fill))
+  t.setBackgroundColour(colours.grey)
+  t.write(string.rep(" ", barW - fill))
+  t.setBackgroundColour(colours.black)
+end
+
+--- Installed: the game from saltgate.pak, in memory. The time it took goes to the log.
+local function mountPak()
+  if fs.exists(at("sg/core/app.lua")) or not fs.exists(at("saltgate.pak")) then return end
+  local started = os.epoch("utc")
+  local pak = dofile(at("sgpak.lua"))
+  loadingCard(0, 1)
+  local last = started
+  local files, order = pak.read(at("saltgate.pak"), {
+    fs = fs,
+    yield = function(done, total)
+      local now = os.epoch("utc")
+      if now - last < 50 then return end
+      last = now
+      loadingCard(done, total)
+      os.queueEvent("saltgate_pak")
+      os.pullEvent("saltgate_pak")
+    end,
+  })
+  if not files then error("SALTGATE could not open its pack: " .. tostring(order), 0) end
+  local env = pak.mount(files, {
+    fs = fs,
+    env = { shell = shell, multishell = multishell, require = require, package = package },
+    require = require,
+  })
+  gameRequire = env.require
+  log(string.format("pak: %d files in memory in %d ms", #order, os.epoch("utc") - started))
+end
+
 local function run()
   if not term.isColour() then
     print("SALTGATE needs an advanced computer (gold) or an advanced pocket computer.")
     return
   end
-  require("sg.core.app").main(args)
+  mountPak()
+  gameRequire("sg.core.app").main(args)
 end
 
 -- ---------------------------------------------------------------- when it goes wrong
@@ -50,6 +111,14 @@ end
 --- The error and where it happened on the screen; status: how the crash report went (nil when none was sent).
 local function showCrash(err, trace, status)
   term.redirect(native)
+  local hasRender, render = pcall(gameRequire, "sg.render")
+  if not hasRender then
+    render = { resetPalette = function() end, wrap = function(text, width)
+      local out = {}
+      for i = 1, #text, width do out[#out + 1] = text:sub(i, i + width - 1) end
+      return out
+    end }
+  end
   render.resetPalette(native)
   native.setBackgroundColour(colours.black)
   native.clear()
@@ -103,7 +172,8 @@ else
 end
 if not ok then
   if type(err) == "string" and err:find("Terminated", 1, true) then
-    render.resetPalette(native)
+    local hasRender, render = pcall(gameRequire, "sg.render")
+    if hasRender then render.resetPalette(native) end
     error(err, 0)
   end
   if not logged then writeCrashLog(err, crashTrace) end
