@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.18"
+    "version": "1.0.19"
   },
   "build": {
-    "commit": "1cd9de123b2e7810bf1f07cee5100b2b38de629c",
-    "generated_at": "2026-11-19T04:43:47Z",
-    "package_hash": "fcdfa1253e20ef0b4e9c3e34db7602d71d11c2a19331e0b6138116bac8942fc2"
+    "commit": "77dd2b9a69c11904f9be5de796691363e551ddd0",
+    "generated_at": "2026-11-19T04:57:50Z",
+    "package_hash": "b60d3cb68020bc8534580b7564933aca85637fbfa3066b688bae2845ac3953bc"
   },
   "install": {
     "preserve": [
@@ -127,7 +127,7 @@
       {
         "repo_path": "Games/Saltgate/sg/story/world.lua",
         "install_path": "sg/story/world.lua",
-        "sha256": "d003f916634e7318f4cf91c4c2f1b4003433dcf0c16ec0f37693e84b6c66764b"
+        "sha256": "38f13e217082e3bbcc902eea43306c7688220aa14c00bbec44a2bde2c5bb8e2f"
       },
       {
         "repo_path": "Games/Saltgate/sg/ui/guard.lua",
@@ -202,7 +202,7 @@
       {
         "repo_path": "Games/Saltgate/sg/core/testbed.lua",
         "install_path": "sg/core/testbed.lua",
-        "sha256": "0abbddf617960113789ee8be162f93bd0e13cad9ed5740ae9042426b822f404b"
+        "sha256": "6318f10891297f6397e82817f6f383b5f3fde8e6bdd3d86a525399e4ba444a9d"
       },
       {
         "repo_path": "Games/Saltgate/sg/core/ui.lua",
@@ -487,7 +487,7 @@
       {
         "repo_path": "Games/Saltgate/sg/core/follow.lua",
         "install_path": "sg/core/follow.lua",
-        "sha256": "715ddfc98a44762af6e353d5c9b9dc56b76540b3002b39c05790a2f9f876fb61"
+        "sha256": "b857256d0321bc19f902e9345f1ad0a0bd95e211940ffc2b65ff0d83845ae1aa"
       },
       {
         "repo_path": "Games/Saltgate/sg/world/chunkmodel.lua",
@@ -853,7 +853,7 @@
       {
         "repo_path": "Games/Saltgate/sg/ai/peds.lua",
         "install_path": "sg/ai/peds.lua",
-        "sha256": "aa0c1d4f287a0fdc115185ba6ad464d2c0a896c74281da486be19b5216a75f61"
+        "sha256": "7ba86984719e68a9119030bacd05bebe06505ac1b1215cfe850576ca8858c038"
       },
       {
         "repo_path": "Games/Saltgate/sg/ai/planner.lua",
