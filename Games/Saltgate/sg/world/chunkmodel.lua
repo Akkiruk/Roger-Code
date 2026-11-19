@@ -69,6 +69,7 @@ local STYLES = {
   stage = { C.red, C.brown, C.red, "flat", nil },
   pillar_i = { C.lightGray, C.white, C.lightGray, "flat", nil },
   vault = { C.gray, C.black, C.lightGray, "flat", nil },
+  plant = { C.green, C.lime, C.green, "flat", nil },
   exhibit = { C.yellow, C.orange, C.yellow, "flat", nil },
 }
 M.STYLES = STYLES
@@ -346,6 +347,10 @@ local function prop(list, p, c, ox, oz)
     local nx, nz = -sin(a) * 0.25, cos(a) * 0.25
     shapes.flat(list, lx - dx - nx, y + 0.5, lz - dz - nz, lx + dx - nx, y + 0.5, lz + dz - nz, lx + dx + nx, y + 0.5, lz + dz + nz, lx - dx + nx, y + 0.5, lz - dz + nz, C.brown)
     shapes.flat(list, lx - dx - nx, y + 0.5, lz - dz - nz, lx + dx - nx, y + 0.5, lz + dz - nz, lx + dx - nx, y + 1.0, lz + dz - nz, lx - dx - nx, y + 1.0, lz - dz - nz, C.brown)
+  elseif kind == "bush" then
+    box(list, lx - 0.7, y, lz - 0.7, lx + 0.7, y + 1.0, lz + 0.7, C.lime, C.green, C.green)
+  elseif kind == "hydrant" then
+    box(list, lx - 0.2, y, lz - 0.2, lx + 0.2, y + 0.7, lz + 0.2, C.red, C.red, C.red)
   elseif kind == "bollard" then
     box(list, lx - 0.15, y, lz - 0.15, lx + 0.15, y + 0.8, lz + 0.15, C.yellow, C.yellow, C.black)
   elseif kind == "pillar" then
@@ -394,8 +399,20 @@ local function ribbon(list, c, rb, ox, oz, lod)
     local start = #list + 1
     strip(list, pts, w, 0.08, colour, ox, oz, every)
     faceUp(list, start)
-    wall(list, pts, w / 2 + 0.2, 0, 5.4, C.lightGray, ox, oz, every * 2)
-    wall(list, pts, -(w / 2 + 0.2), 0, 5.4, C.lightGray, ox, oz, every * 2)
+    wall(list, pts, w / 2 + 0.2, 0, 5.4, C.white, ox, oz, every * 2)
+    wall(list, pts, -(w / 2 + 0.2), 0, 5.4, C.white, ox, oz, every * 2)
+    wall(list, pts, w / 2 + 0.15, 0.4, 1.1, C.yellow, ox, oz, every * 2)
+    wall(list, pts, -(w / 2 + 0.15), 0.4, 1.1, C.yellow, ox, oz, every * 2)
+    if not lod then
+      dashes(list, pts, ox, oz, C.white, 0.3)
+      local len = geom.polylineLength(pts)
+      local s = 3
+      while s < len - 2 do
+        local x, y, z = geom.polylineAt(pts, s)
+        box(list, x - ox - 0.6, y + 5.1, z - oz - 0.35, x - ox + 0.6, y + 5.3, z - oz + 0.35, C.lightBlue, C.lightBlue, C.lightBlue, { bottom = true })
+        s = s + 8
+      end
+    end
     -- the roof, a strip seen from both sides
     local i = 1
     while i <= #pts - 3 do

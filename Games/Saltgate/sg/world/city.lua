@@ -124,6 +124,21 @@ function C:mapImage()
   return img
 end
 
+--- The far skyline: { w, h, res, rows } with the highest thing in each cell (a char per cell, 1 unit a step from -9).
+function C:skyline()
+  local s = self.data.skyline
+  if s and not s.ready then
+    s.ready = true
+    s.top = {}
+    for v = 1, s.h do
+      local row, out = s.rows[v], {}
+      for u = 1, s.w do out[u] = row:byte(u) - 35 - 9 end
+      s.top[v] = out
+    end
+  end
+  return s
+end
+
 --- Every world chunk (for the whole-city map). Reads every file once.
 function C:chunks()
   if self.all then return self.all end

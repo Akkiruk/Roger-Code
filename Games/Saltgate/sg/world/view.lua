@@ -182,6 +182,7 @@ function V:paintSky()
     end
   end
   self.horizon = horizon
+  self:paintSkyline(cam, horizon, rows)
   -- stars
   if night > 0.5 and s.kind ~= "fog" and s.kind ~= "storm" then
     local n = math.floor(#self.stars * (night - 0.4) / 0.6)
@@ -235,6 +236,53 @@ function V:paintSky()
           if not edge then put(rows, sy + 1, floor(sx + dx), colour2) end
           if abs(dx) < cl.w - 3 then put(rows, sy - 1, floor(sx + dx), colour) end
         end
+      end
+    end
+  end
+end
+
+--- The far city as a silhouette on the horizon: for each column, walk the coarse height grid outwards from where the
+-- streamed chunks end and draw the tallest thing it meets (hills, towers, chimneys).
+function V:paintSkyline(cam, horizon, rows)
+  local sk = self.city and self.city:skyline()
+  if not sk or horizon < 3 then return end
+  local frame, w = self.r.frame, self.r.pw
+  local sx0 = frame:map3dTo2d(cam.x + cos(cam.yaw) * 1000, cam.y, cam.z + sin(cam.yaw) * 1000)
+  local sx1 = frame:map3dTo2d(cam.x + cos(cam.yaw) * 1000 - sin(cam.yaw) * 1000, cam.y, cam.z + sin(cam.yaw) * 1000 + cos(cam.yaw) * 1000)
+  local f = sx1 - sx0
+  if abs(f) < 1 then return end
+  local _, sy100 = frame:map3dTo2d(cam.x + cos(cam.yaw) * 1000, cam.y + 100, cam.z + sin(cam.yaw) * 1000)
+  local k = (horizon - sy100) * 10 -- pixels per unit of height, at distance 1 (scaled by 1/d below)
+  local top, res = sk.top, sk.res
+  local night = sky.nightness(self.sky.hour)
+  local colour = night > 0.5 and C.gray or (self.sky.kind == "clear" and C.lightGray or C.gray)
+  local from = 170
+  local step = 44
+  for x = 1, w, 3 do
+    local t = (x - sx0) / f
+    local len = math.sqrt(1 + t * t)
+    local dx = (cos(cam.yaw) - sin(cam.yaw) * t) / len
+    local dz = (sin(cam.yaw) + cos(cam.yaw) * t) / len
+    local best = horizon
+    local d = from
+    while d < 760 do
+      local u = floor((cam.x + dx * d) / res) + 1
+      local v = floor((cam.z + dz * d) / res) + 1
+      local row = top[v]
+      local h = row and row[u]
+      if h and h > 0.5 then
+        local y = horizon - (h - cam.y) / d * k * 100 / 100
+        if y < best then best = y end
+      end
+      d = d + step
+    end
+    local y0 = floor(best)
+    if y0 < horizon then
+      for y = math.max(1, y0), horizon - 1 do
+        local row = rows[y]
+        row[x] = colour
+        if row[x + 1] then row[x + 1] = colour end
+        if row[x + 2] then row[x + 2] = colour end
       end
     end
   end

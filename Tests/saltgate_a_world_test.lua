@@ -314,6 +314,37 @@ t.test("world places: every name the story uses is laid out in the city, on the 
   t.truthy(city.data.places.motor_pool_top.y > city.data.places.motor_pool.y + 5, "the roof deck is above the street")
 end)
 
+t.test("world places: every place stream D's missions use resolves, and sits on something you can stand on at its height", function()
+  local story = content:data("story/places.lua")
+  if story then
+    for name in pairs(story) do t.truthy(city.data.places[name], "the city lays out '" .. name .. "'") end
+  end
+  for name, p in pairs(city.data.places) do
+    local c = all[chunk.key(chunk.at(p.x, p.z))]
+    t.truthy(c, name .. " is in a chunk")
+    local gy = chunk.groundAt(c, p.x, p.z, p.y + 0.5)
+    local near = false
+    for dz = -1, 1 do
+      for dx = -1, 1 do
+        local o = all[chunk.key(c.cx + dx, c.cz + dz)]
+        if o then
+          for _, s in ipairs(chunk.surfaces(o, p.x, p.z)) do if math.abs(s.y - p.y) < 1.6 then near = true end end
+        end
+      end
+    end
+    t.truthy(near or math.abs(gy - p.y) < 1.6 or (name == "open_water" and chunk.waterAt(c, p.x, p.z)), name .. ": y " .. p.y .. " has a surface under it")
+  end
+end)
+
+t.test("world skyline: a coarse height picture of the whole world for the far horizon", function()
+  local sk = city:skyline()
+  t.truthy(sk and sk.w >= 30 and sk.h >= 20, "the skyline picture")
+  local high, sea = -1e9, 1e9
+  for v = 1, sk.h do for u = 1, sk.w do high = math.max(high, sk.top[v][u]) sea = math.min(sea, sk.top[v][u]) end end
+  t.truthy(high > 40, "the hill and towers show: " .. high)
+  t.truthy(sea < 0, "open sea is below the horizon")
+end)
+
 -- ---------------------------------------------------------------- the models
 t.test("world models: every chunk builds at both levels of detail with sane triangles", function()
   local worst, total = 0, 0
