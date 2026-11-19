@@ -492,11 +492,16 @@ t.test("pause: Resume, the map, progress, awards, settings, controls and save-an
   os.queueEvent = realQueue
   t.eq(queued[1] and queued[1][1], "terminate")
   -- a phone from the story stream shows up when it exists
-  ctx.ui.screen({ name = "phone", modal = true, draw = function() end })
+  ctx.ui.screen({ name = "d_phone", modal = true, draw = function() end })
   ctx.ui.pop()
   ctx.ui.push("pause")
   frames(ctx)
-  t.truthy(ctx.screen.find("Phone"), "the phone is offered once it is registered")
+  t.truthy(not ctx.screen.find("Phone"), "the story's phone is not offered while nothing passes keys to its screen")
+  ctx.routesScreenInput = true
+  ctx.ui.pop()
+  ctx.ui.push("pause")
+  frames(ctx)
+  t.truthy(ctx.screen.find("Phone"), "the phone is offered once the loop routes screen input")
 end)
 
 t.test("controls: every key of the game on one screen, none written twice, all inside 51 columns", function()

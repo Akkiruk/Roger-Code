@@ -21,6 +21,7 @@ local put, fill = theme.put, theme.fill
 local M = {}
 
 M.MAX_HEAT = 6
+M.PAGE_SECONDS = 3.5
 local KMH = 3.6
 local MPH = 2.237
 
@@ -134,7 +135,11 @@ function M.new(ctx, opts)
     local label = districtName(c)
     if hud.hour then label = label .. " " .. M.clockText(hud.hour) end
     mx = math.max(14, mx + 1)
-    put(t, mx, 1, theme.fit(label, hx - mx - 1), C.lightGray)
+    -- the Patrol's own wanted widget (c_wanted: stars, SPOTTED / LOST) draws on the right when it is there; the pips
+    -- below are for a game without it
+    local patrol = c.heat ~= nil
+    put(t, mx, 1, theme.fit(label, (patrol and 33 or hx - 1) - mx), C.lightGray)
+    if patrol then return end
     -- wanted: six pips, lit up to the level, flashing while the Patrol is after you
     local flash = hud.heat > 0 and math.floor(hud.clock * 3) % 2 == 0
     put(t, hx, 1, "HEAT", hud.heat > 0 and C.white or C.gray)
@@ -256,22 +261,38 @@ function M.new(ctx, opts)
       frac = car.spec and car.spec.health and car.spec.health > 0 and car.health / car.spec.health or 1
     else
       label = "Wren"
-      frac = (c.player.health or c.save.player.health or 100) / 100
+      frac = (c.combat and c.combat.hp and c.combat:hp() or c.player.health or c.save.player.health or 100) / 100
     end
     put(t, 2, y, label, car and C.white or C.orange, bg)
     theme.bar(t, 16, y, 8, frac, frac > 0.35 and C.lime or C.red, C.gray)
     if car then put(t, 26, y, speedText, car.airborne and C.cyan or C.lightGray) end
-    local right = w
-    local radio = car and hud.radioLine and hud.radioLine() or nil
-    if radio then
-      radio = theme.fit(radio, 15)
-      put(t, w - #radio, y, radio, C.cyan)
-      right = w - #radio - 2
-    end
+    -- on the right: the weapon (stream B's combat, or a plain { name, ammo, reserve } on the player), else the radio
+    local text, tcol
+    local cb = c.combat
     local weapon = c.player.weapon
-    if type(weapon) == "table" and weapon.name then
-      local text = weapon.name:upper() .. " " .. tostring(weapon.ammo or 0) .. (weapon.reserve and ("/" .. weapon.reserve) or "")
-      if right - #text > 36 then put(t, right - #text, y, text, (weapon.ammo or 1) == 0 and C.red or C.white) end
+    if cb and cb.weapon then
+      local wp = cb:weapon()
+      text = wp.short
+      if wp.kind ~= "melee" then
+        local mag, reserve = cb:ammo(wp.id)
+        text = text .. " " .. (cb.reloadT and cb.reloadT > 0 and "RELOAD" or (mag .. "/" .. reserve))
+        tcol = ((cb.reloadT or 0) > 0 and C.orange) or (mag == 0 and C.red) or C.white
+      end
+      if cb.lock and not cb.lock.knocked and not cb.lock.removed then
+        local at = c.player.car or c.player
+        local d = math.floor(math.sqrt((cb.lock.x - at.x) ^ 2 + (cb.lock.z - at.z) ^ 2) + 0.5)
+        local label = "LOCK " .. d .. "m"
+        put(t, w - #label, h - 2, label, C.red)
+      end
+    elseif type(weapon) == "table" and weapon.name then
+      text = weapon.name:upper() .. " " .. tostring(weapon.ammo or 0) .. (weapon.reserve and ("/" .. weapon.reserve) or "")
+      tcol = (weapon.ammo or 1) == 0 and C.red or C.white
+    end
+    if text then
+      put(t, w - #text, y, theme.fit(text, 15), tcol or C.white)
+    elseif car and hud.radioLine and hud.radioLine() then
+      local radio = theme.fit(hud.radioLine(), 15)
+      put(t, w - #radio, y, radio, C.cyan)
     end
   end })
 
@@ -285,6 +306,8 @@ function M.new(ctx, opts)
       text = fn(c)
       if text then break end
     end
+    -- a provider may answer with a list of pages: they take turns every few seconds
+    if type(text) == "table" then text = text[math.floor(hud.clock / M.PAGE_SECONDS) % #text + 1] end
     if text then theme.keyline(t, 2, h, w - 2, text, C.yellow, C.lightGray, C.black) end
   end })
 
@@ -292,11 +315,38 @@ function M.new(ctx, opts)
   hud.hint(function(c)
     local a = c.activities and c.activities:hud()
     local car = c.player.car
+    local cb = c.combat
+    local ok, combatHud = pcall(require, "sg.combat.hud")
+    local gun = cb and ok and combatHud.hintLine and combatHud.hintLine(c) or nil
+    local phone = c.story and " T phone" or ""
+    local station = ""
+    if car and c.radio then
+      local s = c.radio:current()
+      station = s and (" R " .. s.name) or " R radio"
+    end
     if a then return "WASD drive  X abandon  R radio  P menu" end
-    if car then return "WASD drive SPACE handbrake E out R radio P menu" end
-    if c.nearCar then return "E take car  WASD move  SHIFT run  M map  P menu" end
+    if car then
+      if gun then return { gun, "M map  P menu  C camera" .. phone .. station } end
+      return "WASD drive SPACE handbrake E out R radio P menu"
+    end
+    if c.nearCar then
+      if gun then return { gun, "M map  P menu  SHIFT run" .. phone } end
+      return "E take car  WASD move  SHIFT run  M map  P menu"
+    end
+    if gun then return { gun, "M map  P menu  C camera" .. phone } end
     return "WASD move  SHIFT run  E car  M map  P menu"
   end)
+
+  --- Take over from the other streams' placeholders once they have registered (the first frame): their hint line, weapon
+  -- and hit points are drawn here, in one place, with the same keys on every screen.
+  function hud.adopt()
+    if hud.adopted then return end
+    hud.adopted = true
+    for i = #ui.widgetList, 1, -1 do
+      local n = ui.widgetList[i].name
+      if n == "b_hints" or n == "b_weapon" then table.remove(ui.widgetList, i) end
+    end
+  end
 
   return hud
 end

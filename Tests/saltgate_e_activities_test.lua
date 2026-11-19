@@ -712,3 +712,93 @@ t.test("100%: every activity done adds up to exactly 100, each achievement fired
   for _ in pairs(fired) do n = n + 1 end
   t.eq(n, 40)
 end)
+
+-- ---------------------------------------------------------------- with stream B's customization and fleet
+
+local function gameWithFleet(money)
+  local ctx = kit.game({ money = money or 0, names = { "e_progress", "e_ui", "e_activities", "e_radio", "e_zlast", "b_vehicles" },
+    stream = { groundAt = function() return 0 end, surface = function() return "land" end } })
+  ctx.eui.titleShown = true
+  t.truthy(ctx.fleet, "stream B's fleet is there: " .. table.concat((function()
+    local out = {}
+    for _, f in ipairs(ctx.failed or {}) do out[#out + 1] = f.name .. ": " .. f.err end
+    return out
+  end)(), "; "))
+  local car = ctx.fleet:spawn("marlin", 0, 0, 0, { paint = "red", detached = true })
+  ctx.cars[#ctx.cars + 1] = car
+  ctx.player.car = car
+  return ctx, car
+end
+
+t.test("shops with B's data: paint and stripes priced from the car's value, tune tiers named and priced by the data, applied through custom.apply", function()
+  local ctx, car = gameWithFleet(20000)
+  local shops = ctx.activities.shops
+  local custom = require("sg.vehicles.custom")
+  local paints, price = shops:paints()
+  t.eq(#paints, 16, "B's sixteen paints")
+  t.eq(price, custom.paintPrice(car.spec), "a coat costs a share of the car's value")
+  local before = wallet.balance(ctx)
+  t.truthy(shops:respray("cyan"))
+  t.eq(wallet.balance(ctx), before - price)
+  t.eq(car.paint.body, "cyan")
+  t.truthy(car.colour:find("^cyan"), "the colour string the models read: " .. car.colour)
+  t.truthy(not shops:respray("cyan"), "same colour again")
+  local stripes, sprice = shops:stripes()
+  t.truthy(stripes and #stripes >= 5 and sprice > 0)
+  t.truthy(shops:stripe("white"))
+  t.eq(car.paint.stripe, "white")
+  t.truthy(car.colour:find("cyan:white", 1, true), car.colour)
+  t.truthy(not shops:stripe("white"))
+  -- tune: B's tier names and prices, and the car's numbers change
+  local tier, max, name, tprice = shops:tuneInfo("engine")
+  t.eq(tier, 0)
+  t.eq(max, 3)
+  t.truthy(name and tprice == custom.price(car.spec.base or car.spec, "engine", 1), tostring(name) .. " " .. tostring(tprice))
+  local topBefore = car.spec.top
+  t.truthy(shops:buyTune("engine"))
+  t.eq(car.tune.engine, 1)
+  t.truthy(car.spec.top > topBefore, "the tune raised the top speed")
+  for _ = 1, 2 do t.truthy(shops:buyTune("engine")) end
+  t.truthy(not shops:buyTune("engine"), "no fourth tier")
+  t.eq(ctx.progress.stats:get("tuneMax"), 3)
+  t.truthy(ctx.activities.section.goals.tunemax)
+  local slots = shops:slots()
+  t.eq(#slots, 4)
+  -- the menu rows name the next tier and its price
+  local menus = require("sg.activities.menus").new(ctx, ctx.activities, ctx.eui.screens)
+  for _, p in ipairs(ctx.activities.places) do
+    if p.kind == "shop" and p.shop == "tune" then menus.open("shop", p) break end
+  end
+  kit.frame(ctx)
+  t.truthy(ctx.screen.find("Engine") and ctx.screen.find("MAX"), ctx.screen.text())
+  t.eq(ctx.screen.overflow, 0)
+end)
+
+t.test("garage with B's fleet: the stored car keeps its paint, stripe, tune and damage, and comes back as a built car in the street", function()
+  local ctx, car = gameWithFleet(50000)
+  local mgr = ctx.activities
+  mgr.shops:respray("purple")
+  mgr.shops:stripe("yellow")
+  mgr.shops:buyTune("brakes")
+  car.health = car.spec.health * 0.5
+  local gar = mgr.layout.garages[1]
+  t.truthy(mgr.garage:store(gar))
+  local e = mgr.garage:cars()[1]
+  t.eq(e.paint.body, "purple")
+  t.eq(e.paint.stripe, "yellow")
+  t.eq(e.tune.brakes, 1)
+  t.near(e.health, 0.5, 0.02)
+  t.eq(#ctx.cars, 0)
+  t.truthy(mgr.garage:takeOut(1, gar))
+  local out = ctx.player.car
+  t.truthy(out ~= car and out.paint.body == "purple" and out.paint.stripe == "yellow" and out.tune.brakes == 1)
+  t.near(out.health / out.spec.health, 0.5, 0.05, "the damage stayed")
+  t.eq(#ctx.cars, 1, "it is in the street list exactly once")
+  t.eq(ctx.cars[1], out)
+  -- the garage list shows the car by its definition's name and its paint
+  t.truthy(mgr.garage:store(gar))
+  local menus = require("sg.activities.menus").new(ctx, mgr, ctx.eui.screens)
+  menus.open("garage", gar)
+  kit.frame(ctx)
+  t.truthy(ctx.screen.find("Take out: Marlin"), ctx.screen.text())
+end)

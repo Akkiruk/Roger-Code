@@ -5,6 +5,7 @@
 --   m.open(kind, place)      kind: "shop" | "garage" | "property"
 
 local util = require("sg.util")
+local services = require("sg.activities.services")
 
 local M = {}
 
@@ -39,16 +40,27 @@ function M.new(ctx, mgr, screens)
   end
 
   function api.respray(place)
-    local colours = mgr.catalog.respray.colours
-    local price = mgr.catalog.respray.price
+    local colours, price = mgr.shops:paints()
+    local stripes, stripePrice = mgr.shops:stripes()
     screens.menu({
       title = place.name .. ": respray", width = 36, footer = "W/S choose  ENTER paint  BACKSPACE leave",
       subtitle = function(c) return { carLine(c), cash(c) .. "   " .. util.money(price) .. " a coat" } end,
       build = function()
         local items = {}
         for _, col in ipairs(colours) do
-          items[#items + 1] = { label = pretty(col), swatch = col, value = function() return util.money(price) end,
-            action = function() say(mgr.shops:respray(col)) end }
+          items[#items + 1] = { label = pretty(col), swatch = col, value = function()
+            local body = mgr.shops:currentPaint()
+            return body == col and "now" or util.money(price)
+          end, action = function() say(mgr.shops:respray(col)) end }
+        end
+        if stripes then
+          items[#items + 1] = { label = "Stripes", header = true }
+          for _, st in ipairs(stripes) do
+            items[#items + 1] = { label = pretty(st), swatch = st ~= "none" and st or nil, value = function()
+              local _, cur = mgr.shops:currentPaint()
+              return (cur or "none") == st and "now" or util.money(stripePrice)
+            end, action = function() say(mgr.shops:stripe(st)) end }
+          end
         end
         return items
       end,
@@ -65,9 +77,9 @@ function M.new(ctx, mgr, screens)
           items[#items + 1] = {
             label = slot.label,
             value = function()
-              local tier = mgr.shops:tierOf(slot.id)
-              if tier >= #slot.prices then return "MAX" end
-              return "tier " .. tier .. "/" .. #slot.prices .. "  " .. util.money(slot.prices[tier + 1])
+              local tier, max, name, price = mgr.shops:tuneInfo(slot.id)
+              if tier >= max then return "MAX" end
+              return (name or ("tier " .. tier .. "/" .. max)) .. "  " .. util.money(price)
             end,
             action = function() say(mgr.shops:buyTune(slot.id)) end,
           }
@@ -117,9 +129,8 @@ function M.new(ctx, mgr, screens)
           end }
         end
         for i, e in ipairs(g:cars()) do
-          local def = ctx.vehicles and ctx.vehicles.get(e.kind)
-          local name = def and def.name or e.kind
-          items[#items + 1] = { label = "Take out: " .. name, swatch = e.colour, action = function()
+          local name, colour = services.describe(ctx, e)
+          items[#items + 1] = { label = "Take out: " .. name, swatch = colour:match("^[^:|]*"), action = function()
             local ok, why = g:takeOut(i, place)
             say(ok, why)
             if ok then ui.pop() else refresh(args) end

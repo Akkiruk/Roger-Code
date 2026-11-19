@@ -16,10 +16,16 @@ local function toast(ctx, ...)
   if ctx.hud then ctx.hud.toast(...) end
 end
 
-local function goal(ctx, section, name)
-  section.goals[name] = true
-  local _ = ctx
+--- Stream B's customization (paint, stripes, tune tiers and their prices), when its plugin is loaded.
+local function custom(ctx)
+  if not ctx.fleet then return nil end
+  local ok, c = pcall(require, "sg.vehicles.custom")
+  if ok and c.data then return c end
+  return nil
 end
+M.custom = custom
+
+local SLOT_LABELS = { engine = "Engine", brakes = "Brakes", grip = "Tyres", armour = "Armour" }
 
 -- ---------------------------------------------------------------- shops
 
@@ -39,21 +45,69 @@ local function entryFor(ctx, car)
   return nil
 end
 
+--- The paint colours on sale, and what a coat costs for the car you are in.
+function Shops:paints()
+  local cu = custom(self.ctx)
+  local car = self.ctx.player.car
+  if cu and car then return cu.data.paints, cu.paintPrice(car.spec.base or car.spec) end
+  return self.catalog.respray.colours, self.catalog.respray.price
+end
+
+--- The stripes on sale (stream B's data only) and their price.
+function Shops:stripes()
+  local cu = custom(self.ctx)
+  local car = self.ctx.player.car
+  if cu and car then return cu.data.stripes, cu.stripePrice(car.spec.base or car.spec) end
+  return nil
+end
+
+function Shops:currentPaint()
+  local car = self.ctx.player.car
+  if not car then return nil end
+  if car.paint then return car.paint.body, car.paint.stripe end
+  return car.colour, nil
+end
+
 function Shops:respray(colour)
   local ctx = self.ctx
   local car = ctx.player.car
   if not car then return false, "Drive a car in first." end
-  if car.colour == colour then return false, "It is already that colour." end
-  local ok = wallet.spend(ctx, self.catalog.respray.price, "respray")
+  local body = self:currentPaint()
+  if body == colour then return false, "It is already that colour." end
+  local _, price = self:paints()
+  local ok = wallet.spend(ctx, price, "respray")
   if not ok then return false, "Not enough money." end
-  car.colour = colour
-  if type(car.paint) == "table" then car.paint.body = colour end
+  local cu = custom(ctx)
+  if cu then
+    local _, stripe = self:currentPaint()
+    cu.apply(car, { paint = { body = colour, stripe = stripe } })
+  else
+    car.colour = colour
+    if type(car.paint) == "table" then car.paint.body = colour end
+  end
   local e = entryFor(ctx, car)
   if e then e.colour = colour end
   if ctx.progress then ctx.progress.stats:add("resprays", 1) end
-  goal(ctx, self.section, "respray")
   self.section.goals.respray = true
   toast(ctx, "Fresh paint", "magenta", 3, colour)
+  return true
+end
+
+function Shops:stripe(name)
+  local ctx = self.ctx
+  local car = ctx.player.car
+  local cu = custom(ctx)
+  if not car then return false, "Drive a car in first." end
+  if not cu then return false, "No stripes on sale." end
+  local body, current = self:currentPaint()
+  if (current or "none") == name then return false, "It has that stripe already." end
+  local _, price = self:stripes()
+  local ok = wallet.spend(ctx, price, "stripe")
+  if not ok then return false, "Not enough money." end
+  cu.apply(car, { paint = { body = body, stripe = name ~= "none" and name or nil } })
+  if ctx.progress then ctx.progress.stats:add("resprays", 1) end
+  self.section.goals.respray = true
+  toast(ctx, "Stripe: " .. name, "magenta", 3)
   return true
 end
 
@@ -62,42 +116,77 @@ function Shops:tierOf(slot)
   return car and car.tune and car.tune[slot] or 0
 end
 
---- The tune slots for the car you are in (from its definition if B's data gives one, else the catalog's four).
+--- The tune slots for the car you are in: { id, label } in order.
 function Shops:slots()
+  local cu = custom(self.ctx)
+  local out = {}
+  if cu then
+    for _, id in ipairs(cu.SLOTS) do out[#out + 1] = { id = id, label = SLOT_LABELS[id] or id } end
+    return out
+  end
   local def
   local car = self.ctx.player.car
   if car and self.ctx.vehicles and self.ctx.vehicles.get then def = self.ctx.vehicles.get(car.kind) end
   local allowed = def and def.tune
-  local out = {}
   for _, s in ipairs(self.catalog.tune.slots) do
     local ok = not allowed
     if allowed then
       for _, a in ipairs(allowed) do if a == s.id then ok = true end end
     end
-    if ok then out[#out + 1] = s end
+    if ok then out[#out + 1] = { id = s.id, label = s.label } end
   end
   return out
+end
+
+--- Where a slot stands for the car you are in: tier, the top tier, the next tier's name and its price (nil at the top).
+function Shops:tuneInfo(slotId)
+  local car = self.ctx.player.car
+  local tier = self:tierOf(slotId)
+  local cu = custom(self.ctx)
+  if cu then
+    local s = cu.data.slots[slotId]
+    local max = s and #s.price or 3
+    if tier >= max then return tier, max end
+    local def = car and (car.spec.base or car.spec)
+    return tier, max, s.names and s.names[tier + 1], def and cu.price(def, slotId, tier + 1)
+  end
+  for _, s in ipairs(self.catalog.tune.slots) do
+    if s.id == slotId then
+      if tier >= #s.prices then return tier, #s.prices end
+      return tier, #s.prices, nil, s.prices[tier + 1]
+    end
+  end
+  return tier, 0
 end
 
 function Shops:buyTune(slotId)
   local ctx = self.ctx
   local car = ctx.player.car
   if not car then return false, "Drive a car in first." end
-  local slot
-  for _, s in ipairs(self.catalog.tune.slots) do if s.id == slotId then slot = s end end
-  if not slot then return false, "No such part." end
-  local tier = (car.tune and car.tune[slotId] or 0) + 1
-  if tier > #slot.prices then return false, "Already at the top tier." end
-  local ok = wallet.spend(ctx, slot.prices[tier], "tune: " .. slot.label)
+  local known = false
+  for _, s in ipairs(self:slots()) do if s.id == slotId then known = true end end
+  if not known then return false, "No such part." end
+  local tier, max, _, price = self:tuneInfo(slotId)
+  if tier >= max or not price then return false, "Already at the top tier." end
+  local ok = wallet.spend(ctx, price, "tune: " .. slotId)
   if not ok then return false, "Not enough money." end
-  car.tune = car.tune or {}
-  car.tune[slotId] = tier
+  local cu = custom(ctx)
+  tier = tier + 1
+  if cu then
+    local tune = {}
+    for _, id in ipairs(cu.SLOTS) do tune[id] = (car.tune and car.tune[id]) or 0 end
+    tune[slotId] = tier
+    cu.apply(car, { tune = tune })
+  else
+    car.tune = car.tune or {}
+    car.tune[slotId] = tier
+  end
   local e = entryFor(ctx, car)
   if e then e.tune = e.tune or {} e.tune[slotId] = tier end
   if ctx.progress then ctx.progress.stats:max("tuneMax", tier) end
   self.section.goals.tune = true
-  if tier >= #slot.prices then self.section.goals.tunemax = true end
-  toast(ctx, slot.label .. " tier " .. tier, "orange", 3)
+  if tier >= max then self.section.goals.tunemax = true end
+  toast(ctx, (SLOT_LABELS[slotId] or slotId) .. " tier " .. tier, "orange", 3)
   return true
 end
 
@@ -215,6 +304,13 @@ function Garage:count() return #self:cars() end
 
 local nextId = 0
 
+--- What a stored car looks like in the list: its name and paint.
+function M.describe(ctx, e)
+  local def = ctx.vehicles and ctx.vehicles.get(e.kind)
+  local colour = (e.paint and e.paint.body) or e.colour or "white"
+  return def and def.name or e.kind, colour
+end
+
 --- Put the car you are driving in the garage: it leaves the street, you stand at the door.
 function Garage:store(place)
   local ctx = self.ctx
@@ -224,7 +320,13 @@ function Garage:store(place)
   if self:count() >= self:capacity() then return false, "The garage is full (" .. self:capacity() .. " cars)." end
   nextId = nextId + 1
   local list = self:cars()
-  local entry = { id = car.garageId or ("g" .. os.time() .. "_" .. nextId), kind = car.kind, colour = car.colour, tune = car.tune or {} }
+  local entry
+  if ctx.fleet then
+    entry = ctx.fleet:snapshot(car)
+  else
+    entry = { kind = car.kind, colour = car.colour, tune = car.tune or {} }
+  end
+  entry.id = car.garageId or ("g" .. os.time() .. "_" .. nextId)
   list[#list + 1] = entry
   for i = #ctx.cars, 1, -1 do
     if ctx.cars[i] == car then table.remove(ctx.cars, i) end
@@ -247,15 +349,17 @@ function Garage:takeOut(i, place)
   local h = place.h or 0
   local x, z = place.x + math.cos(h) * 4, place.z + math.sin(h) * 4
   local car
-  if ctx.spawnVehicle then
+  if ctx.fleet and e.paint then
+    car = ctx.fleet:build(e, x, z, h)
+  elseif ctx.spawnVehicle then
     car = ctx.spawnVehicle(e.kind, x, z, h, e.colour)
   else
     car = vehicleLib.new(e.kind, x, z, h, e.colour)
-    ctx.cars[#ctx.cars + 1] = car
   end
   if not car then return false, "That car is not available." end
+  ctx.cars[#ctx.cars + 1] = car
   if ctx.stream then car.y = ctx.stream:groundAt(x, z, nil) end
-  car.tune = e.tune
+  if e.tune and not car.tune then car.tune = e.tune end
   car.garageId = e.id
   table.remove(list, i)
   ctx.player.car = car

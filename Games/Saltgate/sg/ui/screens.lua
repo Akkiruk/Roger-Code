@@ -320,8 +320,10 @@ function M.install(ctx, deps)
       { label = "Resume", action = function() ui.pop() end },
       { label = "Map", action = function() ui.pop() ui.push("map") end },
     }
-    if ui.screens.phone then
-      items[#items + 1] = { label = "Phone", action = function() ui.push("phone") end }
+    -- the story's phone, once the main loop passes keys on to screens (it sets ctx.routesScreenInput)
+    local phone = (ui.screens.d_phone and "d_phone") or (ui.screens.phone and "phone") or nil
+    if phone and ctx.routesScreenInput then
+      items[#items + 1] = { label = "Phone", action = function() ui.push(phone, { sel = 1 }) end }
     end
     items[#items + 1] = { label = "Progress and stats", action = function() api.stats(1) end }
     items[#items + 1] = { label = "Achievements", action = function() api.stats(3) end }

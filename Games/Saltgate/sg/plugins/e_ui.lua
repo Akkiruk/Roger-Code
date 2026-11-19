@@ -85,6 +85,7 @@ function P.init(ctx)
 end
 
 function P.update(ctx, dt)
+  ctx.hud.adopt()
   ctx.hud.tick(dt)
   -- the camera key and the rest are the main loop's; here only a title that has not been shown yet
 end
@@ -94,6 +95,7 @@ function P.draw(ctx)
   local t = nowSeconds()
   eui.dt = math.min(0.25, math.max(0, t - eui.lastT))
   eui.lastT = t
+  ctx.hud.adopt()
   -- the title screen, once, before the first frame of play
   if not eui.titleShown then
     local top = ctx.ui.top()

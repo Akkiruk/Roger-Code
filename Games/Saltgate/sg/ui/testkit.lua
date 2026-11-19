@@ -112,7 +112,7 @@ function M.game(opts)
     bus = bus, world = entity.new({ cell = 32 }), content = contentLib.new({ fs = realFs(), root = root() .. "/content" }),
     ui = uiLib.new(bus), vehicles = vehicles, budget = budgetLib.new({ bus = bus }), cars = {},
     log = function(msg) M.logged[#M.logged + 1] = msg end,
-    screen = M.term(opts.w, opts.h), save = opts.save or saveLib.blank(), player = { x = 0, y = 0, z = 0, h = 0, v = 0 },
+    screen = M.term(opts.w, opts.h), save = opts.save or saveLib.blank(), stream = opts.stream, player = { x = 0, y = 0, z = 0, h = 0, v = 0 },
   }
   M.logged = {}
   ctx.fs = opts.fs
