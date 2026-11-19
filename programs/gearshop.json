@@ -7,12 +7,12 @@
     "description": "The walk-in gear shop: tap a station to browse a gear type, take what you want onto your tab, PAY at any station. Also buys gear for store credit. Install on the shop computer and on every node that holds its chests and monitors.",
     "source_root": "Apps/GearShop",
     "entrypoint": "startup.lua",
-    "version": "1.0.10"
+    "version": "1.0.11"
   },
   "build": {
-    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
-    "generated_at": "2026-11-19T00:39:44Z",
-    "package_hash": "e2c4169a09b4627b597a2287d6013dbc23b74c97fb7645c7345ceeafbd16b75f"
+    "commit": "2bf61ae279089176baf586bf823d0508984c5e56",
+    "generated_at": "2026-11-19T01:08:10Z",
+    "package_hash": "12359e18f8a4f33a5386bfd2021dcd6aa0c37af307288ac8ced48a6c38480fe1"
   },
   "install": {
     "preserve": [],
@@ -25,12 +25,12 @@
       {
         "repo_path": "Shared/lib/gearshop/ui.lua",
         "install_path": "lib/gearshop/ui.lua",
-        "sha256": "08220d879be6a87c7c047effa13679575e5b0432e57466a0444836221e29d8dd"
+        "sha256": "6fb8ddeb166243528282e34c10ddb6bdaaf134ee9640a17f2d326cfeaff6f358"
       },
       {
         "repo_path": "Shared/lib/gearshop/store.lua",
         "install_path": "lib/gearshop/store.lua",
-        "sha256": "d4f130a91eeb3d4ed44600a6d5201868b57ae44dd7a78ac01c98f4f4fb4cfe3c"
+        "sha256": "2dc165951d9e65b41b0732809c46d82510b5c5dd69741f50c003d3ac12aba584"
       },
       {
         "repo_path": "Shared/lib/gearshop/stock.lua",
@@ -40,7 +40,7 @@
       {
         "repo_path": "Shared/lib/gearshop/shop.lua",
         "install_path": "lib/gearshop/shop.lua",
-        "sha256": "8a2dd2efb7a9913fb4ce91d754b69d76eb0409b33147dfb4b37a3fa990764690"
+        "sha256": "ce60809dd6949081bf2d39155029429f0bde0524f824ebdcc2c4c8025247d327"
       },
       {
         "repo_path": "Shared/lib/gearshop/rules.lua",
@@ -65,7 +65,7 @@
       {
         "repo_path": "Shared/lib/gearshop/app.lua",
         "install_path": "lib/gearshop/app.lua",
-        "sha256": "c487bcda1894f8a03852bf4713c1c8b2714f6883a649700f409a52a9bada6d48"
+        "sha256": "68d5f6709afffcc4d2bbf4938d89f04f867c1ab3fbe6dd1611c2cc6e4646f792"
       },
       {
         "repo_path": "Shared/lib/crashreport.lua",
