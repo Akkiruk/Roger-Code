@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.11"
+    "version": "1.0.12"
   },
   "build": {
-    "commit": "8325f1a1275ed35bcb52e8144b21ad131dea7e8a",
-    "generated_at": "2026-11-19T00:21:50Z",
-    "package_hash": "15be39f75470dbd0e9c4982bb78218be447f9ea13bd8187436c99a3ecdca9eb8"
+    "commit": "c7e4f27150de7a6f9b4938363b49662b746c9833",
+    "generated_at": "2026-11-19T00:24:47Z",
+    "package_hash": "0d054bcac1a8decf6465953e39fff088369b0d35aafcb549a9cf5aba1bbaea08"
   },
   "install": {
     "preserve": [
@@ -307,42 +307,42 @@
       {
         "repo_path": "Games/Saltgate/content/interiors/lighthouse.sgc",
         "install_path": "content/interiors/lighthouse.sgc",
-        "sha256": "0f475d9407f50810908e7114ebfddfb0c2cfc121d6c5de5c98d2b09da9176fd4"
+        "sha256": "13135d4ea07083e271f1715bd22b3b45b6df139fd00ac8fa8ff32a2cf6ecc53d"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/museum.sgc",
         "install_path": "content/interiors/museum.sgc",
-        "sha256": "3995eb82d560fec7e0c22f3c4c2c2008d6ca60e103576f2c2e49226969e91c4e"
+        "sha256": "28b7051142eeb5d63f3429622034e6a9b0556c413151579e1ba27cdd5fe541e2"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/noodle.sgc",
         "install_path": "content/interiors/noodle.sgc",
-        "sha256": "ca4b8d34f294769d7ac3395ffa1bf9b17f6d0e2446742040632760b4fcd769dd"
+        "sha256": "19bcbafec953c0ed0ec4e65224ce07a703d4bcd9ab47f4123f20372dcc311bc7"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/pawn.sgc",
         "install_path": "content/interiors/pawn.sgc",
-        "sha256": "9b5ac8b0f4825f1edbefacef361e84647188f1dfc40fd487d3d7603bd352008e"
+        "sha256": "be1e84500c650aee47cc22b9fb8907c1ccf3db14e9b713564bab81356db98ea2"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/precinct.sgc",
         "install_path": "content/interiors/precinct.sgc",
-        "sha256": "6c3312cf27e8479c9b0cf5412ff77bf71ae67ac9bb3ba73d1a0b860bec4ec966"
+        "sha256": "0856bed46a246f187c5fef6af6cb8272cf2fc8168af68615fa52c1f697bf6fae"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/respray.sgc",
         "install_path": "content/interiors/respray.sgc",
-        "sha256": "d0d82a100a8a66c73a617d2d76c609894ada169c6161731b4c5288f833973472"
+        "sha256": "60374fe55500c870dafea3c121be5afb4d96e19721e90ff600c28b2dfaaa9d19"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/tavern.sgc",
         "install_path": "content/interiors/tavern.sgc",
-        "sha256": "81ee762e8f6f53d3151b88a603e23dc7214107574a8a7dbffc6114d750dfab5c"
+        "sha256": "c1c0fcd8126bab3ce4176ee9c72aa321cdce6c0d00ac15fd9c48188e68c4d321"
       },
       {
         "repo_path": "Games/Saltgate/content/world/map.txt",
         "install_path": "content/world/map.txt",
-        "sha256": "12eb1f2b4f083b7ac46abccd49d7bc1c4c9d02233cc0fda26810fe7406eab8fe"
+        "sha256": "3af11fdf153d2d7698950d8aa94325918bcb67f14c4f62837d9d2a007c4282da"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_0_0.sgc",
@@ -352,52 +352,52 @@
       {
         "repo_path": "Games/Saltgate/content/world/w_0_1.sgc",
         "install_path": "content/world/w_0_1.sgc",
-        "sha256": "9c28de7e51c23509eab5cdee404faae635421d6507aabc534aa6dc9926f5d1b2"
+        "sha256": "f9dfe4700eb6859b1c80aac507f83243a34e4014efbd3f70377dbc339a18316b"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_0_2.sgc",
         "install_path": "content/world/w_0_2.sgc",
-        "sha256": "ab45ab42d70851970d92656f19c14b441556063f4607d1ad6e85c300c962220f"
+        "sha256": "8848f87e94772eb1c375a8914f84ba67b0ae3711a726c4ef3984685fcc291edd"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/hotel.sgc",
         "install_path": "content/interiors/hotel.sgc",
-        "sha256": "d6607fa2caab7a6e6712846e2dc29a7a3ddd8c4cccb2e052f31aa468d74f67e6"
+        "sha256": "2e0fb00e5b7736afe1d313cdbad3e02c042c29bb7ba78b159ce9e48fa074b11c"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_1_0.sgc",
         "install_path": "content/world/w_1_0.sgc",
-        "sha256": "db79d399aa94da7cba098d13e359d15751731c6880cef5648526af8f374df356"
+        "sha256": "0057fec303d1b89e79e4125a1faa928bc8c6fcd3c8a6e864fdfe5fbae2597b22"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_1_2.sgc",
         "install_path": "content/world/w_1_2.sgc",
-        "sha256": "1a089e67a5e3980ecc945e1715289673f1d4516b1bebabebe62619bda5d6f905"
+        "sha256": "7d8c8106515b6ff1a75bbceb389d222c1672db03b3ceb91f1b155094e95a7572"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_2_0.sgc",
         "install_path": "content/world/w_2_0.sgc",
-        "sha256": "5fdeb6eb281fb9cca07865ba4f56694532144e17412e5e7e3f029c79ce34e200"
+        "sha256": "d66cb7a5719226e360602c8e265aa34b4e7c0fda80856e082b0242dfce368195"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_2_1.sgc",
         "install_path": "content/world/w_2_1.sgc",
-        "sha256": "7abe924aa5db090f762a261af58e17b0adaf8f75094142bcdd68d164e82341c6"
+        "sha256": "ad879e72c88034fe8df19b566fa1b1b1d298432862edaee76fa1e1f808bc0d8c"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_2_2.sgc",
         "install_path": "content/world/w_2_2.sgc",
-        "sha256": "3c4d2c5453beeca0a590b7490b7cc1044c93dbe119162d0273143051b9b60f9a"
+        "sha256": "72ae52e2189c0ebd88c4bb4824001afddd09a0a9864c32307386d106f2f71fa8"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_3_0.sgc",
         "install_path": "content/world/w_3_0.sgc",
-        "sha256": "7d9879a64cc768e7db964e2d205f2909b3807552b6d274c34260cd02e0b74319"
+        "sha256": "fd8991490c705fb19e9eaacf3292b500e9edd1d3a506ae309cb16cbbfa435e2a"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_3_1.sgc",
         "install_path": "content/world/w_3_1.sgc",
-        "sha256": "7c11ef88ee13471060eec7bd04df38baf360a50d6ecc609abd4cf452abce8511"
+        "sha256": "95c16a50e70aaf8b1d2dd0a95c4216c139f25c3715e79eed2e7db8260a72f8e5"
       },
       {
         "repo_path": "Games/Saltgate/content/world/w_3_2.sgc",
@@ -427,22 +427,22 @@
       {
         "repo_path": "Games/Saltgate/content/world/w_1_1.sgc",
         "install_path": "content/world/w_1_1.sgc",
-        "sha256": "4547fa42d382a4914df59dc07050084053b4fdf84a75e108352ea511575c2988"
+        "sha256": "a7878044e5cc9fb30c9ab6de5d191c70cb7904d7ccb0ec7a2ca88e943e74efc8"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/hospital.sgc",
         "install_path": "content/interiors/hospital.sgc",
-        "sha256": "6d5e7fc65b1192cee9a4f1af90ed614961327df3279171e45f17f7e9d2bc806d"
+        "sha256": "98402d1944c53df0dbad9fe535d553d18aca1d5b8164526db3da3ed86251dbef"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/club.sgc",
         "install_path": "content/interiors/club.sgc",
-        "sha256": "c12332704423442dd091d2a269798e3818a7cb03c52933f97699ee5fc056ecf6"
+        "sha256": "f6f80ffa02aa1d0ecc8029dacfa6db2c660862e94a6101fc484cbf3c62ae6747"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/chopshop.sgc",
         "install_path": "content/interiors/chopshop.sgc",
-        "sha256": "7016c291286cf465f19a57abfa53750db148851486563e3cc2ab79fc16642409"
+        "sha256": "7e04d8b2f5f0904a38927e7058d2b11be161564282c853f17f4c8cbddbc4b4ed"
       },
       {
         "repo_path": "Games/Saltgate/sg/ui/screens.lua",
@@ -512,12 +512,12 @@
       {
         "repo_path": "Games/Saltgate/sg/world/chunkmodel.lua",
         "install_path": "sg/world/chunkmodel.lua",
-        "sha256": "330b62c00819aeb17a9d81e2bdfab939a2af95e24157fc286f4295041db8157b"
+        "sha256": "39c2a4d11adf239d71b7a47240659dbae9f77b89d5e079203c26529864099441"
       },
       {
         "repo_path": "Games/Saltgate/sg/world/city.lua",
         "install_path": "sg/world/city.lua",
-        "sha256": "978713326913f01e0e3a6b1232d2d14d648cdde6ccb8912601f963495483e4f3"
+        "sha256": "37a5c59071f7930e0b2caa1c2a43068a4adc2d1713b13940d28583c0153a87b0"
       },
       {
         "repo_path": "Games/Saltgate/sg/world/landmarks.lua",
@@ -542,7 +542,7 @@
       {
         "repo_path": "Games/Saltgate/sg/world/view.lua",
         "install_path": "sg/world/view.lua",
-        "sha256": "fcc9f8fc917ae4e1d15c7d1cef0ae6e0029cf19072995715da049b4e627be61e"
+        "sha256": "95238216baac37152adb3ad51f036a2b2ecabc7cc7adede90ee6cfd9b6e707e1"
       },
       {
         "repo_path": "Games/Saltgate/startup.lua",
@@ -558,17 +558,17 @@
       {
         "repo_path": "Games/Saltgate/content/interiors/arcade.sgc",
         "install_path": "content/interiors/arcade.sgc",
-        "sha256": "022da505e7d94ca92ec5a9377aaa80c7301f78142176ddf5aea23ac23c59e5f3"
+        "sha256": "188aae9350945e1f676982b138d370e0b084d83533852a53a157ea44875a9e10"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/bait.sgc",
         "install_path": "content/interiors/bait.sgc",
-        "sha256": "e437e915b0cef9241d0d133e66f41b0e704fc5067042d257e752bb7256aaf1d1"
+        "sha256": "1df26e3d9db492154646ff575da2a6dc6f812ad25a005eb59a5f014cd4c09394"
       },
       {
         "repo_path": "Games/Saltgate/content/interiors/bank.sgc",
         "install_path": "content/interiors/bank.sgc",
-        "sha256": "a529a187d75bfa9a704ddbcf79b7d8ed8a349babafe0be72fca671eef3ffc76b"
+        "sha256": "d3646cdf98fe2710bca144ea9010e032e2d50c7160ecf10052ca484223d108ae"
       },
       {
         "repo_path": "Games/Saltgate/sg/core/follow.lua",
@@ -678,7 +678,7 @@
       {
         "repo_path": "Games/Saltgate/content/world/world.lua",
         "install_path": "content/world/world.lua",
-        "sha256": "4887c6777e4aad4582991fc1fde64b93839fcd8bfe8792b43c27d4471b318274"
+        "sha256": "77ba0948086681ce08aea6762b61b01a539b93656f63001f4c21a288aa24be59"
       },
       {
         "repo_path": "Games/Saltgate/music/chase_score.lua",
