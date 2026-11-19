@@ -1,8 +1,8 @@
--- activities/genlayout.lua
+-- saltgate_genlayout.lua (a tool, not shipped with the game)
 -- Writes content/activities/layout.lua from a city. Run it from the Saltgate folder with desktop Lua whenever the city
 -- changes (or by the integrator when a new city lands):
---   lua sg/activities/genlayout.lua testbed                       the step 0 testbed island
---   lua sg/activities/genlayout.lua content/world/*.sgc           the packed chunks of the real city
+--   lua ../../Tests/saltgate_genlayout.lua testbed                     the step 0 testbed island
+--   lua ../../Tests/saltgate_genlayout.lua content/world/*.sgc         the packed chunks of the real city
 -- Prints what it placed and what the city could not give (fewer than 20 places to jump, and so on).
 
 package.path = "./?.lua;" .. package.path

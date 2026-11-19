@@ -5,7 +5,7 @@
 -- to exactly 100 when every activity has been done.
 
 local t = require("testing")
-local kit = require("sg.ui.testkit")
+local kit = require("saltgate_testkit")
 local layoutLib = require("sg.activities.layout")
 local raceLib = require("sg.activities.race")
 local jobLib = require("sg.activities.job")
@@ -122,7 +122,7 @@ t.test("layout: the file in content/ is good for the city as it is (run genlayou
   t.eq(n.postcards, 10)
   t.truthy(n.races >= 4 and n.shops == 6 and n.garages == 3 and n.taxi == 3 and n.depots == 3 and n.properties >= 4)
   local problems = layoutLib.check(onDisk, city())
-  t.eq(table.concat(problems, "; "), "", "run lua sg/activities/genlayout.lua content/world/w_*.sgc after the city changes")
+  t.eq(table.concat(problems, "; "), "", "from Games/Saltgate run lua ../../Tests/saltgate_genlayout.lua content/world/w_*.sgc after the city changes")
 end)
 
 -- ---------------------------------------------------------------- collectibles

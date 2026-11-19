@@ -300,6 +300,41 @@ local function testbedStream(x, z)
   return s
 end
 
+t.test("core stream: a bridge has rails (the play-test's car cut Gull Span's bend and fell in the sea); its ends are open", function()
+  -- the testbed's bridge
+  local rb, at
+  for _, c in pairs(testbed.chunks()) do
+    for _, r in ipairs(c.ribbons) do
+      if r[1] == "bridge" and (not rb or geom.polylineLength(r[3]) > geom.polylineLength(rb[3])) then rb, at = r, c end
+    end
+  end
+  t.truthy(rb, "the testbed has a bridge")
+  local pts = rb[3]
+  local len = geom.polylineLength(pts)
+  local mx, my, mz, dx, dz = geom.polylineAt(pts, len / 2)
+  local s = testbedStream(mx, mz)
+  local hw = rb[2] / 2
+  local nxs, nzs = -dz, dx
+  -- pressing the side, at deck height: held on the deck
+  local x, z, hit = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my)
+  t.truthy(hit, "the rail stops you")
+  local d = geom.polylineNearest(pts, x, z)
+  t.truthy(d <= hw, "and you are on the deck: " .. d)
+  -- under the bridge (far below the deck): no rail
+  local _, _, hitLow = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my - 8)
+  t.truthy(not hitLow, "a boat or a car under the bridge is not held by its rails")
+  -- off the end, along it: open
+  local ex, ey, ez = pts[1], pts[2], pts[3]
+  local ax, az = pts[4] - ex, pts[6] - ez
+  local al = math.sqrt(ax * ax + az * az)
+  local _, _, hitEnd = s:collide(ex - ax / al * 2, ez - az / al * 2, 1.2, ey)
+  t.truthy(not hitEnd, "you drive off the end of the bridge onto the road")
+  -- no shoulder slope beside a high deck: off its edge is a drop to what is below
+  local gy = s:groundAt(mx + nxs * (hw + 1.5), mz + nzs * (hw + 1.5), my)
+  t.truthy(gy < my - 3 or my - (s:groundAt(mx + nxs * (hw + 1.5), mz + nzs * (hw + 1.5), nil) or my) < 4, "a deck's edge is not a slide down to the sea")
+  local _ = at
+end)
+
 t.test("core motion: a car hitting the jump ramp at speed flies, then lands", function()
   local j = testbed.FEATURES.jump
   local s = testbedStream(j.x, j.z)
@@ -535,6 +570,34 @@ t.test("core save: a version 1 save becomes version 2, nothing lost", function()
   t.eq(again.player.money, 1234)
   -- a save with no version at all is the oldest kind
   t.eq(save.migrate({ money = 5 }).player.money, 5)
+end)
+
+t.test("core save: a real save from the first SALTGATE (its own code wrote this file) is read from disk and moved over", function()
+  -- byte for byte what the first game's save code wrote (textutils.serialise) after Fresh Air and Hot Broth
+  local text = '{\n  finished = false,\n  version = 1,\n  money = 550,\n  done = {\n    "fresh_air",\n    "hot_broth",\n  },\n' ..
+    '  tutorialDone = true,\n  stats = {\n    chopped = 0,\n    cars = 0,\n    ko = 0,\n    nabbed = 0,\n    jobs = 0,\n  },\n}'
+  local files = { ["saltgate_save.dat"] = text }
+  local fakeFs = {
+    exists = function(p) return files[p] ~= nil end,
+    open = function(p, mode)
+      if mode == "r" then
+        if not files[p] then return nil end
+        return { readAll = function() return files[p] end, close = function() end }
+      end
+      local buf = {}
+      return { write = function(s) buf[#buf + 1] = s end, writeLine = function(s) buf[#buf + 1] = s .. "\n" end,
+        close = function() files[p] = table.concat(buf) end }
+    end,
+    delete = function(p) files[p] = nil end,
+    move = function(a, b) files[b], files[a] = files[a], nil end,
+    copy = function(a, b) files[b] = files[a] end,
+  }
+  local v2 = assert(save.read(fakeFs, "saltgate_save.dat"))
+  t.eq(v2.version, 2)
+  t.eq(v2.player.money, 550)
+  t.truthy(v2.story.done.fresh_air and v2.story.done.hot_broth, "both jobs done")
+  t.eq(v2.settings.tutorialDone, true)
+  t.eq(files["saltgate_save.dat"], text, "the old file is left as it was")
 end)
 
 t.test("core save: a newer save is refused untouched; a broken file falls back to the backup", function()

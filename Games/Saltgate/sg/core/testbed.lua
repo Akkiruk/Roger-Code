@@ -1,7 +1,7 @@
 -- core/testbed.lua
 -- Step 0's proving ground: a small island made in code with everything the chunk format can say, so the streamer,
 -- the 3D drive, the road graph, the maps and the renderer are shown working with curves and heights before the real
--- city exists. Behind the v2 flag only; stream A's city replaces it. Pure and the same every time.
+-- city exists. Used only when no city is installed (content/world); stream A's city replaces it. Pure and the same every time.
 --
 --   testbed.chunks() -> { ["cx,cz"] = chunk }   (built once and kept)
 --   testbed.source(cx, cz) -> chunk or nil       (for core/stream.lua)

@@ -269,7 +269,8 @@ function M.extraSurfaces(c, x, z, out, groundY)
         out[#out + 1] = { y = b.y, kind = "road", what = r }
       else
         local gy = groundY or M.terrainY(c, x, z)
-        if math.abs(b.y - gy) > 0.3 then
+        -- (a road far above its ground is a deck, a bridge over the sea: its edge is a drop, not a slope)
+        if math.abs(b.y - gy) > 0.3 and math.abs(b.y - gy) <= M.SHOULDER_MAX then
           local f = (d - b.hw) / S
           out[#out + 1] = { y = b.y + (gy - b.y) * f, kind = "shoulder", what = r }
         end
@@ -281,6 +282,7 @@ end
 
 M.ROAD_CELL = 8
 M.SHOULDER = 3
+M.SHOULDER_MAX = 4 -- a road more than this above (or below) its ground has no shoulder: a deck edge is a drop
 
 --- The chunk's road segments by grid cell (built once, kept as c._roadGrid): each { x1, y1, z1, x2, y2, z2, halfWidth,
 -- road }, in every cell its padded box touches.

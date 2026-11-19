@@ -1,8 +1,7 @@
 -- models.lua
--- Every shape in Saltgate, as Pine3D models (lists of coloured triangles): city tiles, the sea and pier, cars, people,
--- cash and markers. Boxes copy the winding of Pine3D's own cube, so back-face culling keeps working.
+-- Shapes for Pine3D (lists of coloured triangles): boxes and quads for the world's builders, cars, people, a marker.
+-- Boxes copy the winding of Pine3D's own cube, so back-face culling keeps working.
 
-local city = require("sg.city")
 
 local M = {}
 
@@ -76,137 +75,6 @@ M.STYLE = {
   crane = { C.yellow, C.yellow, C.orange },
 }
 
-local GROUND = { concrete = C.lightGray, lot = C.green, plaza = C.white, grass = C.lime }
-
-local function building(list, b, ox, oz, lod)
-  local x0, z0, x1, z1 = b.x0 - ox, b.z0 - oz, b.x1 - ox, b.z1 - oz
-  if b.style == "tree" then
-    local cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-    M.box(list, cx - 0.3, 0, cz - 0.3, cx + 0.3, 2, cz + 0.3, C.brown, C.brown, C.brown, { noTop = true })
-    M.box(list, cx - 1.6, 2, cz - 1.6, cx + 1.6, 4.6, cz + 1.6, C.lime, C.green, C.green, { bottom = true })
-    return
-  end
-  local st = M.STYLE[b.style] or M.STYLE.concrete
-  M.box(list, x0, 0, z0, x1, b.h, z1, st[1], st[2], st[3])
-  if lod or not st[4] or b.h < 5 then return end
-  -- window bands: a little proud of the wall so the depth test puts them in front
-  local inset = 0.15
-  local count = math.min(6, math.floor((b.h - 2) / 3.5))
-  local spacing = (b.h - 2) / math.max(1, count)
-  for k = 0, count - 1 do
-    local y = 1.6 + k * spacing
-    local band = st[5] and (k % 2 == 1) and st[5] or st[4]
-    M.box(list, x0 - inset, y, z0 - inset, x1 + inset, y + math.min(1.1, spacing * 0.45), z1 + inset, band, band, band,
-      { noTop = true })
-  end
-  if b.style == "gilt" then
-    -- a gold crown on the tower
-    M.box(list, x0 + 2, b.h, z0 + 2, x1 - 2, b.h + 4, z1 - 2, C.yellow, C.orange, C.yellow)
-  elseif b.style == "hospital" then
-    local cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-    M.box(list, cx - 3, b.h, cz - 0.8, cx + 3, b.h + 0.4, cz + 0.8, C.red)
-    M.box(list, cx - 0.8, b.h, cz - 3, cx + 0.8, b.h + 0.4, cz + 3, C.red)
-  end
-end
-
---- One tile, as a model centred on the tile's middle. lod leaves the small things out.
-function M.tile(tile, lod)
-  local list = {}
-  local P, HALF, SW = city.P, city.HALF, city.SIDEWALK
-  local x0, z0 = tile.i * P, tile.j * P
-  local ox, oz = x0 + P / 2, z0 + P / 2
-  local a, b = -P / 2, P / 2
-  -- the roads are not drawn: the ground below the horizon is asphalt, and the sea is drawn round the land instead
-  -- sidewalk ring
-  local s0, s1 = a + HALF, b - HALF
-  local walk = C.lightGray
-  local y = 0.12
-  M.quad(list, s0, s0, s1, s0 + SW, y, walk)
-  M.quad(list, s0, s1 - SW, s1, s1, y, walk)
-  M.quad(list, s0, s0 + SW, s0 + SW, s1 - SW, y, walk)
-  M.quad(list, s1 - SW, s0 + SW, s1, s1 - SW, y, walk)
-  -- the lot
-  M.quad(list, s0 + SW, s0 + SW, s1 - SW, s1 - SW, y, GROUND[tile.ground] or C.green)
-  if tile.pond then
-    local p = tile.pond
-    M.quad(list, p.x0 - ox, p.z0 - oz, p.x1 - ox, p.z1 - oz, y + 0.02, C.blue)
-  end
-  if not lod then
-    -- dashed centre lines on the north and west roads (and south/east on the last row/column)
-    local function dashesX(z)
-      local x = a + HALF + 1
-      while x + 2.5 < b - HALF do
-        M.quad(list, x, z - 0.15, x + 2.5, z + 0.15, 0.02, C.yellow)
-        x = x + 5.5
-      end
-    end
-    local function dashesZ(x)
-      local z = a + HALF + 1
-      while z + 2.5 < b - HALF do
-        M.quad(list, x - 0.15, z, x + 0.15, z + 2.5, 0.02, C.yellow)
-        z = z + 5.5
-      end
-    end
-    dashesX(a)
-    dashesZ(a)
-    if tile.j == city.N - 1 then dashesX(b) end
-    if tile.i == city.N - 1 then dashesZ(b) end
-    -- a street lamp on two corners
-    for _, c in ipairs({ { s0 + 0.5, s0 + 0.5 }, { s1 - 0.5, s1 - 0.5 } }) do
-      M.box(list, c[1] - 0.1, 0, c[2] - 0.1, c[1] + 0.1, 4, c[2] + 0.1, C.black, C.black, C.black, { noTop = true })
-      M.box(list, c[1] - 0.3, 4, c[2] - 0.3, c[1] + 0.3, 4.3, c[2] + 0.3, C.yellow, C.yellow, C.yellow, { bottom = true })
-    end
-  end
-  for _, bld in ipairs(tile.buildings) do
-    building(list, bld, ox, oz, lod)
-  end
-  return list, ox, oz
-end
-
---- The sea round the land (eight big sheets reaching far enough that the horizon is all water), the pier and its ferry.
-function M.waterfront()
-  local out = {}
-  local lo, hi = -city.EDGE, city.SIZE + city.EDGE
-  local far = 900
-  local function sheet(x0, z0, x1, z1)
-    local cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-    out[#out + 1] = { model = M.quad({}, x0 - cx, z0 - cz, x1 - cx, z1 - cz, -0.2, C.blue), x = cx, z = cz }
-  end
-  local edges = { lo - far, lo, hi, hi + far }
-  for a = 1, 3 do
-    for b = 1, 3 do
-      if not (a == 2 and b == 2) then sheet(edges[a], edges[b], edges[a + 1], edges[b + 1]) end
-    end
-  end
-  -- a pale line of surf along the seawall
-  local surf = {}
-  local mid = (lo + hi) / 2
-  M.quad(surf, lo - 1.2 - mid, lo - 1.2 - mid, hi + 1.2 - mid, lo - mid, -0.15, C.lightBlue)
-  M.quad(surf, lo - 1.2 - mid, hi - mid, hi + 1.2 - mid, hi + 1.2 - mid, -0.15, C.lightBlue)
-  M.quad(surf, lo - 1.2 - mid, lo - mid, lo - mid, hi - mid, -0.15, C.lightBlue)
-  M.quad(surf, hi - mid, lo - mid, hi + 1.2 - mid, hi - mid, -0.15, C.lightBlue)
-  out[#out + 1] = { model = surf, x = mid, z = mid }
-  -- the pier: planks on posts, a ferry at the end
-  local p = city.pier
-  local px, pz = (p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2
-  local pier = {}
-  M.quad(pier, p.x0 - px, p.z0 - pz, p.x1 - px, p.z1 - pz, 0.05, C.brown)
-  for k = 0, 3 do
-    local zz = p.z0 - pz + 8 + k * 10
-    M.box(pier, p.x0 - px - 0.4, -0.3, zz - 0.4, p.x0 - px + 0.4, 1, zz + 0.4, C.black, C.brown, C.brown)
-    M.box(pier, p.x1 - px - 0.4, -0.3, zz - 0.4, p.x1 - px + 0.4, 1, zz + 0.4, C.black, C.brown, C.brown)
-  end
-  out[#out + 1] = { model = pier, x = px, z = pz }
-  local ferry = {}
-  local fx, fz = p.x1 + 9, p.z1 - 12
-  M.box(ferry, -3.5, -0.3, -13, 3.5, 2.5, 13, C.white, C.white, C.lightGray)
-  M.box(ferry, -2.5, 2.5, -7, 2.5, 5, 6, C.white, C.lightGray, C.white)
-  M.box(ferry, -2.6, 3.3, -7.1, 2.6, 4, 6.1, C.black, C.black, C.black, { noTop = true })
-  M.box(ferry, -0.8, 5, -1, 0.8, 8, 1, C.black, C.red, C.red)
-  out[#out + 1] = { model = ferry, x = fx, z = fz }
-  return out
-end
-
 -- ---------------------------------------------------------------- things that move
 
 --- Rotate a model about y so local +x points along heading h (forward (cos h, sin h)).
@@ -278,42 +146,12 @@ function M.person(shirt, down, legs)
   return list
 end
 
---- Mama Juno's noodle stall: a counter under a striped awning, a pot on top. Centred on its counter.
-function M.stall()
-  local list = {}
-  M.box(list, -1.6, 0, -0.25, 1.6, 1.0, 0.25, C.red, C.red, C.brown)
-  M.box(list, -0.35, 1.0, -0.2, 0.05, 1.35, 0.2, C.lightGray, C.gray, C.gray)
-  M.box(list, -1.6, 0, 0.3, -1.45, 2.5, 0.45, C.black, C.black, C.black, { noTop = true })
-  M.box(list, 1.45, 0, 0.3, 1.6, 2.5, 0.45, C.black, C.black, C.black, { noTop = true })
-  for k = 0, 3 do
-    local c = k % 2 == 0 and C.magenta or C.white
-    M.box(list, -1.9 + k * 0.95, 2.5, -0.9, -0.95 + k * 0.95, 2.75, 0.6, c, c, c, { bottom = true })
-  end
-  return list
-end
-
---- A bundle of cash.
-function M.cash()
-  local list = {}
-  M.box(list, -0.35, 0, -0.2, 0.35, 0.3, 0.2, C.lime, C.green, C.green, { bottom = true })
-  M.box(list, -0.05, 0.3, -0.21, 0.05, 0.31, 0.21, C.white, C.white, C.white)
-  return list
-end
-
 --- A tall light for a job marker.
 function M.beacon(colour)
   local list = {}
   local c = C[colour] or C.yellow
   M.box(list, -0.35, 0.2, -0.35, 0.35, 9, 0.35, c, c, c)
   M.quad(list, -2, -2, 2, 2, 0.16, c)
-  return list
-end
-
---- Fire on a wreck.
-function M.flames()
-  local list = {}
-  M.box(list, -0.6, 1.1, -0.5, 0.4, 1.9, 0.5, C.orange, C.orange, C.red)
-  M.box(list, -0.3, 1.9, -0.25, 0.2, 2.5, 0.25, C.yellow, C.yellow, C.orange)
   return list
 end
 

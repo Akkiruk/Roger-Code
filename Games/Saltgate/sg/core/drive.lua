@@ -20,7 +20,7 @@ function M.step(car, input, dt, world, opts)
     input = { throttle = 0, steer = (input.steer or 0) * 0.3, handbrake = false }
   end
   local ox, oz = car.x, car.z
-  vehicle.update(car, input, dt, nil) -- speed and heading on the flat
+  vehicle.update(car, input, dt) -- speed and heading on the flat
   local nx, nz = car.x, car.z
   car.x, car.z = ox, oz
   local spec = car.spec

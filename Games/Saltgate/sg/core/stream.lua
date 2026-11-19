@@ -22,6 +22,7 @@
 -- Jobs must not pull events: a yield inside source or build hands control back to the streamer, not to CC.
 
 local chunkLib = require("sg.core.chunk")
+local geom = require("sg.core.geom")
 local roadgraph = require("sg.core.roadgraph")
 
 local M = {}
@@ -239,6 +240,21 @@ function S:groundAt(x, z, y)
   local ground = list[1].y
   eachNear(self, x, z, function(c) chunkLib.extraSurfaces(c, x, z, list, ground) end)
   if #list == 1 then return list[1].y, "terrain" end
+  -- in a tunnel (at its floor's height), the hill above is its roof, not ground: without this the hill rose gently
+  -- from the mouth and a car drove up over it instead of through
+  if y ~= nil then
+    local floorY
+    for _, s in ipairs(list) do
+      if s.kind == "tunnel" and y < s.y + M.TUNNEL_HEAD and (not floorY or s.y > floorY) then floorY = s.y end
+    end
+    if floorY then
+      for i = #list, 1, -1 do
+        local s = list[i]
+        if (s.kind == "terrain" or s.kind == "shoulder") and s.y > floorY + chunkLib.STEP then table.remove(list, i) end
+      end
+      if #list == 0 then return floorY, "tunnel" end
+    end
+  end
   table.sort(list, function(a, b) return a.y > b.y end)
   if y == nil then return list[1].y, list[1].kind end
   for _, s in ipairs(list) do
@@ -284,11 +300,71 @@ function S:collide(x, z, r, y)
       nx, nz = nx + hnx, nz + hnz
     end
   end)
-  if hit then
-    local len = math.sqrt(nx * nx + nz * nz)
-    if len > 0 then nx, nz = nx / len, nz / len end
+  -- rails along bridges and overpasses: on a deck you stay on it, and drive on and off at its ends. Across chunk edges
+  -- a deck comes in pieces (often joined on a bend), so: inside any piece at your height is fine; otherwise you are held
+  -- by the nearest piece you are beside, or past a bend of (a corner, or an end that meets another piece); only an end
+  -- that meets nothing is open
+  if y then
+    local decks = {}
+    eachNear(self, x, z, function(c)
+      for _, rb in ipairs(c.ribbons) do
+        if rb[1] == "bridge" or rb[1] == "overpass" then decks[#decks + 1] = rb end
+      end
+    end)
+    local inside, push = false, nil
+    local function joined(px, pz, me)
+      for _, o in ipairs(decks) do
+        if o ~= me then
+          local p = o[3]
+          if (p[1] - px) ^ 2 + (p[3] - pz) ^ 2 < 1 or (p[#p - 2] - px) ^ 2 + (p[#p] - pz) ^ 2 < 1 then return true end
+        end
+      end
+      return false
+    end
+    for _, rb in ipairs(decks) do
+      local hw = rb[2] / 2
+      local pts = rb[3]
+      local d, dy, seg, t, qx, qz, dx, dz = geom.polylineNearest(pts, x, z)
+      if d < hw + r + 1.5 and math.abs(y - dy) < M.RAIL_REACH then
+        if d <= hw - r * 0.5 then
+          inside = true
+        else
+          local ox, oz = x - qx, z - qz
+          local lon = math.abs(ox * dx + oz * dz)
+          local held = lon < 0.5 -- beside it
+          if not held then
+            local nseg = #pts / 3 - 1
+            local first, last = seg == 1 and t <= 0, seg == nseg and t >= 1
+            if not first and not last then
+              held = true -- past the outside of a bend
+            else
+              local px, pz = first and pts[1] or pts[#pts - 2], first and pts[3] or pts[#pts]
+              held = joined(px, pz, rb) -- an end that meets another piece is a bend too
+            end
+          end
+          if held and (not push or d < push.d) then
+            push = { d = d, qx = qx, qz = qz, hw = hw, ox = ox, oz = oz }
+          end
+        end
+      end
+    end
+    if push and not inside then
+      local len = math.sqrt(push.ox * push.ox + push.oz * push.oz)
+      if len > 1e-6 then
+        local ux, uz = push.ox / len, push.oz / len
+        local keep = math.max(0, push.hw - r)
+        x, z = push.qx + ux * keep, push.qz + uz * keep
+        nx, nz = nx - ux, nz - uz
+        hit = true
+        local l2 = math.sqrt(nx * nx + nz * nz)
+        if l2 > 0 then nx, nz = nx / l2, nz / l2 end
+      end
+    end
   end
   return x, z, hit, nx, nz
 end
+
+M.TUNNEL_HEAD = 5 -- under this height above a tunnel floor you are in the tunnel (the hill above is its roof)
+M.RAIL_REACH = 2.5 -- a deck's rails hold what is within this height of it (a car under the bridge drives on)
 
 return M

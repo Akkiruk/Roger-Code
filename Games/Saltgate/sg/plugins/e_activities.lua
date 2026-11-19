@@ -1,7 +1,7 @@
 -- plugins/e_activities.lua
 -- Stream E: the side activities. Street races with ghosts, taxi shifts and parcel runs, 50 gull totems and 10 postcards,
 -- stunt jumps, shops (respray, tune, clothes), property that pays rent, the garage. Where everything is comes from
--- content/activities/layout.lua (made from the city by sg/activities/genlayout.lua); what the shops sell from shops.lua.
+-- content/activities/layout.lua (made from the city by Tests/saltgate_genlayout.lua); what the shops sell from shops.lua.
 -- Other parts reach it as ctx.activities (sg/activities/manager.lua):
 --   ctx.activities:hud()  :prompt()  :markers()  :mapMarkers()  :target()  :counts(category)  :cancel()
 --   ctx.activities.garage  :store() :takeOut()      ctx.activities.shops   ctx.activities.property

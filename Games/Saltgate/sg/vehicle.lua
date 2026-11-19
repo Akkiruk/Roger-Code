@@ -1,10 +1,9 @@
 -- vehicle.lua
 -- Saltgate's cars and how they drive. Pure: a car is a plain table, update() moves it for dt seconds under an input
--- of throttle (-1..1), steer (-1..1, positive turns right) and handbrake. Collision with the city is done here too,
--- through city.collide, so the same physics serve the player, traffic and the Harbor Patrol.
+-- of throttle (-1..1), steer (-1..1, positive turns right) and handbrake, on the flat; core/drive.lua puts it on the
+-- streamed world (ground, walls), so the same physics serve the player, traffic and the Harbor Patrol.
 
 local util = require("sg.util")
-local city = require("sg.city")
 
 local M = {}
 
@@ -53,7 +52,7 @@ function M.new(kind, x, z, h, colour)
 end
 
 --- One step of driving. Returns how hard it hit something (speed lost), 0 if nothing.
-function M.update(car, input, dt, theCity)
+function M.update(car, input, dt)
   local spec = car.spec
   local throttle = input and input.throttle or 0
   local steerIn = input and input.steer or 0
@@ -104,14 +103,8 @@ function M.update(car, input, dt, theCity)
   local nx = car.x + (fx * v + rx * car.side) * dt
   local nz = car.z + (fz * v + rz * car.side) * dt
 
+  -- (walls and ground are core/motion.lua's, through core/drive.lua: this moves the car on the flat)
   local impact = 0
-  if theCity then
-    local cx, cz, hit, hx, hz = city.collide(theCity, nx, nz, spec.radius * 0.8)
-    if hit then
-      impact = M.hitWall(car, hx, hz)
-      nx, nz = cx, cz
-    end
-  end
   car.x, car.z = nx, nz
   if car.hitTimer > 0 then car.hitTimer = car.hitTimer - dt end
   return impact

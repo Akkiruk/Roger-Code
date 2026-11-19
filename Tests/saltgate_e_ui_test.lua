@@ -4,7 +4,7 @@
 -- transitions, the loading card, the map's icons and the keys tee.
 
 local t = require("testing")
-local kit = require("sg.ui.testkit")
+local kit = require("saltgate_testkit")
 local theme = require("sg.ui.theme")
 local menuLib = require("sg.ui.menu")
 local keysLib = require("sg.ui.keys")
@@ -461,7 +461,6 @@ t.test("title: the city turns behind the name; W/S with a tap and repeats move t
   frames(ctx, 2)
   t.eq(ctx.ui.top().name, "e_title", "the game opens on the title")
   t.truthy(ctx.screen.find("Play") and ctx.screen.find("Quit"), ctx.screen.text())
-  t.truthy(ctx.screen.find("Classic"), "the first game is still on the title")
   t.truthy(ctx.screen.find("L O W   T I D E"))
   t.eq(ctx.hud.hidden, true, "no HUD over the title")
   kit.press(ctx, "down", 1) -- tap + one repeat: two rows

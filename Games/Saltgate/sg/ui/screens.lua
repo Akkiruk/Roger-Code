@@ -399,8 +399,6 @@ function M.install(ctx, deps)
         { label = "Stats and awards", action = function() api.stats(1) end },
         { label = "Settings", action = function() api.settings() end },
         { label = "Controls", action = function() api.controls() end },
-        -- the first game, as it was (its own save); the main loop ends and saltgate.lua starts it
-        { label = "Classic", action = function() c.wantClassic = true quit() end },
         { label = "Quit", action = function() quit() end },
       }
       args.menu = menuLib.new(items, { bg = C.black })

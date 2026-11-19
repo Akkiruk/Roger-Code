@@ -1,4 +1,4 @@
--- ui/testkit.lua
+-- saltgate_testkit.lua (the tests' game harness; it lived in sg/ui/testkit.lua, which shipped with the game)
 -- What stream E's tests build their games from: a term that remembers what was drawn (text, colours), CC key codes, and a
 -- context like the app's, with the real plugins loaded. Not used by the game itself.
 

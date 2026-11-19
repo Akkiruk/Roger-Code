@@ -3,7 +3,7 @@
 -- tracker's arithmetic, settings that persist and are applied, and the car radio with the soundtrack's cues.
 
 local t = require("testing")
-local kit = require("sg.ui.testkit")
+local kit = require("saltgate_testkit")
 local statsLib = require("sg.progress.stats")
 local achLib = require("sg.progress.achievements")
 local completionLib = require("sg.progress.completion")

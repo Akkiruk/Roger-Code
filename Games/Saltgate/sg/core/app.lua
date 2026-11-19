@@ -1,13 +1,12 @@
 -- core/app.lua
 -- SALTGATE's engine: the core (events, entities, streaming, the road graph, 3D driving, save v2, plugins, screens and
 -- widgets, the budget) running the city (stream A's world; the step 0 testbed only when no city is installed).
--- saltgate.lua starts this unless Classic is asked for (saltgate classic, engine = "classic" in saltgate_settings.lua,
--- or Classic on the title screen, which ends main with "classic").
+-- saltgate.lua starts it (with a crash report round it).
 --   saltgate              play
 --   saltgate bench [n]    the autopilot drives n frames; times and memory go to saltgate_bench.log
 --
--- Saves go to saltgate_save2.dat (read first from Classic's saltgate_save.dat, migrated), so Classic's save stays
--- exactly as it was.
+-- Saves go to saltgate_save2.dat. With none there, a save from the first SALTGATE (saltgate_save.dat) is read and
+-- migrated (money, jobs done, stats); that file is never written.
 
 local eventsLib = require("sg.core.events")
 local entityLib = require("sg.core.entity")
@@ -77,11 +76,6 @@ local function music(name, ...)
   end
 end
 M.music = function(...) return music(...) end
-
---- Is this engine the one to run? (Always, unless the settings ask for Classic.)
-function M.enabled(settings)
-  return not (type(settings) == "table" and settings.engine == "classic")
-end
 
 --- The context every plugin gets.
 local function makeContext(screen)
@@ -688,8 +682,6 @@ function M.main(args)
   screen.setBackgroundColour(colours.black)
   screen.clear()
   screen.setCursorPos(1, 1)
-  -- Classic, picked on the title screen: saltgate.lua runs it next
-  if ctx.wantClassic then return "classic" end
   print("Thanks for driving in Saltgate.")
   local _ = chunkLib
 end
