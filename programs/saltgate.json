@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.9"
+    "version": "1.0.10"
   },
   "build": {
-    "commit": "a794d069756d0b9e4b23347dcaf748734a9ede17",
-    "generated_at": "2026-11-19T00:07:34Z",
-    "package_hash": "00226b426d0aa4f5597d8d846c1af1cf31fa76692495d5133bed421f2fc58f0f"
+    "commit": "b65d6e6a4cdac1f6a8026b44cb7d0580481f502b",
+    "generated_at": "2026-11-19T00:19:29Z",
+    "package_hash": "a0fbbf37a4616a69bb231dac1e818bf16a390698e9efcc01b47d4255da880a85"
   },
   "install": {
     "preserve": [
@@ -25,310 +25,14 @@
         "sha256": "3c34eca68dd46b7dab89392645bd31634f845620d66e7f388bf08ea0e7aa55e2"
       },
       {
-        "repo_path": "Games/Saltgate/sg/core/mapview.lua",
-        "install_path": "sg/core/mapview.lua",
-        "sha256": "0332dfeafd0b70e13dc9744b0b16611a6972d1597f2d82c3d1213ff2f674dac6"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/motion.lua",
-        "install_path": "sg/core/motion.lua",
-        "sha256": "82a559e38b76dd49dd8b02fd3febf1445e637eaa68f36e9a67dd5a6b57bba686"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/plugins.lua",
-        "install_path": "sg/core/plugins.lua",
-        "sha256": "d5f40261f0959c60fda1b7f7bb9be44307615cb1d8ced1a35e1dedf4a9c8f4db"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/roadgraph.lua",
-        "install_path": "sg/core/roadgraph.lua",
-        "sha256": "91ae456c004ec152fb239e562cf9b92d1b547c72ef3805bbbd293eec9809cf58"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/save.lua",
-        "install_path": "sg/core/save.lua",
-        "sha256": "574d3a2d9a7c4beb9d712f04ecaa1bbd88d8d0bb768d0acee93100e46f3415f0"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/script.lua",
-        "install_path": "sg/core/script.lua",
-        "sha256": "63d27f7514661a2c66e16dff7e8b44f91a32c67049350c07f90fff5545ecf699"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/stream.lua",
-        "install_path": "sg/core/stream.lua",
-        "sha256": "bc1524d10685c6c0981858fa328c947377f3282f59e281ffb23553648efd2048"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/testbed.lua",
-        "install_path": "sg/core/testbed.lua",
-        "sha256": "da25e5314a3993a560f4e3017f41105468c022167308eadab31599d42986f608"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/ui.lua",
-        "install_path": "sg/core/ui.lua",
-        "sha256": "b3c70d40a27d6ad3032f11712ce21f19044bd0f96d84442a1bd91a0c60c00bff"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/vehicles.lua",
-        "install_path": "sg/core/vehicles.lua",
-        "sha256": "f2bc5107dc4e4d41de36da44cb1c284e44a6b462bb4e8b70fffa79c314f055c1"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/view.lua",
-        "install_path": "sg/core/view.lua",
-        "sha256": "d112bd813e9c9b7f346ed6d3ee5224ada4b745a43f8672987f611ab10ab2f9ce"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/game.lua",
-        "install_path": "sg/game.lua",
-        "sha256": "56a3de4119e20f48187fdf8a9279be88119b86093a421249459c31c249ce3f2a"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/heat.lua",
-        "install_path": "sg/heat.lua",
-        "sha256": "f2d27bbb57eb39bbe8c3106981a0c7e5e1a97b2bdd362c58c8a004dd98706c5c"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/heat/air.lua",
-        "install_path": "sg/heat/air.lua",
-        "sha256": "e4f256ed064091578839b87838e42024a613883b9444e5ab5ab2143e1d744d7c"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/heat/blocks.lua",
-        "install_path": "sg/heat/blocks.lua",
-        "sha256": "4c5cfb2d29e8c448f2868352600ed1fd617817483d52efcc00f14b19b7cebcb2"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/geom.lua",
-        "install_path": "sg/core/geom.lua",
-        "sha256": "a2d8486646adeb24aaf85a0d33e9f1c7f87a485e1c7c23a25d2448d8bfd017a3"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/heat/cops.lua",
-        "install_path": "sg/heat/cops.lua",
-        "sha256": "ee243670a0c801744fe884aa23dc854b2785e82518e0364067c419ee85613fae"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/follow.lua",
-        "install_path": "sg/core/follow.lua",
-        "sha256": "715ddfc98a44762af6e353d5c9b9dc56b76540b3002b39c05790a2f9f876fb61"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/entity.lua",
-        "install_path": "sg/core/entity.lua",
-        "sha256": "a181e3c312f9b7088a11257fad47dc6c21b32da85fe0901f970afb18a496fd3a"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/hud.lua",
-        "install_path": "sg/combat/hud.lua",
-        "sha256": "eb186ca3b313f79fe64e1c2cca2cb763eba9ccc645bc4de0ae7d3d9052fbcfe6"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/input.lua",
-        "install_path": "sg/combat/input.lua",
-        "sha256": "b186f7e598dc12bd7d2b2ba72650b439bba57469b0abb3cb7af97eb26652d615"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/knock.lua",
-        "install_path": "sg/combat/knock.lua",
-        "sha256": "fb47e757037908fb815654f65c37f40f76daf239d01814ffd0de2ab9bc91b2dc"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/overlay.lua",
-        "install_path": "sg/combat/overlay.lua",
-        "sha256": "cdd48339e12d69318bc10d7118b6467668f2554c1c6f04e904f00df30bdf222d"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/scene.lua",
-        "install_path": "sg/combat/scene.lua",
-        "sha256": "4fbffb63aae01d58dfde905d96df00dc337766091d0d1046a3eb6cae54cba558"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/shoot.lua",
-        "install_path": "sg/combat/shoot.lua",
-        "sha256": "b9633dabbcaf9a353593809d2a7e76b4453274857b22abc35748827c01c09f5a"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/showroom.lua",
-        "install_path": "sg/combat/showroom.lua",
-        "sha256": "b2eaa33693eff5a229f7f2d9b79c28db44212a02c0009c6fe40a9df800e57a26"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/system.lua",
-        "install_path": "sg/combat/system.lua",
-        "sha256": "6ac2f0a6f0f7e56071a15873877b8fa78d4dd3f5681cf69bd64fdb381b79c738"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/combat/weapons.lua",
-        "install_path": "sg/combat/weapons.lua",
-        "sha256": "b0b5cdf4316a4e444b411a70abace55ce1477be0247b3b0c70b31ae684ca3b46"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/app.lua",
-        "install_path": "sg/core/app.lua",
-        "sha256": "583216689dc5f4f1e8ca94eb2928cc8304e96ce6241c9f431ac9a04fd7bc8dd8"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/budget.lua",
-        "install_path": "sg/core/budget.lua",
-        "sha256": "6cdc51b1d21a45109ac950ebb617bda1fc5b2e62c60277398c3f3ac1a3ed2895"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/chunk.lua",
-        "install_path": "sg/core/chunk.lua",
-        "sha256": "15df00748c1870c4f7073a0c8c5227cf9d2fd6c9de8ded1c47f13ab3534774b3"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/chunkmodel.lua",
-        "install_path": "sg/core/chunkmodel.lua",
-        "sha256": "16431a1d380ab7a0cefa1c89aef26eaa7f12a04dce25a1ad0b5d3df10e882542"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/content.lua",
-        "install_path": "sg/core/content.lua",
-        "sha256": "e753ba0087ea8c86a8a3b9be766d5dc59ea60423ba6b852cfbacdfe96cb6ff60"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/drive.lua",
-        "install_path": "sg/core/drive.lua",
-        "sha256": "d0d244eecd7e3534cf076cac6edf4ceb92acd7f8fc47ad0e4af4975a928efdd2"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/core/events.lua",
-        "install_path": "sg/core/events.lua",
-        "sha256": "d28b481319143722f22b3b3332f2cba79de7d60872999f9ca2730377a6ffd30e"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/heat/los.lua",
-        "install_path": "sg/heat/los.lua",
-        "sha256": "cb66a29ba9fca4e2a24bab428f23eed5665527f89c06b727e7b94a8993411b15"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/heat/wanted.lua",
-        "install_path": "sg/heat/wanted.lua",
-        "sha256": "cfe5c783350bca69628704f22a9343d261bf4b78751ea6883706cb1c80f98099"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/hints.lua",
-        "install_path": "sg/hints.lua",
-        "sha256": "1abdcd6e94efc8b31bee54d35736b7549a74979b57d070291f1926938ed9cc87"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/story/world.lua",
-        "install_path": "sg/story/world.lua",
-        "sha256": "d003f916634e7318f4cf91c4c2f1b4003433dcf0c16ec0f37693e84b6c66764b"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/util.lua",
-        "install_path": "sg/util.lua",
-        "sha256": "4e8396b08877683405712ec618a831952657111da34545579bbc849826e3099a"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicle.lua",
-        "install_path": "sg/vehicle.lua",
-        "sha256": "fd46556c50322c2a75b444753703816622b8478b43c5353676f798a973025cb4"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicles/catalog.lua",
-        "install_path": "sg/vehicles/catalog.lua",
-        "sha256": "63794d687badbe0b21bec1c0a4a63df8d6aeb4077c37766ac25f6315d7758e21"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicles/custom.lua",
-        "install_path": "sg/vehicles/custom.lua",
-        "sha256": "64d50bb8fe0391f1b6b8d3ad9d40e5590063489b0696837468886aa151f19719"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicles/fleet.lua",
-        "install_path": "sg/vehicles/fleet.lua",
-        "sha256": "038ebe27319699cc9783a2c4a9f24c5894409f00ad68fb96eb495f08b7cd2882"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicles/install.lua",
-        "install_path": "sg/vehicles/install.lua",
-        "sha256": "d5ce064ddd1b1aa07c6766beb7479842dbf79aa8f9633182ba8fca91b115a64b"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicles/models.lua",
-        "install_path": "sg/vehicles/models.lua",
-        "sha256": "6beb4a5f6a7fd22beb7837f6d77658b6e6b05332a460df5a0e1791ba20291a0f"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/vehicles/physics.lua",
-        "install_path": "sg/vehicles/physics.lua",
-        "sha256": "dd19bc9cd4c4cc22f0c2ea511b52b34b6c1fa5fcf759e075c92acebe35627a46"
-      },
-      {
-        "repo_path": "Games/Saltgate/startup.lua",
-        "install_path": "saltgate_startup.lua",
-        "sha256": "c455fa09b4cb553e31e024fdb0eda9a15f38e2b6ec9fda73bec7a834d2e58907"
-      },
-      {
-        "repo_path": "Games/Saltgate/saltgate_settings.lua",
-        "install_path": "saltgate_settings.lua",
-        "sha256": "fc7331804324c9032790f2ec3cb620133df3f636cd93423363a65b68afee5072",
-        "preserve_existing": true
-      },
-      {
-        "repo_path": "Games/Saltgate/CREDITS.txt",
-        "install_path": "CREDITS.txt",
-        "sha256": "276198ebbd51930efd2677ab9e55a0ba2c64107c2d190d5f2885dfd847150a39"
-      },
-      {
-        "repo_path": "Games/Saltgate/pine3d/LICENSE.txt",
-        "install_path": "pine3d/LICENSE.txt",
-        "sha256": "444047b85aa7b6394a6167d5e3c88aff7d1a0fc45a2f075575bfccb5d75d99d4"
-      },
-      {
-        "repo_path": "Games/Saltgate/vhcc_lockdown.txt",
-        "install_path": "vhcc_lockdown.txt",
-        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
-      },
-      {
-        "repo_path": "Shared/lib/crashreport.lua",
-        "install_path": "lib/crashreport.lua",
-        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/story/text.lua",
-        "install_path": "sg/story/text.lua",
-        "sha256": "fa156272686f76b6a5ac6b52bd3abd1ba11e1804fd9fd6475ae4992afc85dc18"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/story/talk.lua",
-        "install_path": "sg/story/talk.lua",
-        "sha256": "5ceaef44f45dd6b71e10fb10a9f7fc85bb1f584b4eda2f17c3c7b4fb727f2b7f"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/story/screens.lua",
-        "install_path": "sg/story/screens.lua",
-        "sha256": "aba3eb690d756c30ebfc1d8e647e8a2bf0e9b8088a3535d9f480a06f7a0016b6"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/story/phone.lua",
-        "install_path": "sg/story/phone.lua",
-        "sha256": "290111e9214e3ecd540769231a5c7a762b0cc43dc623cf2ad1a894f90882c9be"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/input.lua",
-        "install_path": "sg/input.lua",
-        "sha256": "efc78f30b8f982b7fa5bb016235afc83e75e08c4b9b985e86020a3173a21147a"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/missions.lua",
-        "install_path": "sg/missions.lua",
-        "sha256": "67aae82fb8feb2050bda3cab53eac09675a80c96a762118492eac82cb91b971b"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/models.lua",
-        "install_path": "sg/models.lua",
-        "sha256": "a5ca5a36452ab760731550dffd40b650d5cecf00344145e1e2bfc630485d6588"
-      },
-      {
         "repo_path": "Games/Saltgate/sg/peds.lua",
         "install_path": "sg/peds.lua",
         "sha256": "33363ec8c586157a78b233d02456cfcef37f6fc3b5dfbcf947a3cb103381b9c4"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/plugins/a_world.lua",
+        "install_path": "sg/plugins/a_world.lua",
+        "sha256": "8c59a86fe4b46cedb1a789aaf73080f6343df47035e56bc8bb207accb0831c32"
       },
       {
         "repo_path": "Games/Saltgate/sg/plugins/b_combat.lua",
@@ -346,14 +50,14 @@
         "sha256": "4c1f74e7e8ef2ae769d40987e951a98c34ca073d63675d240deab17d01a24b12"
       },
       {
-        "repo_path": "Games/Saltgate/sg/combat/fx.lua",
-        "install_path": "sg/combat/fx.lua",
-        "sha256": "1e8a460a54836ce0d67bb71563e0a22ca149c4b839bc2b6e90bdfc67a77e6aa6"
-      },
-      {
         "repo_path": "Games/Saltgate/sg/plugins/c_police.lua",
         "install_path": "sg/plugins/c_police.lua",
         "sha256": "2efd8318114236174c3d6514d1251133845be1528bc99c336769b79460ec049f"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/plugins/c_traffic.lua",
+        "install_path": "sg/plugins/c_traffic.lua",
+        "sha256": "d4012aa039448a6dcd1c5b3efbbc081d2dbc6bf1d82925c99792da05fd6e1ad8"
       },
       {
         "repo_path": "Games/Saltgate/sg/plugins/d_story.lua",
@@ -391,44 +95,410 @@
         "sha256": "bd29c24c0ac092c8096d0625d4506d0576242470d11cdb8101ea1e99ac786e64"
       },
       {
-        "repo_path": "Games/Saltgate/sg/plugins/c_traffic.lua",
-        "install_path": "sg/plugins/c_traffic.lua",
-        "sha256": "d4012aa039448a6dcd1c5b3efbbc081d2dbc6bf1d82925c99792da05fd6e1ad8"
+        "repo_path": "Games/Saltgate/sg/story/phone.lua",
+        "install_path": "sg/story/phone.lua",
+        "sha256": "290111e9214e3ecd540769231a5c7a762b0cc43dc623cf2ad1a894f90882c9be"
       },
       {
-        "repo_path": "Games/Saltgate/sg/combat/aim.lua",
-        "install_path": "sg/combat/aim.lua",
-        "sha256": "e3a77025455cac5a2f0bb469453235651efadd14bdbf20344a64107bac872dde"
+        "repo_path": "Games/Saltgate/sg/story/screens.lua",
+        "install_path": "sg/story/screens.lua",
+        "sha256": "aba3eb690d756c30ebfc1d8e647e8a2bf0e9b8088a3535d9f480a06f7a0016b6"
       },
       {
-        "repo_path": "Games/Saltgate/sg/city.lua",
-        "install_path": "sg/city.lua",
-        "sha256": "ff864780db44a17323ccceb6c13eb6742d5c8665f647c5b42998179d9d197b0a"
+        "repo_path": "Games/Saltgate/sg/story/talk.lua",
+        "install_path": "sg/story/talk.lua",
+        "sha256": "5ceaef44f45dd6b71e10fb10a9f7fc85bb1f584b4eda2f17c3c7b4fb727f2b7f"
       },
       {
-        "repo_path": "Games/Saltgate/sg/bigtext.lua",
-        "install_path": "sg/bigtext.lua",
-        "sha256": "af959ba6e93f249b0ed67c93ae5f91ddf00564810efed189e9fb146a246c10d4"
+        "repo_path": "Games/Saltgate/sg/story/text.lua",
+        "install_path": "sg/story/text.lua",
+        "sha256": "fa156272686f76b6a5ac6b52bd3abd1ba11e1804fd9fd6475ae4992afc85dc18"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_ledger_run.lua",
-        "install_path": "content/story/m_ledger_run.lua",
-        "sha256": "e2de73c902fa090462eb17ffc2d4b9dd206bbb82eb07d09b5cfb55fb0b005a66"
+        "repo_path": "Games/Saltgate/sg/story/world.lua",
+        "install_path": "sg/story/world.lua",
+        "sha256": "d003f916634e7318f4cf91c4c2f1b4003433dcf0c16ec0f37693e84b6c66764b"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_long_way_round.lua",
-        "install_path": "content/story/m_long_way_round.lua",
-        "sha256": "802555b335d361c9bf07c4a307131366172478263f04db2e58e61272627cf46c"
+        "repo_path": "Games/Saltgate/sg/models.lua",
+        "install_path": "sg/models.lua",
+        "sha256": "a5ca5a36452ab760731550dffd40b650d5cecf00344145e1e2bfc630485d6588"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_low_tide.lua",
-        "install_path": "content/story/m_low_tide.lua",
-        "sha256": "28986cf78987802d82c885bcfb0f0236bdeac2e676e81433fa6056118b6a49a1"
+        "repo_path": "Games/Saltgate/sg/missions.lua",
+        "install_path": "sg/missions.lua",
+        "sha256": "67aae82fb8feb2050bda3cab53eac09675a80c96a762118492eac82cb91b971b"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_no_ferry.lua",
-        "install_path": "content/story/m_no_ferry.lua",
-        "sha256": "b91981f9e3e8b71ac8c5f28303a23d44ce717d2223bfa98f34352052a9fb15ca"
+        "repo_path": "Games/Saltgate/sg/input.lua",
+        "install_path": "sg/input.lua",
+        "sha256": "efc78f30b8f982b7fa5bb016235afc83e75e08c4b9b985e86020a3173a21147a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/hints.lua",
+        "install_path": "sg/hints.lua",
+        "sha256": "1abdcd6e94efc8b31bee54d35736b7549a74979b57d070291f1926938ed9cc87"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/follow.lua",
+        "install_path": "sg/core/follow.lua",
+        "sha256": "715ddfc98a44762af6e353d5c9b9dc56b76540b3002b39c05790a2f9f876fb61"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/geom.lua",
+        "install_path": "sg/core/geom.lua",
+        "sha256": "a2d8486646adeb24aaf85a0d33e9f1c7f87a485e1c7c23a25d2448d8bfd017a3"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/mapview.lua",
+        "install_path": "sg/core/mapview.lua",
+        "sha256": "0332dfeafd0b70e13dc9744b0b16611a6972d1597f2d82c3d1213ff2f674dac6"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/motion.lua",
+        "install_path": "sg/core/motion.lua",
+        "sha256": "82a559e38b76dd49dd8b02fd3febf1445e637eaa68f36e9a67dd5a6b57bba686"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/plugins.lua",
+        "install_path": "sg/core/plugins.lua",
+        "sha256": "d5f40261f0959c60fda1b7f7bb9be44307615cb1d8ced1a35e1dedf4a9c8f4db"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/roadgraph.lua",
+        "install_path": "sg/core/roadgraph.lua",
+        "sha256": "91ae456c004ec152fb239e562cf9b92d1b547c72ef3805bbbd293eec9809cf58"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/save.lua",
+        "install_path": "sg/core/save.lua",
+        "sha256": "574d3a2d9a7c4beb9d712f04ecaa1bbd88d8d0bb768d0acee93100e46f3415f0"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/script.lua",
+        "install_path": "sg/core/script.lua",
+        "sha256": "63d27f7514661a2c66e16dff7e8b44f91a32c67049350c07f90fff5545ecf699"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/stream.lua",
+        "install_path": "sg/core/stream.lua",
+        "sha256": "bc1524d10685c6c0981858fa328c947377f3282f59e281ffb23553648efd2048"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/util.lua",
+        "install_path": "sg/util.lua",
+        "sha256": "4e8396b08877683405712ec618a831952657111da34545579bbc849826e3099a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/testbed.lua",
+        "install_path": "sg/core/testbed.lua",
+        "sha256": "da25e5314a3993a560f4e3017f41105468c022167308eadab31599d42986f608"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/vehicles.lua",
+        "install_path": "sg/core/vehicles.lua",
+        "sha256": "f2bc5107dc4e4d41de36da44cb1c284e44a6b462bb4e8b70fffa79c314f055c1"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/view.lua",
+        "install_path": "sg/core/view.lua",
+        "sha256": "d112bd813e9c9b7f346ed6d3ee5224ada4b745a43f8672987f611ab10ab2f9ce"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/game.lua",
+        "install_path": "sg/game.lua",
+        "sha256": "56a3de4119e20f48187fdf8a9279be88119b86093a421249459c31c249ce3f2a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/heat.lua",
+        "install_path": "sg/heat.lua",
+        "sha256": "f2d27bbb57eb39bbe8c3106981a0c7e5e1a97b2bdd362c58c8a004dd98706c5c"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/heat/air.lua",
+        "install_path": "sg/heat/air.lua",
+        "sha256": "e4f256ed064091578839b87838e42024a613883b9444e5ab5ab2143e1d744d7c"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/heat/blocks.lua",
+        "install_path": "sg/heat/blocks.lua",
+        "sha256": "4c5cfb2d29e8c448f2868352600ed1fd617817483d52efcc00f14b19b7cebcb2"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/heat/cops.lua",
+        "install_path": "sg/heat/cops.lua",
+        "sha256": "ee243670a0c801744fe884aa23dc854b2785e82518e0364067c419ee85613fae"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/heat/los.lua",
+        "install_path": "sg/heat/los.lua",
+        "sha256": "cb66a29ba9fca4e2a24bab428f23eed5665527f89c06b727e7b94a8993411b15"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/heat/wanted.lua",
+        "install_path": "sg/heat/wanted.lua",
+        "sha256": "cfe5c783350bca69628704f22a9343d261bf4b78751ea6883706cb1c80f98099"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/ui.lua",
+        "install_path": "sg/core/ui.lua",
+        "sha256": "b3c70d40a27d6ad3032f11712ce21f19044bd0f96d84442a1bd91a0c60c00bff"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicle.lua",
+        "install_path": "sg/vehicle.lua",
+        "sha256": "fd46556c50322c2a75b444753703816622b8478b43c5353676f798a973025cb4"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicles/catalog.lua",
+        "install_path": "sg/vehicles/catalog.lua",
+        "sha256": "63794d687badbe0b21bec1c0a4a63df8d6aeb4077c37766ac25f6315d7758e21"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicles/custom.lua",
+        "install_path": "sg/vehicles/custom.lua",
+        "sha256": "64d50bb8fe0391f1b6b8d3ad9d40e5590063489b0696837468886aa151f19719"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/precinct.sgc",
+        "install_path": "content/interiors/precinct.sgc",
+        "sha256": "6c3312cf27e8479c9b0cf5412ff77bf71ae67ac9bb3ba73d1a0b860bec4ec966"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/respray.sgc",
+        "install_path": "content/interiors/respray.sgc",
+        "sha256": "d0d82a100a8a66c73a617d2d76c609894ada169c6161731b4c5288f833973472"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/tavern.sgc",
+        "install_path": "content/interiors/tavern.sgc",
+        "sha256": "81ee762e8f6f53d3151b88a603e23dc7214107574a8a7dbffc6114d750dfab5c"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/map.txt",
+        "install_path": "content/world/map.txt",
+        "sha256": "12eb1f2b4f083b7ac46abccd49d7bc1c4c9d02233cc0fda26810fe7406eab8fe"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_0_0.sgc",
+        "install_path": "content/world/w_0_0.sgc",
+        "sha256": "762c277b86853d60be528aab23da1b6241f9b807a2a17b42dd9327e73f6b1fb1"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_0_1.sgc",
+        "install_path": "content/world/w_0_1.sgc",
+        "sha256": "9c28de7e51c23509eab5cdee404faae635421d6507aabc534aa6dc9926f5d1b2"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_0_2.sgc",
+        "install_path": "content/world/w_0_2.sgc",
+        "sha256": "ab45ab42d70851970d92656f19c14b441556063f4607d1ad6e85c300c962220f"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_1_0.sgc",
+        "install_path": "content/world/w_1_0.sgc",
+        "sha256": "db79d399aa94da7cba098d13e359d15751731c6880cef5648526af8f374df356"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_1_1.sgc",
+        "install_path": "content/world/w_1_1.sgc",
+        "sha256": "4547fa42d382a4914df59dc07050084053b4fdf84a75e108352ea511575c2988"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/pawn.sgc",
+        "install_path": "content/interiors/pawn.sgc",
+        "sha256": "9b5ac8b0f4825f1edbefacef361e84647188f1dfc40fd487d3d7603bd352008e"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_1_2.sgc",
+        "install_path": "content/world/w_1_2.sgc",
+        "sha256": "1a089e67a5e3980ecc945e1715289673f1d4516b1bebabebe62619bda5d6f905"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_2_1.sgc",
+        "install_path": "content/world/w_2_1.sgc",
+        "sha256": "7abe924aa5db090f762a261af58e17b0adaf8f75094142bcdd68d164e82341c6"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_2_2.sgc",
+        "install_path": "content/world/w_2_2.sgc",
+        "sha256": "3c4d2c5453beeca0a590b7490b7cc1044c93dbe119162d0273143051b9b60f9a"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_3_0.sgc",
+        "install_path": "content/world/w_3_0.sgc",
+        "sha256": "7d9879a64cc768e7db964e2d205f2909b3807552b6d274c34260cd02e0b74319"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_3_1.sgc",
+        "install_path": "content/world/w_3_1.sgc",
+        "sha256": "7c11ef88ee13471060eec7bd04df38baf360a50d6ecc609abd4cf452abce8511"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_3_2.sgc",
+        "install_path": "content/world/w_3_2.sgc",
+        "sha256": "e064e3d494f56cbe685339dd232e9519b5907cd9003aaebeff18470f5b4b2ec0"
+      },
+      {
+        "repo_path": "Games/Saltgate/CREDITS.txt",
+        "install_path": "CREDITS.txt",
+        "sha256": "276198ebbd51930efd2677ab9e55a0ba2c64107c2d190d5f2885dfd847150a39"
+      },
+      {
+        "repo_path": "Games/Saltgate/pine3d/LICENSE.txt",
+        "install_path": "pine3d/LICENSE.txt",
+        "sha256": "444047b85aa7b6394a6167d5e3c88aff7d1a0fc45a2f075575bfccb5d75d99d4"
+      },
+      {
+        "repo_path": "Games/Saltgate/vhcc_lockdown.txt",
+        "install_path": "vhcc_lockdown.txt",
+        "sha256": "cc69dd44376bdb77e6dae89fdfd6f15d538f8a459bf4aaadd098064b43f05ecf"
+      },
+      {
+        "repo_path": "Shared/lib/crashreport.lua",
+        "install_path": "lib/crashreport.lua",
+        "sha256": "ba58934217f972e405b1da1f72dde1637689d23501f32a1b6e7a522dcf02d439"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/w_2_0.sgc",
+        "install_path": "content/world/w_2_0.sgc",
+        "sha256": "5fdeb6eb281fb9cca07865ba4f56694532144e17412e5e7e3f029c79ce34e200"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/events.lua",
+        "install_path": "sg/core/events.lua",
+        "sha256": "d28b481319143722f22b3b3332f2cba79de7d60872999f9ca2730377a6ffd30e"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/noodle.sgc",
+        "install_path": "content/interiors/noodle.sgc",
+        "sha256": "ca4b8d34f294769d7ac3395ffa1bf9b17f6d0e2446742040632760b4fcd769dd"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/lighthouse.sgc",
+        "install_path": "content/interiors/lighthouse.sgc",
+        "sha256": "0f475d9407f50810908e7114ebfddfb0c2cfc121d6c5de5c98d2b09da9176fd4"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicles/fleet.lua",
+        "install_path": "sg/vehicles/fleet.lua",
+        "sha256": "038ebe27319699cc9783a2c4a9f24c5894409f00ad68fb96eb495f08b7cd2882"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicles/install.lua",
+        "install_path": "sg/vehicles/install.lua",
+        "sha256": "d5ce064ddd1b1aa07c6766beb7479842dbf79aa8f9633182ba8fca91b115a64b"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicles/models.lua",
+        "install_path": "sg/vehicles/models.lua",
+        "sha256": "6beb4a5f6a7fd22beb7837f6d77658b6e6b05332a460df5a0e1791ba20291a0f"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/vehicles/physics.lua",
+        "install_path": "sg/vehicles/physics.lua",
+        "sha256": "dd19bc9cd4c4cc22f0c2ea511b52b34b6c1fa5fcf759e075c92acebe35627a46"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/chunkmodel.lua",
+        "install_path": "sg/world/chunkmodel.lua",
+        "sha256": "330b62c00819aeb17a9d81e2bdfab939a2af95e24157fc286f4295041db8157b"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/city.lua",
+        "install_path": "sg/world/city.lua",
+        "sha256": "978713326913f01e0e3a6b1232d2d14d648cdde6ccb8912601f963495483e4f3"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/landmarks.lua",
+        "install_path": "sg/world/landmarks.lua",
+        "sha256": "ba7e9d4a38add858fb8ad716eec277abeefebaecbc4595e0871f496b55b1e96a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/mapview.lua",
+        "install_path": "sg/world/mapview.lua",
+        "sha256": "60c25939e0578ac0c719107b2c95de3e47461cc2a239ed7c2aefd94b14f1419b"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/shapes.lua",
+        "install_path": "sg/world/shapes.lua",
+        "sha256": "38cbae45e8ca894118c7bd7cd9ff4aaaf79b19678b1bc7800f163bf0a4429f48"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/museum.sgc",
+        "install_path": "content/interiors/museum.sgc",
+        "sha256": "3995eb82d560fec7e0c22f3c4c2c2008d6ca60e103576f2c2e49226969e91c4e"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/sky.lua",
+        "install_path": "sg/world/sky.lua",
+        "sha256": "395a0c565b91792266a11f711b56302686202c64744e6ae1e1e0073be9293ffe"
+      },
+      {
+        "repo_path": "Games/Saltgate/startup.lua",
+        "install_path": "saltgate_startup.lua",
+        "sha256": "c455fa09b4cb553e31e024fdb0eda9a15f38e2b6ec9fda73bec7a834d2e58907"
+      },
+      {
+        "repo_path": "Games/Saltgate/saltgate_settings.lua",
+        "install_path": "saltgate_settings.lua",
+        "sha256": "fc7331804324c9032790f2ec3cb620133df3f636cd93423363a65b68afee5072",
+        "preserve_existing": true
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/arcade.sgc",
+        "install_path": "content/interiors/arcade.sgc",
+        "sha256": "022da505e7d94ca92ec5a9377aaa80c7301f78142176ddf5aea23ac23c59e5f3"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/bait.sgc",
+        "install_path": "content/interiors/bait.sgc",
+        "sha256": "e437e915b0cef9241d0d133e66f41b0e704fc5067042d257e752bb7256aaf1d1"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/bank.sgc",
+        "install_path": "content/interiors/bank.sgc",
+        "sha256": "a529a187d75bfa9a704ddbcf79b7d8ed8a349babafe0be72fca671eef3ffc76b"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/chopshop.sgc",
+        "install_path": "content/interiors/chopshop.sgc",
+        "sha256": "7016c291286cf465f19a57abfa53750db148851486563e3cc2ab79fc16642409"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/club.sgc",
+        "install_path": "content/interiors/club.sgc",
+        "sha256": "c12332704423442dd091d2a269798e3818a7cb03c52933f97699ee5fc056ecf6"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/hospital.sgc",
+        "install_path": "content/interiors/hospital.sgc",
+        "sha256": "6d5e7fc65b1192cee9a4f1af90ed614961327df3279171e45f17f7e9d2bc806d"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/interiors/hotel.sgc",
+        "install_path": "content/interiors/hotel.sgc",
+        "sha256": "d6607fa2caab7a6e6712846e2dc29a7a3ddd8c4cccb2e052f31aa468d74f67e6"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/world/view.lua",
+        "install_path": "sg/world/view.lua",
+        "sha256": "fcc9f8fc917ae4e1d15c7d1cef0ae6e0029cf19072995715da049b4e627be61e"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/entity.lua",
+        "install_path": "sg/core/entity.lua",
+        "sha256": "a181e3c312f9b7088a11257fad47dc6c21b32da85fe0901f970afb18a496fd3a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/drive.lua",
+        "install_path": "sg/core/drive.lua",
+        "sha256": "d0d244eecd7e3534cf076cac6edf4ceb92acd7f8fc47ad0e4af4975a928efdd2"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/content.lua",
+        "install_path": "sg/core/content.lua",
+        "sha256": "e753ba0087ea8c86a8a3b9be766d5dc59ea60423ba6b852cfbacdfe96cb6ff60"
       },
       {
         "repo_path": "Games/Saltgate/content/story/m_on_the_air.lua",
@@ -476,9 +546,59 @@
         "sha256": "ffaa81c57c56ec112c9c9adbe1d6c3476d23ab214ae8abfdb52ff226419aa7e6"
       },
       {
+        "repo_path": "Games/Saltgate/content/story/m_no_ferry.lua",
+        "install_path": "content/story/m_no_ferry.lua",
+        "sha256": "b91981f9e3e8b71ac8c5f28303a23d44ce717d2223bfa98f34352052a9fb15ca"
+      },
+      {
         "repo_path": "Games/Saltgate/content/story/places.lua",
         "install_path": "content/story/places.lua",
         "sha256": "ae7d1074669fe829efb1369346acc1b9c04d8469704fa3727bf51725eefdba1b"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/vehicles/bikes.lua",
+        "install_path": "content/vehicles/bikes.lua",
+        "sha256": "f4ba85512ebada12d4ef468e63477be0deac65f2fd965cbdab26d6b5fd65073d"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/vehicles/boats.lua",
+        "install_path": "content/vehicles/boats.lua",
+        "sha256": "80124d0c11b221ed549c7d33b386b98d97cf4ff9604391ef9fb235ab178bd48d"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/vehicles/cars.lua",
+        "install_path": "content/vehicles/cars.lua",
+        "sha256": "29f9af0e47dbc7dc73cadfb28cf3671341827b86d2581f7d175b8b3fcaac61ad"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/vehicles/trucks.lua",
+        "install_path": "content/vehicles/trucks.lua",
+        "sha256": "def6d697d47fd670e6b055b47398a15e6d370ec2b05b68fb6d800853ea443ab3"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/vehicles/tune.lua",
+        "install_path": "content/vehicles/tune.lua",
+        "sha256": "ca19fe99e19932deadfd5f8f670e9073b0c2e108009de5af769fca0fb5a69f15"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/world/world.lua",
+        "install_path": "content/world/world.lua",
+        "sha256": "4887c6777e4aad4582991fc1fde64b93839fcd8bfe8792b43c27d4471b318274"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/chase_score.lua",
+        "install_path": "music/chase_score.lua",
+        "sha256": "24550def80a3022219a974f5b6b4d30b3b84aec0f2db2cc6477eb243bc4af7de"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/init.lua",
+        "install_path": "music/init.lua",
+        "sha256": "fb703776e4a894ff5f3727ef643bc5842c50c683834d289be8f80e19589eb869"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/player.lua",
+        "install_path": "music/player.lua",
+        "sha256": "c43f3d033787b3670ee2cd25a464a4d4d867dc20f98fa6a6958c8cc5b0ee4aa6"
       },
       {
         "repo_path": "Games/Saltgate/content/vehicles/air.lua",
@@ -486,24 +606,19 @@
         "sha256": "156fa648bc58bccbeab5940cef84ef85cdf83c9b5ece96ca24fe7fd2dae587a9"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_last_ferry.lua",
-        "install_path": "content/story/m_last_ferry.lua",
-        "sha256": "df206ba19950e22f4ab3a1d511b30f34e827d8067201cc0e61f6ec5ba899697c"
+        "repo_path": "Games/Saltgate/music/roam_score.lua",
+        "install_path": "music/roam_score.lua",
+        "sha256": "5f13fa78e4d7d983a63b6a462caa9d5cc598a2c68b6f227527b682ce9dd477e7"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_king_tide.lua",
-        "install_path": "content/story/m_king_tide.lua",
-        "sha256": "12308f92ef0358899601bc69be6ea81fd65d6dba69364fc8816d61c596c38ae9"
+        "repo_path": "Games/Saltgate/content/story/m_low_tide.lua",
+        "install_path": "content/story/m_low_tide.lua",
+        "sha256": "28986cf78987802d82c885bcfb0f0236bdeac2e676e81433fa6056118b6a49a1"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_hot_broth.lua",
-        "install_path": "content/story/m_hot_broth.lua",
-        "sha256": "4e374b670dcdbcc9e1cac6460a9defd0db64449dc1925bbe1a602283e1661e08"
-      },
-      {
-        "repo_path": "Games/Saltgate/content/story/m_heights_heist.lua",
-        "install_path": "content/story/m_heights_heist.lua",
-        "sha256": "dfe5047710d356bdb8e8189ed3d1312e3264aeea003d8791d648be0560cc1c37"
+        "repo_path": "Games/Saltgate/content/story/m_ledger_run.lua",
+        "install_path": "content/story/m_ledger_run.lua",
+        "sha256": "e2de73c902fa090462eb17ffc2d4b9dd206bbb82eb07d09b5cfb55fb0b005a66"
       },
       {
         "repo_path": "System/roger_logs.lua",
@@ -541,24 +656,24 @@
         "sha256": "2184dc08606acddd6a0eebcce36021d195e1ffd030a5a8bce35086c06961499e"
       },
       {
-        "repo_path": "Games/Saltgate/content/vehicles/bikes.lua",
-        "install_path": "content/vehicles/bikes.lua",
-        "sha256": "f4ba85512ebada12d4ef468e63477be0deac65f2fd965cbdab26d6b5fd65073d"
-      },
-      {
         "repo_path": "Games/Saltgate/content/story/m_beat_the_freight.lua",
         "install_path": "content/story/m_beat_the_freight.lua",
         "sha256": "38cfde6b29ee317c2075a242d28c8cec42dfbe04a497742da9a3db8596b8d2f2"
       },
       {
+        "repo_path": "Games/Saltgate/content/story/m_bridge_out.lua",
+        "install_path": "content/story/m_bridge_out.lua",
+        "sha256": "4f2c98d5ff6b3692e24b28b65e752ec15ff8d87c5af414d0adf95708e756a88e"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/story/m_long_way_round.lua",
+        "install_path": "content/story/m_long_way_round.lua",
+        "sha256": "802555b335d361c9bf07c4a307131366172478263f04db2e58e61272627cf46c"
+      },
+      {
         "repo_path": "Games/Saltgate/content/story/m_cannery_row.lua",
         "install_path": "content/story/m_cannery_row.lua",
         "sha256": "843de6c51e253708c0bfef27f1321ddb05ea53bb7c3dfa822a8c6278d12c6f0a"
-      },
-      {
-        "repo_path": "Games/Saltgate/content/story/m_double_dealing.lua",
-        "install_path": "content/story/m_double_dealing.lua",
-        "sha256": "1c3ed37d334ee1360cda47365b430fa0fc8a0ff7b690948f7121925521545270"
       },
       {
         "repo_path": "Games/Saltgate/content/story/m_dumpling_run.lua",
@@ -586,9 +701,29 @@
         "sha256": "ca815e6e39bab0d34eb16ef726250916dc8b896a64707a4b738fa15edfb8a350"
       },
       {
-        "repo_path": "Games/Saltgate/content/story/m_bridge_out.lua",
-        "install_path": "content/story/m_bridge_out.lua",
-        "sha256": "4f2c98d5ff6b3692e24b28b65e752ec15ff8d87c5af414d0adf95708e756a88e"
+        "repo_path": "Games/Saltgate/content/story/m_heights_heist.lua",
+        "install_path": "content/story/m_heights_heist.lua",
+        "sha256": "dfe5047710d356bdb8e8189ed3d1312e3264aeea003d8791d648be0560cc1c37"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/story/m_hot_broth.lua",
+        "install_path": "content/story/m_hot_broth.lua",
+        "sha256": "4e374b670dcdbcc9e1cac6460a9defd0db64449dc1925bbe1a602283e1661e08"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/story/m_king_tide.lua",
+        "install_path": "content/story/m_king_tide.lua",
+        "sha256": "12308f92ef0358899601bc69be6ea81fd65d6dba69364fc8816d61c596c38ae9"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/story/m_last_ferry.lua",
+        "install_path": "content/story/m_last_ferry.lua",
+        "sha256": "df206ba19950e22f4ab3a1d511b30f34e827d8067201cc0e61f6ec5ba899697c"
+      },
+      {
+        "repo_path": "Games/Saltgate/content/story/m_double_dealing.lua",
+        "install_path": "content/story/m_double_dealing.lua",
+        "sha256": "1c3ed37d334ee1360cda47365b430fa0fc8a0ff7b690948f7121925521545270"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
@@ -596,14 +731,194 @@
         "sha256": "bae68e0fc46331f8c78bebc5c219150afd6e8df5f1fc44bc8a42033bc2985123"
       },
       {
-        "repo_path": "Games/Saltgate/content/vehicles/boats.lua",
-        "install_path": "content/vehicles/boats.lua",
-        "sha256": "80124d0c11b221ed549c7d33b386b98d97cf4ff9604391ef9fb235ab178bd48d"
+        "repo_path": "Games/Saltgate/music/score.lua",
+        "install_path": "music/score.lua",
+        "sha256": "eaf6859473e20063f265c1c6aeec879be1bfcc9215080bbbb65572cbc33ddd12"
       },
       {
-        "repo_path": "Games/Saltgate/content/vehicles/trucks.lua",
-        "install_path": "content/vehicles/trucks.lua",
-        "sha256": "def6d697d47fd670e6b055b47398a15e6d370ec2b05b68fb6d800853ea443ab3"
+        "repo_path": "Games/Saltgate/music/tracks/complete.lua",
+        "install_path": "music/tracks/complete.lua",
+        "sha256": "1b92136a44f356353b7eebb581eff5c54d23135eaca9e2689cd4eb4b921870cc"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/scene.lua",
+        "install_path": "sg/ai/scene.lua",
+        "sha256": "04cc7246c6593d55aada1c84fb6d10a4a0a93dc23681b026aa4038602292c952"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/signals.lua",
+        "install_path": "sg/ai/signals.lua",
+        "sha256": "f42c32733e4b1166368a81e21d3ec5f4269fa15cd83f8c621cf154ba92ce711f"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/traffic.lua",
+        "install_path": "sg/ai/traffic.lua",
+        "sha256": "1e1a717f493c74c27bfd21708e383e02a6ead78437e2e0cb1de462d6e03d2f8d"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/bigtext.lua",
+        "install_path": "sg/bigtext.lua",
+        "sha256": "af959ba6e93f249b0ed67c93ae5f91ddf00564810efed189e9fb146a246c10d4"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/city.lua",
+        "install_path": "sg/city.lua",
+        "sha256": "ff864780db44a17323ccceb6c13eb6742d5c8665f647c5b42998179d9d197b0a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/aim.lua",
+        "install_path": "sg/combat/aim.lua",
+        "sha256": "e3a77025455cac5a2f0bb469453235651efadd14bdbf20344a64107bac872dde"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/fx.lua",
+        "install_path": "sg/combat/fx.lua",
+        "sha256": "1e8a460a54836ce0d67bb71563e0a22ca149c4b839bc2b6e90bdfc67a77e6aa6"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/hud.lua",
+        "install_path": "sg/combat/hud.lua",
+        "sha256": "eb186ca3b313f79fe64e1c2cca2cb763eba9ccc645bc4de0ae7d3d9052fbcfe6"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/input.lua",
+        "install_path": "sg/combat/input.lua",
+        "sha256": "b186f7e598dc12bd7d2b2ba72650b439bba57469b0abb3cb7af97eb26652d615"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/planner.lua",
+        "install_path": "sg/ai/planner.lua",
+        "sha256": "3aea674f84559fdeedf5c82f9aa2fdd55ea03d4701d2e64ccc7cee879dbfc9e0"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/knock.lua",
+        "install_path": "sg/combat/knock.lua",
+        "sha256": "fb47e757037908fb815654f65c37f40f76daf239d01814ffd0de2ab9bc91b2dc"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/scene.lua",
+        "install_path": "sg/combat/scene.lua",
+        "sha256": "4fbffb63aae01d58dfde905d96df00dc337766091d0d1046a3eb6cae54cba558"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/shoot.lua",
+        "install_path": "sg/combat/shoot.lua",
+        "sha256": "b9633dabbcaf9a353593809d2a7e76b4453274857b22abc35748827c01c09f5a"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/showroom.lua",
+        "install_path": "sg/combat/showroom.lua",
+        "sha256": "b2eaa33693eff5a229f7f2d9b79c28db44212a02c0009c6fe40a9df800e57a26"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/system.lua",
+        "install_path": "sg/combat/system.lua",
+        "sha256": "6ac2f0a6f0f7e56071a15873877b8fa78d4dd3f5681cf69bd64fdb381b79c738"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/weapons.lua",
+        "install_path": "sg/combat/weapons.lua",
+        "sha256": "b0b5cdf4316a4e444b411a70abace55ce1477be0247b3b0c70b31ae684ca3b46"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/app.lua",
+        "install_path": "sg/core/app.lua",
+        "sha256": "583216689dc5f4f1e8ca94eb2928cc8304e96ce6241c9f431ac9a04fd7bc8dd8"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/budget.lua",
+        "install_path": "sg/core/budget.lua",
+        "sha256": "6cdc51b1d21a45109ac950ebb617bda1fc5b2e62c60277398c3f3ac1a3ed2895"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/chunk.lua",
+        "install_path": "sg/core/chunk.lua",
+        "sha256": "15df00748c1870c4f7073a0c8c5227cf9d2fd6c9de8ded1c47f13ab3534774b3"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/core/chunkmodel.lua",
+        "install_path": "sg/core/chunkmodel.lua",
+        "sha256": "16431a1d380ab7a0cefa1c89aef26eaa7f12a04dce25a1ad0b5d3df10e882542"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/combat/overlay.lua",
+        "install_path": "sg/combat/overlay.lua",
+        "sha256": "cdd48339e12d69318bc10d7118b6467668f2554c1c6f04e904f00df30bdf222d"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/theme.lua",
+        "install_path": "music/theme.lua",
+        "sha256": "7baad90189e21bc2c521cf0dced04c971e9fefe19bca2d2dd9919baac35c72d7"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/peds.lua",
+        "install_path": "sg/ai/peds.lua",
+        "sha256": "aa0c1d4f287a0fdc115185ba6ad464d2c0a896c74281da486be19b5216a75f61"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/lane.lua",
+        "install_path": "sg/ai/lane.lua",
+        "sha256": "d804d0e8217ea4aa1008f0a2279a8bed67217e77f33a514e44039e992df2384c"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/credits.lua",
+        "install_path": "music/tracks/credits.lua",
+        "sha256": "f2a388b061e7567b64a72405925d6fc7f4052b9ef155b6438553a195d323de9a"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/cuffed.lua",
+        "install_path": "music/tracks/cuffed.lua",
+        "sha256": "ed1c0f755f8fd392b0c2fd800f880f2cb0f7b4d53e5d211f9d123d973b33875f"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/drive.lua",
+        "install_path": "music/tracks/drive.lua",
+        "sha256": "7c18f75ec332b212b045260005b5b9b41b2f12645caa4be67aa4347ff0c778d9"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/finale.lua",
+        "install_path": "music/tracks/finale.lua",
+        "sha256": "c462cf4fd94fa71e4e3a005564ab719057a5eb395f0836e5d65b0a321dec9616"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/heat_high.lua",
+        "install_path": "music/tracks/heat_high.lua",
+        "sha256": "01109104be2f579ffda5e922b7b873d7e8099deb62563548879896c0f47550d3"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/heat_low.lua",
+        "install_path": "music/tracks/heat_low.lua",
+        "sha256": "3a43502a930b5a3a4f8d24113f159c12cd8124d16a724625a8f4d89131a15157"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/job.lua",
+        "install_path": "music/tracks/job.lua",
+        "sha256": "f53836d935b5e52963a101e0ed158e3576115257dcfd0dcc9ac3dadcf507ab19"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/roam_brine.lua",
+        "install_path": "music/tracks/roam_brine.lua",
+        "sha256": "1cf59ee7a07b121d1ff0c8adf9d25bbb57416347598c7643034c60bb60d79d81"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/roam_cinder.lua",
+        "install_path": "music/tracks/roam_cinder.lua",
+        "sha256": "c5c5f941d24e33b1b431914ce01cdb60de92f3712cd5219c85cad5547bb7e7e5"
+      },
+      {
+        "repo_path": "Games/Saltgate/sg/ai/models.lua",
+        "install_path": "sg/ai/models.lua",
+        "sha256": "b9abd401a0e2bf953a1434e558826b16274559bee5651dd8493da3c062c5c260"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/roam_gilt.lua",
+        "install_path": "music/tracks/roam_gilt.lua",
+        "sha256": "ef18b21f499c4b4e57b760a2c003c0b2f3c56972fd71fa145eb12ad0bff8bc4c"
+      },
+      {
+        "repo_path": "Games/Saltgate/music/tracks/roam.lua",
+        "install_path": "music/tracks/roam.lua",
+        "sha256": "2a9abf59bb93ea77bc30d1c97138e80f2c8602ed714fc0bf6b5f4a43a89b2fd4"
       },
       {
         "repo_path": "Games/Saltgate/music/tracks/title.lua",
@@ -646,144 +961,9 @@
         "sha256": "abb3c2b7d7dd50ec39c500e8a4b1de939d43690197146b849feb37918afa5fa8"
       },
       {
-        "repo_path": "Games/Saltgate/sg/ai/lane.lua",
-        "install_path": "sg/ai/lane.lua",
-        "sha256": "d804d0e8217ea4aa1008f0a2279a8bed67217e77f33a514e44039e992df2384c"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/ai/models.lua",
-        "install_path": "sg/ai/models.lua",
-        "sha256": "b9abd401a0e2bf953a1434e558826b16274559bee5651dd8493da3c062c5c260"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/ai/peds.lua",
-        "install_path": "sg/ai/peds.lua",
-        "sha256": "aa0c1d4f287a0fdc115185ba6ad464d2c0a896c74281da486be19b5216a75f61"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/ai/planner.lua",
-        "install_path": "sg/ai/planner.lua",
-        "sha256": "3aea674f84559fdeedf5c82f9aa2fdd55ea03d4701d2e64ccc7cee879dbfc9e0"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/ai/scene.lua",
-        "install_path": "sg/ai/scene.lua",
-        "sha256": "04cc7246c6593d55aada1c84fb6d10a4a0a93dc23681b026aa4038602292c952"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/ai/signals.lua",
-        "install_path": "sg/ai/signals.lua",
-        "sha256": "f42c32733e4b1166368a81e21d3ec5f4269fa15cd83f8c621cf154ba92ce711f"
-      },
-      {
-        "repo_path": "Games/Saltgate/sg/ai/traffic.lua",
-        "install_path": "sg/ai/traffic.lua",
-        "sha256": "1e1a717f493c74c27bfd21708e383e02a6ead78437e2e0cb1de462d6e03d2f8d"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/roam.lua",
-        "install_path": "music/tracks/roam.lua",
-        "sha256": "2a9abf59bb93ea77bc30d1c97138e80f2c8602ed714fc0bf6b5f4a43a89b2fd4"
-      },
-      {
         "repo_path": "Games/Saltgate/music/tracks/roam_lantern.lua",
         "install_path": "music/tracks/roam_lantern.lua",
         "sha256": "a07675811740199711fa3466d6e03c77e4a2d424986e2d59824b33e94bd85d45"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/roam_gilt.lua",
-        "install_path": "music/tracks/roam_gilt.lua",
-        "sha256": "ef18b21f499c4b4e57b760a2c003c0b2f3c56972fd71fa145eb12ad0bff8bc4c"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/roam_cinder.lua",
-        "install_path": "music/tracks/roam_cinder.lua",
-        "sha256": "c5c5f941d24e33b1b431914ce01cdb60de92f3712cd5219c85cad5547bb7e7e5"
-      },
-      {
-        "repo_path": "Games/Saltgate/content/vehicles/tune.lua",
-        "install_path": "content/vehicles/tune.lua",
-        "sha256": "ca19fe99e19932deadfd5f8f670e9073b0c2e108009de5af769fca0fb5a69f15"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/chase_score.lua",
-        "install_path": "music/chase_score.lua",
-        "sha256": "24550def80a3022219a974f5b6b4d30b3b84aec0f2db2cc6477eb243bc4af7de"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/init.lua",
-        "install_path": "music/init.lua",
-        "sha256": "fb703776e4a894ff5f3727ef643bc5842c50c683834d289be8f80e19589eb869"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/player.lua",
-        "install_path": "music/player.lua",
-        "sha256": "c43f3d033787b3670ee2cd25a464a4d4d867dc20f98fa6a6958c8cc5b0ee4aa6"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/roam_score.lua",
-        "install_path": "music/roam_score.lua",
-        "sha256": "5f13fa78e4d7d983a63b6a462caa9d5cc598a2c68b6f227527b682ce9dd477e7"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/score.lua",
-        "install_path": "music/score.lua",
-        "sha256": "eaf6859473e20063f265c1c6aeec879be1bfcc9215080bbbb65572cbc33ddd12"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/theme.lua",
-        "install_path": "music/theme.lua",
-        "sha256": "7baad90189e21bc2c521cf0dced04c971e9fefe19bca2d2dd9919baac35c72d7"
-      },
-      {
-        "repo_path": "Games/Saltgate/content/vehicles/cars.lua",
-        "install_path": "content/vehicles/cars.lua",
-        "sha256": "29f9af0e47dbc7dc73cadfb28cf3671341827b86d2581f7d175b8b3fcaac61ad"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/complete.lua",
-        "install_path": "music/tracks/complete.lua",
-        "sha256": "1b92136a44f356353b7eebb581eff5c54d23135eaca9e2689cd4eb4b921870cc"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/cuffed.lua",
-        "install_path": "music/tracks/cuffed.lua",
-        "sha256": "ed1c0f755f8fd392b0c2fd800f880f2cb0f7b4d53e5d211f9d123d973b33875f"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/drive.lua",
-        "install_path": "music/tracks/drive.lua",
-        "sha256": "7c18f75ec332b212b045260005b5b9b41b2f12645caa4be67aa4347ff0c778d9"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/finale.lua",
-        "install_path": "music/tracks/finale.lua",
-        "sha256": "c462cf4fd94fa71e4e3a005564ab719057a5eb395f0836e5d65b0a321dec9616"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/heat_high.lua",
-        "install_path": "music/tracks/heat_high.lua",
-        "sha256": "01109104be2f579ffda5e922b7b873d7e8099deb62563548879896c0f47550d3"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/heat_low.lua",
-        "install_path": "music/tracks/heat_low.lua",
-        "sha256": "3a43502a930b5a3a4f8d24113f159c12cd8124d16a724625a8f4d89131a15157"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/job.lua",
-        "install_path": "music/tracks/job.lua",
-        "sha256": "f53836d935b5e52963a101e0ed158e3576115257dcfd0dcc9ac3dadcf507ab19"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/roam_brine.lua",
-        "install_path": "music/tracks/roam_brine.lua",
-        "sha256": "1cf59ee7a07b121d1ff0c8adf9d25bbb57416347598c7643034c60bb60d79d81"
-      },
-      {
-        "repo_path": "Games/Saltgate/music/tracks/credits.lua",
-        "install_path": "music/tracks/credits.lua",
-        "sha256": "f2a388b061e7567b64a72405925d6fc7f4052b9ef155b6438553a195d323de9a"
       },
       {
         "repo_path": "Shared/lib/update_screen.lua",
