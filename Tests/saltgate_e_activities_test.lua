@@ -51,8 +51,28 @@ end
 
 -- ---------------------------------------------------------------- the layout
 
+--- The chunks the game plays in: stream A's city when content/world is installed, else the step 0 testbed.
+local function cityChunks()
+  local ctx = kit.game()
+  local world = ctx.content:data("world/world.lua")
+  if not world then return testbed.chunks() end
+  local out = {}
+  for i = 0, math.ceil(world.bounds[3] / world.block) - 1 do
+    for j = 0, math.ceil(world.bounds[4] / world.block) - 1 do
+      local c = ctx.content:chunks("world/w_" .. i .. "_" .. j .. ".sgc")
+      if c then for k, v in pairs(c) do out[k] = v end end
+    end
+  end
+  return out
+end
+local cityCache
+local function city()
+  cityCache = cityCache or cityChunks()
+  return cityCache
+end
+
 t.test("layout: the city gives 50 totems, 10 postcards, races, ranks, shops, garages and homes, the same every time", function()
-  local chunks = testbed.chunks()
+  local chunks = city()
   local a, warn = layoutLib.generate(chunks, { seed = 1 })
   local b = layoutLib.generate(chunks, { seed = 1 })
   t.eq(layoutLib.serialise(a), layoutLib.serialise(b), "deterministic")
@@ -80,7 +100,7 @@ t.test("layout: the city gives 50 totems, 10 postcards, races, ranks, shops, gar
 end)
 
 t.test("layout: the races climb, bend and follow real roads (elevation and curves count)", function()
-  local l = layoutLib.generate(testbed.chunks(), { seed = 1 })
+  local l = layoutLib.generate(city(), { seed = 1 })
   local bends, rises = 0, 0
   for _, r in ipairs(l.races) do
     t.truthy(r.length >= 250, r.id .. " is long enough")
@@ -96,7 +116,7 @@ t.test("layout: the file in content/ is what the generator makes from the city (
   local ctx = game()
   local onDisk = ctx.content:data("activities/layout.lua")
   t.truthy(onDisk, "content/activities/layout.lua exists")
-  local made = layoutLib.generate(testbed.chunks(), { seed = 1 })
+  local made = layoutLib.generate(city(), { seed = 1 })
   -- the same places to within a fraction of a unit (the interpreters round a little differently)
   local function same(a, b, path)
     if type(a) == "number" then return type(b) == "number" and math.abs(a - b) < 0.35 end
@@ -104,7 +124,7 @@ t.test("layout: the file in content/ is what the generator makes from the city (
     if type(b) ~= "table" then return false end
     for k, v in pairs(a) do
       if not same(v, b[k], path .. "." .. tostring(k)) then
-        t.truthy(false, "layout.lua is stale at " .. path .. "." .. tostring(k) .. ": run lua sg/activities/genlayout.lua testbed")
+        t.truthy(false, "layout.lua is stale at " .. path .. "." .. tostring(k) .. ": run lua sg/activities/genlayout.lua content/world/w_*.sgc")
       end
     end
     for k in pairs(b) do

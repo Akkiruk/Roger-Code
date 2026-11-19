@@ -19,7 +19,7 @@ else
     local text = h:read("*a")
     h:close()
     local list = assert(chunkLib.unpackMany(text))
-    for _, c in ipairs(list) do chunks[chunkLib.key(c.cx, c.cz)] = c end
+    for _, c in pairs(list) do chunks[chunkLib.key(c.cx, c.cz)] = c end
   end
 end
 

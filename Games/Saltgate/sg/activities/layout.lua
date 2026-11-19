@@ -232,9 +232,9 @@ local function jumpCandidates(w)
         local _, y1 = geom.polylineAt(e.pts, dir == 1 and s - 8 or e.length - s + 8)
         local _, y2 = geom.polylineAt(e.pts, dir == 1 and s + 18 or e.length - s - 18)
         local _, y3 = geom.polylineAt(e.pts, dir == 1 and s + 4 or e.length - s - 4)
-        if sy - y1 > 0.8 and sy - y2 > 4 and y3 <= sy + 0.2 then
+        if sy - y1 > 0.3 and sy - y2 > 1.0 and y3 <= sy + 0.2 then
           local c = chunkAt(w, sx, sz)
-          out[#out + 1] = { x = sx, z = sz, y = sy, h = atan2(dir * dz, dir * dx), min = 10, kind = "crest",
+          out[#out + 1] = { x = sx, z = sz, y = sy, h = atan2(dir * dz, dir * dx), min = 8, kind = "crest",
             district = c and c.district, weight = (sy - y2) }
           s = s + 40
         end
@@ -381,7 +381,7 @@ function M.generate(chunks, opts)
 
   -- stunt jumps
   local jc = jumpCandidates(w)
-  local jumps = spread(jc, M.JUMPS, rng, nil, 28)
+  local jumps = spread(jc, M.JUMPS, rng, nil, 14)
   if #jumps < M.JUMPS then warnings[#warnings + 1] = "only " .. #jumps .. " places to jump (" .. M.JUMPS .. " wanted)" end
   out.jumps = {}
   for i, j in ipairs(jumps) do

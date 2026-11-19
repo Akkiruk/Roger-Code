@@ -102,7 +102,7 @@ function M.install(ctx, deps)
     local row = iy
     for _, line in ipairs(subLines) do
       fill(t, ix, row, iw, 1, theme.PANEL)
-      put(t, ix + 1, row, theme.fit(line, iw - 2), C.lightGray, theme.PANEL)
+      put(t, ix + 1, row, theme.fit(line, iw - 2), C.lightBlue, theme.PANEL)
       row = row + 1
     end
     args.menu:draw(t, ix, row, iw, shown)
@@ -440,6 +440,18 @@ function M.install(ctx, deps)
     local w, h = t.getSize()
     local view = c.view
     local project = view and view.mapProject
+    local img = not project and c.a_world and c.a_world.city and c.a_world.city.mapImage and c.a_world.city:mapImage()
+    if img then
+      -- stream A's whole-city picture: the same fit as view:drawMapImage
+      local W, H = view.r.pw, view.r.ph
+      local worldW, worldH = img.w * img.res, img.h * img.res
+      local scale = math.max(worldW / (W - 2), worldH / (H - 6))
+      local ox = (W - worldW / scale) / 2
+      local oy = 4 + (H - 4 - worldH / scale) / 2
+      project = function(x, z)
+        return math.ceil(math.floor(ox + x / scale) / 2), math.ceil(math.floor(oy + z / scale) / 3)
+      end
+    end
     if not project then
       local chunks = require("sg.core.testbed").chunks()
       local chunkLib = require("sg.core.chunk")

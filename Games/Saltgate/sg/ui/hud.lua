@@ -133,7 +133,8 @@ function M.new(ctx, opts)
     local pipsW = M.MAX_HEAT * 2 - 1 -- a cell for each level with a gap between
     local hx = w - pipsW - 5
     local label = districtName(c)
-    if hud.hour then label = label .. " " .. M.clockText(hud.hour) end
+    -- the world's own clock (stream A's, top right, with the weather) is the one to read when it is there
+    if hud.hour and not c.a_world then label = label .. " " .. M.clockText(hud.hour) end
     mx = math.max(14, mx + 1)
     -- the Patrol's own wanted widget (c_wanted: stars, SPOTTED / LOST) draws on the right when it is there; the pips
     -- below are for a game without it
