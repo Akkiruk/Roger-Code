@@ -115,6 +115,10 @@ function V:camera(ctx, dt)
   local up = car and 3.6 or 2.5
   if self.mode == "far" then back, up = back * 1.6, up * 1.8 end
   if self.inside then back, up = 5.2, 5.6 end
+  -- in a tunnel the camera stays inside it, low and close behind (it used to rise over the hill above: the screen
+  -- went grey with the car out of sight)
+  local inTunnel = not self.inside and stream:surface(tx, tz) == "tunnel"
+  if inTunnel then back, up = math.min(back, 6), 2.4 end
   local camX, camY, camZ, pitch
   if self.mode == "hood" and car and not self.inside then
     camX, camZ = tx + fx * car.spec.length * 0.2, tz + fz * car.spec.length * 0.2
@@ -131,9 +135,13 @@ function V:camera(ctx, dt)
     end
     camX, camZ = tx - fx * step, tz - fz * step
     camY = ty + up
-    local gy = stream:groundAt(camX, camZ, camY + 5)
+    -- the ground under the camera: in a tunnel, its floor (asked from near the car's height, where the hill above
+    -- is the roof), not the hill
+    local gy = stream:groundAt(camX, camZ, inTunnel and (ty + 1) or (camY + 5))
     if gy and camY < gy + 1.4 then camY = gy + 1.4 end
+    if inTunnel and gy then camY = math.min(camY, gy + 3) end
     self.camY = self.camY and (self.camY + (camY - self.camY) * util.clamp(dt * 6, 0, 1)) or camY
+    if inTunnel then self.camY = camY end
     camY = math.max(self.camY, (gy or -100) + 1.2)
     pitch = -deg(atan2(camY - (ty + 1.2), step + 4))
   end
