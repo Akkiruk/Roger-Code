@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-19T01:08:10Z",
+  "generated_at": "2026-11-19T01:36:47Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "2bf61ae279089176baf586bf823d0508984c5e56",
+    "commit": "5e976ec79f1db13c0c7605688ad2443148d06a7c",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -153,7 +153,7 @@
       "category": "Utilities",
       "description": "The walk-in gear shop: tap a station to browse a gear type, take what you want onto your tab, PAY at any station. Also buys gear for store credit. Install on the shop computer and on every node that holds its chests and monitors.",
       "version": "1.0.11",
-      "commit": "2bf61ae279089176baf586bf823d0508984c5e56",
+      "commit": "5e976ec79f1db13c0c7605688ad2443148d06a7c",
       "package_hash": "12359e18f8a4f33a5386bfd2021dcd6aa0c37af307288ac8ced48a6c38480fe1",
       "spec_path": "programs/gearshop.json"
     },
@@ -215,9 +215,9 @@
       "name": "SALTGATE: Low Tide",
       "category": "Games",
       "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
-      "version": "1.0.14",
-      "commit": "cbbb0a7c8a056354457836aca9483cd7d63862c9",
-      "package_hash": "f05e7849595ead8f96892bd716b0fac1a28379f987466889e87aee684ad2e5ae",
+      "version": "1.0.15",
+      "commit": "42215b5e9c4038bde20633225c9ccd04c1b9e3d1",
+      "package_hash": "6b88a31227135ed7b1ffa88849af26e70557d11e1fe07b810389e4710fd16ca7",
       "spec_path": "programs/saltgate.json"
     },
     "slots": {
