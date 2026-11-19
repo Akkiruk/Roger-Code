@@ -497,3 +497,52 @@ t.test("c gangs: a crew in the district's colour stands about; leave it alone an
   t.truthy(calm, "standing about again")
   for _, g in ipairs(ctx.world:each("gang")) do t.truthy(not g.removed and g.health == 1, "nobody was killed") end
 end)
+
+-- ---------------------------------------------------------------- the roundabout
+
+t.test("c lane: cars come in off the avenue and go round the one-way ring, giving way to the cars on it, without a bump", function()
+  local ctx = sim.new({ plugins = false, x = 166, z = 196 })
+  local f = testbed.FEATURES
+  local ring = {}
+  for _, id in ipairs(f.roundabout) do ring[id] = true end
+  local ringEdges, avenue = {}, nil
+  for _, e in pairs(ctx.roads.edges) do
+    if ring[e.a] and ring[e.b] and e.lanes == 1 then ringEdges[#ringEdges + 1] = e end
+    if e.b == f.roundabout[1] and e.kind == "avenue" then avenue = e end
+  end
+  t.truthy(#ringEdges >= 2, "a one-way ring: " .. #ringEdges)
+  t.truthy(avenue, "the avenue that comes in")
+  table.sort(ringEdges, function(a, b) return a.id < b.id end)
+  local cars = {}
+  -- two on the ring already, three coming in one after another
+  cars[#cars + 1] = placeCar(ctx, ringEdges[2], 10, "marlin", 1)
+  cars[#cars + 1] = placeCar(ctx, ringEdges[math.min(3, #ringEdges)], 20, "pipit", 1)
+  for i = 1, 3 do cars[#cars + 1] = placeCar(ctx, avenue, avenue.length - 12 - (i - 1) * 14, "kestrel", 1) end
+  local visited, nearest = {}, 1e9
+  for step = 1, 1200 do
+    sim.step(ctx, 0.05, { handbrake = true })
+    for i, c in ipairs(cars) do
+      if ring[c.drv.edge.a] and ring[c.drv.edge.b] then visited[c.drv.edge.id] = true end
+      for j = i + 1, #cars do
+        nearest = math.min(nearest, math.sqrt((c.x - cars[j].x) ^ 2 + (c.z - cars[j].z) ^ 2))
+      end
+    end
+    if step % 300 == 0 then t.breathe() end
+  end
+  local n = 0
+  for _ in pairs(visited) do n = n + 1 end
+  t.truthy(n >= 2, "they went round the ring: " .. n .. " edges")
+  t.truthy(nearest > 2, "never inside each other: " .. nearest)
+  for _, c in ipairs(cars) do t.truthy(c.health > c.spec.health * 0.8, "no crash: " .. c.health) end
+end)
+
+t.test("c heat: ctx.heat works as the story's world.lua calls it: level, set(n) and heat:set(n)", function()
+  local ctx = sim.new({ hour = 13 })
+  t.eq(ctx.heat.level, 0)
+  ctx.heat:set(4)
+  t.eq(ctx.heat.level, 4)
+  ctx.heat.set(2)
+  t.eq(ctx.heat.level, 2)
+  ctx.heat:set(0)
+  t.eq(ctx.heat.level, 0)
+end)

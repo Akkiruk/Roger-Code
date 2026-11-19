@@ -7,7 +7,7 @@
 --             vehicle_enter {stolen}   respawn   player_down   load   save   time_of_day
 -- Emits       heat_changed {level, previous}   player_down {kind = "nabbed"}   money {amount, reason, total} (a bribe)
 -- ctx.heat is the wanted state: level, seen, radius, cx, cz, unseen, total, flash; plus
---   ctx.heat.set(n)             set the level outright (0 ends it; a mission's alarm, the Paint & Pray)
+--   ctx.heat.set(n) / ctx.heat:set(n)   set the level outright (0 ends it; a mission's alarm, the Paint & Pray)
 --   ctx.heat.bribe() -> ok, cost | false, why     pay off one level when no patrol can see you
 --   ctx.heat.hideouts()         the hideouts near you (chunk spawns of kind "hideout")
 --   ctx.ai.cops, ctx.ai.blocks, ctx.ai.air      the parts, for tests and other plugins
@@ -55,7 +55,8 @@ function P.init(ctx)
     end
   end
 
-  function h.set(n)
+  function h.set(a, b)
+    local n = type(a) == "table" and b or a -- callable as heat.set(n) or heat:set(n)
     local before = h.level
     local t = who()
     if before == 0 and n > 0 then h.cx, h.cz = t.x, t.z end
