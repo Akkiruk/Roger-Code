@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.24"
+    "version": "1.0.25"
   },
   "build": {
-    "commit": "94c9a0fe9f39837f0d534983e341834811ed40ce",
-    "generated_at": "2026-11-19T14:54:59Z",
-    "package_hash": "45e8e2e8d5c346d225867a5ea3ed5d3b4481891d135bbc0219c9118d9d919827"
+    "commit": "e70cafac0dfadebdb7732295781188ec45443ea4",
+    "generated_at": "2026-11-19T15:59:50Z",
+    "package_hash": "6d5627c416bdb0525e8eefdc4c7f94cde815f51ddac5e34ff7013d62a03dcc00"
   },
   "install": {
     "preserve": [
@@ -37,7 +37,7 @@
       {
         "repo_path": "Games/Saltgate/saltgate.pak",
         "install_path": "saltgate.pak",
-        "sha256": "813f6d8349106e5816d4eb8d7fae23d529da2f61032876484179eadbe7afe3e9"
+        "sha256": "6a492443e6bb6135af80b8fc8a3156f29e542620c18f7a6ebb0aab1c58449819"
       },
       {
         "repo_path": "Games/Saltgate/pine3d/LICENSE.txt",
@@ -68,7 +68,7 @@
       {
         "repo_path": "Games/Saltgate/saltgate.lua",
         "install_path": "saltgate.lua",
-        "sha256": "0b83fab7187c7b53cc8ce88f0f0aa59c5226f443cb4c400b05d795b929a696bf"
+        "sha256": "7bb161271e79c7662d8b225ac78129b27fc56a14c723fd957f4e4f25b37fb82c"
       },
       {
         "repo_path": "Shared/lib/updater.lua",
