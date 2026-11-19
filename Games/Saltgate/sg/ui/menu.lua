@@ -81,6 +81,18 @@ function Menu:handle(action)
   return nil
 end
 
+--- A click at (cx, cy) on the screen: on a usable row it moves the cursor there and selects it (as ENTER would);
+-- anywhere else (beside the rows, on a heading, a locked row) nothing happens. Returns the item handled, or nil.
+function Menu:click(cx, cy)
+  local r = self.rect
+  if not r or cx < r.x or cx > r.x + r.w - 1 or cy < r.y or cy > r.y + r.rows - 1 then return nil end
+  local i = r.top + (cy - r.y)
+  local item = self.items[i]
+  if not item or not usable(item) then return nil end
+  self.sel = i
+  return self:handle("select")
+end
+
 --- Draw the rows in a w-wide, rows-tall window at (x, y), scrolling to keep the cursor in view.
 function Menu:draw(t, x, y, w, rows)
   local n = #self.items
@@ -88,6 +100,7 @@ function Menu:draw(t, x, y, w, rows)
   if self.sel < self.top then self.top = self.sel end
   if self.sel > self.top + rows - 1 then self.top = self.sel - rows + 1 end
   if self.top < 1 then self.top = 1 end
+  self.rect = { x = x, y = y, w = w, rows = rows, top = self.top } -- where the rows are, for a click
   local bg = self.opts.bg or theme.PANEL
   for r = 0, rows - 1 do
     local i = self.top + r

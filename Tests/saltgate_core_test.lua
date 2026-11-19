@@ -316,18 +316,20 @@ t.test("core stream: a bridge has rails (the play-test's car cut Gull Span's ben
   local hw = rb[2] / 2
   local nxs, nzs = -dz, dx
   -- pressing the side, at deck height: held on the deck
-  local x, z, hit = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my)
+  local x, z, hit = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my, true)
   t.truthy(hit, "the rail stops you")
   local d = geom.polylineNearest(pts, x, z)
   t.truthy(d <= hw, "and you are on the deck: " .. d)
   -- under the bridge (far below the deck): no rail
-  local _, _, hitLow = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my - 8)
+  local _, _, hitAI = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my)
+  t.truthy(not hitAI, "the rails are the player's: the AI keeps to its lanes (rails on its cars held cruisers up)")
+  local _, _, hitLow = s:collide(mx + nxs * (hw + 0.6), mz + nzs * (hw + 0.6), 1.2, my - 8, true)
   t.truthy(not hitLow, "a boat or a car under the bridge is not held by its rails")
   -- off the end, along it: open
   local ex, ey, ez = pts[1], pts[2], pts[3]
   local ax, az = pts[4] - ex, pts[6] - ez
   local al = math.sqrt(ax * ax + az * az)
-  local _, _, hitEnd = s:collide(ex - ax / al * 2, ez - az / al * 2, 1.2, ey)
+  local _, _, hitEnd = s:collide(ex - ax / al * 2, ez - az / al * 2, 1.2, ey, true)
   t.truthy(not hitEnd, "you drive off the end of the bridge onto the road")
   -- no shoulder slope beside a high deck: off its edge is a drop to what is below
   local gy = s:groundAt(mx + nxs * (hw + 1.5), mz + nzs * (hw + 1.5), my)

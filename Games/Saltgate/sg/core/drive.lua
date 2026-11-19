@@ -25,7 +25,7 @@ function M.step(car, input, dt, world, opts)
   car.x, car.z = ox, oz
   local spec = car.spec
   local r = motion.move(car, world, nx, nz, dt, { radius = spec.radius * 0.8, speed = car.v, length = spec.length,
-    width = spec.width, tilt = not (opts and opts.tilt == false) })
+    width = spec.width, tilt = not (opts and opts.tilt == false), rails = opts and opts.rails })
   local out = { impact = 0, airborne = r.airborne, landed = r.landed, landImpact = r.impact, water = r.water,
     surface = r.surface }
   if r.hit then out.impact = vehicle.hitWall(car, r.nx or 0, r.nz or 0) end

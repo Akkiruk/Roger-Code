@@ -37,7 +37,7 @@ end
 --- Move over the ground to (nx, nz) with the shared wall and landing rules.
 local function settle(car, world, nx, nz, dt, spec, opts)
   local r = motion.move(car, world, nx, nz, dt, { radius = spec.radius * 0.8, speed = car.v, length = spec.length,
-    width = spec.width, tilt = not (opts and opts.tilt == false) })
+    width = spec.width, tilt = not (opts and opts.tilt == false), rails = opts and opts.rails })
   local out = result(r)
   if r.hit then out.impact = vehicle.hitWall(car, r.nx or 0, r.nz or 0) end
   if r.landed and r.impact > M.LAND_HURT then vehicle.damage(car, (r.impact - M.LAND_HURT) * 2 * (spec.rugged or 1)) end

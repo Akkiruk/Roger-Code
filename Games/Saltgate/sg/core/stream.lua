@@ -289,7 +289,7 @@ end
 
 --- Push a circle at height y out of the buildings round it (an unloaded chunk is a wall: nobody leaves the
 -- loaded world). Returns x, z, hit, nx, nz.
-function S:collide(x, z, r, y)
+function S:collide(x, z, r, y, rails)
   if not self:chunkAt(x, z) then return x, z, true, 0, 0 end
   local hit, nx, nz = false, 0, 0
   eachNear(self, x, z, function(c)
@@ -303,8 +303,9 @@ function S:collide(x, z, r, y)
   -- rails along bridges and overpasses: on a deck you stay on it, and drive on and off at its ends. Across chunk edges
   -- a deck comes in pieces (often joined on a bend), so: inside any piece at your height is fine; otherwise you are held
   -- by the nearest piece you are beside, or past a bend of (a corner, or an end that meets another piece); only an end
-  -- that meets nothing is open
-  if y then
+  -- that meets nothing is open. Only for the player's car (rails = true): the AI keeps to its lanes, and rails on its cars
+  -- held cruisers up at the foot of decks
+  if y and rails then
     local decks = {}
     eachNear(self, x, z, function(c)
       for _, rb in ipairs(c.ribbons) do
@@ -325,7 +326,11 @@ function S:collide(x, z, r, y)
       local hw = rb[2] / 2
       local pts = rb[3]
       local d, dy, seg, t, qx, qz, dx, dz = geom.polylineNearest(pts, x, z)
-      if d < hw + r + 1.5 and math.abs(y - dy) < M.RAIL_REACH then
+      -- (a rail only where the deck stands above what is beside it: at a bridge's foot, where it meets the road, people
+      -- and cars cross beside it freely)
+      local own = self:chunkAt(x, z)
+      local beside = own and chunkLib.terrainY(own, x, z) or dy
+      if d < hw + r + 1.5 and math.abs(y - dy) < M.RAIL_REACH and dy - beside > M.RAIL_DROP then
         if d <= hw - r * 0.5 then
           inside = true
         else
@@ -365,6 +370,7 @@ function S:collide(x, z, r, y)
 end
 
 M.TUNNEL_HEAD = 5 -- under this height above a tunnel floor you are in the tunnel (the hill above is its roof)
+M.RAIL_DROP = 2 -- a deck this far above the ground beside it has rails
 M.RAIL_REACH = 2.5 -- a deck's rails hold what is within this height of it (a car under the bridge drives on)
 
 return M

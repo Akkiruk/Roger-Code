@@ -9,7 +9,7 @@ local M = {}
 M.FOOT = "WASD move  SHIFT run  E enter car"
 M.NEAR_CAR = "E steal car  WASD move  SHIFT run"
 M.DRIVING = "W gas S brake/rev A/D steer SPACE handbrake E out"
-M.TALK = "ENTER next"
+M.TALK = "ENTER/SPACE next"
 
 --- Which words of a hint are keys (shown in a key colour): all-capital words and A/D.
 function M.isKey(word)

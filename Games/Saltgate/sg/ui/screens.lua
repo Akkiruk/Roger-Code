@@ -20,7 +20,7 @@ local put, fill, centre = theme.put, theme.fill, theme.centre
 
 local M = {}
 
-M.FOOT = "W/S choose  ENTER select  BACKSPACE back"
+M.FOOT = "W/S choose  ENTER/SPACE select  BACKSPACE back"
 M.FOOT_ADJUST = "W/S choose  A/D change  BACKSPACE back"
 
 M.CONTROLS = {
@@ -32,6 +32,8 @@ M.CONTROLS = {
   { "H", "horn" },
   { "Everywhere", nil },
   { "ENTER", "use a place (race, shop, garage)" },
+  { "SPACE", "ENTER in talk and menus (not in a car)" },
+  { "Click", "ENTER, or pick the option clicked" },
   { "X", "abandon a race, shift or run" },
   { "R", "radio station (then off)" },
   { "C", "camera" },
@@ -51,6 +53,10 @@ local function run(ctx, keys, menu, args)
     local a = e.action
     if a == "up" or a == "down" or a == "left" or a == "right" then
       menu:handle(a)
+    elseif a == "select" and not e.held and e.click then
+      -- a mouse click: the row under it, or nothing
+      menu:click(e.click.x, e.click.y)
+      if ctx.ui.top() ~= top then return "done" end
     elseif a == "select" and not e.held then
       menu:handle("select")
       if ctx.ui.top() ~= top then return "done" end
@@ -339,7 +345,7 @@ function M.install(ctx, deps)
       local _, args = ui.top()
       args.title = "Paused"
       args.width = 38
-      args.footer = "W/S choose  ENTER select  P resume"
+      args.footer = "W/S choose  ENTER/SPACE select  P resume"
       if not args.items then
         args.items = pauseItems()
         args.subtitle = function(cc)
@@ -414,7 +420,7 @@ function M.install(ctx, deps)
     fill(t, mx - 1, my - 1, mw + 2, items + 2, C.black)
     args.menu:draw(t, mx, my, mw, items)
     fill(t, 1, h, w, 1, C.black)
-    theme.keyline(t, 2, h, w - 2, "W/S choose  ENTER select", C.yellow, C.lightGray, C.black)
+    theme.keyline(t, 2, h, w - 2, "W/S choose  ENTER/SPACE or click select", C.yellow, C.lightGray, C.black)
     local _ = ok
   end })
 

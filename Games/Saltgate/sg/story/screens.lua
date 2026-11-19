@@ -72,7 +72,7 @@ function M.drawTalk(ctx, host, idx)
       put(t, 3, y, (sel and "> " or "  ") .. i .. ". " .. text.clip(o, text.OPTION), sel and "white" or "lightGray", sel and "gray" or "black")
     end
     fill(t, 1, h - 1, w, "black")
-    put(t, 3, h - 1, "W/S or 1-" .. #choice.options .. " choose   ENTER confirm", "lightGray")
+    put(t, 3, h - 1, "W/S or 1-" .. #choice.options .. " choose   ENTER/SPACE or click", "lightGray")
     return
   end
   if not line then return end
@@ -89,7 +89,7 @@ function M.drawTalk(ctx, host, idx)
     if r then put(t, 3, top + i, r, (who == "") and "lightGray" or "white") end
   end
   fill(t, 1, h - 1, w, "black")
-  put(t, 3, h - 1, line.full and "ENTER next   X skip talk" or "ENTER show all   X skip talk", "lightGray")
+  put(t, 3, h - 1, line.full and "ENTER/SPACE next   X skip talk" or "ENTER/SPACE show all   X skip talk", "lightGray")
   if line.full then put(t, w - 2, h - 1, "\31", "yellow") end
 end
 
@@ -153,7 +153,37 @@ function M.drawFail(ctx, host, args)
     local sel = i == (args.sel or 1)
     put(t, 8, top + 4 + i, (sel and "> " or "  ") .. o .. string.rep(" ", 26 - #o), sel and "white" or "lightGray", sel and "gray" or "black")
   end
-  put(t, 8, top + 9, "W/S choose   ENTER confirm", "lightGray")
+  put(t, 8, top + 9, "W/S choose   ENTER/SPACE or click", "lightGray")
+end
+
+-- ---------------------------------------------------------------- where a click lands (the same layout as the draws)
+
+--- The dialogue choice under a click at screen row y, or nil.
+function M.choiceAt(ctx, host, y)
+  local choice = host.talk and host.talk.choice
+  if not choice then return nil end
+  local _, h = ctx.screen.getSize()
+  local top = h - (#choice.rows + #choice.options + 2)
+  local i = y - (top + #choice.rows)
+  if i >= 1 and i <= #choice.options then return i end
+  return nil
+end
+
+--- The MISSION FAILED option (1 retry, 2 restart, 3 give up) under a click, or nil.
+function M.failAt(ctx, x, y)
+  local w, h = ctx.screen.getSize()
+  local top = math.floor(h / 2) - 4
+  local i = y - (top + 4)
+  if i >= 1 and i <= #FAIL_OPTIONS and x >= 8 and x <= 8 + 28 then return i end
+  return nil
+end
+
+--- The phone contact under a click, or nil.
+function M.phoneAt(ctx, host, idx, x, y)
+  local list = phoneLib.contacts(host.story, idx)
+  local i = y - 2
+  if i >= 1 and i <= #list and x >= 2 and x <= 18 then return i end
+  return nil
 end
 
 function M.drawPass(ctx, host, args)
@@ -165,7 +195,7 @@ function M.drawPass(ctx, host, args)
   local title = text.clip(args.title or "", w - 16)
   put(t, math.floor((w - #title) / 2) + 1, top + 1, title, "white")
   if args.sub then put(t, math.floor((w - #args.sub) / 2) + 1, top + 2, args.sub, "yellow") end
-  put(t, math.floor((w - 14) / 2) + 1, top + 4, "ENTER continue", "lightGray")
+  put(t, math.floor((w - 20) / 2) + 1, top + 4, "ENTER/SPACE continue", "lightGray")
 end
 
 -- ---------------------------------------------------------------- the phone
@@ -206,7 +236,7 @@ function M.drawPhone(ctx, host, idx, args)
         y = y + 1
       end
     end
-    put(t, x0, h - 1, "ENTER hang up", "lightGray")
+    put(t, x0, h - 1, "ENTER/SPACE hang up", "lightGray")
     return
   end
   local thread = phoneLib.thread(host.story, c.id)
@@ -220,7 +250,7 @@ function M.drawPhone(ctx, host, idx, args)
     y = y + 1
   end
   if #thread == 0 then put(t, x0, 6, "No texts.", "gray") end
-  put(t, x0, h - 1, "ENTER call   W/S contacts", "lightGray")
+  put(t, x0, h - 1, "ENTER/SPACE call   W/S contacts", "lightGray")
 end
 
 -- ---------------------------------------------------------------- the HUD

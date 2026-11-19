@@ -72,6 +72,7 @@ local function frame(ctx, dt, presses)
   local s = ctx.ui.top()
   if s then s.draw(ctx, dt) end
   ctx.inp.queued = {}
+  ctx.inp.clickAt = nil
 end
 
 local function story(ctx) return ctx.story.host end
@@ -130,7 +131,7 @@ t.test("story plugin: walking up to Juno offers the first job; the box and the c
       choiceSeen = true
       frame(ctx, 0.1)
       t.truthy(ctx.screen.has("1. "), "the choices are numbered")
-      t.truthy(ctx.screen.has("ENTER confirm"))
+      t.truthy(ctx.screen.has("ENTER/SPACE or click"))
       frame(ctx, 0.1, { "down" })
       frame(ctx, 0.1, { "advance" })
       break
@@ -138,6 +139,55 @@ t.test("story plugin: walking up to Juno offers the first job; the box and the c
   end
   t.truthy(choiceSeen, "reached the choice")
   t.eq(ctx.screen.overflow, 0)
+end)
+
+--- The screen row a piece of text is on (nil when it is not there).
+local function rowOf(ctx, text)
+  local _, h = ctx.screen.getSize()
+  for y = 1, h do
+    local s = ctx.screen.row(y)
+    local x = s:find(text, 1, true)
+    if x then return y, x end
+  end
+  return nil
+end
+
+t.test("story plugin: a mouse click is ENTER for the talk; a click on a choice says it, a click beside the choices says nothing", function()
+  local ctx = game()
+  teleport(ctx, "juno")
+  frame(ctx)
+  frame(ctx)
+  t.eq(topName(ctx), "d_talk")
+  local talk = story(ctx).talk
+  local before = talk.line and talk.line.text
+  -- clicks move the talk on, as ENTER does (the first shows the whole line, the next goes on)
+  local reached = false
+  for _ = 1, 40 do
+    ctx.inp:click(25, 3)
+    frame(ctx, 0.5)
+    if talk.choice then reached = true break end
+  end
+  t.truthy(reached, "clicking through the talk reaches Juno's first choice")
+  t.truthy(talk.line == nil or talk.line.text ~= before, "the talk moved on")
+  frame(ctx, 0.1)
+  -- a click beside the options (the top of the screen): nothing is said
+  local options = #talk.choice.options
+  ctx.inp:click(25, 1)
+  frame(ctx, 0.1)
+  t.truthy(talk.choice ~= nil and #talk.choice.options == options, "a click beside the choices does not answer")
+  -- a click on option 3
+  local y, x = rowOf(ctx, "3. ")
+  t.truthy(y, "option 3 is on the screen")
+  ctx.inp:click(x + 4, y)
+  frame(ctx, 0.1)
+  t.eq(talk.choice, nil, "clicked option answered")
+  -- the third answer of Fresh Air's first choice: Juno laughs about noodles
+  local said = false
+  for _ = 1, 6 do
+    if ctx.screen.has("Ha! There she is") or (talk.line and (talk.line.text or ""):find("Ha! There she is", 1, true)) then said = true break end
+    frame(ctx, 0.5)
+  end
+  t.truthy(said, "Juno answers the third option")
 end)
 
 --- Press ENTER (and pick the first choice) until the talk is over and the screen is the game's again.
@@ -154,6 +204,30 @@ local function talkThrough(ctx, maxFrames)
   end
   return false
 end
+
+t.test("story plugin: on MISSION FAILED a click on Give up gives up; a click beside the options does nothing", function()
+  local ctx = game()
+  teleport(ctx, "juno")
+  frame(ctx)
+  t.truthy(talkThrough(ctx))
+  ctx.player.car = newCar(ctx)
+  frame(ctx)
+  frame(ctx)
+  ctx.bus:emit("player_down", { kind = "ko" })
+  frame(ctx)
+  frame(ctx)
+  t.eq(topName(ctx), "d_fail")
+  frame(ctx, 0.1)
+  ctx.inp:click(48, 2)
+  frame(ctx, 0.1)
+  t.eq(topName(ctx), "d_fail", "a click beside the options leaves the screen up")
+  local y, x = rowOf(ctx, "Give up")
+  t.truthy(y, "Give up is on the screen")
+  ctx.inp:click(x + 1, y)
+  frame(ctx, 0.1)
+  frame(ctx)
+  t.eq(story(ctx).state, "idle", "gave up")
+end)
 
 t.test("story plugin: a whole job in the game's context, paid, remembered, saved and passed", function()
   local ctx = game()

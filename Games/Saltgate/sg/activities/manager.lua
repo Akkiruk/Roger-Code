@@ -275,7 +275,7 @@ function A:update(dt, keys)
     return
   end
   self.here = self:placeHere()
-  if self.here and keys and keys:pressed("select") then
+  if self.here and keys and keys:pressed("select", { play = true }) then
     local text, key = self:describe(self.here)
     local _ = text
     if key then self:use_(self.here) end

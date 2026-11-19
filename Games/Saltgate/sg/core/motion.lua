@@ -48,7 +48,7 @@ function M.move(e, world, nx, nz, dt, opts)
   e.vy = e.vy or 0
 
   -- walls: buildings at this height
-  local x, z, hit, hnx, hnz = world:collide(nx, nz, r, e.y)
+  local x, z, hit, hnx, hnz = world:collide(nx, nz, r, e.y, opts.rails) -- (rails: a bridge holds the player's car)
   if hit then out.hit, out.nx, out.nz = true, hnx, hnz end
 
   -- the ground where it would be

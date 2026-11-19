@@ -199,6 +199,62 @@ t.test("menu: the cursor skips headings and locked rows, wraps, and A/D change a
   t.eq(term.overflow, 0)
 end)
 
+t.test("menu: a click on a row picks and selects it; a click beside the rows, on a heading or a locked row does nothing", function()
+  local log = {}
+  local m = menuLib.new({
+    { label = "Head", header = true },
+    { label = "One", action = function() log[#log + 1] = "one" end },
+    { label = "Locked", enabled = function() return false end, action = function() log[#log + 1] = "locked" end },
+    { label = "Two", action = function() log[#log + 1] = "two" end },
+  })
+  local term = kit.term(30, 8)
+  m:draw(term, 5, 2, 20, 4) -- rows 2..5: Head, One, Locked, Two
+  t.eq(m:click(10, 5) and m:current().label, "Two", "a click on Two")
+  t.eq(m:click(30, 3), nil, "beside the rows")
+  t.eq(m:click(10, 2), nil, "on the heading")
+  t.eq(m:click(10, 4), nil, "on a locked row")
+  t.eq(m:click(10, 7), nil, "under the rows")
+  t.eq(table.concat(log, ","), "two", "only the clicked row ran")
+  -- through the keys object, the way CC sends it: a mouse_click is a "select" that knows where it landed
+  local now = 0
+  local k = keysLib.new(kit.KEYS, function() return now end)
+  k:feed("mouse_click", 1, 10, 3)
+  local e = k.queue[1]
+  t.eq(e.action, "select")
+  t.eq(e.click.x, 10)
+  t.eq(e.click.y, 3)
+  k:flush()
+  -- SPACE selects in menus; in play (a race line's prompt) only ENTER and a click do, SPACE being the handbrake
+  k:feed("key", kit.KEYS.space, false)
+  t.truthy(k:pressed("select"), "SPACE selects in a menu")
+  t.truthy(not k:pressed("select", { play = true }), "but not at a prompt in play")
+  k:feed("key_up", kit.KEYS.space)
+  k:flush()
+  now = 1
+  k:feed("key", kit.KEYS.enter, false)
+  t.truthy(k:pressed("select", { play = true }), "ENTER does")
+  k:feed("key_up", kit.KEYS.enter)
+  k:flush()
+  k:feed("mouse_click", 1, 10, 3)
+  t.truthy(k:pressed("select", { play = true }), "and a click")
+end)
+
+t.test("title: a click on a row of the title menu opens it (Settings), a click on the empty sky does nothing", function()
+  local ctx = kit.game()
+  frames(ctx, 2)
+  t.eq(ctx.ui.top().name, "e_title")
+  local _, h = ctx.screen.getSize()
+  local sy
+  for y = 1, h do if ctx.screen.row(y):find("Settings", 1, true) then sy = y end end
+  t.truthy(sy, "Settings is on the title")
+  ctx.eui.keys:feed("mouse_click", 1, 25, 1)
+  frames(ctx)
+  t.eq(ctx.ui.top().name, "e_title", "a click on the sky does nothing")
+  ctx.eui.keys:feed("mouse_click", 1, 26, sy)
+  frames(ctx, 2)
+  t.eq(ctx.ui.top().name, "e_menu", "a click on Settings opens it")
+end)
+
 t.test("menu: long lists scroll to keep the cursor on screen", function()
   local items = {}
   for i = 1, 30 do items[i] = { label = "Row " .. i, action = function() end } end

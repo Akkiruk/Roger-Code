@@ -12,6 +12,7 @@ local indexLib = require("sg.story.index")
 local hostLib = require("sg.story.host")
 local worldLib = require("sg.story.world")
 local screens = require("sg.story.screens")
+local hints = require("sg.hints")
 local phoneLib = require("sg.story.phone")
 
 local M = { name = "d_story", order = 60 }
@@ -122,6 +123,14 @@ function M.init(ctx)
       local talk = host.talk
       if inp:pressedAction("skip") then talk:skipAll() end
       if talk.choice then
+        -- a click on an option says it; a click anywhere else does nothing (it must not say the highlighted one)
+        local cx, cy
+        if inp.clicked then cx, cy = inp:clicked() end
+        if cx then
+          inp:takeClick()
+          local i = screens.choiceAt(c, host, cy)
+          if i then talk:pick(i) return end
+        end
         if inp:pressedAction("up") then talk:move(-1) end
         if inp:pressedAction("down") then talk:move(1) end
         for n = 1, 4 do
@@ -170,7 +179,16 @@ function M.init(ctx)
       for n = 1, 3 do
         if inp:pressedAction("n" .. n) then args.sel = n end
       end
-      if inp:pressedAction("advance") then
+      -- a click on Retry / Restart / Give up picks and confirms it; a click beside them does nothing
+      local cx, cy
+      if inp.clicked then cx, cy = inp:clicked() end
+      local clickedOption = false
+      if cx then
+        inp:takeClick()
+        local i = screens.failAt(c, cx, cy)
+        if i then args.sel, clickedOption = i, true end
+      end
+      if inp:pressedAction("advance") or clickedOption then
         local pick = args.sel
         ui.pop()
         if pick == 1 then
@@ -222,9 +240,18 @@ function M.init(ctx)
       end
       if inp:pressedAction("up") then args.sel = math.max(1, (args.sel or 1) - 1) end
       if inp:pressedAction("down") then args.sel = math.min(#list, (args.sel or 1) + 1) end
+      -- a click on a contact calls them; a click elsewhere does nothing
+      local cx, cy
+      if inp.clicked then cx, cy = inp:clicked() end
+      local clickedContact = false
+      if cx then
+        inp:takeClick()
+        local i = screens.phoneAt(c, host, idx, cx, cy)
+        if i then args.sel, clickedContact = i, true end
+      end
       local c1 = list[args.sel or 1]
       if c1 then phoneLib.markRead(host.story, c1.id) end
-      if c1 and inp:pressedAction("advance") then
+      if c1 and (inp:pressedAction("advance") or clickedContact) then
         args.mode = "call"
         args.lines = phoneLib.call(host.story, idx, c1.id, host.state == "running" and host.hint or nil)
       end
@@ -234,6 +261,16 @@ function M.init(ctx)
 
   -- the plugin's own frame
   M.update = function(c, dt)
+    -- the bottom line's key hint while someone talks (not the car's "SPACE brake": SPACE moves the talk on here).
+    -- Added on the first frame, after every plugin's own, so it is asked first
+    if not state.hinted and c.hud and c.hud.hint then
+      state.hinted = true
+      c.hud.hint(function()
+        if host.state == "running" and (host.talk:talking() or host.cut) then
+          return host.talk.choice and "W/S choose  ENTER/SPACE or click" or (hints.TALK .. "  X skip")
+        end
+      end)
+    end
     world:update(dt)
     host:update(dt)
     if state.toast then

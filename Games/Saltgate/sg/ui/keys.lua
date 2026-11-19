@@ -41,7 +41,9 @@ function M.new(keysTable, clock)
   map("down", "s", "down")
   map("left", "a", "left")
   map("right", "d", "right")
-  map("select", "enter", "numPadEnter")
+  -- SPACE selects too (it is the handbrake in play, where the activity prompt reads pressed("select", { play = true }),
+  -- which leaves it out)
+  map("select", "enter", "numPadEnter", "space")
   map("back", "backspace")
   map("tab", "tab")
   map("pause", "p")
@@ -53,8 +55,16 @@ function M.new(keysTable, clock)
   return self
 end
 
---- One event, as os.pullEventRaw returns it.
-function K:feed(name, code, isHeld)
+--- One event, as os.pullEventRaw returns it. A mouse click ("mouse_click", button, x, y) is a "select" (ENTER) that
+-- knows where it landed (e.click): a list menu picks the row under it, and does nothing for a click beside its rows.
+function K:feed(name, code, isHeld, y)
+  if name == "mouse_click" then
+    local x = isHeld
+    if type(x) ~= "number" or type(y) ~= "number" then return end
+    if #self.queue >= M.MAX then table.remove(self.queue, 1) end
+    self.queue[#self.queue + 1] = { action = "select", held = false, click = { x = x, y = y, button = code } }
+    return
+  end
   if name == "key" and code then
     self.down[code] = true
     local now = self.clock()
@@ -97,10 +107,14 @@ function K:fresh()
   return out
 end
 
---- Did this action's key go down this frame?
-function K:pressed(action)
+--- Did this action's key go down this frame? opts.play: asked in play (the prompt at a race line or a shop), where
+-- SPACE is the handbrake: SPACE does not count there (ENTER and a click do).
+function K:pressed(action, opts)
+  local space = self.keys.space
   for _, e in ipairs(self.queue) do
-    if e.action == action and not e.held then return true end
+    if e.action == action and not e.held then
+      if not (opts and opts.play and space and e.code == space) then return true end
+    end
   end
   return false
 end
@@ -153,8 +167,8 @@ function M.attach(listener)
   os_.pullEventRaw = function(...)
     local ev = pack(tee.raw(...))
     local name = ev[1]
-    if name == "key" or name == "key_up" then
-      for _, l in ipairs(tee.listeners) do l:feed(name, ev[2], ev[3]) end
+    if name == "key" or name == "key_up" or name == "mouse_click" then
+      for _, l in ipairs(tee.listeners) do l:feed(name, ev[2], ev[3], ev[4]) end
     end
     return unpack(ev, 1, ev.n)
   end

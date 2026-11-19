@@ -478,6 +478,8 @@ function M.main(args)
   music("cue", ctx.player.car and "driving" or "free_roam")
 
   local inp = ctx.input
+  -- a screen that stops play opening: SPACE (the handbrake a moment ago) is not ENTER for its first moment
+  ctx.bus:on("screen_push", function() if inp.guardSpace then inp:guardSpace(now() / 1000) end end, "core")
   local timer = os.startTimer(0.05)
   local last = now()
   local saveT = 30
@@ -501,6 +503,9 @@ function M.main(args)
     if name == "terminate" then
       if not bench then doSave() end
       running = false
+    elseif name == "mouse_click" then
+      -- a click on the screen: Enter wherever Enter advances or confirms (see sg/input.lua and sg/ui/keys.lua)
+      inp:event(now() / 1000, name, ev[2], ev[3], ev[4])
     elseif name == "key" or name == "key_up" then
       inp:event(now() / 1000, name, ev[2], ev[3])
     elseif name == "timer" and ev[2] == timer then
@@ -587,7 +592,7 @@ function M.main(args)
             end
             local physics = vehicles.physicsForCar(c) or drive.step
             if c.sunk then carInput = nil end
-            local r = physics(c, carInput, dt, ctx.stream, { tilt = c == p.car })
+            local r = physics(c, carInput, dt, ctx.stream, { tilt = c == p.car, rails = c == p.car })
             sink(ctx, c, r, dt)
           end
           -- cars against cars (only those at about the same height: a bridge over a road does not collide)

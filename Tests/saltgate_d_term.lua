@@ -68,9 +68,22 @@ function T.input()
       self.queued[name] = nil
       return true
     end
+    -- a click no screen took is ENTER, as in sg/input.lua
+    if name == "advance" and self.clickAt and not self.clickAt.taken then
+      self.clickAt.taken = true
+      return true
+    end
     return false
   end
   function inp:press(name) self.queued[name] = true end
+  -- a mouse click at a screen cell for the next frame (sg/input.lua's clicked / takeClick)
+  function inp:click(x, y) self.clickAt = { x = x, y = y } end
+  function inp:clicked()
+    local c = self.clickAt
+    if c and not c.taken then return c.x, c.y, 1 end
+    return nil
+  end
+  function inp:takeClick() if self.clickAt then self.clickAt.taken = true end end
   return inp
 end
 

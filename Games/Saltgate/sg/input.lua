@@ -51,8 +51,15 @@ function I:bind(action, codes)
 end
 
 --- Feed one event (the values os.pullEvent returns). t is the time now in seconds.
-function I:event(t, name, code, isHeld)
+-- A mouse click on the computer's screen ("mouse_click", button, x, y) is Enter wherever Enter advances or confirms
+-- (pressedAction("advance") sees it), unless a screen with options takes it first (takeClick: a click on an option
+-- picks it; a click beside them does nothing).
+function I:event(t, name, code, isHeld, y)
   self.now = t
+  if name == "mouse_click" and isHeld and y then
+    self.click = { button = code, x = isHeld, y = y }
+    return
+  end
   if name == "key" and code then
     if not isHeld or not self.held[code] then
       if not self.held[code] then self.pressed[code] = true end
@@ -74,12 +81,40 @@ function I:down(action)
   return false
 end
 
---- Was an action's key pressed since the last frame?
+--- Was an action's key pressed since the last frame? (A click this frame that no screen took is an "advance".)
+-- SPACE is the handbrake in play and ENTER on the screens that stop play (talk, cutscenes, MISSION FAILED, the
+-- phone, the map): "advance" is only read there. A screen that opens while SPACE is in use (a talk while you brake)
+-- ignores SPACE for SPACE_GUARD seconds, so a handbrake press never skips its first line.
 function I:pressedAction(action)
   for _, code in ipairs(self.map[action] or {}) do
     if self.pressed[code] then return true end
   end
+  if action == "advance" then
+    if self.click and not self.click.taken then return true end
+    local space = self.keys and self.keys.space
+    if space and self.pressed[space] and self.now >= (self.spaceGuard or 0) then return true end
+  end
   return false
+end
+
+M.SPACE_GUARD = 0.35
+
+--- A screen that stops play has just opened: SPACE (the handbrake) does not count as ENTER for a moment.
+function I:guardSpace(t)
+  self.spaceGuard = (t or self.now) + M.SPACE_GUARD
+end
+
+--- The click this frame not yet taken: x, y, button (nil when there is none).
+function I:clicked()
+  local c = self.click
+  if c and not c.taken then return c.x, c.y, c.button end
+  return nil
+end
+
+--- A screen with options has dealt with the click (picked an option, or ignored a click beside them): it is no
+-- longer an "advance".
+function I:takeClick()
+  if self.click then self.click.taken = true end
 end
 
 --- What the game gets this frame.
@@ -102,6 +137,7 @@ end
 function I:endFrame(t)
   self.pressed = {}
   self.tapped = {}
+  self.click = nil
   t = t or self.now
   for code, at in pairs(self.seen) do
     if t - at > M.STALE then
@@ -114,6 +150,7 @@ end
 --- Let go of everything (a screen change).
 function I:clear()
   self.held, self.seen, self.pressed, self.tapped = {}, {}, {}, {}
+  self.click = nil
 end
 
 return M
