@@ -1,0 +1,15 @@
+# SALTGATE installed on its own (the Pastebin installer, pastebin run Ri6djbYq): the files it needs, read by
+# Shared/lib/standalone_update.lua at the commit it installs or updates to. "file <repo path> <install path>";
+# "keep" files are written only when missing and never deleted (the settings). Saves and logs are never listed.
+# Files that leave this list are deleted from installs at their next update. Tests/saltgate_standalone_test.lua
+# checks every repo path here exists.
+program saltgate
+file Games/Saltgate/saltgate.pak saltgate.pak
+file Games/Saltgate/sgpak.lua sgpak.lua
+file Games/Saltgate/saltgate.lua saltgate.lua
+file Games/Saltgate/startup.lua saltgate_startup.lua
+keep Games/Saltgate/saltgate_settings.lua saltgate_settings.lua
+file Games/Saltgate/CREDITS.txt CREDITS.txt
+file Games/Saltgate/pine3d/LICENSE.txt pine3d/LICENSE.txt
+file Shared/lib/crashreport.lua lib/crashreport.lua
+file Shared/lib/standalone_update.lua lib/standalone_update.lua

@@ -6,7 +6,7 @@
 //
 // Lua files are minified without moving anything off its line: comments and indentation go, every line break stays,
 // so a crash trace's "sg/core/app.lua:123" is the same line in the readable source and no line map is needed.
-// Format: "SGPAK1 <payload bytes>\n" then the payload as raw deflate. Payload: one "path<TAB>bytes\n" line a file, an
+// Format: "SGPAK1 <payload bytes>\n" then the payload as raw deflate, then "\nSGEND <bytes before it>\n". Payload: one "path<TAB>bytes\n" line a file, an
 // empty line, then the files' bytes one after another in that order.
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { deflateRawSync, constants } from "node:zlib";
@@ -149,7 +149,10 @@ export function build(opts = {}) {
   const header = files.map((f) => `${f.rel}\t${f.bytes.length}\n`).join("") + "\n";
   const payload = Buffer.concat([Buffer.from(header, "latin1"), ...files.map((f) => f.bytes)]);
   const packed = deflateRawSync(payload, { level: 9, memLevel: 9, windowBits: 15, strategy: constants.Z_DEFAULT_STRATEGY });
-  const pak = Buffer.concat([Buffer.from(`SGPAK1 ${payload.length}\n`, "latin1"), packed]);
+  const body = Buffer.concat([Buffer.from(`SGPAK1 ${payload.length}\n`, "latin1"), packed]);
+  // the trailer: how long the pak is, so a download cut short is seen before it is used (the inflater stops at the
+  // deflate stream's last block and never reads it)
+  const pak = Buffer.concat([body, Buffer.from(`\nSGEND ${body.length}\n`, "latin1")]);
   return { files, payload, pak };
 }
 

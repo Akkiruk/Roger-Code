@@ -79,6 +79,71 @@ local function mountPak()
   log(string.format("pak: %d files in memory in %d ms", #order, os.epoch("utc") - started))
 end
 
+-- ---------------------------------------------------------------- keeping itself up to date
+-- A copy installed on its own (the Pastebin installer; a Roger install has lib/updater.lua and .installed_program)
+-- keeps itself up to date through lib/standalone_update.lua: an update downloaded last time goes in here, before
+-- anything loads, never mid-game; the next one is looked for, and downloaded, in the background while you play.
+-- Games/Saltgate/standalone.txt in the repo lists the files. Off: set saltgate.autoupdate false.
+local UPDATE_LIB = "lib/standalone_update.lua"
+local MANIFEST = "Games/Saltgate/standalone.txt"
+local standalone = not fs.exists("/.installed_program") and not fs.exists(at("sg/core/app.lua")) and args[1] ~= "bench"
+  and not (settings and settings.get("saltgate.autoupdate") == false)
+local updater, updaterOpts
+
+local function loadUpdater()
+  if not fs.exists(at(UPDATE_LIB)) then return nil end
+  local okL, lib = pcall(dofile, at(UPDATE_LIB))
+  if not okL or type(lib) ~= "table" or not lib.options then return nil end
+  return lib, lib.options(MANIFEST, "saltgate", { log = log, sleep = function(s) os.sleep(s) end })
+end
+
+if standalone then
+  updater, updaterOpts = loadUpdater()
+  if updater then
+    local okA, commit = pcall(updater.applyStaged, updaterOpts)
+    if okA and commit then
+      -- this file may be one of the new ones: start again on the new files
+      return shell.run(shell.getRunningProgram(), table.unpack(args))
+    elseif not okA then
+      log("update not put in: " .. tostring(commit))
+    end
+    -- "Updated to abc1234" on the title screen, once
+    local okS, st = pcall(updater.readState, updaterOpts)
+    if okS and st.commit and st.updatedAt and st.noted ~= st.commit then
+      args.updated = "Updated to " .. st.commit:sub(1, 7)
+      st.noted = st.commit
+      pcall(updater.writeState, updaterOpts, st)
+    end
+  end
+end
+
+--- In the background while the game runs: look for an update and download it (it goes in at the next start). An install
+-- from before the updater (the first Pastebin installer) fetches the updater itself first.
+local function backgroundUpdate()
+  local okB, why = pcall(function()
+    local lib, o = updater, updaterOpts
+    if not lib and http then
+      local base = (settings and settings.get("saltgate.update_raw")) or "https://raw.githubusercontent.com/Akkiruk/Roger-Code/"
+      local okH, h = pcall(http.get, base .. "main/Shared/lib/standalone_update.lua", nil, true)
+      if okH and h then
+        local code = h.getResponseCode and h.getResponseCode() or 200
+        local data = h.readAll()
+        h.close()
+        if code == 200 and data and load(data, "=standalone_update", "t", {}) then
+          if not fs.exists(at("lib")) then fs.makeDir(at("lib")) end
+          local f = fs.open(at(UPDATE_LIB), "wb")
+          if f then f.write(data) f.close() end
+          lib, o = loadUpdater()
+        end
+      end
+    end
+    if lib then return lib.check(o) end
+    return "no updater"
+  end)
+  log("update check: " .. tostring(why))
+  while true do os.pullEventRaw("saltgate_never") end
+end
+
 local function run()
   if not term.isColour() then
     print("SALTGATE needs an advanced computer (gold) or an advanced pocket computer.")
@@ -153,31 +218,44 @@ local function showCrash(err, trace, status)
 end
 
 local function game() run() end
-local logged = false
-local ok, err, status, crashTrace
-if crashreport then
-  ok, err, status, crashTrace = crashreport.run("Saltgate", nil, game, {
-    log = LOG,
-    onCrash = function(e, trace)
-      writeCrashLog(e, trace)
-      logged = true
-      if crashreport.enabled() and http then pcall(showCrash, e, trace, "Sending crash report...") end
-    end,
-  })
-else
-  ok, err = xpcall(game, function(e)
-    crashTrace = debug and debug.traceback and debug.traceback(tostring(e), 2) or tostring(e)
-    return e
-  end)
-end
-if not ok then
+
+--- The game under the crash reporter: ok, or false, the error (logged, shown and reported already).
+local function playGuarded()
+  local logged = false
+  local ok, err, status, crashTrace
+  if crashreport then
+    ok, err, status, crashTrace = crashreport.run("Saltgate", nil, game, {
+      log = LOG,
+      onCrash = function(e, trace)
+        writeCrashLog(e, trace)
+        logged = true
+        if crashreport.enabled() and http then pcall(showCrash, e, trace, "Sending crash report...") end
+      end,
+    })
+  else
+    ok, err = xpcall(game, function(e)
+      crashTrace = debug and debug.traceback and debug.traceback(tostring(e), 2) or tostring(e)
+      return e
+    end)
+  end
+  if ok then return true end
   if type(err) == "string" and err:find("Terminated", 1, true) then
     local hasRender, render = pcall(gameRequire, "sg.render")
     if hasRender then render.resetPalette(native) end
-    error(err, 0)
+    return false, err
   end
   if not logged then writeCrashLog(err, crashTrace) end
   local shown = pcall(showCrash, err, crashTrace, status)
   if shown then pcall(os.pullEvent, "key") end
-  error(err, 0)
+  return false, err
 end
+
+-- the next update looked for (and downloaded) beside the game, on a copy installed on its own; else just the game
+local result
+local function guarded() result = { playGuarded() } end
+if standalone and parallel then
+  parallel.waitForAny(guarded, backgroundUpdate)
+else
+  guarded()
+end
+if result and result[1] == false then error(result[2], 0) end

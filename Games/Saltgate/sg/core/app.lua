@@ -290,6 +290,8 @@ function M.main(args)
   local ctx = makeContext(screen)
   -- no title screen over a bench or an autopilot run (saltgate_notitle.flag does the same by hand)
   ctx.noTitle = bench or fs.exists("saltgate_notitle.flag")
+  -- "Updated to abc1234" for the title screen, after an update went in (saltgate.lua, lib/standalone_update.lua)
+  ctx.updateNote = type(args.updated) == "string" and args.updated or nil
   local note
   ctx.save, note = loadSave()
   if not ctx.save then

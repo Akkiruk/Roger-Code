@@ -421,6 +421,11 @@ function M.install(ctx, deps)
     args.menu:draw(t, mx, my, mw, items)
     fill(t, 1, h, w, 1, C.black)
     theme.keyline(t, 2, h, w - 2, "W/S choose  ENTER/SPACE or click select", C.yellow, C.lightGray, C.black)
+    -- after an update went in: which one, small, in the corner above the key line
+    if c.updateNote then
+      local note = c.updateNote:sub(1, w - 2)
+      put(t, w - #note, h - 1, note, C.lightGray, C.black)
+    end
     local _ = ok
   end })
 
