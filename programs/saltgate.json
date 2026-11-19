@@ -7,12 +7,12 @@
     "description": "A 3D open-city crime and driving game: steal cars, run jobs for Mama Juno, and keep your heat low in a harbor city at dusk.",
     "source_root": "Games/Saltgate",
     "entrypoint": "startup.lua",
-    "version": "1.0.23"
+    "version": "1.0.24"
   },
   "build": {
-    "commit": "022509d19224fd9fd72a674b6d523dcde24779ba",
-    "generated_at": "2026-11-19T13:30:18Z",
-    "package_hash": "6489f9028036b51e03d0b2c138a6949a9f586b845be9e945b41acd75c1f3aa7c"
+    "commit": "94c9a0fe9f39837f0d534983e341834811ed40ce",
+    "generated_at": "2026-11-19T14:54:59Z",
+    "package_hash": "45e8e2e8d5c346d225867a5ea3ed5d3b4481891d135bbc0219c9118d9d919827"
   },
   "install": {
     "preserve": [
@@ -37,7 +37,7 @@
       {
         "repo_path": "Games/Saltgate/saltgate.pak",
         "install_path": "saltgate.pak",
-        "sha256": "6ea3b3c16ea7130481707c2bb0b48e25458c2ee6e3d1bf6142c770b0b5b3d989"
+        "sha256": "813f6d8349106e5816d4eb8d7fae23d529da2f61032876484179eadbe7afe3e9"
       },
       {
         "repo_path": "Games/Saltgate/pine3d/LICENSE.txt",
