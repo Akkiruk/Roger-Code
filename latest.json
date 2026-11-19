@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-19T13:27:21Z",
+  "generated_at": "2026-11-19T13:30:18Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "022509d19224fd9fd72a674b6d523dcde24779ba",
+    "commit": "43c09691ec4a8d42240f8a2bb13bea8a3b9882b1",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
