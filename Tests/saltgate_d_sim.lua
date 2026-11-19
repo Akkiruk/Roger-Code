@@ -289,6 +289,12 @@ function S.play(host, w, opts)
     elseif host.cut then
       host.cut:skip()
     elseif host.goal then
+      -- what the HUD says while the player has something to do (every goal has its objective line)
+      local info = host:objectiveInfo()
+      if not (info and type(info.text) == "string" and #info.text > 0) then
+        seen.blankGoals = seen.blankGoals or {}
+        seen.blankGoals[#seen.blankGoals + 1] = tostring(host.checkpointName) .. ":" .. tostring(host.goal.kind)
+      end
       if opts.failAt and host.checkpointName == opts.failAt and not spoiled then
         spoiled = true
         S.spoil(w)

@@ -111,6 +111,7 @@ t.test("story: every mission plays start to finish with the first choice every t
     t.truthy(story.done[def.id], def.id .. " is marked done")
     t.truthy(w.money >= def.reward, def.id .. " pays")
     t.truthy(#seen.says >= 4, def.id .. " has talk")
+    t.eq(table.concat(seen.blankGoals or {}, ", "), "", def.id .. ": every step you play has an objective line")
     local started, ended = false, false
     for _, e in ipairs(host.events) do
       if e[1] == "mission_start" and e[2].id == def.id then started = true end

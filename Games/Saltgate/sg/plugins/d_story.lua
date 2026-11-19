@@ -66,19 +66,25 @@ function M.init(ctx)
   })
   ctx.story = { host = host, world = world, idx = idx }
   M.ctx = ctx -- a handle for scripted tests
+  -- x, z, kind, text: where the arrow points and the objective line under it
   ctx.story.target = function()
     local info = host:objectiveInfo()
     if info and info.target ~= nil then
       local x, z = world:pos(info.target)
-      if x then return x, z, "objective" end
+      if x then return x, z, "objective", info.text end
     end
     if host.state == "idle" and host.story then
       local def = host:next()
       if def then
         local x, z = world:pos(def.giver)
-        if x then return x, z, "giver" end
+        if x then return x, z, "giver", "Next job: " .. tostring(def.title or def.id) end
       end
     end
+  end
+  -- the objective line for a step whose goal has no place (get in any car, lose the Patrol, hold out)
+  ctx.story.text = function()
+    local info = host:objectiveInfo()
+    return info and info.text or nil
   end
   patchCamera(ctx.view)
 

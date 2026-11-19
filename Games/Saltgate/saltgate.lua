@@ -1,8 +1,11 @@
 -- saltgate.lua
 -- SALTGATE: LOW TIDE. An open-city crime and driving game in 3D (Pine3D), played on an advanced computer's own screen
 -- with its keyboard. (A pocket computer works too.)
---   saltgate             play
---   saltgate bench [n]   drive itself for n frames (default 200) and write the frame times to saltgate_bench.log
+--   saltgate                     play (the open city: sg/core/app.lua and its plugins; while V2_DEFAULT is off,
+--                                only with saltgate_v2.flag, else Classic)
+--   saltgate bench [n]           the city's autopilot for n frames; the frame times go to saltgate_bench.log
+--   saltgate classic [bench [n]] the first game, as it was (also: Classic on the title screen, or
+--                                engine = "classic" in saltgate_settings.lua); it keeps its own save
 --
 -- Music: if a music module is installed (music.lua or music/init.lua), it is told what is going on through
 -- music.cue(name) and music.setDistrict(name) (gilt, lantern, cinder, brine, mid, when you cross into another);
@@ -21,6 +24,8 @@ local inputlib = require("sg.input")
 local hints = require("sg.hints")
 
 local args = { ... }
+-- the open city (sg/core/app.lua) is the game when this is true; false: it runs only with saltgate_v2.flag
+local V2_DEFAULT = false
 local SAVE = "saltgate_save.dat"
 local LOG = "saltgate.log"
 local BENCH_LOG = "saltgate_bench.log"
@@ -128,9 +133,16 @@ local function run(bench)
     return
   end
   local settings = loadSettings()
-  -- the v2 engine (step 0 of the expansion), behind a flag until the new city is ready
-  -- (checked before loading any of it, so the live game never depends on the new code)
-  if fs.exists("saltgate_v2.flag") or settings.engine == "v2" then return require("sg.core.app").main(args) end
+  -- v2 (the open city) or Classic, the first game. Until V2_DEFAULT is switched on, v2 runs with saltgate_v2.flag (or
+  -- engine = "v2" in saltgate_settings.lua). Classic is always there: "saltgate classic", engine = "classic", or Classic
+  -- on v2's title screen (main returns "classic" and we fall through to it)
+  local wantV2 = V2_DEFAULT or fs.exists("saltgate_v2.flag") or settings.engine == "v2"
+  local classic = args[1] == "classic" or settings.engine == "classic" or not wantV2
+  if args[1] == "classic" then table.remove(args, 1) end
+  if not classic then
+    local how = require("sg.core.app").main(args)
+    if how ~= "classic" then return end
+  end
   local screen = term.current()
   render.applyPalette(screen)
   screen.setBackgroundColour(colours.black)
@@ -234,6 +246,8 @@ local function run(bench)
       local dt = util.clamp(t0 - last, 0, 0.25)
       last = t0
       timer = os.startTimer(0.05)
+      -- alive for the Roger supervisor (a game install with no monitor touches was rebooted every 60 s)
+      util.rogerAlive(t0, mode ~= "title" and mode ~= "controls")
 
       if mode == "title" then
         titleT = titleT + dt

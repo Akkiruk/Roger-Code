@@ -14,6 +14,7 @@ return {
   -- new
   tam_garage = { x = 128, z = 202, r = 5, label = "Pit Wall (Tam's garage)", district = "mid" },
   counting_house = { x = 118, z = 138, r = 8, label = "Gilt counting house", district = "lantern" },
+  courier_watch = { x = 118, z = 168, r = 6, label = "Across from the counting house", district = "lantern" },
   radio_mast = { x = 246, z = 116, r = 7, label = "Heights relay mast", district = "gilt" },
   studio = { x = 110, z = 168, r = 5, label = "Radio Lantern", district = "lantern" },
   market = { x = 96, z = 150, r = 9, label = "Lantern market", district = "lantern" },
@@ -40,6 +41,7 @@ return {
   hairpin_top = { x = 246, z = 120, r = 7, label = "Top of the hairpins", district = "gilt" },
   hairpin_foot = { x = 206, z = 150, r = 8, label = "Foot of the hairpins", district = "gilt" },
   lighthouse = { x = 214, z = 306, r = 8, label = "Brine lighthouse", district = "brine" },
+  lighthouse_landing = { x = 210, z = 316, r = 12, label = "Windward landing", district = "brine" },
   scrapyard_gate = { x = 140, z = 246, r = 7, label = "Chop yard gate", district = "cinder" },
   hideout = { x = 70, z = 210, r = 8, label = "The Gilts' hideout", district = "lantern" },
   old_gate = { x = 150, z = 190, r = 6, label = "Old Saltgate arch", district = "mid" },

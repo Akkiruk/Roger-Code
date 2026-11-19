@@ -168,8 +168,13 @@ function M.objective(ctx)
   if type(o) == "table" and (o.text or o.x) then return o end
   local story = ctx.story
   if story and type(story.target) == "function" then
-    local x, z, kind = story.target()
-    if x and z then return { x = x, z = z, kind = kind } end
+    local x, z, kind, text = story.target()
+    if x and z then return { x = x, z = z, kind = kind, text = text } end
+  end
+  -- a goal with no place still has its line (no arrow)
+  if story and type(story.text) == "function" then
+    local text = story.text()
+    if text then return { text = text } end
   end
   return nil
 end

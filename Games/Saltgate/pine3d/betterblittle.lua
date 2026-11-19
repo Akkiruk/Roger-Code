@@ -74,15 +74,21 @@ end
 ---@param window Redirect
 ---@param colorSpace "Oklab" | "sRGB" | nil default: Oklab
 local function computeColorDistances(window, colorSpace)
+	-- (SALTGATE: each colour read and converted once, not once per pair: the sky changes the palette through the day,
+	-- and the old double loop's 272 conversions made a slow frame each time)
+	local cr, cg, cb = {}, {}, {}
+	for c = 1, 16 do
+		local r, g, b = window.getPaletteColor(2 ^ (c - 1))
+		if colorSpace ~= "sRGB" then r, g, b = sRGBtoOklab(r, g, b) end
+		cr[c], cg[c], cb[c] = r, g, b
+	end
 	colorDistances = {}
 	for c1 = 1, 16 do
-		local r1, g1, b1 = window.getPaletteColor(2 ^ (c1 - 1))
-		if colorSpace ~= "sRGB" then r1, g1, b1 = sRGBtoOklab(r1, g1, b1) end
+		local r1, g1, b1 = cr[c1], cg[c1], cb[c1]
 		local distances = {}
 		for c2 = 1, 16 do
-			local r2, g2, b2 = window.getPaletteColor(2 ^ (c2 - 1))
-			if colorSpace ~= "sRGB" then r2, g2, b2 = sRGBtoOklab(r2, g2, b2) end
-			distances[c2] = (r2 - r1) ^ 2 + (g2 - g1) ^ 2 + (b2 - b1) ^ 2
+			local dr, dg, db = cr[c2] - r1, cg[c2] - g1, cb[c2] - b1
+			distances[c2] = dr * dr + dg * dg + db * db
 		end
 		colorDistances[c1] = distances
 	end

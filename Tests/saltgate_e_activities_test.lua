@@ -189,6 +189,25 @@ local function runStraight(ctx, def, v, dt)
   return mgr.section.races[def.id], ghostGaps
 end
 
+t.test("race: not in the middle of a story job (the play-test's race was nabbed and failed the job behind it)", function()
+  local ctx = game()
+  giveCar(ctx)
+  local mgr = ctx.activities
+  local said
+  ctx.hud.toast = function(text) said = text end
+  ctx.story = { host = { state = "running" } }
+  mgr:use_({ kind = "race", def = straight(10, 20), name = "Test Straight" })
+  t.eq(mgr.active, nil, "no race while a job runs")
+  t.eq(said, "Finish the job first.")
+  mgr:use_({ kind = "taxi", name = "Rank", x = 0, z = 0 })
+  t.eq(mgr.active, nil, "no shift either")
+  ctx.story.host.state = "idle"
+  mgr:use_({ kind = "race", def = straight(10, 20), name = "Test Straight" })
+  t.truthy(mgr.active, "between jobs it starts")
+  mgr:cancel()
+  ctx.story = nil
+end)
+
 t.test("race: times are exact whatever the frame time (20 u/s over 240 units is 12.00 s)", function()
   for _, dt in ipairs({ 0.05, 0.02, 1 / 30, 0.2, 0.125 }) do
     local ctx = game()

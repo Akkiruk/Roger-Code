@@ -36,8 +36,10 @@ return function(api)
   api.step("run", function()
     api.say("Tam", "Pit Wall to Wren! Three cruisers on the quay, two boats at the mouth. There is a gap. It is a very small gap.")
     api.ensureCar("boat", "skiff", "ferry", { label = "skiff" })
-    api.hint("Aim for the lighthouse at the far end. The patrol boats are slow to turn, so cut inside them.")
-    api.drive("lighthouse", { name = "boat", text = "Slip the patrol boats. Make for the lighthouse.", timer = 80, timerText = "NET",
+    -- (the lighthouse stands on Gull Rock's headland; a boat makes for the bay under it, round the west shore: about
+    -- 950 units, so the net closes in 150 s, not the 80 the step 0 harbor needed)
+    api.hint("Round the west shore to the bay under the lighthouse. The patrol boats are slow to turn, so cut inside them.")
+    api.drive("lighthouse_landing", { name = "boat", text = "Slip the patrol boats. Make for the lighthouse.", timer = 150, timerText = "NET",
       timerReason = "the patrol boats closed the net" })
   end, { at = "ferry", give = { name = "boat", kind = "skiff" } })
 

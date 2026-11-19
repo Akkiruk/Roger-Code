@@ -60,6 +60,12 @@ function V:builder()
   return function(c, lod, yield)
     local polys, ox, oz = chunkmodel.build(c, lod, yield, baseAt)
     if yield then yield() end
+    -- the minimap's picture of the chunk, made here in the load job (spread over frames) and not on the minimap's
+    -- first look at it, inside a frame: that was the 50-140 ms frames whenever a chunk came into the minimap
+    if not c._map then
+      mapview.raster(c, yield, baseAt)
+      if yield then yield() end
+    end
     local q = chunkLib.SIZE / 4
     local parts = { {}, {}, {}, {} }
     for _, p in ipairs(polys) do

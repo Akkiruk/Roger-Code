@@ -248,6 +248,41 @@ t.test("c lane: two cars arriving at a junction at once do not end up inside eac
   t.truthy(c1.health > c1.spec.health * 0.9 and c2.health > c2.spec.health * 0.9, "no bump")
 end)
 
+t.test("c lane: a knot of cars nosed into one crossing from every side clears (the soak's 'stuck' cars)", function()
+  local ctx = sim.new({ plugins = false })
+  local mid
+  for _, n in pairs(ctx.roads.nodes) do
+    if #n.edges == 4 then mid = n end
+  end
+  t.truthy(mid, "the downtown crossing")
+  local cars, start = {}, {}
+  local kinds = { "marlin", "pipit", "tidewater", "marlin" }
+  for i, e in ipairs(mid.edges) do
+    local dir = (e.b == mid.id) and 1 or -1
+    -- right up to the middle, and a second car close behind: everyone wants the same few metres
+    for k, back in ipairs({ 5, 12 }) do
+      local c = placeCar(ctx, e, dir == 1 and e.length - back or back, kinds[(i + k) % 4 + 1], dir)
+      if c then
+        c.drv.route = nil
+        cars[#cars + 1] = c
+        start[c] = { c.x, c.z }
+      end
+    end
+  end
+  t.truthy(#cars >= 6, "a knot of " .. #cars)
+  local moved = {}
+  for _ = 1, 20 * 60 do
+    sim.step(ctx, 0.05, { handbrake = true })
+    for _, c in ipairs(cars) do
+      if math.sqrt((c.x - start[c][1]) ^ 2 + (c.z - start[c][2]) ^ 2) > 20 then moved[c] = true end
+    end
+  end
+  local n = 0
+  for _ in pairs(moved) do n = n + 1 end
+  t.eq(n, #cars, "every car in the knot got going within a minute")
+  for _, c in ipairs(cars) do t.truthy(not c.ghost or c.ghost <= 2.5, "slipping through is brief") end
+end)
+
 -- ---------------------------------------------------------------- the population
 
 t.test("c traffic: it fills to the district's target, stays inside it, and thins out at night and under a tighter budget", function()
@@ -304,6 +339,20 @@ t.test("c traffic: cars far behind are put away, cars wrecked are left then remo
   for car in pairs(T.cars) do
     t.truthy((car.idle or 0) < 41, "nobody is stuck longer than the limit: " .. (car.idle or 0))
   end
+  -- wedged in a jam out of your close view: backing and filling (a moment of speed now and then) is still going
+  -- nowhere, and the car is put away (the soak's 'stuck' cars sat like this for minutes)
+  local wedged
+  for car in pairs(T.cars) do if not car.cop and car.drv then wedged = car break end end
+  local wx, wz = wedged.x, wedged.z
+  local gone = false
+  for i = 1, 20 * 40 do
+    if T.cars[wedged] == nil then gone = true break end
+    wedged.x, wedged.z = wx + (i % 40 < 3 and 1 or 0), wz
+    wedged.v = (i % 40 < 3) and -2 or 0.1
+    ctx.player.x, ctx.player.z = wx + 50, wz
+    T:update(0.05)
+  end
+  t.truthy(gone, "a car going nowhere for long is put away")
 end)
 
 -- ---------------------------------------------------------------- the people

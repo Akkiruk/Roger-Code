@@ -114,7 +114,7 @@ function M.step(ctx, dt, input)
   local cars = ctx.cars
   for a = 1, #cars - 1 do
     for b = a + 1, #cars do
-      if math.abs((cars[a].y or 0) - (cars[b].y or 0)) < 2 then vehicle.bump(cars[a], cars[b]) end
+      if math.abs((cars[a].y or 0) - (cars[b].y or 0)) < 2 and not cars[a].ghost and not cars[b].ghost then vehicle.bump(cars[a], cars[b]) end
     end
   end
   if p.car then p.x, p.y, p.z, p.h = p.car.x, p.car.y, p.car.z, p.car.h end

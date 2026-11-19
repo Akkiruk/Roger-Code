@@ -25,6 +25,8 @@ local sqrt, abs, cos, sin, min, max = math.sqrt, math.abs, math.cos, math.sin, m
 local atan2 = math.atan2 or math.atan
 
 M.LOOK = 6
+M.KNOT = 3 -- jams in a row (backing out, blocked again) before a car slips through the cars it is wedged among
+M.GHOST_SECONDS = 2.5
 M.SKIP = { path = true, rail = true }
 M.DRIVABLE = { road = true, avenue = true, alley = true, highway = true }
 
@@ -277,6 +279,7 @@ function M.step(d, car, dt, env)
   end
   d.lost = nil
   d.pushy = d.pushy and d.pushy > 0 and d.pushy - dt or nil
+  if car.ghost then car.ghost = car.ghost > dt and car.ghost - dt or nil end
   local s, off = project(e, car.x, car.z)
   d.s = s
   d.off = off
@@ -332,13 +335,15 @@ function M.step(d, car, dt, env)
   if d.pushy and d.pushy > 0 then limit = 1e9 end
   if limit <= 0.1 and abs(v) < 0.5 then
     d.blocked = (d.blocked or 0) + dt
-    if d.blocked > 5 then d.blocked, d.pushy = 0, 3 end -- two cars waiting for each other: one goes
+    if d.blocked > 5 then d.blocked, d.pushy, d.knot = 0, 3, (d.knot or 0) + 1 end -- two cars waiting for each other: one goes
   else
     d.blocked = max(0, (d.blocked or 0) - dt)
   end
   if limit < want then want = limit end
   local yielding = false
-  if rem < 16 + abs(v) * 0.8 then
+  -- (a driver who has waited long enough goes: pushy beats the junction's right of way too, or a knot of cars all
+  -- giving way to each other never clears)
+  if rem < 16 + abs(v) * 0.8 and not (d.pushy and d.pushy > 0) then
     local jl = junction(d, car, env, rem)
     if jl and jl < want then want = jl yielding = true end
   end
@@ -373,13 +378,23 @@ function M.step(d, car, dt, env)
     d.stuck = d.stuck + dt
     if d.stuck > 2.4 then
       d.stuck = 0
-      d.rev = 1.1
-      d.revSteer = steer >= 0 and 1 or -1
       d.jams = (d.jams or 0) + 1
+      d.knot = (d.knot or 0) + 1
+      if d.knot >= M.KNOT then
+        -- backed out and run into the same cars three times: wedged in a knot with them. Slip through for a moment
+        -- (car.ghost: no car-to-car bumps) and go, rather than sit there for ever
+        d.knot = 0
+        car.ghost = M.GHOST_SECONDS
+        d.pushy = M.GHOST_SECONDS
+      else
+        d.rev = 1.1
+        d.revSteer = steer >= 0 and 1 or -1
+      end
     end
   elseif want > 2.5 then
     d.stuck = max(0, d.stuck - dt)
   end
+  if v > 4 then d.knot = 0 end -- going (backing out at speed is not getting anywhere)
   if yielding and abs(v) < 0.8 then
     d.wait = d.wait + dt
     if d.wait > 5 then d.wait, d.pushy = 0, 3 end -- nobody moves: go anyway

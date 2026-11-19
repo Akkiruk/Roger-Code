@@ -737,6 +737,12 @@ return {
       r = 8,
       y = 2.6,
     },
+    courier_watch = {
+      x = 490,
+      z = 590.9,
+      r = 6,
+      y = 2.8,
+    },
     studio = {
       x = 410,
       z = 686,
@@ -850,6 +856,12 @@ return {
       z = 108,
       r = 8,
       y = 35.6,
+    },
+    lighthouse_landing = {
+      x = 436,
+      z = 192,
+      r = 12,
+      y = 0,
     },
     hideout = {
       x = 420,

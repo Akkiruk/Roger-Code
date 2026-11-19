@@ -121,7 +121,12 @@ function P.init(ctx)
 
   -- districts, the clock on the top line, the objective line
   -- (the core's objective line shows the story's target now: it is no longer blanked here)
-  ctx.ui.widget({ name = "a_clock", slot = "top-right", priority = 60, visible = function() return not state.inside end, draw = function(c, t)
+  -- (while the Patrol's stars and SPOTTED / LOST are up on the same line, they win and the clock steps aside)
+  ctx.ui.widget({ name = "a_clock", slot = "top-right", priority = 60, visible = function(c)
+    if state.inside then return false end
+    local h = c and c.heat
+    return not (h and ((h.level or 0) > 0 or (h.flash or 0) > 0))
+  end, draw = function(c, t)
     local w = c.screen.getSize()
     local text = clockText(state.hour) .. " " .. state.weather.kind
     t.setCursorPos(1, 1)
@@ -198,6 +203,9 @@ function P.init(ctx)
     state.inside = nil
     ctx.interior = nil
     state.cool = 1.5
+    -- you come out standing on the door: it does not take you back in until you have stepped off it (standing still
+    -- after the cool-down used to pull you straight back inside)
+    state.offDoor = { x = b.x, z = b.z }
     ctx.bus:emit("interior_exit", { id = id })
     return true
   end
@@ -252,6 +260,11 @@ local function doors(ctx, state, api, dt)
     return
   end
   if p.car then return end
+  local off = state.offDoor
+  if off then
+    if (p.x - off.x) ^ 2 + (p.z - off.z) ^ 2 < 2.5 * 2.5 then return end
+    state.offDoor = nil
+  end
   local cx, cz = chunkLib.at(p.x, p.z)
   for dz = -1, 1 do
     for dx = -1, 1 do

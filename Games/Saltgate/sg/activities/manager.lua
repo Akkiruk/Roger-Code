@@ -132,6 +132,12 @@ end
 function A:use_(p)
   local ctx = self.ctx
   local car = ctx.player.car
+  -- a race or a shift in the middle of a story job would fail the job behind your back: one thing at a time
+  local host = ctx.story and ctx.story.host
+  if (p.kind == "race" or p.kind == "taxi" or p.kind == "depot") and host and host.state == "running" then
+    self:say("Finish the job first.")
+    return
+  end
   if p.kind == "race" then
     if not car then self:say("Drive a car to the line.") return end
     self:startRace(p.def)

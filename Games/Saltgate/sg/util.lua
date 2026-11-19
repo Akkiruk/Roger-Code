@@ -80,4 +80,19 @@ function M.copy(t)
   return out
 end
 
+--- Tell the Roger supervisor (Shared/lib/roger_supervisor.lua) the game is alive, and whether a game is in progress
+-- (an update then waits). Without "roger_alive" a game install with no monitor touches is taken for hung and rebooted
+-- every 60 s. Call it every frame: it sends once every M.ALIVE_SECONDS of the given clock (seconds).
+M.ALIVE_SECONDS = 5
+local aliveAt = -1e9
+function M.rogerAlive(nowSeconds, busy)
+  if nowSeconds - aliveAt < M.ALIVE_SECONDS then return false end
+  aliveAt = nowSeconds
+  local q = rawget(_G, "os") and os.queueEvent
+  if not q then return false end
+  q("roger_alive")
+  q("roger_busy", busy and true or false)
+  return true
+end
+
 return M

@@ -704,6 +704,25 @@ t.test("core app: a car driven into deep water stalls, floods, and the driver sw
   t.eq(dry.v, 10)
 end)
 
+t.test("core util: the game tells the Roger supervisor it is alive (else a game install is rebooted every 60 s)", function()
+  local util = require("sg.util")
+  local sent = {}
+  local old = os.queueEvent
+  os.queueEvent = function(name, a) sent[#sent + 1] = { name, a } end
+  local ok, err = pcall(function()
+    t.truthy(util.rogerAlive(1000, true), "sends at once")
+    t.eq(sent[1][1], "roger_alive")
+    t.eq(sent[2][1], "roger_busy")
+    t.eq(sent[2][2], true, "busy while a game is on")
+    t.truthy(not util.rogerAlive(1003, false), "not again within its 5 s")
+    t.truthy(util.rogerAlive(1006, false), "again after them")
+    t.eq(sent[4][2], false, "not busy on the title")
+    t.truthy(util.ALIVE_SECONDS * 2 < 60, "well inside the supervisor's 60 s watchdog")
+  end)
+  os.queueEvent = old
+  if not ok then error(err, 0) end
+end)
+
 t.test("core view: the objective comes from ctx.objective (table or function), else the story's target", function()
   local view = require("sg.core.view")
   t.eq(view.objective({}), nil, "nowhere to go")
@@ -716,4 +735,9 @@ t.test("core view: the objective comes from ctx.objective (table or function), e
   t.eq(o.kind, "giver")
   o = view.objective({ objective = { text = "first" }, story = { target = function() return 1, 1 end } })
   t.eq(o.text, "first", "ctx.objective wins over the story's target")
+  o = view.objective({ story = { target = function() return 3, 4, "objective", "Drive to Juno's back lot." end } })
+  t.eq(o.text, "Drive to Juno's back lot.", "the story's line comes with its arrow")
+  o = view.objective({ story = { target = function() end, text = function() return "Lose the Harbor Patrol." end } })
+  t.eq(o.text, "Lose the Harbor Patrol.", "a goal with no place still has its line")
+  t.eq(o.x, nil, "and no arrow")
 end)

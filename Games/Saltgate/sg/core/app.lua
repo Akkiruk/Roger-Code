@@ -1,12 +1,13 @@
 -- core/app.lua
--- SALTGATE's v2 engine: the core (events, entities, streaming, the road graph, 3D driving, save v2, plugins, screens and
--- widgets, the budget) running the step 0 testbed island. Behind a flag while the city is built: saltgate.lua starts
--- this instead of today's game when saltgate_v2.flag exists or saltgate_settings.lua says engine = "v2".
---   saltgate              (with the flag) play the testbed
---   saltgate bench [n]    (with the flag) the autopilot drives n frames; times and memory go to saltgate_bench.log
+-- SALTGATE's engine: the core (events, entities, streaming, the road graph, 3D driving, save v2, plugins, screens and
+-- widgets, the budget) running the city (stream A's world; the step 0 testbed only when no city is installed).
+-- saltgate.lua starts this unless Classic is asked for (saltgate classic, engine = "classic" in saltgate_settings.lua,
+-- or Classic on the title screen, which ends main with "classic").
+--   saltgate              play
+--   saltgate bench [n]    the autopilot drives n frames; times and memory go to saltgate_bench.log
 --
--- Saves go to saltgate_save2.dat (read first from today's saltgate_save.dat, migrated), so switching the flag off
--- leaves today's save exactly as it was.
+-- Saves go to saltgate_save2.dat (read first from Classic's saltgate_save.dat, migrated), so Classic's save stays
+-- exactly as it was.
 
 local eventsLib = require("sg.core.events")
 local entityLib = require("sg.core.entity")
@@ -77,9 +78,9 @@ local function music(name, ...)
 end
 M.music = function(...) return music(...) end
 
---- Is the v2 engine switched on?
+--- Is this engine the one to run? (Always, unless the settings ask for Classic.)
 function M.enabled(settings)
-  return fs.exists("saltgate_v2.flag") or (type(settings) == "table" and settings.engine == "v2")
+  return not (type(settings) == "table" and settings.engine == "classic")
 end
 
 --- The context every plugin gets.
@@ -515,6 +516,8 @@ function M.main(args)
       timer = os.startTimer(0.05)
       local top = ctx.ui.top()
       local screenName = top and top.name
+      -- alive for the Roger supervisor (and busy while a game is on, so an update waits for the title)
+      util.rogerAlive(t0 / 1000, screenName ~= "e_title")
       -- screens
       if screenName == "play" then
         if inp:pressedAction("pause") then ctx.ui.push("pause") end
@@ -597,7 +600,10 @@ function M.main(args)
           local cars = ctx.cars
           for a = 1, #cars - 1 do
             for b = a + 1, #cars do
-              if math.abs((cars[a].y or 0) - (cars[b].y or 0)) < 2 then (ctx.bump or vehicle.bump)(cars[a], cars[b]) end
+              -- (a car slipping out of a traffic knot, car.ghost, touches nobody for a moment)
+              if math.abs((cars[a].y or 0) - (cars[b].y or 0)) < 2 and not cars[a].ghost and not cars[b].ghost then
+                (ctx.bump or vehicle.bump)(cars[a], cars[b])
+              end
             end
           end
           if p.car then
@@ -682,7 +688,9 @@ function M.main(args)
   screen.setBackgroundColour(colours.black)
   screen.clear()
   screen.setCursorPos(1, 1)
-  print("Thanks for driving in Saltgate (v2 testbed).")
+  -- Classic, picked on the title screen: saltgate.lua runs it next
+  if ctx.wantClassic then return "classic" end
+  print("Thanks for driving in Saltgate.")
   local _ = chunkLib
 end
 

@@ -20,6 +20,9 @@ T.__index = T
 M.BASE = 16 -- cars at a busy hour in a busy district with the budget at its best
 M.SPAWN_MIN, M.SPAWN_MAX = 70, 150
 M.DESPAWN = 175
+M.IDLE_GO = 6 -- a car that has not got this far from where it was ...
+M.IDLE_OUT_OF_VIEW = 25 -- ... in this many seconds, 30 or more units from you, is put away
+M.IDLE_MAX = 40 -- ... and this many anywhere
 M.QUALITY = { 1, 0.85, 0.7, 0.6 }
 
 -- how busy the roads are by district and time: { night 22-5, morning 5-10, day 10-17, evening 17-22 }
@@ -199,6 +202,23 @@ function T:randomSpot(lo, hi, tries, connected)
       return e, s, dir
     end
   end
+  -- few roads in the band (out on the water, at the city's edge): look at every road once, from a random start, so
+  -- whoever is coming still comes. Half-way along each road, the connected ones first, then any
+  for pass = 1, (connected and self.comp) and 2 or 1 do
+    local n = #edges
+    local start = self.rng(n)
+    for i = 0, n - 1 do
+      local e = edges[(start + i - 1) % n + 1]
+      if pass == 2 or not connected or not self.comp or self.comp[e.a] == connected then
+        local s = e.length * 0.5
+        local x, _, z = self.ctx.roads:pointAt(e, s, 0)
+        local d2 = (x - p.x) ^ 2 + (z - p.z) ^ 2
+        if d2 >= lo * lo and d2 <= hi * hi then
+          return e, s, (e.lanes == 1 or self.rng() < 0.5) and 1 or -1
+        end
+      end
+    end
+  end
   return nil
 end
 
@@ -249,12 +269,18 @@ function T:update(dt)
           if d.panic <= 0 then d.panic = nil end
         end
         if (d.lost or 0) > 4 then gone = true end
-        if math.abs(car.v) < 0.4 then
-          car.idle = (car.idle or 0) + dt
-          if car.idle > 40 or (car.idle > 18 and d2 > 60 * 60) then gone = true end
-        else
+        -- getting nowhere: idle counts until the car is IDLE_GO units from where it last was, so backing and filling in
+        -- a jam (a moment of speed, then stopped again) still counts. Wedged long enough, it is put away (traffic
+        -- refills the street): sooner out of your close view, later in it; a cruiser on your case is left alone
+        local a = car.anchor
+        if not a or (car.x - a.x) ^ 2 + (car.z - a.z) ^ 2 > M.IDLE_GO * M.IDLE_GO then
+          car.anchor = { x = car.x, z = car.z }
           car.idle = 0
+        else
+          car.idle = (car.idle or 0) + dt
         end
+        local chasing = car.cop and car.cop.state ~= "patrol"
+        if not chasing and not car.parked and (car.idle > M.IDLE_MAX or (car.idle > M.IDLE_OUT_OF_VIEW and d2 > 30 * 30)) then gone = true end
       end
     end
     if gone then self:remove(car) end

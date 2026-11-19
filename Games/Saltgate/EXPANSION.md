@@ -1,6 +1,6 @@
 # SALTGATE: the expansion (King Tide)
 
-Step 0, the core interfaces, is built and runs behind a flag. This file is the plan and the brief for the five streams.
+Step 0, the core interfaces, is built, and the open city plays end to end. It still runs behind a flag (`V2_DEFAULT` in saltgate.lua turns it on for everyone); Classic is on its title screen. This file is the plan and the brief for the five streams.
 Read sections 2 and 3 before you write a line.
 
 ## 1. The budget
@@ -38,7 +38,7 @@ Today's live game: 3–6 ms (it varies with machine load).
 
 ## 3. Step 0: the core, and how to use it
 
-Turn it on: create `saltgate_v2.flag` on the computer (or put `engine = "v2"` in `saltgate_settings.lua`). Without the flag the live game runs exactly as before. v2 saves to `saltgate_save2.dat`; it reads today's `saltgate_save.dat` once and migrates it, and never writes it.
+Turn it on: create `saltgate_v2.flag` on the computer (or put `engine = "v2"` in `saltgate_settings.lua`); once `V2_DEFAULT` in saltgate.lua is true it is the game with no flag. Classic, the first game, is reached from the title screen (or `saltgate classic`, or `engine = "classic"`) and keeps its own save. v2 saves to `saltgate_save2.dat`; the first time, it reads Classic's `saltgate_save.dat` and migrates it (money, jobs done, stats), and never writes it.
 
 **Files: `Games/Saltgate/sg/core/*`, owned by step 0. Streams call these; they never edit them.** Need a change? Ask the integrator (step 0's owner).
 
