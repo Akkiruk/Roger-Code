@@ -48,4 +48,4 @@ function P.update(ctx, dt)
   ctx.activities:update(dt, ctx.eui.keys)
 end
 
-return P
+return require("sg.ui.guard").plugin(P)

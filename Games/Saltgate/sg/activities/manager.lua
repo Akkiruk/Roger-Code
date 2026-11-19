@@ -224,6 +224,7 @@ end
 -- ---------------------------------------------------------------- time
 
 function A:onTime(hour)
+  self.worldClock = true
   if self.lastHour then
     local d = hour - self.lastHour
     if d < -12 then d = d + 24 elseif d < 0 then d = 0 end
@@ -239,9 +240,9 @@ function A:update(dt, keys)
   local ctx = self.ctx
   self.collect:update(dt)
   self.jumps:update(dt)
-  -- no clock from the world for a while: a day passes in M.DAY_SECONDS
+  -- no clock from the world, ever (it sends time_of_day): a day passes in M.DAY_SECONDS
   self.sinceClock = self.sinceClock + dt
-  if self.sinceClock > 5 then self.property:advance(dt * 24 / M.DAY_SECONDS) end
+  if not self.worldClock and self.sinceClock > 5 then self.property:advance(dt * 24 / M.DAY_SECONDS) end
   local active = self.active
   if active then
     local status = active:update(dt)

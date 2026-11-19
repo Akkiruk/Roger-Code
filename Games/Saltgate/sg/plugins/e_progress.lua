@@ -150,4 +150,4 @@ function P.update(ctx, dt)
   end
 end
 
-return P
+return require("sg.ui.guard").plugin(P)

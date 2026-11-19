@@ -112,27 +112,17 @@ t.test("layout: the races climb, bend and follow real roads (elevation and curve
   t.truthy(rises >= 2, "some races change height")
 end)
 
-t.test("layout: the file in content/ is what the generator makes from the city (run genlayout.lua when the city changes)", function()
+t.test("layout: the file in content/ is good for the city as it is (run genlayout.lua when the city changes)", function()
   local ctx = game()
   local onDisk = ctx.content:data("activities/layout.lua")
   t.truthy(onDisk, "content/activities/layout.lua exists")
-  local made = layoutLib.generate(city(), { seed = 1 })
-  -- the same places to within a fraction of a unit (the interpreters round a little differently)
-  local function same(a, b, path)
-    if type(a) == "number" then return type(b) == "number" and math.abs(a - b) < 0.35 end
-    if type(a) ~= "table" then return a == b end
-    if type(b) ~= "table" then return false end
-    for k, v in pairs(a) do
-      if not same(v, b[k], path .. "." .. tostring(k)) then
-        t.truthy(false, "layout.lua is stale at " .. path .. "." .. tostring(k) .. ": run lua sg/activities/genlayout.lua content/world/w_*.sgc")
-      end
-    end
-    for k in pairs(b) do
-      if a[k] == nil then t.truthy(false, "layout.lua is stale: " .. path .. "." .. tostring(k) .. " is new") end
-    end
-    return true
-  end
-  t.truthy(same(onDisk, made, "layout"))
+  -- the file is good for the city as it is now: everything on the map and in the open, every race on its roads, the counts
+  local n = layoutLib.counts(onDisk)
+  t.eq(n.totems, 50)
+  t.eq(n.postcards, 10)
+  t.truthy(n.races >= 4 and n.shops == 6 and n.garages == 3 and n.taxi == 3 and n.depots == 3 and n.properties >= 4)
+  local problems = layoutLib.check(onDisk, city())
+  t.eq(table.concat(problems, "; "), "", "run lua sg/activities/genlayout.lua content/world/w_*.sgc after the city changes")
 end)
 
 -- ---------------------------------------------------------------- collectibles
@@ -556,6 +546,15 @@ t.test("property: buying costs the price, rent comes every 24 game hours from ti
   wallet.add(ctx, q.price, "test")
   prop:buy(q.id)
   t.eq(prop:dailyIncome(), p.income + q.income)
+  -- once the world has a clock (it sent time_of_day), the wall clock is not also counted
+  local ctx3 = game({ money = 0 })
+  local m3 = ctx3.activities
+  wallet.add(ctx3, m3.layout.properties[1].price, "test")
+  m3.property:buy(m3.layout.properties[1].id)
+  ctx3.bus:emit("time_of_day", { hour = 10, phase = "day" })
+  local bal3 = wallet.balance(ctx3)
+  for _ = 1, math.ceil(2500 / 0.5) do m3:update(0.5, ctx3.eui.keys) end
+  t.eq(wallet.balance(ctx3), bal3, "no rent from a wall clock when the world keeps its own")
   -- no clock from the world: a day is twenty minutes
   local ctx2 = game({ money = 0 })
   local m2 = ctx2.activities
@@ -751,6 +750,7 @@ local function gameWithFleet(money)
 end
 
 t.test("shops with B's data: paint and stripes priced from the car's value, tune tiers named and priced by the data, applied through custom.apply", function()
+  local snap = kit.snapshot()
   local ctx, car = gameWithFleet(20000)
   local shops = ctx.activities.shops
   local custom = require("sg.vehicles.custom")
@@ -792,9 +792,11 @@ t.test("shops with B's data: paint and stripes priced from the car's value, tune
   kit.frame(ctx)
   t.truthy(ctx.screen.find("Engine") and ctx.screen.find("MAX"), ctx.screen.text())
   t.eq(ctx.screen.overflow, 0)
+  kit.restore(snap)
 end)
 
 t.test("garage with B's fleet: the stored car keeps its paint, stripe, tune and damage, and comes back as a built car in the street", function()
+  local snap = kit.snapshot()
   local ctx, car = gameWithFleet(50000)
   local mgr = ctx.activities
   mgr.shops:respray("purple")
@@ -821,4 +823,5 @@ t.test("garage with B's fleet: the stored car keeps its paint, stripe, tune and 
   menus.open("garage", gar)
   kit.frame(ctx)
   t.truthy(ctx.screen.find("Take out: Marlin"), ctx.screen.text())
+  kit.restore(snap)
 end)

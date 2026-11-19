@@ -49,6 +49,11 @@ function P.init(ctx)
   ctx.bus:on("screen_push", function() keys:flush() end, "e_ui")
   ctx.bus:on("screen_pop", function() keys:flush() end, "e_ui")
 
+  -- a respawn or a door cuts to somewhere else: the curtain draws back from it
+  for _, name in ipairs({ "respawn", "interior_enter", "interior_exit" }) do
+    ctx.bus:on(name, function() transition:reveal(0.35) end, "e_ui")
+  end
+
   -- graphics quality: AUTO leaves the budget in charge; a number pins it
   local budget = ctx.budget
   local origFrame = budget.frame
@@ -111,4 +116,4 @@ function P.draw(ctx)
   end
 end
 
-return P
+return require("sg.ui.guard").plugin(P)

@@ -14,4 +14,4 @@ function P.draw(ctx)
   eui.keys:flush()
 end
 
-return P
+return require("sg.ui.guard").plugin(P)

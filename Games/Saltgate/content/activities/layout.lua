@@ -2,60 +2,60 @@
 return {
   depots = {
     {
-      district = "cinder",
-      h = -1.54,
+      district = "lantern",
+      h = -0.95,
       id = "depot1",
       name = "Net Depot",
-      x = 618.5,
-      y = 2.5,
-      z = 759.6
+      x = 458,
+      y = 3,
+      z = 764.8
     },
     {
       district = "gilt",
-      h = 0.09,
+      h = -1.44,
       id = "depot2",
       name = "Fish Market Depot",
-      x = 489.7,
-      y = 22.4,
-      z = 417.3
+      x = 565.7,
+      y = 47.1,
+      z = 413.2
     },
     {
-      district = "mid",
-      h = 0.69,
+      district = "cinder",
+      h = -2.7,
       id = "depot3",
       name = "Chandlery Depot",
-      x = 864.5,
-      y = 2.5,
-      z = 390.8
+      x = 724.8,
+      y = 2.4,
+      z = 728.7
     }
   },
   garages = {
     {
-      district = "lantern",
-      h = -0.49,
+      district = "cinder",
+      h = 1.29,
       id = "garage1",
       name = "Quay Garage",
-      x = 888,
-      y = 2.6,
-      z = 561.3
+      x = 734.7,
+      y = 2.7,
+      z = 513.7
     },
     {
-      district = "mid",
-      h = -3,
+      district = "cinder",
+      h = -1.43,
       id = "garage2",
       name = "Hilltop Lockup",
-      x = 498.2,
-      y = 2.8,
-      z = 584.3
+      x = 547.7,
+      y = 2,
+      z = 585.2
     },
     {
-      district = "mid",
-      h = 1.12,
+      district = "gilt",
+      h = 2.03,
       id = "garage3",
       name = "Old Town Mews",
-      x = 298.7,
-      y = 2.7,
-      z = 532.1
+      x = 413.9,
+      y = 2.2,
+      z = 340
     }
   },
   jumps = {
@@ -126,72 +126,72 @@ return {
       id = "card1",
       name = "Postcard 1: Gilt Heights",
       text = "Greetings from the harbour. The gulls here steal chips and opinions in equal measure.",
-      x = 684,
-      y = 5.8,
-      z = 452
-    },
-    {
-      district = "brine",
-      id = "card2",
-      name = "Postcard 2: Brine Docks",
-      text = "Wish you were here. Not for the weather. For the view.",
-      x = 276,
-      y = 3.4,
-      z = 628
-    },
-    {
-      district = "gilt",
-      id = "card3",
-      name = "Postcard 3: Gilt Heights",
-      text = "They told me the tide goes out. They did not say how far. Come see.",
       x = 756,
       y = 1.3,
       z = 412
     },
     {
       district = "cinder",
-      id = "card4",
-      name = "Postcard 4: Cinder Flats",
-      text = "Found the best chowder in town. Cannot tell you where. A gull is reading over my shoulder.",
+      id = "card2",
+      name = "Postcard 2: Cinder Flats",
+      text = "Wish you were here. Not for the weather. For the view.",
       x = 692,
       y = 1.1,
       z = 188
     },
     {
       district = "lantern",
-      id = "card5",
-      name = "Postcard 5: Lantern Row",
-      text = "Lamps lit at five, bells at six, nobody sleeps. Love it.",
+      id = "card3",
+      name = "Postcard 3: Lantern Row",
+      text = "They told me the tide goes out. They did not say how far. Come see.",
       x = 1116,
       y = 2.6,
       z = 452
     },
     {
+      district = "mid",
+      id = "card4",
+      name = "Postcard 4: Old Saltgate",
+      text = "Found the best chowder in town. Cannot tell you where. A gull is reading over my shoulder.",
+      x = 324,
+      y = 1.6,
+      z = 372
+    },
+    {
       district = "brine",
-      id = "card6",
-      name = "Postcard 6: Brine Docks",
-      text = "Drove the hill road with my eyes shut. Do not recommend. Do recommend the view.",
+      id = "card5",
+      name = "Postcard 5: Brine Docks",
+      text = "Lamps lit at five, bells at six, nobody sleeps. Love it.",
       x = 604,
       y = 13.3,
       z = 92
     },
     {
       district = "cinder",
-      id = "card7",
-      name = "Postcard 7: Cinder Flats",
-      text = "The crane at the docks has a name. The crane at the docks has a union.",
+      id = "card6",
+      name = "Postcard 6: Cinder Flats",
+      text = "Drove the hill road with my eyes shut. Do not recommend. Do recommend the view.",
       x = 732,
       y = 1,
       z = 756
     },
     {
       district = "lantern",
-      id = "card8",
-      name = "Postcard 8: Lantern Row",
-      text = "Rain on the water looks like the whole bay is thinking. Send umbrellas.",
+      id = "card7",
+      name = "Postcard 7: Lantern Row",
+      text = "The crane at the docks has a name. The crane at the docks has a union.",
       x = 588,
       y = 1.8,
       z = 780
+    },
+    {
+      district = "brine",
+      id = "card8",
+      name = "Postcard 8: Brine Docks",
+      text = "Rain on the water looks like the whole bay is thinking. Send umbrellas.",
+      x = 428,
+      y = 1.5,
+      z = 748
     },
     {
       district = "mid",
@@ -221,33 +221,33 @@ return {
       name = "Gull's Rest flat",
       price = 12000,
       slots = 2,
-      x = 650.2,
-      y = 3,
-      z = 663.7
+      x = 699.4,
+      y = 2.5,
+      z = 615.6
     },
     {
-      district = "lantern",
+      district = "brine",
       h = 0,
       id = "home2",
       income = 500,
       name = "Net Loft",
       price = 20000,
       slots = 2,
-      x = 1031.4,
-      y = 12.9,
-      z = 597.4
+      x = 475.2,
+      y = 35.6,
+      z = 108
     },
     {
-      district = "gilt",
+      district = "lantern",
       h = 0,
       id = "home3",
       income = 700,
       name = "Chandlery Rooms",
       price = 28000,
       slots = 2,
-      x = 595.8,
-      y = 38.5,
-      z = 414
+      x = 410,
+      y = 2.3,
+      z = 686
     },
     {
       district = "mid",
@@ -257,9 +257,9 @@ return {
       name = "Lamplighter's House",
       price = 40000,
       slots = 2,
-      x = 421.5,
-      y = 3,
-      z = 469.7
+      x = 283.6,
+      y = 4.7,
+      z = 498.2
     },
     {
       district = "lantern",
@@ -269,9 +269,9 @@ return {
       name = "Tide Clock Penthouse",
       price = 60000,
       slots = 2,
-      x = 451.5,
-      y = 2.3,
-      z = 686.2
+      x = 1070.8,
+      y = 10.9,
+      z = 516.1
     },
     {
       district = "mid",
@@ -281,9 +281,9 @@ return {
       name = "Harbour Master's Villa",
       price = 90000,
       slots = 2,
-      x = 204.1,
-      y = 2.3,
-      z = 560.6
+      x = 421.5,
+      y = 3,
+      z = 469.7
     }
   },
   races = {
@@ -515,64 +515,64 @@ return {
   seed = 1,
   shops = {
     {
-      district = "lantern",
-      h = 3.05,
+      district = "mid",
+      h = 1.83,
       id = "respray1",
       kind = "respray",
       name = "Paint & Pray",
-      x = 375,
-      y = 4.9,
-      z = 663.7
-    },
-    {
-      district = "cinder",
-      h = -2.65,
-      id = "respray2",
-      kind = "respray",
-      name = "Brine Brush Co.",
-      x = 679.9,
-      y = 2.8,
-      z = 537.4
-    },
-    {
-      district = "mid",
-      h = 1.83,
-      id = "tune1",
-      kind = "tune",
-      name = "Rusty's Tune Bay",
       x = 1053.9,
       y = 2.5,
       z = 292.4
     },
     {
-      district = "brine",
-      h = -1.12,
+      district = "mid",
+      h = -3,
+      id = "respray2",
+      kind = "respray",
+      name = "Brine Brush Co.",
+      x = 362.9,
+      y = 2.5,
+      z = 512.5
+    },
+    {
+      district = "lantern",
+      h = -1.84,
+      id = "tune1",
+      kind = "tune",
+      name = "Rusty's Tune Bay",
+      x = 1077.6,
+      y = 2.5,
+      z = 647.7
+    },
+    {
+      district = "cinder",
+      h = 2.49,
       id = "tune2",
       kind = "tune",
       name = "Iron Flats Garage",
-      x = 445.4,
-      y = 2.2,
-      z = 168.2
+      x = 723.9,
+      y = 11.8,
+      z = 143.6
     },
     {
-      district = "mid",
-      h = 1.49,
+      district = "brine",
+      h = -2.72,
       id = "clothes1",
       kind = "clothes",
       name = "Thread & Needle",
-      x = 293.7,
-      y = 2.3,
-      z = 386.5
+      x = 264.6,
+      y = 2.7,
+      z = 691.7
     },
     {
-      district = "gilt",
-      h = 1.85,
+      district = "lantern",
+      h = 1.65,
       id = "clothes2",
       kind = "clothes",
       name = "Gull Outfitters",
-      x = 651.8,
-      y = 12.4,
-      z = 344.8
+      x = 1131.4,
+      y = 2.7,
+      z = 463.3
     }
   },
   spots = {
@@ -580,332 +580,332 @@ return {
       district = "mid",
       id = "spot1",
       name = "Old Saltgate 1",
-      x = 377.3,
-      y = 2.1,
-      z = 449.7
-    },
-    {
-      district = "lantern",
-      id = "spot2",
-      name = "Lantern Row 2",
-      x = 1145.8,
-      y = 2.7,
-      z = 442.6
-    },
-    {
-      district = "cinder",
-      id = "spot3",
-      name = "Cinder Flats 3",
-      x = 699.7,
-      y = 11.1,
-      z = 85.4
-    },
-    {
-      district = "cinder",
-      id = "spot4",
-      name = "Cinder Flats 4",
-      x = 724.8,
+      x = 851.1,
       y = 2.4,
-      z = 728.7
+      z = 421.6
     },
     {
-      district = "gilt",
-      id = "spot5",
-      name = "Gilt Heights 5",
-      x = 696.9,
-      y = 5.3,
-      z = 411.5
-    },
-    {
-      district = "lantern",
-      id = "spot6",
-      name = "Lantern Row 6",
-      x = 442.7,
+      district = "mid",
+      id = "spot2",
+      name = "Old Saltgate 2",
+      x = 138.1,
       y = 2.8,
-      z = 728.4
+      z = 538.9
     },
     {
       district = "brine",
-      id = "spot7",
-      name = "Brine Docks 7",
+      id = "spot3",
+      name = "Brine Docks 3",
       x = 431.7,
       y = 11.8,
       z = 103.4
     },
     {
-      district = "brine",
-      id = "spot8",
-      name = "Brine Docks 8",
-      x = 183.3,
-      y = 1.3,
-      z = 635.2
+      district = "cinder",
+      id = "spot4",
+      name = "Cinder Flats 4",
+      x = 618.5,
+      y = 2.5,
+      z = 759.6
     },
     {
       district = "mid",
-      id = "spot9",
-      name = "Old Saltgate 9",
-      x = 918.4,
-      y = 2.6,
-      z = 522.4
-    },
-    {
-      district = "gilt",
-      id = "spot10",
-      name = "Gilt Heights 10",
-      x = 513.8,
-      y = 8.7,
-      z = 290.1
+      id = "spot5",
+      name = "Old Saltgate 5",
+      x = 470.8,
+      y = 11.4,
+      z = 443.5
     },
     {
       district = "lantern",
-      id = "spot11",
-      name = "Lantern Row 11",
+      id = "spot6",
+      name = "Lantern Row 6",
       x = 1077.6,
       y = 2.5,
       z = 647.7
     },
     {
       district = "cinder",
-      id = "spot12",
-      name = "Cinder Flats 12",
-      x = 550.4,
-      y = 2.5,
-      z = 557.5
+      id = "spot7",
+      name = "Cinder Flats 7",
+      x = 723.9,
+      y = 11.8,
+      z = 143.6
     },
     {
       district = "mid",
-      id = "spot13",
-      name = "Old Saltgate 13",
-      x = 1007.1,
+      id = "spot8",
+      name = "Old Saltgate 8",
+      x = 1135.6,
       y = 2.6,
-      z = 310.5
-    },
-    {
-      district = "mid",
-      id = "spot14",
-      name = "Old Saltgate 14",
-      x = 195.6,
-      y = 2.4,
-      z = 435.2
-    },
-    {
-      district = "cinder",
-      id = "spot15",
-      name = "Cinder Flats 15",
-      x = 745.6,
-      y = 2.5,
-      z = 563.1
-    },
-    {
-      district = "mid",
-      id = "spot16",
-      name = "Old Saltgate 16",
-      x = 878.1,
-      y = 2.5,
-      z = 377.2
-    },
-    {
-      district = "brine",
-      id = "spot17",
-      name = "Brine Docks 17",
-      x = 588.8,
-      y = 3.2,
-      z = 170.1
-    },
-    {
-      district = "brine",
-      id = "spot18",
-      name = "Brine Docks 18",
-      x = 316.6,
-      y = 5.1,
-      z = 669
-    },
-    {
-      district = "gilt",
-      id = "spot19",
-      name = "Gilt Heights 19",
-      x = 565.7,
-      y = 47.1,
-      z = 413.2
-    },
-    {
-      district = "brine",
-      id = "spot20",
-      name = "Brine Docks 20",
-      x = 548.2,
-      y = 2.3,
-      z = 49.9
+      z = 373.1
     },
     {
       district = "lantern",
-      id = "spot21",
-      name = "Lantern Row 21",
-      x = 1043.8,
-      y = 12.3,
-      z = 521.4
-    },
-    {
-      district = "mid",
-      id = "spot22",
-      name = "Old Saltgate 22",
-      x = 304.2,
-      y = 2.9,
-      z = 543.3
-    },
-    {
-      district = "mid",
-      id = "spot23",
-      name = "Old Saltgate 23",
-      x = 439.6,
-      y = 2.5,
-      z = 543.4
-    },
-    {
-      district = "gilt",
-      id = "spot24",
-      name = "Gilt Heights 24",
-      x = 413.9,
-      y = 2.2,
-      z = 340
+      id = "spot9",
+      name = "Lantern Row 9",
+      x = 372.2,
+      y = 3.5,
+      z = 699.2
     },
     {
       district = "cinder",
-      id = "spot25",
-      name = "Cinder Flats 25",
-      x = 618.5,
-      y = 2.5,
-      z = 759.6
-    },
-    {
-      district = "cinder",
-      id = "spot26",
-      name = "Cinder Flats 26",
-      x = 625.6,
-      y = 2.6,
-      z = 636.3
-    },
-    {
-      district = "mid",
-      id = "spot27",
-      name = "Old Saltgate 27",
-      x = 138.1,
-      y = 2.8,
-      z = 538.9
-    },
-    {
-      district = "mid",
-      id = "spot28",
-      name = "Old Saltgate 28",
-      x = 1013.5,
+      id = "spot10",
+      name = "Cinder Flats 10",
+      x = 664.9,
       y = 2.7,
-      z = 415
-    },
-    {
-      district = "mid",
-      id = "spot29",
-      name = "Old Saltgate 29",
-      x = 293.7,
-      y = 2.3,
-      z = 386.5
+      z = 529.5
     },
     {
       district = "gilt",
-      id = "spot30",
-      name = "Gilt Heights 30",
-      x = 639.2,
-      y = 7.4,
-      z = 494.3
-    },
-    {
-      district = "gilt",
-      id = "spot31",
-      name = "Gilt Heights 31",
+      id = "spot11",
+      name = "Gilt Heights 11",
       x = 634.5,
       y = 15.2,
       z = 340
     },
     {
+      district = "mid",
+      id = "spot12",
+      name = "Old Saltgate 12",
+      x = 280,
+      y = 3.1,
+      z = 414.8
+    },
+    {
+      district = "mid",
+      id = "spot13",
+      name = "Old Saltgate 13",
+      x = 967,
+      y = 2.7,
+      z = 524.7
+    },
+    {
+      district = "mid",
+      id = "spot14",
+      name = "Old Saltgate 14",
+      x = 358.7,
+      y = 2.4,
+      z = 542.5
+    },
+    {
+      district = "brine",
+      id = "spot15",
+      name = "Brine Docks 15",
+      x = 601.5,
+      y = 3.5,
+      z = 67.7
+    },
+    {
+      district = "mid",
+      id = "spot16",
+      name = "Old Saltgate 16",
+      x = 498.2,
+      y = 2.8,
+      z = 584.3
+    },
+    {
+      district = "mid",
+      id = "spot17",
+      name = "Old Saltgate 17",
+      x = 1007.1,
+      y = 2.6,
+      z = 310.5
+    },
+    {
+      district = "gilt",
+      id = "spot18",
+      name = "Gilt Heights 18",
+      x = 476.6,
+      y = 7.1,
+      z = 302
+    },
+    {
+      district = "brine",
+      id = "spot19",
+      name = "Brine Docks 19",
+      x = 239.2,
+      y = 2.8,
+      z = 657.4
+    },
+    {
       district = "cinder",
+      id = "spot20",
+      name = "Cinder Flats 20",
+      x = 722.8,
+      y = 2.2,
+      z = 655.5
+    },
+    {
+      district = "lantern",
+      id = "spot21",
+      name = "Lantern Row 21",
+      x = 1093.6,
+      y = 8.1,
+      z = 513.5
+    },
+    {
+      district = "cinder",
+      id = "spot22",
+      name = "Cinder Flats 22",
+      x = 588.6,
+      y = 2.7,
+      z = 185.1
+    },
+    {
+      district = "mid",
+      id = "spot23",
+      name = "Old Saltgate 23",
+      x = 1020.5,
+      y = 2.7,
+      z = 427.7
+    },
+    {
+      district = "cinder",
+      id = "spot24",
+      name = "Cinder Flats 24",
+      x = 773.7,
+      y = 1.8,
+      z = 543.6
+    },
+    {
+      district = "lantern",
+      id = "spot25",
+      name = "Lantern Row 25",
+      x = 458,
+      y = 3,
+      z = 764.8
+    },
+    {
+      district = "gilt",
+      id = "spot26",
+      name = "Gilt Heights 26",
+      x = 578.4,
+      y = 34,
+      z = 441.8
+    },
+    {
+      district = "lantern",
+      id = "spot27",
+      name = "Lantern Row 27",
+      x = 615.9,
+      y = 2.4,
+      z = 621.6
+    },
+    {
+      district = "mid",
+      id = "spot28",
+      name = "Old Saltgate 28",
+      x = 250.9,
+      y = 5.3,
+      z = 514.4
+    },
+    {
+      district = "mid",
+      id = "spot29",
+      name = "Old Saltgate 29",
+      x = 868.6,
+      y = 1.4,
+      z = 522.6
+    },
+    {
+      district = "cinder",
+      id = "spot30",
+      name = "Cinder Flats 30",
+      x = 719.6,
+      y = 2.6,
+      z = 451
+    },
+    {
+      district = "mid",
+      id = "spot31",
+      name = "Old Saltgate 31",
+      x = 377.3,
+      y = 2.1,
+      z = 449.7
+    },
+    {
+      district = "mid",
       id = "spot32",
-      name = "Cinder Flats 32",
-      x = 684.7,
-      y = 8.4,
-      z = 178.5
+      name = "Old Saltgate 32",
+      x = 922.2,
+      y = 2.8,
+      z = 343.3
     },
     {
       district = "mid",
       id = "spot33",
       name = "Old Saltgate 33",
-      x = 470.8,
-      y = 11.4,
-      z = 443.5
+      x = 195.6,
+      y = 2.4,
+      z = 435.2
     },
     {
-      district = "mid",
+      district = "gilt",
       id = "spot34",
-      name = "Old Saltgate 34",
-      x = 1095.7,
-      y = 2.5,
-      z = 329.8
+      name = "Gilt Heights 34",
+      x = 529.8,
+      y = 38.7,
+      z = 368.8
     },
     {
-      district = "lantern",
+      district = "gilt",
       id = "spot35",
-      name = "Lantern Row 35",
-      x = 995,
-      y = 4.4,
-      z = 595.3
+      name = "Gilt Heights 35",
+      x = 408.1,
+      y = 2.3,
+      z = 351.6
     },
     {
       district = "mid",
       id = "spot36",
       name = "Old Saltgate 36",
-      x = 222.5,
-      y = 1.5,
-      z = 518.8
+      x = 290.4,
+      y = 2.9,
+      z = 588.3
     },
     {
       district = "mid",
       id = "spot37",
       name = "Old Saltgate 37",
-      x = 858.5,
-      y = 2.7,
-      z = 456.9
-    },
-    {
-      district = "mid",
-      id = "spot38",
-      name = "Old Saltgate 38",
       x = 399.5,
       y = 3.2,
       z = 612.9
     },
     {
-      district = "cinder",
-      id = "spot39",
-      name = "Cinder Flats 39",
-      x = 722.8,
-      y = 2.6,
-      z = 488
+      district = "mid",
+      id = "spot38",
+      name = "Old Saltgate 38",
+      x = 445.5,
+      y = 2.3,
+      z = 522.8
     },
     {
-      district = "cinder",
+      district = "lantern",
+      id = "spot39",
+      name = "Lantern Row 39",
+      x = 1014.1,
+      y = 8.3,
+      z = 598
+    },
+    {
+      district = "mid",
       id = "spot40",
-      name = "Cinder Flats 40",
-      x = 620.1,
-      y = 8.8,
-      z = 66.9
+      name = "Old Saltgate 40",
+      x = 212.9,
+      y = 2.5,
+      z = 585.9
     }
   },
   taxi = {
     {
-      district = "lantern",
-      h = -1.81,
+      district = "mid",
+      h = -2.04,
       id = "rank1",
       name = "Quay Rank",
-      x = 1097.6,
-      y = 10.2,
-      z = 530
+      x = 918.4,
+      y = 2.6,
+      z = 522.4
     },
     {
       district = "mid",
@@ -917,13 +917,13 @@ return {
       z = 538.9
     },
     {
-      district = "cinder",
-      h = -1.74,
+      district = "brine",
+      h = 1.43,
       id = "rank3",
       name = "Hill Rank",
-      x = 620.1,
-      y = 8.8,
-      z = 66.9
+      x = 548.2,
+      y = 2.3,
+      z = 49.9
     }
   },
   totems = {
@@ -979,9 +979,9 @@ return {
     {
       district = "lantern",
       id = "totem8",
-      x = 1100,
-      y = 1.8,
-      z = 652
+      x = 1108,
+      y = 1.4,
+      z = 644
     },
     {
       district = "gilt",
@@ -991,25 +991,25 @@ return {
       z = 348
     },
     {
-      district = "mid",
-      id = "totem10",
-      x = 260,
-      y = 1.6,
-      z = 380
-    },
-    {
       district = "cinder",
-      id = "totem11",
+      id = "totem10",
       x = 748,
       y = 1.1,
       z = 132
     },
     {
       district = "mid",
-      id = "totem12",
+      id = "totem11",
       x = 948,
       y = 1.3,
       z = 324
+    },
+    {
+      district = "mid",
+      id = "totem12",
+      x = 244,
+      y = 2.1,
+      z = 388
     },
     {
       district = "cinder",
@@ -1028,23 +1028,23 @@ return {
     {
       district = "lantern",
       id = "totem15",
-      x = 508,
+      x = 500,
       y = 2.4,
-      z = 628
-    },
-    {
-      district = "mid",
-      id = "totem16",
-      x = 292,
-      y = 0.8,
-      z = 548
+      z = 620
     },
     {
       district = "gilt",
-      id = "totem17",
+      id = "totem16",
       x = 524,
       y = 1.8,
       z = 276
+    },
+    {
+      district = "mid",
+      id = "totem17",
+      x = 292,
+      y = 0.8,
+      z = 548
     },
     {
       district = "lantern",
@@ -1061,18 +1061,18 @@ return {
       z = 668
     },
     {
-      district = "lantern",
-      id = "totem20",
-      x = 508,
-      y = 2.7,
-      z = 788
-    },
-    {
       district = "brine",
-      id = "totem21",
+      id = "totem20",
       x = 612,
       y = 16.4,
       z = 164
+    },
+    {
+      district = "lantern",
+      id = "totem21",
+      x = 972,
+      y = 1,
+      z = 628
     },
     {
       district = "gilt",
@@ -1084,9 +1084,9 @@ return {
     {
       district = "lantern",
       id = "totem23",
-      x = 964,
-      y = 1.4,
-      z = 620
+      x = 500,
+      y = 2.8,
+      z = 756
     },
     {
       district = "gilt",
@@ -1140,23 +1140,23 @@ return {
     {
       district = "mid",
       id = "totem31",
-      x = 356,
-      y = 2.3,
+      x = 348,
+      y = 2.5,
       z = 444
     },
     {
-      district = "cinder",
+      district = "lantern",
       id = "totem32",
-      x = 756,
-      y = 2.6,
-      z = 492
+      x = 612,
+      y = 2.5,
+      z = 668
     },
     {
       district = "cinder",
       id = "totem33",
-      x = 620,
-      y = 2.7,
-      z = 668
+      x = 756,
+      y = 2.6,
+      z = 492
     },
     {
       district = "mid",
@@ -1168,23 +1168,23 @@ return {
     {
       district = "mid",
       id = "totem35",
-      x = 180,
-      y = 1.8,
-      z = 452
-    },
-    {
-      district = "mid",
-      id = "totem36",
       x = 940,
       y = 2.6,
       z = 436
     },
     {
       district = "mid",
-      id = "totem37",
+      id = "totem36",
       x = 1052,
       y = 2.4,
       z = 388
+    },
+    {
+      district = "mid",
+      id = "totem37",
+      x = 172,
+      y = 2.8,
+      z = 476
     },
     {
       district = "gilt",
@@ -1201,81 +1201,81 @@ return {
       z = 540
     },
     {
-      district = "lantern",
-      id = "totem40",
-      x = 412,
-      y = 2.8,
-      z = 628
-    },
-    {
-      district = "mid",
-      id = "totem41",
-      x = 180,
-      y = 2.2,
-      z = 564
-    },
-    {
       district = "gilt",
-      id = "totem42",
+      id = "totem40",
       x = 524,
       y = 35,
       z = 364
     },
     {
-      district = "lantern",
-      id = "totem43",
-      x = 444,
-      y = 2.9,
-      z = 724
-    },
-    {
       district = "brine",
-      id = "totem44",
+      id = "totem41",
       x = 452,
       y = 1.8,
       z = 76
     },
     {
       district = "brine",
-      id = "totem45",
+      id = "totem42",
       x = 268,
       y = 1.2,
       z = 724
     },
     {
       district = "lantern",
-      id = "totem46",
-      x = 1060,
-      y = 24.8,
-      z = 572
+      id = "totem43",
+      x = 412,
+      y = 2.8,
+      z = 628
+    },
+    {
+      district = "mid",
+      id = "totem44",
+      x = 188,
+      y = 2.3,
+      z = 580
     },
     {
       district = "cinder",
-      id = "totem47",
+      id = "totem45",
       x = 756,
       y = 1.4,
       z = 580
     },
     {
       district = "lantern",
-      id = "totem48",
-      x = 532,
-      y = 2.4,
-      z = 708
-    },
-    {
-      district = "lantern",
-      id = "totem49",
+      id = "totem46",
       x = 956,
       y = 2.7,
       z = 532
     },
     {
       district = "mid",
-      id = "totem50",
+      id = "totem47",
       x = 260,
       y = 9.1,
       z = 468
+    },
+    {
+      district = "gilt",
+      id = "totem48",
+      x = 684,
+      y = 5.8,
+      z = 452
+    },
+    {
+      district = "brine",
+      id = "totem49",
+      x = 276,
+      y = 3.4,
+      z = 628
+    },
+    {
+      district = "lantern",
+      id = "totem50",
+      x = 1076,
+      y = 20.8,
+      z = 572
     }
   }
 }

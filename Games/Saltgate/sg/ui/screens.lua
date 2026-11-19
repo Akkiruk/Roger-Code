@@ -489,6 +489,12 @@ function M.install(ctx, deps)
     end
   end
 
+  -- a menu that fails to draw is left, not stuck in
+  local guard = require("sg.ui.guard")
+  for _, name in ipairs({ "e_menu", "e_stats", "e_title", "pause", "map" }) do
+    if ui.screens[name] then guard.screen(ctx, ui.screens[name]) end
+  end
+
   api.keys, api.settings_, api.transition = keys, settings, transition
   return api
 end

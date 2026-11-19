@@ -112,4 +112,4 @@ function P.draw(ctx)
   if ok and music and music.update then music.update(dt) end
 end
 
-return P
+return require("sg.ui.guard").plugin(P)

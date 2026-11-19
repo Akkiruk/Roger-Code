@@ -458,6 +458,14 @@ function M.check(l, chunks)
   for _, k in ipairs({ "totems", "postcards", "jumps", "taxi", "depots", "shops", "garages", "properties", "spots" }) do
     for _, item in ipairs(l[k] or {}) do on(item, k) end
   end
+  -- a totem or a postcard must stand on open ground (not in a building, on a road or in the sea)
+  for _, k in ipairs({ "totems", "postcards" }) do
+    for _, item in ipairs(l[k] or {}) do
+      if chunkAt(w, item.x, item.z) and not clear(w, item.x, item.z, 0.8) then
+        bad[#bad + 1] = k .. " " .. tostring(item.id) .. " is inside a building, on a road or in the water"
+      end
+    end
+  end
   for _, r in ipairs(l.races or {}) do
     local off = 0
     for i = 1, #r.pts, 3 do

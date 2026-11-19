@@ -416,6 +416,46 @@ t.test("keys: the key that opens a screen is not also read by that screen (ENTER
   t.truthy(ctx.screen.find("Resume"))
 end)
 
+t.test("guard: an error in a menu or a plugin is logged and left behind, the game goes on, and a broken screen is popped", function()
+  local guard = require("sg.ui.guard")
+  local ctx = game()
+  guard.strict = false
+  guard.seen = {}
+  -- a screen that fails to draw
+  ctx.ui.screen({ name = "e_broken", modal = true, draw = function() error("boom") end })
+  guard.screen(ctx, ctx.ui.screens.e_broken)
+  ctx.ui.push("e_broken")
+  frames(ctx)
+  t.eq(ctx.ui.top().name, "play", "the broken screen was popped")
+  t.truthy(#kit.logged > 0 and kit.logged[#kit.logged]:find("boom"), "and the error logged")
+  local n = #kit.logged
+  ctx.ui.push("e_broken")
+  frames(ctx)
+  t.eq(#kit.logged, n, "the same error is logged once")
+  -- a plugin that fails
+  local p = guard.plugin({ name = "e_bad", update = function() error("bad update") end, draw = function() error("bad draw") end })
+  p.update(ctx, 0.05)
+  p.draw(ctx)
+  t.truthy(kit.logged[#kit.logged]:find("bad draw"))
+  -- strict mode (the tests') lets errors through
+  guard.strict = true
+  t.truthy(not pcall(p.update, ctx, 0.05))
+end)
+
+t.test("transition: a respawn or a door cuts to somewhere else and the curtain draws back from it", function()
+  local ctx = game()
+  t.truthy(not ctx.eui.transition:active())
+  ctx.bus:emit("respawn", { place = "hospital" })
+  t.truthy(ctx.eui.transition:active())
+  t.near(ctx.eui.transition:amount(), 1, 1e-9, "closed at first, then opening")
+  ctx.eui.transition:update(0.2)
+  t.truthy(ctx.eui.transition:amount() < 0.6)
+  ctx.eui.transition:update(0.3)
+  t.truthy(not ctx.eui.transition:active())
+  ctx.bus:emit("interior_enter", { id = "noodle" })
+  t.truthy(ctx.eui.transition:active())
+end)
+
 t.test("title: the city turns behind the name; W/S with a tap and repeats move the cursor; ENTER opens settings; BACKSPACE returns", function()
   local ctx = kit.game()
   frames(ctx, 2)

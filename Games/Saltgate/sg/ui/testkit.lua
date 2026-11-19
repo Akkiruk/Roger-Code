@@ -93,6 +93,8 @@ end
 M.realFs = realFs
 
 --- Make the global `keys` table exist (CC has it; desktop Lua does not).
+require("sg.ui.guard").strict = true
+
 function M.installKeys()
   if rawget(_G, "keys") == nil then _G.keys = M.KEYS end
   -- sg/models.lua reads CC's colors table when it loads
@@ -132,6 +134,30 @@ function M.game(opts)
   ctx.failed = failed
   ctx.ui.push("play")
   return ctx
+end
+
+--- Take what stream B's plugin changes in the shared modules (vehicle types, the vehicle registry, the tune data), and put it
+-- back: tests that load b_vehicles must leave the others the game they expect when everything runs in one process.
+function M.snapshot()
+  local vehicle = require("sg.vehicle")
+  local types, traffic = {}, {}
+  for k, v in pairs(vehicle.TYPES) do types[k] = v end
+  for i, v in ipairs(vehicle.TRAFFIC_TYPES) do traffic[i] = v end
+  local ok, custom = pcall(require, "sg.vehicles.custom")
+  return { types = types, traffic = traffic, custom = ok and custom or nil, data = ok and custom.data or nil }
+end
+
+function M.restore(snap)
+  local vehicle = require("sg.vehicle")
+  for k in pairs(vehicle.TYPES) do
+    if snap.types[k] == nil then vehicle.TYPES[k] = nil end
+  end
+  for k, v in pairs(snap.types) do vehicle.TYPES[k] = v end
+  for i = #vehicle.TRAFFIC_TYPES, 1, -1 do vehicle.TRAFFIC_TYPES[i] = nil end
+  for i, v in ipairs(snap.traffic) do vehicle.TRAFFIC_TYPES[i] = v end
+  if snap.custom then snap.custom.data = snap.data end
+  vehicles.reset()
+  vehicles.registerLegacy()
 end
 
 --- A file system in memory, shaped like CC's fs (just what core/save.lua uses).

@@ -22,6 +22,13 @@ function T:start(onCovered, seconds, colour)
   return true
 end
 
+--- Only the opening half: the screen was cut to somewhere new (a respawn, a door) and the curtain draws back.
+function T:reveal(seconds, colour)
+  if self.phase then return false end
+  self.phase, self.t, self.dur, self.cb, self.colour = "reveal", 0, seconds or 0.3, nil, colour or C.black
+  return true
+end
+
 function T:active() return self.phase ~= nil end
 
 function T:update(dt)
