@@ -261,7 +261,7 @@ function V:scene(ctx)
   local list = {}
   local cam = self.cam
   local fx, fz = cos(cam.yaw), sin(cam.yaw)
-  local maxD = self.drawDistance or 260
+  local maxD = self.drawDistance or 190
   local wk = sky.WEATHER[self.sky.kind or "clear"]
   if wk and wk.fog > 0.5 then maxD = math.min(maxD, 150) elseif wk and wk.rain > 1 then maxD = math.min(maxD, 200) end
   local maxD2 = maxD * maxD

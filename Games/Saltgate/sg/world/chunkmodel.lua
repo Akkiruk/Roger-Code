@@ -297,7 +297,7 @@ local function building(list, b, c, ox, oz, lod)
       box(l, -0.8, roofY, -3, 0.8, roofY + 0.4, 3, C.red, C.red, C.red)
     end
     if band and h >= 5 and w >= 5 then
-      local count = min(st.dense and 4 or 2, floor((h - 1.5) / 3.6))
+      local count = min(st.dense and 3 or 1, floor((h - 1.5) / 3.6))
       if count >= 1 then
         local spacing = (h - 2) / max(1, count)
         for k = 0, count - 1 do
@@ -332,7 +332,6 @@ local function prop(list, p, c, ox, oz)
   elseif kind == "tree" then
     box(list, lx - 0.25, y, lz - 0.25, lx + 0.25, y + 2, lz + 0.25, C.brown, C.brown, C.brown, { noTop = true })
     shapes.pyramid(list, lx - 1.7, y + 1.6, lz - 1.7, lx + 1.7, lz + 1.7, 3.6, C.green, C.lime)
-    shapes.pyramid(list, lx - 1.2, y + 3.4, lz - 1.2, lx + 1.2, lz + 1.2, 2.6, C.lime, C.green)
   elseif kind == "palm" then
     box(list, lx - 0.18, y, lz - 0.18, lx + 0.18, y + 4.6, lz + 0.18, C.brown, C.brown, C.brown, { noTop = true })
     for k = 0, 3 do
@@ -475,8 +474,8 @@ function M.build(c, lod, yield, baseAt)
         end
       end
     elseif not deckish then
-      if not low and (kind == "road" or kind == "avenue" or kind == "highway") then
-        strip(list, pts, rd[4] + 3.2, 0.1, C.lightGray, ox, oz, 1)
+      if not low and (kind == "avenue" or kind == "highway") then
+        strip(list, pts, rd[4] + 3.2, 0.1, C.lightGray, ox, oz, 2)
       end
       strip(list, pts, rd[4], 0.25, ROAD_COLOUR[kind] or C.gray, ox, oz, every)
       if not low and (kind == "road" or kind == "avenue" or kind == "highway") then dashes(list, pts, ox, oz, C.yellow, 0.3) end
