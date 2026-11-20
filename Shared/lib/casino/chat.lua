@@ -24,7 +24,7 @@ local outbox = {}  -- { player, text, tries }, oldest first
 --- Find the chat box. Safe to call again whenever the peripherals change. Finding one is not a call on it, so this can run
 -- anywhere. Returns whether there is one.
 function M.scan()
-  box = peripheral.find("chatBox")
+  box = peripheral.find("chatBox") or peripheral.find("chat_box") -- the 1.21.1+ name
   if box and #outbox > 0 then os.queueEvent(WAKE) end
   return box ~= nil
 end

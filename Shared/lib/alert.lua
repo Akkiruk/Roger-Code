@@ -92,7 +92,7 @@ local function send(errorMsg)
 
   -- Lazy-init chatbox
   if not chatbox then
-    chatbox = peripherals.find("chatBox")
+    chatbox = peripherals.find("chatBox") or peripherals.find("chat_box")
   end
 
   if chatbox then
@@ -116,7 +116,7 @@ local function notifyPlayer(playerName, message)
 
   -- Lazy-init chatbox
   if not chatbox then
-    chatbox = peripherals.find("chatBox")
+    chatbox = peripherals.find("chatBox") or peripherals.find("chat_box")
   end
 
   if chatbox then

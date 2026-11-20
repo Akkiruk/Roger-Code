@@ -127,6 +127,25 @@ t("arcade: only a seated player acts, and nobody is seated for them", function()
   eq(seats.wallSeat({ red = { name = "Ann", wall = "left" }, blue = { name = "CPU", cpu = "hard", wall = "right" } }, "right"), nil)
 end)
 
+t("arcade: a player detector and chat box are found under either Advanced Peripherals name", function()
+  local hw = require("lib.arcade.hw")
+  local real = peripheral
+  for _, names in ipairs({ { "playerDetector", "chatBox" }, { "player_detector", "chat_box" } }) do
+    local attached = { det = names[1], box = names[2] }
+    _G.peripheral = {
+      getNames = function() return { "det", "box" } end,
+      getType = function(name) return attached[name] end,
+      wrap = function(name) return { name = name } end,
+    }
+    local ok, rep = pcall(hw.init)
+    _G.peripheral = real
+    truthy(ok, rep)
+    eq(rep.detector, "det", names[1])
+    eq(rep.chat, "box", names[2])
+  end
+  hw.init()
+end)
+
 t("arcade: a knockout of any size ends with one champion", function()
   for count = tournament.MIN, tournament.MAX do
     local names = {}

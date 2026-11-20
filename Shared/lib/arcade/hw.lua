@@ -55,9 +55,10 @@ function M.init(cfg)
       monitors[#monitors + 1] = { name = name, obj = m, w = w, h = h, area = w * h }
     elseif t == "speaker" and not state.speakerName then
       state.speakerName = name
-    elseif t == "playerDetector" and not state.detector then
+    -- Advanced Peripherals names them player_detector and chat_box from Minecraft 1.21.1 on
+    elseif (t == "playerDetector" or t == "player_detector") and not state.detector then
       state.detector, state.detectorName = peripheral.wrap(name), name
-    elseif t == "chatBox" and not state.chat then
+    elseif (t == "chatBox" or t == "chat_box") and not state.chat then
       state.chat, state.chatName = peripheral.wrap(name), name
     elseif t == "redstoneIntegrator" and not state.redstone then
       state.redstone, state.redstoneName = peripheral.wrap(name), name

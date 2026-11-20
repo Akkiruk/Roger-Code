@@ -25,7 +25,7 @@ end
 
 --- One look at the detector. Only call this from M.worker.
 local function poll(name)
-  local detector = peripheral.find("playerDetector")
+  local detector = peripheral.find("playerDetector") or peripheral.find("player_detector") -- the 1.21.1+ name
   local ok, players = false, nil
   if detector then ok, players = pcall(detector.getPlayersInRange, M.RANGE) end
   if name ~= watched then
