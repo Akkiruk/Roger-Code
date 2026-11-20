@@ -7,12 +7,12 @@
     "description": "Pocket casino shell for ComputerCraft pocket computers.",
     "source_root": "Apps/PhoneOS",
     "entrypoint": "startup.lua",
-    "version": "1.0.28"
+    "version": "1.0.29"
   },
   "build": {
-    "commit": "e889367f97ad8079b981dd14b3f291c9b822c519",
-    "generated_at": "2026-11-19T15:59:50Z",
-    "package_hash": "9abf68e9f432b3d00f5c9e8f889cb6cd851a5e95b897ca0c60a05deba6e11e9f"
+    "commit": "373cd80adc1262ba0ed5bc5161c77c6c5fa8813e",
+    "generated_at": "2026-11-20T01:51:39Z",
+    "package_hash": "cebea4315b802169fb97a65be08324865d26c674c3e9cdafc2ecbfb07bda1b11"
   },
   "install": {
     "preserve": [
@@ -73,7 +73,7 @@
       {
         "repo_path": "Shared/lib/alert.lua",
         "install_path": "lib/alert.lua",
-        "sha256": "3a2de54edd4ac3912c1ab3a97fc6b40be5dac89a9ef91a2c5d2ac7d427b96622"
+        "sha256": "ce880b86099a4216a83337673e2e00ac2432a81522b74f7fcb15fec4c9394fad"
       },
       {
         "repo_path": "Apps/PhoneOS/vhcc_lockdown.txt",

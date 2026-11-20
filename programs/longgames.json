@@ -7,12 +7,12 @@
     "description": "Oregon Trail, Tower of Druaga, a first-person dungeon crawl, Craft World and Cookie Clicker, with your progress saved between visits.",
     "source_root": "Games/LongGames",
     "entrypoint": "startup.lua",
-    "version": "1.0.24"
+    "version": "1.0.25"
   },
   "build": {
-    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
-    "generated_at": "2026-11-19T15:59:50Z",
-    "package_hash": "a939ab13dbc7064cd488653a332076d6797d54182605b0841f719b6885c49d59"
+    "commit": "373cd80adc1262ba0ed5bc5161c77c6c5fa8813e",
+    "generated_at": "2026-11-20T01:51:39Z",
+    "package_hash": "1077fe00c5eba96dea431d7dd37e76c8eee71baf5789477f5b8ca3365a1f6f2c"
   },
   "install": {
     "preserve": [],
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/arcade/hw.lua",
         "install_path": "lib/arcade/hw.lua",
-        "sha256": "73c89d6b163bfb04d44ee6229ca168934decd2321fc9519657ed17d06cc143cf"
+        "sha256": "38964dcfadfb743800678286cf7aac6ef5d08226b7c171058c161fcf8a53d473"
       },
       {
         "repo_path": "Shared/lib/arcade/journal.lua",

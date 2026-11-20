@@ -7,12 +7,12 @@
     "description": "Jacks or Better draw poker with payout and tutorial screens.",
     "source_root": "Games/VideoPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.104"
+    "version": "1.0.105"
   },
   "build": {
-    "commit": "edcbc156c0b6b832043fcaf5d1ae5096f969358a",
-    "generated_at": "2026-11-19T15:59:50Z",
-    "package_hash": "3aa66d229dc46388a5f6b3db43a8dcfc11e4df5ba9947b1378c0fd0e25f8b00f"
+    "commit": "373cd80adc1262ba0ed5bc5161c77c6c5fa8813e",
+    "generated_at": "2026-11-20T01:51:39Z",
+    "package_hash": "9f65c1753535109808df239e00052d437621d7527552b2679ee59fa4c81b6635"
   },
   "install": {
     "preserve": [],
@@ -55,7 +55,7 @@
       {
         "repo_path": "Shared/lib/casino/presence.lua",
         "install_path": "lib/casino/presence.lua",
-        "sha256": "d7f042c3b682f47e17beb84ba339e59373d0ebc11400dd3336473dd5bae1fc74"
+        "sha256": "2021c8035c7d66d49f3b62be1d069778ed65bfbf06b1b70941ec334c7f10a51b"
       },
       {
         "repo_path": "Shared/lib/casino/pretend.lua",
@@ -220,7 +220,7 @@
       {
         "repo_path": "Shared/lib/casino/chat.lua",
         "install_path": "lib/casino/chat.lua",
-        "sha256": "3a4e6ed1229448dbac276a1be6d2464c76d17ac745930171c6861d7de089e23f"
+        "sha256": "8abeb6bfe70b794960199096ab5841f35619e1877003da388b6db8d25d0ce433"
       },
       {
         "repo_path": "Shared/lib/casino/deck.lua",
