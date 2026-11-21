@@ -16,3 +16,9 @@ emulator/
 # OS files
 Thumbs.db
 .DS_Store
+
+AGENTS.md
+CLAUDE.md
+.claude/
+.github/copilot-instructions.md
+.github/instructions/

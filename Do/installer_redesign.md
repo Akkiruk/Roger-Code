@@ -1,6 +1,6 @@
 # Installer And Auto-Updater Redesign
 
-Status: done and live (all five migration phases). The deploy index is built by `scripts/build-deploy-index.ps1`, published to the `deploy-index` branch on every push to `main` by `.github/workflows/publish-deploy-index.yml`, and consumed by `System/installer.lua` and `Shared/lib/updater.lua`. `Games/manifest.json` no longer exists. `AGENTS.md` describes the flow as it runs today. This document is kept as the design record; the Open Questions at the end are settled.
+Status: done and live (all five migration phases). The deploy index is built by `scripts/build-deploy-index.ps1`, published to the `deploy-index` branch on every push to `main` by `.github/workflows/publish-deploy-index.yml`, and consumed by `System/installer.lua` and `Shared/lib/updater.lua`. `Games/manifest.json` no longer exists. This document is kept as the design record; the Open Questions at the end are settled.
 
 ## Goals
 
