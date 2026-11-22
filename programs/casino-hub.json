@@ -7,12 +7,12 @@
     "description": "The casino's central board: shared jackpot, leaderboards, each game's measured return, and the tables on the floor.",
     "source_root": "Games/CasinoHub",
     "entrypoint": "startup.lua",
-    "version": "1.0.15"
+    "version": "1.0.16"
   },
   "build": {
-    "commit": "373cd80adc1262ba0ed5bc5161c77c6c5fa8813e",
-    "generated_at": "2026-11-21T03:54:04Z",
-    "package_hash": "d4f7fad21898e09cbfce57e8cba0e26a78ef4eea43d8a910c6420a432d931aab"
+    "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
+    "generated_at": "2026-11-22T19:13:42Z",
+    "package_hash": "33526e85b64428979782cf66a8e55fa088a0502c3d00b550005080ad710470fa"
   },
   "install": {
     "preserve": [],
@@ -45,7 +45,7 @@
       {
         "repo_path": "Shared/lib/casino/stats.lua",
         "install_path": "lib/casino/stats.lua",
-        "sha256": "39f1ec7e85cc28f12deb8dc608779e64380bc43248844600767bc483979c1b00"
+        "sha256": "4280a14969921201ef0346ce3941f795c9fb57e7b188f79c03faa3d03229db6b"
       },
       {
         "repo_path": "Shared/lib/casino/net.lua",

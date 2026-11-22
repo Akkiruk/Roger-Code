@@ -7,12 +7,12 @@
     "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
     "source_root": "Games/Casino",
     "entrypoint": "startup.lua",
-    "version": "1.0.19"
+    "version": "1.0.20"
   },
   "build": {
-    "commit": "373cd80adc1262ba0ed5bc5161c77c6c5fa8813e",
-    "generated_at": "2026-11-21T03:54:04Z",
-    "package_hash": "fdf51483973b9945e6f456ba4b22ac30dcdf8c5b743c34aca4ebdd412c23534d"
+    "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
+    "generated_at": "2026-11-22T19:13:42Z",
+    "package_hash": "364f49adee932a6147b2546bf5c852cf0771f8885fe311f12ad466c38269b34a"
   },
   "install": {
     "preserve": [],
@@ -155,7 +155,7 @@
       {
         "repo_path": "Shared/lib/casino/stats.lua",
         "install_path": "lib/casino/stats.lua",
-        "sha256": "39f1ec7e85cc28f12deb8dc608779e64380bc43248844600767bc483979c1b00"
+        "sha256": "4280a14969921201ef0346ce3941f795c9fb57e7b188f79c03faa3d03229db6b"
       },
       {
         "repo_path": "Shared/lib/casino/session.lua",
@@ -360,7 +360,7 @@
       {
         "repo_path": "Games/PokerTable/pokertable_app.lua",
         "install_path": "pokertable_app.lua",
-        "sha256": "3a451d6f532600c4ac0bc75182266034d9c8f59d7e006f45eccf9c62b1eee7cf"
+        "sha256": "5e061570b3edd3fb7da983c35dac7c3cc10d52b44eee7beed886152af87de42e"
       },
       {
         "repo_path": "Games/HorseRacing/horseracing_view.lua",
