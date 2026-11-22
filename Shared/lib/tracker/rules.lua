@@ -130,7 +130,9 @@ local function onStats(d, sender, m)
       }
     end
   end
-  d.tables[id] = { game = game, title = text(m.title, MAX_TEXT) or titled(game), players = players, cabinet = text(m.cabinet, MAX_TEXT) }
+  -- one record per game, not per computer: a Casino cabinet keeps a file for each of its games and answers with whichever is up
+  d.tables[id] = nil -- kept by computer alone before
+  d.tables[id .. "/" .. game] = { computer = id, game = game, title = text(m.title, MAX_TEXT) or titled(game), players = players, cabinet = text(m.cabinet, MAX_TEXT) }
   return true
 end
 

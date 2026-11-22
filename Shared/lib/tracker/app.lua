@@ -266,7 +266,14 @@ local function drawRecover(out, d, t, w, h, ui)
   y = y + 2
   local ids = {}
   for id, cab in pairs(d.cabinets or {}) do ids[#ids + 1] = { id = tonumber(id) or id, label = cab.label, kind = "cabinet" } end
-  for id, tab in pairs(d.tables or {}) do ids[#ids + 1] = { id = tonumber(id) or id, label = tab.cabinet, kind = tab.title or "table" } end
+  local listed = {}
+  for id, tab in pairs(d.tables or {}) do
+    local n = tab.computer or id
+    if not listed[n] then
+      listed[n] = true
+      ids[#ids + 1] = { id = tonumber(n) or n, label = tab.cabinet, kind = tab.title or "table" }
+    end
+  end
   table.sort(ids, function(a, b)
     if type(a.id) == "number" and type(b.id) == "number" then return a.id < b.id end
     return tostring(a.id) < tostring(b.id)

@@ -29,7 +29,8 @@
 -- On Duel the walls are on this computer, so there is no seat book: a move is books.move, as on a Poker Table.
 --
 -- A free cabinet (cabinet.free, Game Night) has no money at all: nobody buys in or approves, nothing goes in the book, no order is
--- ever sent, and the stats, the session notes and the hub hear nothing. A seat is a name and a count of wins. Every money step
+-- ever sent, and the session notes and the hub hear nothing. The stats get each game at 0 wagered, for the play tracker. A seat
+-- is a name and a count of wins. Every money step
 -- below checks self.free first, and lib/casino/group/free.lua swaps the wallet and the books for stand-ins that refuse to move a
 -- token, so a call missed here fails instead of reaching ccvault.
 --
@@ -499,6 +500,9 @@ function Dealer:finishBooks(round)
   end
 
   if self.free then
+    -- no money, but the tracker still wants who played and for how long
+    local length = round.started and os.epoch("utc") - round.started
+    for _, entry in ipairs(round.entries) do stats.record(entry.name, 0, 0, round.id .. entry.name, length) end
     for _, name in ipairs(dropped) do self:leaving(name) end
     round.phase = "closed"
     journal.saveRound(round)
@@ -1086,6 +1090,7 @@ function Dealer:deal()
     spent = spent,
     phase = "open",
     timedOut = {},
+    started = os.epoch("utc"),
   }
   self:save()
   journal.saveRound(round)
@@ -2470,7 +2475,8 @@ end
 local function open(cabinet, localMode)
   audio.init()
   local modem = link.open()
-  net.open()
+  -- the play tracker gets nothing from a table that never said which game it is
+  net.open(cabinet.key, (cabinet.title:lower():gsub("(%a)(%w*)", function(a, b) return a:upper() .. b end)))
   chat.scan()
   local keep = journal.loadKeep()
   local self = setmetatable({

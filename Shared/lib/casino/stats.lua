@@ -37,7 +37,8 @@ local function firstTime(data, tag)
 end
 
 --- Add a round to a player's record. A tag makes this safe to repeat: the note and the record land in one write.
-function M.record(name, wagered, net, tag)
+--- length, if the caller knows it, is how long the round itself took: a long board game is more than a minute's sitting.
+function M.record(name, wagered, net, tag, length)
   local data = load()
   if not firstTime(data, tag) then return nil end
   local player = data.players[name] or { rounds = 0, wagered = 0, net = 0, best = 0 }
@@ -50,7 +51,9 @@ function M.record(name, wagered, net, tag)
   local gap = player.last and at - player.last
   if not gap or gap < 0 or gap > SITTING_GAP_MS then
     player.sessions = (player.sessions or 0) + 1
-    player.ms = (player.ms or 0) + FIRST_ROUND_MS
+    local first = FIRST_ROUND_MS
+    if type(length) == "number" and length > first and length < 6 * 3600000 then first = length end
+    player.ms = (player.ms or 0) + first
   else
     player.ms = (player.ms or 0) + gap
   end

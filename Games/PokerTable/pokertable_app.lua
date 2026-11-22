@@ -1158,7 +1158,7 @@ end
 --- opts.back, on a cabinet: leave this game for the menu. It never returns.
 function M.run(opts)
   audio.init()
-  net.open()
+  net.open("pokertable", "Poker Table")
   chat.scan()
   local self = setmetatable({ back = opts and opts.back, keep = journal.loadKeep(), ctx = { title = TITLE } }, App)
   self.monitorName = board.largest()
