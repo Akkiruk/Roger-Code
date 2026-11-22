@@ -2129,6 +2129,8 @@ function Shop:sellScan(again, as)
       view.returns[#view.returns + 1] = { slot = slot, key = key, label = piece.label }
     else
       local yes, why = rules.accepts(piece, self.cfg)
+      -- a bag nothing here can open (no unpacker, a server without listContents) isn't junk, the gear is just inside
+      if not yes and M.isBag(detail.name) then why = "empty it first" end
       if yes then
         view.accepted[#view.accepted + 1] = { slot = slot, key = key, label = piece.label, level = piece.level, grade = rules.grade(piece) }
       else
