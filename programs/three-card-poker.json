@@ -7,12 +7,12 @@
     "description": "Ante and Play against the dealer, with an Ante Bonus and a Pair Plus side bet.",
     "source_root": "Games/ThreeCardPoker",
     "entrypoint": "startup.lua",
-    "version": "1.0.22"
+    "version": "1.0.23"
   },
   "build": {
-    "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
-    "generated_at": "2026-11-26T03:53:18Z",
-    "package_hash": "3eec82e6b4f2bb6e404a5852cf07feaf7bf0d6fb887ae55b0ffbc5983c8a22b3"
+    "commit": "7a0c2664197ce54561963221e200d1b330b76346",
+    "generated_at": "2026-11-26T04:08:01Z",
+    "package_hash": "cbf23b08582f1718df7396270be21b0935ab3218741edd7727f93a6def4fe37b"
   },
   "install": {
     "preserve": [],
@@ -80,7 +80,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
+        "sha256": "024ceae7821f794003b719eead0db0cfb55bc3a7b5fea692d33601d74ac9f7ce"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",

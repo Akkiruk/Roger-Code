@@ -7,12 +7,12 @@
     "description": "Higher or lower through one deck, with every guess priced from the cards left.",
     "source_root": "Games/HiLo",
     "entrypoint": "startup.lua",
-    "version": "1.0.111"
+    "version": "1.0.112"
   },
   "build": {
-    "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
-    "generated_at": "2026-11-26T03:53:18Z",
-    "package_hash": "04a8fd8550615752b7ec4ed4872bd8397a30e9246d791d331a044f7099c4406c"
+    "commit": "7a0c2664197ce54561963221e200d1b330b76346",
+    "generated_at": "2026-11-26T04:08:01Z",
+    "package_hash": "dc7fc9c7deb1c0339f50f4e9a0b300ec7990d951f66256d3d54f2f4dd27354c6"
   },
   "install": {
     "preserve": [],
@@ -75,7 +75,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
+        "sha256": "024ceae7821f794003b719eead0db0cfb55bc3a7b5fea692d33601d74ac9f7ce"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",

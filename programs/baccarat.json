@@ -7,12 +7,12 @@
     "description": "Eight-deck baccarat with Player, Banker and Tie bets.",
     "source_root": "Games/Baccarat",
     "entrypoint": "startup.lua",
-    "version": "1.2.101"
+    "version": "1.2.102"
   },
   "build": {
-    "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
-    "generated_at": "2026-11-26T03:53:18Z",
-    "package_hash": "9154816db657ea546bcd5806f25765998acb445ef71f6a46551c29b97f8112d3"
+    "commit": "7a0c2664197ce54561963221e200d1b330b76346",
+    "generated_at": "2026-11-26T04:08:01Z",
+    "package_hash": "47c6ce4984e877632e91ac9b1ca5d3c67cea6d5df6e3e9765960e3205c5296c4"
   },
   "install": {
     "preserve": [],
@@ -75,7 +75,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
+        "sha256": "024ceae7821f794003b719eead0db0cfb55bc3a7b5fea692d33601d74ac9f7ce"
       },
       {
         "repo_path": "Shared/lib/casino/theme.lua",

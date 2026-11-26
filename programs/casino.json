@@ -7,12 +7,12 @@
     "description": "Every single-player casino game on one cabinet: pick a game from the menu, and it plays just as its own table does.",
     "source_root": "Games/Casino",
     "entrypoint": "startup.lua",
-    "version": "1.0.20"
+    "version": "1.0.21"
   },
   "build": {
-    "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
-    "generated_at": "2026-11-26T03:53:18Z",
-    "package_hash": "364f49adee932a6147b2546bf5c852cf0771f8885fe311f12ad466c38269b34a"
+    "commit": "7a0c2664197ce54561963221e200d1b330b76346",
+    "generated_at": "2026-11-26T04:08:01Z",
+    "package_hash": "10ed5157908ba715ab158255f3d12942446582ae7e292f52703c39ecb6875b06"
   },
   "install": {
     "preserve": [],
@@ -150,7 +150,7 @@
       {
         "repo_path": "Shared/lib/casino/table.lua",
         "install_path": "lib/casino/table.lua",
-        "sha256": "779bffe34f6c34892cbab2622b31a3d75a30c57c3edf4a88eac8728f526bf454"
+        "sha256": "024ceae7821f794003b719eead0db0cfb55bc3a7b5fea692d33601d74ac9f7ce"
       },
       {
         "repo_path": "Shared/lib/casino/stats.lua",
@@ -230,7 +230,7 @@
       {
         "repo_path": "Games/Blackjack/blackjack_game.lua",
         "install_path": "blackjack_game.lua",
-        "sha256": "ab3241ca3fd66fb2d46755a1bcce2e8b5968a1bcf16f7eb4e583b4567877dc83"
+        "sha256": "5d97d817818b9fce21052296cd2640c6a3c19f3da38a4c9ce43f3dad11bded43"
       },
       {
         "repo_path": "Games/Baccarat/baccarat_view.lua",
