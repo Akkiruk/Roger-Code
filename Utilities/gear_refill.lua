@@ -1,9 +1,13 @@
 -- manifest-name: Gear Refill
 -- manifest-description: Command computer only. Copies one template gear piece into a chest as every gear type, to replace the gear the Gear Locker lost.
--- Runs on a command computer. A chest on top holds the template (slot 1): a blank piece given the level, rarity and
--- legendary flag by hand. The chest underneath gets the copies; an AE2 import bus on it takes them into the ME.
--- Copies go through /data (template -> command storage -> chest), so the gear data is copied as is, never rebuilt.
--- Both chests need to be plain ones that keep an Items list (vanilla chest or barrel).
+-- Runs on a command computer:
+--   top     a plain chest or barrel with the template in slot 1 (a blank piece given level, rarity and legendary by hand)
+--   bottom  a plain chest or barrel the copies are made in
+--   any other side (optional)  where they go: a netherite barrel or anything else. Without one, an AE2 import bus on the
+--           bottom chest can take them.
+-- Copies go through /data (template -> command storage -> bottom chest), so the gear data is copied as is, never
+-- rebuilt. /data only reaches plain chests and barrels, so the Sophisticated ones can only be the destination; the
+-- move there is a normal item move, which keeps the data.
 --
 --   gear_refill test    one of each type, then stops so they can be checked
 --   gear_refill         everything still owed
@@ -19,10 +23,48 @@ local OWED = {
 local TEMPLATE, OUT = "~ ~1 ~", "~ ~-1 ~"
 local STORE = "roger:gear_refill"
 local DONE_FILE = "gear_refill_done.txt"
+local PATH = "Utilities/gear_refill.lua"
+
+local args = { ... }
+
+-- update from main before doing anything; by commit, since the raw CDN can hand out an old copy for minutes
+local function update()
+  if not http or args[1] == "noupdate" then return false end
+  local h = http.get("https://api.github.com/repos/Akkiruk/Roger-Code/commits/main")
+  if not h then return false end
+  local sha = (h.readAll() or ""):match('"sha"%s*:%s*"(%x+)"')
+  h.close()
+  if not sha then return false end
+  h = http.get("https://raw.githubusercontent.com/Akkiruk/Roger-Code/" .. sha .. "/" .. PATH)
+  if not h then return false end
+  local new = h.readAll()
+  h.close()
+  local me = shell.getRunningProgram()
+  local f = fs.open(me, "r")
+  local old = f.readAll()
+  f.close()
+  if not new or #new < 100 or new == old or not load(new) then return false end
+  f = fs.open(me, "w")
+  f.write(new)
+  f.close()
+  print("Updated to " .. sha:sub(1, 7))
+  return true
+end
+
+if update() then
+  shell.run(shell.getRunningProgram(), "noupdate", table.unpack(args))
+  return
+end
+if args[1] == "noupdate" then table.remove(args, 1) end
 
 if not commands then error("This needs a command computer.", 0) end
 local out = peripheral.wrap("bottom")
-if not out or not out.list then error("Put the output chest under this computer.", 0) end
+if not out or not out.list then error("Put a plain chest or barrel under this computer.", 0) end
+local dest, destName
+for _, side in ipairs({ "left", "right", "front", "back" }) do
+  local p = peripheral.wrap(side)
+  if p and p.list and p.size then dest, destName = p, side break end
+end
 
 local function loadDone()
   if not fs.exists(DONE_FILE) then return {} end
@@ -41,17 +83,19 @@ end
 
 local function run(cmd)
   local ok, lines = commands.exec(cmd)
-  if not ok then error("Command failed: " .. cmd .. "\n" .. table.concat(lines or {}, "\n"), 0) end
+  local text = table.concat(lines or {}, "\n")
+  -- /data says this when the value was already right
+  if not ok and not text:find("Nothing changed", 1, true) then error("Command failed: " .. cmd .. "\n" .. text, 0) end
   return lines
 end
 
-local mode = ... or "all"
+local mode = args[1] or "all"
 
 if mode == "status" then
   local total, left = 0, 0
   for _, row in ipairs(OWED) do
     local n = done[row[1]] or 0
-    print(("%-22s %4d / %d"):format(row[1]:gsub("^the_vault:", ""), n, row[2]))
+    print(("%-12s %4d / %d"):format(row[1]:gsub("^the_vault:", ""), n, row[2]))
     total, left = total + n, left + row[2] - n
   end
   print(("%d made, %d to go"):format(total, left))
@@ -60,10 +104,16 @@ end
 
 local tpl = peripheral.wrap("top")
 local first = tpl and tpl.getItemDetail and tpl.getItemDetail(1)
-if not first then error("Put the template piece in slot 1 of the chest on top.", 0) end
+if not first then error("Put the template piece in slot 1 of a plain chest or barrel on top.", 0) end
 local vd = first.vaultData
 if type(vd) == "table" and vd.level ~= 100 then
   print("Warning: the template is level " .. tostring(vd.level) .. ", not 100.")
+end
+print(dest and ("Copies go to the " .. destName .. ".") or "No destination on the sides: copies stay in the chest below.")
+
+-- whatever a stopped run left below goes on first
+if dest then
+  for slot in pairs(out.list()) do out.pushItems(destName, slot) end
 end
 
 local function freeSlot()
@@ -73,17 +123,29 @@ local function freeSlot()
   end
 end
 
-local function place()
-  local slot = freeSlot()
-  while not slot do
-    -- full: the import bus empties it
+local function waitFor(what, check)
+  local said = false
+  local v = check()
+  while not v do
+    if not said then print(what) said = true end
     sleep(1)
-    slot = freeSlot()
+    v = check()
   end
-  -- /item replace refused the template chest ("not a container"), so the copy goes through command storage
+  return v
+end
+
+local function place(id)
+  local slot = waitFor("The chest below is full, waiting...", freeSlot)
   run(("data modify storage %s item.Slot set value %db"):format(STORE, slot - 1))
   run(("data modify block %s Items append from storage %s item"):format(OUT, STORE))
-  return slot
+  local d = out.getItemDetail(slot)
+  if not d or d.name ~= id then error("The copy in slot " .. slot .. " isn't " .. id .. ", stopping.", 0) end
+  if dest then
+    -- gone from the slot some other way (an import bus) counts as delivered too
+    waitFor("The " .. destName .. " is full, waiting...", function()
+      return out.pushItems(destName, slot) == 1 or out.getItemDetail(slot) == nil
+    end)
+  end
 end
 
 for _, row in ipairs(OWED) do
@@ -94,11 +156,7 @@ for _, row in ipairs(OWED) do
     run(("data modify storage %s item set from block %s Items[{Slot:0b}]"):format(STORE, TEMPLATE))
     run(('data modify storage %s item.id set value "%s"'):format(STORE, id))
     while have < want do
-      local slot = place()
-      if have == 0 then
-        local d = out.getItemDetail(slot)
-        if not d or d.name ~= id then error("The copy in slot " .. slot .. " isn't " .. id .. ", stopping.", 0) end
-      end
+      place(id)
       have = have + 1
       done[id] = have
       saveDone()
@@ -108,8 +166,7 @@ for _, row in ipairs(OWED) do
 end
 
 if mode == "test" then
-  print("One of each is in the chest below. Check them, then run gear_refill for the rest.")
-  -- the test pieces count, so the full run makes one fewer of each
+  print("One of each is made. Check them, then run gear_refill for the rest.")
 else
   print("All done.")
 end
