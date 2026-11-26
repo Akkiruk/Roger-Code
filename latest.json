@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-26T04:10:01Z",
+  "generated_at": "2026-11-26T04:21:13Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "45fbfe9bb71532c1eabba774c1622c36e1bab9d7",
+    "commit": "b256db7f16d170b510b4ea9c80a881b69c27a9e3",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -152,9 +152,9 @@
       "name": "Gear Locker",
       "category": "Utilities",
       "description": "Your own vault gear in AE2: finds the bad gear and pulls it to a junk chest, and shows the best upgrade per slot from what's in your ME system. Needs an ME Bridge, a monitor and three chests (staging, junk, pickup). The chests can sit on node computers linked by ender modem: install this on each node too and pick \"node\".",
-      "version": "1.0.5",
-      "commit": "45fbfe9bb71532c1eabba774c1622c36e1bab9d7",
-      "package_hash": "60c9ba6cf0d0398034bdce49124fa5e2661b6048f8d5f3e11ecffd3092b946fb",
+      "version": "1.0.6",
+      "commit": "b256db7f16d170b510b4ea9c80a881b69c27a9e3",
+      "package_hash": "69a8516624e2be9e9b1f745fd185aa6b851971230e7d9036f2ef60efcdd698f7",
       "spec_path": "programs/gearlocker.json"
     },
     "gearshop": {

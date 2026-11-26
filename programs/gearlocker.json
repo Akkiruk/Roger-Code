@@ -7,12 +7,12 @@
     "description": "Your own vault gear in AE2: finds the bad gear and pulls it to a junk chest, and shows the best upgrade per slot from what's in your ME system. Needs an ME Bridge, a monitor and three chests (staging, junk, pickup). The chests can sit on node computers linked by ender modem: install this on each node too and pick \"node\".",
     "source_root": "Apps/GearLocker",
     "entrypoint": "startup.lua",
-    "version": "1.0.5"
+    "version": "1.0.6"
   },
   "build": {
-    "commit": "45fbfe9bb71532c1eabba774c1622c36e1bab9d7",
-    "generated_at": "2026-11-26T04:10:01Z",
-    "package_hash": "60c9ba6cf0d0398034bdce49124fa5e2661b6048f8d5f3e11ecffd3092b946fb"
+    "commit": "b256db7f16d170b510b4ea9c80a881b69c27a9e3",
+    "generated_at": "2026-11-26T04:21:13Z",
+    "package_hash": "69a8516624e2be9e9b1f745fd185aa6b851971230e7d9036f2ef60efcdd698f7"
   },
   "install": {
     "preserve": [],
@@ -60,7 +60,7 @@
       {
         "repo_path": "Shared/lib/gearlocker/app.lua",
         "install_path": "lib/gearlocker/app.lua",
-        "sha256": "5027eeeb1260ab6df246e2378c136190ffdc77c726fa6f2776ea909fc7ad1094"
+        "sha256": "3a935000e3a3124e3224fa0aab0188b5485baf926e380e6c7903dfd76e3cedc9"
       },
       {
         "repo_path": "Shared/lib/crashreport.lua",
