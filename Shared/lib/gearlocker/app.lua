@@ -184,7 +184,33 @@ local function askRole()
   end
 end
 
+-- Off until the ME moves are proven to keep vault gear data: on the live server they came back unidentified, level 0.
+-- Nothing here touches a peripheral's items while this is set.
+M.DISABLED = true
+
+local function disabled()
+  local lines = { "GEAR LOCKER IS OFF", "", "It damaged gear moving it in and out of AE2.",
+    "It won't move anything until that's fixed.", "Your ME and chests are left alone." }
+  local function show(t)
+    pcall(function()
+      t.setBackgroundColor(colors.black)
+      t.clear()
+      for i, line in ipairs(lines) do
+        t.setTextColor(i == 1 and colors.red or colors.white)
+        t.setCursorPos(2, i + 1)
+        t.write(line)
+      end
+    end)
+  end
+  show(term.current())
+  for _, name in ipairs(peripheral.getNames()) do
+    if peripheral.hasType(name, "monitor") then show(peripheral.wrap(name)) end
+  end
+  while true do os.pullEvent() end
+end
+
 function M.run(opts)
+  if M.DISABLED and not (opts and opts.allowDisabled) then return disabled() end
   opts = opts or {}
   local L = (opts.Locker or Locker).new(opts.locker or {})
   local cfg = L.cfg
