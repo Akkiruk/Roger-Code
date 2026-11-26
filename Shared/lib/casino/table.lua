@@ -34,7 +34,7 @@
 --   and the engine keeps that seed and its hash in keep, shows only the hash until the shoe is finished, and then shows
 --   both on the FAIR page. A round's own seed drives no cards once a shoe is running, so it is never offered as proof.
 --   demo (optional): how the idle screen plays a round, or false for none. See demo.lua.
---   hint (optional): false takes the HINT button off this table. }
+--   hint (optional): false takes the HINT button off this table, "practice" shows it only on a practice seat. }
 --
 -- A table is one monitor and nothing else. Everything below is optional, and with none of it a table plays the same:
 --   a smaller monitor   the scoreboard (board.lua). Touches on it are ignored
@@ -1157,7 +1157,8 @@ function Table:playRound(round, stream, firstEvents)
       end
       local regions = view.regions and view.regions(model, round.state) or {}
       -- With one thing to press there is no decision to advise on, as at a blackjack reveal
-      if rules.hint and game.hint ~= false and choices + #regions > 1 and #specs <= HINT_MAX_ACTIONS then
+      local hintHere = game.hint ~= false and (game.hint ~= "practice" or (self.pretend and self.pretend.kind == "practice"))
+      if rules.hint and hintHere and choices + #regions > 1 and #specs <= HINT_MAX_ACTIONS then
         specs[#specs + 1] = { id = "hint", label = "HINT", color = C.panel2 }
       end
       ui.actionBar(c, s.buttons, specs)
