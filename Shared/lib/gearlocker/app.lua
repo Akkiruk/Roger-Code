@@ -1,14 +1,73 @@
 -- gearlocker/app.lua
 -- The Gear Locker on one player's base: first-run setup on the terminal, then the pages from ui.lua on the monitor
 -- (the terminal shows the same pages). One worker does everything slow (scan, pull, take) so a touch never waits on it.
+-- The chests can sit on node computers: the locker links them through its ender modem (vhcctweaks 2.2.36) and uses
+-- their chests as "<id>:<name>". Links aren't saved by the server, so every boot links cfg.nodes again.
 
 local Locker = require("lib.gearlocker.locker")
 local judge = require("lib.gearlocker.judge")
 local ui = require("lib.gearlocker.ui")
+local node = require("lib.gearlocker.node")
 
 local M = {}
 
 local RESCAN = 180
+
+local function enderModem()
+  for _, name in ipairs(peripheral.getNames()) do
+    if not name:match("^%d+:") and peripheral.hasType(name, "modem") then
+      for _, method in ipairs(peripheral.getMethods(name) or {}) do
+        if method == "link" then return name end
+      end
+    end
+  end
+end
+
+-- links every saved node that isn't yet; returns what went wrong, or nil
+local function linkNodes(cfg, linked)
+  local trouble
+  for _, id in ipairs(cfg.nodes or {}) do
+    if not linked[id] then
+      local modem = enderModem()
+      local ok, done, why = false, false, "no ender modem on this computer"
+      if modem then ok, done, why = pcall(peripheral.call, modem, "link", id) end
+      if ok and done == true then
+        linked[id] = true
+      else
+        trouble = "computer " .. id .. ": " .. tostring(ok and why or done)
+      end
+    end
+  end
+  return trouble
+end
+
+local function findNodes(cfg, linked)
+  local modem = enderModem()
+  if not modem then
+    print("No ender modem here, so only chests on this computer.")
+    return
+  end
+  rednet.open(modem)
+  rednet.broadcast({ kind = "who" }, node.PROTOCOL)
+  local known = {}
+  for _, id in ipairs(cfg.nodes or {}) do known[id] = true end
+  local stop = os.startTimer(2)
+  while true do
+    local ev, a, b, c = os.pullEvent()
+    if ev == "timer" and a == stop then break end
+    if ev == "rednet_message" and c == node.PROTOCOL and type(b) == "table" and b.kind == "node" and not known[a] then
+      known[a] = true
+      cfg.nodes = cfg.nodes or {}
+      table.insert(cfg.nodes, a)
+    end
+  end
+  table.sort(cfg.nodes or {})
+  local trouble = linkNodes(cfg, linked)
+  print("Nodes: " .. (#(cfg.nodes or {}) > 0 and table.concat(cfg.nodes, ", ") or "none found"))
+  if trouble then print("Couldn't link " .. trouble) end
+  -- the linked chests show up as peripheral events
+  sleep(0.5)
+end
 
 local function inventories(skip)
   local out = {}
@@ -62,8 +121,10 @@ local function pickChest(what, skip)
   return picked
 end
 
-local function setup(L)
+local function setup(L, linked, again)
   local cfg = L.cfg
+  term.setBackgroundColor(colors.black)
+  term.setTextColor(colors.white)
   term.clear()
   term.setCursorPos(1, 1)
   print("Gear Locker setup")
@@ -71,6 +132,9 @@ local function setup(L)
     write("Your Minecraft name: ")
     cfg.player = read()
   end
+  print("Looking for node computers...")
+  findNodes(cfg, linked)
+  if again then cfg.staging, cfg.junk, cfg.pickup = nil, nil, nil end
   if not (cfg.bridge and peripheral.isPresent(cfg.bridge)) then
     local bridge = peripheral.find("meBridge")
     if not bridge then
@@ -102,13 +166,48 @@ local function setup(L)
   return true
 end
 
+local function askRole()
+  term.clear()
+  term.setCursorPos(1, 1)
+  print("GEAR LOCKER")
+  print("")
+  print(" 1  The locker: ME Bridge and monitor, runs it all")
+  print(" 2  A node: only lends its chests to the locker")
+  print("")
+  print("Press 1 or 2.")
+  while true do
+    local _, ch = os.pullEvent("char")
+    if ch == "1" then return "locker" end
+    if ch == "2" then return "node" end
+  end
+end
+
 function M.run(opts)
   opts = opts or {}
   local L = (opts.Locker or Locker).new(opts.locker or {})
   local cfg = L.cfg
-  if not (cfg.player and cfg.bridge and cfg.staging and cfg.junk and cfg.pickup) then
-    if not setup(L) then return end
+  local ready = cfg.player and cfg.bridge and cfg.staging and cfg.junk and cfg.pickup
+  if not cfg.role then
+    -- set up before nodes existed: that one is a locker
+    cfg.role = ready and "locker" or askRole()
+    L:saveConfig()
   end
+  if cfg.role == "node" then return node.run() end
+
+  local linked = {}
+  local linkTrouble = linkNodes(cfg, linked)
+  if cfg.nodes and #cfg.nodes > 0 then sleep(0.5) end
+  if not ready then
+    if not setup(L, linked) then return end
+  end
+  while M.loop(L, linked, linkTrouble) == "setup" do
+    if not setup(L, linked, true) then return end
+    linkTrouble = nil
+  end
+end
+
+function M.loop(L, linked, linkTrouble)
+  local cfg = L.cfg
 
   local st = { page = "home", player = cfg.player, picked = cfg.build ~= nil, buildId = cfg.build }
   local screens = {}
@@ -130,8 +229,13 @@ function M.run(opts)
   local function check()
     local missing = {}
     for _, role in ipairs({ "bridge", "staging", "junk", "pickup" }) do
-      if not (cfg[role] and peripheral.isPresent(cfg[role])) then missing[#missing + 1] = role .. " (" .. tostring(cfg[role]) .. ")" end
+      local name = cfg[role]
+      if not (name and peripheral.isPresent(name)) then
+        local id = name and name:match("^(%d+):")
+        missing[#missing + 1] = role .. (id and (" (computer " .. id .. " not loaded)") or (" (" .. tostring(name) .. ")"))
+      end
     end
+    if linkTrouble then missing[#missing + 1] = "link to " .. linkTrouble end
     st.missing = missing
     local ready = #missing == 0 and not st.busy
     st.canScan, st.canPull, st.canTake = ready, ready, ready
@@ -161,6 +265,7 @@ function M.run(opts)
   end
 
   local jobs = {}
+  local backAgain = false
   local function post(name, fn)
     if st.busy then return end
     jobs[#jobs + 1] = { name = name, fn = fn }
@@ -286,6 +391,15 @@ function M.run(opts)
         if st.canScan then post("Scanning", scan) end
       elseif e == "timer" and ev[2] == tick then
         tick = os.startTimer(5)
+        if linkTrouble then linkTrouble = linkNodes(cfg, linked) end
+        -- the staging node came back with pieces still in it
+        if backAgain and not st.busy and peripheral.isPresent(cfg.staging) then
+          backAgain = false
+          post("Checking staging", function()
+            L:recover()
+            scan()
+          end)
+        end
         pcall(refresh)
         local r = st.rules or {}
         if r.auto and st.canPull and #(st.junk or {}) > 0
@@ -294,8 +408,11 @@ function M.run(opts)
           post("Pulling", pullAll)
         end
       elseif e == "peripheral" or e == "peripheral_detach" or e == "monitor_resize" or e == "term_resize" then
+        if e == "peripheral" and ev[2] == cfg.staging then backAgain = true end
         attach()
         check()
+      elseif e == "char" and ev[2] == "s" and not st.busy then
+        return "setup"
       end
       draw()
     end
@@ -303,7 +420,9 @@ function M.run(opts)
 
   pcall(refresh)
   draw()
-  parallel.waitForAny(worker, events)
+  local out
+  parallel.waitForAny(worker, function() out = events() end)
+  return out
 end
 
 return M

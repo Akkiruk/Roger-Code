@@ -93,8 +93,11 @@ function Locker:recover()
   if not bridge then return nil, why end
   local staging, swhy = self:dev("staging")
   if not staging then return nil, swhy end
+  -- a chest on a node errors while that node is unloaded; its items wait there until it's back
+  local ok, list = pcall(staging.list)
+  if not ok then return nil, tostring(list) end
   local names = {}
-  for _, stack in pairs(staging.list() or {}) do names[stack.name] = (names[stack.name] or 0) + stack.count end
+  for _, stack in pairs(list or {}) do names[stack.name] = (names[stack.name] or 0) + stack.count end
   local back = 0
   for name, n in pairs(names) do
     local ok, moved = pcall(bridge.importItemFromPeripheral, { name = name, count = n }, self.cfg.staging)
@@ -127,7 +130,9 @@ function Locker:scan(onProgress)
   end
 
   -- leftovers from a stopped scan would land in the wrong slots
-  if next(staging.list() or {}) then self:recover() end
+  local ok, left = pcall(staging.list)
+  if not ok then return nil, "staging chest: " .. tostring(left) end
+  if next(left or {}) then self:recover() end
   local size = staging.size()
   local done = 0
   if onProgress then onProgress(0, #todo) end
@@ -143,10 +148,18 @@ function Locker:scan(onProgress)
       if ok and moved == 1 then batch[slot] = e else done = done + 1 end
     end
     if next(batch) then
-      local details = staging.listDetailed and staging.listDetailed()
-      if type(details) ~= "table" then
-        details = {}
-        for slot in pairs(batch) do details[slot] = staging.getItemDetail(slot) end
+      local ok, details = pcall(function()
+        local d = staging.listDetailed and staging.listDetailed()
+        if type(d) ~= "table" then
+          d = {}
+          for slot in pairs(batch) do d[slot] = staging.getItemDetail(slot) end
+        end
+        return d
+      end)
+      if not ok then
+        -- the staging node went away mid-batch: what's in it goes back once it loads again (app recovers then)
+        self:saveCache()
+        return nil, "staging chest went away: " .. tostring(details)
       end
       for slot, e in pairs(batch) do
         local piece = rules.piece(details[slot])
@@ -157,7 +170,11 @@ function Locker:scan(onProgress)
         end
         done = done + 1
       end
-      self:recover()
+      local back, why = self:recover()
+      if not back then
+        self:saveCache()
+        return nil, "staging chest went away: " .. tostring(why)
+      end
     end
     if onProgress then onProgress(done, #todo) end
   end
