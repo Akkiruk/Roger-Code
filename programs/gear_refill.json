@@ -4,15 +4,15 @@
     "key": "gear_refill",
     "name": "Gear Refill",
     "category": "Utilities",
-    "description": "Runs on a command computer. A chest on top holds the template (slot 1): a blank piece given the level, rarity and",
+    "description": "Runs on a command computer:",
     "source_root": "Utilities",
     "entrypoint": "gear_refill.lua",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "build": {
-    "commit": "6206099d80cbddb7f98ceaa6f1caf1591c875cc3",
-    "generated_at": "2026-11-26T04:46:47Z",
-    "package_hash": "6da67ace8d079ff2c108c5b37fa42e0540d8c560a0477220e8ec9328f1ef298c"
+    "commit": "415b64dca0ef6d487dcf07eefe9112c76d6de42b",
+    "generated_at": "2026-11-26T04:54:54Z",
+    "package_hash": "3a65b09f6dc5f0c4b834a5d497d83e9b6d4097843abfa3f54dc5aac22b636b11"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Utilities/gear_refill.lua",
         "install_path": "gear_refill.lua",
-        "sha256": "d1e44e74668abc4c5975a2abe223a30f44faf258c6cc85d3c696ae206577e73f"
+        "sha256": "59843757a7e2ce3088fd2930d6887b00086283c18af5a75f2272b4416fc1b168"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
