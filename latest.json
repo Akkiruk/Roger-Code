@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-22T20:35:12Z",
+  "generated_at": "2026-11-26T03:07:15Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "627f2188da4f3bd397ef48ec8e36a5bc245f5521",
+    "commit": "fbd53055bd0dc3f39847ac7068ce9aa91c91a039",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -147,6 +147,15 @@
       "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
       "package_hash": "edbac3c504ba0dd54d3e7ec555581a05df1fc79aceaff2789ba36d2a2508e7c4",
       "spec_path": "programs/game-night.json"
+    },
+    "gearlocker": {
+      "name": "Gear Locker",
+      "category": "Utilities",
+      "description": "Your own vault gear in AE2: finds the bad gear and pulls it to a junk chest, and shows the best upgrade per slot from what's in your ME system. Needs an ME Bridge, a monitor and three chests (staging, junk, pickup).",
+      "version": "1.0.0",
+      "commit": "fbd53055bd0dc3f39847ac7068ce9aa91c91a039",
+      "package_hash": "aa86251f8c732141d5044dbac255910a1e1207d43230c4778f6adb6b6984bdc5",
+      "spec_path": "programs/gearlocker.json"
     },
     "gearshop": {
       "name": "Gear Shop",
