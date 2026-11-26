@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-26T04:21:13Z",
+  "generated_at": "2026-11-26T04:43:10Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "b256db7f16d170b510b4ea9c80a881b69c27a9e3",
+    "commit": "394360a81babf869f9ba0c0abbcc3e8c4a7a55f5",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -147,6 +147,15 @@
       "commit": "dc4139164c99a125b35156cd9ce9e84cf52a7e42",
       "package_hash": "edbac3c504ba0dd54d3e7ec555581a05df1fc79aceaff2789ba36d2a2508e7c4",
       "spec_path": "programs/game-night.json"
+    },
+    "gear_refill": {
+      "name": "Gear Refill",
+      "category": "Utilities",
+      "description": "Runs on a command computer. A chest on top holds the template (slot 1): a blank piece given the level, rarity and",
+      "version": "1.0.0",
+      "commit": "394360a81babf869f9ba0c0abbcc3e8c4a7a55f5",
+      "package_hash": "1af6bf6cd1dd3b3662908e4150a8534b88dfc681928dcae9b7871d5f78056c73",
+      "spec_path": "programs/gear_refill.json"
     },
     "gearlocker": {
       "name": "Gear Locker",
