@@ -7,12 +7,12 @@
     "description": "Runs on a command computer:",
     "source_root": "Utilities",
     "entrypoint": "gear_refill.lua",
-    "version": "1.0.5"
+    "version": "1.0.6"
   },
   "build": {
-    "commit": "62808152c6491378eea2adfacd1065386e78fa39",
-    "generated_at": "2026-11-26T05:03:56Z",
-    "package_hash": "760756657c565bb478e89b62c26eefb7463be861b8f5ce60993a0ca87548bc15"
+    "commit": "2630a671c75275bd21c5b78a2109f81b9d918e8b",
+    "generated_at": "2026-11-26T05:06:14Z",
+    "package_hash": "efcd389006835098c7b79abc493fde6b6786399c3a6471c874ae21ce45449b84"
   },
   "install": {
     "preserve": [],
@@ -50,7 +50,7 @@
       {
         "repo_path": "Utilities/gear_refill.lua",
         "install_path": "gear_refill.lua",
-        "sha256": "20d0000ad6263ae4b1bf0747983c9982bf851ab75dc55eebcfd9340aa7d98c4e"
+        "sha256": "6f69e1444c835683c879467ab4aaab10a01efdaef6ae58f825b054499f249631"
       },
       {
         "repo_path": "Shared/lib/runtime_exit.lua",
