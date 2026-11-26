@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-26T04:43:10Z",
+  "generated_at": "2026-11-26T04:46:47Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "394360a81babf869f9ba0c0abbcc3e8c4a7a55f5",
+    "commit": "6206099d80cbddb7f98ceaa6f1caf1591c875cc3",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -152,9 +152,9 @@
       "name": "Gear Refill",
       "category": "Utilities",
       "description": "Runs on a command computer. A chest on top holds the template (slot 1): a blank piece given the level, rarity and",
-      "version": "1.0.0",
-      "commit": "394360a81babf869f9ba0c0abbcc3e8c4a7a55f5",
-      "package_hash": "1af6bf6cd1dd3b3662908e4150a8534b88dfc681928dcae9b7871d5f78056c73",
+      "version": "1.0.1",
+      "commit": "6206099d80cbddb7f98ceaa6f1caf1591c875cc3",
+      "package_hash": "6da67ace8d079ff2c108c5b37fa42e0540d8c560a0477220e8ec9328f1ef298c",
       "spec_path": "programs/gear_refill.json"
     },
     "gearlocker": {
