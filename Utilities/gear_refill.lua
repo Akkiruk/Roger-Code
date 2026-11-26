@@ -2,10 +2,10 @@
 -- manifest-description: Command computer only. Copies one template gear piece into a chest as every gear type, to replace the gear the Gear Locker lost.
 -- Runs on a command computer:
 --   top     a plain chest or barrel with the template in slot 1 (a blank piece given level, rarity and legendary by hand)
---   bottom  a plain chest or barrel the copies are made in
---   any other side (optional)  where they go: a netherite barrel or anything else. Without one, an AE2 import bus on the
---           bottom chest can take them.
--- Copies go through /data (template -> command storage -> bottom chest), so the gear data is copied as is, never
+--   one plain chest or barrel on another side or below: the copies are made in it
+--   anything else touching it (optional), like a netherite barrel: where they go. Without one, an AE2 import bus on
+--           the plain chest can take them.
+-- Copies go through /data (template -> command storage -> plain chest), so the gear data is copied as is, never
 -- rebuilt. /data only reaches plain chests and barrels, so the Sophisticated ones can only be the destination; the
 -- move there is a normal item move, which keeps the data.
 --
@@ -20,7 +20,7 @@ local OWED = {
   { "the_vault:chestplate", 188 }, { "the_vault:boots", 188 }, { "the_vault:battlestaff", 220 },
   { "the_vault:axe", 221 }, { "the_vault:magnet", 198 }, { "the_vault:focus", 129 },
 }
-local TEMPLATE, OUT = "~ ~1 ~", "~ ~-1 ~"
+local TEMPLATE, OUT = "~ ~1 ~", nil
 local STORE = "roger:gear_refill"
 local DONE_FILE = "gear_refill_done.txt"
 local PATH = "Utilities/gear_refill.lua"
@@ -58,19 +58,32 @@ end
 if args[1] == "noupdate" then table.remove(args, 1) end
 
 if not commands then error("This needs a command computer.", 0) end
-local out = peripheral.wrap("bottom")
-if not out or not out.list then error("Put a plain chest or barrel under this computer.", 0) end
--- /data can't write into modded storage (a netherite barrel ignores it), so the block below has to be vanilla
-local below = peripheral.getType("bottom")
-if below ~= "minecraft:chest" and below ~= "minecraft:barrel" and below ~= "minecraft:trapped_chest" then
-  error("The block under this computer is " .. tostring(below) .. ". It has to be a plain chest or barrel;"
-    .. " put the netherite barrel on a side instead.", 0)
-end
-local dest, destName
-for _, side in ipairs({ "left", "right", "front", "back" }) do
+
+-- /data can't write into modded storage (a netherite barrel ignores it), so the copies are made in a plain chest or
+-- barrel touching the computer (not the top one), and anything else touching it is where they go
+local PLAIN = { ["minecraft:chest"] = true, ["minecraft:barrel"] = true, ["minecraft:trapped_chest"] = true }
+local SIDES = { "bottom", "left", "right", "front", "back" }
+
+local out, outSide, dest, destName
+for _, side in ipairs(SIDES) do
   local p = peripheral.wrap(side)
-  if p and p.list and p.size then dest, destName = p, side break end
+  if p and p.list and p.size then
+    if PLAIN[peripheral.getType(side)] and not out then out, outSide = p, side
+    elseif not dest then dest, destName = p, side end
+  end
 end
+if not out then error("Put a plain chest or barrel against a side or the bottom of this computer.", 0) end
+
+-- the same block by world position, for /data
+local cx, cy, cz = commands.getBlockPosition()
+for _, d in ipairs({ { 0, -1, 0 }, { 1, 0, 0 }, { -1, 0, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }) do
+  local info = commands.getBlockInfo(cx + d[1], cy + d[2], cz + d[3])
+  if info and PLAIN[info.name] then
+    if OUT then error("Only one plain chest or barrel can touch the computer (besides the template on top).", 0) end
+    OUT = ("~%d ~%d ~%d"):format(d[1], d[2], d[3])
+  end
+end
+if not OUT then error("Couldn't find the plain chest or barrel by position.", 0) end
 
 local function loadDone()
   if not fs.exists(DONE_FILE) then return {} end
@@ -115,7 +128,7 @@ local vd = first.vaultData
 if type(vd) == "table" and vd.level ~= 100 then
   print("Warning: the template is level " .. tostring(vd.level) .. ", not 100.")
 end
-print(dest and ("Copies go to the " .. destName .. ".") or "No destination on the sides: copies stay in the chest below.")
+print(dest and ("Copies are made " .. outSide .. " and go to the " .. destName .. ".") or "Nothing else touching the computer: copies stay in the plain " .. outSide .. " chest.")
 
 -- whatever a stopped run left below goes on first
 if dest then
@@ -141,7 +154,7 @@ local function waitFor(what, check)
 end
 
 local function place(id)
-  local slot = waitFor("The chest below is full, waiting...", freeSlot)
+  local slot = waitFor("The plain chest is full, waiting...", freeSlot)
   run(("data modify storage %s item.Slot set value %db"):format(STORE, slot - 1))
   run(("data modify block %s Items append from storage %s item"):format(OUT, STORE))
   local d = out.getItemDetail(slot)
