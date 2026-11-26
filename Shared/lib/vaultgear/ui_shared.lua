@@ -207,7 +207,7 @@ local function selectionModeLabel(app, storage)
   end
   if storage.role == "inbox" then
     if entry and entry.is_me_bridge then
-      return "ME Bridge inbox. Vault items here are sampled through a physical inbox, then routed into homes."
+      return "ME Bridge inbox. Vault items are read in the ME, then sent straight to matching homes."
     end
     return "Inbox. New items here are routed into homes."
   end
@@ -375,7 +375,7 @@ function M.storageSummaryLines(app, storage)
       return {
         "ME Bridge Inbox",
         storage.enabled == false and "Paused" or "Active",
-        "Vault items are sampled through another inbox, then sent straight to matching homes.",
+        "Vault items are read in the ME, then sent straight to matching homes.",
       }
     end
     return {

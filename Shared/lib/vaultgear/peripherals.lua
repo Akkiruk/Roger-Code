@@ -11,31 +11,24 @@ local function safeWrap(name)
   return nil
 end
 
-local function isMeBridgeType(peripheralType)
-  return peripheralType == "meBridge" or peripheralType == "me_bridge"
-end
-
 local function inventoryEntry(name, wrapped)
   local peripheralType = peripheral.getType(name) or "unknown"
-  local meBridge = isMeBridgeType(peripheralType)
+  local meBridge = peripheral.hasType(name, "me_bridge") == true
   local canList = type(wrapped.list) == "function"
-  local canGetItems = type(wrapped.getItems) == "function" or type(wrapped.listItems) == "function"
   local canPush = type(wrapped.pushItems) == "function"
   local canPull = type(wrapped.pullItems) == "function"
-  local canExport = type(wrapped.exportItem) == "function" or type(wrapped.exportItemToPeripheral) == "function"
-  local canImport = type(wrapped.importItem) == "function" or type(wrapped.importItemFromPeripheral) == "function"
 
+  -- the bridge has its own list(), but it isn't an inventory: it reads gear with getDetail and moves with export
   local entry = {
     name = name,
     type = peripheralType,
     is_me_bridge = meBridge,
-    can_list = canList,
-    can_scan = canList or (meBridge and canGetItems),
-    can_detail = type(wrapped.getItemDetail) == "function",
+    can_list = canList and not meBridge,
+    can_scan = canList,
+    can_detail = type(wrapped.getItemDetail) == "function" or (meBridge and type(wrapped.getDetail) == "function"),
     can_push = canPush,
     can_pull = canPull,
-    can_export = canPush or (meBridge and canExport),
-    can_import = canPull or (meBridge and canImport),
+    can_export = canPush or (meBridge and type(wrapped.export) == "function"),
   }
 
   if not meBridge and type(wrapped.size) == "function" then
@@ -69,7 +62,7 @@ function M.discover()
         }
       end
 
-      if type(wrapped.list) == "function" or isMeBridgeType(pType) then
+      if type(wrapped.list) == "function" then
         inventories[#inventories + 1] = inventoryEntry(name, wrapped)
       end
     end

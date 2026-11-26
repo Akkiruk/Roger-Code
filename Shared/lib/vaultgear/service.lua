@@ -28,36 +28,8 @@ local function safeCall(methodOwner, methodName, ...)
   end)
 end
 
-local function safeCallAny(methodOwner, methodNames, ...)
-  if not methodOwner then
-    return false, nil, nil, "Missing method owner"
-  end
-
-  local args = { ... }
-  for _, methodName in ipairs(methodNames or {}) do
-    if type(methodOwner[methodName]) == "function" then
-      local ok, first, second = pcall(function()
-        return methodOwner[methodName](unpackArgs(args))
-      end)
-      if not ok then
-        return false, nil, nil, tostring(first)
-      end
-      return true, first, second, nil
-    end
-  end
-
-  return false, nil, nil, "Missing method: " .. table.concat(methodNames or {}, " or ")
-end
-
-local function isMeBridge(name, wrapped)
-  local peripheralType = peripheral.getType(name)
-  if peripheralType == "meBridge" or peripheralType == "me_bridge" then
-    return true
-  end
-
-  return wrapped
-    and (type(wrapped.getItems) == "function" or type(wrapped.listItems) == "function")
-    and (type(wrapped.exportItem) == "function" or type(wrapped.exportItemToPeripheral) == "function")
+local function isMeBridge(name)
+  return peripheral.hasType(name, "me_bridge") == true
 end
 
 local function slotKeys(slotMap)
@@ -101,7 +73,7 @@ local function summarizeBridgeItem(slot, basic)
   }
 
   if isVaultRegistryName(basic.name) then
-    lines[#lines + 1] = "Vault item will be inspected through a physical inbox when routed."
+    lines[#lines + 1] = "Vault item gets read in the ME and routed to its home."
   else
     lines[#lines + 1] = "Non-vault items stay in the ME system."
   end
@@ -123,24 +95,25 @@ local function loadSlotMap(inventoryName)
   return inventory, slotMap, nil
 end
 
-local function loadBridgeItems(inventoryName)
+-- one page of bridge entries; filter and opts go straight to bridge.list
+local function loadBridgePage(inventoryName, filter, opts)
   local bridge = safeWrap(inventoryName)
   if not bridge then
     return nil, nil, "Inventory missing: " .. tostring(inventoryName)
   end
-  if not isMeBridge(inventoryName, bridge) then
+  if not isMeBridge(inventoryName) then
     return bridge, nil, "ME Bridge missing: " .. tostring(inventoryName)
   end
 
-  local ok, items, apiError, callError = safeCallAny(bridge, { "getItems", "listItems" }, {})
+  local ok, page, code = pcall(bridge.list, filter, opts)
   if not ok then
-    return bridge, nil, callError or "Could not list ME Bridge: " .. tostring(inventoryName)
+    return bridge, nil, tostring(page), nil
   end
-  if type(items) ~= "table" then
-    return bridge, nil, tostring(apiError or "Could not list ME Bridge: " .. tostring(inventoryName))
+  if type(page) ~= "table" then
+    return bridge, nil, "Could not list ME Bridge " .. tostring(inventoryName) .. ": " .. tostring(code), code
   end
 
-  return bridge, items, nil
+  return bridge, page, nil
 end
 
 local function observeItem(catalog, catalogLib, item)
@@ -201,9 +174,9 @@ function M.inspectInventory(inventoryName, catalog, catalogLib, limit)
     }
   end
 
-  local wrapped = safeWrap(inventoryName)
-  if wrapped and isMeBridge(inventoryName, wrapped) then
-    local _, items, err = loadBridgeItems(inventoryName)
+  if isMeBridge(inventoryName) then
+    local sampleLimit = math.max(1, tonumber(limit) or constants.INSPECT_LIMIT)
+    local _, page, err = loadBridgePage(inventoryName, { minCount = 1 }, { limit = sampleLimit, names = true })
     if err then
       return {
         inventory = inventoryName,
@@ -225,26 +198,19 @@ function M.inspectInventory(inventoryName, catalog, catalogLib, limit)
       supported_items = 0,
       vault_items = 0,
     }
-    local sampleLimit = math.max(1, tonumber(limit) or constants.INSPECT_LIMIT)
 
-    for slot, basic in ipairs(items) do
-      if type(basic) == "table" then
-        result.total_slots = result.total_slots + 1
-        if isVaultRegistryName(basic.name) then
-          result.vault_items = result.vault_items + 1
-        end
-
-        local item, lines = summarizeBridgeItem(slot, basic)
-        result.items[#result.items + 1] = {
-          slot = slot,
-          item = item,
-          lines = lines,
-        }
-
-        if #result.items >= sampleLimit then
-          break
-        end
+    for slot, basic in ipairs(page.items) do
+      result.total_slots = result.total_slots + 1
+      if isVaultRegistryName(basic.name) then
+        result.vault_items = result.vault_items + 1
       end
+
+      local item, lines = summarizeBridgeItem(slot, basic)
+      result.items[#result.items + 1] = {
+        slot = slot,
+        item = item,
+        lines = lines,
+      }
     end
 
     return result
@@ -304,45 +270,12 @@ local function buildMoveAction(kind, sourceName, destination, item, reason, move
   }
 end
 
-local function buildBridgeFilter(item, count)
-  local filter = {
-    name = item and item.name or nil,
-    count = count or (item and item.count) or 1,
-  }
-
-  if item and item.fingerprint ~= nil then
-    filter.fingerprint = item.fingerprint
-  end
-  if item and item.components ~= nil then
-    filter.components = item.components
-  elseif item and item.nbt ~= nil then
-    filter.nbt = item.nbt
-  end
-
-  return filter
-end
-
-local function bridgeIdentityPart(value)
-  if type(value) == "table" then
-    return textutils.serialize(value)
-  end
-  if value == nil then
-    return ""
-  end
-  return tostring(value)
-end
-
+-- ids name an exact NBT state, which is what the bridge moves by
 local function bridgeIdentityKey(item)
-  if type(item) ~= "table" then
+  if type(item) ~= "table" or type(item.id) ~= "string" then
     return ""
   end
-
-  return table.concat({
-    tostring(item.name or ""),
-    bridgeIdentityPart(item.fingerprint),
-    bridgeIdentityPart(item.components),
-    bridgeIdentityPart(item.nbt),
-  }, "|")
+  return item.id
 end
 
 local function bridgeSkipBucket(runtimeState, inventoryName, create)
@@ -418,93 +351,30 @@ local function shouldSkipBridgeItem(runtimeState, inventoryName, item)
   return true
 end
 
-local function bridgeExportItem(bridge, filter, targetName)
-  local ok, moved, apiError, callError = safeCallAny(bridge, { "exportItem", "exportItemToPeripheral" }, filter, targetName)
+local function bridgeExport(bridge, id, targetName)
+  local ok, result = pcall(bridge.export, id, targetName, { count = 1 })
   if not ok then
-    return nil, callError
+    return 0, tostring(result)
   end
-  if type(moved) ~= "number" or moved < 1 then
-    return moved or 0, tostring(apiError or "ME Bridge export failed")
+  if result.moved < 1 then
+    return 0, "ME Bridge export to " .. tostring(targetName) .. " failed: " .. tostring(result.reason)
   end
-  return moved, nil
+  return result.moved, nil
 end
 
-local function bridgeImportItem(bridge, filter, sourceName)
-  local ok, moved, apiError, callError = safeCallAny(bridge, { "importItem", "importItemFromPeripheral" }, filter, sourceName)
-  if not ok then
-    return nil, callError
-  end
-  if type(moved) ~= "number" or moved < 1 then
-    return moved or 0, tostring(apiError or "ME Bridge import failed")
-  end
-  return moved, nil
-end
-
-local function changedSlot(beforeMap, afterMap, itemName)
-  for _, slot in ipairs(slotKeys(afterMap)) do
-    local current = afterMap[slot]
-    if current and current.name == itemName then
-      local previous = beforeMap and beforeMap[slot] or nil
-      local previousCount = previous and tonumber(previous.count) or 0
-      local currentCount = tonumber(current.count) or 0
-      if currentCount > previousCount then
-        return slot, current
-      end
+-- getDetail reads vaultData straight off the ME key, so nothing has to leave the ME until we know where it goes
+local function routeBridgeItem(report, bridgeStorage, bridge, entry, homes, runtimeState, catalog, catalogLib)
+  local ok, detail, code = pcall(bridge.getDetail, entry.id)
+  if not ok or type(detail) ~= "table" then
+    -- gone since the list, nothing to do
+    if ok and code == "NOT_FOUND" then
+      return
     end
-  end
-  return nil, nil
-end
-
-local function findBridgeInspectionInbox(storages, connectedSet, sourceInventory)
-  for _, storage in ipairs(planner.listInboxes(storages, connectedSet)) do
-    if storage.inventory ~= sourceInventory then
-      local inventory = safeWrap(storage.inventory)
-      if inventory
-        and type(inventory.list) == "function"
-        and type(inventory.getItemDetail) == "function"
-        and type(inventory.pushItems) == "function" then
-        return storage, inventory
-      end
-    end
-  end
-  return nil, nil
-end
-
-local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, runtimeState, catalog, catalogLib)
-  local baselineInventory, baselineSlots, baselineError = loadSlotMap(stagingStorage.inventory)
-  if baselineError then
-    report.errors[#report.errors + 1] = baselineError
+    report.errors[#report.errors + 1] = "Could not read " .. tostring(entry.name) .. " in the ME: " .. tostring(ok and code or detail)
     return
   end
 
-  local singleFilter = buildBridgeFilter(bridgeItem, 1)
-  local exported, exportError = bridgeExportItem(bridge, singleFilter, stagingStorage.inventory)
-  if type(exported) ~= "number" or exported < 1 then
-    report.errors[#report.errors + 1] = exportError or ("ME Bridge export failed from " .. tostring(bridgeStorage.inventory))
-    local routeFailure = classifyMoveFailure(bridgeStorage.inventory, stagingStorage.inventory, exportError)
-    if routeFailure then
-      report.route_failures[#report.route_failures + 1] = routeFailure
-    end
-    return
-  end
-
-  local _, stagedSlots, stagedError = loadSlotMap(stagingStorage.inventory)
-  if stagedError then
-    report.errors[#report.errors + 1] = stagedError
-    return
-  end
-
-  local slot, basic = changedSlot(baselineSlots, stagedSlots, bridgeItem.name)
-  if not slot or not basic then
-    report.errors[#report.errors + 1] = "ME Bridge exported an item, but the inspection inbox could not locate it."
-    local restored, restoreError = bridgeImportItem(bridge, singleFilter, stagingStorage.inventory)
-    if type(restored) ~= "number" or restored < 1 then
-      report.errors[#report.errors + 1] = restoreError or "Could not return staged ME Bridge item to the system."
-    end
-    return
-  end
-
-  local item = normalizeSlot(stagingInventory or baselineInventory, slot, basic)
+  local item = model.normalize(nil, { name = entry.name, count = 1 }, detail, nil)
   report.catalog_changed = observeItem(catalog, catalogLib, item) or report.catalog_changed
 
   local picked = planner.pickDestination(homes, item, bridgeStorage.inventory)
@@ -512,35 +382,25 @@ local function routeBridgeItem(report, bridgeStorage, bridge, bridgeItem, homes,
     if item.supported_type then
       report.unresolved = report.unresolved + 1
     end
-
-    local restored, restoreError = bridgeImportItem(bridge, singleFilter, stagingStorage.inventory)
-    if type(restored) ~= "number" or restored < 1 then
-      report.errors[#report.errors + 1] = restoreError or "Could not return unresolved ME Bridge item to the system."
-    end
-    rememberBridgeSkip(runtimeState, bridgeStorage.inventory, bridgeItem)
+    rememberBridgeSkip(runtimeState, bridgeStorage.inventory, entry)
     return
   end
 
-  local movedFromStage, moveError = moveItem(stagingInventory or baselineInventory, picked.storage.inventory, slot, 1)
-  if type(movedFromStage) ~= "number" or movedFromStage < 1 then
-    report.errors[#report.errors + 1] = moveError or ("Move failed from " .. tostring(stagingStorage.inventory))
+  local moved, moveError = bridgeExport(bridge, entry.id, picked.storage.inventory)
+  if moved < 1 then
+    report.errors[#report.errors + 1] = moveError
     local routeFailure = classifyMoveFailure(bridgeStorage.inventory, picked.storage.inventory, moveError)
     if routeFailure then
       report.route_failures[#report.route_failures + 1] = routeFailure
-    end
-
-    local restored, restoreError = bridgeImportItem(bridge, singleFilter, stagingStorage.inventory)
-    if type(restored) ~= "number" or restored < 1 then
-      report.errors[#report.errors + 1] = restoreError or "Could not return staged ME Bridge item to the system."
     end
     return
   end
 
   report.kind = "routing"
   report.moved_stacks = report.moved_stacks + 1
-  report.moved_items = report.moved_items + movedFromStage
-  report.action = buildMoveAction("route", bridgeStorage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], movedFromStage)
-  clearBridgeSkip(runtimeState, bridgeStorage.inventory, bridgeItem)
+  report.moved_items = report.moved_items + moved
+  report.action = buildMoveAction("route", bridgeStorage.inventory, picked.storage, item, picked.reasons and picked.reasons[1], moved)
+  clearBridgeSkip(runtimeState, bridgeStorage.inventory, entry)
 end
 
 local function ensureRuntimeState(runtimeState)
@@ -649,53 +509,31 @@ local function processStandardInboxStep(report, storage, homes, runtimeState, ca
   return false, false, inspected
 end
 
-local function processBridgeInboxStep(report, storage, storages, connectedSet, homes, runtimeState, catalog, catalogLib, budget)
+local function processBridgeInboxStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
   report.target_inventory = storage.inventory
 
-  local bridge, items, err = loadBridgeItems(storage.inventory)
+  local bridge, page, err, code = loadBridgePage(storage.inventory, { mod = "the_vault", minCount = 1 },
+    { limit = budget, after = runtimeState.bridge_after })
+  if code == "INDEXING" then
+    -- the bridge is still hashing a fresh grid, try again next step
+    return true, false, 0
+  end
   if err then
     report.errors[#report.errors + 1] = err
-    runtimeState.inbox_slot = 0
+    runtimeState.bridge_after = nil
     return true, true, 0
   end
 
-  local stagingStorage, stagingInventory = findBridgeInspectionInbox(storages, connectedSet, storage.inventory)
-  if not stagingStorage or not stagingInventory then
-    report.errors[#report.errors + 1] = "ME Bridge inboxes need another connected inbox with getItemDetail() so Vault items can be inspected before routing."
-    runtimeState.inbox_slot = 0
-    return true, true, 0
-  end
-
-  local totalItems = #items
-  if totalItems == 0 then
-    runtimeState.inbox_slot = 0
-    return false, true, 0
-  end
-
-  local startIndex = tonumber(runtimeState.inbox_slot) or 0
-  if startIndex < 1 or startIndex > totalItems then
-    startIndex = 1
-  else
-    startIndex = nextCursorIndex(startIndex, totalItems)
-  end
-
-  local visited = 0
   local inspected = 0
+  local prev = runtimeState.bridge_after
 
-  while visited < totalItems and inspected < budget do
-    local index = ((startIndex - 1 + visited) % totalItems) + 1
-    local bridgeItem = items[index]
-    runtimeState.inbox_slot = index
-    visited = visited + 1
-
-    if type(bridgeItem) == "table"
-      and isVaultRegistryName(bridgeItem.name)
-      and not shouldSkipBridgeItem(runtimeState, storage.inventory, bridgeItem) then
+  for _, entry in ipairs(page.items) do
+    if not shouldSkipBridgeItem(runtimeState, storage.inventory, entry) then
       inspected = inspected + 1
       local priorMoves = report.moved_stacks
       local priorErrors = #report.errors
       local priorUnresolved = report.unresolved
-      routeBridgeItem(report, storage, bridge, bridgeItem, homes, stagingStorage, stagingInventory, runtimeState, catalog, catalogLib)
+      routeBridgeItem(report, storage, bridge, entry, homes, runtimeState, catalog, catalogLib)
 
       if report.unresolved > priorUnresolved then
         runtimeState.unresolved_scan = runtimeState.unresolved_scan + (report.unresolved - priorUnresolved)
@@ -703,18 +541,16 @@ local function processBridgeInboxStep(report, storage, storages, connectedSet, h
       end
 
       if report.moved_stacks > priorMoves or #report.errors > priorErrors then
-        runtimeState.inbox_slot = math.max(0, index - 1)
+        -- come back to this key, there may be more of it
+        runtimeState.bridge_after = prev
         return true, false, inspected
       end
     end
+    prev = entry.id
   end
 
-  if visited >= totalItems then
-    runtimeState.inbox_slot = 0
-    return false, true, inspected
-  end
-
-  return false, false, inspected
+  runtimeState.bridge_after = page.next
+  return false, page.next == nil, inspected
 end
 
 function M.processInboxes(storages, connectedSet, runtimeState, catalog, catalogLib)
@@ -749,10 +585,9 @@ function M.processInboxes(storages, connectedSet, runtimeState, catalog, catalog
     local storage = inboxes[storageIndex]
     runtimeState.inbox_cursor = storageIndex
 
-    local wrapped = safeWrap(storage.inventory)
     local yielded, exhausted, inspected
-    if wrapped and isMeBridge(storage.inventory, wrapped) then
-      yielded, exhausted, inspected = processBridgeInboxStep(report, storage, storages, connectedSet, homes, runtimeState, catalog, catalogLib, budget)
+    if isMeBridge(storage.inventory) then
+      yielded, exhausted, inspected = processBridgeInboxStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
     else
       yielded, exhausted, inspected = processStandardInboxStep(report, storage, homes, runtimeState, catalog, catalogLib, budget)
     end
