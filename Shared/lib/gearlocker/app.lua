@@ -128,9 +128,11 @@ local function setup(L, linked, again)
   term.clear()
   term.setCursorPos(1, 1)
   print("Gear Locker setup")
-  if not cfg.player then
-    write("Your Minecraft name: ")
-    cfg.player = read()
+  -- whose gear it judges: can be someone else's when setting it up at their base
+  if not cfg.player or again then
+    write("Whose gear is this (Minecraft name)" .. (cfg.player and (" [" .. cfg.player .. "]") or "") .. ": ")
+    local name = read()
+    if name ~= "" then cfg.player = name end
   end
   print("Looking for node computers...")
   findNodes(cfg, linked)
