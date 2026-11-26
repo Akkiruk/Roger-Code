@@ -7,12 +7,12 @@
     "description": "Your own vault gear in AE2: finds the bad gear and pulls it to a junk chest, and shows the best upgrade per slot from what's in your ME system. Needs an ME Bridge, a monitor and three chests (staging, junk, pickup). The chests can sit on node computers linked by ender modem: install this on each node too and pick \"node\".",
     "source_root": "Apps/GearLocker",
     "entrypoint": "startup.lua",
-    "version": "1.0.4"
+    "version": "1.0.5"
   },
   "build": {
-    "commit": "153643a9b7331cb4aae0af2905297971b5190009",
-    "generated_at": "2026-11-26T04:08:01Z",
-    "package_hash": "a2c0d8ed19d297949824b823fd9406c74d2d658c90ae2921e56a64add1d0b910"
+    "commit": "45fbfe9bb71532c1eabba774c1622c36e1bab9d7",
+    "generated_at": "2026-11-26T04:10:01Z",
+    "package_hash": "60c9ba6cf0d0398034bdce49124fa5e2661b6048f8d5f3e11ecffd3092b946fb"
   },
   "install": {
     "preserve": [],
@@ -50,12 +50,12 @@
       {
         "repo_path": "Shared/lib/gearlocker/locker.lua",
         "install_path": "lib/gearlocker/locker.lua",
-        "sha256": "99579b630b84fc4450126c3e1672f71c4ea5cb83c54993f19bec8416586ba7d3"
+        "sha256": "9ff76dbe1fd9b55b61fa2fd00d02cea88919ba5ecee9c36cc6ff965f8908572d"
       },
       {
         "repo_path": "Shared/lib/gearlocker/judge.lua",
         "install_path": "lib/gearlocker/judge.lua",
-        "sha256": "ebbc2286286979c180de9f405f196a105d60b9397fb38ebcb6853c6dc1bb6217"
+        "sha256": "d1ada635063b5ef18abab6a7d6b883cd0924827bdcb850dacf3572ad760467dc"
       },
       {
         "repo_path": "Shared/lib/gearlocker/app.lua",
