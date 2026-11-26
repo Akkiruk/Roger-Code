@@ -313,7 +313,7 @@ function M.upgrades(s, st)
   local b = bh(s)
   local top = s.h - b + 1
   local why = st.readWhy or (st.picked and "Your pick" or ("Guess: " .. tostring(st.buildWhy or "")))
-  if st.limited and not st.readWhy then why = why .. ". Guess limited until the server has vhcctweaks 2.2.37" end
+  if st.limited and not st.readWhy then why = why .. " (rough, server lacks 2.2.37)" end
   local y = 2 + s:wrap(2, 2, why, "8")
   local best = st.best or {}
   -- two lines a slot when there is room: what is best, then what is worn
