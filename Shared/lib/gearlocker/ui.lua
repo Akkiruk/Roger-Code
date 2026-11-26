@@ -201,6 +201,9 @@ local function footer(s, st, y)
     s:write(1, y, fit(msg, s.w), "4")
   elseif st.note then
     s:write(1, y, fit(st.note, s.w), st.noteFg or "8")
+  elseif s.isTerm then
+    -- the only way to add nodes after the first setup, so say it somewhere
+    s:write(1, y, fit("Press S to run setup again", s.w), "8")
   end
 end
 
@@ -453,7 +456,7 @@ end
 function M.settingRows(r)
   return {
     { "Keep best per slot", tostring(r.keepPerSlot), "keepPerSlot" },
-    { "Junk levels under you", tostring(r.maxBelow), "maxBelow" },
+    { "Junk lvls under you", tostring(r.maxBelow), "maxBelow" },
     { "Lowest rarity kept", tostring(r.minRarity), "minRarity" },
     { "Keep legendary", r.keepLegendary and "ON" or "OFF", "keepLegendary", toggle = true },
     { "Auto pull", r.auto and "ON" or "OFF", "auto", toggle = true },

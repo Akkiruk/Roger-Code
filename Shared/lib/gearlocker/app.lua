@@ -216,6 +216,7 @@ function M.loop(L, linked, linkTrouble)
     local mon = cfg.monitor and peripheral.isPresent(cfg.monitor) and peripheral.wrap(cfg.monitor)
     if mon then screens[cfg.monitor] = ui.screen(mon, 0.5) end
     screens.term = ui.screen(term.current())
+    screens.term.isTerm = true
   end
   attach()
 
