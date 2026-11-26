@@ -1,7 +1,7 @@
 -- gearlocker/judge.lua
 -- Which pieces in a player's ME are junk and which beat what they wear. Pure: locker.lua reads the ME and the player
 -- and hands everything in, so Tests/gearlocker_test.lua runs this on its own.
--- Pieces are lib.gearshop.rules.piece records with an `fp` (the ME fingerprint); a read is improve.lua's player read.
+-- Pieces are lib.gearshop.rules.piece records with an `fp` (the gear uuid, or the ME id when it has none); a read is improve.lua's player read.
 
 local rules = require("lib.gearshop.rules")
 local builds = require("lib.gearshop.builds")

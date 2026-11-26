@@ -1,7 +1,7 @@
 -- gearlocker/locker.lua
--- Everything the locker does to the world: the ME Bridge, the three chests, ccvault and its own files.
--- The bridge can't read vault gear stats, so a piece we haven't seen goes out to the staging chest, gets read with
--- vhcctweaks listDetailed, and goes straight back. Each fingerprint is only read once, the cache keeps the rest.
+-- Everything the locker does to the world: the ME Bridge, the junk and pickup chests, ccvault and its own files.
+-- Gear stats come straight off the ME with getDetails, so nothing leaves the ME just to be read. Each bridge id
+-- (one exact NBT state) is only read once, the cache keeps the rest.
 
 local rules = require("lib.gearshop.rules")
 local judge = require("lib.gearlocker.judge")
@@ -57,6 +57,9 @@ function M.new(opts)
   self.cache = cache.pieces or {}
   self.lastScan = cache.at
   self.inMe = {}
+  -- fp is what the judge and the spared list key on: the gear uuid, so a piece VH rewrites keeps its place
+  self.ids = {}
+  for id, piece in pairs(self.cache) do self.ids[piece.fp or id] = id end
   return self
 end
 
@@ -81,111 +84,66 @@ end
 
 function Locker:missing()
   local out = {}
-  for _, role in ipairs({ "bridge", "staging", "junk", "pickup", "monitor" }) do
+  for _, role in ipairs({ "bridge", "junk", "pickup", "monitor" }) do
     local _, why = self:dev(role)
     if why then out[#out + 1] = why end
   end
   return out
 end
 
--- everything in staging back into ME, one import per item name
-function Locker:recover()
-  local bridge, why = self:dev("bridge")
-  if not bridge then return nil, why end
-  local staging, swhy = self:dev("staging")
-  if not staging then return nil, swhy end
-  -- a chest on a node errors while that node is unloaded; its items wait there until it's back
-  local ok, list = pcall(staging.list)
-  if not ok then return nil, tostring(list) end
-  local names = {}
-  for _, stack in pairs(list or {}) do names[stack.name] = (names[stack.name] or 0) + stack.count end
-  local back = 0
-  for name, n in pairs(names) do
-    local ok, moved = pcall(bridge.importItemFromPeripheral, { name = name, count = n }, self.cfg.staging)
-    if ok and type(moved) == "number" then back = back + moved end
-  end
-  return back
-end
-
-local function hasNbt(entry)
-  local nbt = entry.nbt
-  if type(nbt) ~= "table" then return nbt ~= nil end
-  if nbt.id and nbt.tag == nil then return false end
-  return next(nbt) ~= nil
-end
+local GEAR_NAMES = {}
+for name in pairs(GEAR) do GEAR_NAMES[#GEAR_NAMES + 1] = name end
+table.sort(GEAR_NAMES)
 
 function Locker:scan(onProgress)
   local bridge, why = self:dev("bridge")
   if not bridge then return nil, why end
-  local staging, swhy = self:dev("staging")
-  if not staging then return nil, swhy end
-  local list, err = bridge.listItems()
-  if type(list) ~= "table" then return nil, "can't list the ME: " .. tostring(err) end
 
-  local seen, todo = {}, {}
-  for _, e in ipairs(list) do
-    if GEAR[e.name] and e.fingerprint and hasNbt(e) then
-      seen[e.fingerprint] = e.amount or 1
-      if not self.cache[e.fingerprint] then todo[#todo + 1] = e end
-    end
+  local entries, after = {}, nil
+  repeat
+    local ok, page, err = pcall(bridge.list, { name = GEAR_NAMES, nbt = true, minCount = 1 }, { limit = 5000, after = after })
+    if not ok or type(page) ~= "table" then return nil, "can't list the ME: " .. tostring(ok and err or page) end
+    for _, e in ipairs(page.items) do entries[#entries + 1] = e end
+    after = page.next
+  until not after
+
+  local seen, ids, todo = {}, {}, {}
+  for _, e in ipairs(entries) do
+    -- the same uuid twice means one piece in two NBT states (or a dupe): the second one goes by its id
+    local fp = e.uuid and not ids[e.uuid] and e.uuid or e.id
+    seen[fp] = e.count
+    ids[fp] = e.id
+    if not self.cache[e.id] then todo[#todo + 1] = e.id end
   end
 
-  -- leftovers from a stopped scan would land in the wrong slots
-  local ok, left = pcall(staging.list)
-  if not ok then return nil, "staging chest: " .. tostring(left) end
-  if next(left or {}) then self:recover() end
-  local size = staging.size()
   local done = 0
   if onProgress then onProgress(0, #todo) end
-  local i = 1
-  while i <= #todo do
-    local batch = {}
-    for slot = 1, size do
-      local e = todo[i]
-      if not e then break end
-      i = i + 1
-      local ok, moved = pcall(bridge.exportItemToPeripheral,
-        { fingerprint = e.fingerprint, count = 1, toSlot = slot - 1 }, self.cfg.staging)
-      if ok and moved == 1 then batch[slot] = e else done = done + 1 end
+  for i = 1, #todo, 64 do
+    local batch = { table.unpack(todo, i, math.min(i + 63, #todo)) }
+    local ok, details, err = pcall(bridge.getDetails, batch)
+    if not ok or type(details) ~= "table" then
+      self:saveCache()
+      return nil, "can't read gear in the ME: " .. tostring(ok and err or details)
     end
-    if next(batch) then
-      local ok, details = pcall(function()
-        local d = staging.listDetailed and staging.listDetailed()
-        if type(d) ~= "table" then
-          d = {}
-          for slot in pairs(batch) do d[slot] = staging.getItemDetail(slot) end
-        end
-        return d
-      end)
-      if not ok then
-        -- the staging node went away mid-batch: what's in it goes back once it loads again (app recovers then)
-        self:saveCache()
-        return nil, "staging chest went away: " .. tostring(details)
-      end
-      for slot, e in pairs(batch) do
-        local piece = rules.piece(details[slot])
-        -- a stack that moved under us reads as something else; leave it uncached and try again next scan
-        if piece and piece.id == e.name then
-          piece.fp = e.fingerprint
-          local vd = details[slot].vaultData
-          piece.unique = (type(vd) == "table" and vd.uniqueKey ~= nil) or nil
-          self.cache[e.fingerprint] = piece
-        end
-        done = done + 1
-      end
-      local back, why = self:recover()
-      if not back then
-        self:saveCache()
-        return nil, "staging chest went away: " .. tostring(why)
+    for _, id in ipairs(batch) do
+      -- missing means it left the ME since the list; it gets read next scan if it's back
+      local piece = rules.piece(details[id])
+      if piece then
+        local vd = details[id].vaultData
+        piece.unique = (type(vd) == "table" and vd.uniqueKey ~= nil) or nil
+        self.cache[id] = piece
       end
     end
+    done = done + #batch
     if onProgress then onProgress(done, #todo) end
   end
 
-  for fp in pairs(self.cache) do
-    if not seen[fp] then self.cache[fp] = nil end
+  local live = {}
+  for fp, id in pairs(ids) do live[id] = fp end
+  for id, piece in pairs(self.cache) do
+    if live[id] then piece.fp = live[id] else self.cache[id] = nil end
   end
-  self.inMe = seen
+  self.inMe, self.ids = seen, ids
   self.lastScan = self.now()
   self:saveCache()
   return #todo
@@ -193,9 +151,9 @@ end
 
 function Locker:pieces()
   local out = {}
-  for fp, piece in pairs(self.cache) do
-    piece.fp = fp
-    piece.amount = self.inMe[fp] or 1
+  for id, piece in pairs(self.cache) do
+    piece.fp = piece.fp or id
+    piece.amount = self.inMe[piece.fp] or 1
     out[#out + 1] = piece
   end
   return out
@@ -286,17 +244,29 @@ function Locker:send(fp, role)
   local bridge, why = self:dev("bridge")
   if not bridge then return nil, why end
   if not self.cfg[role] or not self.p.wrap(self.cfg[role]) then return nil, role .. " chest is missing" end
+  local id = self.ids[fp]
+  if not id then return nil, "piece gone" end
   local want = self.inMe[fp] or 1
-  local ok, moved, err = pcall(bridge.exportItemToPeripheral, { fingerprint = fp, count = want }, self.cfg[role])
-  if not ok then return nil, tostring(moved) end
-  if type(moved) ~= "number" or moved < 1 then return nil, err and tostring(err) or (role .. " chest full or piece gone") end
-  if moved >= want then
-    self.cache[fp] = nil
-    self.inMe[fp] = nil
-  else
-    self.inMe[fp] = want - moved
+  local ok, r, code = pcall(bridge.export, id, self.cfg[role], { count = want })
+  -- VH rewrote the piece since the scan, so its id moved on; the uuid still finds it
+  if ok and type(r) == "table" and r.reason == "NOT_FOUND" and fp ~= id then
+    ok, r, code = pcall(bridge.export, { uuid = fp }, self.cfg[role], { count = want })
   end
-  return moved
+  if not ok then return nil, tostring(r) end
+  if type(r) ~= "table" then return nil, tostring(code) end
+  if r.moved < 1 then
+    if r.reason == "TARGET_FULL" then return nil, role .. " chest full" end
+    if r.reason == "NOT_FOUND" or r.reason == "NOT_ENOUGH" then return nil, "piece gone" end
+    return nil, tostring(r.reason)
+  end
+  if r.moved >= want then
+    self.cache[id] = nil
+    self.inMe[fp] = nil
+    self.ids[fp] = nil
+  else
+    self.inMe[fp] = want - r.moved
+  end
+  return r.moved
 end
 
 function Locker:pull(list)

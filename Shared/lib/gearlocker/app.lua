@@ -136,9 +136,10 @@ local function setup(L, linked, again)
   end
   print("Looking for node computers...")
   findNodes(cfg, linked)
-  if again then cfg.staging, cfg.junk, cfg.pickup = nil, nil, nil end
-  if not (cfg.bridge and peripheral.isPresent(cfg.bridge)) then
-    local bridge = peripheral.find("meBridge")
+  if again then cfg.junk, cfg.pickup = nil, nil end
+  cfg.staging = nil
+  if not (cfg.bridge and peripheral.hasType(cfg.bridge, "me_bridge")) then
+    local bridge = peripheral.find("me_bridge")
     if not bridge then
       print("No ME Bridge found. Put one next to the computer or on its network, then restart.")
       return false
@@ -152,11 +153,11 @@ local function setup(L, linked, again)
     print("Monitor: " .. tostring(cfg.monitor or "none, using this screen"))
   end
   local taken = { [cfg.bridge] = true }
-  for _, role in ipairs({ "staging", "junk", "pickup" }) do
+  for _, role in ipairs({ "junk", "pickup" }) do
     if cfg[role] and peripheral.isPresent(cfg[role]) then taken[cfg[role]] = true end
   end
-  local words = { staging = "staging chest (keep it empty)", junk = "junk chest", pickup = "pickup chest" }
-  for _, role in ipairs({ "staging", "junk", "pickup" }) do
+  local words = { junk = "junk chest", pickup = "pickup chest" }
+  for _, role in ipairs({ "junk", "pickup" }) do
     if not (cfg[role] and peripheral.isPresent(cfg[role])) then
       cfg[role] = pickChest(words[role], taken)
       taken[cfg[role]] = true
@@ -214,7 +215,7 @@ function M.run(opts)
   opts = opts or {}
   local L = (opts.Locker or Locker).new(opts.locker or {})
   local cfg = L.cfg
-  local ready = cfg.player and cfg.bridge and cfg.staging and cfg.junk and cfg.pickup
+  local ready = cfg.player and cfg.bridge and cfg.junk and cfg.pickup
   if not cfg.role then
     -- set up before nodes existed: that one is a locker
     cfg.role = ready and "locker" or askRole()
@@ -257,7 +258,7 @@ function M.loop(L, linked, linkTrouble)
 
   local function check()
     local missing = {}
-    for _, role in ipairs({ "bridge", "staging", "junk", "pickup" }) do
+    for _, role in ipairs({ "bridge", "junk", "pickup" }) do
       local name = cfg[role]
       if not (name and peripheral.isPresent(name)) then
         local id = name and name:match("^(%d+):")
@@ -294,7 +295,6 @@ function M.loop(L, linked, linkTrouble)
   end
 
   local jobs = {}
-  local backAgain = false
   local function post(name, fn)
     if st.busy then return end
     jobs[#jobs + 1] = { name = name, fn = fn }
@@ -329,10 +329,7 @@ function M.loop(L, linked, linkTrouble)
   end
 
   local function worker()
-    post("Checking staging", function()
-      L:recover()
-      scan()
-    end)
+    post("Scanning", scan)
     while true do
       local job = table.remove(jobs, 1)
       if job then
@@ -421,14 +418,6 @@ function M.loop(L, linked, linkTrouble)
       elseif e == "timer" and ev[2] == tick then
         tick = os.startTimer(5)
         if linkTrouble then linkTrouble = linkNodes(cfg, linked) end
-        -- the staging node came back with pieces still in it
-        if backAgain and not st.busy and peripheral.isPresent(cfg.staging) then
-          backAgain = false
-          post("Checking staging", function()
-            L:recover()
-            scan()
-          end)
-        end
         pcall(refresh)
         local r = st.rules or {}
         if r.auto and st.canPull and #(st.junk or {}) > 0
@@ -437,7 +426,6 @@ function M.loop(L, linked, linkTrouble)
           post("Pulling", pullAll)
         end
       elseif e == "peripheral" or e == "peripheral_detach" or e == "monitor_resize" or e == "term_resize" then
-        if e == "peripheral" and ev[2] == cfg.staging then backAgain = true end
         attach()
         check()
       elseif e == "char" and ev[2] == "s" and not st.busy then

@@ -204,7 +204,7 @@ test("gearlocker: ties never push each other out", function()
     if keep[p.fp] == "top 3 Helmets" then top = top + 1 elseif keep[p.fp] == "fine" then fine = fine + 1 end
   end
   eq(top, 3) eq(fine, 3)
-  -- the same in another order keeps the same three (by fingerprint)
+  -- the same in another order keeps the same three (by fp)
   local flipped = {}
   for i = #pieces, 1, -1 do flipped[#flipped + 1] = pieces[i] end
   local _, keep2 = judge.junk(flipped, read, "caster")
