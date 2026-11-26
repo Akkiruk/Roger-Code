@@ -7,12 +7,12 @@
     "description": "Your own vault gear in AE2: finds the bad gear and pulls it to a junk chest, and shows the best upgrade per slot from what's in your ME system. Needs an ME Bridge, a monitor and three chests (staging, junk, pickup).",
     "source_root": "Apps/GearLocker",
     "entrypoint": "startup.lua",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "build": {
-    "commit": "fbd53055bd0dc3f39847ac7068ce9aa91c91a039",
-    "generated_at": "2026-11-26T03:07:15Z",
-    "package_hash": "aa86251f8c732141d5044dbac255910a1e1207d43230c4778f6adb6b6984bdc5"
+    "commit": "6b37e8c487520ad8eb433cc0c2307fe535cdda71",
+    "generated_at": "2026-11-26T03:08:32Z",
+    "package_hash": "c06be63b2d97c3c81ffbef0055f1d9e21c132d1d0374e846b4159700d9276cde"
   },
   "install": {
     "preserve": [],
@@ -40,7 +40,7 @@
       {
         "repo_path": "Shared/lib/gearlocker/ui.lua",
         "install_path": "lib/gearlocker/ui.lua",
-        "sha256": "b274a177aba97b3cba6453c676515a4a4bc6c47ae1b3a018c1438a967eea3fae"
+        "sha256": "412e05e5ae1ff2719b0f9b7727e9eb2c04b9e71b0a0b5bc377a9173a51b41653"
       },
       {
         "repo_path": "Shared/lib/gearlocker/locker.lua",
