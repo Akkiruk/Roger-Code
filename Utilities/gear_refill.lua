@@ -12,6 +12,7 @@
 --   gear_refill test    one of each type, then stops so they can be checked
 --   gear_refill         everything still owed
 --   gear_refill status  what's done
+--   gear_refill swap    turn the copies already made into copies of a new template on top (say Rare+), one for one
 
 -- the 2026-11-25 loss, by item
 local OWED = {
@@ -189,7 +190,84 @@ local function itemText(id)
   return text
 end
 
+local function copies(text, n)
+  local list = {}
+  for slot = 0, n - 1 do list[#list + 1] = "{Slot:" .. slot .. "b," .. text:sub(2) end
+  run(("data modify block %s Items set value [%s]"):format(OUT, table.concat(list, ",")))
+end
+
 flush()
+
+-- swap: the copies already made become copies of the template now on top (a new roll type, say), one for one.
+-- The old copies of a type are all identical, so they share one nbt hash; only that group is touched.
+if mode == "swap" then
+  if not dest then error("Swap needs the barrel with the copies touching the computer.", 0) end
+  local swapped = 0
+  for _, row in ipairs(OWED) do
+    local id = row[1]
+    local text = itemText(id)
+    copies(text, 1)
+    local newHash = (out.getItemDetail(1) or {}).nbt
+    run(("data modify block %s Items set value []"):format(OUT))
+    if not newHash then error("Couldn't read the new copy of " .. id .. ", stopping.", 0) end
+
+    local groups = {}
+    for slot, it in pairs(dest.list()) do
+      if it.name == id and it.nbt and it.nbt ~= newHash then
+        local d = dest.getItemDetail(slot)
+        local v = d and d.vaultData
+        if type(v) == "table" and v.level == tplLevel and tostring(v.state):upper() ~= "IDENTIFIED" then
+          local g = groups[it.nbt] or { n = 0, slots = {} }
+          g.n = g.n + it.count
+          g.slots[#g.slots + 1] = slot
+          groups[it.nbt] = g
+        end
+      end
+    end
+    local oldHash, old
+    for h, g in pairs(groups) do
+      if not old or g.n > old.n then oldHash, old = h, g end
+    end
+    for h, g in pairs(groups) do
+      if h ~= oldHash then print(("%s: left %d other unidentified pieces alone"):format(id, g.n)) end
+    end
+
+    local left = old and old.n or 0
+    while left > 0 do
+      -- pull up to a chest's worth of old copies into the plain chest, one per slot
+      local jobs, take = {}, math.min(left, out.size())
+      local k = 0
+      for _, from in ipairs(old.slots) do
+        local here = (dest.getItemDetail(from) or {}).count or 0
+        for _ = 1, here do
+          if k >= take then break end
+          k = k + 1
+          local to = k
+          jobs[#jobs + 1] = function() out.pullItems(destName, from, 1, to) end
+        end
+        if k >= take then break end
+      end
+      if #jobs == 0 then break end
+      parallel.waitForAll(table.unpack(jobs))
+      local n = 0
+      for slot, it in pairs(out.list()) do
+        if it.nbt ~= oldHash then
+          flush()
+          error("Something other than an old copy came out in slot " .. slot .. "; put it back, stopping.", 0)
+        end
+        n = n + it.count
+      end
+      if n == 0 then break end
+      copies(text, n)
+      flush()
+      left, swapped = left - n, swapped + n
+    end
+    print(("%s: swapped %d"):format(id:gsub("^the_vault:", ""), old and old.n - left or 0))
+  end
+  print(("Swapped %d in all."):format(swapped))
+  return
+end
+
 for _, row in ipairs(OWED) do
   local id, want = row[1], row[2]
   if mode == "test" then want = math.min(want, 1) end
@@ -199,9 +277,7 @@ for _, row in ipairs(OWED) do
     while have < want do
       waitFor("The plain chest isn't empty, waiting...", function() return next(out.list()) == nil end)
       local n = math.min(want - have, out.size())
-      local list = {}
-      for slot = 0, n - 1 do list[#list + 1] = "{Slot:" .. slot .. "b," .. text:sub(2) end
-      run(("data modify block %s Items set value [%s]"):format(OUT, table.concat(list, ",")))
+      copies(text, n)
       local d = out.getItemDetail(1)
       if not d or d.name ~= id or type(d.vaultData) ~= "table" or d.vaultData.level ~= tplLevel then
         error("The copies in the plain chest don't look like the template, stopping.", 0)
