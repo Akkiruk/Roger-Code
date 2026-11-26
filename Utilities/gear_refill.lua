@@ -112,73 +112,102 @@ end
 
 local mode = args[1] or "all"
 
+local tpl = peripheral.wrap("top")
+local first = tpl and tpl.getItemDetail and tpl.getItemDetail(1)
+if not first then error("Put the template piece in slot 1 of a plain chest or barrel on top.", 0) end
+local tplLevel = type(first.vaultData) == "table" and first.vaultData.level or nil
+if tplLevel ~= 100 then print("Warning: the template is level " .. tostring(tplLevel) .. ", not 100.") end
+
+-- what's already made: copies sitting in the destination or the plain chest (unidentified, the template's level)
+local OWES = {}
+for _, row in ipairs(OWED) do OWES[row[1]] = true end
+local function countCopies(inv)
+  local n = {}
+  if not inv then return n end
+  for slot, it in pairs(inv.list()) do
+    if OWES[it.name] then
+      local d = inv.getItemDetail(slot)
+      local v = d and d.vaultData
+      if type(v) == "table" and v.level == tplLevel and tostring(v.state):upper() ~= "IDENTIFIED" then
+        n[it.name] = (n[it.name] or 0) + it.count
+      end
+    end
+  end
+  return n
+end
+local inDest, inOut = countCopies(dest), countCopies(out)
+for id in pairs(OWES) do
+  done[id] = math.max(done[id] or 0, (inDest[id] or 0) + (inOut[id] or 0))
+end
+saveDone()
+
 if mode == "status" then
   local total, left = 0, 0
   for _, row in ipairs(OWED) do
-    local n = done[row[1]] or 0
+    local n = done[row[1]]
     print(("%-12s %4d / %d"):format(row[1]:gsub("^the_vault:", ""), n, row[2]))
-    total, left = total + n, left + row[2] - n
+    total, left = total + n, left + math.max(0, row[2] - n)
   end
   print(("%d made, %d to go"):format(total, left))
   return
 end
 
-local tpl = peripheral.wrap("top")
-local first = tpl and tpl.getItemDetail and tpl.getItemDetail(1)
-if not first then error("Put the template piece in slot 1 of a plain chest or barrel on top.", 0) end
-local vd = first.vaultData
-if type(vd) == "table" and vd.level ~= 100 then
-  print("Warning: the template is level " .. tostring(vd.level) .. ", not 100.")
-end
-print(dest and ("Copies are made " .. outSide .. " and go to the " .. destName .. ".") or "Nothing else touching the computer: copies stay in the plain " .. outSide .. " chest.")
-
--- whatever a stopped run left below goes on first
-if dest then
-  for slot in pairs(out.list()) do out.pushItems(destName, slot) end
-end
-
-local function freeSlot()
-  local used = out.list()
-  for slot = 1, out.size() do
-    if not used[slot] then return slot end
-  end
-end
+print(dest and ("Copies are made " .. outSide .. " and go to the " .. destName .. ".")
+  or ("Nothing else touching the computer: copies stay in the plain " .. outSide .. " chest."))
 
 local function waitFor(what, check)
   local said = false
-  local v = check()
-  while not v do
+  while not check() do
     if not said then print(what) said = true end
     sleep(1)
-    v = check()
-  end
-  return v
-end
-
-local function place(id)
-  local slot = waitFor("The plain chest is full, waiting...", freeSlot)
-  run(("data modify storage %s item.Slot set value %db"):format(STORE, slot - 1))
-  run(("data modify block %s Items append from storage %s item"):format(OUT, STORE))
-  local d = out.getItemDetail(slot)
-  if not d or d.name ~= id then error("The copy in slot " .. slot .. " isn't " .. id .. ", stopping.", 0) end
-  if dest then
-    -- gone from the slot some other way (an import bus) counts as delivered too
-    waitFor("The " .. destName .. " is full, waiting...", function()
-      return out.pushItems(destName, slot) == 1 or out.getItemDetail(slot) == nil
-    end)
   end
 end
 
+-- everything in the plain chest into the destination, all slots at once
+local function flush()
+  if not dest then return end
+  local jobs = {}
+  for slot in pairs(out.list()) do
+    jobs[#jobs + 1] = function()
+      waitFor("The " .. destName .. " is full, waiting...", function()
+        out.pushItems(destName, slot)
+        return out.getItemDetail(slot) == nil
+      end)
+    end
+  end
+  if #jobs > 0 then parallel.waitForAll(table.unpack(jobs)) end
+end
+
+-- the template as text, once per type, so a whole chest of copies is one command
+local function itemText(id)
+  run(("data modify storage %s item set from block %s Items[{Slot:0b}]"):format(STORE, TEMPLATE))
+  run(('data modify storage %s item.id set value "%s"'):format(STORE, id))
+  local ok, lines = commands.exec(("data remove storage %s item.Slot"):format(STORE))
+  ok, lines = commands.exec(("data get storage %s item"):format(STORE))
+  local text = ok and table.concat(lines or {}, ""):match("(%b{})%s*$")
+  if not text then error("Couldn't read the template back: " .. table.concat(lines or {}, " "), 0) end
+  return text
+end
+
+flush()
 for _, row in ipairs(OWED) do
   local id, want = row[1], row[2]
   if mode == "test" then want = math.min(want, 1) end
-  local have = done[id] or 0
+  local have = done[id]
   if have < want then
-    run(("data modify storage %s item set from block %s Items[{Slot:0b}]"):format(STORE, TEMPLATE))
-    run(('data modify storage %s item.id set value "%s"'):format(STORE, id))
+    local text = itemText(id)
     while have < want do
-      place(id)
-      have = have + 1
+      waitFor("The plain chest isn't empty, waiting...", function() return next(out.list()) == nil end)
+      local n = math.min(want - have, out.size())
+      local list = {}
+      for slot = 0, n - 1 do list[#list + 1] = "{Slot:" .. slot .. "b," .. text:sub(2) end
+      run(("data modify block %s Items set value [%s]"):format(OUT, table.concat(list, ",")))
+      local d = out.getItemDetail(1)
+      if not d or d.name ~= id or type(d.vaultData) ~= "table" or d.vaultData.level ~= tplLevel then
+        error("The copies in the plain chest don't look like the template, stopping.", 0)
+      end
+      flush()
+      have = have + n
       done[id] = have
       saveDone()
     end
