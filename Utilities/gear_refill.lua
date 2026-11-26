@@ -30,11 +30,13 @@ local args = { ... }
 -- update from main before doing anything; by commit, since the raw CDN can hand out an old copy for minutes
 local function update()
   if not http or args[1] == "noupdate" then return false end
+  -- the API is rate limited per server IP (every Roger-Code computer there shares it); main's raw file is the fallback
+  local sha = "main"
   local h = http.get("https://api.github.com/repos/Akkiruk/Roger-Code/commits/main")
-  if not h then return false end
-  local sha = (h.readAll() or ""):match('"sha"%s*:%s*"(%x+)"')
-  h.close()
-  if not sha then return false end
+  if h then
+    sha = (h.readAll() or ""):match('"sha"%s*:%s*"(%x+)"') or "main"
+    h.close()
+  end
   h = http.get("https://raw.githubusercontent.com/Akkiruk/Roger-Code/" .. sha .. "/" .. PATH)
   if not h then return false end
   local new = h.readAll()
