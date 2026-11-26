@@ -60,6 +60,12 @@ if args[1] == "noupdate" then table.remove(args, 1) end
 if not commands then error("This needs a command computer.", 0) end
 local out = peripheral.wrap("bottom")
 if not out or not out.list then error("Put a plain chest or barrel under this computer.", 0) end
+-- /data can't write into modded storage (a netherite barrel ignores it), so the block below has to be vanilla
+local below = peripheral.getType("bottom")
+if below ~= "minecraft:chest" and below ~= "minecraft:barrel" and below ~= "minecraft:trapped_chest" then
+  error("The block under this computer is " .. tostring(below) .. ". It has to be a plain chest or barrel;"
+    .. " put the netherite barrel on a side instead.", 0)
+end
 local dest, destName
 for _, side in ipairs({ "left", "right", "front", "back" }) do
   local p = peripheral.wrap(side)
