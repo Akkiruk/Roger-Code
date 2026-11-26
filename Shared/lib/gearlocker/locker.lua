@@ -248,8 +248,10 @@ function Locker:send(fp, role)
   if not id then return nil, "piece gone" end
   local want = self.inMe[fp] or 1
   local ok, r, code = pcall(bridge.export, id, self.cfg[role], { count = want })
-  -- VH rewrote the piece since the scan, so its id moved on; the uuid still finds it
-  if ok and type(r) == "table" and r.reason == "NOT_FOUND" and fp ~= id then
+  -- VH rewrote the piece since the scan, so its id moved on (gone, or still listed at 0 for a bit); the uuid still finds it
+  local gone = ok and (type(r) == "table" and r.moved == 0 and (r.reason == "NOT_FOUND" or r.reason == "NOT_ENOUGH")
+    or code == "NOT_FOUND")
+  if gone and fp ~= id then
     ok, r, code = pcall(bridge.export, { uuid = fp }, self.cfg[role], { count = want })
   end
   if not ok then return nil, tostring(r) end
