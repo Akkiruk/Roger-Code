@@ -2,7 +2,8 @@
 -- manifest-description: Command computer only. Copies one template gear piece into a chest as every gear type, to replace the gear the Gear Locker lost.
 -- Runs on a command computer. A chest on top holds the template (slot 1): a blank piece given the level, rarity and
 -- legendary flag by hand. The chest underneath gets the copies; an AE2 import bus on it takes them into the ME.
--- Copies go with /item replace ... from, so the gear data is copied as is, never rebuilt.
+-- Copies go through /data (template -> command storage -> chest), so the gear data is copied as is, never rebuilt.
+-- Both chests need to be plain ones that keep an Items list (vanilla chest or barrel).
 --
 --   gear_refill test    one of each type, then stops so they can be checked
 --   gear_refill         everything still owed
@@ -16,6 +17,7 @@ local OWED = {
   { "the_vault:axe", 221 }, { "the_vault:magnet", 198 }, { "the_vault:focus", 129 },
 }
 local TEMPLATE, OUT = "~ ~1 ~", "~ ~-1 ~"
+local STORE = "roger:gear_refill"
 local DONE_FILE = "gear_refill_done.txt"
 
 if not commands then error("This needs a command computer.", 0) end
@@ -78,7 +80,9 @@ local function place()
     sleep(1)
     slot = freeSlot()
   end
-  run(("item replace block %s container.%d from block %s container.0"):format(OUT, slot - 1, TEMPLATE))
+  -- /item replace refused the template chest ("not a container"), so the copy goes through command storage
+  run(("data modify storage %s item.Slot set value %db"):format(STORE, slot - 1))
+  run(("data modify block %s Items append from storage %s item"):format(OUT, STORE))
   return slot
 end
 
@@ -87,7 +91,8 @@ for _, row in ipairs(OWED) do
   if mode == "test" then want = math.min(want, 1) end
   local have = done[id] or 0
   if have < want then
-    run(('data modify block %s Items[{Slot:0b}].id set value "%s"'):format(TEMPLATE, id))
+    run(("data modify storage %s item set from block %s Items[{Slot:0b}]"):format(STORE, TEMPLATE))
+    run(('data modify storage %s item.id set value "%s"'):format(STORE, id))
     while have < want do
       local slot = place()
       if have == 0 then
