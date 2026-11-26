@@ -29,6 +29,9 @@ function M.settings(cfg)
   return out
 end
 
+-- fixed or one-off pieces: never junk, whatever their level or rolls say
+local SPECIAL = { UNIQUE = true, SPECIAL = true, CHAOTIC = true }
+
 local function word(rarity)
   rarity = tostring(rarity)
   return rarity:sub(1, 1):upper() .. rarity:sub(2):lower()
@@ -129,6 +132,7 @@ function M.junk(pieces, read, buildId, cfg, spared)
     elseif p.unidentified then keep[p.fp] = "unidentified"
     elseif spared[p.fp] then keep[p.fp] = "spared"
     elseif ups[p.fp] then keep[p.fp] = "upgrade"
+    elseif p.unique or SPECIAL[tostring(p.rarity)] then keep[p.fp] = word(p.unique and "UNIQUE" or p.rarity)
     elseif p.legendary and cfg.keepLegendary then keep[p.fp] = "legendary"
     elseif p.broken then keep[p.fp] = "broken, can be repaired"
     elseif rank[p.fp] <= cfg.keepPerSlot then

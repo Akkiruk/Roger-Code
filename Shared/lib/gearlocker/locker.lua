@@ -16,6 +16,7 @@ local GEAR = {
   ["the_vault:helmet"] = true, ["the_vault:chestplate"] = true, ["the_vault:leggings"] = true,
   ["the_vault:boots"] = true, ["the_vault:sword"] = true, ["the_vault:axe"] = true, ["the_vault:shield"] = true,
   ["the_vault:wand"] = true, ["the_vault:focus"] = true, ["the_vault:magnet"] = true,
+  ["the_vault:battlestaff"] = true, ["the_vault:trident"] = true, ["the_vault:rang"] = true,
 }
 M.GEAR = GEAR
 
@@ -166,6 +167,8 @@ function Locker:scan(onProgress)
         -- a stack that moved under us reads as something else; leave it uncached and try again next scan
         if piece and piece.id == e.name then
           piece.fp = e.fingerprint
+          local vd = details[slot].vaultData
+          piece.unique = (type(vd) == "table" and vd.uniqueKey ~= nil) or nil
           self.cache[e.fingerprint] = piece
         end
         done = done + 1

@@ -140,6 +140,19 @@ test("gearlocker: never junk: not gear, no slot, unidentified, spared, legendary
   eq(#junk, 0) eq(keep[rolling.fp], "unidentified")
 end)
 
+test("gearlocker: uniques and chaotics are never junk, even far under the player", function()
+  local read = { level = 90, worn = {} }
+  local cfg = { keepPerSlot = 0 }
+  local uniq = gear("weapon", 5, { rarity = "UNIQUE", type = "battlestaff" })
+  local keyed = gear("head", 5, { rarity = "RARE" })
+  keyed.unique = true
+  local chaos = gear("legs", 5, { rarity = "CHAOTIC" })
+  local bad = gear("legs", 5, { rarity = "RARE" })
+  local junk, keep = judge.junk({ uniq, keyed, chaos, bad }, read, "caster", cfg)
+  eq(#junk, 1) eq(junk[1].piece, bad)
+  eq(keep[uniq.fp], "Unique") eq(keep[keyed.fp], "Unique") eq(keep[chaos.fp], "Chaotic")
+end)
+
 test("gearlocker: unsparing a piece lets it go again", function()
   local read = { level = 60, worn = {} }
   local p = gear("chest", 1, { rarity = "COMMON" })
