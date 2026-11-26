@@ -2,6 +2,7 @@
 -- Vault Gear and the Gear Locker against a fake me_bridge v2 (the shapes in the AP fork's SPEC.md 2.2 and 3.3).
 
 local testing = require("testing")
+local locker = require("lib.gearlocker.locker")
 local test, eq, truthy = testing.test, testing.eq, testing.truthy
 
 table.unpack = table.unpack or unpack
@@ -109,8 +110,15 @@ local function gearMe()
   return fakeBridge(entries, details), entries, details
 end
 
--- the locker keeps its files with fs and textutils; an in-memory copy is enough here
+-- the locker keeps its files with fs and textutils; under plain Lua an in-memory copy is enough
 local function withCcGlobals(fn)
+  if rawget(_G, "fs") and fs.open then
+    if fs.exists("/t") then fs.delete("/t") end
+    local ok, err = pcall(fn)
+    if fs.exists("/t") then fs.delete("/t") end
+    if not ok then error(err, 0) end
+    return
+  end
   local files, store = {}, {}
   local oldFs, oldTu = rawget(_G, "fs"), rawget(_G, "textutils")
   rawset(_G, "fs", {
@@ -134,7 +142,6 @@ local function withCcGlobals(fn)
 end
 
 local function newLocker(me)
-  local locker = require("lib.gearlocker.locker")
   local devs = { bridge = me, junk = {}, pickup = {} }
   local L = locker.new({
     dir = "/t",
