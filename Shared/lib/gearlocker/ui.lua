@@ -2,7 +2,7 @@
 -- The locker's pages: home, bad gear, upgrades, the build picker and settings. Each draw builds the whole screen in
 -- memory, sends only the lines that changed and leaves a list of buttons; app.lua looks a touch up in that list.
 -- Nothing here moves items or waits for the server. Every layout comes from the size the screen reports, so the same
--- pages work on a 3x2 monitor at 0.5 (57x24) and on the computer's own terminal (51x19).
+-- pages work on a 4x4 monitor at scale 1 (39x26), a 2x2 at 0.5 and on the computer's own terminal (51x19).
 
 local rules = require("lib.gearshop.rules")
 local builds = require("lib.gearshop.builds")
@@ -15,15 +15,39 @@ M.SLOT_NAMES = { head = "Helmet", chest = "Chestplate", legs = "Leggings", feet 
 M.RARITIES = { "SCRAPPY", "COMMON", "RARE", "EPIC", "OMEGA" }
 local RARITY_FG = { SCRAPPY = "8", COMMON = "0", RARE = "4", EPIC = "2", OMEGA = "5", LEGENDARY = "1" }
 
--- ---------------------------------------------------------------- a screen
-
 local Screen = {}
 Screen.__index = Screen
 
+local SCALES = { 5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5 }
+
+-- Biggest text that still leaves 39x18 (a 4x4 at scale 1), else 0.5. Worked out from the current size with CC's
+-- monitor formula instead of trying each scale, since every setTextScale fires monitor_resize and app.lua
+-- re-attaches on that.
+function M.pickScale(w, h, cur)
+  local bw = (w * 6 * cur + 20) / 64
+  local bh = (h * 9 * cur + 20) / 64
+  for _, sc in ipairs(SCALES) do
+    local cw = math.floor((bw * 64 - 20) / (6 * sc) + 0.5)
+    local ch = math.floor((bh * 64 - 20) / (9 * sc) + 0.5)
+    if cw >= 39 and ch >= 18 then return sc end
+  end
+  return 0.5
+end
+
 --- target: a wrapped monitor or term. A monitor that goes away mid-draw only makes that draw fail.
+--- Monitors pick their own scale; scale is only used when the monitor can't say what it's at.
 function M.screen(target, scale)
   local self = setmetatable({ t = target, drawn = {}, buttons = {}, w = 0, h = 0 }, Screen)
-  if scale and target.setTextScale then pcall(target.setTextScale, scale) end
+  if target.setTextScale then
+    local ok, cur = pcall(target.getTextScale)
+    local okSize, w, h = pcall(target.getSize)
+    if ok and type(cur) == "number" and okSize and type(w) == "number" then
+      local want = M.pickScale(w, h, cur)
+      if want ~= cur then pcall(target.setTextScale, want) end
+    elseif scale then
+      pcall(target.setTextScale, scale)
+    end
+  end
   self:measure()
   return self
 end
@@ -141,9 +165,7 @@ function Screen:hit(x, y)
   return nil
 end
 
--- ---------------------------------------------------------------- bits every page uses
-
-local function bh(s) return s.h >= 16 and 3 or 1 end
+local function bh(s) return s.h >= 30 and 4 or s.h >= 16 and 3 or 1 end
 
 local function title(s, text, extra)
   s:bar(1, "b")
@@ -217,6 +239,21 @@ function M.home(s, st)
   if st.missing and #st.missing > 0 then
     y = y + s:wrap(y, 2, "Missing: " .. table.concat(st.missing, ", "), "e")
   end
+  if st.nodes and #st.nodes > 0 and y < top - 2 then
+    -- one tag per node computer, red when it's unloaded
+    s:write(2, y, "Nodes:", "8")
+    local x = 9
+    for _, nd in ipairs(st.nodes) do
+      local tag = "#" .. tostring(nd.id) .. (nd.loaded and "" or " off")
+      if x + #tag > s.w and x > 9 then
+        y, x = y + 1, 9
+        if y >= top - 2 then break end
+      end
+      s:write(x, y, tag, nd.loaded and "5" or "e")
+      x = x + #tag + 1
+    end
+    y = y + 1
+  end
   if y < top - 2 then
     local buildText = "Build: " .. M.buildLabel(st.buildId) .. (st.picked and "" or " (guess)")
     s:write(2, y, fit(buildText, s.w - 2), "3")
@@ -252,8 +289,14 @@ function M.badRows(st)
   return list
 end
 
+-- narrow but tall screens (a 4x4 at scale 1) get the reason on its own line instead of cutting both in half
+local function badTwoLine(s)
+  return s.w < 45 and (s.h - 3 - bh(s) - 1) >= 16
+end
+
 function M.badPerPage(s)
-  return math.max(1, s.h - 3 - bh(s) - 1)
+  local rows = math.max(1, s.h - 3 - bh(s) - 1)
+  return badTwoLine(s) and math.floor(rows / 2) or rows
 end
 
 function M.bad(s, st)
@@ -269,25 +312,30 @@ function M.bad(s, st)
   if #list == 0 then
     s:centre(math.floor(top / 2) + 1, "Nothing to pull.", "5")
   end
-  local reasonW = math.min(24, math.floor(s.w * 0.4))
+  local two = badTwoLine(s)
+  local reasonW = two and s.w - 2 or math.min(24, math.floor(s.w * 0.4))
   for i = 1, per do
     local row = list[(st.badPage - 1) * per + i]
     if not row then break end
-    local y = 2 + i
+    local y = two and (1 + i * 2) or (2 + i)
     local p = row.piece
     local g, gfg = grade(p)
     local lvl = "lv" .. tostring(p.level or 0)
     local right = row.spared and "kept by you" or tostring(row.reason or "")
     right = fit(right, reasonW)
-    local nameW = s.w - reasonW - #lvl - #g - 4
+    local nameW = s.w - #lvl - #g - (two and 2 or reasonW + 4)
     s:write(1, y, fit(p.label or p.type or "?", nameW), row.spared and "8" or "0")
     s:write(nameW + 2, y, lvl, "8")
     s:write(nameW + 3 + #lvl, y, g, gfg)
-    s:right(y, right, row.spared and "5" or "e")
-    s.buttons[#s.buttons + 1] = { id = "spare", value = p.fp, on = not row.spared, x = 1, y = y, w = s.w, h = 1 }
+    if two then
+      s:write(3, y + 1, right, row.spared and "5" or "e")
+    else
+      s:right(y, right, row.spared and "5" or "e")
+    end
+    s.buttons[#s.buttons + 1] = { id = "spare", value = p.fp, on = not row.spared, x = 1, y = y, w = s.w, h = two and 2 or 1 }
   end
   footer(s, st, top - 1)
-  if pages > 1 then s:right(top - 1, st.badPage .. "/" .. pages, "8") end
+  if pages > 1 then s:right(top - 1, " " .. st.badPage .. "/" .. pages, "8") end
   local n = #(st.junk or {})
   s:row(top, b, {
     { "back", nil, "BACK", "0", "7" },
@@ -329,18 +377,27 @@ function M.upgrades(s, st)
     if e then
       local p = e.piece
       local g, gfg = grade(p)
-      local txt = fit(p.label or "?", w - 14)
-      s:write(x, y, txt, "0")
-      s:write(x + #txt + 1, y, "lv" .. (p.level or 0), "8")
       local gain = gainText(e) .. (e.later and (" at " .. (p.level or 0)) or "")
-      s:write(x + w - #gain, y, gain, e.later and "8" or "5")
       local ok = st.canTake
-      s:button("take", p.fp, s.w - takeW + 1, y, takeW, 1, "TAKE", ok and "f" or "8", ok and "4" or "7")
       if tall then
+        -- name up top, the rest underneath so narrow screens still fit it all
+        s:write(x, y, fit(p.label or "?", w), "0")
+        local lv = "lv" .. (p.level or 0)
+        s:write(3, y + 1, lv, "8")
+        s:write(4 + #lv, y + 1, g, gfg)
+        local gx = 5 + #lv + #g
+        s:write(gx, y + 1, gain, e.later and "8" or "5")
         local worn = e.worn
-        local wtxt = worn and ("now: " .. (worn.label or "?") .. " lv" .. (worn.level or 0)) or "now: nothing"
-        s:write(x, y + 1, fit(wtxt, w), "8")
-        s:write(x + w - #g, y + 1, g, gfg)
+        local wtxt = worn and ("now " .. (worn.label or "?") .. " lv" .. (worn.level or 0)) or "now nothing"
+        local wx = gx + #gain + 2
+        s:write(wx, y + 1, fit(wtxt, s.w - takeW - wx), "8")
+        s:button("take", p.fp, s.w - takeW + 1, y, takeW, 2, "TAKE", ok and "f" or "8", ok and "4" or "7")
+      else
+        local txt = fit(p.label or "?", w - 14)
+        s:write(x, y, txt, "0")
+        s:write(x + #txt + 1, y, "lv" .. (p.level or 0), "8")
+        s:write(x + w - #gain, y, gain, e.later and "8" or "5")
+        s:button("take", p.fp, s.w - takeW + 1, y, takeW, 1, "TAKE", ok and "f" or "8", ok and "4" or "7")
       end
     else
       s:write(x, y, (st.counts and (st.counts[slot] or 0) > 0) and "see list" or "nothing better", "8")
@@ -371,15 +428,18 @@ function M.builds(s, st)
   local b = bh(s)
   local top = s.h - b + 1
   local choices = M.buildChoices()
-  local cols = (top - 3 < #choices) and 2 or 1
+  local cols = (top - 4 < #choices) and 2 or 1
   local per = math.ceil(#choices / cols)
   local colW = math.floor((s.w - (cols - 1)) / cols)
+  -- taller buttons with a gap when the screen has the rows for it
+  local step = math.max(1, math.min(4, math.floor((top - 4) / per)))
+  local hgt = step > 1 and step - 1 or 1
   for i, c in ipairs(choices) do
     local col, row = math.floor((i - 1) / per), (i - 1) % per
-    local y = 3 + row
-    if y < top - 1 then
+    local y = 3 + row * step
+    if y + hgt - 1 < top - 1 then
       local on = (c.id == false and not st.picked) or (c.id and st.picked and st.buildId == c.id)
-      s:button("build", c.id, 1 + col * (colW + 1), y, colW, 1, fit(c.label, colW - 2), on and "f" or "0", on and "5" or "7")
+      s:button("build", c.id, 1 + col * (colW + 1), y, colW, hgt, fit(c.label, colW - 2), on and "f" or "0", on and "5" or "7")
     end
   end
   footer(s, st, top - 1)
