@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-26T05:06:14Z",
+  "generated_at": "2026-11-26T05:18:04Z",
   "repo": {
     "owner": "Akkiruk",
     "name": "Roger-Code",
@@ -8,7 +8,7 @@
   },
   "installer": {
     "version": "2.0.0",
-    "commit": "2630a671c75275bd21c5b78a2109f81b9d918e8b",
+    "commit": "af6ed08a4520198fa938fe0fef3283e18acf787d",
     "path": "System/installer.lua",
     "sha256": "6118026fbcb697ac2a986a42755cd5360e8cebec97aa96fa982e4b452bb8fea7"
   },
@@ -152,9 +152,9 @@
       "name": "Gear Refill",
       "category": "Utilities",
       "description": "Runs on a command computer:",
-      "version": "1.0.6",
-      "commit": "2630a671c75275bd21c5b78a2109f81b9d918e8b",
-      "package_hash": "efcd389006835098c7b79abc493fde6b6786399c3a6471c874ae21ce45449b84",
+      "version": "1.0.7",
+      "commit": "af6ed08a4520198fa938fe0fef3283e18acf787d",
+      "package_hash": "1bf9648fca6d82bd912e685a388a2239a2febcdc2b41f054f1c4c073f837e496",
       "spec_path": "programs/gear_refill.json"
     },
     "gearlocker": {
